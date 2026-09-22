@@ -72,4 +72,48 @@ For each material decision, record the problem, chosen approach, responsible own
 - **POC 2:** En installerbar app til Windows og Mac med lokal agentmotor og brugerens egne modelforbindelser. Samtalen vises til venstre og en løbende forhåndsvisning af den applikation, der bygges, til højre. Forhåndsvisningen skal afspejle de aktuelle ændringer og vise forståelig status ved opstart og fejl. De to POC'er skal dele konfigurationsgrundlag.
 - Disse præciseringer erstatter tidligere beskrivelser af den første POC som en samlet desktop-, organisations- og hostingløsning. Den bredere arkitektur er fortsat en fremtidig retning.
 - **POC 2, oplevelse:** Lovable-inspireret brugerflade med en lokal live-server. En fremtidig “Gem”-handling skal kunne oprette et Git-commit efter en synlig gennemgang af de relevante ændringer. En separat “Deploy”-handling skal udgive til den valgte, konfigurerede destination. Dette er produktfunktioner til senere afklaring og ændrer ikke reglen om, at assistenten ikke laver commits i dette repository.
-- **POC 2, projektoprettelse:** Start nye projekter med en guidet init-/planfase. Afklar projektets navn, formål, teknologiønsker, kodekonventioner, teststrategi (herunder TDD, almindelige unit-tests eller uden unit-tests) og mappeplacering. Tilbyd forståelige anbefalinger, når brugeren ikke har en præference. Vis en samlet plan og de valgte standarder til godkendelse, før agenten opretter mappestruktur, dokumentation og projektregler. Gem valgene i projektet, så efterfølgende arbejde følger dem. Et valg uden unit-tests skal stadig have en aftalt måde at afprøve brugerrejser på. Undersøg eksisterende indhold før oprettelse; overskriv ikke en eksisterende projektmappe. Dette er et designkrav, ikke en implementeret funktion.
+- **POC 2, projektoprettelse:** Hjælp brugeren fra idé til et lokalt projekt gennem en enkel samtale. Spørg efter navn og formål, og afklar kun de valg, som kræver brugerens stillingtagen. Teknologi, kodekonventioner og teststrategi skal have forståelige standardforslag og kunne tilpasses af interesserede brugere; de må ikke være obligatoriske tekniske spørgsmål for alle. Appen opretter den aftalte mappestruktur og bevarer projektvalgene uden at kræve en særskilt dokumentarbejdsgang. Undersøg eksisterende indhold før oprettelse. Dette er et designkrav, ikke en implementeret funktion.
+- **POC 2, platforme:** Første desktopversion skal understøtte både Windows og macOS. Afprøvning skal dokumenteres særskilt for hvert operativsystem; en vellykket Mac-kørsel er ikke en Windows-verifikation.
+- **POC 2, opsætning:** Understøt både eksisterende udviklingsværktøjer på maskinen og en guidet opsætning for brugere uden dem. Undersøg eksisterende installationer først. Vis nødvendige installationer og tilladelser, og overskriv ikke brugerens værktøjer eller maskinopsætning uden konkret godkendelse. Den tekniske distributionsmekanisme er endnu ikke valgt.
+
+## Inspiration til POC 2: Hamster (ikke valgt som hovedretning)
+
+Følgende er forslag til drøftelse, ikke nye accepterede funktioner. Grundlaget er brugerens indsendte produkttekst og Hamsters offentlige produktsider, læst 22. september 2026. Produktet er ikke afprøvet i en indlogget session.
+
+- **Projektgrundlag adskilt fra den aktuelle opgave:** Hamster beskriver [Blueprints](https://tryhamster.com/product/studio/blueprints) som produktkontekst og [Briefs](https://tryhamster.com/product/studio/briefs) som grundlag for en ændring. Hos os kan init-fasens godkendte valg være projektgrundlaget, mens hver efterfølgende ændring får en kort opgavebeskrivelse.
+- **Synlige kriterier før kode:** Hamsters [Plans](https://tryhamster.com/product/studio/plans) forbinder opgaver med acceptkriterier. Forslag: vis i almindeligt dansk, hvad brugeren skal kunne gøre, og hvordan resultatet afprøves, før agenten starter.
+- **Beslutninger skal følge projektet:** Hamsters [CLI](https://tryhamster.com/product/studio/cli) beskriver overførsel af kontekst til kodeværktøjer. Forslag: gem vores godkendte projektgrundlag og planer i læsbare lokale filer, så bruger og agent arbejder ud fra samme oplysninger. Det indebærer ikke en Hamster-integration.
+- **Skeln mellem forslag og godkendt retning:** Vis agentens foreslåede ændringer til planen, før de erstatter godkendte valg. En teknisk ændring må ikke ubemærket ændre formålet eller teststrategien.
+
+En kontekstgraf, mødeoptagelse, Slack-integration og teamsamarbejde fra Hamsters bredere produkt er ikke tilføjet til POC 2's omfang. Der er endnu ikke valgt en integration eller afhængighed til Hamster.
+
+## Præcisering: et værktøj til at bygge og udgive
+
+POC 2 skal primært gøre det muligt for ikke-tekniske brugere at vibe-code og hoste deres egne applikationer. Hamsters dokument- og planlægningsorienterede arbejdsgang er ikke valgt som produktets hovedretning.
+
+- Brugeren beskriver ønsket i samtalen og ser resultatet i en lokal live-forhåndsvisning.
+- Appen hjælper med Git, npm-pakker, nødvendige udviklingsværktøjer og Docker, hvor projektet kræver det, uden at forudsætte terminalkendskab.
+- Første version skal tilstræbe både brugerens eget Claude-abonnement og en Anthropic API-nøgle, hvor den konkrete integration er understøttet og tilladt. Abonnementsadgang er en ønsket mulighed, ikke en verificeret produktfunktion. Agentmotor og loginform holdes adskilt fra brugerfladen. OpenCode er fortsat en kandidat, ikke et krav der må forhindre denne brugerrejse.
+- Deployment skal være leverandøruafhængig gennem udskiftelige hostingadaptere. Azure er kun et eksempel sammen med Vercel, Hetzner, Promte og egne servere; ingen af disse er valgt som obligatorisk eller verificeret destination. Hver adapter skal beskrive understøttede applikationstyper, nødvendige tjenester, konfiguration, udgivelse og kontrol af resultatet. “Alle steder” er målet for udvidelighed, ikke et løfte om, at enhver app fungerer uændret på enhver host. Konto, ressourcevalg og omkostninger afklares ved opsætning.
+- Lokal udvikling, egne modelforbindelser, Windows/macOS og de to opsætningsmuligheder fastholdes. Fælles profiler fra POC 1 skal støtte arbejdet i baggrunden.
+
+Dette præciserer produktretningen; der er endnu ikke implementeret desktopfunktioner eller valgt en bestemt hostingtjeneste.
+
+## POC 2: modulære forbindelser og visuel opstart
+
+- **Uafhængige valg:** Brugerflade, agentmotor, model/login, lokal værktøjsopsætning, projektprofil og hostingforbindelse skal kunne udskiftes gennem afgrænsede grænseflader. Adaptere angiver deres faktiske muligheder; de må ikke foregive fuld kompatibilitet, når en funktion mangler.
+- **Claude med API-nøgle:** Brug en dokumenteret API-/SDK-integration. Opbevar nøglen beskyttet, vis den valgte betalingsform, og skift ikke automatisk fra abonnement til betalt API-brug ved en fejl eller opbrugt kvote.
+- **Claude med abonnement:** Bevar dette som krav under ekstern afklaring. Agent SDK-dokumentationen kræver forudgående godkendelse for at tilbyde claude.ai-login eller abonnementskvoter i tredjepartsprodukter. En eksisterende lokal login-session eller teknisk mulighed er ikke i sig selv dokumentation for tilladelse til vores distribution. Undgå tokenudtræk og identitetsmaskering som integrationsvej.
+- **Designmateriale ved opstart:** Tilbyd et valgfrit trin, hvor brugeren kan vælge referencebilleder og andre inspirationsfiler fra maskinen, tilføje links til designguides, angive brandfarver og vælge logoer eller øvrige grafiske filer. Tilbyd også at fortsætte uden materiale og lade agenten foreslå en retning.
+- **Appen organiserer materialet:** Brugeren vælger filer gennem brugerfladen; appen placerer kopier i passende projektmapper uden at overskrive eksisterende filer. Hold referencer adskilt fra aktiver, der skal offentliggøres med appen. En intern designguide må ikke automatisk ende i det offentlige webindhold. Forklar hvilke valgte materialer der deles med den tilsluttede model.
+- **Visuel feedback:** Lad brugeren se og korrigere den foreslåede anvendelse af farver og logo i live-forhåndsvisningen. Gem valgene med projektet, så senere ændringer følger dem. Dette er en del af den enkle byggeoplevelse, ikke en obligatorisk dokumentproces.
+
+### Kildegrundlag for Claude-forbindelser
+
+Officiel dokumentation læst 22. september 2026; ingen login- eller modelkald afprøvet:
+
+- [Agent SDK](https://code.claude.com/docs/en/agent-sdk/overview): API-nøgle er den dokumenterede start; tredjepartslogin kræver forudgående godkendelse.
+- [Loginvejledning](https://support.claude.com/en/articles/13189465-log-in-to-your-claude-account): produktudviklere henvises til API-nøgler eller understøttede cloududbydere.
+- [SDK med Claude-abonnement](https://support.claude.com/en/articles/15036540-use-the-claude-agent-sdk-with-your-claude-plan): opdateringen øverst beskriver en pauseret ændring af afregning og fortsat abonnementsforbrug. Den historiske tekst nedenunder er markeret som ikke trådt i kraft på den annoncerede dato. Siden etablerer ikke i sig selv en godkendelse af vores produkt.
+
+Konsekvens: arkitekturen skal give plads til begge forbindelser, men abonnementsadapteren må ikke præsenteres som tilgængelig, før adgang, afregning og produktgodkendelse er afklaret. Dette blokerer ikke design og implementering af resten af den modulære app.
