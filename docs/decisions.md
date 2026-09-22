@@ -1,5 +1,7 @@
 # Current direction and open decisions
 
+**Aktuel implementeringsstatus:** POC 1 er implementeret. POC 2 har nu et Electron-grundlag til projektoprettelse og lokal forhåndsvisning; se [desktopvejledningen](../desktop/README.md). De oprindelige mødenoter nedenfor er historiske, inklusive deres beskrivelser af endnu ikke påbegyndt implementering.
+
 Meeting input · 22 September 2026
 
 These records capture the project discussion, not formal approval by all participating organisations. No implementation has begun. The working name is **AI Harness** (`ai-harness`); municipal use is the initial context rather than a restriction on who can adopt it.
@@ -117,3 +119,11 @@ Officiel dokumentation læst 22. september 2026; ingen login- eller modelkald af
 - [SDK med Claude-abonnement](https://support.claude.com/en/articles/15036540-use-the-claude-agent-sdk-with-your-claude-plan): opdateringen øverst beskriver en pauseret ændring af afregning og fortsat abonnementsforbrug. Den historiske tekst nedenunder er markeret som ikke trådt i kraft på den annoncerede dato. Siden etablerer ikke i sig selv en godkendelse af vores produkt.
 
 Konsekvens: arkitekturen skal give plads til begge forbindelser, men abonnementsadapteren må ikke præsenteres som tilgængelig, før adgang, afregning og produktgodkendelse er afklaret. Dette blokerer ikke design og implementering af resten af den modulære app.
+
+## POC 2: første desktopmilepæl og designretning
+
+Electron er valgt til det første desktopgrundlag. Projektoprettelse og lokal forhåndsvisning er adskilte moduler uden Electron-afhængighed. UI og native filhandlinger forbindes gennem en begrænset IPC-bro. Agentmotor, loginform og hostingudbyder er fortsat åbne, separate integrationsvalg.
+
+Brugerfladen skal ligne et arbejdsredskab i stil med Codex, Claude Code og OpenCode: kompakt navigation, neutrale farver, diskrete værktøjslinjer og sammenhængende paneler. Store kampagneoverskrifter, kortbaseret landingpage-layout og dekorativ websitebranding er fravalgt. Det gælder selve værktøjet; de applikationer, brugeren bygger, kan have deres eget visuelle udtryk.
+
+Denne milepæl omfatter nye lokale projekter med navn, idé, brandfarve, referencelinks og kopier af logoer/referencefiler; fælles AI-regler; genåbning; og automatisk genindlæsning af en statisk startside ved filændringer. AI-chat, Git-handlinger, npm-/Docker-opsætning, hosting og distributionspakker er endnu ikke implementeret. Windows er målplatform, men kræver særskilt afprøvning. Se [desktopvejledningen](../desktop/README.md) for verifikationsniveau og begrænsninger.

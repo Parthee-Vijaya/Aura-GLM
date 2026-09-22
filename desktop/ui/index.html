@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="da"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; frame-src http://127.0.0.1:*; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>AI Harness</title><link rel="stylesheet" href="styles.css"><script src="app.js" defer></script></head>
+<body>
+<aside class="sidebar" aria-label="Projektnavigation">
+  <div class="brand"><span class="brand-icon" aria-hidden="true">⌘</span> AI Harness</div>
+  <nav><button id="new"><span aria-hidden="true">＋</span> Nyt projekt</button><button id="open"><span aria-hidden="true">▱</span> Åbn projekt</button></nav>
+  <div class="nav-label">ARBEJDSOMRÅDE</div><div id="active-project" class="project-item">Intet projekt åbent</div>
+  <div class="sidebar-bottom"><div><span class="dot"></span> Lokal tilstand</div><p>AI-forbindelse ikke tilsluttet</p><span class="badge">POC 2 · Udviklingsversion</span></div>
+</aside>
+<div class="app-content">
+<header><span id="view-title">Projektopstart</span><span class="local">Kun på din computer</span></header>
+<main id="onboarding">
+  <div class="intro"><h1>Nyt projekt</h1><p>Beskriv, hvad du vil bygge. Projektet og dine filer bliver på din computer.</p></div>
+  <form id="create-form">
+    <section class="panel"><div class="section-title"><h2>Projekt</h2></div>
+      <label for="name">Hvad skal projektet hedde?</label><input id="name" required maxlength="80" placeholder="Fx Fælleshaven">
+      <label for="purpose">Hvad skal det hjælpe med?</label><textarea id="purpose" required maxlength="3000" rows="3" placeholder="Jeg vil lave en side, hvor naboer kan finde og dele aktiviteter i vores fælleshave …"></textarea>
+    </section>
+    <section class="panel"><div class="section-title"><h2>Design og referencer</h2><span class="muted">Valgfrit</span></div>
+      <div class="design-row"><div><label for="color">Din primære farve</label><div class="color-row"><input id="color" type="color" value="#326556"><output id="color-value">#326556</output></div></div><div><label>Logo</label><button type="button" id="logo" class="secondary">＋ Vælg logo</button><p class="hint">PNG, JPG eller WebP · offentlig del af siden</p></div></div>
+      <label for="links">Links til inspiration eller designguide</label><textarea id="links" rows="2" placeholder="https://…&#10;Ét link pr. linje"></textarea>
+      <button type="button" id="reference" class="text-button">＋ Tilføj referencefiler</button><ul id="assets"></ul>
+      <p class="hint">Referencer gemmes separat fra det offentlige indhold. Intet sendes til en model i denne version, og links hentes ikke automatisk.</p>
+    </section>
+    <details class="panel advanced"><summary>Tekniske valg</summary><p>Startskabelon: en lokal hjemmeside med HTML, CSS og JavaScript. Den kræver hverken npm eller Docker. Flere projekttyper kommer via selvstændige moduler.</p><label for="tests">Ønsket teststrategi til den kommende agent</label><select id="tests"><option value="manuel">Manuel gennemgang af brugerrejsen</option><option value="automatiske">Automatiske tests og manuel gennemgang</option></select><p class="hint">Valget gemmes; denne version opretter ikke tests. De fælles danske AI-regler følger med projektet.</p></details>
+    <div class="create-footer"><p>Du vælger placeringen i næste trin.<br>Vi opretter en ny mappe og bevarer dine eksisterende filer.</p><button id="create" class="primary" type="submit">Opret projekt</button></div>
+  </form>
+</main>
+<main id="workspace" hidden>
+  <div class="workspace-bar"><div><h1 id="project-name"></h1></div><div class="actions"><button disabled title="Git-integration er endnu ikke tilsluttet">Gem version</button><button disabled title="Hostingadaptere er endnu ikke tilsluttet">Udgiv</button></div></div>
+  <div class="work-grid"><section class="chat panel"><div class="section-title"><h2>Samtale</h2><span class="badge">Ikke tilsluttet</span></div><div class="chat-content"><h3>Projektet er oprettet</h3><p id="project-purpose"></p><div class="notice">Du ser en startskabelon baseret på dine valg. AI-chatten er endnu ikke tilsluttet.</div><p>Den kommende forbindelse skal kunne bruge din egen API-nøgle. Claude-abonnement afventer afklaring af understøttelse og tilladelse.</p><details><summary>Projektoplysninger</summary><p id="project-path"></p><p>Fælles regler: AGENTS.md og CLAUDE.md.<br>Projektvalg: harness.json.<br>Versionsstyring: ikke oprettet af appen.</p></details></div><div class="composer"><textarea aria-label="Besked til agenten" disabled placeholder="Her beskriver du snart din næste ændring …"></textarea><button disabled>Send ↑</button></div></section>
+  <section class="preview panel"><div class="preview-toolbar"><div><span class="dot"></span> <span id="preview-status">Lokal forhåndsvisning</span></div><div><button id="narrow" class="text-button" aria-pressed="false">Smal visning</button><button id="refresh" class="text-button">Genindlæs ↻</button></div></div><div id="preview-surface"><iframe id="preview" title="Dit projekts lokale forhåndsvisning" sandbox="allow-scripts"></iframe></div><div class="preview-footer">Kun på din computer · opdateres ved filændringer · endnu ikke udgivet</div></section></div>
+</main>
+</div>
+<div id="message" role="status" aria-live="polite" hidden></div>
+</body></html>

@@ -1,0 +1,76 @@
+const { _electron: electron } = require('playwright');
+const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const os = require('node:os');
+const root = path.join(__dirname, '..', '..');
+(async () => {
+  const testRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'harness-desktop-'));
+  const reference = path.join(testRoot, 'reference.txt');
+  await fs.writeFile(reference, 'PRIVAT TESTREFERENCE');
+  const logo = path.join(testRoot, 'logo.png');
+  await fs.writeFile(logo, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==', 'base64'));
+  const executablePath = require('electron');
+  let app;
+  async function launch() {
+    app = await electron.launch({executablePath, args:[path.join(root, 'desktop'), '--user-data-dir='+path.join(testRoot,'electron-data')], env:{...process.env, ELECTRON_RUN_AS_NODE: undefined}});
+    const page = await app.firstWindow();
+    await page.waitForSelector('#create-form');
+    return page;
+  }
+  async function choose(paths, canceled=false) {
+    await app.evaluate(({dialog}, {paths,canceled}) => {dialog.showOpenDialog = async () => ({canceled,filePaths:paths});}, {paths,canceled});
+  }
+  try {
+    let page = await launch();
+    const errors=[]; page.on('pageerror',e=>errors.push(e.message));
+    await page.screenshot({path:path.join(testRoot, 'opstart.png'), fullPage:true});
+    await page.fill('#name','Fælleshaven'); await page.fill('#purpose','Find og del aktiviteter med dine naboer.');
+    await page.fill('#links','https://example.com/design');
+    await choose([reference]); await page.click('#reference'); await page.waitForSelector('#assets li');
+    await choose([logo]); await page.click('#logo');
+    await page.waitForFunction(()=>document.querySelectorAll('#assets li').length===2);
+    await choose([],true); await page.click('#create');
+    await page.waitForFunction(()=>!document.querySelector('#create').disabled);
+    assert.equal(await page.locator('#onboarding').isVisible(),true);
+    await choose([testRoot]); await page.click('#create');
+    await page.waitForSelector('#workspace:not([hidden])');
+    const preview = page.frameLocator('#preview');
+    await preview.locator('h1').waitFor(); assert.equal(await preview.locator('h1').textContent(),'Fælleshaven');
+    assert.equal(await preview.locator('.logo').evaluate(el=>el.complete && el.naturalWidth>0),true);
+    const all = await fs.readdir(testRoot); const projectDir=path.join(testRoot,all.find(x=>x.startsWith('projekt-')));
+    const publicIndex=path.join(projectDir,'public/index.html');
+    const initial=await fs.readFile(publicIndex,'utf8');
+    await page.waitForTimeout(1800);
+    await fs.writeFile(publicIndex,initial.replace('Fælleshaven</h1>','En levende fælleshave</h1>'));
+    await preview.locator('h1').filter({hasText:'En levende fælleshave'}).waitFor({timeout:10000});
+    await page.click('#narrow'); assert.equal(await page.locator('#narrow').getAttribute('aria-pressed'),'true');
+    await page.click('#narrow');
+    assert.equal(await preview.locator('body').evaluate(()=>typeof window.harness),'undefined');
+    assert.equal(await preview.locator('body').evaluate(()=>typeof require),'undefined');
+    assert.equal(await preview.locator('body').evaluate(async()=>{try{await fetch('https://example.com');return true;}catch{return false;}}),false);
+    await fs.rename(publicIndex, publicIndex + '.backup');
+    await page.locator('#preview-status').filter({hasText:'Kan ikke læse siden'}).waitFor({timeout:10000});
+    await fs.rename(publicIndex + '.backup', publicIndex);
+    await page.locator('#preview-status').filter({hasText:'Lokal forhåndsvisning'}).waitFor({timeout:10000});
+    assert.equal(await preview.locator('body').evaluate(()=>{try{return !!parent.harness;}catch{return false;}}),false);
+    await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setSize(980,720));
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth <= window.innerWidth),true);
+    assert.ok((await page.locator('#preview').boundingBox()).width > 250);
+    await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setSize(1440,940));
+    await page.screenshot({path:path.join(testRoot, 'arbejdsflade.png'),fullPage:true});
+    await page.click('#new');
+    await page.waitForSelector('#onboarding:not([hidden])');
+    assert.equal(await page.inputValue('#name'), '');
+    await app.close();
+    page=await launch(); await choose([projectDir]); await page.click('#open');
+    await page.frameLocator('#preview').locator('h1').filter({hasText:'En levende fælleshave'}).waitFor();
+    await app.close(); page=await launch();
+    await page.fill('#name','Fælleshaven');await page.fill('#purpose','Må ikke overskrive');await choose([testRoot]);await page.click('#create');
+    await page.locator('#message.error').waitFor();assert.match(await fs.readFile(publicIndex,'utf8'),/En levende fælleshave/);
+    await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setSize(980,720));
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth <= window.innerWidth),true);
+    assert.deepEqual(errors,[]);
+    console.log(JSON.stringify({passed:['projektoprettelse','annulleret dialog','logo og reference','ægte preview','automatisk opdatering fra disk','smal visning','ingen Node eller IPC i preview','genåbning efter genstart','eksisterende projekt bevaret'],testRoot,projectDir,screenshots:[path.join(testRoot, 'opstart.png'),path.join(testRoot, 'arbejdsflade.png')]}));
+  } finally {if(app) await app.close().catch(()=>{});}
+})().catch(error=>{console.error(error);process.exitCode=1;});
