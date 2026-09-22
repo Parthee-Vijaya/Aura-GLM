@@ -1,0 +1,126 @@
+# Personlige arbejdsregler og midlertidige udkast i dette projekt
+/AGENTS.md
+/.cursor/rules/git-ownership.mdc
+/docs/readme-udkast.md
+
+# Operativsystemets hjælpefiler
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Lokale editorindstillinger, historik og midlertidige filer
+.idea/
+.history/
+*.swp
+*.swo
+*~
+*.orig
+*.rej
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# Lokale agentindstillinger; fælles regler og skills kan fortsat deles
+.claude/settings.local.json
+CLAUDE.local.md
+.cursorignore.local
+
+# Miljøvariabler og hemmeligheder
+# Eksempelfiler må kun indeholde pladsholdere, aldrig rigtige nøgler
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+!.env.*.example
+!.env.*.sample
+!.env.*.template
+.envrc.local
+/.secrets/
+/secrets.local/
+*.key
+*.p12
+*.pfx
+*.keystore
+
+# JavaScript og TypeScript: afhængigheder og genererede filer
+node_modules/
+.npm/
+.pnpm-store/
+.yarn/cache/
+.yarn/unplugged/
+.yarn/install-state.gz
+.pnp.*
+*.tsbuildinfo
+.eslintcache
+.stylelintcache
+.parcel-cache/
+.turbo/
+.vite/
+.next/
+.nuxt/
+.output/
+.svelte-kit/
+.astro/
+.angular/cache/
+dist/
+build/
+out/
+
+# Python: virtuelle miljøer, cache og pakkemetadata
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+*.egg-info/
+
+# Rust og desktopbygninger
+/target/
+/src-tauri/target/
+/src-tauri/gen/schemas/
+
+# Testresultater og dækningsrapporter
+coverage/
+.nyc_output/
+.coverage
+.coverage.*
+htmlcov/
+playwright-report/
+test-results/
+blob-report/
+
+# Logs, cache og midlertidige arbejdsmapper
+*.log
+*.pid
+*.pid.lock
+.cache/
+/tmp/
+/temp/
+
+# Lokal tilknytning til hosting og cloudværktøjer
+.vercel/
+.netlify/
+.wrangler/
+.azure/
+.azd/
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+*.tfvars.json
+crash.log
+crash.*.log
+
+# Bevar kildekode, dokumentation, migrationsfiler, infrastrukturdefinitioner
+# og afhængigheders låsefiler i Git, herunder package-lock.json, pnpm-lock.yaml,
+# yarn.lock, bun.lock, uv.lock, Cargo.lock og .terraform.lock.hcl.
