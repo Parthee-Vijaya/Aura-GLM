@@ -1,0 +1,33 @@
+{
+  "version": "0.1.0",
+  "checkedAt": "2026-09-22",
+  "tools": [
+    {
+      "id": "claude",
+      "name": "Claude Code",
+      "file": "CLAUDE.md",
+      "summary": "Til Claude Code i terminalen eller din editor.",
+      "source": "https://code.claude.com/docs/en/memory",
+      "verification": "Start en ny session i projektmappen. Brug /memory til at undersøge, om projektets CLAUDE.md er med. Spørg derefter efter profilens kontrolord.",
+      "caveat": "Andre CLAUDE.md-filer og administrerede indstillinger kan også påvirke sessionen. Denne pakke er til Claude Code, ikke en almindelig Claude-chat."
+    },
+    {
+      "id": "codex",
+      "name": "Codex",
+      "file": "AGENTS.md",
+      "summary": "Til projektinstruktioner i Codex.",
+      "source": "https://learn.chatgpt.com/docs/agent-configuration/agents-md",
+      "verification": "Åbn projektet, og start en ny Codex-session fra projektets rodmappe. Bed agenten opsummere de aktive projektinstruktioner og oplyse profilens kontrolord.",
+      "caveat": "AGENTS.override.md kan erstatte AGENTS.md i samme mappe. Instruktioner i undermapper og globale indstillinger kan ændre, hvad der gælder for arbejdet."
+    },
+    {
+      "id": "opencode",
+      "name": "OpenCode",
+      "file": "AGENTS.md",
+      "summary": "Til projektregler i OpenCode.",
+      "source": "https://opencode.ai/docs/rules/",
+      "verification": "Åbn OpenCode i projektets rodmappe, og start en ny session. Bed agenten opsummere de aktive projektinstruktioner og oplyse profilens kontrolord.",
+      "caveat": "OpenCode kan også indlæse globale regler og instruktioner fra sin konfiguration. Pakken ændrer ikke dine modeller, nøgler eller værktøjstilladelser."
+    }
+  ]
+}

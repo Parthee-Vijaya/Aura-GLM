@@ -124,3 +124,7 @@ crash.*.log
 # Bevar kildekode, dokumentation, migrationsfiler, infrastrukturdefinitioner
 # og afhængigheders låsefiler i Git, herunder package-lock.json, pnpm-lock.yaml,
 # yarn.lock, bun.lock, uv.lock, Cargo.lock og .terraform.lock.hcl.
+
+# POC 1 er en statisk side. Dens offentlige filer og downloadpakker deles i Git.
+!/site/dist/
+!/site/dist/**

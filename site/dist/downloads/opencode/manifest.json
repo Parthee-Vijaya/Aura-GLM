@@ -1,0 +1,12 @@
+{
+  "profile": "grundregler",
+  "version": "0.1.0",
+  "tool": "opencode",
+  "language": "da",
+  "source": "https://opencode.ai/docs/rules/",
+  "files": {
+    "AGENTS.md": "627e6bdf55b34aec016aab8edd275f56df1101c3f0cb80474e9f7efe33c520e9",
+    ".gitignore": "42dbe36bb4bc5a34f2779e8e0dbcd5bc27d63a855bab15b7fed7869a1036c4b8",
+    "LAES-MIG.md": "5a12727031aaf580058195fb9947392c7021f8b89a88095f6fa20104e1eba10a"
+  }
+}
