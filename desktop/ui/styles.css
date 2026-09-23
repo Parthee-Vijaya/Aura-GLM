@@ -89,3 +89,44 @@ iframe { width: 100%; height: 100%; border: 0; background: white; }
   .work-grid { grid-template-columns: 285px minmax(0,1fr); }
   #onboarding { padding: 24px 30px; }
 }
+/* Forbindelser, samtale og gennemsigtige instruktioner. */
+dialog { width: min(680px, 90vw); max-height: 86vh; overflow: auto; padding: 24px; border: 1px solid #d7d7d7; border-radius: 10px; color: inherit; box-shadow: 0 20px 70px #0002; }
+dialog::backdrop { background: #0004; }
+.dialog-heading, .dialog-actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.dialog-heading { margin-bottom: 16px; }
+.dialog-heading h2 { font-size: 16px; }
+.dialog-actions { margin-top: 20px; }
+dialog p { font-size: 12px; line-height: 1.7; }
+.saved-connection { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; border-bottom: 1px solid var(--line); padding: 8px 0; }
+.saved-connection span { margin-right: auto; font-size: 12px; }
+.check-label { display: flex; gap: 9px; align-items: center; font-size: 12px; font-weight: 400; }
+.check-label input[type=checkbox] { width: auto; }
+.model-controls { padding: 9px 15px; border-bottom: 1px solid var(--line); background: #fcfcfc; }
+.model-controls label { font-size: 10px; color: var(--muted); margin: 4px 0; }
+.model-controls select { font-size: 11px; padding: 5px 7px; }
+.chat-content { padding: 18px; }
+.chat-message { white-space: pre-wrap; overflow-wrap: anywhere; margin: 12px 0; font-size: 12px; color: #353535; }
+.chat-message.user { border-left: 2px solid #bbb; padding: 9px 12px; background: #f6f6f6; }
+.chat-message.tool, .chat-message.system { font-size: 10px; color: #777; }
+.chat-message.error { color: #853e32; }
+.approval { border: 1px solid #d9c799; border-radius: 7px; padding: 12px; margin: 14px 0; background: #fffcf4; }
+.approval pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 230px; overflow: auto; font: 11px/1.6 ui-monospace, monospace; }
+.approval button { margin-right: 5px; font-size: 11px; }
+.reference-choice { padding: 6px 14px; border-top: 1px solid var(--line); font-size: 11px; max-height: 140px; overflow: auto; }
+.reference-choice summary { font-size: 10px; }
+.reference-choice .hint { font-size: 10px; }
+.empty-state { align-self: center; max-width: 400px; padding: 30px; color: #777; font-size: 12px; line-height: 1.7; }
+.empty-state h2 { color: #444; font-size: 15px; }
+#skill-content { font: 12px/1.6 ui-monospace, monospace; }
+#data-details dt { font-size: 11px; font-weight: 600; color: #555; margin: 15px 0 5px; }
+#data-details dd { margin: 0; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+#changes-dialog { width: min(1000px, 90vw); }
+#changes-list pre { font: 11px/1.6 ui-monospace, monospace; white-space: pre-wrap; overflow-wrap: anywhere; background: #f7f7f7; padding: 12px; max-height: 320px; overflow: auto; }
+#changes-list h3 { font-size: 11px; }
+#changes-list details { margin: 16px 0; }
+#message { z-index: 9999; }
+body:has(dialog[open]) #message { position: fixed; }
+.design-save { margin-top: 15px; }
+.design-save-row { display: flex; gap: 9px; }
+.design-save-row input { flex: 1; min-width: 0; }
+.design-save-row button { white-space: nowrap; }

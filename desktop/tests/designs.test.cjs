@@ -1,0 +1,35 @@
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const os = require('node:os');
+const { Store } = require('../core/store.cjs');
+const { Designs } = require('../core/designs.cjs');
+const { createProject } = require('../core/projects.cjs');
+test('gemt designpakke overlever genåbning og slettede originalfiler', async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'harness-design-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const source = path.join(root, 'designguide.txt'); await fs.writeFile(source, 'Referenceindhold');
+  const store = new Store(path.join(root, 'appdata'));
+  const library = new Designs(store);
+  const input = { name: 'Gentofte', color: '#123456', links: ['https://design.gentofte.dk/'] };
+  const [entry] = await library.save(input, [{ kind: 'reference', path: source }]);
+  await fs.unlink(source);
+  const reloaded = await new Designs(new Store(store.root)).get(entry.id);
+  assert.equal(await fs.readFile(reloaded.assets[0].path, 'utf8'), 'Referenceindhold');
+  assert.deepEqual(reloaded.links, input.links);
+  assert.equal(entry.files, 1);
+  assert.equal(entry.assets, undefined);
+  const project = await createProject(root, { ...input, purpose: 'Prøve', tests: 'manuel' }, reloaded.assets, path.join(__dirname, '../../profiles'));
+  assert.equal(project.assets[0].name, 'designguide.txt');
+  assert.equal(await fs.readFile(path.join(project.root, project.assets[0].file), 'utf8'), 'Referenceindhold');
+  assert.equal((await library.get(entry.id)).color, '#123456');
+  await assert.rejects(library.get('../ukendt'));
+});
+test('ugyldigt materiale gemmes ikke som designpakke', async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'harness-design-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const library = new Designs(new Store(path.join(root, 'appdata')));
+  await assert.rejects(library.save({ name: 'Prøve', color: '#123456', links: [] }, [{ kind: 'reference', path: root }]));
+  assert.deepEqual(await library.list(), []);
+});

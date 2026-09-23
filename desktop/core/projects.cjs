@@ -35,7 +35,7 @@ async function createProject(parent, input, assets = [], profileRoot) {
       if (asset.kind === 'logo' && !['.png', '.jpg', '.jpeg', '.webp'].includes(ext)) throw new Error('Logoer skal være PNG, JPG eller WebP.');
       const relative = `${asset.kind === 'logo' ? 'public/assets' : 'references'}/${crypto.randomUUID()}${ext}`;
       await fs.copyFile(asset.path, path.join(root, relative), require('node:fs').constants.COPYFILE_EXCL);
-      copied.push({ kind: asset.kind, name: path.basename(asset.path), file: relative });
+      copied.push({ kind: asset.kind, name: asset.name || path.basename(asset.path), file: relative });
     }
     const project = { schemaVersion: 1, ...values, template: 'statisk-web', assets: copied };
     await fs.writeFile(path.join(root, 'harness.json'), JSON.stringify(project, null, 2) + '\n', { flag: 'wx' });
@@ -47,7 +47,7 @@ async function createProject(parent, input, assets = [], profileRoot) {
 <html lang="da"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHTML(values.name)}</title><link rel="stylesheet" href="styles.css"></head>
 <body><main>${logo ? `<img class="logo" src="${logo.file.slice(7)}" alt="Projektets logo">` : ''}<p class="label">HER BEGYNDER DIN IDÉ</p><h1>${escapeHTML(values.name)}</h1><p class="intro">${escapeHTML(values.purpose)}</p><div class="card"><h2>Plads til det, du vil skabe.</h2><p>Dette er din lokale startside. Den er oprettet fra dine valg og er endnu ikke bygget af en AI.</p></div></main></body></html>`, { flag: 'wx' });
     await fs.writeFile(path.join(root, 'public', 'styles.css'), `:root{--brand:${values.color}}*{box-sizing:border-box}body{margin:0;background:#f8f7f3;color:#172c2b;font:17px/1.6 system-ui}main{max-width:900px;margin:auto;padding:70px 36px}.logo{max-width:180px;max-height:90px;object-fit:contain}.label{font-size:11px;font-weight:700;letter-spacing:.2em;color:var(--brand)}h1{font:clamp(38px,7vw,72px)/1.1 Georgia,serif;overflow-wrap:anywhere}.intro{max-width:600px;white-space:pre-wrap}.card{margin-top:45px;padding:30px;border:1px solid #d9dfd7;border-top:4px solid var(--brand);border-radius:16px;background:white}h2{font-size:22px}`, { flag: 'wx' });
-    await fs.writeFile(path.join(root, 'README.md'), `# ${values.name}\n\n${values.purpose}\n\nÅbn projektmappen i AI Harness for lokal forhåndsvisning. Kun public/ vises.\n\nProjektvalg ligger i harness.json. Referencer ligger i references/ og er ikke offentlige. Logoer i public/assets/ er offentligt indhold ved udgivelse.\n\nTeststrategi: ${values.tests}. Der er endnu ikke oprettet tests eller Git-repository. Der er ingen AI-forbindelse eller hosting i denne milepæl.\n`, { flag: 'wx' });
+    await fs.writeFile(path.join(root, 'README.md'), `# ${values.name}\n\n${values.purpose}\n\nÅbn projektmappen i AI Harness for lokal forhåndsvisning. Kun public/ vises.\n\nProjektvalg ligger i harness.json. Referencer ligger i references/ og er ikke offentlige. Logoer i public/assets/ er offentligt indhold ved udgivelse.\n\nTeststrategi: ${values.tests}. Der er endnu ikke oprettet tests eller Git-repository. AI-forbindelsen vælges separat i appen. Hosting er ikke tilsluttet.\n`, { flag: 'wx' });
     return { root, ...project };
   } catch (error) {
     throw new Error(`Projektoprettelsen blev afbrudt. Eventuelle filer er bevaret i ${root}. ${error.message}`);
@@ -56,15 +56,25 @@ async function createProject(parent, input, assets = [], profileRoot) {
 
 async function openProject(folder) {
   const root = await fs.realpath(folder);
+  if (!(await fs.stat(root)).isDirectory()) throw new Error('Vælg en mappe som arbejdsområde.');
+  const base = { root, name: path.basename(root), purpose: '', assets: [], links: [], template: 'eksisterende', warnings: [] };
   const manifest = path.join(root, 'harness.json');
-  const info = await fs.lstat(manifest);
-  if (!info.isFile() || info.size > 100_000) throw new Error('Projektfilen er ugyldig.');
-  let project;
-  try { project = JSON.parse(await fs.readFile(manifest, 'utf8')); }
-  catch { throw new Error('Projektfilen harness.json kan ikke læses som et gyldigt projekt.'); }
-  validate(project);
-  if (project.schemaVersion !== 1 || project.template !== 'statisk-web') throw new Error('Denne projekttype understøttes endnu ikke.');
-  if (!(await fs.lstat(path.join(root, 'public'))).isDirectory()) throw new Error('Projektets public-mappe mangler eller er et symbolsk link.');
-  return { ...project, root };
+  try {
+    const info = await fs.lstat(manifest);
+    if (!info.isFile() || info.size > 100_000) throw new Error('Projektfilen er ugyldig.');
+    const project = JSON.parse(await fs.readFile(manifest, 'utf8'));
+    validate(project);
+    if (project.schemaVersion !== 1) throw new Error('Ukendt projektformat.');
+    if (!Array.isArray(project.assets) || project.assets.some(a => !a || !['logo', 'reference'].includes(a.kind) || typeof a.name !== 'string' || typeof a.file !== 'string')) throw new Error('Ugyldige materialer.');
+    Object.assign(base, validate(project), { schemaVersion: 1, assets: project.assets, template: 'statisk-web' });
+  } catch (error) {
+    if (error.code !== 'ENOENT') base.warnings.push('harness.json kunne ikke indlæses. Mappen er åbnet uden at ændre filen.');
+  }
+  try {
+    const dir = await fs.lstat(path.join(root, 'public'));
+    const index = await fs.lstat(path.join(root, 'public/index.html'));
+    if (dir.isDirectory() && index.isFile()) base.staticPreview = true;
+  } catch { /* Projektåbning kræver ikke en startside. */ }
+  return base;
 }
 module.exports = { createProject, openProject, validate };

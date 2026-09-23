@@ -1,0 +1,72 @@
+const { _electron: electron } = require('playwright');
+const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const os = require('node:os');
+const http = require('node:http');
+(async () => {
+ const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(),'harness-chat-')));
+ const project = path.join(root,'projekt'); await fs.mkdir(path.join(project,'public'),{recursive:true});
+ await fs.writeFile(path.join(project,'public/index.html'),'<h1>Før chatten</h1>');
+ const server=http.createServer(async(req,res)=>{
+  if(req.url==='/preview'){res.setHeader('content-type','text/html');return res.end('<h1>Eksisterende udviklingsserver</h1>');}
+  if(req.url==='/v1/models'){res.setHeader('content-type','application/json');return res.end(JSON.stringify({data:[{id:'test-model',name:'Kontrolleret testmodel'}]}));}
+  let raw='';for await(const chunk of req)raw+=chunk;
+  const body=JSON.parse(raw);
+  const tool=body.tools?.length&&!body.messages.some(m=>m.role==='tool')?{id:'chat_write',type:'function',function:{name:'write',arguments:JSON.stringify({filePath:path.join(project,'public/index.html'),content:'<h1>Bygget fra desktopchatten</h1>'})}}:null;
+  res.setHeader('content-type','text/event-stream');
+  const chunk={id:'test',object:'chat.completion.chunk',created:1,model:body.model,choices:[{index:0,delta:tool?{role:'assistant',tool_calls:[{index:0,...tool}]}:{role:'assistant',content:'Ændringen er behandlet.'},finish_reason:null}]};
+  res.write('data: '+JSON.stringify(chunk)+'\n\n');
+  res.write('data: '+JSON.stringify({...chunk,choices:[{index:0,delta:{},finish_reason:tool?'tool_calls':'stop'}],usage:{prompt_tokens:20,completion_tokens:10,total_tokens:30}})+'\n\n');res.end('data: [DONE]\n\n');
+ });
+ await new Promise(r=>server.listen(0,'127.0.0.1',r));
+ let app;
+ try {
+  app=await electron.launch({executablePath:require('electron'),args:[path.join(__dirname,'..'),'--user-data-dir='+path.join(root,'appdata')],env:{...process.env,ELECTRON_RUN_AS_NODE:undefined}});
+  const page=await app.firstWindow(); await page.waitForSelector('#create-form');
+  await app.evaluate(({dialog},project)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[project]});},project);
+  await page.click('#open'); await page.waitForSelector('#workspace:not([hidden])');
+  await page.click('#connections-button'); await page.selectOption('#provider-kind','compatible');
+  await page.fill('#connection-name','Lokal testmodel');await page.fill('#base-url',`http://127.0.0.1:${server.address().port}/v1`);
+  const key='syntetisk-noegle-kun-til-test';
+  await page.fill('#api-key',key);await page.click('#save-connection');
+  await page.locator('#connection-feedback').filter({hasText:'Forbindelsen er gemt'}).waitFor();
+  assert.equal(await page.inputValue('#api-key'),'');
+  const stateResult=await page.evaluate(()=>window.harness.connectionState());
+  assert.equal(stateResult.value.connections[0].hasKey,true);
+  assert.equal(JSON.stringify(stateResult).includes(key),false);
+  const userData=await app.evaluate(({app})=>app.getPath('userData'));
+  const stored=await fs.readFile(path.join(userData,'harness/settings.json'),'utf8');assert.equal(stored.includes(key),false);
+  const encrypted=JSON.parse(stored).connections[0].secret;
+  assert.equal(await app.evaluate(({safeStorage},encrypted)=>safeStorage.decryptString(Buffer.from(encrypted,'base64')),encrypted),key);
+  await page.click('[data-close="connections-dialog"]');
+  await page.selectOption('#connection-select',stateResult.value.connections[0].id);
+  await page.waitForFunction(()=>document.querySelector('#model-select').options.length===2);
+  await page.selectOption('#model-select','test-model');await page.fill('#prompt','Opdater startsiden.');await page.click('#send');
+  await page.waitForSelector('#data-dialog[open]');
+  assert.match(await page.locator('#data-details').textContent(),/Ukendt/);
+  assert.equal(await fs.readFile(path.join(project,'public/index.html'),'utf8'),'<h1>Før chatten</h1>');
+  await page.click('#accept-send');
+  await page.locator('#approvals button').filter({hasText:'Tillad én gang'}).waitFor({timeout:60000});
+  await page.locator('#approvals button').filter({hasText:'Tillad én gang'}).click();
+  await page.frameLocator('#preview').locator('h1').filter({hasText:'Bygget fra desktopchatten'}).waitFor({timeout:30000});
+  await page.locator('#run-status').filter({hasText:'Klar'}).waitFor({timeout:30000});
+  await page.click('#changes-button');assert.match(await page.locator('#changes-list').textContent(),/public[/\\]index.html/);
+  await page.click('[data-close="changes-dialog"]');
+  await page.click('#skills-button');await page.selectOption('#skill-select','git-og-versioner');
+  const original=await page.inputValue('#skill-content');await page.fill('#skill-content',original+'\nTesttilpasning.');await page.click('#skill-save');
+  await page.locator('#skill-source').filter({hasText:'lokal tilpasning'}).waitFor();
+  await page.click('#skill-reset');await page.locator('#skill-source').filter({hasText:'fælles version'}).waitFor();
+  assert.equal(await page.inputValue('#skill-content'),original);await page.click('[data-close="skills-dialog"]');
+  await page.screenshot({path:path.join(root,'chat.png'),fullPage:true});
+  await page.click('#open'); await page.waitForFunction(()=>document.querySelector('#model-select').value==='test-model');
+  await page.click('#attach-preview'); await page.fill('#preview-url',`http://127.0.0.1:${server.address().port}/preview`); await page.click('#preview-form button[type="submit"]');
+  await page.frameLocator('#preview').locator('h1').filter({hasText:'Eksisterende udviklingsserver'}).waitFor();
+  await page.click('#attach-preview'); await page.click('#static-preview');
+  await page.frameLocator('#preview').locator('h1').filter({hasText:'Bygget fra desktopchatten'}).waitFor();
+  const empty=path.join(root,'tom');await fs.mkdir(empty);
+  await app.evaluate(({dialog},empty)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[empty]});},empty);
+  await page.click('#open');await page.waitForSelector('#preview-empty:not([hidden])');assert.deepEqual(await fs.readdir(empty),[]);
+  console.log(JSON.stringify({status:'bestået',root,checks:['Electron safeStorage uden klartekst i appdata eller renderer','UI-modelvalg og datagennemgang','streaming og godkendelse','rigtig filændring og preview','ændringsoversigt','skill redigering og gendannelse','tom mappe uden filændringer','bevaret modelvalg ved genåbning','tilsluttet udviklingsserver']}));
+ } catch (error) { if (app) { const page=await app.firstWindow(); console.error(await page.locator('#messages').textContent()); console.error(await page.locator('#approvals').textContent()); await page.screenshot({path:path.join(root,'fejl.png'),fullPage:true}); } throw error; } finally {await app?.close();server.closeAllConnections();await new Promise(r=>server.close(r));}
+})().catch(error=>{console.error(error);process.exitCode=1;});

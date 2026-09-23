@@ -1,9 +1,10 @@
 const { contextBridge, ipcRenderer } = require('electron');
-contextBridge.exposeInMainWorld('harness', {
-  createProject: input => ipcRenderer.invoke('project:create', input),
-  openProject: () => ipcRenderer.invoke('project:open'),
-  newProject: () => ipcRenderer.invoke('project:new'),
-  chooseAssets: kind => ipcRenderer.invoke('assets:choose', kind),
-  removeAsset: id => ipcRenderer.invoke('assets:remove', id),
-  revision: () => ipcRenderer.invoke('preview:revision')
-});
+const methods = {
+  listDesigns: 'designs:list', saveDesign: 'designs:save', applyDesign: 'designs:apply',
+  createProject: 'project:create', openProject: 'project:open', newProject: 'project:new', chooseAssets: 'assets:choose', removeAsset: 'assets:remove', revision: 'preview:revision', attachPreview: 'preview:attach',
+  connectionState: 'connections:state', saveConnection: 'connections:save', removeConnection: 'connections:remove', models: 'connections:models', routes: 'connections:routes',
+  prepare: 'agent:prepare', send: 'agent:send', stop: 'agent:stop', reply: 'agent:reply', question: 'agent:question', changes: 'agent:changes', skills: 'skills:list', saveSkill: 'skills:save'
+};
+const api = Object.fromEntries(Object.entries(methods).map(([name, channel]) => [name, value => ipcRenderer.invoke(channel, value)]));
+api.onEvent = callback => { const listener = (_event, value) => callback(value); ipcRenderer.on('harness:event', listener); return () => ipcRenderer.removeListener('harness:event', listener); };
+contextBridge.exposeInMainWorld('harness', api);

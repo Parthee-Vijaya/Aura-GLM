@@ -1,6 +1,6 @@
 # Current direction and open decisions
 
-**Aktuel implementeringsstatus:** POC 1 er implementeret. POC 2 har nu et Electron-grundlag til projektoprettelse og lokal forhåndsvisning; se [desktopvejledningen](../desktop/README.md). De oprindelige mødenoter nedenfor er historiske, inklusive deres beskrivelser af endnu ikke påbegyndt implementering.
+**Aktuel implementeringsstatus:** POC 1 er implementeret. POC 2 omfatter lokal kodeagent via OpenCode 1.17.15, modeladaptere, synlige skills, dataoplysninger, vilkårlig projektåbning og genbrugelige designpakker. Se [desktopvejledningen](../desktop/README.md) for den faktiske verifikation og begrænsninger. Noterne nedenfor er historiske.
 
 Meeting input · 22 September 2026
 
@@ -127,3 +127,10 @@ Electron er valgt til det første desktopgrundlag. Projektoprettelse og lokal fo
 Brugerfladen skal ligne et arbejdsredskab i stil med Codex, Claude Code og OpenCode: kompakt navigation, neutrale farver, diskrete værktøjslinjer og sammenhængende paneler. Store kampagneoverskrifter, kortbaseret landingpage-layout og dekorativ websitebranding er fravalgt. Det gælder selve værktøjet; de applikationer, brugeren bygger, kan have deres eget visuelle udtryk.
 
 Denne milepæl omfatter nye lokale projekter med navn, idé, brandfarve, referencelinks og kopier af logoer/referencefiler; fælles AI-regler; genåbning; og automatisk genindlæsning af en statisk startside ved filændringer. AI-chat, Git-handlinger, npm-/Docker-opsætning, hosting og distributionspakker er endnu ikke implementeret. Windows er målplatform, men kræver særskilt afprøvning. Se [desktopvejledningen](../desktop/README.md) for verifikationsniveau og begrænsninger.
+
+
+## POC 2: agent og genbrug af design · 23. september 2026
+
+OpenCode er den første udskiftelige agentadapter. Modelnøgler beskyttes i appens datamappe og sendes ikke ind i projektets konfiguration. Et projekt kan åbnes uden manifest og uden filændringer. Modelvalg, skill-tilpasninger og navngivne designpakker gemmes uden for repositoryet. Designpakker indeholder farve, links og kopier af materialer; brugeren vælger stadig særskilt, hvilke referencer modellen må læse.
+
+Modelplacering, arbejdsområde og hosting skal forblive separate moduler. Kun lokalt arbejdsområde er implementeret. Kommunal styring, cloud-login og remote eksekvering kræver en afklaret host og rettighedsmodel; de fremstilles ikke som aktive funktioner. Ingen bestemt hostingudbyder er obligatorisk. Skills er synlige instruktioner, ikke en erstatning for adgangskontrol. Godkendte kommandoer kører med brugerens lokale rettigheder.

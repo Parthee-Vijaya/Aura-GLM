@@ -1,0 +1,59 @@
+const http = require('node:http');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const os = require('node:os');
+const assert = require('node:assert/strict');
+const { Workbench } = require('../core/workbench.cjs');
+const { openProject } = require('../core/projects.cjs');
+const { startPreview } = require('../core/preview.cjs');
+const rootPath = path.join(__dirname, '..', '..');
+const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+async function until(check, description) { for (let i=0;i<300;i++) { if (await check()) return; await pause(100); } throw new Error(`Kontrollen nåede ikke frem til: ${description}`); }
+(async () => {
+ const root = await fs.mkdtemp(path.join(os.tmpdir(),'harness-agent-'));
+ const project = path.join(root,'projekt'); await fs.mkdir(path.join(project,'public'),{recursive:true});
+ await fs.writeFile(path.join(project,'public/index.html'),'<h1>Før</h1>');
+ let mode='write', permission='allow'; const requests=[], events=[];
+ const server=http.createServer(async(req,res)=>{
+  if(req.url==='/v1/models') {res.setHeader('content-type','application/json');return res.end(JSON.stringify({data:[{id:'test-model',name:'Kontrolleret testmodel'}]}));}
+  let raw='';for await(const chunk of req)raw+=chunk;
+  const body=JSON.parse(raw);requests.push(body);
+  if(mode==='wait') return;
+  const isToolRun=Boolean(body.tools?.length);
+  const hasResult=body.messages.some(m=>m.role==='tool');
+  const tool=isToolRun&&!hasResult?{id:'call_test',type:'function',function:{name:'write',arguments:JSON.stringify({filePath:path.join(project,'public/index.html'),content:'<h1>Bygget gennem agenten</h1>'})}}:null;
+  const content=tool?null:isToolRun?'Ændringen er behandlet.':'Prøveprojekt';
+  if(body.stream){
+   res.setHeader('content-type','text/event-stream');
+   const chunk={id:'test',object:'chat.completion.chunk',created:1,model:body.model,choices:[{index:0,delta:tool?{role:'assistant',tool_calls:[{index:0,...tool}]}:{role:'assistant',content},finish_reason:null}]};
+   res.write('data: '+JSON.stringify(chunk)+'\n\n');
+   res.write('data: '+JSON.stringify({...chunk,choices:[{index:0,delta:{},finish_reason:tool?'tool_calls':'stop'}],usage:{prompt_tokens:20,completion_tokens:10,total_tokens:30}})+'\n\n');res.end('data: [DONE]\n\n');
+  }else{res.setHeader('content-type','application/json');res.end(JSON.stringify({id:'test',object:'chat.completion',created:1,model:body.model,choices:[{index:0,message:{role:'assistant',content,tool_calls:tool?[tool]:undefined},finish_reason:tool?'tool_calls':'stop'}],usage:{prompt_tokens:20,completion_tokens:10,total_tokens:30}}));}
+ });
+ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+ const safeStorage={isEncryptionAvailable:()=>true,encryptString:s=>Buffer.from('test-encrypted:'+s),decryptString:b=>b.toString().replace('test-encrypted:','')};
+ const bench=new Workbench({directory:path.join(root,'state'),safeStorage,profiles:path.join(rootPath,'profiles'),emit:event=>{events.push(event);if(event.type==='permission.asked') bench.reply({id:event.properties.id,allow:permission==='allow'}).catch(e=>console.error('REPLY',e.message));}});
+ let preview;
+ try{
+  await bench.activate(await openProject(project));
+  const state=await bench.saveConnection({name:'Prøveserver',kind:'compatible',baseURL:`http://127.0.0.1:${server.address().port}/v1`});
+  const selection={connectionID:state.connections[0].id,modelID:'test-model',references:[]};
+  const disclosure=await bench.prepare(selection);
+  await assert.rejects(bench.send({text:'Test',fingerprint:'forkert'}));
+  await bench.send({text:'Skriv startsiden som aftalt.',fingerprint:disclosure.fingerprint});
+  await until(()=>!bench.running,'agenten færdig');
+  const errors=events.filter(e=>['session.error','engine.error'].includes(e.type));
+  assert.deepEqual(errors,[],JSON.stringify(errors));
+  assert.match(await fs.readFile(path.join(project,'public/index.html'),'utf8'),/Bygget gennem agenten/);
+  assert.ok(events.some(e=>e.type==='permission.asked'));
+  assert.ok(events.some(e=>e.type==='message.part.updated'));
+  assert.ok(requests.some(r=>JSON.stringify(r).includes('git-og-versioner')));
+  preview=await startPreview(project);assert.match(await(await fetch(preview.url)).text(),/Bygget gennem agenten/);
+  await bench.close();permission='reject';await fs.writeFile(path.join(project,'public/index.html'),'<h1>Bevar</h1>');
+  const declined=await bench.prepare(selection);await bench.send({text:'Prøv igen.',fingerprint:declined.fingerprint});await until(()=>!bench.running,'afvist handling');
+  assert.equal(await fs.readFile(path.join(project,'public/index.html'),'utf8'),'<h1>Bevar</h1>');
+  await bench.close();mode='wait';const canceled=await bench.prepare(selection);await bench.send({text:'Vent på svar.',fingerprint:canceled.fingerprint});await pause(1000);await bench.stop();assert.equal(bench.running,false);
+  console.log(JSON.stringify({status:'bestået',root,checks:['rigtig OpenCode-motor','kontrolleret modelserver','krævet datagennemgang','værktøjskald og godkendelse','rigtig filændring','preview fra disk','afvist ændring bevaret','stop'],model:'Simuleret kompatibel API, ikke en ekstern AI-model'}));
+ }catch(error){console.error(error);console.error(JSON.stringify(events.filter(e=>/error|permission/.test(e.type))));process.exitCode=1;}
+ finally {await bench.close();await preview?.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
+})();

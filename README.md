@@ -1,6 +1,6 @@
 # AI Harness
 
-Et modulært fundament til at bygge applikationer med AI. POC 1 er en dansk hjemmeside med instruktionspakker til Claude Code, Codex og OpenCode. POC 2 er påbegyndt som en lokal desktop-app med projektopstart og live-forhåndsvisning.
+Et modulært fundament til at bygge applikationer med AI. POC 1 er en dansk hjemmeside med instruktionspakker til Claude Code, Codex og OpenCode. POC 2 er en lokal desktop-app med projektopstart, kodeagent, modelforbindelser, designpakker og live-forhåndsvisning.
 
 ## Kør POC 1 lokalt
 
@@ -42,6 +42,6 @@ Kontrollér også siden i en browser: vælg alle tre værktøjer, se filerne, he
 
 POC 1 kræver ikke modelkald og installerer ikke automatisk noget i brugerens projekt. Den er endnu ikke offentliggjort. Licens og vedligeholdelsesansvar skal aftales før ekstern kodeudveksling.
 
-POC 2 har nu et desktopgrundlag i `desktop/`: opret og genåbn et lokalt projekt med designmateriale, fælles regler og løbende forhåndsvisning. Se [startvejledning og begrænsninger](desktop/README.md). AI-chat, Git-handlinger, hosting og installationspakker er endnu ikke implementeret.
+POC 2 i `desktop/` åbner lokale mapper og forbinder en OpenCode-kodeagent med valgte modeller. Designpakker kan genbruges, skills tilpasses, og modeldata/godkendelser gennemgås før handlinger. Se [startvejledning, verifikation og begrænsninger](desktop/README.md). Git-handlinger, cloud-arbejdsområder, hosting og installationspakker er endnu ikke implementeret. Eksterne modelkald er endnu ikke verificeret som en vellykket kodeændring.
 
 Se [bidragsvejledningen](CONTRIBUTING.md). Ældre dokumenter i `docs/` og `harness-options.md` indeholder tidligere arkitekturforslag; POC 1 er afgrænset som beskrevet her.

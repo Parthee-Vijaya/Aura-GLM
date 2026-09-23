@@ -25,10 +25,19 @@ test('afvis forkert input før oprettelse, også aktive links og ugyldige farver
   await assert.rejects(createProject(parent, { ...input, color: 'red;display:none' }, [], profiles));
   assert.deepEqual(await fs.readdir(parent), []);
 });
-test('afvis genåbning, hvis public er erstattet af et symbolsk link', async t => {
+test('åbn mappe uden preview, hvis public er erstattet af et symbolsk link', async t => {
   const parent = await temporary(t);
   const project = await createProject(parent, input, [], profiles);
   await fs.rename(path.join(project.root, 'public'), path.join(project.root, 'original'));
   await fs.symlink(path.join(project.root, 'original'), path.join(project.root, 'public'), 'junction');
-  await assert.rejects(openProject(project.root));
+  assert.equal((await openProject(project.root)).staticPreview, undefined);
+});
+
+test('åbn tomme og eksisterende mapper uden filændringer', async t => {
+  const root = await temporary(t);
+  assert.equal((await openProject(root)).root, await fs.realpath(root));
+  assert.deepEqual(await fs.readdir(root), []);
+  await fs.writeFile(path.join(root, 'harness.json'), '{ugyldig');
+  assert.equal((await openProject(root)).warnings.length, 1);
+  assert.equal(await fs.readFile(path.join(root, 'harness.json'), 'utf8'), '{ugyldig');
 });
