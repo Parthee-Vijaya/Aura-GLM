@@ -53,8 +53,27 @@ const root = path.join(__dirname, '..', '..');
     await page.waitForTimeout(1800);
     await fs.writeFile(publicIndex,initial.replace('Fælleshaven</h1>','En levende fælleshave</h1>'));
     await preview.locator('h1').filter({hasText:'En levende fælleshave'}).waitFor({timeout:10000});
-    await page.click('#narrow'); assert.equal(await page.locator('#narrow').getAttribute('aria-pressed'),'true');
-    await page.click('#narrow');
+    for (const [preset, w, h] of [['desktop',1920,1080],['tablet',768,1024],['phone',390,844]]) {
+      await page.selectOption('#viewport-preset',preset);
+      await page.waitForFunction(([w,h])=>{const f=document.querySelector('#preview');return f.clientWidth===w&&f.clientHeight===h;},[w,h]);
+      assert.deepEqual(await preview.locator('body').evaluate(()=>[innerWidth,innerHeight]),[w,h]);
+    }
+    await page.click('#viewport-rotate');
+    assert.deepEqual(await preview.locator('body').evaluate(()=>[innerWidth,innerHeight]),[844,390]);
+    await page.fill('#viewport-width','1024'); await page.locator('#viewport-width').press('Tab');
+    assert.equal(await preview.locator('body').evaluate(()=>innerWidth),1024);
+    const divider=await page.locator('#workspace-divider').boundingBox();
+    const originalWidth=(await page.locator('#chat-panel').boundingBox()).width;
+    await page.mouse.move(divider.x+3,divider.y+100);await page.mouse.down();await page.mouse.move(divider.x+143,divider.y+100,{steps:12});await page.mouse.up();
+    assert.ok((await page.locator('#chat-panel').boundingBox()).width>originalWidth+100);
+    await page.locator('#workspace-divider').focus();await page.keyboard.press('Home');
+    assert.equal(await page.locator('#workspace-divider').getAttribute('aria-valuenow'),'280');
+    await page.selectOption('#viewport-preset','desktop');await page.selectOption('#viewport-zoom','actual');
+    assert.ok(await page.locator('#preview-surface').evaluate(el=>el.scrollWidth>el.clientWidth));
+    await page.selectOption('#viewport-zoom','fit');
+    assert.ok(await page.locator('#preview-surface').evaluate(el=>el.scrollWidth<=el.clientWidth));
+    await page.screenshot({path:path.join(testRoot,'desktop-preview.png'),fullPage:true});
+    await page.selectOption('#viewport-preset','fluid');
     assert.equal(await preview.locator('body').evaluate(()=>typeof window.harness),'undefined');
     assert.equal(await preview.locator('body').evaluate(()=>typeof require),'undefined');
     assert.equal(await preview.locator('body').evaluate(async()=>{try{await fetch('https://example.com');return true;}catch{return false;}}),false);
@@ -80,6 +99,6 @@ const root = path.join(__dirname, '..', '..');
     await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setSize(980,720));
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth <= window.innerWidth),true);
     assert.deepEqual(errors,[]);
-    console.log(JSON.stringify({passed:['designpakke genbrugt efter genstart og slettede originaler','projektoprettelse','annulleret dialog','logo og reference','ægte preview','automatisk opdatering fra disk','smal visning','ingen Node eller IPC i preview','genåbning efter genstart','eksisterende projekt bevaret'],testRoot,projectDir,screenshots:[path.join(testRoot, 'opstart.png'),path.join(testRoot, 'arbejdsflade.png')]}));
+    console.log(JSON.stringify({passed:['designpakke genbrugt efter genstart og slettede originaler','projektoprettelse','annulleret dialog','logo og reference','ægte preview','automatisk opdatering fra disk','skærmstørrelser, rotation, egne mål, skalering og trækbar skillelinje','ingen Node eller IPC i preview','genåbning efter genstart','eksisterende projekt bevaret'],testRoot,projectDir,screenshots:[path.join(testRoot, 'opstart.png'),path.join(testRoot, 'arbejdsflade.png')]}));
   } finally {if(app) await app.close().catch(()=>{});}
 })().catch(error=>{console.error(error);process.exitCode=1;});

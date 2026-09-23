@@ -143,8 +143,8 @@ app.whenReady().then(() => {
   protocol.handle('harness', async request => {
     const url = new URL(request.url);
     const name = url.pathname.slice(1);
-    if (url.host !== 'app' || !['index.html', 'app.js', 'styles.css'].includes(name)) return new Response('Ikke fundet', { status: 404 });
-    return new Response(await fs.readFile(path.join(__dirname, 'ui', name)), { headers: { 'Content-Type': { 'index.html': 'text/html; charset=utf-8', 'app.js': 'text/javascript', 'styles.css': 'text/css' }[name] } });
+    if (url.host !== 'app' || !['index.html', 'app.js', 'viewport.js', 'styles.css'].includes(name)) return new Response('Ikke fundet', { status: 404 });
+    return new Response(await fs.readFile(path.join(__dirname, 'ui', name)), { headers: { 'Content-Type': { 'index.html': 'text/html; charset=utf-8', 'app.js': 'text/javascript', 'viewport.js': 'text/javascript', 'styles.css': 'text/css' }[name] } });
   });
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
   session.defaultSession.setPermissionCheckHandler(() => false);
