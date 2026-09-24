@@ -13,7 +13,8 @@
     "test:live": "node scripts/verify-live-agent.cjs",
     "test:setup": "node scripts/verify-setup.cjs",
     "test:hosting": "node scripts/verify-hosting.cjs",
-    "test:openrouter": "node scripts/verify-live-openrouter.cjs"
+    "test:openrouter": "node scripts/verify-live-openrouter.cjs",
+    "test:preferences": "node scripts/verify-preferences.cjs"
   },
   "engines": {
     "node": ">=22.12.0"

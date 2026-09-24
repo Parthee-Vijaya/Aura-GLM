@@ -107,6 +107,10 @@ async function displayProject(project) {
   const saved = state.projectSettings.selection;
   if (autoConnect && saved && state.connections.some(c => c.id === saved.connectionID)) { $('#connection-select').value = saved.connectionID; await loadModels(saved); }
   else if (autoConnect && state.connections.some(c => c.id === preferredConnection)) { $('#connection-select').value = preferredConnection; await loadModels(); }
+  const startup = state.projectSettings.startup;
+  const preferredProjectConnection = saved?.connectionID || startup?.connectionID;
+  if (!$('#connection-select').value && preferredProjectConnection && state.connections.some(c => c.id === preferredProjectConnection)) $('#connection-select').value = preferredProjectConnection;
+  $('#project-startup').textContent = startup ? `Hostingønske: ${hostingLabel(startup.hosting)} · Tests: ${testLabel(startup.tests)}` : 'Ingen opstartsvalg gemt for dette projekt.';
   $('#model-options').open = !$('#model-select').value; $('#start-idea').hidden = !project.purpose; updateModelSummary();
   $('#project-name').tabIndex = -1; if (!setupActive) $('#project-name').focus();
 }
@@ -130,7 +134,7 @@ function renderConnections() {
   }
   if (state.connections.some(c => c.id === previous)) $('#connection-select').value = previous;
   else { $('#model-select').replaceChildren(option('', 'Hent modeller fra forbindelsen')); $('#route-row').hidden = true; }
-  renderSetup();
+  renderSetup(); renderStartupConnections();
 }
 function updateProvider() {
   const definition = state?.definitions[$('#provider-kind').value]; if (!definition) return;
@@ -167,7 +171,7 @@ async function loadRoutes(saved = '') {
   if (routes.some(route => route.id === saved)) $('#route-select').value = saved;
 }
 function selection() { return { connectionID: $('#connection-select').value, modelID: $('#model-select').value, routeID: $('#route-select').value, references: [...document.querySelectorAll('#reference-choices input:checked')].map(el => el.value) }; }
-const detailLabels = { connection: 'Forbindelse', model: 'Model', endpoint: 'Serveradresse', recipients: 'Modtagere', region: 'Behandlingssted', retention: 'Opbevaring', training: 'Brug til træning', price: 'Pris og gratisbegrænsninger', capabilities: 'Modelmuligheder', material: 'Hvad sendes?', references: 'Udvalgte private referencer', skills: 'Aktive skills', localStorage: 'Lokal historik og yderligere netværk', security: 'Forbindelsens sikkerhed', source: 'Kilde', checkedAt: 'Dokumentation kontrolleret', evidence: 'Grundlag' };
+const detailLabels = { projectChoices: 'Projektets opstartsvalg', connection: 'Forbindelse', model: 'Model', endpoint: 'Serveradresse', recipients: 'Modtagere', region: 'Behandlingssted', retention: 'Opbevaring', training: 'Brug til træning', price: 'Pris og gratisbegrænsninger', capabilities: 'Modelmuligheder', material: 'Hvad sendes?', references: 'Udvalgte private referencer', skills: 'Aktive skills', localStorage: 'Lokal historik og yderligere netværk', security: 'Forbindelsens sikkerhed', source: 'Kilde', checkedAt: 'Dokumentation kontrolleret', evidence: 'Grundlag' };
 function showData(data, canSend) {
   $('#data-details').replaceChildren();
   for (const [key, label] of Object.entries(detailLabels)) { $('#data-details').append(node('dt', label), node('dd', Array.isArray(data[key]) ? data[key].join(', ') || 'Ingen' : data[key])); }
@@ -233,8 +237,8 @@ window.harness.onEvent(event => {
 $('#color').addEventListener('input', event => { $('#color-value').value = event.target.value; });
 for (const kind of ['logo', 'reference']) $(`#${kind}`).onclick = () => action(async () => showAssets(await call('chooseAssets', kind)));
 $('#open').onclick = () => action(async () => displayProject(await call('openProject')));
-$('#new').onclick = () => action(async () => { setupActive = false; $('#setup').hidden = true; ++modelRequest; recovery = ''; $('#connection-warning').hidden = true; await call('newProject'); current = null; revision = null; acceptedFingerprint = null; showPreview(null); $('#workspace').hidden = true; $('#onboarding').hidden = false; $('#skills-button').disabled = true; $('#view-title').textContent = 'Projektopstart'; $('#active-project').textContent = 'Intet projekt åbent'; $('#active-project').classList.remove('active'); $('#create-form').reset(); $('#color-value').value = $('#color').value; showAssets([]); $('#name').focus(); });
-$('#create-form').onsubmit = event => { event.preventDefault(); action(async () => { $('#create').disabled = true; try { await displayProject(await call('createProject', { name: $('#name').value, purpose: $('#purpose').value, color: $('#color').value, links: $('#links').value.split('\n').map(line => line.trim()).filter(Boolean), tests: $('#tests').value })); } finally { $('#create').disabled = false; } }); };
+$('#new').onclick = () => action(async () => { setupActive = false; $('#setup').hidden = true; ++modelRequest; recovery = ''; $('#connection-warning').hidden = true; await call('newProject'); current = null; revision = null; acceptedFingerprint = null; showPreview(null); $('#workspace').hidden = true; $('#onboarding').hidden = false; $('#skills-button').disabled = true; $('#view-title').textContent = 'Projektopstart'; $('#active-project').textContent = 'Intet projekt åbent'; $('#active-project').classList.remove('active'); $('#create-form').reset(); $('#color-value').value = $('#color').value; showAssets([]); await loadStartup(); $('#purpose').focus(); });
+$('#create-form').onsubmit = event => { event.preventDefault(); action(async () => { $('#create').disabled = true; try { await displayProject(await call('createProject', { name: $('#name').value, purpose: $('#purpose').value, color: $('#color').value, links: $('#links').value.split('\n').map(line => line.trim()).filter(Boolean), tests: $('#tests').value, startup: startupValues(), remember: $('#remember-startup').checked })); } finally { $('#create').disabled = false; } }); };
 $('#connections-button').onclick = () => action(async () => { state = await call('connectionState'); renderConnections(); updateProvider(); $('#connections-dialog').showModal(); });
 $('#provider-kind').onchange = updateProvider;
 $('#reset-connection').onclick = () => { $('#connection-form').reset(); $('#connection-id').value = ''; updateProvider(); };
@@ -255,12 +259,12 @@ $('#refresh').onclick = () => { if (current?.previewURL) $('#preview').src = cur
 for (const button of document.querySelectorAll('[data-close]')) button.onclick = () => document.getElementById(button.dataset.close).close();
 $('#connections-dialog').addEventListener('close', () => { $('#api-key').value = ''; });
 setInterval(async () => { if (!current || polling) return; polling = true; const project = current; try { const next = await call('revision'); if (current !== project || !next) return; if (revision && next !== revision) $('#preview').src = current.previewURL; revision = next; $('#preview-status').textContent = 'Lokal forhåndsvisning'; } catch { $('#preview-status').textContent = 'Kan ikke læse siden – kontrollér projektfilerne'; } finally { polling = false; } }, 1500);
-action(async () => { state = await call('connectionState'); renderConnections(); updateProvider(); setupControls(); $('#purpose').focus(); });
+action(async () => { $('#create').disabled = true; try { state = await call('connectionState'); renderConnections(); updateProvider(); await loadDesigns(); await loadStartup(); setupControls(); $('#purpose').focus(); } finally { $('#create').disabled = false; } });
 
 async function loadDesigns() { const designs = await call('listDesigns'); $('#design-select').replaceChildren(option('', 'Vælg en tidligere gemt pakke'), ...designs.map(d => option(d.id, `${d.name} · ${d.files} filer`))); }
 $('#save-design').onclick = () => action(async () => { await call('saveDesign', { name: $('#design-name').value, color: $('#color').value, links: $('#links').value.split('\n').map(s => s.trim()).filter(Boolean) }); await loadDesigns(); message('Designpakken er gemt lokalt og kan vælges i andre projekter.'); });
-$('#design-select').onchange = () => action(async () => { if (!$('#design-select').value) return; const design = await call('applyDesign', $('#design-select').value); $('#color').value = design.color; $('#color-value').value = design.color; $('#links').value = design.links.join('\n'); showAssets(design.assets); });
-action(loadDesigns);
+$('#design-select').onchange = () => action(async () => { updateStartupSummary(); if (!$('#design-select').value) { await clearStartupDesign(); return; } const design = await call('applyDesign', $('#design-select').value); $('#color').value = design.color; $('#color-value').value = design.color; $('#links').value = design.links.join('\n'); showAssets(design.assets); updateStartupSummary(); });
+
 
 let gitReview = null;
 async function loadGitReview() {
@@ -321,3 +325,42 @@ $('#start-idea').onclick = () => { if (!$('#prompt').value.trim()) $('#prompt').
 $('#model-select').addEventListener('change', updateModelSummary);
 
 $('#model-done').onclick = () => { if (!$('#connection-select').value || !$('#model-select').value || (!$('#route-row').hidden && !$('#route-select').value)) { message('Vælg en forbindelse, model og eventuel udbyder først.', true); return; } updateModelSummary(); $('#model-options').open = false; $('#prompt').focus(); };
+
+function hostingLabel(value) { return ({ vercel: 'Vercel', azure: 'Azure', own: 'Egen løsning' })[value] || 'Beslut senere'; }
+function testLabel(value) { return ({ manuel: 'Manuel gennemgang', automatiske: 'Automatiske tests', senere: 'Beslut senere' })[value] || 'Beslut senere'; }
+function startupValues() { return { hosting: $('#startup-hosting').value, connectionID: $('#startup-connection').value, designID: $('#design-select').value, tests: $('#tests').value }; }
+function renderStartupConnections() {
+  const previous = $('#startup-connection').value;
+  $('#startup-connection').replaceChildren(option('', 'Beslut senere'), ...(state?.connections || []).map(c => option(c.id, c.name)));
+  if (state?.connections.some(c => c.id === previous)) $('#startup-connection').value = previous;
+  updateStartupSummary();
+}
+function updateStartupSummary() {
+  const values = startupValues();
+  const connection = state?.connections.find(c => c.id === values.connectionID)?.name || 'AI vælges senere';
+  const design = values.designID ? $('#design-select').selectedOptions[0]?.textContent : 'Intet design valgt';
+  $('#startup-summary').textContent = `${connection} · ${hostingLabel(values.hosting)} · ${design} · ${testLabel(values.tests)}`;
+}
+async function clearStartupDesign() {
+  showAssets(await call('clearAssets')); $('#design-select').value = ''; $('#color').value = '#326556'; $('#color-value').value = '#326556'; $('#links').value = ''; updateStartupSummary();
+}
+async function loadStartup() {
+  $('#create').disabled = true;
+  try {
+  const result = await call('preferencesGet');
+  renderStartupConnections();
+  $('#startup-hosting').value = result.values.hosting; $('#startup-connection').value = result.values.connectionID; $('#tests').value = result.values.tests; $('#design-select').value = result.values.designID;
+  $('#remember-startup').checked = false; $('#startup-warning').textContent = result.warnings.join(' ');
+  if (result.values.designID) {
+    try { const design = await call('applyDesign', result.values.designID); $('#color').value = design.color; $('#color-value').value = design.color; $('#links').value = design.links.join('\n'); showAssets(design.assets); }
+    catch { await clearStartupDesign(); $('#startup-warning').textContent = 'Designpakken kunne ikke indlæses. Vælg en anden, eller fortsæt uden design.'; }
+  }
+  for (const selector of ['#startup-options', '#design-options', '#onboarding .advanced']) $(selector).open = false;
+  updateStartupSummary();
+  } finally { $('#create').disabled = false; }
+}
+$('#startup-customize').onclick = () => { $('#startup-options').open = true; $('#startup-connection').focus(); };
+$('#startup-skip').onclick = () => action(async () => { await clearStartupDesign(); $('#startup-hosting').value = ''; $('#startup-connection').value = ''; $('#tests').value = 'senere'; $('#remember-startup').checked = false; $('#startup-warning').textContent = 'Valgene er sprunget over for dette projekt. Dine gemte standarder er bevaret.'; updateStartupSummary(); });
+$('#forget-startup').onclick = () => action(async () => { await call('preferencesSave', { hosting: '', connectionID: '', designID: '', tests: 'senere' }); $('#startup-warning').textContent = 'Standarderne er glemt. Valgene for dette projekt er bevaret.'; });
+for (const selector of ['#startup-hosting', '#startup-connection', '#tests']) $(selector).addEventListener('change', updateStartupSummary);
+$('#model-load').onclick = () => action(() => loadModels(state?.projectSettings.selection?.connectionID === $('#connection-select').value ? state.projectSettings.selection : {}));

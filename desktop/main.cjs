@@ -7,6 +7,7 @@ const { startPreview } = require('./core/preview.cjs');
 const { Workbench } = require('./core/workbench.cjs');
 const { GitHub } = require('./core/github.cjs');
 const { Publishing } = require('./core/publishing.cjs');
+const { Preferences } = require('./core/preferences.cjs');
 const { Designs } = require('./core/designs.cjs');
 const { capture, changes } = require('./core/changes.cjs');
 
@@ -51,9 +52,12 @@ async function exclusive(action) {
 }
 handle('project:create', input => exclusive(async () => {
   if (workbench.running) throw new Error('Stop den aktive opgave først.');
+  const startup = await new Preferences(workbench.store).available({ ...input.startup, tests: input.tests });
   const selection = await dialog.showOpenDialog(window, { title: 'Vælg, hvor den nye projektmappe skal ligge', properties: ['openDirectory', 'createDirectory'] });
   if (selection.canceled) return null;
   const created = await createProject(selection.filePaths[0], input, assets, profileRoot);
+  await workbench.store.saveProject(created.root, { startup: startup.values });
+  if (input.remember === true) await new Preferences(workbench.store).save(startup.values);
   return activate(await openProject(created.root));
 }));
 handle('project:open', () => exclusive(async () => {
@@ -112,6 +116,9 @@ handle('preview:revision', async () => {
   return crypto.createHash('sha256').update(entries.sort().join('\n')).digest('hex');
 });
 
+handle('preferences:get', () => new Preferences(workbench.store).get());
+handle('preferences:save', input => exclusive(() => new Preferences(workbench.store).save(input)));
+handle('designs:clear', () => exclusive(() => { assets = []; return []; }));
 handle('designs:list', () => new Designs(workbench.store).list());
 handle('designs:save', input => exclusive(() => new Designs(workbench.store).save(input, assets)));
 handle('designs:apply', id => exclusive(async () => { const design = await new Designs(workbench.store).get(id); assets = design.assets; return { color: design.color, links: design.links, assets: assets.map(({ id, kind, name }) => ({ id, kind, name })) }; }));

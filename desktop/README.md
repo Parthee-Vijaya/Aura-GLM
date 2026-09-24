@@ -151,3 +151,13 @@ Kilder: [GitHub Device Flow](https://docs.github.com/en/apps/oauth-apps/building
 ## Afprøvning af enkel opstart
 
 Den forenklede brugerrejse afprøves med `test:setup`, `test:desktop`, `test:chat` og `test:hosting`. Testene kontrollerer foldede standardvalg, lokal adgang uden konto, bevarede kladder ved forbindelsesfejl, eksplicit modelvalg, designpakker, preview og uændrede godkendelser. GitHub-kald i publiceringstesten er simulerede; Git og filerne er virkelige, isolerede testmaterialer. Denne milepæl kræver ingen nye eksterne modelkald og ændrer ikke deployment eller installationspakker.
+
+## Valg, der kan huskes eller springes over
+
+Opstarten viser en kort opsummering af AI-forbindelse, hostingønske, gemt designpakke og teststrategi. **Tilpas** åbner valgene. **Beslut senere** rydder dem og designmaterialet for den aktuelle projektkladde, men bevarer idé, navn og gemte standarder. **Husk disse valg til nye projekter** gemmer kun ved en faktisk projektoprettelse; en annulleret mappedialog gemmer ingen standarder. **Glem mine standardvalg** fjerner standarderne uden at ændre kladden eller eksisterende projekter.
+
+Standarderne ligger i appdata. Nye projekter får deres egen kopi i projektindstillingerne uden for repositoryet. Et eksisterende projekts modelvalg har forrang. Manglende forbindelser og designpakker giver en forklaring og vælges ikke automatisk på ny. En husket AI-forbindelse kontakter ikke serveren; brug **Hent modeller** før modelvalg. Designpakken kopieres lokalt som hidtil; private referencer er stadig ikke valgt til modellen.
+
+Hostingønsket vises i projektoplysninger og medsendes som kontekst efter datagennemgangen. Det opretter ingen cloudressource og er ikke en godkendelse af upload, omkostninger eller publicering. Startskabelonen er stadig statisk HTML/CSS/JavaScript. Azure-/Vercel-deployment og organisationers centrale standarder er endnu ikke tilsluttet. Der loves derfor ikke automatisk tilpasning af projekttypen til destinationen.
+
+`npm run test:preferences` afprøver gemning, genstart, spring-over og glem i Electron med isolerede projekter. `tests/preferences.test.cjs` kontrollerer validering, manglende henvisninger og at nye standarder ikke ændrer eksisterende projekter eller gemmer godkendelser/nøgler.

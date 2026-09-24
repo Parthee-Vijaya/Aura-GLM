@@ -203,3 +203,9 @@ body.resizing-workspace iframe { pointer-events: none; }
   .model-controls { max-height: 180px; }
   .chat-content { min-height: 90px; }
 }
+
+.startup-summary { background: #f7f7f7; border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin-bottom: 18px; }
+.startup-summary p { font-size: 12px; line-height: 1.7; margin: 0 0 8px; overflow-wrap: anywhere; }
+.startup-summary button { font-size: 11px; margin-right: 6px; }
+#startup-options { padding: 14px 0; }
+#startup-warning:empty { display: none; }

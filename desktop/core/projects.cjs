@@ -13,7 +13,7 @@ function validate(input) {
     try { url = new URL(link); } catch { throw new Error('Et referencelink er ugyldigt. Brug en fuld http- eller https-adresse.'); }
     if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) throw new Error('Referencelinks skal være almindelige http- eller https-adresser uden loginoplysninger.');
   }
-  if (!['manuel', 'automatiske'].includes(input.tests)) throw new Error('Vælg en teststrategi.');
+  if (!['manuel', 'automatiske', 'senere'].includes(input.tests)) throw new Error('Vælg en teststrategi.');
   return { name: input.name.trim(), purpose: input.purpose.trim(), color: input.color, links: input.links, tests: input.tests };
 }
 
