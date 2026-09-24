@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="da"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; frame-src http://127.0.0.1:* http://localhost:* http://[::1]:* https://127.0.0.1:* https://localhost:* https://[::1]:*; object-src 'none'; base-uri 'none'; form-action 'none'">
-<title>AI Harness</title><link rel="stylesheet" href="styles.css"><script src="app.js" defer></script><script src="hosting.js" defer></script><script src="viewport.js" defer></script></head>
+<title>AI Harness</title><link rel="stylesheet" href="styles.css"><script src="app.js" defer></script><script src="hosting.js" defer></script><script src="deployment.js" defer></script><script src="viewport.js" defer></script></head>
 <body>
 <aside class="sidebar" aria-label="Projektnavigation">
   <div class="brand"><span class="brand-icon" aria-hidden="true">⌘</span> AI Harness</div>
@@ -30,7 +30,7 @@
     <section class="startup-summary" aria-label="Dine opstartsvalg"><p id="startup-summary" role="status">Indlæser dine valg …</p><button id="startup-customize" type="button">Tilpas</button><button id="startup-skip" type="button">Beslut senere</button><p id="startup-warning" class="hint"></p></section>
     <details class="panel" id="startup-options"><summary>AI og hosting · valgfrit</summary>
       <label for="startup-connection">Din foretrukne AI-forbindelse</label><select id="startup-connection"><option value="">Beslut senere</option></select><p class="hint">Vi husker valget uden at kontakte serveren. Model og datavilkår vælges før afsendelse.</p>
-      <label for="startup-hosting">Hvor vil du gerne udgive?</label><select id="startup-hosting"><option value="">Beslut senere</option><option value="vercel">Vercel</option><option value="azure">Azure</option><option value="own">Organisationens løsning / egen server</option></select><p class="hint">Et ønske til projektet. Hostingadapterne er endnu ikke tilsluttet; dette opretter ingen ressourcer og uploader intet.</p>
+      <label for="startup-hosting">Hvor vil du gerne udgive?</label><select id="startup-hosting"><option value="">Beslut senere</option><option value="vercel">Vercel</option><option value="azure">Azure</option><option value="own">Organisationens løsning / egen server</option></select><p class="hint">Et ønske til projektet. Destinationen gennemgås under Udgiv til test; dette valg uploader intet.</p>
     </details>
     <details class="panel" id="design-options"><summary>Tilføj design, logo eller inspiration · valgfrit</summary>
       <label for="design-select">Gemt designpakke</label><select id="design-select"><option value="">Vælg en tidligere gemt pakke</option></select><div class="design-row"><div><label for="color">Din primære farve</label><div class="color-row"><input id="color" type="color" value="#326556"><output id="color-value">#326556</output></div></div><div><label>Logo</label><button type="button" id="logo" class="secondary">＋ Vælg logo</button><p class="hint">PNG, JPG eller WebP · offentlig del af siden</p></div></div>
@@ -45,7 +45,7 @@
   </form>
 </main>
 <main id="workspace" hidden>
-  <div class="workspace-bar"><div><h1 id="project-name"></h1><p class="hint workspace-storage">Filer på denne computer · brug Del til sikkerhedskopi</p></div><div class="actions"><button id="git-button" title="Lokale versioner og Git-historik">Gem version</button><button id="publish-button">Del</button><button disabled title="Hostingadaptere er endnu ikke tilsluttet">Udgiv</button></div></div>
+  <div class="workspace-bar"><div><h1 id="project-name"></h1><p class="hint workspace-storage">Filer på denne computer · brug Del til sikkerhedskopi</p></div><div class="actions"><button id="git-button" title="Lokale versioner og Git-historik">Gem version</button><button id="publish-button">Del</button><button id="deploy-button">Udgiv til test</button></div></div>
   <div class="work-grid"><section class="chat panel" id="chat-panel">
     <div class="section-title"><h2>Samtale</h2><span id="run-status" class="badge" role="status">Klar</span><button id="changes-button" class="text-button">Ændringer</button></div>
 
@@ -88,6 +88,29 @@
 <div class="setup-actions"><button id="hosting-review">Gennemgå historik til push / kontrollér server</button><button id="hosting-open">Åbn repository på GitHub</button></div>
 <div id="hosting-review-result" hidden><h3>Gennemgå publicering</h3><p id="hosting-destination"></p><p class="hint">Hele de udgående commits sendes, inklusive tidligere filindhold og commit-identitet. Kontrollen leder efter kendte hemmeligheder i historikken, men kan ikke finde alt. Git-hooks og Git LFS kræver publicering i dit eget Git-værktøj.</p><details><summary>Filer i de udgående versioner</summary><ul id="hosting-files"></ul></details><label class="check-label"><input id="hosting-ack" type="checkbox"> Jeg har gennemgået destination, synlighed og historik.</label><button id="hosting-push" class="primary" disabled>Push den gennemgåede version</button></div></section>
 </fieldset><p id="hosting-feedback" role="status"></p>
+</dialog>
+<dialog id="deployment-dialog" aria-labelledby="deployment-title">
+<div class="dialog-heading"><h2 id="deployment-title">Udgiv til test</h2><button data-close="deployment-dialog">Luk</button></div>
+<p>Giv andre et link til en gemt version. Produktion og dine lokale filer ændres ikke. Et testlink er ikke nødvendigvis privat.</p>
+<fieldset id="deployment-fields"><form id="deployment-form">
+<label for="deploy-provider">Destination</label><select id="deploy-provider"><option value="vercel">Vercel</option><option value="azure">Azure Static Web Apps</option></select>
+<details class="deployment-alternatives"><summary>Flere steder at udgive · endnu ikke tilsluttet</summary>
+<p>Disse destinationer kræver nye adaptere. De kan ikke vælges til upload i denne version.</p>
+<ul><li><strong>Cloudflare Pages / Workers:</strong> preview-adresser til hjemmesider og kompatible Workers-apps.</li><li><strong>Netlify:</strong> draft-udgivelser til hjemmesider og understøttede funktioner.</li><li><strong>Render:</strong> testmiljøer med tjenester og datalagre.</li><li><strong>Railway:</strong> særskilte miljøer til appens tjenester.</li><li><strong>Egen server:</strong> fx kommunens infrastruktur eller en server hos Hetzner. Kræver egen opsætning af runtime, testadresse og adgang.</li></ul>
+<p class="hint">Et testmiljø er ikke automatisk gratis, privat eller placeret i Danmark. Vilkår og adgang skal kontrolleres for den konkrete konto og opsætning.</p></details>
+<p class="hint">Bruger dit eksisterende login i Vercel CLI eller Azure CLI. Værktøjerne skal være installeret og tilsluttet på denne computer. Vercel kræver en eksisterende startversion i projektet; tomme projekter afvises for at undgå automatisk produktionsudgivelse. Azure kræver også SWA CLI og en eksisterende Static Web App. Appen opretter ingen cloudressourcer. SWA CLI kan hente sit deploymentværktøj ved første upload.</p>
+<label for="deploy-project">Projekt / Static Web App-navn</label><input id="deploy-project" required maxlength="200">
+<div id="deploy-vercel"><label for="deploy-scope">Vercel-team</label><input id="deploy-scope" maxlength="200"></div>
+<div id="deploy-azure" hidden><label for="deploy-subscription">Azure-abonnementets ID</label><input id="deploy-subscription" maxlength="200"><label for="deploy-group">Ressourcegruppe</label><input id="deploy-group" maxlength="200"><p class="hint">Testmiljøet hedder harness-test. En ny udgivelse erstatter indholdet i dette testmiljø.</p></div>
+<details><summary>Avanceret · filer og projekttype</summary>
+<label for="deploy-mode">Hvad skal udgives?</label><select id="deploy-mode"><option value="static">Færdigbygget frontend</option><option value="source">Kildekode · Vercel bygger frontend/backend</option><option value="functions">Frontend og færdigbygget Azure Functions-API</option></select>
+<label for="deploy-directory">Mappe i den gemte Git-version</label><input id="deploy-directory" value="public" required>
+<div id="deploy-functions" hidden><label for="deploy-frontend">Frontendmappe inde i pakken</label><input id="deploy-frontend" value="public"><label for="deploy-api">Functions-mappe inde i pakken · Node.js 22</label><input id="deploy-api" value="api"><p class="hint">API’et skal være færdigbygget og have alle nødvendige afhængigheder. Almindelige langvarige serverprocesser, Docker og databaser kræver andre adaptere.</p></div>
+<p class="hint">Kun gemte filer sendes. Ignorerede buildfiler medtages ikke. Kendte hemmelighedsfiler og private referencer blokerer udgivelsen. Appen kører ikke npm eller andre projektkommandoer på din computer.</p></details>
+<button class="primary" type="submit">Gennemgå udgivelse</button></form>
+<section id="deployment-review" hidden><h3>Det sender vi</h3><button id="deployment-settings" type="button">Åbn indstillinger hos udbyderen</button><dl id="deployment-details"></dl><details><summary>Vis alle filer</summary><ul id="deployment-files"></ul></details>
+<label class="check-label"><input id="deployment-ack" type="checkbox"> Jeg har gennemgået version, destination, adgang og mulige omkostninger. Eventuelle miljøvariabler og hemmeligheder er opsat til test hos udbyderen.</label><button id="deployment-send" disabled class="primary">Upload og udgiv til test</button></section></fieldset>
+<p id="deployment-feedback" role="status"></p><section id="deployment-result" hidden><p id="deployment-state"></p><p id="deployment-verification"></p><button id="deployment-check">Kontrollér status</button><button id="deployment-open">Åbn testlink</button><button id="deployment-portal">Åbn hos udbyderen</button></section>
 </dialog>
 <div id="message" role="status" aria-live="polite" hidden></div>
 </body></html>

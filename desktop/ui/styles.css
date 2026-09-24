@@ -209,3 +209,12 @@ body.resizing-workspace iframe { pointer-events: none; }
 .startup-summary button { font-size: 11px; margin-right: 6px; }
 #startup-options { padding: 14px 0; }
 #startup-warning:empty { display: none; }
+
+#deployment-dialog { width: min(820px, 92vw); }
+#deployment-fields { border: 0; padding: 0; min-width: 0; }
+#deployment-form > button { margin: 16px 0; }
+#deployment-form details { margin-top: 18px; }
+#deployment-details dt { margin-top: 12px; font-weight: 600; }
+#deployment-details dd { margin: 4px 0; overflow-wrap: anywhere; font-size: 12px; line-height: 1.6; }
+#deployment-files { max-height: 180px; overflow: auto; }
+#deployment-state { overflow-wrap: anywhere; }

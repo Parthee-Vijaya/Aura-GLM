@@ -185,7 +185,7 @@ async function sendNow(data, text) {
 }
 function setRunning(value, status) {
   running = value; $('#run-status').textContent = status; $('#send').disabled = value; $('#stop').hidden = !value;
-  for (const selector of ['#connection-select', '#model-select', '#route-select', '#new', '#open', '#connections-button', '#skills-button', '#git-button', '#publish-button', '#setup-hosting']) $(selector).disabled = value;
+  for (const selector of ['#connection-select', '#model-select', '#route-select', '#new', '#open', '#connections-button', '#skills-button', '#git-button', '#publish-button', '#setup-hosting', '#deploy-button']) $(selector).disabled = value;
   setupControls();
   if (!value && recovery) { const reason = recovery; recovery = ''; showConnectionWarning(reason); }
 }

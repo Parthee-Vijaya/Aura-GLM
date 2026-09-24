@@ -1,5 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 const methods = {
+  deploymentState: 'deployment:state', deploymentReview: 'deployment:review', deploymentSend: 'deployment:send', deploymentCheck: 'deployment:check', deploymentOpen: 'deployment:open',
   preferencesGet: 'preferences:get', preferencesSave: 'preferences:save', clearAssets: 'designs:clear',
   hostingState: 'hosting:state', hostingToken: 'hosting:token', hostingLogin: 'hosting:login', hostingPoll: 'hosting:poll', hostingCancel: 'hosting:cancel', hostingBrowser: 'hosting:browser', hostingDisconnect: 'hosting:disconnect', hostingCatalog: 'hosting:catalog', hostingCreate: 'hosting:create', hostingAttach: 'hosting:attach', hostingReview: 'hosting:review', hostingPush: 'hosting:push', hostingOpen: 'hosting:open',
   setupStatus: 'setup:status',

@@ -75,7 +75,7 @@ Kontrollen gennemgår filindhold i alle udgående versioner, også slettede hemm
 
 Før push vises destination, synlighed, branch, commitantal og filer. Brugeren bekræfter aktivt. Lokal HEAD, serverreference og synlighed kontrolleres igen; ændringer kræver en ny gennemgang. Almindeligt Git-push beskytter desuden mod samtidige ikke-fast-forward-opdateringer. GitHub-branchregler kan afvise push. Nøglen gives kun til Git-processens miljø for den faste HTTPS-destination, aldrig til argumenter, logs eller Git-konfiguration på disk. Git er en betroet lokal proces, ikke en OS-sandbox.
 
-Et bekræftet push betyder, at versionen blev set på serveren ved kontrollen. Senere ændringer kræver ny kontrol. En netværksfejl kan gøre udfaldet ukendt; appen forsøger ikke automatisk igen. **Kode på GitHub er ikke en deployet applikation.** Deployment følger i en anden milepæl.
+Et bekræftet push betyder, at versionen blev set på serveren ved kontrollen. Senere ændringer kræver ny kontrol. En netværksfejl kan gøre udfaldet ukendt; appen forsøger ikke automatisk igen. **Kode på GitHub er ikke en deployet applikation.** Testudgivelse er en separat handling beskrevet nedenfor.
 
 ## Moduler og data
 
@@ -102,7 +102,7 @@ Statisk preview genindlæser ved filændringer; det er ikke rammespecifik HMR. F
 
 DGX Spark bruger **Egen server / DGX Spark** med den faktiske Tailscale-adresse, port og kompatible modeltjeneste. Appen ændrer ikke Tailscale eller serveren. Adresse og netværk fortæller ikke i sig selv, hvor modellen behandler data eller om den videresender til cloud.
 
-Cloud-arbejdsområder, kommunale rettighedspolitikker, automatisk npm-/Docker-opsætning, deploymentadaptere er ikke tilsluttet. GitHub er den eneste færdige kodepubliceringsadapter. Modelplacering og arbejdsområdets placering er separate valg i arkitekturen; denne version tilbyder kun lokale arbejdsområder. En cloud-implementering kræver et aftalt host-/loginmodul og håndhævelse af kommunens rettigheder. Azure er ikke valgt som obligatorisk destination. Claude-abonnement er utilgængeligt; Anthropic API-nøgle er den implementerede forbindelsesvej.
+Cloud-arbejdsområder, kommunale rettighedspolitikker, automatisk npm-/Docker-opsætning og andre deploymenttyper end dem beskrevet nedenfor er ikke tilsluttet. GitHub er den eneste færdige kodepubliceringsadapter. Modelplacering og arbejdsområdets placering er separate valg i arkitekturen; denne version tilbyder kun lokale arbejdsområder. En cloud-implementering kræver et aftalt host-/loginmodul og håndhævelse af kommunens rettigheder. Azure er ikke valgt som obligatorisk destination. Claude-abonnement er utilgængeligt; Anthropic API-nøgle er den implementerede forbindelsesvej.
 
 ## Afprøvning
 
@@ -158,6 +158,59 @@ Opstarten viser en kort opsummering af AI-forbindelse, hostingønske, gemt desig
 
 Standarderne ligger i appdata. Nye projekter får deres egen kopi i projektindstillingerne uden for repositoryet. Et eksisterende projekts modelvalg har forrang. Manglende forbindelser og designpakker giver en forklaring og vælges ikke automatisk på ny. En husket AI-forbindelse kontakter ikke serveren; brug **Hent modeller** før modelvalg. Designpakken kopieres lokalt som hidtil; private referencer er stadig ikke valgt til modellen.
 
-Hostingønsket vises i projektoplysninger og medsendes som kontekst efter datagennemgangen. Det opretter ingen cloudressource og er ikke en godkendelse af upload, omkostninger eller publicering. Startskabelonen er stadig statisk HTML/CSS/JavaScript. Azure-/Vercel-deployment og organisationers centrale standarder er endnu ikke tilsluttet. Der loves derfor ikke automatisk tilpasning af projekttypen til destinationen.
+Hostingønsket vises i projektoplysninger og medsendes som kontekst efter datagennemgangen. Det opretter ingen cloudressource og er ikke en godkendelse af upload, omkostninger eller publicering. Startskabelonen er stadig statisk HTML/CSS/JavaScript. Hostingønsket foreslår nu udbyder i udgivelsesdialogen. Organisationers centrale standarder er endnu ikke tilsluttet. Der loves derfor ikke automatisk tilpasning af projekttypen til destinationen.
 
 `npm run test:preferences` afprøver gemning, genstart, spring-over og glem i Electron med isolerede projekter. `tests/preferences.test.cjs` kontrollerer validering, manglende henvisninger og at nye standarder ikke ændrer eksisterende projekter eller gemmer godkendelser/nøgler.
+
+## Udgiv til test
+
+**Udgiv til test** er valgfri og kræver ingen GitHub-forbindelse. Vælg et eksisterende hostingprojekt, gennemgå filerne og bekræft upload. Destinationen huskes pr. projekt uden for repositoryet. Avancerede valg er foldet sammen. Produktion, branches og projektets lokale filer ændres ikke.
+
+Pakken læses fra den gemte Git-version i den valgte mappe, som bliver uploadens rod. Arbejdsområdet skal være rent. Ignorerede buildfiler på disken medtages ikke: ved færdigbygget frontend skal det faktiske output være gemt i Git; ved Vercel-kildekode bygger udbyderen i stedet. Grænserne er 2.000 filer, 2 MB pr. fil og 20 MB samlet. Kendte hemmelighedsfiler, private referencer, links, undermoduler og LFS-pointere afvises. Indholdskontrollen er heuristisk.
+
+Gennemgangen viser Git-version, filnavne, indholdsfingeraftryk, destination, adgang, placering og mulige omkostninger. Version og destination genkontrolleres før upload. Godkendelsen er engangsbrug og udløber. Projekt-/appindstillinger gemmes, men godkendelsen huskes ikke til næste udgivelse.
+
+### Vercel
+
+Kræver eksisterende login i Vercel CLI og et eksisterende projekt i det angivne team. Adapteren bruger CLI'ens API-adgang og opretter **preview** uden Git-push, produktionsflag eller ændrede projektindstillinger. Adapteren afviser projekter uden en eksisterende klar produktionsversion, før der uploades. Vercel promoverede første udgivelse til produktion i liveafprøvningen, både med udeladt target og eksplicit staging. Derfor skal en startversion oprettes særskilt hos Vercel, helst i et dedikeret testprojekt. Kontrollen gentages før upload; undgå samtidige sletninger af udgivelser fra andre værktøjer. Vercel CLI 59.25.2 er brugt i afprøvningen. Et andet program kan angives med `HARNESS_VERCEL_PATH`.
+
+- **Færdigbygget frontend:** vælg fx `public`. Projektet skal have standardindstillinger uden framework, egne build-/installationskommandoer, outputmappe eller særskilt rodmappe. Appen overskriver ikke disse indstillinger.
+- **Kildekode:** vælg fx `.` med `package.json` og lockfil. Projektets Vercel-indstillinger styrer framework og build. En særskilt Vercel-rodmappe afvises, fordi pakken allerede er afgrænset til den valgte mappe. Understøttelse af serverkode afhænger af Vercels runtime og frameworkadapter.
+
+Preview-miljøvariabler opsættes i Vercel. Appen viser variabelnavne, aldrig værdier, og opretter ingen hemmeligheder. Installations- og buildscripts fra kildekoden kører hos Vercel og kan læse disse værdier. Et preview kan være offentligt eller kræve login afhængigt af kontoens adgangsindstillinger.
+
+### Azure Static Web Apps
+
+Kræver Azure CLI-login, SWA CLI og en eksisterende Static Web App. Angiv abonnement-ID, ressourcegruppe og navn. Programstier kan angives med `HARNESS_AZ_PATH` og `HARNESS_SWA_PATH`. SWA CLI kan hente sit deploymentværktøj ved første brug. Der installeres ingen npm-afhængigheder eller startes projektkommandoer lokalt.
+
+Adapteren bruger det navngivne **harness-test**-miljø; næste upload erstatter dets indhold. Produktion er ikke destination. Azure-kontoen skal have rettighed til at læse ressourcen og hente deploymentnøglen. Nøglen gives kortvarigt til SWA-processens miljø, aldrig argumenter, renderer, projektfiler eller appens kvittering. CLI'ernes eksisterende kontologin administreres af deres egne værktøjer.
+
+Færdigbygget frontend skal have `index.html`. Frontend med Functions kræver adskilte mapper, fx `public` og `api`, med `host.json` og færdigt selvstændigt Node.js 22-API. `node_modules` medtages ikke; afhængigheder skal være bundlet. Appen bygger ikke Functions. Langvarige serverprocesser, Docker, databaser og automatisk ressourceoprettelse er ikke en del af adapteren. Hemmeligheder og adgangsregler opsættes særskilt i Azure-testmiljøet.
+
+### Status og kontrol
+
+**Kontrollér status** følger den registrerede udgivelse. Appen kontrollerer kun kendte HTTPS-testadresser hos udbyderen og følger ikke redirects ved indholdskontrollen. Ved statiske sider sammenlignes startsideindholdet med den godkendte fil. Udbyderindsatte scripts kan give forskelligt fingeraftryk; appen beder da om manuel gennemgang frem for at erklære fuld overensstemmelse. Ved kildekode beviser et HTTP-svar kun, at adressen svarer. Backend, login og brugerrejser kræver yderligere afprøvning. En loginbeskyttet side bliver ikke meldt som verificeret.
+
+Azure-status skal have et opdateringstidspunkt efter uploadstart, før en gammel testversion kan tælle som klar. Dette er ikke en lås mod andre, der samtidig udgiver til samme miljø. Uploadfejl kan have ukendt udfald: kontrollér udbyderens oversigt før nyt forsøg. Appen gentager ikke automatisk. Lukning af dialogen annullerer ikke en allerede igangsat cloududgivelse.
+
+### Verifikation og kilder
+
+`npm test` består med 39 tests. `test:deployment` og `test:desktop` består i Electron på macOS. Testene omfatter snapshots fra rigtige isolerede Git-repositories, engangsgodkendelser, ændret version/destination, fejlstatus, indholdskontrol og leverandørkontrakter. `npm run test:deployment` afprøver Electron-dialog og IPC med rigtige filer og simulerede hostingsvar. `node scripts/verify-deployment.cjs --live-vercel` uploader syntetisk materiale til det konkret godkendte `progressify/ai-harness-test`; kommandoen skal kun bruges med ejerens tilladelse.
+
+Vercel-forløbet er afprøvet gennem Electron med en syntetisk HTML-side i `progressify/ai-harness-test`; Vercel bekræftede `target: null` og `READY`. Den anonyme kontrol registrerer korrekt viderestilling til login. En særskilt autentificeret CLI-kontrol hentede den godkendte HTML-side; Vercel havde tilføjet sit feedback-script, så hele HTTP-svaret var ikke byteidentisk. De to syntetiske udgivelser, som Vercel klassificerede som produktion under fejlsøgningen, er fjernet. Kontrollen før upload blev derefter afprøvet mod det rigtige projekt og afviste korrekt manglende startversion. Kun preview-testudgivelsen er efterladt.
+
+Azure er ikke liveafprøvet; der er endnu ingen testressource. Windows og framework-/Functions-apps er ikke afprøvet live i denne milepæl. CLI-installation/login kræver stadig ekstern opsætning; dette er endnu ikke et fuldt guidet hostinglogin for nye brugere.
+
+Kilder kontrolleret 24. september 2026: [Vercel deployments API](https://vercel.com/docs/rest-api/deployments/create-a-new-deployment), [SWA deploy](https://azure.github.io/static-web-apps-cli/docs/cli/swa-deploy/), [Azure-miljøer](https://learn.microsoft.com/en-us/azure/static-web-apps/preview-environments) og [Azure buildstatus](https://learn.microsoft.com/en-us/rest/api/appservice/static-sites/get-static-site-builds?view=rest-appservice-2024-11-01).
+
+## Flere hostingmuligheder
+
+Dialogen viser også mulige kommende adaptere, tydeligt adskilt fra de aktive destinationer. Der er endnu ingen upload til disse fra appen:
+
+- [Cloudflare Pages](https://developers.cloudflare.com/pages/configuration/preview-deployments/) og [Workers](https://developers.cloudflare.com/workers/versions-and-deployments/version-urls/): preview-/versionsadresser. Workers kræver en kompatibel runtime; det er ikke en vilkårlig Node-server.
+- [Netlify](https://cli.netlify.com/commands/deploy/): CLI'en opretter som standard draft-deploys. Funktioner og build skal håndteres efter Netlifys format.
+- [Render](https://render.com/docs/preview-environments): preview-miljøer til flere tjenester og datalagre.
+- [Railway](https://docs.railway.com/environments): særskilte vedvarende miljøer og PR-miljøer.
+- Egen server, fx kommunal infrastruktur eller Hetzner: kræver en adapter til den valgte runtime, adgang og testadresse.
+
+Valgmulighederne er ikke et løfte om gratis drift eller godkendt databehandling. Pris, region, logging, opbevaring, hemmeligheder og adgang skal vurderes pr. konto og tjeneste. Kilder kontrolleret 24. september 2026.

@@ -6,6 +6,7 @@ const { createProject, openProject } = require('./core/projects.cjs');
 const { startPreview } = require('./core/preview.cjs');
 const { Workbench } = require('./core/workbench.cjs');
 const { GitHub } = require('./core/github.cjs');
+const { Deployments } = require('./core/deployments.cjs');
 const { Publishing } = require('./core/publishing.cjs');
 const { Preferences } = require('./core/preferences.cjs');
 const { Designs } = require('./core/designs.cjs');
@@ -21,7 +22,7 @@ app.setPath('sessionData', existingSessionData);
 protocol.registerSchemesAsPrivileged([{ scheme: 'harness', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 let window, preview, project, busy = false;
 let assets = [];
-let github, publishing;
+let github, publishing, deployments;
 let workbench, beforeChanges, externalPreview = null;
 const uiURL = 'harness://app/index.html';
 const profileRoot = path.join(__dirname, '..', 'profiles');
@@ -162,6 +163,19 @@ handle('hosting:review', () => exclusive(() => publishing.review(requireIdleProj
 handle('hosting:push', token => exclusive(() => publishing.push(requireIdleProject(), token)));
 handle('hosting:open', async () => { const root = requireIdleProject(); const selected = (await workbench.store.project(root)).publication; if (!selected) throw new Error('Vælg repository først.'); return shell.openExternal('https://github.com/' + require('./core/github.cjs').repository(selected.fullName)); });
 
+handle('deployment:state', () => deployments.state(requireIdleProject()));
+handle('deployment:review', input => exclusive(() => deployments.review(requireIdleProject(), input)));
+handle('deployment:send', token => exclusive(() => deployments.deploy(requireIdleProject(), token)));
+handle('deployment:check', () => exclusive(() => deployments.check(requireIdleProject())));
+handle('deployment:open', async kind => {
+  const state = await deployments.state(requireIdleProject());
+  if(kind==='settings') return shell.openExternal(await deployments.settings(requireIdleProject()));
+  if (!state.last) throw new Error('Ingen udgivelse registreret.');
+  const url = kind === 'portal' ? state.last.target.portal : state.last.url;
+  if (!url || !/^https:\/\//.test(url)) throw new Error('Intet link tilgængeligt.');
+  return shell.openExternal(url);
+});
+
 handle('setup:status', async () => {
   try {
     if (project) { const status = await workbench.git.status(project.root); return { git: status.block || `Git er klar · branch ${status.branch}`, project: true }; }
@@ -230,12 +244,13 @@ app.whenReady().then(() => {
     ] }
   ]));
   workbench = new Workbench({ directory: path.join(app.getPath('userData'), 'harness'), safeStorage, profiles: profileRoot, emit: event => { if (window && !window.isDestroyed()) window.webContents.send('harness:event', event); } });
+  deployments = new Deployments(workbench.store);
   github = new GitHub(workbench.store); publishing = new Publishing({ store: workbench.store, git: workbench.git, provider: github });
   protocol.handle('harness', async request => {
     const url = new URL(request.url);
     const name = url.pathname.slice(1);
-    if (url.host !== 'app' || !['index.html', 'app.js', 'viewport.js', 'hosting.js', 'styles.css'].includes(name)) return new Response('Ikke fundet', { status: 404 });
-    return new Response(await fs.readFile(path.join(__dirname, 'ui', name)), { headers: { 'Content-Type': { 'index.html': 'text/html; charset=utf-8', 'app.js': 'text/javascript', 'viewport.js': 'text/javascript', 'hosting.js': 'text/javascript', 'styles.css': 'text/css' }[name] } });
+    if (url.host !== 'app' || !['index.html', 'app.js', 'viewport.js', 'hosting.js', 'deployment.js', 'styles.css'].includes(name)) return new Response('Ikke fundet', { status: 404 });
+    return new Response(await fs.readFile(path.join(__dirname, 'ui', name)), { headers: { 'Content-Type': { 'index.html': 'text/html; charset=utf-8', 'app.js': 'text/javascript', 'viewport.js': 'text/javascript', 'hosting.js': 'text/javascript', 'deployment.js': 'text/javascript', 'styles.css': 'text/css' }[name] } });
   });
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
   session.defaultSession.setPermissionCheckHandler(() => false);
