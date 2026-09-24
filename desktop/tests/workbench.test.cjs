@@ -43,13 +43,13 @@ test('gateway kræver nøgle, fastholder model og OpenRouter-udbyder uden fallba
  const received=[];
  const upstream=http.createServer(async(req,res)=>{let raw='';for await(const chunk of req)raw+=chunk;received.push({headers:req.headers,body:JSON.parse(raw)});res.setHeader('content-type','application/json');res.end('{}');});
  await new Promise(r=>upstream.listen(0,'127.0.0.1',r));
- const gateway=await startGateway({kind:'openrouter',baseURL:`http://127.0.0.1:${upstream.address().port}/v1`},{id:'test'},'prøvenøgle',{id:'valgt'});
+ const gateway=await startGateway({kind:'openrouter',baseURL:`http://127.0.0.1:${upstream.address().port}/v1`},{id:'test:free',price:{prompt:'0',completion:'0'}},'prøvenøgle',{id:'valgt',price:{prompt:'0',completion:'0'}});
  t.after(async()=>{await gateway.close();upstream.closeAllConnections();await new Promise(r=>upstream.close(r));});
  assert.equal((await fetch(gateway.url+'/chat/completions',{method:'POST',body:'{}'})).status,401);
  const send=body=>fetch(gateway.url+'/chat/completions',{method:'POST',headers:{authorization:`Bearer ${gateway.token}`,'content-type':'application/json'},body:JSON.stringify(body)});
  await send({model:'anden'}); assert.equal(received.length,0);
- assert.equal((await send({model:'test',provider:{allow_fallbacks:true},models:['anden']})).status,200);
- assert.deepEqual(received[0].body.provider,{only:['valgt'],allow_fallbacks:false});
+ assert.equal((await send({model:'test:free',provider:{allow_fallbacks:true},models:['anden']})).status,200);
+ assert.deepEqual(received[0].body.provider,{only:['valgt'],allow_fallbacks:false,max_price:{prompt:0,completion:0,request:0,image:0}});
  assert.equal(received[0].body.models,undefined);
  assert.equal(received[0].headers.authorization,'Bearer prøvenøgle');
 });

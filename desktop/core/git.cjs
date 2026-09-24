@@ -5,9 +5,11 @@ const { createHash, randomUUID } = require('node:crypto');
 const digest = data => createHash('sha256').update(data).digest('hex');
 const LIMIT = 2 * 1024 * 1024;
 
-function run(root, args, input) {
+function run(root, args, input, configuration = []) {
   const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')));
   Object.assign(env, { GIT_TERMINAL_PROMPT: '0', GIT_OPTIONAL_LOCKS: '0', GIT_LITERAL_PATHSPECS: '1', LC_ALL: 'C' });
+  env.GIT_CONFIG_COUNT = String(configuration.length);
+  configuration.forEach(([key, value], index) => { env[`GIT_CONFIG_KEY_${index}`] = key; env[`GIT_CONFIG_VALUE_${index}`] = value; });
   return new Promise((resolve, reject) => {
     const child = execFile('git', ['-c', 'core.fsmonitor=false', ...args], { cwd: root, env, timeout: 30000, maxBuffer: 8 * LIMIT, windowsHide: true, encoding: 'buffer' }, (error, stdout) => {
       if (error) { const failure = new Error(error.code === 'ENOENT' ? 'Git blev ikke fundet. Installer Git, og genstart appen.' : 'Git kunne ikke gennemføre handlingen. Kontrollér repository, låsefiler, hooks og eventuel commitsignering.'); failure.code = error.code; reject(failure); }

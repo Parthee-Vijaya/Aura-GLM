@@ -3,15 +3,17 @@ const fs = require('node:fs/promises');
 const { createHash } = require('node:crypto');
 const { run } = require('./git.cjs');
 
+async function hooksBlock(repo) {
+  const hooks = (await run(repo.root, ['rev-parse', '--git-path', 'hooks'])).toString().trim();
+  const directory = path.resolve(repo.root, hooks);
+  try { if ((await fs.readdir(directory)).some(name => !name.endsWith('.sample'))) return 'Git-hooks kræver gennemgang i dit Git-værktøj for denne handling.'; }
+  catch (error) { if (error.code !== 'ENOENT') throw error; }
+  return '';
+}
 async function automaticBlock(repo) {
   if (repo.block) return repo.block;
   if (!repo.head) return 'Gem først projektets første version manuelt.';
-  let hooks;
-  try { hooks = (await run(repo.root, ['config', '--get', 'core.hooksPath'])).toString().trim(); }
-  catch (error) { if (error.code !== 1) throw error; }
-  const directory = hooks ? path.resolve(repo.root, hooks) : path.join(repo.gitDir, 'hooks');
-  try { if ((await fs.readdir(directory)).some(name => !name.endsWith('.sample'))) return 'Git-hooks kræver manuel versionsgemning.'; }
-  catch (error) { if (error.code !== 'ENOENT') throw error; }
+  const hook = await hooksBlock(repo); if (hook) return hook;
   try { if ((await run(repo.root, ['config', '--get-regexp', '^filter\\.'])).length) return 'Git-filtre kræver manuel versionsgemning.'; }
   catch (error) { if (error.code !== 1) throw error; }
   return '';
@@ -73,4 +75,4 @@ class Checkpoints {
     } catch (error) { this.emit({ type: 'git.checkpoint', status: 'skipped', message: `Automatisk checkpoint sprunget over: ${error.message}` }); }
   }
 }
-module.exports = { Checkpoints, automaticBlock };
+module.exports = { Checkpoints, automaticBlock, hooksBlock };

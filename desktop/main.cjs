@@ -1,10 +1,12 @@
-const { app, BrowserWindow, ipcMain, dialog, protocol, session, safeStorage, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, protocol, session, safeStorage, Menu, shell } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const crypto = require('node:crypto');
 const { createProject, openProject } = require('./core/projects.cjs');
 const { startPreview } = require('./core/preview.cjs');
 const { Workbench } = require('./core/workbench.cjs');
+const { GitHub } = require('./core/github.cjs');
+const { Publishing } = require('./core/publishing.cjs');
 const { Designs } = require('./core/designs.cjs');
 const { capture, changes } = require('./core/changes.cjs');
 
@@ -18,6 +20,7 @@ app.setPath('sessionData', existingSessionData);
 protocol.registerSchemesAsPrivileged([{ scheme: 'harness', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 let window, preview, project, busy = false;
 let assets = [];
+let github, publishing;
 let workbench, beforeChanges, externalPreview = null;
 const uiURL = 'harness://app/index.html';
 const profileRoot = path.join(__dirname, '..', 'profiles');
@@ -137,6 +140,21 @@ handle('git:automatic', value => exclusive(async () => {
   return value;
 }));
 
+function hostingIdle() { if (workbench.running || workbench.finishing) throw new Error('Vent på den igangværende AI-opgave.'); }
+handle('hosting:state', async () => ({ ...await github.state(), project: Boolean(project), publication: project ? await publishing.status(project.root).catch(error => ({ message: error.message, selected: null })) : null }));
+handle('hosting:token', token => exclusive(async () => { hostingIdle(); publishing.reviews.clear(); return github.connectToken(token); }));
+handle('hosting:login', () => exclusive(async () => { hostingIdle(); return github.startLogin(); }));
+handle('hosting:poll', id => exclusive(async () => { hostingIdle(); publishing.reviews.clear(); return github.poll(id); }));
+handle('hosting:cancel', () => { github.cancel(); return true; });
+handle('hosting:browser', () => { if (!github.pending) throw new Error('Start login først.'); return shell.openExternal('https://github.com/login/device'); });
+handle('hosting:disconnect', () => exclusive(async () => { hostingIdle(); publishing.reviews.clear(); return github.disconnect(); }));
+handle('hosting:catalog', () => exclusive(async () => { hostingIdle(); return { owners: await github.owners(), repositories: await github.repositories() }; }));
+handle('hosting:create', input => exclusive(async () => { hostingIdle(); return github.create(input); }));
+handle('hosting:attach', fullName => exclusive(() => publishing.attach(requireIdleProject(), fullName)));
+handle('hosting:review', () => exclusive(() => publishing.review(requireIdleProject())));
+handle('hosting:push', token => exclusive(() => publishing.push(requireIdleProject(), token)));
+handle('hosting:open', async () => { const root = requireIdleProject(); const selected = (await workbench.store.project(root)).publication; if (!selected) throw new Error('Vælg repository først.'); return shell.openExternal('https://github.com/' + require('./core/github.cjs').repository(selected.fullName)); });
+
 handle('setup:status', async () => {
   try {
     if (project) { const status = await workbench.git.status(project.root); return { git: status.block || `Git er klar · branch ${status.branch}`, project: true }; }
@@ -205,11 +223,12 @@ app.whenReady().then(() => {
     ] }
   ]));
   workbench = new Workbench({ directory: path.join(app.getPath('userData'), 'harness'), safeStorage, profiles: profileRoot, emit: event => { if (window && !window.isDestroyed()) window.webContents.send('harness:event', event); } });
+  github = new GitHub(workbench.store); publishing = new Publishing({ store: workbench.store, git: workbench.git, provider: github });
   protocol.handle('harness', async request => {
     const url = new URL(request.url);
     const name = url.pathname.slice(1);
-    if (url.host !== 'app' || !['index.html', 'app.js', 'viewport.js', 'styles.css'].includes(name)) return new Response('Ikke fundet', { status: 404 });
-    return new Response(await fs.readFile(path.join(__dirname, 'ui', name)), { headers: { 'Content-Type': { 'index.html': 'text/html; charset=utf-8', 'app.js': 'text/javascript', 'viewport.js': 'text/javascript', 'styles.css': 'text/css' }[name] } });
+    if (url.host !== 'app' || !['index.html', 'app.js', 'viewport.js', 'hosting.js', 'styles.css'].includes(name)) return new Response('Ikke fundet', { status: 404 });
+    return new Response(await fs.readFile(path.join(__dirname, 'ui', name)), { headers: { 'Content-Type': { 'index.html': 'text/html; charset=utf-8', 'app.js': 'text/javascript', 'viewport.js': 'text/javascript', 'hosting.js': 'text/javascript', 'styles.css': 'text/css' }[name] } });
   });
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
   session.defaultSession.setPermissionCheckHandler(() => false);
@@ -234,11 +253,11 @@ app.whenReady().then(() => {
     window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     window.webContents.on('will-navigate', event => event.preventDefault());
     window.webContents.on('will-attach-webview', event => event.preventDefault());
-    window.on('closed', () => { workbench.close(); externalPreview = null; window = null; assets = []; project = null; if (preview) { preview.close(); preview = null; } });
+    window.on('closed', () => { github.cancel(); workbench.close(); externalPreview = null; window = null; assets = []; project = null; if (preview) { preview.close(); preview = null; } });
     window.loadURL(uiURL);
   }
   createWindow();
   app.on('activate', () => { if (!window) createWindow(); });
 });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
-app.on('before-quit', () => { workbench?.close(); if (preview) preview.close(); });
+app.on('before-quit', () => { github?.cancel(); workbench?.close(); if (preview) preview.close(); });

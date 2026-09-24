@@ -20,6 +20,7 @@ async function startGateway(connection, model, key, route) {
       if (connection.kind === 'openrouter') {
         if (!route?.id) throw new Error('Vælg en konkret OpenRouter-udbyder.');
         body.provider = { only: [route.id], allow_fallbacks: false };
+        if (model.id.endsWith(':free')) body.provider.max_price = { prompt: 0, completion: 0, request: 0, image: 0 };
       }
       const anthropic = req.url === '/v1/messages';
       const base = connection.kind === 'ollama' ? `${connection.baseURL}/v1` : connection.baseURL;

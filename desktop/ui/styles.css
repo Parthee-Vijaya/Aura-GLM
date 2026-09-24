@@ -164,3 +164,42 @@ body.resizing-workspace iframe { pointer-events: none; }
 #setup-reason { border-left: 3px solid #b27a46; padding: 10px 14px; background: #faf6f0; line-height: 1.6; }
 
 #setup-title:focus { outline: none; }
+
+#hosting-dialog { width: min(820px, 92vw); }
+#hosting-body { border: 0; padding: 0; margin: 0; min-width: 0; }
+#hosting-dialog form, #hosting-project { border-top: 1px solid var(--line); margin-top: 18px; padding-top: 14px; }
+#hosting-files { max-height: 220px; overflow: auto; font: 11px/1.7 ui-monospace, monospace; }
+#hosting-feedback, #hosting-destination { overflow-wrap: anywhere; }
+#hosting-code { font: bold 18px ui-monospace, monospace; letter-spacing: .08em; }
+
+#hosting-dialog .dialog-heading { position: sticky; top: -24px; background: white; z-index: 2; padding: 12px 0; }
+#hosting-review-result { scroll-margin-top: 70px; }
+
+/* Roligt arbejdsområde med idéen og samtalen som udgangspunkt. */
+#onboarding { max-width: 780px; padding-top: clamp(36px, 9vh, 90px); }
+#onboarding .intro h1 { font-size: 26px; }
+#purpose { min-height: 126px; font-size: 14px; line-height: 1.7; }
+#onboarding details.panel { padding: 15px 0; margin-bottom: 8px; }
+#onboarding details[open] > summary { margin-bottom: 15px; }
+#onboarding .create-footer { margin-top: 24px; }
+.workspace-storage { margin: 4px 0 0; font-size: 10px; }
+.model-controls { border-top: 1px solid var(--line); border-bottom: 0; max-height: 240px; overflow: auto; flex-shrink: 0; }
+.model-controls > summary { font-size: 11px; overflow-wrap: anywhere; }
+.model-controls[open] > summary { margin-bottom: 10px; }
+.chat-content { padding: 24px 20px; }
+.chat-message.user { border: 0; border-radius: 10px; padding: 12px 14px; }
+.chat-message.assistant { line-height: 1.8; }
+.composer { margin-top: 6px; background: white; box-shadow: 0 2px 6px #00000006; }
+#connection-warning { padding: 10px 14px; background: #fff8ed; border-bottom: 1px solid #ead9ba; font-size: 11px; line-height: 1.5; }
+#connection-warning p { margin: 0 0 7px; }
+#connection-warning button { font-size: 10px; padding: 5px; margin: 2px; }
+#connection-advanced { margin: 16px 0; }
+#setup details > summary { margin-bottom: 12px; }
+#setup details > strong { display: block; }
+#project-intro details { margin-top: 12px; }
+#start-idea { text-align: left; padding-left: 0; text-decoration: underline; }
+@media (max-height: 650px) {
+  #onboarding { padding-top: 24px; }
+  .model-controls { max-height: 180px; }
+  .chat-content { min-height: 90px; }
+}
