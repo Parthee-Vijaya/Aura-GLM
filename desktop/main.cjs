@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, protocol, session, safeStorage } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, protocol, session, safeStorage, Menu } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const crypto = require('node:crypto');
@@ -7,6 +7,13 @@ const { startPreview } = require('./core/preview.cjs');
 const { Workbench } = require('./core/workbench.cjs');
 const { Designs } = require('./core/designs.cjs');
 const { capture, changes } = require('./core/changes.cjs');
+
+// Bevar eksisterende forbindelser, designpakker og rendererindstillinger ved navneskift.
+const existingUserData = app.getPath('userData');
+const existingSessionData = app.getPath('sessionData');
+app.setName('AI Harness');
+app.setPath('userData', existingUserData);
+app.setPath('sessionData', existingSessionData);
 
 protocol.registerSchemesAsPrivileged([{ scheme: 'harness', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 let window, preview, project, busy = false;
@@ -139,6 +146,33 @@ handle('preview:attach', value => exclusive(async () => {
 }));
 
 app.whenReady().then(() => {
+  app.setAboutPanelOptions({ applicationName: 'AI Harness', applicationVersion: app.getVersion() });
+  Menu.setApplicationMenu(Menu.buildFromTemplate([
+    { label: 'AI Harness', submenu: [
+      { label: 'Om AI Harness', role: 'about' },
+      ...(process.platform === 'darwin' ? [
+        { type: 'separator' }, { label: 'Tjenester', role: 'services' },
+        { type: 'separator' }, { label: 'Skjul AI Harness', role: 'hide' },
+        { label: 'Skjul andre', role: 'hideOthers' }, { label: 'Vis alle', role: 'unhide' }
+      ] : []),
+      { type: 'separator' }, { label: 'Afslut AI Harness', role: 'quit' }
+    ] },
+    { label: 'Rediger', submenu: [
+      { label: 'Fortryd', role: 'undo' }, { label: 'Gentag', role: 'redo' },
+      { type: 'separator' }, { label: 'Klip', role: 'cut' }, { label: 'Kopiér', role: 'copy' },
+      { label: 'Sæt ind', role: 'paste' }, { label: 'Vælg alt', role: 'selectAll' }
+    ] },
+    { label: 'Vis', submenu: [
+      { label: 'Faktisk størrelse', role: 'resetZoom' }, { label: 'Zoom ind', role: 'zoomIn' },
+      { label: 'Zoom ud', role: 'zoomOut' }, { type: 'separator' }, { label: 'Fuld skærm', role: 'togglefullscreen' },
+      ...(!app.isPackaged ? [{ type: 'separator' }, { label: 'Udviklerværktøjer', role: 'toggleDevTools' }] : [])
+    ] },
+    { label: 'Vindue', submenu: [
+      { label: 'Minimér', role: 'minimize' }, { label: 'Zoom vindue', role: 'zoom' },
+      { label: 'Luk vindue', role: 'close' },
+      ...(process.platform === 'darwin' ? [{ type: 'separator' }, { label: 'Vis alle forrest', role: 'front' }] : [])
+    ] }
+  ]));
   workbench = new Workbench({ directory: path.join(app.getPath('userData'), 'harness'), safeStorage, profiles: profileRoot, emit: event => { if (window && !window.isDestroyed()) window.webContents.send('harness:event', event); } });
   protocol.handle('harness', async request => {
     const url = new URL(request.url);

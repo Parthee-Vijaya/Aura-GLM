@@ -16,6 +16,10 @@ const root = path.join(__dirname, '..', '..');
     app = await electron.launch({executablePath, args:[path.join(root, 'desktop'), '--user-data-dir='+path.join(testRoot,'electron-data')], env:{...process.env, ELECTRON_RUN_AS_NODE: undefined}});
     const page = await app.firstWindow();
     await page.waitForSelector('#create-form');
+    const identity = await app.evaluate(({app, Menu}) => ({ name: app.getName(), userData: app.getPath('userData'), labels: Menu.getApplicationMenu().items.map(item => item.label) }));
+    assert.equal(identity.name, 'AI Harness');
+    assert.equal(await fs.realpath(identity.userData), await fs.realpath(path.join(testRoot, 'electron-data')));
+    assert.deepEqual(identity.labels, ['AI Harness', 'Rediger', 'Vis', 'Vindue']);
     return page;
   }
   async function choose(paths, canceled=false) {
