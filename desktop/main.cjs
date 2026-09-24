@@ -137,6 +137,13 @@ handle('git:automatic', value => exclusive(async () => {
   return value;
 }));
 
+handle('setup:status', async () => {
+  try {
+    if (project) { const status = await workbench.git.status(project.root); return { git: status.block || `Git er klar · branch ${status.branch}`, project: true }; }
+    const version = (await require('./core/git.cjs').run(app.getPath('userData'), ['--version'])).toString().trim();
+    return { git: `${version} · projektets historik og identitet kontrolleres, når du åbner et projekt.`, project: false };
+  } catch (error) { return { git: error.message, project: Boolean(project) }; }
+});
 handle('connections:state', () => workbench.state());
 handle('connections:save', value => exclusive(() => workbench.saveConnection(value)));
 handle('connections:remove', value => exclusive(() => workbench.removeConnection(value)));

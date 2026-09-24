@@ -15,6 +15,16 @@ Der er endnu ingen signerede installationspakker. Windows og macOS er målplatfo
 
 Appens navn og egne menuer er **AI Harness**. Under `npm start` bruges stadig udviklingsprogrammet `Electron.app` på macOS; systemets Dock, procesvisning og visse systemdialoger kan derfor fortsat vise Electron. Fuld systemnavngivning kræver en pakket app med egne bundle-oplysninger. Der ændres ikke i den installerede Electron-afhængighed. Navneskiftet bevarer eksisterende data- og sessionsmapper.
 
+## Opstart og forbindelser
+
+Appen starter på **Opsætning** med status for det lokale arbejdsområde, Git og gemte AI-forbindelser. Den kontakter ingen modelserver og dekrypterer ingen modelnøgle blot for at vise skærmen. **Kontrollér forbindelse** henter den valgte servers modelkatalog; ingen projektfiler eller prompts sendes. En vellykket katalogkontrol er ikke en afprøvning af modelkald, kvote eller kodeværktøjer.
+
+**Fortsæt med AI** kræver et katalog med modeller. **Fortsæt uden AI-kontrol** åbner de lokale funktioner uden at kræve konto eller serveradgang. Ved lokal fortsættelse hentes heller ikke et gemt projekts modelkatalog automatisk. Et aktivt forbindelsesvalg eller en AI-opgave udløser først netværksadgang. Model og datavilkår kontrolleres stadig før enhver AI-opgave. Den foretrukne forbindelse huskes lokalt, men vises som ukontrolleret efter genstart. En gemt nøgle eller adresse er ikke i sig selv en bekræftet forbindelse.
+
+Ved fejl under katalogkontrol i projektet eller under et modelkald vender opsætningen tilbage med en forklaring. Projektet, filerne og beskedkladden bevares; der foretages intet automatisk genforsøg eller udbyderskift. Brugeren kan rette forbindelsen, kontrollere igen eller fortsætte med de lokale funktioner. Kontroller sker ved brug, ikke som baggrundspolling; skærmen er ikke en garanti for fortsat adgang. **Opsætning** i sidepanelet kan altid åbnes, når agenten er standset.
+
+Git-status er lokal og ændrer ingen konfiguration. Med et åbent projekt kan brugeren gå til versionsindstillingerne. Manglende Git blokerer ikke projektoprettelse eller preview. Git-login, push og cloud-arbejdsområder er markeret som utilgængelige; denne skærm aktiverer ikke hosting.
+
 ## Brugerrejse
 
 1. Opret et projekt eller åbn en eksisterende eller tom mappe. Åbning kræver ikke `harness.json` og ændrer ingen projektfiler. Et ugyldigt manifest giver en advarsel.
@@ -78,6 +88,7 @@ Kør fra `desktop/`:
 ```bash
 npm test
 npm run test:desktop
+npm run test:setup
 npm run test:agent
 npm run test:chat
 ```
@@ -103,6 +114,7 @@ npm run test:live
 - **Skrevet og automatisk testet:** mapper uden manifest, designbibliotek, krypteringsfejl, projektspecifikke skills, stop under motoropstart, serveradresser, ukendte vilkår og låst routing. 16 tests består. Git-testene bruger rigtige midlertidige repositories og kontrollerer aktivt filvalg, sletning, forældet gennemgang, hemmeligheder, eksisterende stage, afvisende hooks samt checkpoint-afvisning ved stop, værktøjsfejl, kommandoer og samtidige ændringer.
 - **Afprøvet på konkret materiale:** macOS/Electron 44.4.4, genåbning, rigtigt preview og designpakke genbrugt efter genstart og sletning af originaler. OpenCode 1.17.15 gennemførte en rigtig filændring med kontrolleret modelserver, godkendelse, afvisning og stop. Den samlede desktop-chatrejse består også: modelvalg, datagennemgang, streaming, godkendt filændring, preview, ændringsoversigt og skill-redigering. Genåbning bevarer modelvalg, og tilslutning til en eksisterende udviklingsserver er afprøvet. OpenCodes webværktøj hentede Gentofte-guidens forside og en relevant underside gennem godkendelser med en kontrolleret testmodel. Electron safeStorage blev afprøvet med en syntetisk nøgle; hverken rendererens forbindelsesdata eller indstillingsfilen indeholdt nøglen i klartekst.
 - **Git-milepæl afprøvet i Electron på macOS:** UI-oprettelse af Git-historik, manuelt første commit, tilvalg af checkpoints og automatisk andet commit efter en rigtig OpenCode-filændring med en kontrolleret lokal modelserver. Git-historikken indeholdt det ændrede indhold, arbejdsområdet var rent, og preview viste resultatet. Nøglekryptering og genlæsning bestod med normal macOS-hjemmemappe. En tidligere test med midlertidig HOME udløste en nøgleringsdialog; testopsætningen isolerer nu Git via et testværktøj på PATH og ændrer ikke Electrons HOME. Ingen nulstilling af nøgleringen er en del af testen.
+- **Opstartsskærm afprøvet i Electron på macOS:** første start uden modelkald, lokal adgang, tilføjelse af forbindelse, tomt katalog, utilgængelig server, genoprettelse, bevarede kladder, manglende Git og ny kontrol efter genstart. En rigtig OpenCode-session mod den kontrollerede testserver fik afvist modeladgang; opsætningen kom frem, beskeden blev bevaret, og intet automatisk checkpoint blev oprettet.
 - **Ekstern prøve:** Zen-kataloget svarede, men modelkaldet uden nøgle blev afvist med HTTP 403. En vellykket ekstern AI-genereret kodeændring er derfor ikke verificeret. Ingen anden model eller betalingsvej blev forsøgt som fallback.
 - **Ikke verificeret:** Windows, brugerens faktiske providerkonti, Ollama, DGX Spark/Tailscale, en rigtig AI-models selvstændige fortolkning af designguiden samt cloud-arbejdsområder. Ingen installationer er pakket, deployet eller observeret i drift.
 

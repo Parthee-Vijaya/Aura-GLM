@@ -1,5 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 const methods = {
+  setupStatus: 'setup:status',
   gitStatus: 'git:status', gitInit: 'git:init', gitReview: 'git:review', gitCommit: 'git:commit', gitAutomatic: 'git:automatic',
   listDesigns: 'designs:list', saveDesign: 'designs:save', applyDesign: 'designs:apply',
   createProject: 'project:create', openProject: 'project:open', newProject: 'project:new', chooseAssets: 'assets:choose', removeAsset: 'assets:remove', revision: 'preview:revision', attachPreview: 'preview:attach',

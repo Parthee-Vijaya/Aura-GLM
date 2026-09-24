@@ -1,0 +1,82 @@
+const { _electron: electron } = require('playwright');
+const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const os = require('node:os');
+const http = require('node:http');
+(async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'harness-setup-'));
+  const project = path.join(root, 'projekt'); await fs.mkdir(project);
+  let requests = 0, available = true, empty = false;
+  const server = http.createServer((req, res) => {
+    ++requests; res.setHeader('content-type', 'application/json');
+    if (!available) { res.writeHead(503); return res.end(JSON.stringify({ error: 'Testserver utilgængelig' })); }
+    res.end(JSON.stringify({ data: empty ? [] : [{ id: 'test-model', name: 'Testmodel' }] }));
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  let app;
+  const errors = [];
+  async function launch(extra = {}) {
+    app = await electron.launch({ executablePath: require('electron'), args: [path.join(__dirname, '..'), '--user-data-dir=' + path.join(root, 'appdata')], env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined, ...extra } });
+    const page = await app.firstWindow(); page.on('pageerror', error => errors.push(error.message));
+    await page.waitForSelector('#setup');
+    await page.waitForFunction(() => !document.querySelector('#setup-git').textContent.includes('Kontrollerer'));
+    return page;
+  }
+  try {
+    let page = await launch();
+    assert.equal(await page.isDisabled('#new'), true);
+    assert.equal(await page.isDisabled('#setup-continue'), true);
+    assert.equal(requests, 0);
+    await page.screenshot({ path: path.join(root, 'opstart.png'), fullPage: true });
+    await page.click('#setup-local'); await page.waitForSelector('#create-form');
+    await page.fill('#name', 'Min kladde'); await page.fill('#purpose', 'Bevar denne idé.');
+    await page.click('#setup-button'); await page.click('#setup-local');
+    assert.equal(await page.inputValue('#name'), 'Min kladde');
+    await page.click('#setup-button'); await page.click('#setup-manage');
+    await page.selectOption('#provider-kind', 'compatible'); await page.fill('#connection-name', 'Lokal testserver');
+    await page.fill('#base-url', `http://127.0.0.1:${server.address().port}/v1`); await page.click('#save-connection');
+    await page.locator('#connection-feedback').filter({ hasText: 'Forbindelsen er gemt' }).waitFor();
+    await page.click('[data-close="connections-dialog"]');
+    const connection = (await page.evaluate(() => window.harness.connectionState())).value.connections[0];
+    assert.equal(requests, 0);
+    await page.selectOption('#setup-connection', connection.id);
+    empty = true; await page.click('#setup-test');
+    await page.locator('#setup-ai').filter({ hasText: 'uden modeller' }).waitFor();
+    assert.equal(await page.isDisabled('#setup-continue'), true);
+    empty = false; available = false; await page.click('#setup-test');
+    await page.locator('#setup-ai').filter({ hasText: 'mislykkedes' }).waitFor();
+    assert.equal(await page.isDisabled('#setup-continue'), true);
+    available = true; await page.click('#setup-test');
+    await page.locator('#setup-ai').filter({ hasText: 'Kataloget svarede' }).waitFor();
+    await page.click('#setup-continue');
+    await app.evaluate(({ dialog }, project) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [project] }); }, project);
+    await page.click('#open'); await page.waitForFunction(() => document.querySelector('#model-select').options.length === 2);
+    assert.equal(await page.inputValue('#connection-select'), connection.id);
+    await page.selectOption('#model-select', 'test-model'); await page.fill('#prompt', 'Bevar min besked ved forbindelsesfejl.');
+    available = false; await page.click('#send');
+    await page.waitForSelector('#setup:not([hidden])');
+    assert.match(await page.locator('#setup-reason').textContent(), /gennemgås/);
+    assert.equal(await page.isDisabled('#setup-continue'), true);
+    await page.click('#setup-local'); await page.waitForSelector('#workspace:not([hidden])');
+    assert.equal(await page.inputValue('#prompt'), 'Bevar min besked ved forbindelsesfejl.');
+    assert.deepEqual(await fs.readdir(project), []);
+    await page.click('#setup-button'); available = true; await page.click('#setup-test');
+    await page.locator('#setup-ai').filter({ hasText: 'Kataloget svarede' }).waitFor();
+    await page.screenshot({ path: path.join(root, 'genoprettet.png'), fullPage: true });
+    await page.click('#setup-continue'); await app.close();
+    const count = requests;
+    const noGit = path.join(root, 'uden-git'); await fs.mkdir(noGit);
+    page = await launch({ PATH: noGit });
+    assert.match(await page.locator('#setup-git').textContent(), /Git blev ikke fundet/);
+    assert.equal(await page.inputValue('#setup-connection'), connection.id);
+    assert.equal(await page.isDisabled('#setup-continue'), true);
+    assert.equal(requests, count);
+    await page.click('#setup-local'); await page.waitForSelector('#create-form');
+    await app.evaluate(({ dialog }, project) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [project] }); }, project);
+    await page.click('#open'); await page.waitForSelector('#workspace:not([hidden])');
+    assert.equal(await page.inputValue('#connection-select'), ''); assert.equal(requests, count);
+    assert.deepEqual(errors, []);
+    console.log(JSON.stringify({ status: 'bestået', root, checks: ['første start uden netværkskald', 'lokal adgang og bevaret projektkladde', 'opsætning og katalogkontrol', 'tomt katalog og utilgængelig server', 'genoprettet forbindelse', 'modelvalg i åbnet projekt', 'fejl før afsendelse bevarer besked og filer', 'genstart kræver ny kontrol', 'manglende Git blokerer ikke lokal adgang'] }));
+  } finally { await app?.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
+})().catch(error => { console.error(error); process.exitCode = 1; });

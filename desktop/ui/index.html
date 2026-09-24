@@ -5,13 +5,21 @@
 <body>
 <aside class="sidebar" aria-label="Projektnavigation">
   <div class="brand"><span class="brand-icon" aria-hidden="true">⌘</span> AI Harness</div>
-  <nav><button id="new"><span aria-hidden="true">＋</span> Nyt projekt</button><button id="open"><span aria-hidden="true">▱</span> Åbn projekt</button><button id="connections-button"><span aria-hidden="true">⇄</span> Forbindelser</button><button id="skills-button" disabled><span aria-hidden="true">≡</span> Skills og regler</button></nav>
+  <nav><button id="setup-button"><span aria-hidden="true">⚙</span> Opsætning</button><button id="new" disabled><span aria-hidden="true">＋</span> Nyt projekt</button><button id="open" disabled><span aria-hidden="true">▱</span> Åbn projekt</button><button id="connections-button"><span aria-hidden="true">⇄</span> Forbindelser</button><button id="skills-button" disabled><span aria-hidden="true">≡</span> Skills og regler</button></nav>
   <div class="nav-label">ARBEJDSOMRÅDE</div><div id="active-project" class="project-item">Intet projekt åbent</div>
   <div class="sidebar-bottom"><div><span class="dot"></span> Lokalt arbejdsområde</div><p id="connection-status">Ingen model valgt</p><span class="badge">POC 2 · Udviklingsversion</span></div>
 </aside>
 <div class="app-content">
 <header><span id="view-title">Projektopstart</span><span class="local">Projektfiler på din computer</span></header>
-<main id="onboarding">
+<main id="setup" aria-labelledby="setup-title">
+  <div class="intro"><h1 id="setup-title" tabindex="-1">Forbindelser og arbejdsområde</h1><p>Klargør dine værktøjer, eller fortsæt lokalt uden AI. Dine projekter bliver på denne computer.</p></div>
+  <p id="setup-reason" role="status" hidden></p>
+  <section class="setup-row"><h2>Arbejdsområde</h2><strong>Denne computer</strong><p class="hint">Filer, preview og agent kører lokalt. Modeldata sendes til den forbindelse, du vælger. Cloud-arbejdsområder er endnu ikke tilsluttet.</p></section>
+  <section class="setup-row"><h2>Versioner · Git</h2><p id="setup-git" role="status">Kontrollerer lokal Git …</p><button id="setup-git-refresh">Kontrollér Git igen</button><button id="setup-git-open" hidden>Åbn versionsindstillinger</button><p class="hint">Du kan arbejde lokalt uden en hostingkonto. Login og push til GitHub, Codeberg eller egen Git-server er endnu ikke tilsluttet. AI Alliancens organisation bliver et valgfrit mål.</p></section>
+  <section class="setup-row"><h2>Din AI-forbindelse</h2><label for="setup-connection">Gemt forbindelse</label><select id="setup-connection"><option value="">Vælg forbindelse</option></select><div class="setup-actions"><button id="setup-manage">Tilføj eller rediger forbindelse</button><button id="setup-test" disabled>Kontrollér forbindelse</button></div><p id="setup-ai" role="status">Ingen forbindelse valgt.</p><p class="hint">Kontrollen kontakter den valgte server for at hente modelkataloget. Den sender ingen projektfiler eller prompts og starter ikke en kodeopgave. Et svar fra kataloget beviser ikke adgang til alle modeller. Model og datavilkår vælges i projektet.</p></section>
+  <div class="setup-actions"><button id="setup-continue" class="primary" disabled>Fortsæt med AI</button><button id="setup-local">Fortsæt uden AI-kontrol</button></div><p class="hint">Du kan åbne filer, se preview og gemme versioner uden AI. Før en AI-opgave kontrolleres modelvalget og datavilkårene.</p>
+</main>
+<main id="onboarding" hidden>
   <div class="intro"><h1>Nyt projekt</h1><p>Beskriv, hvad du vil bygge. Projektfilerne gemmes på din computer. Modelforbindelsen vælges separat.</p></div>
   <form id="create-form">
     <section class="panel"><div class="section-title"><h2>Projekt</h2></div>

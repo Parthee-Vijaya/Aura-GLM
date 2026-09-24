@@ -2,7 +2,7 @@
   "name": "ai-harness-desktop",
   "version": "0.1.0",
   "private": true,
-  "description": "Lokal projektopstart og forh\u00e5ndsvisning til AI Harness",
+  "description": "Lokal projektopstart og forhåndsvisning til AI Harness",
   "main": "main.cjs",
   "scripts": {
     "start": "electron .",
@@ -10,7 +10,8 @@
     "test:desktop": "node scripts/verify-desktop.cjs",
     "test:agent": "node scripts/verify-agent.cjs",
     "test:chat": "node scripts/verify-chat.cjs",
-    "test:live": "node scripts/verify-live-agent.cjs"
+    "test:live": "node scripts/verify-live-agent.cjs",
+    "test:setup": "node scripts/verify-setup.cjs"
   },
   "engines": {
     "node": ">=22.12.0"

@@ -7,6 +7,70 @@ async function action(fn) { $('#message').hidden = true; try { return await fn()
 function node(tag, text, className) { const el = document.createElement(tag); if (text !== undefined) el.textContent = text; if (className) el.className = className; return el; }
 function option(value, label) { const el = node('option', label); el.value = value; return el; }
 function appendMessage(text, role = 'assistant') { const el = node('div', text, `chat-message ${role}`); $('#messages').append(el); $('#chat-content').scrollTop = $('#chat-content').scrollHeight; return el; }
+let setupActive = true, setupGeneration = 0, verifiedConnection = '', recovery = '', lastSentText = '';
+let preferredConnection = '', autoConnect = false;
+try { preferredConnection = localStorage.getItem('harness.preferredConnection') || ''; } catch {}
+function setupControls() {
+  const id = $('#setup-connection').value;
+  $('#setup-test').disabled = !id || running;
+  $('#setup-continue').disabled = !id || verifiedConnection !== id || running;
+  $('#new').disabled = running || setupActive; $('#open').disabled = running || setupActive;
+  $('#skills-button').disabled = running || setupActive || !current;
+  $('#setup-button').disabled = running; $('#setup-local').disabled = running;
+  $('#setup-git-open').disabled = running;
+}
+function renderSetup() {
+  const previous = $('#setup-connection').value || preferredConnection;
+  $('#setup-connection').replaceChildren(option('', 'Vælg forbindelse'), ...(state?.connections || []).map(c => option(c.id, c.name)));
+  if (state?.connections.some(c => c.id === previous)) $('#setup-connection').value = previous;
+  else verifiedConnection = '';
+  if (!verifiedConnection) $('#setup-ai').textContent = $('#setup-connection').value ? 'Gemt opsætning · endnu ikke kontrolleret i denne session.' : 'Tilføj en forbindelse, eller fortsæt uden AI.';
+  setupControls();
+}
+async function setupGit() {
+  $('#setup-git-refresh').disabled = true;
+  try { const result = await call('setupStatus'); $('#setup-git').textContent = result.git; $('#setup-git-open').hidden = !result.project; }
+  finally { $('#setup-git-refresh').disabled = false; }
+}
+function showSetup(reason = '') {
+  setupActive = true; $('#setup').hidden = false; $('#workspace').hidden = true; $('#onboarding').hidden = true;
+  $('#view-title').textContent = 'Opsætning'; $('#setup-reason').textContent = reason; $('#setup-reason').hidden = !reason;
+  renderSetup(); action(setupGit); $('#setup-title').focus();
+}
+function connectionFailed(reason) {
+  verifiedConnection = ''; ++setupGeneration; acceptedFingerprint = null; pendingSend = null;
+  if (state?.connections.some(c => c.id === $('#connection-select').value)) $('#setup-connection').value = $('#connection-select').value;
+  recovery = `AI-forbindelsen skal gennemgås: ${reason} Dit projekt og din kladde er bevaret.`;
+  if (!running) { showSetup(recovery); recovery = ''; }
+}
+async function leaveSetup(useAI) {
+  const id = $('#setup-connection').value;
+  if (useAI && (!id || verifiedConnection !== id)) return;
+  if (useAI) { preferredConnection = id; try { localStorage.setItem('harness.preferredConnection', id); } catch {} }
+  autoConnect = useAI;
+  setupActive = false; $('#setup').hidden = true; $('#workspace').hidden = !current; $('#onboarding').hidden = Boolean(current);
+  $('#view-title').textContent = current ? 'Arbejdsområde' : 'Projektopstart'; setupControls();
+  if (useAI && current) { const saved = $('#connection-select').value === id ? { modelID: $('#model-select').value, routeID: $('#route-select').value } : {}; $('#connection-select').value = id; await loadModels(saved); }
+  (current ? $('#prompt') : $('#name')).focus();
+}
+$('#setup-button').onclick = () => showSetup();
+$('#setup-local').onclick = () => action(() => leaveSetup(false));
+$('#setup-continue').onclick = () => action(() => leaveSetup(true));
+$('#setup-manage').onclick = () => $('#connections-button').click();
+$('#setup-git-refresh').onclick = () => action(setupGit);
+$('#setup-git-open').onclick = () => $('#git-button').click();
+$('#setup-connection').onchange = () => { ++setupGeneration; verifiedConnection = ''; $('#setup-ai').textContent = 'Forbindelsen er ikke kontrolleret.'; setupControls(); };
+$('#setup-test').onclick = () => action(async () => {
+  const id = $('#setup-connection').value, generation = ++setupGeneration;
+  verifiedConnection = ''; setupControls(); $('#setup-test').disabled = true; $('#setup-ai').textContent = 'Henter modelkatalog fra den valgte server …';
+  try {
+    const models = await call('models', id);
+    if (generation !== setupGeneration || id !== $('#setup-connection').value) return;
+    verifiedConnection = models.length ? id : '';
+    $('#setup-ai').textContent = models.length ? `Kataloget svarede med ${models.length} modeller. Modelkald er endnu ikke afprøvet.` : 'Serveren svarede uden modeller. Kontrollér opsætningen.';
+  } catch (error) { if (generation === setupGeneration) $('#setup-ai').textContent = `Kontrollen mislykkedes: ${error.message} Rediger forbindelsen, eller prøv igen.`; }
+  finally { if (generation === setupGeneration) setupControls(); }
+});
 function showAssets(assets) {
   $('#assets').replaceChildren();
   for (const asset of assets) {
@@ -25,6 +89,7 @@ function showPreview(url, external = false) {
 }
 async function displayProject(project) {
   if (!project) return;
+  setupActive = false; $('#setup').hidden = true; setupControls();
   current = project; revision = null; acceptedFingerprint = null; roles.clear(); parts.clear();
   $('#messages').replaceChildren(); $('#approvals').replaceChildren(); $('#prompt').value = '';
   $('#view-title').textContent = 'Arbejdsområde'; $('#active-project').textContent = project.name; $('#active-project').classList.add('active');
@@ -38,10 +103,11 @@ async function displayProject(project) {
   if (!$('#reference-choices').children.length) $('#reference-choices').textContent = 'Ingen referencefiler registreret i projektet.';
   showPreview(project.previewURL);
   if (project.warnings?.length) message(project.warnings.join(' '));
-  state = project.workbench; renderConnections();
+  state = project.workbench; $('#connection-select').value = ''; renderConnections();
   const saved = state.projectSettings.selection;
-  if (saved && state.connections.some(c => c.id === saved.connectionID)) { $('#connection-select').value = saved.connectionID; await loadModels(saved); }
-  $('#project-name').tabIndex = -1; $('#project-name').focus();
+  if (autoConnect && saved && state.connections.some(c => c.id === saved.connectionID)) { $('#connection-select').value = saved.connectionID; await loadModels(saved); }
+  else if (autoConnect && state.connections.some(c => c.id === preferredConnection)) { $('#connection-select').value = preferredConnection; await loadModels(); }
+  $('#project-name').tabIndex = -1; if (!setupActive) $('#project-name').focus();
 }
 function renderConnections() {
   const previous = $('#connection-select').value;
@@ -56,13 +122,14 @@ function renderConnections() {
       button.onclick = () => action(async () => {
         if (actionName === 'edit') { $('#connection-id').value = connection.id; $('#provider-kind').value = connection.kind; updateProvider(); $('#connection-name').value = connection.name; $('#base-url').value = connection.baseURL; $('#api-key').value = ''; $('#clear-key').checked = false; }
         if (actionName === 'test') { $('#connection-feedback').textContent = 'Kontrollerer serveren …'; const models = await call('models', connection.id); $('#connection-feedback').textContent = `Serveren svarede med ${models.length} modeller. Modelkald og værktøjsbrug er endnu ikke verificeret.`; }
-        if (actionName === 'delete') { state = await call('removeConnection', connection.id); acceptedFingerprint = null; renderConnections(); }
+        if (actionName === 'delete') { state = await call('removeConnection', connection.id); ++setupGeneration; verifiedConnection = ''; acceptedFingerprint = null; renderConnections(); if (current && previous === connection.id) connectionFailed('Den valgte forbindelse er fjernet.'); }
       }); row.append(button);
     }
     $('#saved-connections').append(row);
   }
   if (state.connections.some(c => c.id === previous)) $('#connection-select').value = previous;
   else { $('#model-select').replaceChildren(option('', 'Hent modeller fra forbindelsen')); $('#route-row').hidden = true; }
+  renderSetup();
 }
 function updateProvider() {
   const definition = state?.definitions[$('#provider-kind').value]; if (!definition) return;
@@ -82,7 +149,7 @@ async function loadModels(saved = {}) {
     }
     if (saved.modelID && models.some(m => m.id === saved.modelID)) { $('#model-select').value = saved.modelID; await loadRoutes(saved.routeID); }
     $('#connection-status').textContent = state.connections.find(c => c.id === id)?.name || 'Ingen model valgt';
-  } catch (error) { if (generation === modelRequest) $('#model-select').replaceChildren(option('', 'Forbindelsen kunne ikke læses')); throw error; }
+  } catch (error) { if (generation === modelRequest) { $('#model-select').replaceChildren(option('', 'Forbindelsen kunne ikke læses')); connectionFailed(error.message); } throw error; }
 }
 async function loadRoutes(saved = '') {
   acceptedFingerprint = null;
@@ -104,13 +171,15 @@ function showData(data, canSend) {
 }
 async function sendNow(data, text) {
   $('#data-dialog').close(); setRunning(true, 'Starter agent …');
-  appendMessage(text, 'user'); $('#prompt').value = '';
+  lastSentText = text; appendMessage(text, 'user'); $('#prompt').value = '';
   try { await call('send', { text, fingerprint: data.fingerprint }); acceptedFingerprint = data.fingerprint; }
-  catch (error) { setRunning(false, 'Fejl'); appendMessage(error.message, 'error'); throw error; }
+  catch (error) { $('#prompt').value = text; setRunning(false, 'Fejl'); appendMessage(error.message, 'error'); connectionFailed(error.message); throw error; }
 }
 function setRunning(value, status) {
   running = value; $('#run-status').textContent = status; $('#send').disabled = value; $('#stop').hidden = !value;
   for (const selector of ['#connection-select', '#model-select', '#route-select', '#new', '#open', '#connections-button', '#skills-button', '#git-button']) $(selector).disabled = value;
+  setupControls();
+  if (!value && recovery) { const reason = recovery; recovery = ''; showSetup(reason); }
 }
 function showSkill() {
   const skill = skillList.find(s => s.id === $('#skill-select').value); if (!skill) return;
@@ -153,7 +222,7 @@ window.harness.onEvent(event => {
     const submit = node('button', 'Svar'); submit.type = 'submit'; form.append(submit); form.onsubmit = event => { event.preventDefault(); action(async () => { await call('question', { id: p.id, answers: fields.map(f => [f.value]) }); form.remove(); }); }; $('#approvals').append(form);
   }
   if (event.type === 'engine.error') appendMessage(event.message, 'error');
-  if (event.type === 'session.error') appendMessage(p.error?.data?.message || p.error?.message || 'Modelkaldet mislykkedes. Kontrollér forbindelsen og kvoten.', 'error');
+  if (event.type === 'session.error') { if (!$('#prompt').value) $('#prompt').value = lastSentText; const reason = p.error?.data?.message || p.error?.message || 'Modelkaldet mislykkedes. Kontrollér forbindelsen og kvoten.'; appendMessage(reason, 'error'); connectionFailed(reason); }
 });
 $('#color').addEventListener('input', event => { $('#color-value').value = event.target.value; });
 for (const kind of ['logo', 'reference']) $(`#${kind}`).onclick = () => action(async () => showAssets(await call('chooseAssets', kind)));
@@ -163,10 +232,10 @@ $('#create-form').onsubmit = event => { event.preventDefault(); action(async () 
 $('#connections-button').onclick = () => action(async () => { state = await call('connectionState'); renderConnections(); updateProvider(); $('#connections-dialog').showModal(); });
 $('#provider-kind').onchange = updateProvider;
 $('#reset-connection').onclick = () => { $('#connection-form').reset(); $('#connection-id').value = ''; updateProvider(); };
-$('#connection-form').onsubmit = event => { event.preventDefault(); action(async () => { $('#save-connection').disabled = true; const input = { id: $('#connection-id').value || undefined, kind: $('#provider-kind').value, name: $('#connection-name').value, baseURL: $('#base-url').value, apiKey: $('#api-key').value, clearKey: $('#clear-key').checked }; $('#api-key').value = ''; try { state = await call('saveConnection', input); acceptedFingerprint = null; renderConnections(); $('#connection-feedback').textContent = 'Forbindelsen er gemt. Brug Test / hent modeller for at kontrollere serveren.'; $('#connection-form').reset(); $('#connection-id').value = ''; updateProvider(); } finally { $('#save-connection').disabled = false; } }); };
-$('#connection-select').onchange = () => action(() => loadModels()); $('#model-select').onchange = () => action(() => loadRoutes());
+$('#connection-form').onsubmit = event => { event.preventDefault(); action(async () => { $('#save-connection').disabled = true; const input = { id: $('#connection-id').value || undefined, kind: $('#provider-kind').value, name: $('#connection-name').value, baseURL: $('#base-url').value, apiKey: $('#api-key').value, clearKey: $('#clear-key').checked }; $('#api-key').value = ''; try { state = await call('saveConnection', input); ++setupGeneration; verifiedConnection = ''; acceptedFingerprint = null; renderConnections(); $('#connection-feedback').textContent = 'Forbindelsen er gemt. Brug Test / hent modeller for at kontrollere serveren.'; $('#connection-form').reset(); $('#connection-id').value = ''; updateProvider(); } finally { $('#save-connection').disabled = false; } }); };
+$('#connection-select').onchange = () => { autoConnect = true; action(() => loadModels()); }; $('#model-select').onchange = () => action(() => loadRoutes());
 $('#data-button').onclick = () => action(async () => showData(await call('prepare', selection()), false));
-$('#chat-form').onsubmit = event => { event.preventDefault(); action(async () => { const text = $('#prompt').value.trim(); if (!text || running) return; $('#send').disabled = true; try { const data = await call('prepare', selection()); if (data.fingerprint === acceptedFingerprint) await sendNow(data, text); else { pendingSend = { data, text }; showData(data, true); } } finally { $('#send').disabled = running; } }); };
+$('#chat-form').onsubmit = event => { event.preventDefault(); action(async () => { const text = $('#prompt').value.trim(); if (!text || running) return; if (!$('#connection-select').value) { showSetup('Vælg en AI-forbindelse for at sende beskeden. Din kladde er bevaret.'); return; } if (!$('#model-select').value || (!$('#route-row').hidden && !$('#route-select').value)) { message('Vælg model og eventuel modeludbyder over samtalen.', true); return; } $('#send').disabled = true; try { const data = await call('prepare', selection()); if (data.fingerprint === acceptedFingerprint) await sendNow(data, text); else { pendingSend = { data, text }; showData(data, true); } } catch (error) { connectionFailed(error.message); throw error; } finally { $('#send').disabled = running; } }); };
 $('#accept-send').onclick = () => action(async () => { const pending = pendingSend; pendingSend = null; if (pending) await sendNow(pending.data, pending.text); });
 $('#stop').onclick = () => action(() => call('stop'));
 $('#skills-button').onclick = () => action(async () => { skillList = await call('skills'); $('#skill-select').replaceChildren(...skillList.map(s => option(s.id, s.id))); showSkill(); $('#skills-dialog').showModal(); });
@@ -180,7 +249,7 @@ $('#refresh').onclick = () => { if (current?.previewURL) $('#preview').src = cur
 for (const button of document.querySelectorAll('[data-close]')) button.onclick = () => document.getElementById(button.dataset.close).close();
 $('#connections-dialog').addEventListener('close', () => { $('#api-key').value = ''; });
 setInterval(async () => { if (!current || polling) return; polling = true; const project = current; try { const next = await call('revision'); if (current !== project || !next) return; if (revision && next !== revision) $('#preview').src = current.previewURL; revision = next; $('#preview-status').textContent = 'Lokal forhåndsvisning'; } catch { $('#preview-status').textContent = 'Kan ikke læse siden – kontrollér projektfilerne'; } finally { polling = false; } }, 1500);
-action(async () => { state = await call('connectionState'); renderConnections(); updateProvider(); });
+action(async () => { state = await call('connectionState'); renderConnections(); updateProvider(); showSetup(); });
 
 async function loadDesigns() { const designs = await call('listDesigns'); $('#design-select').replaceChildren(option('', 'Vælg en tidligere gemt pakke'), ...designs.map(d => option(d.id, `${d.name} · ${d.files} filer`))); }
 $('#save-design').onclick = () => action(async () => { await call('saveDesign', { name: $('#design-name').value, color: $('#color').value, links: $('#links').value.split('\n').map(s => s.trim()).filter(Boolean) }); await loadDesigns(); message('Designpakken er gemt lokalt og kan vælges i andre projekter.'); });

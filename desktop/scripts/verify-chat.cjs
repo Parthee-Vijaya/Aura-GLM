@@ -14,9 +14,11 @@ const { run } = require('../core/git.cjs');
  const quote=value=>"'"+value.replaceAll("'","'\"'\"'")+"'";
  await fs.writeFile(path.join(bin,'git'),'#!/bin/sh\nexport GIT_CONFIG_GLOBAL=/dev/null\nexport GIT_CONFIG_NOSYSTEM=1\nexec '+quote(realGit)+' "$@"\n',{mode:0o755});
  const opencode=process.env.HARNESS_OPENCODE_PATH || path.join(os.homedir(),'.opencode/bin/opencode');
+ let rejectInference=false;
  const server=http.createServer(async(req,res)=>{
   if(req.url==='/preview'){res.setHeader('content-type','text/html');return res.end('<h1>Eksisterende udviklingsserver</h1>');}
   if(req.url==='/v1/models'){res.setHeader('content-type','application/json');return res.end(JSON.stringify({data:[{id:'test-model',name:'Kontrolleret testmodel'}]}));}
+  if(rejectInference){res.writeHead(401,{'content-type':'application/json'});return res.end(JSON.stringify({error:{message:'Testadgang afvist',type:'authentication_error'}}));}
   let raw='';for await(const chunk of req)raw+=chunk;
   const body=JSON.parse(raw);
   const tool=body.tools?.length&&!body.messages.some(m=>m.role==='tool')?{id:'chat_write',type:'function',function:{name:'write',arguments:JSON.stringify({filePath:path.join(project,'public/index.html'),content:'<h1>Bygget fra desktopchatten</h1>'})}}:null;
@@ -29,7 +31,7 @@ const { run } = require('../core/git.cjs');
  let app;
  try {
   app=await electron.launch({executablePath:require('electron'),args:[path.join(__dirname,'..'),'--user-data-dir='+path.join(root,'appdata')],env:{...process.env,PATH:bin+path.delimiter+process.env.PATH,HARNESS_OPENCODE_PATH:opencode,ELECTRON_RUN_AS_NODE:undefined}});
-  const page=await app.firstWindow(); await page.waitForSelector('#create-form');
+  const page=await app.firstWindow(); await page.waitForSelector('#setup'); await page.click('#setup-local'); await page.waitForSelector('#create-form');
   await app.evaluate(({dialog},project)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[project]});},project);
   await page.click('#open'); await page.waitForSelector('#workspace:not([hidden])');
   await page.click('#git-button'); await page.click('#git-init');
@@ -90,9 +92,16 @@ const { run } = require('../core/git.cjs');
   await page.frameLocator('#preview').locator('h1').filter({hasText:'Eksisterende udviklingsserver'}).waitFor();
   await page.click('#attach-preview'); await page.click('#static-preview');
   await page.frameLocator('#preview').locator('h1').filter({hasText:'Bygget fra desktopchatten'}).waitFor();
+  rejectInference=true; await page.fill('#prompt','Denne besked skal bevares ved afvist modeladgang.'); await page.click('#send');
+  await page.waitForSelector('#data-dialog[open]'); await page.click('#accept-send');
+  await page.waitForSelector('#setup:not([hidden])',{timeout:60000});
+  assert.match(await page.locator('#setup-reason').textContent(),/gennemgås/);
+  await page.waitForFunction(()=>!document.querySelector('#setup-local').disabled);
+  await page.click('#setup-local'); assert.equal(await page.inputValue('#prompt'),'Denne besked skal bevares ved afvist modeladgang.');
+  assert.equal((await run(project,['rev-list','--count','HEAD'])).toString().trim(),'2');
   const empty=path.join(root,'tom');await fs.mkdir(empty);
   await app.evaluate(({dialog},empty)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[empty]});},empty);
   await page.click('#open');await page.waitForSelector('#preview-empty:not([hidden])');assert.deepEqual(await fs.readdir(empty),[]);
-  console.log(JSON.stringify({status:'bestået',root,checks:['manuel Git-opstart og versionsgemning gennem UI','automatisk checkpoint efter rigtig OpenCode-filændring','Electron safeStorage uden klartekst i appdata eller renderer','UI-modelvalg og datagennemgang','streaming og godkendelse','rigtig filændring og preview','ændringsoversigt','skill redigering og gendannelse','tom mappe uden filændringer','bevaret modelvalg ved genåbning','tilsluttet udviklingsserver']}));
+  console.log(JSON.stringify({status:'bestået',root,checks:['afvist modeladgang genåbner opsætning og bevarer beskeden uden checkpoint','manuel Git-opstart og versionsgemning gennem UI','automatisk checkpoint efter rigtig OpenCode-filændring','Electron safeStorage uden klartekst i appdata eller renderer','UI-modelvalg og datagennemgang','streaming og godkendelse','rigtig filændring og preview','ændringsoversigt','skill redigering og gendannelse','tom mappe uden filændringer','bevaret modelvalg ved genåbning','tilsluttet udviklingsserver']}));
  } catch (error) { console.error(error); if (app) { try { const page=app.windows().find(w=>w.url().startsWith('harness:')); if(page) { console.error(await page.locator('#messages').textContent({timeout:2000})); console.error(await page.locator('#message').textContent({timeout:2000}).catch(()=>'')); await page.screenshot({path:path.join(root,'fejl.png'),fullPage:true,timeout:3000}); } } catch {} } throw error; } finally {await app?.close();server.closeAllConnections();await new Promise(r=>server.close(r));}
 })().catch(error=>{console.error(error);process.exitCode=1;});
