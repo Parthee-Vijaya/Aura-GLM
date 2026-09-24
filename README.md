@@ -42,6 +42,6 @@ Kontrollér også siden i en browser: vælg alle tre værktøjer, se filerne, he
 
 POC 1 kræver ikke modelkald og installerer ikke automatisk noget i brugerens projekt. Den er endnu ikke offentliggjort. Licens og vedligeholdelsesansvar skal aftales før ekstern kodeudveksling.
 
-POC 2 i `desktop/` åbner lokale mapper og forbinder en OpenCode-kodeagent med valgte modeller. Designpakker kan genbruges, skills tilpasses, og modeldata/godkendelser gennemgås før handlinger. Se [startvejledning, verifikation og begrænsninger](desktop/README.md). Git-handlinger, cloud-arbejdsområder, hosting og installationspakker er endnu ikke implementeret. Eksterne modelkald er endnu ikke verificeret som en vellykket kodeændring.
+POC 2 i `desktop/` åbner lokale mapper og forbinder en OpenCode-kodeagent med valgte modeller. Designpakker kan genbruges, skills tilpasses, og modeldata/godkendelser gennemgås før handlinger. Se [startvejledning, verifikation og begrænsninger](desktop/README.md). Lokal manuel versionsgemning og valgfrie Git-checkpoints er implementeret. Publicering til Git-servere, cloud-arbejdsområder, hosting og installationspakker er endnu ikke implementeret. Eksterne modelkald er endnu ikke verificeret som en vellykket kodeændring.
 
 Se [bidragsvejledningen](CONTRIBUTING.md). Ældre dokumenter i `docs/` og `harness-options.md` indeholder tidligere arkitekturforslag; POC 1 er afgrænset som beskrevet her.

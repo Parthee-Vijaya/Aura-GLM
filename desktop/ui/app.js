@@ -110,7 +110,7 @@ async function sendNow(data, text) {
 }
 function setRunning(value, status) {
   running = value; $('#run-status').textContent = status; $('#send').disabled = value; $('#stop').hidden = !value;
-  for (const selector of ['#connection-select', '#model-select', '#route-select', '#new', '#open', '#connections-button', '#skills-button']) $(selector).disabled = value;
+  for (const selector of ['#connection-select', '#model-select', '#route-select', '#new', '#open', '#connections-button', '#skills-button', '#git-button']) $(selector).disabled = value;
 }
 function showSkill() {
   const skill = skillList.find(s => s.id === $('#skill-select').value); if (!skill) return;
@@ -122,6 +122,7 @@ function partElement(id, role) {
 }
 window.harness.onEvent(event => {
   const p = event.properties || {};
+  if (event.type === 'git.checkpoint') { appendMessage(event.message, 'system'); return; }
   if (event.type === 'preview.ready') return showPreview(event.url);
   if (event.type === 'session.new') { roles.clear(); parts.clear(); appendMessage('Ny modelsession. Tidligere samtaler overføres ikke ved skift af forbindelse, model, referencer eller skills.', 'system'); }
   if (event.type === 'run.status') {
@@ -185,3 +186,45 @@ async function loadDesigns() { const designs = await call('listDesigns'); $('#de
 $('#save-design').onclick = () => action(async () => { await call('saveDesign', { name: $('#design-name').value, color: $('#color').value, links: $('#links').value.split('\n').map(s => s.trim()).filter(Boolean) }); await loadDesigns(); message('Designpakken er gemt lokalt og kan vælges i andre projekter.'); });
 $('#design-select').onchange = () => action(async () => { if (!$('#design-select').value) return; const design = await call('applyDesign', $('#design-select').value); $('#color').value = design.color; $('#color-value').value = design.color; $('#links').value = design.links.join('\n'); showAssets(design.assets); });
 action(loadDesigns);
+
+let gitReview = null;
+async function loadGitReview() {
+  gitReview = null; $('#git-save').disabled = true; $('#git-files').replaceChildren();
+  gitReview = await call('gitReview');
+  for (const file of gitReview.files) {
+    const row = node('section'); const label = node('label', undefined, 'check-label'); const input = node('input');
+    input.type = 'checkbox'; input.value = file.file; input.disabled = Boolean(file.blocked);
+    label.append(input, document.createTextNode(`${file.status} · ${file.file}`)); row.append(label);
+    if (file.blocked) row.append(node('p', file.blocked, 'hint'));
+    else if (file.binary) row.append(node('p', 'Binær billed- eller skrifttypefil. Indholdet vises ikke her; kontrollér filen før tilvalg.', 'hint'));
+    else { const details = node('details'); details.append(node('summary', 'Se indhold før og efter'), node('h4', 'Før'), node('pre', file.before ?? '(ny fil)'), node('h4', 'Efter'), node('pre', file.text ?? '(slettet fil)')); row.append(details); }
+    input.onchange = () => { $('#git-save').disabled = !$('#git-files input:checked'); }; $('#git-files').append(row);
+  }
+  if (!gitReview.files.length) $('#git-files').append(node('p', 'Ingen ændringer at gemme.'));
+}
+async function loadGit() {
+  $('#git-dialog .dialog-notice')?.remove();
+  $('#git-auto').disabled = true;
+  try {
+  gitReview = null; $('#git-form').hidden = true; $('#git-init').hidden = true; $('#git-settings').hidden = true;
+  const result = await call('gitStatus');
+  $('#git-summary').textContent = result.block || `Branch: ${result.branch} · ${result.changes} ændrede filer · ${result.identity.name} <${result.identity.email}>`;
+  $('#git-init').hidden = result.initialized;
+  $('#git-settings').hidden = !result.initialized || result.wrongRoot;
+  $('#git-auto').checked = result.autoCheckpoint;
+  $('#git-history').replaceChildren(...result.history.map(item => node('li', `${item.id} · ${item.message}`)));
+  if (!result.history.length) $('#git-history').append(node('li', 'Ingen gemte versioner endnu.'));
+  if (result.initialized && !result.block) { $('#git-form').hidden = false; await loadGitReview(); }
+  } finally { $('#git-auto').disabled = false; }
+}
+$('#git-button').onclick = () => action(async () => { $('#git-feedback').textContent = ''; $('#git-dialog').showModal(); await loadGit(); });
+$('#git-init').onclick = () => action(async () => { $('#git-init').disabled = true; try { await call('gitInit'); await loadGit(); } finally { $('#git-init').disabled = false; } });
+$('#git-refresh').onclick = () => action(loadGit);
+$('#git-auto').onchange = () => action(async () => { const selected = $('#git-auto').checked; try { await call('gitAutomatic', selected); $('#git-feedback').textContent = selected ? 'Automatiske lokale checkpoints er slået til for dette projekt.' : 'Automatiske checkpoints er slået fra.'; } catch (error) { $('#git-auto').checked = !selected; throw error; } });
+$('#git-form').onsubmit = event => { event.preventDefault(); action(async () => {
+  if (!gitReview) return;
+  const input = { token: gitReview.token, message: $('#git-message').value, files: [...document.querySelectorAll('#git-files input:checked')].map(el => el.value) };
+  gitReview = null; $('#git-save').disabled = true; $('#git-auto').disabled = true;
+  try { const result = await call('gitCommit', input); $('#git-feedback').textContent = `Version ${result.head.slice(0, 8)} er gemt lokalt. Intet er pushet.`; $('#git-message').value = ''; }
+  finally { await loadGit(); }
+}); };

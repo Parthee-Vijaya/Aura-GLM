@@ -113,6 +113,30 @@ handle('designs:list', () => new Designs(workbench.store).list());
 handle('designs:save', input => exclusive(() => new Designs(workbench.store).save(input, assets)));
 handle('designs:apply', id => exclusive(async () => { const design = await new Designs(workbench.store).get(id); assets = design.assets; return { color: design.color, links: design.links, assets: assets.map(({ id, kind, name }) => ({ id, kind, name })) }; }));
 
+function requireIdleProject() {
+  if (!project) throw new Error('Åbn et projekt først.');
+  if (workbench.running || workbench.finishing) throw new Error('Vent på agenten og en eventuel versionsgemning.');
+  return project.root;
+}
+handle('git:status', async () => {
+  const root = requireIdleProject();
+  return { ...await workbench.git.status(root), autoCheckpoint: (await workbench.store.project(root)).autoCheckpoint === true };
+});
+handle('git:init', () => exclusive(() => workbench.git.initialize(requireIdleProject())));
+handle('git:review', () => exclusive(() => workbench.git.review(requireIdleProject())));
+handle('git:commit', input => exclusive(() => workbench.git.commit(requireIdleProject(), input)));
+handle('git:automatic', value => exclusive(async () => {
+  const root = requireIdleProject();
+  if (typeof value !== 'boolean') throw new Error('Ugyldigt valg af automatisk checkpoint.');
+  if (value) {
+    const repo = await workbench.git.repository(root);
+    const block = await require('./core/checkpoints.cjs').automaticBlock(repo);
+    if (block) throw new Error(block);
+  }
+  await workbench.store.saveProject(root, { autoCheckpoint: value });
+  return value;
+}));
+
 handle('connections:state', () => workbench.state());
 handle('connections:save', value => exclusive(() => workbench.saveConnection(value)));
 handle('connections:remove', value => exclusive(() => workbench.removeConnection(value)));

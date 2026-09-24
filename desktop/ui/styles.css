@@ -147,3 +147,10 @@ body.resizing-workspace iframe { pointer-events: none; }
 #preview-stage { position: relative; margin: 0 auto; flex-shrink: 0; overflow: hidden; }
 #preview { display: block; transform-origin: top left; max-width: none; }
 #preview-empty { margin: auto; padding-top: 70px; }
+
+#git-dialog { width: min(900px, 90vw); }
+#git-files > section { border-top: 1px solid var(--line); padding: 6px 0; }
+#git-files pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #f7f7f7; padding: 12px; font: 11px/1.6 ui-monospace, monospace; max-height: 240px; overflow: auto; }
+#git-history { padding-left: 22px; font-size: 12px; line-height: 1.8; overflow-wrap: anywhere; }
+#git-save { margin-top: 16px; }
+#git-feedback { overflow-wrap: anywhere; }

@@ -4,10 +4,16 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const os = require('node:os');
 const http = require('node:http');
+const { run } = require('../core/git.cjs');
 (async () => {
  const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(),'harness-chat-')));
  const project = path.join(root,'projekt'); await fs.mkdir(path.join(project,'public'),{recursive:true});
  await fs.writeFile(path.join(project,'public/index.html'),'<h1>Før chatten</h1>');
+ const bin=path.join(root,'bin'); await fs.mkdir(bin);
+ const realGit=require('node:child_process').execFileSync('/usr/bin/which',['git'],{encoding:'utf8'}).trim();
+ const quote=value=>"'"+value.replaceAll("'","'\"'\"'")+"'";
+ await fs.writeFile(path.join(bin,'git'),'#!/bin/sh\nexport GIT_CONFIG_GLOBAL=/dev/null\nexport GIT_CONFIG_NOSYSTEM=1\nexec '+quote(realGit)+' "$@"\n',{mode:0o755});
+ const opencode=process.env.HARNESS_OPENCODE_PATH || path.join(os.homedir(),'.opencode/bin/opencode');
  const server=http.createServer(async(req,res)=>{
   if(req.url==='/preview'){res.setHeader('content-type','text/html');return res.end('<h1>Eksisterende udviklingsserver</h1>');}
   if(req.url==='/v1/models'){res.setHeader('content-type','application/json');return res.end(JSON.stringify({data:[{id:'test-model',name:'Kontrolleret testmodel'}]}));}
@@ -22,10 +28,23 @@ const http = require('node:http');
  await new Promise(r=>server.listen(0,'127.0.0.1',r));
  let app;
  try {
-  app=await electron.launch({executablePath:require('electron'),args:[path.join(__dirname,'..'),'--user-data-dir='+path.join(root,'appdata')],env:{...process.env,ELECTRON_RUN_AS_NODE:undefined}});
+  app=await electron.launch({executablePath:require('electron'),args:[path.join(__dirname,'..'),'--user-data-dir='+path.join(root,'appdata')],env:{...process.env,PATH:bin+path.delimiter+process.env.PATH,HARNESS_OPENCODE_PATH:opencode,ELECTRON_RUN_AS_NODE:undefined}});
   const page=await app.firstWindow(); await page.waitForSelector('#create-form');
   await app.evaluate(({dialog},project)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[project]});},project);
   await page.click('#open'); await page.waitForSelector('#workspace:not([hidden])');
+  await page.click('#git-button'); await page.click('#git-init');
+  await page.waitForFunction(()=>document.querySelector('#git-init').hidden && !document.querySelector('#git-init').disabled);
+  await run(project,['config','--local','user.name','Testbruger']); await run(project,['config','--local','user.email','test@example.invalid']);
+  const hooks=path.join(root,'hooks'); await fs.mkdir(hooks); await run(project,['config','--local','core.hooksPath',hooks]); await run(project,['config','--local','commit.gpgsign','false']);
+  await page.click('[data-close="git-dialog"]'); await page.click('#git-button');
+  await page.locator('#git-files input').waitFor();
+  assert.equal(await page.isChecked('#git-auto'),false);
+  await page.locator('#git-files input').check(); await page.fill('#git-message','Opret testprojekt'); await page.click('#git-save');
+  await page.locator('#git-feedback').filter({hasText:'er gemt lokalt'}).waitFor();
+  assert.equal((await run(project,['rev-list','--count','HEAD'])).toString().trim(),'1');
+  await page.check('#git-auto'); await page.locator('#git-feedback').filter({hasText:'slået til'}).waitFor();
+  await page.click('[data-close="git-dialog"]');
+  console.log('Git-opstart og checkpoint-tilvalg bestået');
   await page.click('#connections-button'); await page.selectOption('#provider-kind','compatible');
   await page.fill('#connection-name','Lokal testmodel');await page.fill('#base-url',`http://127.0.0.1:${server.address().port}/v1`);
   const key='syntetisk-noegle-kun-til-test';
@@ -46,11 +65,18 @@ const http = require('node:http');
   await page.waitForSelector('#data-dialog[open]');
   assert.match(await page.locator('#data-details').textContent(),/Ukendt/);
   assert.equal(await fs.readFile(path.join(project,'public/index.html'),'utf8'),'<h1>Før chatten</h1>');
+  console.log('Forbindelse og datagennemgang bestået');
   await page.click('#accept-send');
   await page.locator('#approvals button').filter({hasText:'Tillad én gang'}).waitFor({timeout:60000});
   await page.locator('#approvals button').filter({hasText:'Tillad én gang'}).click();
   await page.frameLocator('#preview').locator('h1').filter({hasText:'Bygget fra desktopchatten'}).waitFor({timeout:30000});
   await page.locator('#run-status').filter({hasText:'Klar'}).waitFor({timeout:30000});
+  assert.equal((await run(project,['rev-list','--count','HEAD'])).toString().trim(),'2');
+  assert.match((await run(project,['show','HEAD:public/index.html'])).toString(),/Bygget fra desktopchatten/);
+  assert.equal((await run(project,['status','--porcelain'])).toString(),'');
+  await page.click('#git-button'); await page.waitForFunction(()=>document.querySelectorAll('#git-history li').length===2 && !document.querySelector('#git-auto').disabled); assert.equal(await page.isChecked('#git-auto'),true);
+  assert.equal(await page.locator('#git-dialog .dialog-notice').count(),0);
+  await page.screenshot({path:path.join(root,'versioner.png'),fullPage:true}); await page.click('[data-close="git-dialog"]');
   await page.click('#changes-button');assert.match(await page.locator('#changes-list').textContent(),/public[/\\]index.html/);
   await page.click('[data-close="changes-dialog"]');
   await page.click('#skills-button');await page.selectOption('#skill-select','git-og-versioner');
@@ -67,6 +93,6 @@ const http = require('node:http');
   const empty=path.join(root,'tom');await fs.mkdir(empty);
   await app.evaluate(({dialog},empty)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[empty]});},empty);
   await page.click('#open');await page.waitForSelector('#preview-empty:not([hidden])');assert.deepEqual(await fs.readdir(empty),[]);
-  console.log(JSON.stringify({status:'bestået',root,checks:['Electron safeStorage uden klartekst i appdata eller renderer','UI-modelvalg og datagennemgang','streaming og godkendelse','rigtig filændring og preview','ændringsoversigt','skill redigering og gendannelse','tom mappe uden filændringer','bevaret modelvalg ved genåbning','tilsluttet udviklingsserver']}));
- } catch (error) { if (app) { const page=await app.firstWindow(); console.error(await page.locator('#messages').textContent()); console.error(await page.locator('#approvals').textContent()); await page.screenshot({path:path.join(root,'fejl.png'),fullPage:true}); } throw error; } finally {await app?.close();server.closeAllConnections();await new Promise(r=>server.close(r));}
+  console.log(JSON.stringify({status:'bestået',root,checks:['manuel Git-opstart og versionsgemning gennem UI','automatisk checkpoint efter rigtig OpenCode-filændring','Electron safeStorage uden klartekst i appdata eller renderer','UI-modelvalg og datagennemgang','streaming og godkendelse','rigtig filændring og preview','ændringsoversigt','skill redigering og gendannelse','tom mappe uden filændringer','bevaret modelvalg ved genåbning','tilsluttet udviklingsserver']}));
+ } catch (error) { console.error(error); if (app) { try { const page=app.windows().find(w=>w.url().startsWith('harness:')); if(page) { console.error(await page.locator('#messages').textContent({timeout:2000})); console.error(await page.locator('#message').textContent({timeout:2000}).catch(()=>'')); await page.screenshot({path:path.join(root,'fejl.png'),fullPage:true,timeout:3000}); } } catch {} } throw error; } finally {await app?.close();server.closeAllConnections();await new Promise(r=>server.close(r));}
 })().catch(error=>{console.error(error);process.exitCode=1;});

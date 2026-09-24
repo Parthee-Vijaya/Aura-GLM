@@ -33,8 +33,21 @@ Preview tilbyder fleksibel størrelse, desktop 1920 × 1080, tablet/iPad 768 × 
 
 Afprøvet i Electron på macOS med et rigtigt projekt: træk, tastatur, faste og egne mål, rotation, iframe-layoutmål, skalering og vinduesstørrelse. Windows er ikke afprøvet.
 
+## Lokale Git-versioner
+
+**Gem version** viser status, aktiv branch, Git-identitet og de seneste versioner. I en mappe uden Git kan brugeren aktivt oprette lokal historik. Vælg derefter filer, gennemgå indholdet før/efter og skriv en versionsbeskrivelse. Appen kræver en eksisterende Git-installation og konfigureret `user.name`/`user.email`; den ændrer ikke identiteten. Projektet er et almindeligt Git-repository, som kan overtages uden AI Harness.
+
+Automatiske checkpoints er slået fra som standard og vælges pr. projekt. Gem først en version manuelt. Efter en afsluttet AI-opgave gemmer appen kun et checkpoint, når udgangspunktet var rent, historikken er uændret, og alle ændringer kan knyttes til agentens afsluttede `write`-/`edit`-værktøjer. Fejl, stop, afvisninger, shellkommandoer, patchværktøjer, hooks, filtre og uklare ændringer medfører, at automatisk gemning springes over med en forklaring. Filerne bevares. Et checkpoint er ikke en bekræftelse på, at koden virker.
+
+Eksisterende staged ændringer, konflikter, igangværende Git-operationer og detached HEAD blokerer appens versionsgemning. Mapper inde i et overordnet repository skal åbnes fra repositoryets rod. Manuel gemning respekterer Git-hooks og signering; disse kan køre lokale programmer. Hvis et commit afvises, kan de valgte filer forblive staged til gennemgang i brugerens Git-værktøj.
+
+Visningen understøtter højst 200 ændrede filer og 2 MB pr. fil. Kendte hemmelighedsfiler, private referencer, symbolske links og mistænkeligt tekstindhold blokeres. Visse billed- og skrifttypefiler kan vælges manuelt uden indholdsvisning. Kontrollen er heuristisk og finder ikke alle hemmeligheder; `.env`-skabeloner blokeres også. Undgå samtidige filændringer fra andre programmer under versionsgemning: Git-kontrollerne er ikke en lås på hele filsystemet.
+
+Intet pushes eller deployes. AI Alliancens GitHub-organisation er en mulig fremtidig destination, ligesom brugerens egen konto, organisation, Codeberg eller egen Git-server. Denne milepæl kræver ingen hostingkonto og opretter ingen remote, branch eller organisationstilgang.
+
 ## Moduler og data
 
+- `core/git.cjs`, `core/checkpoints.cjs`: lokal Git-gennemgang, eksplicit filvalg og valgfrie checkpoints efter agentopgaver.
 - `core/projects.cjs`: lokale mapper og kompatibilitet med `harness.json`, version 1.
 - `core/designs.cjs`: genbrug af designmateriale uden modelkald. Kopier i appdata er almindelige lokale filer, ikke krypteret dokumentlagring.
 - `core/workbench.cjs`: forbindelsesvalg, datagennemgang og sessioner; agentmotoren kan udskiftes via `engineFactory`.
@@ -56,7 +69,7 @@ Statisk preview genindlæser ved filændringer; det er ikke rammespecifik HMR. F
 
 DGX Spark bruger **Egen server / DGX Spark** med den faktiske Tailscale-adresse, port og kompatible modeltjeneste. Appen ændrer ikke Tailscale eller serveren. Adresse og netværk fortæller ikke i sig selv, hvor modellen behandler data eller om den videresender til cloud.
 
-Cloud-arbejdsområder, kommunale rettighedspolitikker, automatisk npm-/Docker-opsætning, hostingadaptere og Git-handlinger er ikke tilsluttet. Modelplacering og arbejdsområdets placering er separate valg i arkitekturen; denne version tilbyder kun lokale arbejdsområder. En cloud-implementering kræver et aftalt host-/loginmodul og håndhævelse af kommunens rettigheder. Azure er ikke valgt som obligatorisk destination. Claude-abonnement er utilgængeligt; Anthropic API-nøgle er den implementerede forbindelsesvej.
+Cloud-arbejdsområder, kommunale rettighedspolitikker, automatisk npm-/Docker-opsætning, hostingadaptere og publicering til Git-servere er ikke tilsluttet. Modelplacering og arbejdsområdets placering er separate valg i arkitekturen; denne version tilbyder kun lokale arbejdsområder. En cloud-implementering kræver et aftalt host-/loginmodul og håndhævelse af kommunens rettigheder. Azure er ikke valgt som obligatorisk destination. Claude-abonnement er utilgængeligt; Anthropic API-nøgle er den implementerede forbindelsesvej.
 
 ## Afprøvning
 
@@ -68,6 +81,8 @@ npm run test:desktop
 npm run test:agent
 npm run test:chat
 ```
+
+Git-testene og chattesten opretter rigtige commits med syntetiske filer og testidentitet i nye, isolerede midlertidige repositories. De committer eller pusher ikke dette projekt. Electron-testen bevarer den normale hjemmemappe, så macOS safeStorage kan bruge den eksisterende nøglering; testidentiteten sættes kun lokalt i testrepositoryet. Nøgleringen skal aldrig nulstilles som led i testen.
 
 Desktop- og chattest kræver en grafisk session. Agent- og chattest kræver den installerede OpenCode 1.17.15. Native dialogers svar simuleres med isolerede teststier; operativsystemets dialogbetjening skal afprøves manuelt. Integrationstestene bruger en kontrolleret lokal modelserver, rigtige filer og rigtige OpenCode-værktøjer. Testmapper/skærmbilleder bevares under systemets midlertidige mappe, og stierne udskrives.
 
@@ -83,10 +98,11 @@ Den særskilte eksterne modelprøve sender kun syntetisk projektmateriale og off
 npm run test:live
 ```
 
-## Verifikationsstatus · 23. september 2026
+## Verifikationsstatus · 24. september 2026
 
-- **Skrevet og automatisk testet:** mapper uden manifest, designbibliotek, krypteringsfejl, projektspecifikke skills, stop under motoropstart, serveradresser, ukendte vilkår og låst routing. 12 tests består.
+- **Skrevet og automatisk testet:** mapper uden manifest, designbibliotek, krypteringsfejl, projektspecifikke skills, stop under motoropstart, serveradresser, ukendte vilkår og låst routing. 16 tests består. Git-testene bruger rigtige midlertidige repositories og kontrollerer aktivt filvalg, sletning, forældet gennemgang, hemmeligheder, eksisterende stage, afvisende hooks samt checkpoint-afvisning ved stop, værktøjsfejl, kommandoer og samtidige ændringer.
 - **Afprøvet på konkret materiale:** macOS/Electron 44.4.4, genåbning, rigtigt preview og designpakke genbrugt efter genstart og sletning af originaler. OpenCode 1.17.15 gennemførte en rigtig filændring med kontrolleret modelserver, godkendelse, afvisning og stop. Den samlede desktop-chatrejse består også: modelvalg, datagennemgang, streaming, godkendt filændring, preview, ændringsoversigt og skill-redigering. Genåbning bevarer modelvalg, og tilslutning til en eksisterende udviklingsserver er afprøvet. OpenCodes webværktøj hentede Gentofte-guidens forside og en relevant underside gennem godkendelser med en kontrolleret testmodel. Electron safeStorage blev afprøvet med en syntetisk nøgle; hverken rendererens forbindelsesdata eller indstillingsfilen indeholdt nøglen i klartekst.
+- **Git-milepæl afprøvet i Electron på macOS:** UI-oprettelse af Git-historik, manuelt første commit, tilvalg af checkpoints og automatisk andet commit efter en rigtig OpenCode-filændring med en kontrolleret lokal modelserver. Git-historikken indeholdt det ændrede indhold, arbejdsområdet var rent, og preview viste resultatet. Nøglekryptering og genlæsning bestod med normal macOS-hjemmemappe. En tidligere test med midlertidig HOME udløste en nøgleringsdialog; testopsætningen isolerer nu Git via et testværktøj på PATH og ændrer ikke Electrons HOME. Ingen nulstilling af nøgleringen er en del af testen.
 - **Ekstern prøve:** Zen-kataloget svarede, men modelkaldet uden nøgle blev afvist med HTTP 403. En vellykket ekstern AI-genereret kodeændring er derfor ikke verificeret. Ingen anden model eller betalingsvej blev forsøgt som fallback.
 - **Ikke verificeret:** Windows, brugerens faktiske providerkonti, Ollama, DGX Spark/Tailscale, en rigtig AI-models selvstændige fortolkning af designguiden samt cloud-arbejdsområder. Ingen installationer er pakket, deployet eller observeret i drift.
 
