@@ -14,7 +14,7 @@ const readline = require('node:readline');
   process.stdout.write('Indtast testnøglen (skjult): ');execFileSync('stty',['-echo'],{stdio:'inherit'});
   const input=readline.createInterface({input:process.stdin,terminal:false});key=await new Promise(resolve=>input.once('line',resolve));input.close();execFileSync('stty',['echo'],{stdio:'inherit'});process.stdout.write('\n');
   app=await electron.launch({executablePath:require('electron'),args:[path.join(__dirname,'..'),'--user-data-dir='+path.join(root,'appdata')],env:{...process.env,ELECTRON_RUN_AS_NODE:undefined}});
-  const page=await app.firstWindow();await page.waitForSelector('#onboarding'); await page.waitForFunction(() => !document.querySelector('#new').disabled); await page.click('#setup-button');await page.click('#setup-local');
+  const page=await app.firstWindow(); await require('./ui-test-helpers.cjs').skipIntroduction(page);await page.waitForSelector('#onboarding'); await page.waitForFunction(() => !document.querySelector('#new').disabled); await page.click('#setup-button');await page.click('#setup-local');
   await app.evaluate(({dialog},project)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[project]});},project);await page.click('#open');await page.waitForSelector('#workspace:not([hidden])');
   const result=await page.evaluate(apiKey=>window.harness.saveConnection({kind:'openrouter',name:'OpenRouter gratisprøve',baseURL:'',apiKey}),key);if(!result.ok)throw new Error(result.error);
   const connection=result.value.connections[0];assert.equal(JSON.stringify(result).includes(key),false);

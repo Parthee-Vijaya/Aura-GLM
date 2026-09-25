@@ -18,7 +18,7 @@ const http = require('node:http');
   const errors = [];
   async function launch(extra = {}) {
     app = await electron.launch({ executablePath: require('electron'), args: [path.join(__dirname, '..'), '--user-data-dir=' + path.join(root, 'appdata')], env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined, ...extra } });
-    const page = await app.firstWindow(); page.on('pageerror', error => errors.push(error.message));
+    const page = await app.firstWindow(); await require('./ui-test-helpers.cjs').skipIntroduction(page); page.on('pageerror', error => errors.push(error.message));
     await page.waitForSelector('#onboarding'); await page.waitForFunction(() => !document.querySelector('#new').disabled);
     assert.equal(await page.isVisible('#setup'), false);
     assert.equal(await page.locator('#design-options').evaluate(el => el.open), false);

@@ -1,0 +1,6 @@
+body { font: 15px/1.6 system-ui; color: #252525; background: #fff; padding: 24px; }
+h1 { font-size: 23px; }
+section.cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+section.list { display: block; }
+article { padding: 14px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; }
+small { color: #666; }

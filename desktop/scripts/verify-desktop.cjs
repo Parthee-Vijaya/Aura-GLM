@@ -14,7 +14,7 @@ const root = path.join(__dirname, '..', '..');
   let app;
   async function launch() {
     app = await electron.launch({executablePath, args:[path.join(root, 'desktop'), '--user-data-dir='+path.join(testRoot,'electron-data')], env:{...process.env, ELECTRON_RUN_AS_NODE: undefined}});
-    const page = await app.firstWindow();
+    const page = await app.firstWindow(); await require('./ui-test-helpers.cjs').skipIntroduction(page);
     await page.waitForSelector('#onboarding'); await page.waitForFunction(() => !document.querySelector('#new').disabled); await page.click('#setup-button'); await page.click('#setup-local'); await page.waitForSelector('#create-form');
     const identity = await app.evaluate(({app, Menu}) => ({ name: app.getName(), userData: app.getPath('userData'), labels: Menu.getApplicationMenu().items.map(item => item.label) }));
     assert.equal(identity.name, 'AI Harness');

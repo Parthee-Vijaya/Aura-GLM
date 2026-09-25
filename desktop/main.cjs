@@ -176,6 +176,12 @@ handle('deployment:open', async kind => {
   return shell.openExternal(url);
 });
 
+handle('connections:account', kind => {
+  const urls = { anthropic: 'https://platform.claude.com/', openrouter: 'https://openrouter.ai/settings/keys', zen: 'https://opencode.ai/auth' };
+  if (!Object.hasOwn(urls, kind)) throw new Error('Denne forbindelse opsættes hos din organisation eller på din egen server.');
+  return shell.openExternal(urls[kind]);
+});
+
 handle('setup:status', async () => {
   try {
     if (project) { const status = await workbench.git.status(project.root); return { git: status.block || `Git er klar · branch ${status.branch}`, project: true }; }
@@ -249,8 +255,8 @@ app.whenReady().then(() => {
   protocol.handle('harness', async request => {
     const url = new URL(request.url);
     const name = url.pathname.slice(1);
-    if (url.host !== 'app' || !['index.html', 'app.js', 'viewport.js', 'hosting.js', 'deployment.js', 'styles.css'].includes(name)) return new Response('Ikke fundet', { status: 404 });
-    return new Response(await fs.readFile(path.join(__dirname, 'ui', name)), { headers: { 'Content-Type': { 'index.html': 'text/html; charset=utf-8', 'app.js': 'text/javascript', 'viewport.js': 'text/javascript', 'hosting.js': 'text/javascript', 'deployment.js': 'text/javascript', 'styles.css': 'text/css' }[name] } });
+    if (url.host !== 'app' || !['index.html', 'app.js', 'viewport.js', 'hosting.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name)) return new Response('Ikke fundet', { status: 404 });
+    return new Response(await fs.readFile(path.join(__dirname, 'ui', name)), { headers: { 'Content-Type': { 'index.html': 'text/html; charset=utf-8', 'app.js': 'text/javascript', 'viewport.js': 'text/javascript', 'hosting.js': 'text/javascript', 'deployment.js': 'text/javascript', 'styles.css': 'text/css', 'demo.css': 'text/css' }[name] } });
   });
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
   session.defaultSession.setPermissionCheckHandler(() => false);

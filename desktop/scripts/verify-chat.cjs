@@ -31,7 +31,7 @@ const { run } = require('../core/git.cjs');
  let app;
  try {
   app=await electron.launch({executablePath:require('electron'),args:[path.join(__dirname,'..'),'--user-data-dir='+path.join(root,'appdata')],env:{...process.env,PATH:bin+path.delimiter+process.env.PATH,HARNESS_OPENCODE_PATH:opencode,ELECTRON_RUN_AS_NODE:undefined}});
-  const page=await app.firstWindow(); await page.waitForSelector('#onboarding'); await page.waitForFunction(() => !document.querySelector('#new').disabled); await page.click('#setup-button'); await page.click('#setup-local'); await page.waitForSelector('#create-form');
+  const page=await app.firstWindow(); await require('./ui-test-helpers.cjs').skipIntroduction(page); await page.waitForSelector('#onboarding'); await page.waitForFunction(() => !document.querySelector('#new').disabled); await page.click('#setup-button'); await page.click('#setup-local'); await page.waitForSelector('#create-form');
   await app.evaluate(({dialog},project)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[project]});},project);
   await page.click('#open'); await page.waitForSelector('#workspace:not([hidden])');
   await page.click('#git-button'); await page.click('#git-init');

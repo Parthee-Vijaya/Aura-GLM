@@ -1,0 +1,44 @@
+const { _electron: electron } = require('playwright');
+const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const os = require('node:os');
+(async () => {
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'harness-introduction-'));let app;const errors=[];
+ try {
+  app=await electron.launch({executablePath:require('electron'),args:[path.join(__dirname,'..'),'--user-data-dir='+path.join(root,'appdata')],env:{...process.env,ELECTRON_RUN_AS_NODE:undefined}});
+  const page=await app.firstWindow();page.on('pageerror',e=>errors.push(e.message));
+  await page.waitForFunction(()=>!document.querySelector('#welcome-build').disabled);
+  await app.evaluate(()=>{global.introRequests=0;global.fetch=async()=>{global.introRequests++;throw Error('Ingen modelsendelse i introduktionen');};});
+  assert.equal(await page.locator('#welcome-dialog').evaluate(e=>e.open),true);
+  await page.screenshot({path:path.join(root,'velkomst.png'),animations:'disabled'});
+  await page.emulateMedia({reducedMotion:'reduce'});assert.equal(await page.locator('#welcome-dialog').evaluate(el=>getComputedStyle(el).animationName),'none');
+  await page.click('#welcome-example');assert.match(await page.locator('#welcome-demo').textContent(),/faste svar/);
+  const preview=page.frameLocator('#demo-preview');await preview.locator('h1').waitFor();
+  assert.equal(await preview.locator('section').evaluate(el=>getComputedStyle(el).display),'grid');
+  await page.click('#demo-change');assert.equal(await preview.locator('section').evaluate(el=>getComputedStyle(el).display),'block');
+  assert.deepEqual((await fs.readdir(root)).filter(x=>x!=='appdata'),['velkomst.png']);
+  await page.screenshot({path:path.join(root,'demonstration.png'),animations:'disabled'});
+  await page.click('#demo-back');await page.click('#welcome-skip');
+  await page.fill('#purpose','Jeg vil lave en aktivitetsoversigt');assert.equal(await page.inputValue('#name'),'En aktivitetsoversigt');
+  await page.fill('#name','Mit bibliotek');await page.fill('#purpose','Vi vil bygge en oversigt til biblioteket');assert.equal(await page.inputValue('#name'),'Mit bibliotek');
+  await page.reload();await page.waitForFunction(()=>!document.querySelector('#create').disabled);
+  assert.equal(await page.locator('#welcome-dialog').evaluate(e=>e.open),false);assert.equal(await page.inputValue('#name'),'Mit bibliotek');
+  assert.equal(await page.inputValue('#purpose'),'Vi vil bygge en oversigt til biblioteket');
+  await page.click('#intro-button');await page.click('#welcome-build');await page.waitForSelector('#setup:not([hidden])');
+  assert.equal(await page.isDisabled('#setup-continue'),true);
+  await page.click('#setup-back');assert.equal(await page.locator('#welcome-dialog').evaluate(el=>el.open),true);await page.click('#welcome-build');await page.click('#setup-local');assert.equal(await page.inputValue('#name'),'Mit bibliotek');
+  await app.evaluate(({dialog})=>{dialog.showOpenDialog=async()=>({canceled:true,filePaths:[]});});
+  await page.click('#create');await page.waitForFunction(()=>!document.querySelector('#create').disabled);assert.equal(await page.inputValue('#name'),'Mit bibliotek');
+  await app.evaluate(({dialog},root)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[root]});},root);
+  await page.click('#create');await page.waitForSelector('#workspace:not([hidden])');
+  await page.frameLocator('#preview').locator('h1').waitFor();assert.equal(await page.frameLocator('#preview').locator('h1').textContent(),'Mit bibliotek');
+  assert.equal(await app.evaluate(()=>global.introRequests),0);
+  assert.equal(await page.evaluate(()=>localStorage.getItem('harness.ideaDraft.v1')),null);
+  await assert.rejects(fs.stat(path.join(root,'projekt-mit-bibliotek','.git')),{code:'ENOENT'});
+  assert.equal((await page.evaluate(()=>window.harness.providerAccount('https://example.invalid'))).ok,false);
+  assert.deepEqual(errors,[]);
+  await page.screenshot({path:path.join(root,'arbejdsomraade.png')});
+  console.log(JSON.stringify({status:'bestået',root,checks:['første start','lokal demonstration uden model eller projektfiler','spring over og genindlæsning','navneforslag respekterer rettelser','bevaret kladde','guidet fortsættelse uden AI','annulleret mappevalg','rigtigt projekt med preview','ingen implicit Git eller netværkskald','afvist ukendt udbyderlink']}));
+ }finally{await app?.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;});

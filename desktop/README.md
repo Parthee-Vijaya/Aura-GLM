@@ -17,15 +17,15 @@ Appens navn og egne menuer er **AI Harness**. Under `npm start` bruges stadig ud
 
 ## Opstart og forbindelser
 
-Appen starter med **Hvad vil du bygge?**: en idé og et projektnavn. Designmateriale og avancerede projektvalg er foldet sammen. Brugeren kan oprette eller åbne et lokalt projekt uden AI- eller GitHub-konto. Opstarten kontakter ingen modelserver og dekrypterer ingen modelnøgle.
+Ved første start vises **Byg et værktøj til din hverdag** med Start et projekt, Prøv et eksempel og Åbn et projekt. **Spring introduktionen over** går direkte til projektoprettelsen og huskes på denne computer. Introduktionen kan åbnes igen fra sidepanelet. Den guidede vej tilbyder AI-forbindelse eller fortsættelse uden AI; derefter beskriver brugeren sin idé og får et redigerbart navneforslag. Designmateriale og avancerede projektvalg er foldet sammen. Brugeren kan oprette eller åbne et lokalt projekt uden AI- eller GitHub-konto. Opstarten kontakter ingen modelserver og dekrypterer ingen modelnøgle.
 
-**Forbindelser og konto** i sidepanelet samler AI og valgfri GitHub-adgang. **Kontrollér forbindelse** henter kun den valgte servers modelkatalog. Et katalogsvar beviser ikke adgang til modelkald, kvote eller kodeværktøjer. **Fortsæt med AI** kræver et katalog med modeller; **Fortsæt lokalt** kræver ingen serveradgang. Den foretrukne forbindelse huskes lokalt, men bliver ukontrolleret efter genstart. Der skiftes aldrig automatisk til en anden model eller udbyder.
+**Forbindelser og konto** i sidepanelet samler AI og valgfri GitHub-adgang. **Kontrollér forbindelse** henter kun den valgte servers modelkatalog. Et katalogsvar beviser ikke adgang til modelkald, kvote eller kodeværktøjer. **Fortsæt med AI** kræver et katalog med modeller; **Fortsæt uden AI** kræver ingen serveradgang. Den foretrukne forbindelse huskes lokalt, men bliver ukontrolleret efter genstart. Der skiftes aldrig automatisk til en anden model eller udbyder.
 
 Arbejdsområdet viser samtale og preview. Modelvalget ligger foldbart ved beskedfeltet; **Brug dette valg** folder det sammen. Før afsendelse vises stadig datamodtagere, pris og vilkår, når en ny godkendelse er nødvendig. Tilføjelse af en almindelig API-forbindelse viser udbyder og nøgle; navn og serveradresse ligger under **Avanceret**. Egen server og Ollama åbner adressefelterne, fordi de skal kontrolleres. Der er endnu ingen automatisk organisationsopsætning eller Claude-abonnementsforbindelse.
 
 **Brug min projektidé som første besked** udfylder en kladde, der beder AI'en stille nødvendige spørgsmål og foreslå en plan før filændringer. Det sender ikke noget og overskriver ikke en eksisterende kladde. Den tekniske startskabelon er fortsat den lokale HTML/CSS/JavaScript-skabelon; opstarten foretager ikke et skjult modelkald.
 
-Fejl i modelkatalog eller modelkald vises i arbejdsområdet med **Gennemgå AI-forbindelse** og **Fortsæt lokalt**. Projekt, preview og beskedkladde bevares. Ingen automatisk gentagelse eller baggrundskontrol. GitHub er valgfri sikkerhedskopi og samarbejde; manglende adgang blokerer kun publiceringen. Lokale Git-oplysninger ligger under **Avanceret · lokale værktøjer**. Manglende Git blokerer ikke oprettelse eller preview.
+Fejl i modelkatalog eller modelkald vises i arbejdsområdet med **Gennemgå AI-forbindelse** og **Fortsæt uden AI**. Projekt, preview og beskedkladde bevares. Ingen automatisk gentagelse eller baggrundskontrol. GitHub er valgfri sikkerhedskopi og samarbejde; manglende adgang blokerer kun publiceringen. Lokale Git-oplysninger ligger under **Avanceret · lokale værktøjer**. Manglende Git blokerer ikke oprettelse eller preview.
 
 ## Brugerrejse
 
@@ -59,7 +59,7 @@ Versionsgemning pusher eller deployer ikke. Kodepublicering er en særskilt, eks
 
 ## GitHub og kodepublicering
 
-**Forbind GitHub** under Forbindelser og konto og **Del** i arbejdsområdet åbner samme modul. GitHub er den første udbyderadapter; `Publishing` afhænger af en provider med `id`, `get` og `credential`, samt en udskiftelig Git-transport. Codeberg, GitHub Enterprise og egne servere har endnu ingen færdig adapter. Projektet forbliver et almindeligt Git-repository.
+**Forbind GitHub** under Forbindelser og konto og **Sikkerhedskopi** i arbejdsområdet åbner samme modul. GitHub er den første udbyderadapter; `Publishing` afhænger af en provider med `id`, `get` og `credential`, samt en udskiftelig Git-transport. Codeberg, GitHub Enterprise og egne servere har endnu ingen færdig adapter. Projektet forbliver et almindeligt Git-repository.
 
 Browserlogin bruger GitHubs Device Flow. En vedligeholder skal registrere en OAuth-app, aktivere Device Flow og angive dens offentlige Client ID i `HARNESS_GITHUB_CLIENT_ID` ved start. Ingen client secret skal indbygges eller deles. OAuth beder om `repo read:org`; dette er bred adgang. Organisationen kan kræve egen godkendelse eller SSO. En GitHub App med finere rettigheder er ikke implementeret her. Alternativt kan brugeren indtaste et GitHub-token i appens skjulte felt. Et afgrænset token skal have relevante repositories og Contents read/write; oprettelse og workflows kan kræve yderligere rettigheder. Browserlogin uden Client ID er tydeligt deaktiveret.
 
@@ -214,3 +214,21 @@ Dialogen viser også mulige kommende adaptere, tydeligt adskilt fra de aktive de
 - Egen server, fx kommunal infrastruktur eller Hetzner: kræver en adapter til den valgte runtime, adgang og testadresse.
 
 Valgmulighederne er ikke et løfte om gratis drift eller godkendt databehandling. Pris, region, logging, opbevaring, hemmeligheder og adgang skal vurderes pr. konto og tjeneste. Kilder kontrolleret 24. september 2026.
+
+## Introduktion og bevægelse · 25. september 2026
+
+Introduktionen er valgfri. Spring over og Escape gemmer kun et lokalt navigationsvalg; de giver ingen værktøjstilladelser, accepterer ingen datavilkår og tilslutter ingen konto. Tilbage-navigation og Vis introduktion gør det muligt at vende tilbage. Et annulleret mappevalg efterlader kladden.
+
+Den lokale demonstration viser en aktivitetsoversigt med faste svar og skift mellem kort og liste. Den er tydeligt markeret som demonstration, bruger ingen model og opretter intet projekt. Eksemplet vises i en sandboxet iframe uden scriptrettigheder. Appens indholdspolitik er bevaret.
+
+Idé og projektnavn gemmes automatisk i rendererens lokale lager, uden kryptering. Nøgler og private referencefiler gemmes ikke dér. Kladden genlæses ved genstart og ryddes efter vellykket projektoprettelse. Manuelt rettede navne bliver ikke overskrevet af navneforslaget.
+
+Tilslut AI viser en vejledning til egen API-adgang. Udbyderknappen åbner kun faste adresser for Anthropic, OpenRouter og OpenCode Zen gennem main-processen. Egen server og Ollama viser deres adresseopsætning i stedet. Ingen nøgle eller projektdetalje sendes til hjemmesiden af appen. En ny gemt forbindelse vælges lokalt i opsætningen, men kontakter først udbyderen ved brugerens kontrol. Katalogkontrol er stadig ikke en afprøvet kodeopgave; den første rigtige AI-opgave kræver modelvalg og datagennemgang.
+
+Datagennemgangen viser model, modtagere, behandlingssted, pris, opbevaring og træning før afsendelse. Yderligere oplysninger og regler kan foldes ud. Ingen standardmodel eller betalingsrute vælges automatisk.
+
+Navigation og status bruger samme typografi og rolige overgange mellem trin. Operativsystemets reduceret-bevægelse-indstilling slår animationer og overgange fra. Fokus flyttes til det nye trin; interaktive kontroller beholder synligt tastaturfokus.
+
+**Verifikation:** `npm run test:introduction` afprøver velkomst, demonstration, reduceret bevægelse, spring over, genindlæsning, navneforslag, kladde, tilbage-navigation, annulleret mappevalg og oprettelse af et virkeligt projekt med preview i Electron. De øvrige UI-tests bruger den rigtige Spring over-knap ved start. Ingen fælles organisationslogin, browserlogin til modeludbydere, automatisk værktøjsinstallation eller signeret installationspakke er implementeret i denne milepæl. Forløbet er endnu ikke brugertestet med kommunale medarbejdere, og Windows er ikke afprøvet.
+
+Udbydervejledningen bygger på [Anthropics adgangsvejledning](https://platform.claude.com/docs/en/manage-claude/authentication), [OpenRouters introduktion](https://openrouter.ai/docs/quickstart) og [OpenCodes udbydervejledning](https://opencode.ai/docs/providers), kontrolleret 25. september 2026.

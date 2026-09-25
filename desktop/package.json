@@ -15,7 +15,8 @@
     "test:hosting": "node scripts/verify-hosting.cjs",
     "test:openrouter": "node scripts/verify-live-openrouter.cjs",
     "test:preferences": "node scripts/verify-preferences.cjs",
-    "test:deployment": "node scripts/verify-deployment.cjs"
+    "test:deployment": "node scripts/verify-deployment.cjs",
+    "test:introduction": "node scripts/verify-introduction.cjs"
   },
   "engines": {
     "node": ">=22.12.0"
