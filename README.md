@@ -1,60 +1,38 @@
 # AI Harness
 
-Et modulært fundament til at bygge applikationer med AI. POC 1 er en dansk hjemmeside med instruktionspakker til Claude Code, Codex og OpenCode. POC 2 er en lokal desktop-app med projektopstart, kodeagent, modelforbindelser, designpakker og live-forhåndsvisning.
+AI Harness hjælper dig med at bygge applikationer med AI. Du kan hente instruktioner til dit nuværende kodeværktøj eller bruge desktopappen, hvor samtale, kodeændringer og forhåndsvisning er samlet.
 
-## Kør POC 1 lokalt
+Projektet er startet med udgangspunkt i den offentlige sektors behov. Kommuner, udviklere og leverandører kan bidrage med kode, integrationer og erfaringer. Instruktionerne kan bruges uden appen.
 
-Kræver Python 3.10 eller nyere. Der er ingen eksterne afhængigheder, konti eller API-nøgler.
+## Vælg den del, du har brug for
 
-Byg downloadpakkerne fra det fælles profilgrundlag:
+**Brug instruktionerne i dit eget værktøj.** Hent danske grundregler til [Claude Code](site/dist/downloads/claude/LAES-MIG.md), [Codex](site/dist/downloads/codex/LAES-MIG.md) eller [OpenCode](site/dist/downloads/opencode/LAES-MIG.md). Læs, tilpas og læg dem i dit projekt. Desktopappen er ikke nødvendig.
 
-```bash
-python3 scripts/build.py
-```
+**Byg i desktopappen.** Beskriv din idé, tilslut din egen AI, gennemgå ændringerne og se resultatet ved siden af samtalen. Projektfilerne ligger lokalt. Appen hjælper med Git og tilbyder særskilt testudgivelse til understøttede hostingtjenester. Se [installation og opsætning](desktop/README.md).
 
-Start en lokal webserver fra projektets rodmappe:
+**Gem instruktioner og design til flere projekter.** Appen har redigerbare skills og lokale designpakker med farver, logoer og referencer. Delbar import/eksport, projektpakker og centrale organisationsprofiler er planlagt, men har endnu ikke et fælles pakkeformat.
 
-```bash
-python3 -m http.server 4173 --bind 127.0.0.1 --directory site/dist
-```
+## Hvad består projektet af?
 
-Åbn http://127.0.0.1:4173. Server kun `site/dist`, aldrig projektets rodmappe med lokale indstillinger og Git-data.
+- **Skills og instruktioner** beskriver hvordan agenten skal håndtere hemmeligheder, Git, afprøvning og dokumentation.
+- **Design- og projektpakker** skal gøre fælles valg lette at genbruge uden at låse projekter til appen.
+- **Integrationer** forbinder modeller, kodeagenter, Git og hosting. De eksisterende adaptere er kode i projektet; der er endnu ikke et system til at installere eksterne plugins.
+- **Organisationsprofiler** skal skelne mellem anbefalinger, standardvalg og håndhævede krav. Central administration og cloud-arbejdsområder er planlagt.
 
-## Indhold og vedligeholdelse
+Instruktioner vejleder modellen. Adgangskontrol og godkendelser skal håndhæves af det værktøj eller miljø, der udfører handlingen. En eksporteret tekstfil kan ikke i sig selv garantere samme beskyttelse i alle kodeværktøjer.
 
-- `profiles/grundregler.md`: fælles danske instruktioner.
-- `profiles/gitignore.txt`: forslag til modtagerens .gitignore; ingen personlige projektregler.
-- `profiles/catalog.json`: værktøjernes filnavne, vejledning, kilder og version.
-- `scripts/build.py`: genererer læsbare filer, indholdsmanifest og reproducerbare ZIP-pakker.
-- `site/dist/`: den statiske hjemmeside og dens offentlige downloadfiler. Filerne i denne mappe skal med i Git.
+Vi planlægger import og eksport af læsbare filer i pakker med versionsnumre. Brugeren skal kunne gennemgå indholdet, før eksisterende filer ændres. Nøgler, login og private samtaler skal holdes uden for almindelige delingspakker. Det er et designprincip, ikke en færdig eksportfunktion.
 
-Ret profilerne ved kilden, og byg igen. Ved versionsændringer opdateres også de direkte downloadlinks og versionsangivelsen i `site/dist/index.html`. Downloadpakker må ikke indeholde lokale arbejdsregler, nøgler eller privat materiale.
+## Giv koden videre til en udvikler
 
-## Afprøvning
+Resultatet er almindelige projektfiler og Git-historik, når du vælger versionsstyring. En udvikler kan overtage koden med de nødvendige oplysninger om opsætning og drift. Projektfilerne kan åbnes og videreudvikles uden AI Harness.
 
-```bash
-python3 -m unittest discover -s tests -v
-```
+## Prøv eller bidrag
 
-Kontrollér også siden i en browser: vælg alle tre værktøjer, se filerne, hent pakkerne og følg vejledningen i et separat prøveprojekt. Pakkerne er instruktioner, ikke teknisk håndhævelse. Modeladfærd skal afprøves særskilt med det konkrete værktøj og den konkrete model.
+Løsningen er under udvikling og afprøves med inviterede testere. Installation, signering og konkret teststatus fremgår af [desktopvejledningen](desktop/README.md). Licens og vedligeholdelsesansvar skal stadig aftales; ambitionen er open source.
 
-## Status og næste POC
-
-POC 1 kræver ikke modelkald og installerer ikke automatisk noget i brugerens projekt. Den er endnu ikke offentliggjort. Licens og vedligeholdelsesansvar skal aftales før ekstern kodeudveksling.
-
-POC 2 i `desktop/` åbner lokale mapper og forbinder en OpenCode-kodeagent med valgte modeller. Designpakker kan genbruges, skills tilpasses, og modeldata/godkendelser gennemgås før handlinger. Se [startvejledning, verifikation og begrænsninger](desktop/README.md). Lokal manuel versionsgemning og valgfrie Git-checkpoints er implementeret. GitHub-forbindelse og særskilt kodepublicering er implementeret med eksplicit gennemgang før push. Testudgivelse til Vercel og Azure Static Web Apps er tilsluttet med separat filgennemgang og uploadgodkendelse; se desktop-vejledningens verifikationsniveau og begrænsninger. Lokale installationspakker til Mac og Windows samt en dansk downloadside er tilføjet. Apple Silicon-pakken er kørt med rigtig kodeændring og preview; Windows og Intel-Mac er ikke kørt på målmaskiner. Mac-notarisation og offentlig distribution afventer. Andre Git-udbydere og cloud-arbejdsområder er endnu ikke implementeret. En rigtig kodeændring med gratis Cohere-model via OpenRouter er afprøvet i Electron. GitHub-API’et er afprøvet med kontrollerede svar og push til en lokal Git-server; live-GitHub afventer konto/appregistrering.
-
-Se [bidragsvejledningen](CONTRIBUTING.md). Ældre dokumenter i `docs/` og `harness-options.md` indeholder tidligere arkitekturforslag; POC 1 er afgrænset som beskrevet her.
-
-
-## Downloadside og GitHub Pages
-
-`scripts/build-pages.cjs` bygger en separat downloadforside fra faktiske GitHub Releases. Instruktionspakkerne bevares som `pakker.html`. Kun publicerede releasefiler vises; kladder og ukendte filtyper udelades. GitHubs kontrolsum vises, når den foreligger. Notarisation udledes ikke af filnavnet; installationsstatus skal dokumenteres i udgivelsesnoterne.
-
-Workflowet `.github/workflows/pages.yml` bygger ved relevante push til `main`, ved publicering/redigering/sletning af releases eller manuelt. Tilføjelse af filer til en eksisterende release kræver en manuel kørsel bagefter. Det uploader kun den genererede statiske mappe, aldrig installationsfiler, tokens eller repositoryroden. Workflowet opretter ingen releases, tags eller commits.
-
-**Aktuel adgang:** Kun inviterede testere. Repositoryet er privat, og organisationens abonnement er GitHub Free (kontrolleret 25. september 2026). Privat Pages kræver [GitHub Enterprise Cloud](https://docs.github.com/en/enterprise-cloud@latest/pages/getting-started-with-github-pages/changing-the-visibility-of-your-github-pages-site). Derfor er Pages endnu ikke aktiveret. Deployment stopper, medmindre GitHubs Pages-API udtrykkeligt oplyser `public: false`; et privat repository gør ikke automatisk selve Pages-siden privat.
-
-Indtil privat Pages er tilgængeligt, kan inviterede testere med læseadgang hente installationsfiler fra repositoryets private Releases. Der findes endnu ingen release med installationsfiler. Publicér kun de gennemgåede pakker med præcis signerings-/teststatus og kontrolsummer; den lokale Mac-notarisation afventer fortsat Apple-loginprofil. En offentlig informationsside med private downloads er en anden mulighed, men er ikke valgt eller aktiveret.
-
-**Verifikation:** Tre automatiske tests afprøver tom tilstand, privat adgangstekst, udeladelse af kladder, downloadadresser og bevarelse af POC 1-pakker. Siden er også bygget fra repositoryets faktiske API-svar, som aktuelt indeholder nul releases. Ingen Pages-deployment eller download fra GitHub Releases er endnu udført. Kildeændringerne skal først gennemgås, committes og pushes af vedligeholderen.
+- [Bidrag med kode, integrationer eller feedback](CONTRIBUTING.md)
+- [Fælles instruktioner og skills](profiles/)
+- [Start desktopappen fra kildekoden](desktop/README.md#start-fra-kildekoden)
+- [Byg og vedligehold hjemmesiden](docs/website.md)
+- [Skriv tekster til projektet](docs/sprog.md)

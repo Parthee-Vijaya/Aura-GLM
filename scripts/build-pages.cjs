@@ -26,11 +26,11 @@ async function build(releases, metadata, output = path.join(root, '.cache/pages'
   await fs.mkdir(output, {recursive:true});
   await fs.cp(path.join(root, 'site/dist'), output, {recursive:true});
   await fs.copyFile(path.join(root, 'site/dist/index.html'), path.join(output, 'pakker.html'));
-  let html = await fs.readFile(path.join(root, 'site/dist/desktop.html'), 'utf8');
+  let html = await fs.readFile(path.join(root, 'site/dist/overview.html'), 'utf8');
   html = html.replace(/<!-- artifacts -->[\s\S]*?<!-- \/artifacts -->/, fragment);
-  html = html.replace('<footer>', '<footer><a href="pakker.html">Instruktionspakker til Claude Code, Codex og OpenCode</a>');
   await fs.writeFile(path.join(output, 'index.html'), html);
-  await fs.writeFile(path.join(output, 'desktop.html'), html);
+  const desktop = (await fs.readFile(path.join(root, 'site/dist/desktop.html'), 'utf8')).replace(/<!-- artifacts -->[\s\S]*?<!-- \/artifacts -->/, fragment);
+  await fs.writeFile(path.join(output, 'desktop.html'), desktop);
   await fs.writeFile(path.join(output, '.nojekyll'), '');
   return output;
 }
