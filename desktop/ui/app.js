@@ -308,6 +308,9 @@ async function loadGit() {
   const result = await call('gitStatus');
   $('#git-summary').textContent = result.block || `Branch: ${result.branch} · ${result.changes} ændrede filer · ${result.identity.name} <${result.identity.email}>`;
   $('#git-init').hidden = result.initialized;
+  $('#git-identity').hidden = !result.initialized || result.wrongRoot || Boolean(result.identity?.name && result.identity?.email);
+  $('#git-name').value = result.identity?.name || ''; $('#git-email').value = result.identity?.email || '';
+  $('#git-name').readOnly = Boolean(result.identity?.name); $('#git-email').readOnly = Boolean(result.identity?.email);
   $('#git-settings').hidden = !result.initialized || result.wrongRoot;
   $('#git-auto').checked = result.autoCheckpoint;
   $('#git-history').replaceChildren(...result.history.map(item => node('li', `${item.id} · ${item.message}`)));
@@ -512,3 +515,5 @@ function renderRunReview(result) {
     const save = node('button', 'Gem version'); save.onclick = () => $('#git-button').click(); box.append(inspect, save);
   }
 }
+
+$('#git-identity').onsubmit = event => { event.preventDefault(); action(async () => { await call('gitIdentity', { name: $('#git-name').value, email: $('#git-email').value }); await loadGit(); }); };

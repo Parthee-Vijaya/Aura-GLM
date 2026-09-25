@@ -25,7 +25,8 @@ let assets = [];
 let github, publishing, deployments;
 let workbench, beforeChanges, externalPreview = null;
 const uiURL = 'harness://app/index.html';
-const profileRoot = path.join(__dirname, '..', 'profiles');
+const profileRoot = app.isPackaged ? path.join(process.resourcesPath, 'profiles') : path.join(__dirname, '..', 'profiles');
+if (app.isPackaged) require('./core/runtime.cjs').configure(process.resourcesPath);
 
 async function activate(next) {
   if (workbench.running) throw new Error('Stop den aktive opgave, før du skifter projekt.');
@@ -133,6 +134,7 @@ handle('git:status', async () => {
   const root = requireIdleProject();
   return { ...await workbench.git.status(root), autoCheckpoint: (await workbench.store.project(root)).autoCheckpoint === true };
 });
+handle('git:identity', value => exclusive(() => workbench.git.setIdentity(requireIdleProject(), value)));
 handle('git:init', () => exclusive(() => workbench.git.initialize(requireIdleProject())));
 handle('git:review', () => exclusive(() => workbench.git.review(requireIdleProject())));
 handle('git:commit', input => exclusive(() => workbench.git.commit(requireIdleProject(), input)));

@@ -31,7 +31,7 @@ const { run } = require('../core/git.cjs');
  await new Promise(r=>server.listen(0,'127.0.0.1',r));
  let app;
  try {
-  app=await electron.launch({executablePath:require('electron'),args:[path.join(__dirname,'..'),'--user-data-dir='+path.join(root,'appdata')],env:{...process.env,PATH:bin+path.delimiter+process.env.PATH,HARNESS_OPENCODE_PATH:opencode,ELECTRON_RUN_AS_NODE:undefined}});
+  app=await electron.launch({executablePath:process.env.HARNESS_TEST_PACKAGE || require('electron'),args:[...(process.env.HARNESS_TEST_PACKAGE ? [] : [path.join(__dirname,'..')]),'--user-data-dir='+path.join(root,'appdata')],env:{...process.env,PATH:bin+path.delimiter+process.env.PATH,HARNESS_OPENCODE_PATH:opencode,ELECTRON_RUN_AS_NODE:undefined}});
   const page=await app.firstWindow(); await require('./ui-test-helpers.cjs').skipIntroduction(page); await page.waitForSelector('#onboarding'); await page.waitForFunction(() => !document.querySelector('#new').disabled); await page.click('#setup-button'); await page.click('#setup-local'); await page.waitForSelector('#create-form');
   await app.evaluate(({dialog},project)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[project]});},project);
   await page.click('#open'); await page.waitForSelector('#workspace:not([hidden])');
@@ -45,7 +45,7 @@ const { run } = require('../core/git.cjs');
   await page.locator('#git-files input').check(); await page.fill('#git-message','Opret testprojekt'); await page.click('#git-save');
   await page.locator('#git-feedback').filter({hasText:'er gemt lokalt'}).waitFor();
   assert.equal((await run(project,['rev-list','--count','HEAD'])).toString().trim(),'1');
-  await page.check('#git-auto'); await page.locator('#git-feedback').filter({hasText:'slået til'}).waitFor();
+  if (!process.env.HARNESS_TEST_PACKAGE) { await page.check('#git-auto'); await page.locator('#git-feedback').filter({hasText:'slået til'}).waitFor(); }
   await page.click('[data-close="git-dialog"]');
   console.log('Git-opstart og checkpoint-tilvalg bestået');
   await page.click('#connections-button'); await page.selectOption('#provider-kind','compatible');
@@ -88,11 +88,20 @@ const { run } = require('../core/git.cjs');
   await page.locator('#approvals button').filter({hasText:'Tillad én gang'}).click();
   await page.frameLocator('#preview').locator('h1').filter({hasText:'Bygget fra desktopchatten'}).waitFor({timeout:30000});
   await page.locator('#run-status').filter({hasText:'Klar'}).waitFor({timeout:30000});
+  if (process.env.HARNESS_TEST_PACKAGE) {
+    assert.equal((await run(project,['rev-list','--count','HEAD'])).toString().trim(),'1');
+    await page.locator('#run-review button').filter({hasText:'Gem version'}).click();
+    await page.locator('#git-files input:not(:disabled)').first().waitFor();
+    for(const input of await page.locator('#git-files input:not(:disabled)').all()) await input.check();
+    await page.fill('#git-message','Gem agentens prøveændring');await page.click('#git-save');
+    await page.locator('#git-feedback').filter({hasText:'er gemt lokalt'}).waitFor();
+    await page.click('[data-close="git-dialog"]');
+  }
   assert.equal((await run(project,['rev-list','--count','HEAD'])).toString().trim(),'2');
   assert.match(await page.locator('#run-review').textContent(),/Ingen kommandoer kørt/);
   assert.match((await run(project,['show','HEAD:public/index.html'])).toString(),/Bygget fra desktopchatten/);
   assert.equal((await run(project,['status','--porcelain'])).toString(),'');
-  await page.locator('#run-review button').filter({hasText:'Gem version'}).click(); await page.waitForFunction(()=>document.querySelectorAll('#git-history li').length===2 && !document.querySelector('#git-auto').disabled); assert.equal(await page.isChecked('#git-auto'),true);
+  await page.locator('#run-review button').filter({hasText:'Gem version'}).click(); await page.waitForFunction(()=>document.querySelectorAll('#git-history li').length===2 && !document.querySelector('#git-auto').disabled); assert.equal(await page.isChecked('#git-auto'),!process.env.HARNESS_TEST_PACKAGE);
   assert.equal(await page.locator('#git-dialog .dialog-notice').count(),0);
   await page.screenshot({path:path.join(root,'versioner.png'),fullPage:true}); await page.click('[data-close="git-dialog"]');
   await page.click('#changes-button');assert.match(await page.locator('#changes-list').textContent(),/public[/\\]index.html/);
@@ -118,6 +127,6 @@ const { run } = require('../core/git.cjs');
   const empty=path.join(root,'tom');await fs.mkdir(empty);
   await app.evaluate(({dialog},empty)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[empty]});},empty);
   await page.click('#open');await page.waitForSelector('#preview-empty:not([hidden])');assert.deepEqual(await fs.readdir(empty),[]);
-  console.log(JSON.stringify({status:'bestået',root,checks:['modelkort uden automatisk valg','planlægning, afklaring og eksplicit bygning gennem UI','resultatoversigt uden opdigtede testresultater','afvist modeladgang viser hjælp i arbejdsområdet og bevarer beskeden uden checkpoint','manuel Git-opstart og versionsgemning gennem UI','automatisk checkpoint efter rigtig OpenCode-filændring','Electron safeStorage uden klartekst i appdata eller renderer','UI-modelvalg og datagennemgang','streaming og godkendelse','rigtig filændring og preview','ændringsoversigt','skill redigering og gendannelse','tom mappe uden filændringer','bevaret modelvalg ved genåbning','tilsluttet udviklingsserver']}));
+  console.log(JSON.stringify({status:'bestået',root,checks:['modelkort uden automatisk valg','planlægning, afklaring og eksplicit bygning gennem UI','resultatoversigt uden opdigtede testresultater','afvist modeladgang viser hjælp i arbejdsområdet og bevarer beskeden uden checkpoint','manuel Git-opstart og versionsgemning gennem UI',process.env.HARNESS_TEST_PACKAGE ? 'manuel version efter rigtig OpenCode-filændring i pakket app' : 'automatisk checkpoint efter rigtig OpenCode-filændring','Electron safeStorage uden klartekst i appdata eller renderer','UI-modelvalg og datagennemgang','streaming og godkendelse','rigtig filændring og preview','ændringsoversigt','skill redigering og gendannelse','tom mappe uden filændringer','bevaret modelvalg ved genåbning','tilsluttet udviklingsserver']}));
  } catch (error) { console.error(error); if (app) { try { const page=app.windows().find(w=>w.url().startsWith('harness:')); if(page) { console.error(await page.locator('#messages').textContent({timeout:2000})); console.error(await page.locator('#message').textContent({timeout:2000}).catch(()=>'')); await page.screenshot({path:path.join(root,'fejl.png'),fullPage:true,timeout:3000}); } } catch {} } throw error; } finally {await app?.close();server.closeAllConnections();await new Promise(r=>server.close(r));}
 })().catch(error=>{console.error(error);process.exitCode=1;});

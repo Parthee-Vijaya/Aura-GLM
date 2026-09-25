@@ -11,7 +11,8 @@ function run(root, args, input, configuration = []) {
   env.GIT_CONFIG_COUNT = String(configuration.length);
   configuration.forEach(([key, value], index) => { env[`GIT_CONFIG_KEY_${index}`] = key; env[`GIT_CONFIG_VALUE_${index}`] = value; });
   return new Promise((resolve, reject) => {
-    const child = execFile('git', ['-c', 'core.fsmonitor=false', ...args], { cwd: root, env, timeout: 30000, maxBuffer: 8 * LIMIT, windowsHide: true, encoding: 'buffer' }, (error, stdout) => {
+    const runtime = require('./runtime.cjs');
+    const child = execFile(runtime.get()?.git || 'git', ['-c', 'core.fsmonitor=false', ...args], { cwd: root, env: runtime.gitEnvironment(env), timeout: 30000, maxBuffer: 8 * LIMIT, windowsHide: true, encoding: 'buffer' }, (error, stdout) => {
       if (error) { const failure = new Error(error.code === 'ENOENT' ? 'Git blev ikke fundet. Installer Git, og genstart appen.' : 'Git kunne ikke gennemføre handlingen. Kontrollér repository, låsefiler, hooks og eventuel commitsignering.'); failure.code = error.code; reject(failure); }
       else resolve(stdout);
     });
@@ -87,6 +88,15 @@ class GitVersions {
     const repo = await this.repository(root);
     if (repo.initialized) throw new Error('Mappen ligger allerede i et Git-repository.');
     await run(repo.root, ['init']);
+    return this.status(repo.root);
+  }
+  async setIdentity(root, input) {
+    const repo = await this.repository(root);
+    if (!repo.initialized || repo.wrongRoot) throw new Error('Opret eller åbn først projektets egen Git-historik.');
+    if (repo.identity.name && repo.identity.email) throw new Error('Der findes allerede en Git-identitet. Den ændres ikke her.');
+    if (typeof input.name !== 'string' || !input.name.trim() || input.name.length > 100 || /[\r\n\0<>]/.test(input.name) || typeof input.email !== 'string' || !/^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/.test(input.email) || input.email.length > 254) throw new Error('Skriv dit navn og en gyldig e-mailadresse.');
+    if (!repo.identity.name) await run(repo.root, ['config', '--local', 'user.name', input.name.trim()]);
+    if (!repo.identity.email) await run(repo.root, ['config', '--local', 'user.email', input.email.trim()]);
     return this.status(repo.root);
   }
   async review(root) {

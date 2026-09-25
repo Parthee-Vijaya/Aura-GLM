@@ -1,0 +1,61 @@
+name: Byg testpakker
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            target: darwin-arm64
+            command: package:mac
+            arch: arm64
+            app: release/mac-arm64/AI Harness.app
+          - os: macos-15-intel
+            target: darwin-x64
+            command: package:mac
+            arch: x64
+            app: release/mac/AI Harness.app
+          - os: windows-latest
+            target: win32-x64
+            command: package:windows
+            arch: x64
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.3
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - run: npm ci
+      - run: npm run runtime:prepare -- ${{ matrix.target }}
+      - run: npm run ${{ matrix.command }} -- --${{ matrix.arch }}
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Afprøv den pakkede app på Mac
+        if: runner.os == 'macOS'
+        run: npm run test:package -- "${{ matrix.app }}"
+      - name: Afprøv den pakkede app på Windows
+        if: runner.os == 'Windows'
+        run: npm run test:package -- "release/win-unpacked/AI Harness.exe"
+      - run: npm run release:site
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ai-harness-${{ matrix.target }}
+          path: |
+            desktop/release/*.dmg
+            desktop/release/*.zip
+            desktop/release/*.exe
+            desktop/release/*.json
+            desktop/release/*.html
+            desktop/release/*.css
+            desktop/release/*.js
+            desktop/release/*.txt
+          if-no-files-found: error

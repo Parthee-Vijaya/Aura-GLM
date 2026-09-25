@@ -8,7 +8,7 @@ const run = promisify(execFile);
 const VERSION = '1.17.15';
 
 async function findExecutable() {
-  const candidates = [process.env.HARNESS_OPENCODE_PATH, path.join(os.homedir(), '.opencode', 'bin', process.platform === 'win32' ? 'opencode.exe' : 'opencode'), 'opencode'].filter(Boolean);
+  const candidates = require('./runtime.cjs').get() ? [require('./runtime.cjs').get().opencode] : [process.env.HARNESS_OPENCODE_PATH, path.join(os.homedir(), '.opencode', 'bin', process.platform === 'win32' ? 'opencode.exe' : 'opencode'), 'opencode'].filter(Boolean);
   for (const file of candidates) {
     try { const result = await run(file, ['--version'], { timeout: 15000, windowsHide: true }); if (result.stdout.trim() === VERSION) return file; }
     catch { /* Prøv næste eksplicitte installationsplacering. */ }
@@ -30,7 +30,7 @@ function isolatedEnv(directory, config, password) {
   for (const [key, sub] of Object.entries({ XDG_CONFIG_HOME: 'config', XDG_DATA_HOME: 'data', XDG_CACHE_HOME: 'cache', XDG_STATE_HOME: 'state' })) env[key] = path.join(directory, sub);
   Object.assign(env, { OPENCODE_CONFIG_CONTENT: JSON.stringify(config), OPENCODE_CONFIG_DIR: path.join(directory, 'config'), OPENCODE_SERVER_PASSWORD: password, OPENCODE_SERVER_USERNAME: 'harness', OPENCODE_CLIENT: 'harness' });
   for (const flag of ['DISABLE_PROJECT_CONFIG', 'DISABLE_DEFAULT_PLUGINS', 'DISABLE_EXTERNAL_SKILLS', 'DISABLE_CLAUDE_CODE', 'DISABLE_AUTOUPDATE', 'DISABLE_MODELS_FETCH', 'DISABLE_LSP_DOWNLOAD', 'DISABLE_SHARE', 'DISABLE_EMBEDDED_WEB_UI']) env[`OPENCODE_${flag}`] = 'true';
-  return env;
+  return require('./runtime.cjs').gitEnvironment(env);
 }
 class OpenCodeEngine {
   constructor({ root, directory, provider, model, references = [], mode = 'free', onEvent = () => {} }) { Object.assign(this, { root, directory, provider, model, references, mode, onEvent }); this.pending = new Map(); this.active = false; }

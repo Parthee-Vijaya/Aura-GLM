@@ -11,7 +11,7 @@ npm ci
 npm start
 ```
 
-Der er endnu ingen signerede installationspakker. Windows og macOS er målplatforme; kun macOS er afprøvet. Electron kan kræve netadgang ved installation.
+Der findes lokale betapakker til macOS (Apple Silicon og Intel) og Windows x64; se installationsafsnittet nedenfor. Mac-pakkerne er signerede, men afventer notarisation. Kun Apple Silicon-pakken er kørt. Electron kan kræve netadgang ved installation fra kildekoden.
 
 Appens navn og egne menuer er **AI Harness**. Under `npm start` bruges stadig udviklingsprogrammet `Electron.app` på macOS; systemets Dock, procesvisning og visse systemdialoger kan derfor fortsat vise Electron. Fuld systemnavngivning kræver en pakket app med egne bundle-oplysninger. Der ændres ikke i den installerede Electron-afhængighed. Navneskiftet bevarer eksisterende data- og sessionsmapper.
 
@@ -47,7 +47,7 @@ Afprøvet i Electron på macOS med et rigtigt projekt: træk, tastatur, faste og
 
 ## Lokale Git-versioner
 
-**Gem version** viser status, aktiv branch, Git-identitet og de seneste versioner. I en mappe uden Git kan brugeren aktivt oprette lokal historik. Vælg derefter filer, gennemgå indholdet før/efter og skriv en versionsbeskrivelse. Appen kræver en eksisterende Git-installation og konfigureret `user.name`/`user.email`; den ændrer ikke identiteten. Projektet er et almindeligt Git-repository, som kan overtages uden AI Harness.
+**Gem version** viser status, aktiv branch, Git-identitet og de seneste versioner. I en mappe uden Git kan brugeren aktivt oprette lokal historik. Vælg derefter filer, gennemgå indholdet før/efter og skriv en versionsbeskrivelse. Kildekodeversionen kræver Git; installationspakken medleverer Git. Ved manglende navn/e-mail viser appen en formular og gemmer kun manglende oplysninger i projektets lokale Git-konfiguration efter brugerens aktive valg. En eksisterende identitet overskrives ikke. Projektet er et almindeligt Git-repository, som kan overtages uden AI Harness.
 
 Automatiske checkpoints er slået fra som standard og vælges pr. projekt. Gem først en version manuelt. Efter en afsluttet AI-opgave gemmer appen kun et checkpoint, når udgangspunktet var rent, historikken er uændret, og alle ændringer kan knyttes til agentens afsluttede `write`-/`edit`-værktøjer. Fejl, stop, afvisninger, shellkommandoer, patchværktøjer, hooks, filtre og uklare ændringer medfører, at automatisk gemning springes over med en forklaring. Filerne bevares. Et checkpoint er ikke en bekræftelse på, at koden virker.
 
@@ -248,3 +248,51 @@ Godkendelseskort forklarer på dansk, hvad en filændring, kommando, websidelæs
 Afslutningen viser ændrede tekstfiler registreret i den enkelte opgave og status for eventuelle shellværktøjer. En afsluttet kommando er ikke automatisk en bestået test. AI’en bliver desuden bedt om at beskrive ændringer, faktisk udførte kontroller og manuelle prøvetrin. Appen markerer eksplicit, når ingen kommandoer er kørt, og tilbyder ændringsgennemgang og den eksisterende **Gem version**-dialog. Oversigten kan omfatte samtidige manuelle ændringer og udelader store/private/binære filer efter de eksisterende grænser. Den samlede Ændringer-dialog dækker stadig fra første besked i arbejdsområdet.
 
 **Verifikation:** 41 automatiske tests består. Den rigtige OpenCode-motor er kørt mod en kontrolleret lokal modelserver: et bevidst skriveforsøg under planlægning blev afvist uden filændring; en forældet plan blev afvist; den godkendte plan fulgte med til en rigtig filændring og preview. Electron-forløbet omfatter modelkort, opfølgende afklaring, eksplicit bygning, datagennemgang, godkendelse, ændringsoversigt og Git-version i et isoleret testrepository. Projekt-/preview- og forbindelsestestene består også på macOS. Ingen ny ekstern modelafprøvning, Windows-kørsel, brugertest med kommunale medarbejdere eller cloududgivelse er udført i denne milepæl.
+
+## Installationspakker · beta
+
+Kør alle følgende kommandoer fra `desktop/`. Pakningen henter kun fastlåste værktøjer fra `runtime-lock.json`, kontrollerer deres SHA-256/SHA-512 og kopierer dem til appens ressourcemappe. Byg ikke fra en mappe med ukendte lokale ændringer. Appens kode pakkes fra en eksplicit filliste; projekter, nøgler, testmapper og udviklerens indstillinger medtages ikke. Git, Node/npm og OpenCode følger med; model, API-adgang, Docker og hosting-CLI'er følger ikke med. Installationen ændrer ikke systemets PATH eller eksisterende værktøjer.
+
+```bash
+npm ci
+npm run runtime:prepare -- darwin-arm64
+npm run package:mac -- --arm64
+```
+
+Intel-Mac bruger `darwin-x64` og `--x64`. Windows bygges på Windows med mål `win32-x64` og `npm run package:windows -- --x64`; ARM64 bruger `win32-arm64` og `--arm64`. Pakken er en betaversion. Windows-kørsel kræver særskilt afprøvning på Windows, også hvis krydsbygning lykkes.
+
+Signering sker kun, når `HARNESS_SIGN_IDENTITY` eksplicit angives til det godkendte Developer ID-certifikat ved Mac-bygning. Angiv certifikatnavnet uden præfikset `Developer ID Application:`; den lokalt godkendte identitet er `mekbas IVS (2UX98897JW)`. Der er ingen automatisk valg af certifikat. Notarisation er særskilt og kræver en opsat Apple-profil; en signeret pakke er ikke automatisk notariseret. Indtil notarisation er gennemført, må testpakken ikke beskrives som en friktionsfri installation på andre Mac-computere. Omgå ikke kommunens installationspolitik.
+
+```bash
+npm run test:package -- "release/mac-arm64/AI Harness.app"
+npm run release:site
+```
+
+`test:package` starter den pakkede app med isoleret brugerdata og begrænset PATH, kontrollerer medfølgende værktøjer, opretter et syntetisk projekt og viser preview. Den nulstiller aldrig macOS-nøgleringen. Downloadfiler og den genererede downloadside ligger i `desktop/release/` og skal distribueres separat, ikke committes som binære filer. Bygning uploader ikke noget. Downloadsiden viser kun faktiske filer og SHA-256; den opfinder ikke publicerede links.
+
+Vedligeholdere kan starte workflowet **Byg testpakker** manuelt efter eget commit/push. Workflowet uploader byggeartefakter til den konkrete GitHub Actions-kørsel, ikke en offentlig Release. Mac-pakker fra workflowet er usignerede, medmindre en særskilt godkendt signeringsopsætning tilføjes. Kildearkiver og tredjepartslicenser følger med runtime; projektets egen distributionslicens skal stadig aftales af vedligeholderne.
+
+
+Notarisation efter opsætning af lokal `notarytool`-profil:
+
+```bash
+node scripts/notarize.cjs release/AI-Harness-0.2.0-beta.1-mac-arm64.dmg PROFILNAVN
+npm run release:site
+```
+
+Scriptet indsender den konkrete DMG til Apple, kræver Accepted, vedhæfter billetten og validerer den. En kvittering bindes til filens SHA-256. Downloadsiden markerer kun en fil som notariseret, hvis kvittering og aktuel kontrolsum matcher. En ny bygning kræver ny notarisation. Profilnavnet er ikke en adgangskode; profilen oprettes lokalt med Apples værktøj. Apple-login og private nøgler må ikke lægges i repositoryet.
+
+
+### Faktisk afprøvning · 25. september 2026
+
+45 automatiske tests består. Den signerede Apple Silicon-app er startet som pakket app med isolerede brugerdata, normal HOME og begrænset PATH. De medfølgende OpenCode-, Git- og Node/npm-værktøjer er kontrolleret. Et syntetisk projekt er oprettet, vist i preview og versionsgemt gennem brugerfladen med eksplicit lokal Git-identitet. En rigtig OpenCode-session mod en kontrolleret lokal modelserver har gennemført planlægning, godkendt filændring, preview og manuel versionsgemning. Testen bruger ingen ekstern betalt model. Automatiske checkpoints afvises korrekt, når Git-filtre er aktive; den manuelle vej er afprøvet i pakken.
+
+Apple Silicon-DMG'en er monteret skrivebeskyttet; appens signatur og overensstemmelse med den afprøvede app er kontrolleret. Downloadsiden er afprøvet i Chrome på desktop- og mobilbredde med faktisk download og kontrolsum. Intel-Mac og Windows x64 er pakket, men ikke kørt på deres målmaskiner; Windows er usigneret. GitHub-workflowet er skrevet, men ikke kørt på GitHub. Der er endnu ingen offentlig downloadadresse, Apple-notarisation eller afprøvning på en separat, nyinstalleret computer.
+
+Opret om nødvendigt en lokal Apple-loginprofil interaktivt:
+
+```bash
+xcrun notarytool store-credentials ai-harness-notary --team-id 2UX98897JW
+```
+
+Værktøjet spørger efter Apple-konto og en app-specifik adgangskode. Indtast dem kun lokalt. Profilen gemmes i nøgleringen og valideres af Apple; almindelig Apple-kontoadgangskode skal ikke bruges. En eksisterende profil kan bruges i stedet. Nulstil ikke nøgleringen, hvis der opstår en adgangsfejl.

@@ -1,0 +1,84 @@
+{
+  "opencode": "1.17.15",
+  "node": "22.23.3",
+  "git": "2.53.0",
+  "targets": {
+    "darwin-arm64": {
+      "opencode": {
+        "url": "https://registry.npmjs.org/opencode-darwin-arm64/-/opencode-darwin-arm64-1.17.15.tgz",
+        "integrity": "sha512-OfC3+9fNXx1sMADuZKgnVQKaKXnDn3Pon0wzhDs4qLZ6WvOTPzgQtohlztzU3MNz6+p3t8RXtYF3AfTKrubNiQ=="
+      },
+      "git": {
+        "name": "dugite-native-v2.53.0-4098283-macOS-arm64.tar.gz",
+        "url": "https://github.com/desktop/dugite-native/releases/download/v2.53.0-4/dugite-native-v2.53.0-4098283-macOS-arm64.tar.gz",
+        "checksum": "f9dc64635a5b62fbd7ad95db73268bbb8912255ac516d65d37bf7af22fcb8ffe"
+      },
+      "node": {
+        "url": "https://nodejs.org/dist/v22.23.3/node-v22.23.3-darwin-arm64.tar.gz",
+        "checksum": "23b25245dcfb9af7262f8ff142e9e2e0af025368117329e7a7458a51e5922f53"
+      }
+    },
+    "darwin-x64": {
+      "opencode": {
+        "url": "https://registry.npmjs.org/opencode-darwin-x64/-/opencode-darwin-x64-1.17.15.tgz",
+        "integrity": "sha512-FwHay55Y1Cacdfg9JgW2Z69K0SfDrmkOWE+mP/C2zbhLYZbR1cyv1Fhh/pKMx5rydIJqMjd4ZNUNElwRqCn5yw=="
+      },
+      "git": {
+        "name": "dugite-native-v2.53.0-4098283-macOS-x64.tar.gz",
+        "url": "https://github.com/desktop/dugite-native/releases/download/v2.53.0-4/dugite-native-v2.53.0-4098283-macOS-x64.tar.gz",
+        "checksum": "ae6686718aa34f4140424db16b92a47dcffd6d1f312eb8b5f3b267f7404e2680"
+      },
+      "node": {
+        "url": "https://nodejs.org/dist/v22.23.3/node-v22.23.3-darwin-x64.tar.gz",
+        "checksum": "8a677b0219178efd6eb0e475457c4afb452b521a92f6e67845a73bd85727f2a8"
+      }
+    },
+    "win32-x64": {
+      "opencode": {
+        "url": "https://registry.npmjs.org/opencode-windows-x64/-/opencode-windows-x64-1.17.15.tgz",
+        "integrity": "sha512-7H1lFbecFZsL1MV6K+5f9eQ9Drpl+opAeHLBwJkUegVhc7KrloZN39W0wUsuHSmv8OjU/wh4fbEfv9MaDCt0fg=="
+      },
+      "git": {
+        "name": "dugite-native-v2.53.0-4098283-windows-x64.tar.gz",
+        "url": "https://github.com/desktop/dugite-native/releases/download/v2.53.0-4/dugite-native-v2.53.0-4098283-windows-x64.tar.gz",
+        "checksum": "7b76bc5c32c0d7c5984efdc2a8a32697cf1e8a43bc55176fbf9869c0ee995130"
+      },
+      "node": {
+        "url": "https://nodejs.org/dist/v22.23.3/node-v22.23.3-win-x64.zip",
+        "checksum": "2b0ff57b049cda1bbcea2240eec20467018713c1efe1f7360c2681859b90ed71"
+      }
+    },
+    "win32-arm64": {
+      "opencode": {
+        "url": "https://registry.npmjs.org/opencode-windows-arm64/-/opencode-windows-arm64-1.17.15.tgz",
+        "integrity": "sha512-Bhh8uMKJNa5ciiqrp/RVgGL6/BWyJaVF4DzquP2ft/vxY7FmOYGEhWFphI43HQzRReAZ4/4vw5+D5jo+AnpOyg=="
+      },
+      "git": {
+        "name": "dugite-native-v2.53.0-4098283-windows-arm64.tar.gz",
+        "url": "https://github.com/desktop/dugite-native/releases/download/v2.53.0-4/dugite-native-v2.53.0-4098283-windows-arm64.tar.gz",
+        "checksum": "1abbeb3a2ce06e9b80e75bb888dce959b6c73bdb11ccc670a01a71d64f4422a5"
+      },
+      "node": {
+        "url": "https://nodejs.org/dist/v22.23.3/node-v22.23.3-win-arm64.zip",
+        "checksum": "33dad22e4cef5ee8f9fbb1b0d037fdacd0e56d12a4580f0d63f68b894deab535"
+      }
+    }
+  },
+  "sources": [
+    {
+      "name": "git-source.tar.gz",
+      "url": "https://codeload.github.com/git/git/tar.gz/67ad42147a7acc2af6074753ebd03d904476118f",
+      "checksum": "89b73762be55037144c92eaf5d0657b644330770f66c584c1ba2e7b90b6218cf"
+    },
+    {
+      "name": "dugite-native-source.tar.gz",
+      "url": "https://codeload.github.com/desktop/dugite-native/tar.gz/refs/tags/v2.53.0-4",
+      "checksum": "6600bdf3c7e2cbb127ac63d9d38da3a91267610c6034ecb8ff73e94f89508f33"
+    },
+    {
+      "name": "git-for-windows-source.tar.gz",
+      "url": "https://codeload.github.com/git-for-windows/git/tar.gz/refs/tags/v2.53.0.windows.4",
+      "checksum": "8070c16f94a4d5247adf5267bc2484dfeb7c8a55525da7849ac5707b68d8482f"
+    }
+  ]
+}

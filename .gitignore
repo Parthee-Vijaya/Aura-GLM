@@ -128,3 +128,7 @@ crash.*.log
 # POC 1 er en statisk side. Dens offentlige filer og downloadpakker deles i Git.
 !/site/dist/
 !/site/dist/**
+
+# Genererede installationspakker og medfølgende værktøjer
+/desktop/release/
+/desktop/.runtime/

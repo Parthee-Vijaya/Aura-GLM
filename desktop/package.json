@@ -1,8 +1,8 @@
 {
   "name": "ai-harness-desktop",
-  "version": "0.1.0",
+  "version": "0.2.0-beta.1",
   "private": true,
-  "description": "Lokal projektopstart og forhåndsvisning til AI Harness",
+  "description": "Byg applikationer med AI, lokale projektfiler og forhåndsvisning",
   "main": "main.cjs",
   "scripts": {
     "start": "electron .",
@@ -16,13 +16,21 @@
     "test:openrouter": "node scripts/verify-live-openrouter.cjs",
     "test:preferences": "node scripts/verify-preferences.cjs",
     "test:deployment": "node scripts/verify-deployment.cjs",
-    "test:introduction": "node scripts/verify-introduction.cjs"
+    "test:introduction": "node scripts/verify-introduction.cjs",
+    "runtime:prepare": "node scripts/prepare-runtime.cjs",
+    "package:mac": "electron-builder --config electron-builder.cjs --mac --publish never",
+    "package:windows": "electron-builder --config electron-builder.cjs --win --publish never",
+    "test:package": "node scripts/verify-package.cjs",
+    "release:site": "node scripts/release-site.cjs"
   },
   "engines": {
     "node": ">=22.12.0"
   },
   "devDependencies": {
+    "dugite": "3.2.3",
     "electron": "44.4.4",
+    "electron-builder": "26.16.1",
     "playwright": "1.63.0"
-  }
+  },
+  "author": "AI Alliancen"
 }
