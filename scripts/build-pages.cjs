@@ -1,0 +1,41 @@
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const root = path.resolve(__dirname, '..');
+const escape = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const repository = 'ai-alliancen-org/ai-harness';
+function render(releases, metadata) {
+  if (!Array.isArray(releases) || metadata.full_name !== repository || typeof metadata.private !== 'boolean') throw new Error('Ugyldige repository- eller releasedata.');
+  const release = releases.filter(r => !r.draft && r.published_at && Array.isArray(r.assets))
+    .sort((a,b) => Date.parse(b.published_at) - Date.parse(a.published_at))[0];
+  const access = metadata.private ? '<p><strong>Adgang for inviterede testere.</strong> Downloads kræver login på GitHub og adgang til det private repository.</p>' : '';
+  if (!release) return access + '<p>Der er endnu ingen offentliggjort testversion. Downloadknapper vises, når installationsfilerne er udgivet.</p>';
+  const prefix = `https://github.com/${repository}/releases/download/${encodeURIComponent(release.tag_name)}/`;
+  const files = release.assets.filter(a => a.state === 'uploaded' && /^AI-Harness-[a-zA-Z0-9.-]+-(mac|win)-(arm64|x64)\.(dmg|zip|exe)$/.test(a.name));
+  const links = files.map(a => {
+    const expected = prefix + encodeURIComponent(a.name);
+    if (a.browser_download_url !== expected) throw new Error('Downloadadressen matcher ikke repository og version.');
+    const mac = a.name.includes('-mac-');
+    const label = mac ? (a.name.includes('-arm64.') ? 'Mac · Apple-chip' : 'Mac · Intel') : (a.name.includes('-arm64.') ? 'Windows · ARM64' : 'Windows · x64');
+    const digest = /^sha256:[a-f0-9]{64}$/.test(a.digest || '') ? `<br>SHA-256: ${a.digest.slice(7)}` : '<br>Kontrolsum er ikke oplyst af GitHub.';
+    return `<article class="artifact"><a class="button" href="${escape(expected)}">Hent ${label} · ${escape(a.name.split('.').pop().toUpperCase())}</a><small>${escape(a.name)}<br>Signering og ${mac?'notarisation':'Windows-afprøvning'}: se udgivelsesnoterne.${digest}</small></article>`;
+  }).join('');
+  return access + `<p>Senest udgivet: <strong>${escape(release.tag_name)}</strong>${release.prerelease ? ' · testversion' : ''}.</p>` + (links || '<p>Versionen har endnu ingen installationsfiler.</p>') + `<p><a href="https://github.com/${repository}/releases/tag/${encodeURIComponent(release.tag_name)}">Læs udgivelsesnoter og installationsstatus ↗</a></p>`;
+}
+async function build(releases, metadata, output = path.join(root, '.cache/pages')) {
+  const fragment = render(releases, metadata);
+  await fs.mkdir(output, {recursive:true});
+  await fs.cp(path.join(root, 'site/dist'), output, {recursive:true});
+  await fs.copyFile(path.join(root, 'site/dist/index.html'), path.join(output, 'pakker.html'));
+  let html = await fs.readFile(path.join(root, 'site/dist/desktop.html'), 'utf8');
+  html = html.replace(/<!-- artifacts -->[\s\S]*?<!-- \/artifacts -->/, fragment);
+  html = html.replace('<footer>', '<footer><a href="pakker.html">Instruktionspakker til Claude Code, Codex og OpenCode</a>');
+  await fs.writeFile(path.join(output, 'index.html'), html);
+  await fs.writeFile(path.join(output, 'desktop.html'), html);
+  await fs.writeFile(path.join(output, '.nojekyll'), '');
+  return output;
+}
+if (require.main === module) Promise.all(process.argv.slice(2,4).map(f => fs.readFile(f,'utf8').then(JSON.parse)))
+  .then(([releases,metadata]) => build(releases,metadata))
+  .then(p => console.log(`Pages-side bygget i ${p}. Ingen installationsfiler eller adgangstokens kopieret.`))
+  .catch(e => {console.error(e.message);process.exitCode=1;});
+module.exports = {render,build};

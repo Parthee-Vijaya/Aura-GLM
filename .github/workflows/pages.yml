@@ -1,0 +1,55 @@
+name: Udgiv downloadside
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'site/dist/**'
+      - 'scripts/build-pages.cjs'
+      - '.github/workflows/pages.yml'
+  release:
+    types: [published, edited, deleted]
+permissions:
+  contents: read
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Hent faktiske udgivelser
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api repos/ai-alliancen-org/ai-harness/releases?per_page=100 > "$RUNNER_TEMP/releases.json"
+          gh api repos/ai-alliancen-org/ai-harness > "$RUNNER_TEMP/repository.json"
+          node scripts/build-pages.cjs "$RUNNER_TEMP/releases.json" "$RUNNER_TEMP/repository.json"
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .cache/pages
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Kræv adgangsbeskyttet Pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api repos/ai-alliancen-org/ai-harness/pages --jq '.public == false' > "$RUNNER_TEMP/private-pages.txt"
+          test "$(cat "$RUNNER_TEMP/private-pages.txt")" = true
+      - uses: actions/configure-pages@v5
+      - uses: actions/deploy-pages@v4
+        id: deployment
