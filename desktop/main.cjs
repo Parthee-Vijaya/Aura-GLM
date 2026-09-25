@@ -179,7 +179,7 @@ handle('deployment:open', async kind => {
 });
 
 handle('connections:account', kind => {
-  const urls = { anthropic: 'https://platform.claude.com/', openrouter: 'https://openrouter.ai/settings/keys', zen: 'https://opencode.ai/auth' };
+  const urls = { corti: 'https://console.corti.app/', mistral: 'https://console.mistral.ai/', anthropic: 'https://platform.claude.com/', openrouter: 'https://openrouter.ai/settings/keys', zen: 'https://opencode.ai/auth' };
   if (!Object.hasOwn(urls, kind)) throw new Error('Denne forbindelse opsættes hos din organisation eller på din egen server.');
   return shell.openExternal(urls[kind]);
 });

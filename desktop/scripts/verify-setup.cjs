@@ -38,6 +38,14 @@ const http = require('node:http');
     await page.click('#setup-button'); await page.click('#setup-local');
     assert.equal(await page.inputValue('#name'), 'Min kladde');
     await page.click('#setup-button'); await page.click('#setup-manage');
+    for (const [kind, address] of [['corti', 'https://ai.eu.corti.app/v1'], ['mistral', 'https://api.mistral.ai/v1']]) {
+      await page.selectOption('#provider-kind', kind);
+      assert.equal(await page.inputValue('#base-url'), address);
+      assert.equal(await page.locator('#base-url').evaluate(el => el.readOnly), true);
+      assert.equal(await page.isDisabled('#save-connection'), false);
+      assert.equal(await page.isDisabled('#api-key'), false);
+    }
+    assert.equal(await page.locator('#provider-kind option[value=promte]').count(), 0);
     await page.selectOption('#provider-kind', 'compatible'); await page.fill('#connection-name', 'Lokal testserver');
     await page.fill('#base-url', `http://127.0.0.1:${server.address().port}/v1`); await page.click('#save-connection');
     await page.locator('#connection-feedback').filter({ hasText: 'Forbindelsen er gemt' }).waitFor();

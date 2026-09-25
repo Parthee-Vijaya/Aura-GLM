@@ -296,3 +296,16 @@ xcrun notarytool store-credentials ai-harness-notary --team-id 2UX98897JW
 ```
 
 Værktøjet spørger efter Apple-konto og en app-specifik adgangskode. Indtast dem kun lokalt. Profilen gemmes i nøgleringen og valideres af Apple; almindelig Apple-kontoadgangskode skal ikke bruges. En eksisterende profil kan bruges i stedet. Nulstil ikke nøgleringen, hvis der opstår en adgangsfejl.
+
+
+## Corti S1 og Mistral · 25. september 2026
+
+Vælg **Corti S1 · EU** eller **Mistral API** under forbindelser, gem din API-nøgle, og hent kontoens aktuelle modeller. Intet modelvalg, forbrug eller skift til anden udbyder sker automatisk. Nøgler bruger det eksisterende krypterede lager og sendes kun fra hovedprocessens gateway.
+
+Corti bruger fast `https://ai.eu.corti.app/v1` og kræver en nøgle fra et EU-projekt. Modellerne hentes fra `/models`; embedding-modeller udelades fra kodechatten. Samme Corti-modelnavn kan dække andre underliggende modeller i USA, så adapteren skifter ikke region. EU-oplysningerne er leverandørudsagn, ikke en kontrol af jeres aftale eller installation. Se [Cortis regioner](https://docs.corti.ai/models/regions) og [API-vejledning](https://docs.corti.ai/models/quickstart).
+
+Mistral bruger fast `https://api.mistral.ai/v1`. Katalogets `completion_chat: false` udelader modeller uden chat, og `function_calling` bruges til at vise oplyst værktøjsstøtte. Manglende pris eller egenskaber vises fortsat som ukendte. Træningsvalg og opbevaring afhænger af konto og model; appen kan ikke verificere kontoens indstillinger. Se [modelkatalog](https://docs.mistral.ai/api/endpoint/models) og [træningsvilkår](https://help.mistral.ai/en/articles/347617-do-you-use-my-user-data-to-train-your-artificial-intelligence-models). Kilder kontrolleret 25. september 2026.
+
+Promte er efter aftale udeladt fra denne milepæl. Den fundne [Responses API-vejledning](https://kommune.applai.dk/docs/admin/api-og-responses) beskriver arbejdsområde-assistenter, men dokumenterer ikke egne kodeværktøjer; en fremtidig adapter kræver afklaring.
+
+Verifikation: katalog, Bearer-adgang, streaming, værktøjskald og afviste kald er afprøvet gennem gatewayen med lokale kontrollerede HTTP-servere. Udbydervalgene er afprøvet i Electron på macOS. Ingen live-modelopgave mod Corti eller Mistral er gennemført; det kræver konto/nøgle og valgt model. Eksisterende installationspakker indeholder ikke disse kildeændringer før en ny bygning.
