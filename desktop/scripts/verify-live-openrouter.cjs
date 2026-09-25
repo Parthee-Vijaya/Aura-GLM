@@ -25,7 +25,7 @@ const readline = require('node:readline');
   const route=routes.value.find(r=>r.price&&r.price.prompt!=null&&r.price.completion!=null&&Object.values(r.price).every(p=>Number(p)===0));assert.ok(route,'Ingen verificeret gratis rute');
   console.log(JSON.stringify({root,model:modelID,provider:route.id,pricing:route.price,material:'Kun syntetisk startside, testbesked og fælles offentlige regler',paidFallback:false}));
   await page.click('#connections-button');await page.click('[data-close="connections-dialog"]');await page.locator('#model-options').evaluate(el => el.open = true); await page.selectOption('#connection-select',connection.id);
-  await page.waitForFunction(id=>[...document.querySelector('#model-select').options].some(o=>o.value===id),modelID);await page.selectOption('#model-select',modelID);
+  await page.waitForFunction(id=>[...document.querySelector('#model-select').options].some(o=>o.value===id),modelID);await page.locator('#model-catalog').evaluate(el => el.open = true); await page.selectOption('#model-select',modelID);
   await page.waitForFunction(id=>[...document.querySelector('#route-select').options].some(o=>o.value===id),route.id);await page.selectOption('#route-select',route.id);
   await page.evaluate(project=>{
    window.testEvents=[];window.testPermissions=[];window.harness.onEvent(event=>{window.testEvents.push(event.type);if(event.type==='permission.asked'){const p=event.properties;const allow=p.permission==='edit'&&p.patterns.every(file=>file==='public/index.html'||file===project+'/public/index.html'||file===project.slice(1)+'/public/index.html');window.testPermissions.push({permission:p.permission,patterns:p.patterns,allow});window.harness.reply({id:p.id,allow});}});

@@ -38,7 +38,19 @@ async function until(check, description) { for (let i=0;i<300;i++) { if (await c
   await bench.activate(await openProject(project));
   const state=await bench.saveConnection({name:'Prøveserver',kind:'compatible',baseURL:`http://127.0.0.1:${server.address().port}/v1`});
   const selection={connectionID:state.connections[0].id,modelID:'test-model',references:[]};
-  const disclosure=await bench.prepare(selection);
+  await assert.rejects(bench.prepare({...selection,mode:'build',planID:'ukendt'}),/seneste plan/);
+  const planning=await bench.prepare({...selection,mode:'plan'});
+  await bench.send({text:'Planlæg en startside. Prøv også at skrive en fil; det skal afvises.',fingerprint:planning.fingerprint});
+  await until(()=>!bench.running,'plan færdig');
+  assert.equal(await fs.readFile(path.join(project,'public/index.html'),'utf8'),'<h1>Før</h1>');
+  assert.ok(bench.plan?.text, 'Planen skal kunne godkendes');
+  const planRequests=requests.filter(r=>r.tools?.length);
+  assert.ok(planRequests.length);
+  assert.ok(planRequests.every(r=>!r.tools.some(t=>['write','edit','bash'].includes(t.function.name))), 'Skrive- og shellværktøjer må ikke udbydes i planlægning');
+  assert.ok(planRequests.some(r=>r.messages.some(m=>m.role==='tool')), 'Det fremprovokerede skriveforsøg skal være behandlet');
+  const planID=bench.plan.id;
+  await assert.rejects(bench.prepare({...selection,mode:'build',planID:'forældet'}),/seneste plan/);
+  const disclosure=await bench.prepare({...selection,mode:'build',planID});
   await assert.rejects(bench.send({text:'Test',fingerprint:'forkert'}));
   await bench.send({text:'Skriv startsiden som aftalt.',fingerprint:disclosure.fingerprint});
   await until(()=>!bench.running,'agenten færdig');
@@ -46,14 +58,16 @@ async function until(check, description) { for (let i=0;i<300;i++) { if (await c
   assert.deepEqual(errors,[],JSON.stringify(errors));
   assert.match(await fs.readFile(path.join(project,'public/index.html'),'utf8'),/Bygget gennem agenten/);
   assert.ok(events.some(e=>e.type==='permission.asked'));
+  assert.ok(events.some(e=>e.type==='run.review' && e.files?.includes('public/index.html')));
+  assert.ok(requests.some(r=>JSON.stringify(r).includes(planID)), 'Den godkendte plan følger med til bygning');
   assert.ok(events.some(e=>e.type==='message.part.updated'));
   assert.ok(requests.some(r=>JSON.stringify(r).includes('git-og-versioner')));
   preview=await startPreview(project);assert.match(await(await fetch(preview.url)).text(),/Bygget gennem agenten/);
   await bench.close();permission='reject';await fs.writeFile(path.join(project,'public/index.html'),'<h1>Bevar</h1>');
-  const declined=await bench.prepare(selection);await bench.send({text:'Prøv igen.',fingerprint:declined.fingerprint});await until(()=>!bench.running,'afvist handling');
+  const declined=await bench.prepare(selection);await bench.send({text:'Prøv igen.',fingerprint:declined.fingerprint});await until(()=>!bench.running,'afvist handling');assert.equal(bench.plan,null,'Direkte arbejde ugyldiggør tidligere plan');
   assert.equal(await fs.readFile(path.join(project,'public/index.html'),'utf8'),'<h1>Bevar</h1>');
   await bench.close();mode='wait';const canceled=await bench.prepare(selection);await bench.send({text:'Vent på svar.',fingerprint:canceled.fingerprint});await pause(1000);await bench.stop();assert.equal(bench.running,false);
-  console.log(JSON.stringify({status:'bestået',root,checks:['rigtig OpenCode-motor','kontrolleret modelserver','krævet datagennemgang','værktøjskald og godkendelse','rigtig filændring','preview fra disk','afvist ændring bevaret','stop'],model:'Simuleret kompatibel API, ikke en ekstern AI-model'}));
+  console.log(JSON.stringify({status:'bestået',root,checks:['planlægning afviser fremprovokeret skriveforsøg','plan og afklaring følger til bygning','forældet plan afvises','afslutning viser faktiske filændringer','rigtig OpenCode-motor','kontrolleret modelserver','krævet datagennemgang','værktøjskald og godkendelse','rigtig filændring','preview fra disk','afvist ændring bevaret','stop'],model:'Simuleret kompatibel API, ikke en ekstern AI-model'}));
  }catch(error){console.error(error);console.error(JSON.stringify(events.filter(e=>/error|permission/.test(e.type))));process.exitCode=1;}
  finally {await bench.close();await preview?.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
 })();

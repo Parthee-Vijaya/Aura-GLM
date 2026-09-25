@@ -57,7 +57,7 @@ const http = require('node:http');
     await app.evaluate(({ dialog }, project) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [project] }); }, project);
     await page.click('#open'); await page.waitForFunction(() => document.querySelector('#model-select').options.length === 2);
     assert.equal(await page.inputValue('#connection-select'), connection.id);
-    await page.selectOption('#model-select', 'test-model'); await page.click('#model-done');
+    await page.locator('#model-catalog').evaluate(el => el.open = true); await page.selectOption('#model-select', 'test-model'); await page.click('#model-done');
     assert.equal(await page.locator('#model-options').evaluate(el => el.open), false);
     assert.match(await page.locator('#model-summary').textContent(), /Testmodel/); await page.fill('#prompt', 'Bevar min besked ved forbindelsesfejl.');
     available = false; await page.click('#send');

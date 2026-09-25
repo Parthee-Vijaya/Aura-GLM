@@ -58,3 +58,24 @@ test('serveradresser og ukendte vilkår er tydelige', () => {
  const data=disclosure({kind:'compatible',name:'Egen server',baseURL:'http://spark:8000/v1'},{id:'qwen'});
  assert.match(data.region,/Ukendt/);assert.match(data.price,/Ukendt/);assert.match(data.security,/HTTP uden TLS/);
 });
+
+test('planlægning lukker skrive-, shell- og ukendte værktøjer, men bevarer læsebeskyttelsen', () => {
+ const { permissions } = require('../core/engine.cjs');
+ const policy = permissions('/projekt', [], 'plan');
+ assert.equal(policy['*'], 'deny');
+ for (const tool of ['write', 'edit', 'bash', 'task', 'skill', 'apply_patch']) assert.equal(policy[tool] || policy['*'], 'deny');
+ assert.equal(policy.read['*.env'], 'deny');
+ assert.equal(policy.read['**/references/**'], 'deny');
+ assert.equal(policy.webfetch, 'ask');
+ assert.equal(policy.external_directory, 'ask');
+});
+
+test('svar på planlægningsspørgsmål følger med i afklaringen, og afvist stop ændrer ikke status', async t => {
+ const bench = new Workbench({directory:await temp(t), profiles, emit:()=>{}, safeStorage:{}});
+ bench.runMode='plan'; bench.planConversation=[]; bench.engine={request:async()=>true};
+ await bench.question({id:'spørgsmål',answers:[['Kun interne brugere']]});
+ assert.match(bench.planConversation[0],/Kun interne brugere/);
+ bench.runStopped=false; bench.plan={id:'bevar'}; bench.finishing=Promise.resolve();
+ await assert.rejects(bench.stop(),/Afslutningen/);
+ assert.equal(bench.runStopped,false); assert.equal(bench.plan.id,'bevar');
+});

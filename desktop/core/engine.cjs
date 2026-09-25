@@ -15,9 +15,10 @@ async function findExecutable() {
   }
   throw new Error(`OpenCode ${VERSION} blev ikke fundet. Installer denne version, eller angiv HARNESS_OPENCODE_PATH ved start. Din eksisterende installation ændres ikke.`);
 }
-function permissions(root, references) {
+function permissions(root, references, mode = 'free') {
   const read = { '*': 'allow', '*.env': 'deny', '*.env.*': 'deny', '*.key': 'deny', '*.pem': 'deny', '**/.git/**': 'deny', '**/secrets/**': 'deny', '**/references/**': 'deny' };
   for (const file of references) read[path.join(root, file)] = 'allow';
+  if (mode === 'plan') return { '*': 'deny', read, glob: 'allow', list: 'allow', grep: 'ask', webfetch: 'ask', external_directory: 'ask', question: 'allow' };
   return { '*': 'ask', read, glob: 'allow', grep: 'ask', list: 'allow', edit: { '*': 'ask', '*.env*': 'deny', '*.key': 'deny', '*.pem': 'deny', '**/.git/**': 'deny' }, bash: 'ask', external_directory: 'ask', webfetch: 'ask', websearch: 'deny', task: 'deny', skill: 'deny', lsp: 'deny', question: 'allow', todowrite: 'allow', todoread: 'allow' };
 }
 function engineConfig(provider, model, permission) {
@@ -32,7 +33,7 @@ function isolatedEnv(directory, config, password) {
   return env;
 }
 class OpenCodeEngine {
-  constructor({ root, directory, provider, model, references = [], onEvent = () => {} }) { Object.assign(this, { root, directory, provider, model, references, onEvent }); this.pending = new Map(); this.active = false; }
+  constructor({ root, directory, provider, model, references = [], mode = 'free', onEvent = () => {} }) { Object.assign(this, { root, directory, provider, model, references, mode, onEvent }); this.pending = new Map(); this.active = false; }
   async request(url, method = 'GET', body, signal) {
     const response = await fetch(`${this.url}${url}`, { method, headers: { authorization: this.auth, 'content-type': 'application/json', 'x-opencode-directory': encodeURIComponent(this.root) }, body: body === undefined ? undefined : JSON.stringify(body), signal: signal || AbortSignal.timeout(15000), redirect: 'error' });
     if (!response.ok) throw new Error(`Agentmotoren afviste handlingen (HTTP ${response.status}).`);
@@ -44,7 +45,7 @@ class OpenCodeEngine {
     await fs.mkdir(this.directory, { recursive: true, mode: 0o700 });
     const password = randomBytes(32).toString('hex');
     this.auth = `Basic ${Buffer.from(`harness:${password}`).toString('base64')}`;
-    const permission = permissions(this.root, this.references);
+    const permission = permissions(this.root, this.references, this.mode);
     this.config = engineConfig(this.provider, this.model, permission);
     if (/\{(?:env|file):/.test(JSON.stringify(this.config))) throw new Error('Konfigurationen indeholder en ikke tilladt variabelhenvisning.');
     this.child = spawn(executable, ['serve', '--hostname', '127.0.0.1', '--port', '0'], { cwd: this.root, env: isolatedEnv(this.directory, this.config, password), windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });

@@ -256,3 +256,17 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus { outline: none; }
 
 #data-summary dt { font-weight: 600; margin-top: 12px; }
 #data-summary dd { margin: 3px 0; overflow-wrap: anywhere; }
+
+.workflow { padding: 8px 14px; border-top: 1px solid var(--border, #ddd); }
+.workflow label { font-size: 12px; }
+.workflow select { width: 100%; }
+.workflow .hint { margin: 5px 0; }
+.journey-card { overflow-wrap: anywhere; padding: 14px; margin: 8px 12px; border: 1px solid #ddd; border-radius: 12px; animation: step-arrive 220ms ease-out; }
+.journey-card h3 { margin: 0 0 8px; }
+.journey-card pre { white-space: pre-wrap; font-family: inherit; }
+.journey-card button { margin: 4px; }
+.model-choice { width: 100%; text-align: left; padding: 10px; margin-top: 6px; }
+.model-choice strong, .model-choice span { display: block; }
+.model-choice span { font-size: 12px; color: #666; margin-top: 4px; }
+.action-target { white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (prefers-reduced-motion: reduce) { .journey-card { animation: none; } }

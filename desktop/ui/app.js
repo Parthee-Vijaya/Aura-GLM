@@ -93,6 +93,7 @@ function showPreview(url, external = false) {
 async function displayProject(project) {
   if (!project) return;
   ++modelRequest; recovery = ''; $('#connection-warning').hidden = true; setupActive = false; $('#setup').hidden = true; setupControls();
+  activePlan = null; modelCatalog = []; $('#model-shortlist').replaceChildren(); $('#plan-card').hidden = true; $('#run-review').hidden = true; $('#work-mode').value = project.purpose ? 'plan' : 'free'; updateWorkMode();
   current = project; revision = null; acceptedFingerprint = null; roles.clear(); parts.clear();
   $('#project-intro').hidden = false; $('#messages').replaceChildren(); $('#approvals').replaceChildren(); $('#prompt').value = '';
   $('#view-title').textContent = 'Arbejdsområde'; $('#active-project').textContent = project.name; $('#active-project').classList.add('active');
@@ -149,14 +150,16 @@ function updateProvider() {
 }
 async function loadModels(saved = {}) {
   const id = $('#connection-select').value; const generation = ++modelRequest; acceptedFingerprint = null;
+  modelCatalog = []; $('#model-shortlist').replaceChildren(); $('#model-evidence').textContent = '';
   $('#model-select').replaceChildren(option('', id ? 'Henter modeller …' : 'Vælg en forbindelse først')); $('#route-row').hidden = true;
   updateModelSummary();
   if (!id) return;
   try {
     const models = await call('models', id); if (generation !== modelRequest) return;
+    modelCatalog = models; $('#model-search').value = ''; renderShortlist();
     $('#model-select').replaceChildren(option('', 'Vælg model'));
     for (const model of models) {
-      const free = model.price && Number(model.price.prompt) === 0 && Number(model.price.completion) === 0;
+      const free = model.price && model.price.prompt != null && model.price.completion != null && Number(model.price.prompt) === 0 && Number(model.price.completion) === 0;
       $('#model-select').append(option(model.id, `${model.name}${free ? ' · gratis*' : ''}`));
     }
     if (saved.modelID && models.some(m => m.id === saved.modelID)) { $('#model-select').value = saved.modelID; await loadRoutes(saved.routeID); }
@@ -174,26 +177,29 @@ async function loadRoutes(saved = '') {
   for (const route of routes) $('#route-select').append(option(route.id, route.name));
   if (routes.some(route => route.id === saved)) $('#route-select').value = saved;
 }
-function selection() { return { connectionID: $('#connection-select').value, modelID: $('#model-select').value, routeID: $('#route-select').value, references: [...document.querySelectorAll('#reference-choices input:checked')].map(el => el.value) }; }
-const detailLabels = { projectChoices: 'Projektets opstartsvalg', connection: 'Forbindelse', model: 'Model', endpoint: 'Serveradresse', recipients: 'Modtagere', region: 'Behandlingssted', retention: 'Opbevaring', training: 'Brug til træning', price: 'Pris og gratisbegrænsninger', capabilities: 'Modelmuligheder', material: 'Hvad sendes?', references: 'Udvalgte private referencer', skills: 'Aktive skills', localStorage: 'Lokal historik og yderligere netværk', security: 'Forbindelsens sikkerhed', source: 'Kilde', checkedAt: 'Dokumentation kontrolleret', evidence: 'Grundlag' };
+function selection() { return { mode: $('#work-mode').value, planID: activePlan?.id, connectionID: $('#connection-select').value, modelID: $('#model-select').value, routeID: $('#route-select').value, references: [...document.querySelectorAll('#reference-choices input:checked')].map(el => el.value) }; }
+const detailLabels = { mode: 'Arbejdsmåde', planContext: 'Plan og afklaring, der sendes', projectChoices: 'Projektets opstartsvalg', connection: 'Forbindelse', model: 'Model', endpoint: 'Serveradresse', recipients: 'Modtagere', region: 'Behandlingssted', retention: 'Opbevaring', training: 'Brug til træning', price: 'Pris og gratisbegrænsninger', capabilities: 'Modelmuligheder', material: 'Hvad sendes?', references: 'Udvalgte private referencer', skills: 'Aktive skills', localStorage: 'Lokal historik og yderligere netværk', security: 'Forbindelsens sikkerhed', source: 'Kilde', checkedAt: 'Dokumentation kontrolleret', evidence: 'Grundlag' };
 function showData(data, canSend) {
   $('#data-summary').replaceChildren();
   for (const [label, value] of Object.entries({ 'Din AI': `${data.model} · ${data.connection}`, 'Modtagere': data.recipients, 'Behandlingssted': data.region, 'Pris': data.price, 'Opbevaring': data.retention, 'Træning': data.training })) {
     $('#data-summary').append(node('dt', label), node('dd', Array.isArray(value) ? value.join(', ') : value));
   }
   $('#data-details').replaceChildren();
-  for (const [key, label] of Object.entries(detailLabels)) { $('#data-details').append(node('dt', label), node('dd', Array.isArray(data[key]) ? data[key].join(', ') || 'Ingen' : data[key])); }
+  for (const [key, label] of Object.entries(detailLabels)) { $('#data-details').append(node('dt', label), node('dd', key === 'mode' ? ({ plan: 'Afklar og planlæg', build: 'Byg den valgte plan', free: 'Arbejd direkte' }[data[key]]) : Array.isArray(data[key]) ? data[key].join(', ') || 'Ingen' : data[key] && typeof data[key] === 'object' ? JSON.stringify(data[key], null, 2) : data[key] || 'Ingen')); }
   $('#accept-send').hidden = !canSend; $('#data-dialog').showModal();
 }
 async function sendNow(data, text) {
   $('#model-options').open = false; $('#connection-warning').hidden = true; $('#data-dialog').close(); setRunning(true, 'Starter agent …');
+  if ($('#work-mode').value === 'free') { activePlan = null; $('#plan-card').hidden = true; }
+  $('#run-review').hidden = true; if ($('#work-mode').value === 'build') $('#plan-card').hidden = true; if ($('#work-mode').value === 'plan') { activePlan = null; $('#plan-card').hidden = true; }
   lastSentText = text; appendMessage(text, 'user'); $('#prompt').value = '';
   try { await call('send', { text, fingerprint: data.fingerprint }); acceptedFingerprint = data.fingerprint; }
   catch (error) { $('#prompt').value = text; setRunning(false, 'Fejl'); appendMessage(error.message, 'error'); connectionFailed(error.message); throw error; }
 }
 function setRunning(value, status) {
   running = value; $('#run-status').textContent = status; $('#send').disabled = value; $('#stop').hidden = !value;
-  for (const selector of ['#connection-select', '#model-select', '#route-select', '#new', '#open', '#connections-button', '#skills-button', '#git-button', '#publish-button', '#setup-hosting', '#deploy-button', '#intro-button']) $(selector).disabled = value;
+  for (const selector of ['#work-mode', '#build-plan', '#model-load', '#model-search', '#connection-select', '#model-select', '#route-select', '#new', '#open', '#connections-button', '#skills-button', '#git-button', '#publish-button', '#setup-hosting', '#deploy-button', '#intro-button']) $(selector).disabled = value;
+  for (const button of document.querySelectorAll('#model-shortlist button')) button.disabled = value;
   setupControls();
   if (!value && recovery) { const reason = recovery; recovery = ''; showConnectionWarning(reason); }
 }
@@ -209,9 +215,11 @@ function partElement(id, role) {
 }
 window.harness.onEvent(event => {
   const p = event.properties || {};
+  if (event.type === 'plan.ready') { activePlan = event.plan; $('#plan-text').textContent = event.plan.text; $('#plan-card').hidden = false; requestAnimationFrame(() => $('#plan-card').scrollIntoView({ block: 'nearest' })); }
+  if (event.type === 'run.review') renderRunReview(event);
   if (event.type === 'git.checkpoint') { appendMessage(event.message, 'system'); return; }
   if (event.type === 'preview.ready') return showPreview(event.url);
-  if (event.type === 'session.new') { roles.clear(); parts.clear(); appendMessage('Ny modelsession. Tidligere samtaler overføres ikke ved skift af forbindelse, model, referencer eller skills.', 'system'); }
+  if (event.type === 'session.new') { roles.clear(); parts.clear(); appendMessage('Ny modelsession. Tidligere modelsessioner overføres ikke automatisk. I det guidede forløb medsendes den viste plan og afklaring; se Data og vilkår.', 'system'); }
   if (event.type === 'run.status') {
     const active = ['starting', 'working'].includes(event.status);
     const statuses = { starting: 'Starter agent …', working: 'Arbejder …', idle: 'Klar', error: 'Fejl', stopped: 'Stoppet' };
@@ -228,8 +236,11 @@ window.harness.onEvent(event => {
   if (event.type === 'message.part.delta' && p.field === 'text' && roles.get(p.messageID) !== 'user') partElement(p.partID, 'assistant').textContent += p.delta;
   if (event.type === 'permission.asked') {
     const box = node('section', undefined, 'approval'); box.dataset.id = p.id;
-    box.append(node('strong', `Godkend handling: ${toolLabels[p.permission] || p.permission}`), node('pre', JSON.stringify({ paths: p.patterns, details: p.metadata }, null, 2)));
-    box.append(node('p', 'En godkendt kommando kan læse filer og kontakte tjenester med din brugers rettigheder. Agenten er ikke en OS-sandbox.', 'hint'));
+    const explanation = approvalExplanation(p);
+    box.append(node('strong', explanation.title), node('p', explanation.effect));
+    box.append(node('p', (p.patterns || []).join('\n'), 'action-target'));
+    if (p.metadata?.description) box.append(node('p', `Agentens begrundelse: ${p.metadata.description}`, 'hint'));
+    const details = node('details'); details.append(node('summary', 'Tekniske detaljer'), node('pre', JSON.stringify({ paths: p.patterns, details: p.metadata }, null, 2))); box.append(details);
     for (const allow of [false, true]) { const button = node('button', allow ? 'Tillad én gang' : 'Afvis'); button.onclick = () => action(async () => { await call('reply', { id: p.id, allow }); box.remove(); }); box.append(button); }
     $('#approvals').append(box); box.scrollIntoView({ block: 'nearest' });
   }
@@ -329,7 +340,7 @@ function showConnectionWarning(reason) {
 $('#repair-connection').onclick = () => showSetup($('#connection-warning-text').textContent);
 $('#dismiss-connection').onclick = () => { $('#connection-warning').hidden = true; $('#prompt').focus(); };
 $('#model-manage').onclick = () => $('#connections-button').click();
-$('#start-idea').onclick = () => { if (!$('#prompt').value.trim()) $('#prompt').value = `Jeg vil bygge: ${current?.purpose || ''}\n\nHjælp mig med at afklare idéen. Stil de nødvendige spørgsmål i almindeligt sprog og foreslå en kort plan, før du ændrer filer.`; $('#prompt').focus(); };
+$('#start-idea').onclick = () => { $('#work-mode').value = 'plan'; updateWorkMode(); if (!$('#prompt').value.trim()) $('#prompt').value = `Jeg vil bygge: ${current?.purpose || ''}\n\nHjælp mig med at afklare idéen. Stil de nødvendige spørgsmål i almindeligt sprog og foreslå en kort plan, før du ændrer filer.`; $('#prompt').focus(); };
 $('#model-select').addEventListener('change', updateModelSummary);
 
 $('#model-done').onclick = () => { if (!$('#connection-select').value || !$('#model-select').value || (!$('#route-row').hidden && !$('#route-select').value)) { message('Vælg en forbindelse, model og eventuel udbyder først.', true); return; } updateModelSummary(); $('#model-options').open = false; $('#prompt').focus(); };
@@ -438,3 +449,66 @@ $('#purpose').addEventListener('input', () => {
   saveIdeaDraft();
 });
 try { if (!localStorage.getItem(introductionKey)) showIntroduction(); } catch { showIntroduction(); }
+
+// Det guidede forløb ændrer aldrig model, rute eller betaling uden et aktivt valg.
+let modelCatalog = [], activePlan = null;
+function modelDescription(model) {
+  const price = model.price;
+  const known = price && price.prompt != null && price.completion != null && Number.isFinite(Number(price.prompt)) && Number.isFinite(Number(price.completion));
+  const cost = !known ? 'Pris ukendt' : Number(price.prompt) === 0 && Number(price.completion) === 0 ? '0 USD for input/output*' : `${Number(price.prompt) * 1e6} / ${Number(price.completion) * 1e6} USD pr. mio. input-/outputtokens`;
+  return `${cost} · ${model.capabilities?.tools === true ? 'Værktøjskald angivet i kataloget' : model.capabilities?.tools === false ? 'Ingen værktøjskald angivet' : 'Kodeværktøjer ikke verificeret'}`;
+}
+function renderShortlist() {
+  const candidates = modelCatalog.filter(m => m.capabilities?.tools !== false).sort((a, b) => Number(b.capabilities?.tools === true) - Number(a.capabilities?.tools === true) || a.name.localeCompare(b.name, 'da')).slice(0, 3);
+  $('#model-shortlist').replaceChildren();
+  for (const model of candidates) {
+    const button = node('button', undefined, 'model-choice'); button.type = 'button';
+    button.append(node('strong', model.name), node('span', modelDescription(model)));
+    button.onclick = () => action(async () => { $('#model-select').value = model.id; $('#model-evidence').textContent = `${model.name}: ${modelDescription(model)}. Modtager: ${state.connections.find(c => c.id === $('#connection-select').value)?.name || 'valgt forbindelse'}. Endelig udbyder og vilkår gennemgås før afsendelse.`; updateModelSummary(); await loadRoutes(); });
+    $('#model-shortlist').append(button);
+  }
+  $('#model-shortlist').append(node('p', candidates.length ? 'Et udvalg fra din forbindelse: modeller med oplyste værktøjskald først, derefter alfabetisk. Ingen kvalitetsrangering. *Andre gebyrer, kvoter og udbydervilkår kan gælde.' : 'Ingen forslag med kendt eller ukendt værktøjsstøtte. Gennemgå kataloget under Avanceret.', 'hint'));
+}
+$('#model-search').oninput = () => { const query = $('#model-search').value.toLocaleLowerCase(); for (const item of $('#model-select').options) item.hidden = Boolean(item.value && item.value !== $('#model-select').value && !item.textContent.toLocaleLowerCase().includes(query)); };
+function updateWorkMode() {
+  const mode = $('#work-mode').value;
+  $('#mode-help').textContent = mode === 'plan' ? 'AI’en kan læse og stille spørgsmål. Filændringer og kommandoer er blokeret. Svar i samtalen, indtil planen passer.' : mode === 'build' ? 'AI’en bygger efter den plan, du har valgt. Handlinger kræver fortsat godkendelse.' : 'Skriv frit til kodeagenten. Filændringer, kommandoer og webopslag kræver godkendelse.';
+}
+$('#work-mode').onchange = () => { acceptedFingerprint = null; updateWorkMode(); };
+$('#build-plan').onclick = () => {
+  if (!activePlan || running) return;
+  if ($('#prompt').value.trim()) { message('Send eller ryd din beskedkladde, før du bygger planen.'); return; }
+  $('#work-mode').value = 'build'; updateWorkMode(); acceptedFingerprint = null;
+  $('#prompt').value = 'Byg første udkast efter den plan, jeg har gennemgået. Afslut med konkrete ting, jeg skal prøve i forhåndsvisningen.';
+  $('#chat-form').requestSubmit();
+};
+function approvalExplanation(p) {
+  const explanations = {
+    edit: ['Må AI’en ændre disse filer?', 'Ændringen bliver gemt i projektet. Gennemgå bagefter resultat og fildiff; der gemmes ikke automatisk en Git-version, medmindre du har valgt checkpoints.'],
+    write: ['Må AI’en skrive denne fil?', 'En eksisterende fil kan blive erstattet. Gennemgå ændringen bagefter.'],
+    bash: ['Må AI’en køre denne kommando?', 'Kommandoen kan ændre eller slette filer, installere pakker og kontakte tjenester med dine rettigheder. Godkend kun, hvis formålet og kommandoen giver mening.'],
+    webfetch: ['Må AI’en besøge denne hjemmeside?', 'Hjemmesiden modtager forespørgslen. Det hentede indhold kan sendes videre til din valgte AI som kontekst.'],
+    external_directory: ['Må AI’en få adgang uden for projektet?', 'Denne adgang omfatter en anden mappe på computeren. Den kan indeholde materiale, du ikke vil dele med modellen.'],
+    grep: ['Må AI’en søge i filernes indhold?', 'Søgeresultaterne kan indgå i den kontekst, der sendes til modellen.']
+  };
+  const [title, effect] = explanations[p.permission] || ['Gennemgå denne handling', 'Læs målet og de tekniske detaljer, før du giver tilladelse.'];
+  return { title, effect };
+}
+function renderRunReview(result) {
+  const box = $('#run-review'); box.replaceChildren();
+  if (result.mode === 'plan' && result.status === 'idle' && !result.files.length) { box.hidden = true; return; }
+  box.hidden = false; requestAnimationFrame(() => box.scrollIntoView({ block: 'nearest' }));
+  box.append(node('h3', result.status === 'idle' ? result.mode === 'plan' ? 'Forslaget er klar til gennemgang' : 'Opgaven er afsluttet · prøv resultatet' : 'Opgaven blev ikke afsluttet normalt'));
+  if (result.unavailable) { box.append(node('p', 'Ændringsoversigten kunne ikke læses. Gennemgå filerne manuelt.')); return; }
+  box.append(node('p', result.files.length ? `Registrerede ændringer i denne opgave: ${result.files.join(', ')}` : 'Ingen tekstfilændringer registreret i denne opgave.'));
+  const commands = result.tools.filter(t => t.tool === 'bash');
+  box.append(node('p', commands.length ? 'Kørte kommandoer (afsluttet er ikke det samme som bestået test):' : 'Ingen kommandoer kørt. Appen har ikke bekræftet funktionalitet eller tests.'));
+  for (const tool of commands) box.append(node('p', `${tool.title || 'Kommando'} · ${toolStatuses[tool.status] || tool.status}`));
+  if (result.tools.some(t => t.status === 'error')) box.append(node('p', 'Mindst ét værktøj fejlede eller blev afvist. Se samtalen, før du fortsætter.'));
+  box.append(node('p', 'Prøv selv: åbn forhåndsvisningen, gennemfør den vigtigste opgave, og kontrollér også en smal skærmstørrelse. AI’ens beskrivelse er ikke et testbevis.', 'hint'));
+  if (result.skipped) box.append(node('p', 'Nogle filer er udeladt af oversigten på grund af filtype eller størrelse.'));
+  if (result.files.length) {
+    const inspect = node('button', 'Gennemgå ændringer'); inspect.onclick = () => $('#changes-button').click();
+    const save = node('button', 'Gem version'); save.onclick = () => $('#git-button').click(); box.append(inspect, save);
+  }
+}
