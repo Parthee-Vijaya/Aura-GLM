@@ -72,6 +72,7 @@ class Workbench {
     const disclosure = connections.disclosure(selection.connection, selection.model, selection.route);
     disclosure.projectChoices = startup ? `Hostingønske: ${startup.hosting || 'beslut senere'}. Teststrategi: ${startup.tests}. Ønsker er ikke en deploymentgodkendelse.` : 'Ingen ekstra opstartsvalg.';
     disclosure.mode = mode;
+    disclosure.projectGuidance = projectGuidance;
     if (mode !== 'free') disclosure.material += ' Plan og tidligere afklaring medsendes. De kan indeholde oplysninger fra tidligere valgte referencer, også efter at referencerne fravælges. Gennemgå indholdet nedenfor.';
     disclosure.planContext = mode === 'build' ? this.plan : mode === 'plan' ? this.planConversation : null;
     disclosure.planID = mode === 'build' ? this.plan.id : null;

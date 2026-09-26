@@ -79,3 +79,18 @@ test('svar på planlægningsspørgsmål følger med i afklaringen, og afvist sto
  await assert.rejects(bench.stop(),/Afslutningen/);
  assert.equal(bench.runStopped,false); assert.equal(bench.plan.id,'bevar');
 });
+
+test('planlægning vælger plan-agenten og beholder de samme eksplicitte tilladelser', async () => {
+  const { OpenCodeEngine, engineConfig, permissions } = require('../core/engine.cjs');
+  for (const mode of ['plan', 'build', 'free']) {
+    const engine = new OpenCodeEngine({ root: '/tmp/testprojekt', mode, model: { id: 'test' } });
+    engine.active = true; engine.session = { id: 'testsession' };
+    let sent;
+    engine.request = async (url, method, body) => { sent = body; };
+    await engine.send('Prøve', 'Regler');
+    assert.equal(sent.agent, mode === 'plan' ? 'plan' : 'build');
+    const permission = permissions('/tmp/testprojekt', [], mode);
+    const config = engineConfig({}, { id: 'test' }, permission);
+    assert.deepEqual(config.agent.plan.permission, permission);
+  }
+});

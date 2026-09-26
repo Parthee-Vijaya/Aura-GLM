@@ -22,7 +22,7 @@ function permissions(root, references, mode = 'free') {
   return { '*': 'ask', read, glob: 'allow', grep: 'ask', list: 'allow', edit: { '*': 'ask', '*.env*': 'deny', '*.key': 'deny', '*.pem': 'deny', '**/.git/**': 'deny' }, bash: 'ask', external_directory: 'ask', webfetch: 'ask', websearch: 'deny', task: 'deny', skill: 'deny', lsp: 'deny', question: 'allow', todowrite: 'allow', todoread: 'allow' };
 }
 function engineConfig(provider, model, permission) {
-  return { $schema: 'https://opencode.ai/config.json', model: `harness/${model.id}`, small_model: `harness/${model.id}`, enabled_providers: ['harness'], provider: { harness: provider }, permission, share: 'disabled', autoupdate: false, snapshot: false, plugin: [], mcp: {}, lsp: false, formatter: false };
+  return { $schema: 'https://opencode.ai/config.json', model: `harness/${model.id}`, small_model: `harness/${model.id}`, enabled_providers: ['harness'], provider: { harness: provider }, permission, agent: { plan: { permission } }, share: 'disabled', autoupdate: false, snapshot: false, plugin: [], mcp: {}, lsp: false, formatter: false };
 }
 function isolatedEnv(directory, config, password) {
   const env = {};
@@ -64,7 +64,7 @@ class OpenCodeEngine {
       const health = await this.request('/global/health');
       if (health.version !== VERSION) throw new Error('Agentmotorens version matcher ikke den afprøvede version.');
       const effective = await this.request('/config');
-      if (effective.small_model !== this.config.small_model || !isDeepStrictEqual(effective.enabled_providers, ['harness']) || effective.provider?.harness?.npm !== this.provider.npm || effective.provider?.harness?.options?.baseURL !== this.provider.options.baseURL || effective.provider?.harness?.options?.apiKey !== this.provider.options.apiKey || effective.model !== this.config.model || effective.share !== 'disabled' || effective.snapshot !== false || !isDeepStrictEqual(effective.permission, permission) || Object.keys(effective.mcp || {}).length || (effective.plugin || []).length) throw new Error('Agentens effektive indstillinger afviger. En lokal eller administreret konfiguration kan være årsagen.');
+      if (effective.small_model !== this.config.small_model || !isDeepStrictEqual(effective.enabled_providers, ['harness']) || effective.provider?.harness?.npm !== this.provider.npm || effective.provider?.harness?.options?.baseURL !== this.provider.options.baseURL || effective.provider?.harness?.options?.apiKey !== this.provider.options.apiKey || effective.model !== this.config.model || effective.share !== 'disabled' || effective.snapshot !== false || !isDeepStrictEqual(effective.permission, permission) || !isDeepStrictEqual(effective.agent?.plan?.permission, permission) || Object.keys(effective.mcp || {}).length || (effective.plugin || []).length) throw new Error('Agentens effektive indstillinger afviger. En lokal eller administreret konfiguration kan være årsagen.');
       this.session = await this.request('/session', 'POST', { title: 'AI Harness' });
       this.active = true;
       this.listen();
@@ -98,7 +98,7 @@ class OpenCodeEngine {
   }
   async send(text, system) {
     if (!this.active) throw new Error('Agenten er ikke startet.');
-    return this.request(`/session/${this.session.id}/prompt_async`, 'POST', { model: { providerID: 'harness', modelID: this.model.id }, agent: 'build', system, parts: [{ type: 'text', text }] });
+    return this.request(`/session/${this.session.id}/prompt_async`, 'POST', { model: { providerID: 'harness', modelID: this.model.id }, agent: this.mode === 'plan' ? 'plan' : 'build', system, parts: [{ type: 'text', text }] });
   }
   async abort() { if (this.session && this.url) await this.request(`/session/${this.session.id}/abort`, 'POST'); this.pending.clear(); }
   async reply(id, allow) { if (!this.pending.has(id)) throw new Error('Godkendelsen findes ikke længere.'); await this.request(`/permission/${encodeURIComponent(id)}/reply`, 'POST', { reply: allow ? 'once' : 'reject' }); this.pending.delete(id); }

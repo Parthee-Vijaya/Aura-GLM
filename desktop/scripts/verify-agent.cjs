@@ -48,6 +48,9 @@ async function until(check, description) { for (let i=0;i<300;i++) { if (await c
   assert.ok(planRequests.length);
   assert.ok(planRequests.every(r=>!r.tools.some(t=>['write','edit','bash'].includes(t.function.name))), 'Skrive- og shellværktøjer må ikke udbydes i planlægning');
   assert.ok(planRequests.some(r=>r.messages.some(m=>m.role==='tool')), 'Det fremprovokerede skriveforsøg skal være behandlet');
+  const { projectGuidance } = require('../core/project-guidance.cjs');
+  assert.equal(planning.projectGuidance, projectGuidance, 'Datagennemgangen skal vise de ekstra projektinstruktioner');
+  assert.ok(planRequests.some(r => r.messages.some(m => typeof m.content === 'string' && m.content.includes(projectGuidance))), 'Projektvejledningen skal nå frem til modelserveren under planlægning');
   const planID=bench.plan.id;
   await assert.rejects(bench.prepare({...selection,mode:'build',planID:'forældet'}),/seneste plan/);
   const disclosure=await bench.prepare({...selection,mode:'build',planID});
@@ -60,6 +63,7 @@ async function until(check, description) { for (let i=0;i<300;i++) { if (await c
   assert.ok(events.some(e=>e.type==='permission.asked'));
   assert.ok(events.some(e=>e.type==='run.review' && e.files?.includes('public/index.html')));
   assert.ok(requests.some(r=>JSON.stringify(r).includes(planID)), 'Den godkendte plan følger med til bygning');
+  assert.ok(requests.some(r => r.messages.some(m => typeof m.content === 'string' && m.content.includes(projectGuidance) && m.content.includes(planID))), 'Byggesessionen skal modtage både projektvejledningen og den godkendte plan');
   assert.ok(events.some(e=>e.type==='message.part.updated'));
   assert.ok(requests.some(r=>JSON.stringify(r).includes('git-og-versioner')));
   preview=await startPreview(project);assert.match(await(await fetch(preview.url)).text(),/Bygget gennem agenten/);

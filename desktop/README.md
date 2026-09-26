@@ -320,3 +320,23 @@ Modeller med cloudmarkører vises som mulige cloudmodeller. Fravær af markøren
 Agenten får nu fælles instruktioner om at begrunde teknologivalg, bevare eksisterende kode, afklare behov for backend og login samt foreslå et konkret design. React/TypeScript, Astro og designbiblioteker er muligheder i samtalen, ikke nye indbyggede skabeloner. Agenten skal foreslå ét designvalg, tilbyde relevante alternativer og respektere brugerens valg før installation. Tailscale behandles separat som netværksadgang. Planlægningen omfatter også målplatform, offlinebrug, fælles data, login og valget mellem ingen backend, serverless, administrerede tjenester og egen backend. Native teknologier kan foreslås, men appen har ingen indbygget native bygning, simulator eller appbutiksudgivelse. Framework-servere startes fortsat særskilt.
 
 Verifikation: Ti relevante automatiske tests består, inklusive HTTP-katalog og afviste redirects. Opstarten er kørt i Electron på macOS med kontrolleret Ollama-katalog og et faktisk prøveprojekt med preview. Ingen rigtig Ollama-model, Corti-opgave, Windows-installation eller kvalitetsvurdering af et modelgenereret design er afprøvet i denne milepæl. De nye agentinstruktioner er skrevet og koblet til afsendelsen; deres effekt kræver en live-opgave.
+
+## Afprøvning af første app · 26. september 2026
+
+Planlægning bruger nu OpenCodes `plan`-agent, mens bygning bruger `build`. Plan-agentens tilladelser sættes eksplicit og kontrolleres ved opstart. Den tidligere opsætning brugte byggeagenten i begge tilstande; skrivebeskyttelsen blokerede ændringer under planlægning, men en rigtig model forsøgte gentagne gange at bygge alligevel.
+
+Appens ekstra vejledning om platform, backend og design kan læses under Data og vilkår og indgår nu i godkendelsens kontrolsum. Integrationstesten kontrollerer, at vejledningen når frem til modelserveren i både planlægnings- og byggesessionen.
+
+Den eksterne prøve har nu to forløb. Standardforløbet ændrer én overskrift. Det udvidede forløb planlægger og bygger en oversigt over fiktive mødelokaler, prøver kapacitetsfilter og tom tilstand og kontrollerer vandret overløb i mobilvisningen. Kør fra `desktop/`:
+
+```bash
+HARNESS_LIVE_SCENARIO=first-app npm run test:openrouter
+```
+
+Model vælges eventuelt med `HARNESS_LIVE_MODEL`. Testen kræver en `:free`-model med oplyste værktøjskald og nulpris samt en konkret rute med nulpris. Der vælges ikke en betalt reserveudbyder. API-nøglen indtastes skjult i terminalen. Testen bruger isolerede projektfiler og fjerner sin gemte forbindelse ved afslutning. Resultater og skærmbilleder gemmes i den midlertidige testmappe; installationspakkerne ændres ikke.
+
+Faktisk resultat: Otte relevante automatiske tests og integrationen med den rigtige OpenCode-motor mod en kontrolleret lokal server består. `cohere/north-mini-code:free` via Cohere gennemførte både en enkel filændring og senere planlægning og bygning af mødelokaleappen. Planlægningen ændrede ingen projektfiler efter rettelsen. Den udvidede prøves oprindelige filteropslag fejlede, fordi modellen gav inputfeltet et andet tilgængeligt navn end den synlige label. Opslaget er rettet til feltets rolle og meningsbærende navn. Det samme genererede projekt er derefter genåbnet i Electron og afprøvet med filter, tom tilstand, nulstilling og mobilvisning uden vandret overløb. Hele den eksterne test er ikke genkørt efter denne rettelse af testopslaget.
+
+Modellens plan og afslutning var på engelsk trods danske instruktioner. Det genererede design er et funktionelt udkast, ikke en dokumenteret kvalitetsstandard. Ingen native app, React/Astro-bygning, backend, Windows-kørsel eller ny installationspakke er afprøvet her.
+
+Et allerede genereret mødelokaleprojekt kan afprøves uden nye modelkald med `node scripts/verify-generated-preview.cjs /sti/til/projekt`. Kontrollen åbner projektet med isolerede appindstillinger og ændrer ikke projektfilen.
