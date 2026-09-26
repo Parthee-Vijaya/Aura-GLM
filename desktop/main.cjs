@@ -191,6 +191,7 @@ handle('setup:status', async () => {
     return { git: `${version} · projektets historik og identitet kontrolleres, når du åbner et projekt.`, project: false };
   } catch (error) { return { git: error.message, project: Boolean(project) }; }
 });
+handle('connections:discover', () => require('./core/local-discovery.cjs').discoverLocalModels());
 handle('connections:state', () => workbench.state());
 handle('connections:save', value => exclusive(() => workbench.saveConnection(value)));
 handle('connections:remove', value => exclusive(() => workbench.removeConnection(value)));

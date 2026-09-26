@@ -37,7 +37,7 @@ function showSetup(reason = '', fromIntroduction = false) {
   guidedSetup = fromIntroduction;
   setupActive = true; $('#setup').hidden = false; $('#workspace').hidden = true; $('#onboarding').hidden = true;
   $('#view-title').textContent = 'Opsætning'; $('#setup-reason').textContent = reason; $('#setup-reason').hidden = !reason;
-  renderSetup(); action(setupGit); $('#setup-title').focus();
+  renderSetup(); action(setupGit); action(discoverLocal); $('#setup-title').focus();
 }
 function connectionFailed(reason) {
   verifiedConnection = ''; ++setupGeneration; acceptedFingerprint = null; pendingSend = null; setupControls();
@@ -517,3 +517,37 @@ function renderRunReview(result) {
 }
 
 $('#git-identity').onsubmit = event => { event.preventDefault(); action(async () => { await call('gitIdentity', { name: $('#git-name').value, email: $('#git-email').value }); await loadGit(); }); };
+
+let localDiscoveryGeneration = 0, localDiscoveryResult = null;
+async function discoverLocal() {
+  const generation = ++localDiscoveryGeneration;
+  localDiscoveryResult = null;
+  $('#local-discovery-use').hidden = true;
+  $('#local-discovery-retry').disabled = true;
+  $('#local-discovery-models').replaceChildren();
+  $('#local-discovery-status').textContent = 'Leder efter Ollama på denne computer …';
+  try {
+    const result = await call('discoverLocalModels');
+    if (generation !== localDiscoveryGeneration) return;
+    localDiscoveryResult = result;
+    $('#local-discovery-status').textContent = ({ found: 'Ollama svarer. Vælg forbindelsen for at fortsætte.', empty: 'Ollama svarer, men har ingen modeller i kataloget.', invalid: 'Adressen svarer, men gav ikke en Ollama-modelliste.', unavailable: 'Vi fandt ikke en Ollama-server på standardadressen.' })[result.status];
+    for (const model of result.models.slice(0, 6)) $('#local-discovery-models').append(node('li', model.name + (model.remote ? ' · mulig cloudmodel' : '')));
+    if (result.models.length > 6) $('#local-discovery-models').append(node('li', `Og ${result.models.length - 6} andre modeller`));
+    $('#local-discovery-use').hidden = result.status !== 'found';
+  } finally { if (generation === localDiscoveryGeneration) $('#local-discovery-retry').disabled = false; }
+}
+$('#local-discovery-retry').onclick = () => action(discoverLocal);
+$('#local-discovery-use').onclick = () => action(async () => {
+  if (running || localDiscoveryResult?.status !== 'found') return;
+  $('#local-discovery-use').disabled = true;
+  try {
+    const address = localDiscoveryResult.baseURL;
+    let saved = state.connections.find(c => c.kind === 'ollama' && c.baseURL === address);
+    if (!saved) {
+      state = await call('saveConnection', { kind: 'ollama', name: 'Ollama på denne computer', baseURL: address });
+      saved = state.connections.find(c => c.kind === 'ollama' && c.baseURL === address);
+    }
+    renderConnections(); $('#setup-connection').value = saved.id;
+    verifiedConnection = ''; setupControls(); $('#setup-test').click();
+  } finally { $('#local-discovery-use').disabled = false; }
+});

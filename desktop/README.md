@@ -17,7 +17,7 @@ Appens navn og egne menuer er **AI Harness**. Under `npm start` bruges stadig ud
 
 ## Opstart og forbindelser
 
-Ved første start vises **Byg et værktøj til din hverdag** med Start et projekt, Prøv et eksempel og Åbn et projekt. **Spring introduktionen over** går direkte til projektoprettelsen og huskes på denne computer. Introduktionen kan åbnes igen fra sidepanelet. Den guidede vej tilbyder AI-forbindelse eller fortsættelse uden AI; derefter beskriver brugeren sin idé og får et redigerbart navneforslag. Designmateriale og avancerede projektvalg er foldet sammen. Brugeren kan oprette eller åbne et lokalt projekt uden AI- eller GitHub-konto. Opstarten kontakter ingen modelserver og dekrypterer ingen modelnøgle.
+Ved første start vises **Byg et værktøj til din hverdag** med Start et projekt, Prøv et eksempel og Åbn et projekt. **Spring introduktionen over** går direkte til projektoprettelsen og huskes på denne computer. Introduktionen kan åbnes igen fra sidepanelet. Den guidede vej tilbyder AI-forbindelse eller fortsættelse uden AI; derefter beskriver brugeren sin idé og får et redigerbart navneforslag. Designmateriale og avancerede projektvalg er foldet sammen. Brugeren kan oprette eller åbne et lokalt projekt uden AI- eller GitHub-konto. Velkomst og demonstration kontakter ingen modelserver. Når AI-opsætningen åbnes, henter appen automatisk Ollamas modelliste fra http://127.0.0.1:11434/api/tags med en kort timeout. Ingen modelnøgle dekrypteres under søgningen.
 
 **Forbindelser og konto** i sidepanelet samler AI og valgfri GitHub-adgang. **Kontrollér forbindelse** henter kun den valgte servers modelkatalog. Et katalogsvar beviser ikke adgang til modelkald, kvote eller kodeværktøjer. **Fortsæt med AI** kræver et katalog med modeller; **Fortsæt uden AI** kræver ingen serveradgang. Den foretrukne forbindelse huskes lokalt, men bliver ukontrolleret efter genstart. Der skiftes aldrig automatisk til en anden model eller udbyder.
 
@@ -309,3 +309,14 @@ Mistral bruger fast `https://api.mistral.ai/v1`. Katalogets `completion_chat: fa
 Promte er efter aftale udeladt fra denne milepæl. Den fundne [Responses API-vejledning](https://kommune.applai.dk/docs/admin/api-og-responses) beskriver arbejdsområde-assistenter, men dokumenterer ikke egne kodeværktøjer; en fremtidig adapter kræver afklaring.
 
 Verifikation: katalog, Bearer-adgang, streaming, værktøjskald og afviste kald er afprøvet gennem gatewayen med lokale kontrollerede HTTP-servere. Udbydervalgene er afprøvet i Electron på macOS. Ingen live-modelopgave mod Corti eller Mistral er gennemført; det kræver konto/nøgle og valgt model. Eksisterende installationspakker indeholder ikke disse kildeændringer før en ny bygning.
+
+
+## Lokal modelopdagelse og projektforslag · 26. september 2026
+
+AI-opsætningen søger efter en kørende Ollama på standardadressen på denne computer. Der søges ikke på netværket eller på Tailscale. Appen sender ingen prompt, starter ingen model og installerer intet. Brugeren vælger aktivt at gemme forbindelsen; en eksisterende forbindelse med samme type og adresse genbruges. Manglende server, tomt katalog og ugyldigt svar har hver sin forklaring. Andre adresser og API-udbydere tilføjes gennem den eksisterende forbindelsesdialog.
+
+Modeller med cloudmarkører vises som mulige cloudmodeller. Fravær af markøren beviser ikke lokal databehandling. Modelvalg og datagennemgang gælder fortsat før første afsendelse.
+
+Agenten får nu fælles instruktioner om at begrunde teknologivalg, bevare eksisterende kode, afklare behov for backend og login samt foreslå et konkret design. React/TypeScript, Astro og designbiblioteker er muligheder i samtalen, ikke nye indbyggede skabeloner. Agenten skal foreslå ét designvalg, tilbyde relevante alternativer og respektere brugerens valg før installation. Tailscale behandles separat som netværksadgang. Planlægningen omfatter også målplatform, offlinebrug, fælles data, login og valget mellem ingen backend, serverless, administrerede tjenester og egen backend. Native teknologier kan foreslås, men appen har ingen indbygget native bygning, simulator eller appbutiksudgivelse. Framework-servere startes fortsat særskilt.
+
+Verifikation: Ti relevante automatiske tests består, inklusive HTTP-katalog og afviste redirects. Opstarten er kørt i Electron på macOS med kontrolleret Ollama-katalog og et faktisk prøveprojekt med preview. Ingen rigtig Ollama-model, Corti-opgave, Windows-installation eller kvalitetsvurdering af et modelgenereret design er afprøvet i denne milepæl. De nye agentinstruktioner er skrevet og koblet til afsendelsen; deres effekt kræver en live-opgave.
