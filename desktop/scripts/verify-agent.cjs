@@ -22,10 +22,10 @@ async function until(check, description) { for (let i=0;i<300;i++) { if (await c
   const isToolRun=Boolean(body.tools?.length);
   const hasResult=body.messages.some(m=>m.role==='tool');
   const tool=isToolRun&&!hasResult?{id:'call_test',type:'function',function:{name:'write',arguments:JSON.stringify({filePath:path.join(project,'public/index.html'),content:'<h1>Bygget gennem agenten</h1>'})}}:null;
-  const content=tool?null:isToolRun?'Ændringen er behandlet.':'Prøveprojekt';
+  const content=tool?'Arbejdsnote før værktøjskald.':isToolRun?'Ændringen er behandlet.':'Prøveprojekt';
   if(body.stream){
    res.setHeader('content-type','text/event-stream');
-   const chunk={id:'test',object:'chat.completion.chunk',created:1,model:body.model,choices:[{index:0,delta:tool?{role:'assistant',tool_calls:[{index:0,...tool}]}:{role:'assistant',content},finish_reason:null}]};
+   const chunk={id:'test',object:'chat.completion.chunk',created:1,model:body.model,choices:[{index:0,delta:tool?{role:'assistant',content,tool_calls:[{index:0,...tool}]}:{role:'assistant',content},finish_reason:null}]};
    res.write('data: '+JSON.stringify(chunk)+'\n\n');
    res.write('data: '+JSON.stringify({...chunk,choices:[{index:0,delta:{},finish_reason:tool?'tool_calls':'stop'}],usage:{prompt_tokens:20,completion_tokens:10,total_tokens:30}})+'\n\n');res.end('data: [DONE]\n\n');
   }else{res.setHeader('content-type','application/json');res.end(JSON.stringify({id:'test',object:'chat.completion',created:1,model:body.model,choices:[{index:0,message:{role:'assistant',content,tool_calls:tool?[tool]:undefined},finish_reason:tool?'tool_calls':'stop'}],usage:{prompt_tokens:20,completion_tokens:10,total_tokens:30}}));}
@@ -44,6 +44,8 @@ async function until(check, description) { for (let i=0;i<300;i++) { if (await c
   await until(()=>!bench.running,'plan færdig');
   assert.equal(await fs.readFile(path.join(project,'public/index.html'),'utf8'),'<h1>Før</h1>');
   assert.ok(bench.plan?.text, 'Planen skal kunne godkendes');
+  assert.doesNotMatch(bench.plan.text,/Arbejdsnote før værktøjskald/);
+  assert.match(bench.plan.context,/Arbejdsnote før værktøjskald/);
   const planRequests=requests.filter(r=>r.tools?.length);
   assert.ok(planRequests.length);
   assert.ok(planRequests.every(r=>!r.tools.some(t=>['write','edit','bash'].includes(t.function.name))), 'Skrive- og shellværktøjer må ikke udbydes i planlægning');

@@ -96,6 +96,22 @@ const { run } = require('../core/git.cjs');
   await page.locator('#messages .user').filter({hasText:'Medtag en mobilvisning.'}).waitFor();
   await page.waitForSelector('#plan-card:not([hidden])',{timeout:60000});
   await page.waitForFunction(()=>!document.querySelector('#build-plan').disabled);
+  assert.equal(await page.isVisible('#plan-text'),false);
+  await page.locator('#plan-card summary').click();
+  assert.match(await page.locator('#plan-text').textContent(),/Forslag:/);
+  await page.locator('#plan-card summary').click();
+  await app.evaluate(({BrowserWindow}) => {
+    const win=BrowserWindow.getAllWindows()[0];
+    for (const event of [
+      {type:'message.updated',properties:{info:{id:'reasoning-test',role:'assistant'}}},
+      {type:'message.part.updated',properties:{part:{id:'reasoning-part',messageID:'reasoning-test',type:'reasoning',text:''}}},
+      {type:'message.part.delta',properties:{partID:'reasoning-part',messageID:'reasoning-test',field:'text',delta:'Intern arbejdsnote må ikke vises som svar.'}},
+      {type:'message.part.updated',properties:{part:{id:'visible-part',messageID:'reasoning-test',type:'text',text:'Kontrolleret tekst'}}},
+      {type:'message.part.delta',properties:{partID:'visible-part',messageID:'reasoning-test',field:'text',delta:' med streaming.'}}
+    ]) win.webContents.send('harness:event', event);
+  });
+  await page.locator('#messages .assistant').filter({hasText:'Kontrolleret tekst med streaming.'}).waitFor();
+  assert.doesNotMatch(await page.locator('#messages').textContent(),/Intern arbejdsnote/);
   await page.locator('#plan-card').scrollIntoViewIfNeeded();
   await page.screenshot({path:path.join(root,'plan.png'),animations:'disabled'});
   await page.click('#build-plan');

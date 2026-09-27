@@ -1,6 +1,6 @@
 const $ = selector => document.querySelector(selector);
 let current = null, revision = null, polling = false, state = null, modelRequest = 0, acceptedFingerprint = null, pendingSend = null, running = false;
-let skillList = [], roles = new Map(), parts = new Map();
+let skillList = [], roles = new Map(), parts = new Map(), partTypes = new Map();
 function message(text, error = false) { const dialog = document.querySelector('dialog[open]'); if (dialog) { let notice = dialog.querySelector('.dialog-notice'); if (!notice) { notice = document.createElement('p'); notice.className = 'dialog-notice'; notice.setAttribute('role', 'status'); dialog.append(notice); } notice.textContent = text; }  $('#message').textContent = text; $('#message').classList.toggle('error', error); $('#message').hidden = false; }
 async function call(method, value) { const result = await window.harness[method](value); if (!result.ok) throw new Error(result.error); return result.value; }
 async function action(fn) { $('#message').hidden = true; try { return await fn(); } catch (error) { message(error.message, true); } }
@@ -94,7 +94,7 @@ async function displayProject(project) {
   if (!project) return;
   ++modelRequest; recovery = ''; $('#connection-warning').hidden = true; setupActive = false; $('#setup').hidden = true; setupControls();
   activePlan = null; modelCatalog = []; $('#model-shortlist').replaceChildren(); $('#plan-card').hidden = true; $('#run-review').hidden = true; $('#work-mode').value = project.purpose ? 'plan' : 'free'; updateWorkMode();
-  current = project; revision = null; acceptedFingerprint = null; roles.clear(); parts.clear();
+  current = project; revision = null; acceptedFingerprint = null; roles.clear(); parts.clear(); partTypes.clear();
   $('#project-intro').hidden = false; $('#idea-options').open = false; for (const el of document.querySelectorAll('#idea-options select')) el.value = ''; $('#agent-activity').hidden = true; $('#messages').replaceChildren(); $('#approvals').replaceChildren(); $('#prompt').value = '';
   $('#view-title').textContent = 'Arbejdsområde'; $('#active-project').textContent = project.name; $('#active-project').classList.add('active');
   $('#onboarding').hidden = true; $('#workspace').hidden = false; $('#skills-button').disabled = false;
@@ -215,11 +215,11 @@ function partElement(id, role) {
 }
 window.harness.onEvent(event => {
   const p = event.properties || {};
-  if (event.type === 'plan.ready') { activePlan = event.plan; $('#plan-text').textContent = event.plan.text; $('#plan-card').hidden = false; requestAnimationFrame(() => $('#plan-card').scrollIntoView({ block: 'nearest' })); }
+  if (event.type === 'plan.ready') { activePlan = event.plan; $('#plan-card details').open = false; $('#plan-text').textContent = event.plan.text; $('#plan-card').hidden = false; requestAnimationFrame(() => $('#plan-card').scrollIntoView({ block: 'nearest' })); }
   if (event.type === 'run.review') renderRunReview(event);
   if (event.type === 'git.checkpoint') { appendMessage(event.message, 'system'); return; }
   if (event.type === 'preview.ready') return showPreview(event.url);
-  if (event.type === 'session.new') { roles.clear(); parts.clear(); appendMessage('Ny modelsession. Tidligere modelsessioner overføres ikke automatisk. I det guidede forløb medsendes den viste plan og afklaring; se Data og vilkår.', 'system'); }
+  if (event.type === 'session.new') { roles.clear(); parts.clear(); partTypes.clear(); appendMessage('Ny modelsession. Tidligere modelsessioner overføres ikke automatisk. I det guidede forløb medsendes den viste plan og afklaring; se Data og vilkår.', 'system'); }
   if (event.type === 'run.status') {
     const active = ['starting', 'working'].includes(event.status);
     const statuses = { starting: 'Starter agent …', working: 'Arbejder …', idle: 'Klar', error: 'Fejl', stopped: 'Stoppet' };
@@ -229,12 +229,13 @@ window.harness.onEvent(event => {
   if (event.type === 'message.updated') roles.set(p.info.id, p.info.role);
   if (event.type === 'message.part.updated') {
     const part = p.part;
+    partTypes.set(part.id, part.type);
     if (roles.get(part.messageID) === 'user') return;
     if (part.type === 'text') partElement(part.id, 'assistant').textContent = part.text;
     if (part.type === 'tool' && running && ['pending', 'running'].includes(part.state?.status)) $('#agent-activity').textContent = `${toolLabels[part.tool] || 'Værktøjshandling'} · ${toolStatuses[part.state.status]}`;
     if (part.type === 'tool') partElement(part.id, 'tool').textContent = `${toolLabels[part.tool] || part.tool} · ${toolStatuses[part.state?.status] || part.state?.status || ''}${part.state?.title ? '\n' + part.state.title : ''}`;
   }
-  if (event.type === 'message.part.delta' && p.field === 'text' && roles.get(p.messageID) !== 'user') partElement(p.partID, 'assistant').textContent += p.delta;
+  if (event.type === 'message.part.delta' && p.field === 'text' && partTypes.get(p.partID) === 'text' && roles.get(p.messageID) !== 'user') partElement(p.partID, 'assistant').textContent += p.delta;
   if (event.type === 'permission.asked') {
     $('#agent-activity').textContent = 'Venter på din godkendelse. Gennemgå handlingen i samtalen.';
     const box = node('section', undefined, 'approval'); box.dataset.id = p.id;
@@ -518,7 +519,7 @@ function renderRunReview(result) {
   const box = $('#run-review'); box.replaceChildren();
   if (result.mode === 'plan' && result.status === 'idle' && !result.files.length) { box.hidden = true; return; }
   box.hidden = false; requestAnimationFrame(() => box.scrollIntoView({ block: 'nearest' }));
-  box.append(node('h3', result.status === 'idle' ? result.mode === 'plan' ? 'Forslaget er klar til gennemgang' : 'Opgaven er afsluttet · prøv resultatet' : 'Opgaven blev ikke afsluttet normalt'));
+  box.append(node('h3', result.status === 'idle' ? result.mode === 'plan' ? 'Forslaget er klar til gennemgang' : 'AI’en er færdig med at svare' : 'Arbejdet blev afbrudt eller fejlede'));
   if (result.unavailable) { box.append(node('p', 'Ændringsoversigten kunne ikke læses. Gennemgå filerne manuelt.')); return; }
   box.append(node('p', result.files.length ? `Registrerede ændringer i denne opgave: ${result.files.join(', ')}` : 'Ingen tekstfilændringer registreret i denne opgave.'));
   const commands = result.tools.filter(t => t.tool === 'bash');

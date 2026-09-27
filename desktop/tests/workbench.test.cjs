@@ -94,3 +94,19 @@ test('planlægning vælger plan-agenten og beholder de samme eksplicitte tillade
     assert.deepEqual(config.agent.plan.permission, permission);
   }
 });
+
+
+test('planen bruger kun sidste agentsvar; tidligere arbejdsnoter bevares som kontekst', () => {
+ const { planningReply } = require('../core/workbench.cjs');
+ const roles = new Map([['u', 'user'], ['a1', 'assistant'], ['a2', 'assistant']]);
+ const parts = new Map([
+  ['p1', {messageID:'a1', text:'Jeg undersøger filerne.'}],
+  ['pu', {messageID:'u', text:'Brugerens besked'}],
+  ['p2', {messageID:'a2', text:'Det bygger vi'}],
+  ['p3', {messageID:'a2', text:'En side med lokale eksempeldata.'}]
+ ]);
+ assert.deepEqual(planningReply(roles, parts), {text:'Det bygger vi\nEn side med lokale eksempeldata.', context:'Jeg undersøger filerne.\nDet bygger vi\nEn side med lokale eksempeldata.'});
+ roles.set('a3','assistant');
+ assert.equal(planningReply(roles, parts).text, '', 'Et sidste svar uden tekst må ikke genbruge en tidligere arbejdsnote som plan');
+ assert.equal(planningReply(new Map(),new Map()).text,'');
+});

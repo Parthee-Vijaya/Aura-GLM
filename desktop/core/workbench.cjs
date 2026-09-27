@@ -11,6 +11,16 @@ const { OpenCodeEngine, VERSION } = require('./engine.cjs');
 const { GitVersions } = require('./git.cjs');
 const { Checkpoints } = require('./checkpoints.cjs');
 
+function planningReply(roles, parts) {
+  const assistantIDs = [...roles].filter(([, role]) => role === 'assistant').map(([id]) => id);
+  const lastID = assistantIDs.at(-1);
+  const assistantParts = [...parts.values()].filter(p => roles.get(p.messageID) === 'assistant');
+  return {
+    text: assistantParts.filter(p => p.messageID === lastID).map(p => p.text || '').join('\n').trim(),
+    context: assistantParts.map(p => p.text || '').join('\n').trim()
+  };
+}
+
 class Workbench {
   constructor({ directory, safeStorage, profiles, emit, engineFactory = options => new OpenCodeEngine(options) }) {
     this.store = new Store(directory, safeStorage); this.skills = new Skills(path.join(profiles, 'skills'), this.store);
@@ -136,9 +146,10 @@ class Workbench {
       const status = event.type === 'session.idle' ? 'idle' : 'error';
       this.finishing = this.checkpoints.finish().then(async () => {
         if (this.runStopped) return;
-        const text = [...(this.runText?.values() || [])].filter(p => this.runRoles.get(p.messageID) === 'assistant').map(p => p.text || '').join('\n');
+        const reply = planningReply(this.runRoles || new Map(), this.runText || new Map());
+        const text = reply.text;
         if (status === 'idle' && this.runMode === 'plan' && text.trim()) {
-          this.plan = { id: crypto.randomUUID(), text, context: this.planConversation.join('\n') };
+          this.plan = { id: crypto.randomUUID(), text, context: [...this.planConversation, reply.context].join('\n') };
           this.planConversation.push(text); this.emit({ type: 'plan.ready', plan: this.plan });
         }
         const diff = await changes(this.project.root, this.runBefore);
@@ -154,4 +165,4 @@ class Workbench {
   async question(input) { if (!this.engine || typeof input.id !== 'string' || !Array.isArray(input.answers)) throw new Error('Ugyldigt svar.'); const result = await this.engine.request(`/question/${encodeURIComponent(input.id)}/reply`, 'POST', { answers: input.answers }); if (this.runMode === 'plan') this.planConversation.push('Svar på agentens spørgsmål: ' + JSON.stringify(input.answers)); return result; }
   async close(reset = true) { if (reset) { this.checkpoints.cancel(); await this.finishing; } await this.engine?.close(); await this.gateway?.close(); this.engine = null; this.gateway = null; this.engineIdentity = null; if (reset) { this.running = false; this.prepared = null; } }
 }
-module.exports = { Workbench };
+module.exports = { Workbench, planningReply };
