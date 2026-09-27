@@ -95,7 +95,7 @@ async function displayProject(project) {
   ++modelRequest; recovery = ''; $('#connection-warning').hidden = true; setupActive = false; $('#setup').hidden = true; setupControls();
   activePlan = null; modelCatalog = []; $('#model-shortlist').replaceChildren(); $('#plan-card').hidden = true; $('#run-review').hidden = true; $('#work-mode').value = project.purpose ? 'plan' : 'free'; updateWorkMode();
   current = project; revision = null; acceptedFingerprint = null; roles.clear(); parts.clear();
-  $('#project-intro').hidden = false; $('#messages').replaceChildren(); $('#approvals').replaceChildren(); $('#prompt').value = '';
+  $('#project-intro').hidden = false; $('#idea-options').open = false; for (const el of document.querySelectorAll('#idea-options select')) el.value = ''; $('#agent-activity').hidden = true; $('#messages').replaceChildren(); $('#approvals').replaceChildren(); $('#prompt').value = '';
   $('#view-title').textContent = 'Arbejdsområde'; $('#active-project').textContent = project.name; $('#active-project').classList.add('active');
   $('#onboarding').hidden = true; $('#workspace').hidden = false; $('#skills-button').disabled = false;
   $('#project-name').textContent = project.name; $('#project-purpose').textContent = project.purpose || 'Eksisterende mappe. Beskriv din opgave i samtalen.'; $('#project-path').textContent = project.root;
@@ -115,7 +115,7 @@ async function displayProject(project) {
   const preferredProjectConnection = saved?.connectionID || startup?.connectionID;
   if (!$('#connection-select').value && preferredProjectConnection && state.connections.some(c => c.id === preferredProjectConnection)) $('#connection-select').value = preferredProjectConnection;
   $('#project-startup').textContent = startup ? `Hostingønske: ${hostingLabel(startup.hosting)} · Tests: ${testLabel(startup.tests)}` : 'Ingen opstartsvalg gemt for dette projekt.';
-  $('#model-options').open = !$('#model-select').value; $('#start-idea').hidden = !project.purpose; updateModelSummary();
+  $('#model-options').open = !$('#model-select').value; $('#start-idea').hidden = false; $('#start-idea').textContent = project.purpose ? 'Forbered første besked' : 'Få hjælp til en plan'; updateModelSummary();
   $('#project-name').tabIndex = -1; if (!setupActive) $('#project-name').focus();
 }
 function renderConnections() {
@@ -197,8 +197,8 @@ async function sendNow(data, text) {
   catch (error) { $('#prompt').value = text; setRunning(false, 'Fejl'); appendMessage(error.message, 'error'); connectionFailed(error.message); throw error; }
 }
 function setRunning(value, status) {
-  running = value; $('#run-status').textContent = status; $('#send').disabled = value; $('#stop').hidden = !value;
-  for (const selector of ['#work-mode', '#build-plan', '#model-load', '#model-search', '#connection-select', '#model-select', '#route-select', '#new', '#open', '#connections-button', '#skills-button', '#git-button', '#publish-button', '#setup-hosting', '#deploy-button', '#intro-button']) $(selector).disabled = value;
+  running = value; $('#agent-activity').hidden = !value; if (value) $('#agent-activity').textContent = $('#work-mode').value === 'plan' ? 'AI’en udarbejder et forslag. Projektfilerne kan ikke ændres i denne arbejdsmåde.' : 'AI’en arbejder på din opgave. Du kan stoppe den herunder.'; $('#run-status').textContent = status; $('#send').disabled = value; $('#stop').hidden = !value;
+  for (const selector of ['#work-mode', '#build-plan', '#revise-plan', '#start-idea', '#model-load', '#model-search', '#connection-select', '#model-select', '#route-select', '#new', '#open', '#connections-button', '#skills-button', '#git-button', '#publish-button', '#setup-hosting', '#deploy-button', '#intro-button']) $(selector).disabled = value;
   for (const button of document.querySelectorAll('#model-shortlist button')) button.disabled = value;
   setupControls();
   if (!value && recovery) { const reason = recovery; recovery = ''; showConnectionWarning(reason); }
@@ -231,24 +231,27 @@ window.harness.onEvent(event => {
     const part = p.part;
     if (roles.get(part.messageID) === 'user') return;
     if (part.type === 'text') partElement(part.id, 'assistant').textContent = part.text;
+    if (part.type === 'tool' && running && ['pending', 'running'].includes(part.state?.status)) $('#agent-activity').textContent = `${toolLabels[part.tool] || 'Værktøjshandling'} · ${toolStatuses[part.state.status]}`;
     if (part.type === 'tool') partElement(part.id, 'tool').textContent = `${toolLabels[part.tool] || part.tool} · ${toolStatuses[part.state?.status] || part.state?.status || ''}${part.state?.title ? '\n' + part.state.title : ''}`;
   }
   if (event.type === 'message.part.delta' && p.field === 'text' && roles.get(p.messageID) !== 'user') partElement(p.partID, 'assistant').textContent += p.delta;
   if (event.type === 'permission.asked') {
+    $('#agent-activity').textContent = 'Venter på din godkendelse. Gennemgå handlingen i samtalen.';
     const box = node('section', undefined, 'approval'); box.dataset.id = p.id;
     const explanation = approvalExplanation(p);
     box.append(node('strong', explanation.title), node('p', explanation.effect));
     box.append(node('p', (p.patterns || []).join('\n'), 'action-target'));
     if (p.metadata?.description) box.append(node('p', `Agentens begrundelse: ${p.metadata.description}`, 'hint'));
     const details = node('details'); details.append(node('summary', 'Tekniske detaljer'), node('pre', JSON.stringify({ paths: p.patterns, details: p.metadata }, null, 2))); box.append(details);
-    for (const allow of [false, true]) { const button = node('button', allow ? 'Tillad én gang' : 'Afvis'); button.onclick = () => action(async () => { await call('reply', { id: p.id, allow }); box.remove(); }); box.append(button); }
+    for (const allow of [false, true]) { const button = node('button', allow ? 'Tillad én gang' : 'Afvis'); button.onclick = () => action(async () => { await call('reply', { id: p.id, allow }); box.remove(); $('#agent-activity').textContent = allow ? 'Godkendelsen er sendt. Afventer AI’en …' : 'Handlingen er afvist. Afventer AI’en …'; }); box.append(button); }
     $('#approvals').append(box); box.scrollIntoView({ block: 'nearest' });
   }
   if (event.type === 'permission.replied') for (const box of $('#approvals').children) if (box.dataset.id === p.requestID) box.remove();
   if (event.type === 'question.asked') {
+    $('#agent-activity').textContent = 'AI’en har et spørgsmål til dig. Svar i samtalen.';
     const form = node('form', undefined, 'approval'); const fields = [];
     for (const question of p.questions) { form.append(node('p', question.question)); if (question.options?.length) form.append(node('p', question.options.map(o => `${o.label}: ${o.description}`).join('\n'), 'hint')); const input = node('input'); input.required = true; input.setAttribute('aria-label', question.question); form.append(input); fields.push(input); }
-    const submit = node('button', 'Svar'); submit.type = 'submit'; form.append(submit); form.onsubmit = event => { event.preventDefault(); action(async () => { await call('question', { id: p.id, answers: fields.map(f => [f.value]) }); form.remove(); }); }; $('#approvals').append(form);
+    const submit = node('button', 'Svar'); submit.type = 'submit'; form.append(submit); form.onsubmit = event => { event.preventDefault(); action(async () => { await call('question', { id: p.id, answers: fields.map(f => [f.value]) }); form.remove(); $('#agent-activity').textContent = 'Dit svar er sendt. Afventer AI’en …'; }); }; $('#approvals').append(form);
   }
   if (event.type === 'engine.error') appendMessage(event.message, 'error');
   if (event.type === 'session.error') { if (!$('#prompt').value) $('#prompt').value = lastSentText; const reason = p.error?.data?.message || p.error?.message || 'Modelkaldet mislykkedes. Kontrollér forbindelsen og kvoten.'; appendMessage(reason, 'error'); connectionFailed(reason); }
@@ -343,7 +346,15 @@ function showConnectionWarning(reason) {
 $('#repair-connection').onclick = () => showSetup($('#connection-warning-text').textContent);
 $('#dismiss-connection').onclick = () => { $('#connection-warning').hidden = true; $('#prompt').focus(); };
 $('#model-manage').onclick = () => $('#connections-button').click();
-$('#start-idea').onclick = () => { $('#work-mode').value = 'plan'; updateWorkMode(); if (!$('#prompt').value.trim()) $('#prompt').value = `Jeg vil bygge: ${current?.purpose || ''}\n\nHjælp mig med at afklare idéen. Stil de nødvendige spørgsmål i almindeligt sprog og foreslå en kort plan, før du ændrer filer.`; $('#prompt').focus(); };
+$('#start-idea').onclick = () => {
+  if (running) return;
+  if ($('#prompt').value.trim()) { message('Din kladde er bevaret. Send eller ryd den, før du forbereder en ny besked.'); $('#prompt').focus(); return; }
+  const choices = [['idea-platform', 'Platform'], ['idea-data', 'Data'], ['idea-ui', 'Brugerflade'], ['idea-design', 'Designværktøjer'], ['idea-backend', 'Backend']]
+    .filter(([id]) => $(`#${id}`).value).map(([id, label]) => `${label}: ${$(`#${id}`).value}`);
+  $('#work-mode').value = 'plan'; updateWorkMode();
+  $('#prompt').value = `Jeg vil bygge: ${current?.purpose || '[beskriv din idé her]'}\n\n${choices.length ? 'Mine ønsker:\n' + choices.join('\n') + '\n\n' : ''}Hjælp mig med at afklare idéen på dansk. Foreslå én passende løsning, og forklar valgene i almindeligt sprog. Gør opmærksom på ønsker, der ikke passer sammen. Afklar nødvendige spørgsmål, før du skriver en kort plan for brugerforløb, design, data og drift. Ændr ikke filer endnu.`;
+  $('#prompt').focus();
+};
 $('#model-select').addEventListener('change', updateModelSummary);
 
 $('#model-done').onclick = () => { if (!$('#connection-select').value || !$('#model-select').value || (!$('#route-row').hidden && !$('#route-select').value)) { message('Vælg en forbindelse, model og eventuel udbyder først.', true); return; } updateModelSummary(); $('#model-options').open = false; $('#prompt').focus(); };
@@ -478,6 +489,12 @@ function updateWorkMode() {
   $('#mode-help').textContent = mode === 'plan' ? 'AI’en kan læse og stille spørgsmål. Filændringer og kommandoer er blokeret. Svar i samtalen, indtil planen passer.' : mode === 'build' ? 'AI’en bygger efter den plan, du har valgt. Handlinger kræver fortsat godkendelse.' : 'Skriv frit til kodeagenten. Filændringer, kommandoer og webopslag kræver godkendelse.';
 }
 $('#work-mode').onchange = () => { acceptedFingerprint = null; updateWorkMode(); };
+$('#revise-plan').onclick = () => {
+  if (!activePlan || running) return;
+  $('#work-mode').value = 'plan'; updateWorkMode();
+  if (!$('#prompt').value.trim()) $('#prompt').value = 'Ret forslaget: ';
+  $('#prompt').focus();
+};
 $('#build-plan').onclick = () => {
   if (!activePlan || running) return;
   if ($('#prompt').value.trim()) { message('Send eller ryd din beskedkladde, før du bygger planen.'); return; }

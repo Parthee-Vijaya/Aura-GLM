@@ -152,6 +152,11 @@ Kilder: [GitHub Device Flow](https://docs.github.com/en/apps/oauth-apps/building
 
 Den forenklede brugerrejse afprøves med `test:setup`, `test:desktop`, `test:chat` og `test:hosting`. Testene kontrollerer foldede standardvalg, lokal adgang uden konto, bevarede kladder ved forbindelsesfejl, eksplicit modelvalg, designpakker, preview og uændrede godkendelser. GitHub-kald i publiceringstesten er simulerede; Git og filerne er virkelige, isolerede testmaterialer. Denne milepæl kræver ingen nye eksterne modelkald og ændrer ikke deployment eller installationspakker.
 
+I arbejdsområdet kan brugeren folde **Ønsker til løsningen** ud og vælge platform, datadeling og eventuelle tekniske ønsker. Standardvalget overlader anbefalingen til AI’en. **Forbered første besked** indsætter ønskerne i en redigerbar kladde uden at sende noget eller overskrive en eksisterende kladde. Ønskerne nulstilles, når et projekt åbnes, og bliver først en del af afklaringen, når beskeden sendes. De er ikke installations- eller deploymentgodkendelser.
+
+**Ret forslaget** fører tilbage til planlægning og bevarer eventuel tekst i skrivefeltet. Aktivitetsfeltet viser arbejdet, spørgsmål og ventende godkendelser. `test:chat` er afprøvet i Electron på macOS med en kontrolleret lokal modelserver, rigtig OpenCode, filændring og preview. Testen kontrollerer også, at de valgte ønsker når modelkaldet, at kladder bevares, og at valgene ikke overføres til en anden mappe. De opdaterede sproginstruktioner er ikke genafprøvet med en ekstern model; Windows og nye installationspakker er heller ikke kontrolleret i denne omgang.
+
+
 ## Valg, der kan huskes eller springes over
 
 Opstarten viser en kort opsummering af AI-forbindelse, hostingønske, gemt designpakke og teststrategi. **Tilpas** åbner valgene. **Beslut senere** rydder dem og designmaterialet for den aktuelle projektkladde, men bevarer idé, navn og gemte standarder. **Husk disse valg til nye projekter** gemmer kun ved en faktisk projektoprettelse; en annulleret mappedialog gemmer ingen standarder. **Glem mine standardvalg** fjerner standarderne uden at ændre kladden eller eksisterende projekter.
