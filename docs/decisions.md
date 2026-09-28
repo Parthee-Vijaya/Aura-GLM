@@ -1,4 +1,14 @@
-# Current direction and open decisions
+# Produktretning og beslutninger
+
+## Fælles Harness og to brugsveje
+
+Retning afklaret i projektsamtalen 28. september 2026. Dette er ikke en formel vedtagelse på vegne af deltagende kommuner.
+
+AI Harness skal samle en fælles arbejdsmetode for kommunal udvikling med AI fra idé til drift. Indholdet skal hjælpe både nye og erfarne brugere med kodekvalitet, sikkerhed, databeskyttelse, kontrol over data og overdragelse. Det skal kunne bruges gennem eget kodeværktøj og en selvstændig webguide eller samlet i desktopappen. README og hjemmesidens forside skal forklare formålet og give de to veje samme vægt.
+
+[Det faglige grundlag](harness-grundlag.md) indeholder research og forslag til skills, teknologivalg og integration. [Projektkontrol](projektkontrol.md) beskriver forslag til konkrete risikoregistreringer, versionsbundne beslutninger, Git og tilslutning af eksisterende projekter. De tekniske forslag er endnu ikke implementeret eller godkendt som organisationspolitik. Tekstinstruktioner må ikke omtales som teknisk håndhævelse eller en garanti for GDPR.
+
+## Tidligere notater
 
 **Aktuel implementeringsstatus:** POC 1 er implementeret. POC 2 omfatter lokal kodeagent via OpenCode 1.17.15, modeladaptere, synlige skills, dataoplysninger, vilkårlig projektåbning og genbrugelige designpakker. Se [desktopvejledningen](../desktop/README.md) for den faktiske verifikation og begrænsninger. Noterne nedenfor er historiske.
 

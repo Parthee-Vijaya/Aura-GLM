@@ -334,8 +334,8 @@ Vedligeholdere kan starte workflowet **Byg testpakker** manuelt efter eget commi
 Notarisation efter opsætning af lokal `notarytool`-profil:
 
 ```bash
-node scripts/notarize.cjs release/AI-Harness-0.2.0-beta.1-mac-arm64.dmg PROFILNAVN
-npm run release:site
+node scripts/notarize.cjs release/beta.3/AI-Harness-0.2.0-beta.3-mac-arm64.dmg PROFILNAVN
+npm run release:site -- release/beta.3
 ```
 
 Scriptet indsender den konkrete DMG til Apple, kræver Accepted, vedhæfter billetten og validerer den. En kvittering bindes til filens SHA-256. Downloadsiden markerer kun en fil som notariseret, hvis kvittering og aktuel kontrolsum matcher. En ny bygning kræver ny notarisation. Profilnavnet er ikke en adgangskode; profilen oprettes lokalt med Apples værktøj. Apple-login og private nøgler må ikke lægges i repositoryet.
@@ -354,6 +354,8 @@ xcrun notarytool store-credentials ai-harness-notary --team-id 2UX98897JW
 ```
 
 Værktøjet spørger efter Apple-konto og en app-specifik adgangskode. Indtast dem kun lokalt. Profilen gemmes i nøgleringen og valideres af Apple; almindelig Apple-kontoadgangskode skal ikke bruges. En eksisterende profil kan bruges i stedet. Nulstil ikke nøgleringen, hvis der opstår en adgangsfejl.
+
+Team `2UX98897JW` tilhører Progressify ApS; det eksisterende signeringscertifikat viser stadig navnet mekbas IVS. HTTP 401 ved validering peger på loginoplysningerne. HTTP 403 med besked om en manglende eller udløbet aftale kræver, at Account Holder kontrollerer medlemskab og ventende aftaler på [Apple Developer-kontoen](https://developer.apple.com/account/). Apple beskriver blokeringen i sin [vejledning om adgangsproblemer](https://developer.apple.com/help/account/access/resolving-access-issues). En afvist profilvalidering er ikke en indsendt notarisation. Se den aktuelle status og CI-resultaterne i [teststatus](../docs/teststatus.md#pakker-og-ci).
 
 
 ## Corti S1 og Mistral · 25. september 2026

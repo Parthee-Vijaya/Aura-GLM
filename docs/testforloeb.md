@@ -58,6 +58,20 @@ Gendannelse ændrer kun de filer, der vises i gennemgangen. HEAD, commits og ind
 
 ## Gentagelige tekniske prøver
 
+### Installation på en Windows-testmaskine
+
+Den automatiske Windows-prøve starter den pakkede `.exe` direkte. Følgende skal derfor også prøves med den konkrete NSIS-installationsfil og syntetiske projekter:
+
+1. Hent filen som en inviteret tester, og sammenlign SHA-256 med filoversigten. Registrer appversion, Windows-version, arkitektur og om brugeren har administratorrettigheder.
+2. Start installationen som almindelig bruger. Registrer eventuelle SmartScreen-, signatur- eller IT-politikbeskeder. Omgå ikke en blokering; aftal i stedet installation med den ansvarlige IT-afdeling.
+3. Vælg en mappe med mellemrum, og kontroller genvejen samt appens navn. Åbn appen uden en udviklingsterminal. Opret et projekt i en sti med mellemrum og danske bogstaver, og prøv preview og versionsgemning. Maskinen skal ikke kræve en særskilt Git-, Node/npm- eller OpenCode-installation.
+4. Gem en kladde, en designpakke og en forbindelse med syntetiske testdata. Luk appen, installer den næste version samme sted, og kontroller at projektfiler, kladde, design og forbindelsesvalg er bevaret. Afprøv forbindelsen igen uden at udskrive nøglen.
+5. Afinstaller appen på testmaskinen. Kontroller at projektmapperne er bevaret, og registrer om appens indstillinger bevares. Installer igen og prøv genåbning. Slet kun syntetiske testdata, når observationerne er registreret.
+
+Dette er en manuel prøvevejledning, ikke et registreret testresultat. Resultater og konkrete begrænsninger føres i [teststatus](teststatus.md).
+
+### Kildekode og pakkede apps
+
 Læs byggevejledningen i [desktop/README.md](../desktop/README.md), før der pakkes. Kør fra `desktop/`:
 
 ```sh

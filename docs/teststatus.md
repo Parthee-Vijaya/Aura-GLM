@@ -30,12 +30,13 @@ Ingen Ollama-tjeneste blev fundet på standardadressen på denne Mac. Den kendte
 
 ## Pakker og CI
 
-[GitHub-kørsel 36418496986](https://github.com/ai-alliancen-org/ai-harness/actions/runs/36418496986) afprøvede commit `bde83ddbea4b973b2aa25e0e840336e8dab8fceb` (beta.2):
+[GitHub-kørsel 36470547106](https://github.com/ai-alliancen-org/ai-harness/actions/runs/36470547106) afprøvede commit `b5a83bf548f7d495bd9f32c6110d75bb278b0d43` (beta.3). Alle tre platforme bestod:
 
-- **Windows x64:** Pakning, start med medfølgende værktøjer, projektoprettelse, preview, Git-identitet, versionsgemning, gendannelse og forbindelsesfejl bestod i en Windows-runner. En privat byggeartefakt er uploadet til kørslen. NSIS-installationen på en almindelig testmaskine er ikke afprøvet, og pakken er usigneret.
-- **Apple Silicon og Intel-Mac:** Pakkerne blev bygget og startet. Begge nåede Git-identitetsformularen, men prøven udløb, mens den ventede på filvalget. Der er ikke tilstrækkelige detaljer i den gamle log til at fastslå årsagen. Kildekoden skjuler nu identitetsformularen, mens status genindlæses, så et sent svar ikke kan overskrive indtastningen. Pakkeprøven gentager dette forløb og skriver mere konkret fejlstatus. Mac-jobbene skal genkøres efter vedligeholderens næste commit/push.
+- **Windows x64, Apple Silicon og Intel-Mac:** Pakning og start af den pakkede app med isolerede brugerdata og begrænset PATH. Medfølgende Git, Node/npm og OpenCode blev kontrolleret. Projektoprettelse, rigtigt preview, Git-identitet og versionsgemning blev gennemført i syntetiske projekter.
+- **Gendannelse og fejl på alle tre platforme:** Gendan og fortryd gennem brugerfladen og efter genstart, bevaret HEAD og private filer, forkert nøgle, opbrugt kvote, afbrudt HTTP-strøm, Stop, ny opgave efter fejl og eksport af en fejlrapport. Modelserveren leverede kontrollerede svar; prøven vurderer ikke en rigtig models kode eller sprog.
+- **Begrænsning:** Windows-prøven starter `win-unpacked/AI Harness.exe`, ikke NSIS-installationsprogrammet. Installation, opdatering, afinstallation, SmartScreen og arbejdspladsens politik er ikke afprøvet på en almindelig Windows-maskine. CI-pakkerne er usignerede. Den særskilte opstartsprøve med tastatur og reduceret bevægelse er fortsat kun kørt lokalt på Mac.
 
-Den nye guide og ændringerne i beta.3 er ikke med i denne CI-kørsel. Tidligere problemer med den skjulte Git-knap og dugites ekstra download blev ikke gentaget i kørslen.
+De tidligere timeout-fejl ved Git-identiteten på Mac blev ikke gentaget. De private byggeartefakter kan hentes af personer med repositoryadgang: [Windows x64](https://github.com/ai-alliancen-org/ai-harness/actions/runs/36470547106/artifacts/10991466192), [Apple Silicon](https://github.com/ai-alliancen-org/ai-harness/actions/runs/36470547106/artifacts/10991790730) og [Intel-Mac](https://github.com/ai-alliancen-org/ai-harness/actions/runs/36470547106/artifacts/10991214935). De er knyttet til denne CI-kørsel og er ikke en publiceret Release.
 
 Beta.3 til Apple Silicon er bygget separat i `desktop/release/beta.3/` med det godkendte mekbas-certifikat. Signaturen består `codesign --verify --deep --strict`. Alle 36 pakkede kildefiler matcher arbejdsmappen byte for byte; byggesystemet fjerner udviklingsscripts og -afhængigheder fra det pakkede manifest.
 
@@ -49,12 +50,12 @@ DMG'en er monteret skrivebeskyttet; appens signatur og identiske `app.asar` er k
 
 Opdatering fra den signerede beta.2 til beta.3 er gennemført ved at erstatte appen samme sted i en midlertidig mappe. Projektfiler, forbindelse, syntetisk krypteret nøgle, designpakke og kladde er bevaret. Kladden er skrevet gennem appens skrivefelt. Den nye version sender ikke automatisk til den gemte modelserver. Prøven bruger isolerede brugerdata på udviklingsmaskinen; en separat maskine og Windows-opdatering mangler stadig.
 
-Apple-notarisation kræver fortsat en tilgængelig lokal notarytool-profil. Signering alene er ikke notarisation.
+Apple-notarisation er endnu ikke gennemført. Validering af loginprofilen for team `2UX98897JW` blev afvist med HTTP 403: en nødvendig aftale mangler eller er udløbet. Account Holder skal kontrollere medlemskab og ventende aftaler hos Apple. Ingen pakke er indsendt, og der er ingen notariseringskvittering. Signering alene er ikke notarisation.
 
 ## Før invitationerne kan sendes
 
 1. Gennemfør et fuldt bygge- og rettelsesforløb med en lokal model og en hosted model, og vurder dansk og design på det faktiske resultat.
-2. Gennemfør notarisation og kontrol af den endelige Mac-fil samt CI-kørsler på Mac og Windows med den aktuelle version.
+2. Gennemfør notarisation og kontrol af den endelige Mac-fil. CI-kørslen for beta.3 er bestået; nye appændringer kræver en ny pakke og kontrol.
 3. Afprøv installation og opdatering på en separat testmaskine, herunder arbejdspladsens installationsrettigheder.
 4. Observer en person uden udviklererfaring gennem [testforløbet](testforloeb.md), og ret de steder, hvor forklaring er nødvendig.
 5. Giv de inviterede adgang til det konkrete downloadlink og en navngiven feedbackkontakt. Repositoryet er fortsat privat; der er ikke oprettet en offentlig download eller ændret synlighed.

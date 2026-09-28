@@ -1,30 +1,81 @@
 <!doctype html>
 <html lang="da">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AI Harness · Vælg de dele, du har brug for</title>
-<meta name="description" content="Brug danske AI-instruktioner i dit eget kodeværktøj, eller byg i AI Harness. Instruktionerne kan bruges uden appen.">
-<link rel="stylesheet" href="overview.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AI Harness · Fra idé til en app i drift</title>
+  <meta name="description" content="En fælles arbejdsmetode til kommuner, der bygger med AI. Brug vejledninger og instruktioner i dit eget kodeværktøj, eller prøv AI Harness-appen.">
+  <link rel="stylesheet" href="overview.css">
 </head>
 <body>
-<header><a href="./">AI Harness</a><a href="https://github.com/ai-alliancen-org/ai-harness">Projektet på GitHub ↗</a></header>
-<main>
-<p class="eyebrow">AI-VÆRKTØJER TIL APPUDVIKLING</p>
-<h1>Byg applikationer<br>med AI.</h1>
-<p class="lead">Hent danske instruktioner til dit kodeværktøj, eller brug appen til at bygge og afprøve dit projekt. Du kan bruge instruktionerne uden at installere AI Harness.</p>
-<nav aria-label="Kom i gang"><a class="button" href="pakker.html">Hent instruktioner</a><a class="secondary" href="#desktop">Læs om appen ↓</a></nav>
-<section class="steps" aria-label="Tre måder at bruge AI Harness">
-<article><span>INSTRUKTIONER · KLAR TIL BRUG</span><h2>Brug dit eget kodeværktøj</h2><p>Pakker til Claude Code, Codex og OpenCode med instruktioner om Git, hemmeligheder og afprøvning. Hver pakke indeholder en vejledning.</p><a href="pakker.html">Vælg dit kodeværktøj →</a></article>
-<article><span>BYG I APPEN · TESTVERSION</span><h2>Byg og se resultatet i appen</h2><p>Beskriv opgaven, tilslut din egen AI, og se forhåndsvisningen ved siden af samtalen. Gennemgå kodeændringer og gem versioner.</p><a href="#desktop">Se testversionen →</a></article>
-<article><span>DEL PÅ TVÆRS · PLANLAGT</span><h2>Del instruktioner og design</h2><p>Appen har lokale designpakker og redigerbare skills. Vi vil også gøre det muligt at dele pakkerne og administrere en organisations indstillinger og krav.</p></article>
-</section>
-<section class="note"><p class="eyebrow">INDHOLDET I APPEN</p><h2>Instruktioner, design og forbindelser</h2><p>Skills er instruktioner til bestemte opgaver, som du kan læse og redigere. Designpakker samler farver, logoer og referencer. Integrationer forbinder modeller, Git og hosting. I appen vælger du, hvilke forbindelser og instruktioner dit projekt skal bruge.</p><p>Vi planlægger import og eksport, så pakkerne kan deles mellem projekter og organisationer. Du skal kunne gennemgå indholdet, før det ændrer dine filer. Nøgler, loginoplysninger og private samtaler skal ikke følge med almindelige delingspakker. Import og eksport er endnu ikke klar.</p></section>
-<section class="note"><h2>Hvad kan instruktionerne sikre?</h2><p>Instruktionerne fortæller agenten, hvordan den skal arbejde. De kan ikke i sig selv forhindre adgang til filer eller kræve en godkendelse. Det skal kodeværktøjet eller det miljø, agenten kører i, sørge for. Kontrollér derfor adgang og godkendelser i det værktøj, du bruger.</p></section>
-<section class="note"><h2>Du kan give projektet videre</h2><p>Koden ligger i almindelige filer, som en udvikler kan åbne og arbejde videre med uden AI Harness. Hvis du bruger Git til versionsstyring, følger historikken med.</p></section>
-<section id="desktop" class="downloads" aria-labelledby="download-title"><p class="eyebrow">DESKTOPAPPEN</p><h2 id="download-title">Prøv med dit eget projekt</h2><p>Projektfilerne ligger på din computer, hvor kodeagenten også kører. Du vælger modeludbyder eller egen modelserver og gennemgår, hvor data sendes. Installationspakken indeholder OpenCode, Git og Node/npm.</p>
-<!-- artifacts --><p>Installationsfilerne er endnu ikke offentliggjort her.</p><!-- /artifacts -->
-<p><a href="desktop.html">Installation og hjælp →</a></p></section>
-<section class="note"><h2>Et fælles projekt under udvikling</h2><p>AI Harness udspringer af behov i den offentlige sektor. Kommuner, udviklere og leverandører kan bidrage med kode, integrationer og erfaringer. Vi afprøver løsningen med inviterede testere; licens og vedligeholdelsesansvar skal stadig aftales.</p><a href="https://github.com/ai-alliancen-org/ai-harness/blob/main/CONTRIBUTING.md">Bidrag med erfaringer, kode eller integrationer ↗</a></section>
-</main>
-<footer><span>AI Alliancen · AI Harness</span><a href="pakker.html">Instruktioner og vejledning</a></footer>
-</body></html>
+  <a class="skip" href="#valg">Gå til valg af værktøj</a>
+  <header><a href="./">AI Harness</a><a href="https://github.com/ai-alliancen-org/ai-harness">Projektet på GitHub ↗</a></header>
+  <main>
+    <p class="eyebrow">FÆLLES PRAKSIS FOR UDVIKLING MED AI</p>
+    <h1>Fra idé til<br>en app i drift.</h1>
+    <p class="lead">AI Harness skal hjælpe kommunale medarbejdere med at bygge gode applikationer med AI, også uden en udviklerbaggrund. Vi samler vejledninger og værktøjer til kodekvalitet, sikkerhed og ansvarlig brug af data gennem hele forløbet.</p>
+
+    <section id="valg" class="choices" aria-label="To måder at bruge AI Harness">
+      <article>
+        <p class="eyebrow">VEJLEDNINGER OG INSTRUKTIONER</p>
+        <h2>Brug dit eget<br>kodeværktøj</h2>
+        <p>Lær arbejdsgangen, og giv Claude Code, Codex eller OpenCode fælles grundregler. Læs og tilpas filerne. Du behøver ikke installere vores app.</p>
+        <a class="choice-link" href="pakker.html">Åbn webguiden →</a>
+      </article>
+      <article>
+        <p class="eyebrow">SAMLET I EN DESKTOPAPP</p>
+        <h2>Byg i<br>AI Harness-appen</h2>
+        <p>Beskriv din idé, byg med din egen AI, og se resultatet ved siden af samtalen. Appen samler kodeændringer, forhåndsvisning og versionsgemning.</p>
+        <a class="choice-link" href="#desktop">Se appen og testadgang →</a>
+      </article>
+    </section>
+
+    <section class="note" aria-labelledby="forloeb-title">
+      <h2 id="forloeb-title">Hjælp til mere end at skrive koden</h2>
+      <p>Vi udvikler en fælles arbejdsmetode, der også hjælper med de valg, som afgør, om en app kan bruges og vedligeholdes.</p>
+      <ol class="journey">
+        <li><strong>Afklar idéen</strong><span>Brugere, behov og de data, løsningen skal bruge.</span></li>
+        <li><strong>Vælg løsningen</strong><span>Teknologi og design, der passer til opgaven og kommunen.</span></li>
+        <li><strong>Byg og afprøv</strong><span>Kode, ændringshistorik, adgang og en fungerende brugerrejse.</span></li>
+        <li><strong>Sæt i drift</strong><span>Hosting, databehandling og godkendelse af den konkrete løsning.</span></li>
+        <li><strong>Giv arbejdet videre</strong><span>Dokumentation, opdateringer og mulighed for at gendanne.</span></li>
+      </ol>
+    </section>
+
+    <section class="note" aria-labelledby="data-title">
+      <h2 id="data-title">Hvor ender data, og hvem har adgang?</h2>
+      <p>Det spørgsmål skal følge projektet fra den første AI-samtale til den færdige tjeneste. Vi vil gøre det lettere at forstå, hvem der modtager kode og data, hvor de behandles, og hvordan de kan flyttes eller slettes. Det omfatter også logs, support og sikkerhedskopier.</p>
+      <p>Harness skal hjælpe med at forebygge sikkerhedsfejl og brud på persondatasikkerheden. Instruktionerne kan ikke alene sikre GDPR eller erstatte kommunens vurdering og tekniske adgangskontrol.</p>
+      <a href="https://github.com/ai-alliancen-org/ai-harness/blob/main/docs/harness-grundlag.md#data-og-drift">Læs vores forslag om data og drift ↗</a>
+    </section>
+
+    <section class="note" aria-labelledby="indhold-title">
+      <h2 id="indhold-title">Fælles indhold, som kan tilpasses</h2>
+      <p>Grundregler beskriver, hvordan agenten skal arbejde. Skills er vejledninger til bestemte opgaver, som afprøvning eller kodegennemgang. Projektprofiler skal samle kommunens valg om teknologi, design og arbejdsgang.</p>
+      <p>Du skal kunne vælge de relevante dele og bruge dem i flere værktøjer. Koden, du bygger, ligger i almindelige filer, så en udvikler kan overtage projektet.</p>
+    </section>
+
+    <section id="desktop" class="downloads" aria-labelledby="download-title">
+      <p class="eyebrow">APPEN ER EN TESTVERSION</p>
+      <h2 id="download-title">Prøv AI Harness på din computer</h2>
+      <p>Projektfilerne ligger lokalt. Du forbinder selv en AI hos en udbyder eller på din egen modelserver. Installationspakken indeholder OpenCode, Git og Node/npm.</p>
+      <!-- artifacts --><p>Der er endnu ingen udgivet installationspakke på denne side. Testadgang er foreløbig for inviterede med adgang til det private repository.</p><!-- /artifacts -->
+      <p><a href="desktop.html">Installation og hjælp →</a></p>
+    </section>
+
+    <section class="note" aria-labelledby="status-title">
+      <h2 id="status-title">Det kan du bruge nu</h2>
+      <p>Webguiden og de tre downloadpakker indeholder grundregler og hjælp til manuel opsætning. Appen har redigerbare skills og lokale designpakker. Automatisk installation i andre kodeværktøjer, deling af det fulde skillbibliotek og fælles organisationsprofiler er endnu ikke implementeret.</p>
+      <p>Vi arbejder mod et samlet forløb fra idé til drift. Det er endnu ikke afprøvet i sin helhed på en almindelig testers egen computer.</p>
+      <a href="https://github.com/ai-alliancen-org/ai-harness/blob/main/docs/teststatus.md">Se, hvad der er afprøvet ↗</a>
+    </section>
+
+    <section class="note" aria-labelledby="bidrag-title">
+      <h2 id="bidrag-title">Udviklet med kommunernes behov som udgangspunkt</h2>
+      <p>Kommuner, udviklere og leverandører kan bidrage med erfaringer, instruktioner og integrationer. Ambitionen er open source; licens og vedligeholdelsesansvar skal stadig aftales.</p>
+      <a href="https://github.com/ai-alliancen-org/ai-harness/blob/main/CONTRIBUTING.md">Bidrag til projektet ↗</a>
+    </section>
+  </main>
+  <footer><span>AI Alliancen · AI Harness</span><a href="pakker.html">Webguide og grundregler</a></footer>
+</body>
+</html>

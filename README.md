@@ -1,38 +1,61 @@
 # AI Harness
 
-AI Harness hjælper dig med at bygge applikationer med AI. Du kan hente instruktioner til dit nuværende kodeværktøj eller bruge desktopappen, hvor samtale, kodeændringer og forhåndsvisning er samlet.
+AI Harness skal hjælpe kommuner med at udvikle applikationer med AI, fra den første idé til en løsning i drift. Også medarbejdere uden en udviklerbaggrund skal kunne bygge noget brugbart, forstå de vigtigste valg og få hjælp til at forebygge sikkerhedsfejl og brud på persondatasikkerheden.
 
-Projektet er startet med udgangspunkt i den offentlige sektors behov. Kommuner, udviklere og leverandører kan bidrage med kode, integrationer og erfaringer. Instruktionerne kan bruges uden appen.
+Vi samler en fælles arbejdsmetode, vejledninger og instruktioner til kodeagenter. De skal hjælpe med opgaven, koden, afprøvningen og driften, herunder hvor data behandles, hvem der har adgang, og hvordan en anden udvikler kan overtage projektet. Desktopappen er én måde at bruge Harness på.
 
-## Vælg den del, du har brug for
+## To måder at bruge Harness
 
-**Brug instruktionerne i dit eget værktøj.** Hent danske grundregler til [Claude Code](site/dist/downloads/claude/LAES-MIG.md), [Codex](site/dist/downloads/codex/LAES-MIG.md) eller [OpenCode](site/dist/downloads/opencode/LAES-MIG.md). Læs, tilpas og læg dem i dit projekt. Desktopappen er ikke nødvendig.
+### Brug dit eget kodeværktøj
 
-**Byg i desktopappen.** Beskriv din idé, tilslut din egen AI, gennemgå ændringerne og se resultatet ved siden af samtalen. Projektfilerne ligger lokalt. Appen hjælper med Git og tilbyder særskilt testudgivelse til understøttede hostingtjenester. Se [installation og opsætning](desktop/README.md).
+Behold Claude Code, Codex eller OpenCode, og brug Harness til at lære arbejdsgangen og give agenten fælles instruktioner. Du kan læse og tilpasse filerne uden at installere AI Harness eller forbinde en model til vores app.
 
-**Gem instruktioner og design til flere projekter.** Appen har redigerbare skills og lokale designpakker med farver, logoer og referencer. Delbar import/eksport, projektpakker og centrale organisationsprofiler er planlagt, men har endnu ikke et fælles pakkeformat.
+De nuværende pakker indeholder grundregler om blandt andet Git, hemmeligheder og afprøvning samt en trinvis vejledning:
 
-## Hvad består projektet af?
+- [Claude Code](site/dist/downloads/claude/LAES-MIG.md)
+- [Codex](site/dist/downloads/codex/LAES-MIG.md)
+- [OpenCode](site/dist/downloads/opencode/LAES-MIG.md)
 
-- **Skills og instruktioner** beskriver hvordan agenten skal håndtere hemmeligheder, Git, afprøvning og dokumentation.
-- **Design- og projektpakker** skal gøre fælles valg lette at genbruge uden at låse projekter til appen.
-- **Integrationer** forbinder modeller, kodeagenter, Git og hosting. De eksisterende adaptere er kode i projektet; der er endnu ikke et system til at installere eksterne plugins.
-- **Organisationsprofiler** skal skelne mellem anbefalinger, standardvalg og håndhævede krav. Central administration og cloud-arbejdsområder er planlagt.
+Webguiden og filerne findes i [hjemmesidens kilde](site/dist/). Automatisk installation fra repositoryet og eksport af det fulde skillbibliotek er endnu ikke implementeret.
 
-Instruktioner vejleder modellen. Adgangskontrol og godkendelser skal håndhæves af det værktøj eller miljø, der udfører handlingen. En eksporteret tekstfil kan ikke i sig selv garantere samme beskyttelse i alle kodeværktøjer.
+### Brug AI Harness-appen
 
-Vi planlægger import og eksport af læsbare filer i pakker med versionsnumre. Brugeren skal kunne gennemgå indholdet, før eksisterende filer ændres. Nøgler, login og private samtaler skal holdes uden for almindelige delingspakker. Det er et designprincip, ikke en færdig eksportfunktion.
+Appen samler samtale med din AI, kodeændringer, forhåndsvisning og versionsgemning. Du bruger din egen modelforbindelse, og projektfilerne ligger på din computer. Der er også hjælp til testudgivelse hos de hostingtjenester, der er understøttet.
 
-## Giv koden videre til en udvikler
+Se [installation og opsætning](desktop/README.md) og [den konkrete teststatus](docs/teststatus.md). Appen er en testversion til inviterede brugere. Et komplet forløb fra download til drift er endnu ikke afprøvet på en almindelig testers egen computer.
 
-Resultatet er almindelige projektfiler og Git-historik, når du vælger versionsstyring. En udvikler kan overtage koden med de nødvendige oplysninger om opsætning og drift. Projektfilerne kan åbnes og videreudvikles uden AI Harness.
+## Hele vejen fra idé til drift
 
-## Prøv eller bidrag
+Det fælles Harness skal hjælpe brugeren med at:
 
-Løsningen er under udvikling og afprøves med inviterede testere. Installation, signering og konkret teststatus fremgår af [desktopvejledningen](desktop/README.md). Licens og vedligeholdelsesansvar skal stadig aftales; ambitionen er open source.
+1. **Afklare idéen.** Hvem skal bruge løsningen, hvad skal den kunne, og hvilke data behøver den?
+2. **Vælge en egnet løsning.** Tag højde for kommunens eksisterende systemer, design, adgangskrav og muligheder for hosting.
+3. **Bygge og kontrollere.** Bevar ændringshistorikken, beskyt nøgler, og afprøv funktioner, adgang og tilgængelighed.
+4. **Udgive med et kendt ansvar.** Afklar databehandling og godkendelser, og kontrollér den faktiske tjeneste efter udgivelse.
+5. **Vedligeholde eller overdrage.** Dokumentér opsætning, drift, opdateringer og gendannelse, så andre kan tage over.
 
-- [Bidrag med kode, integrationer eller feedback](CONTRIBUTING.md)
-- [Fælles instruktioner og skills](profiles/)
-- [Start desktopappen fra kildekoden](desktop/README.md#start-fra-kildekoden)
+Dette er produktets retning. Det fulde forløb er endnu ikke dækket af de nuværende downloadpakker. [Det faglige grundlag](docs/harness-grundlag.md) beskriver research, forslag til skills og de dele, der mangler.
+
+## Kontrol over data og leverandører
+
+Vi vil gøre datasuverænitet konkret: hvor data behandles og opbevares, hvem der kan tilgå dem, hvilke vilkår der gælder, og om kode og data kan flyttes til en anden leverandør. Det gælder både AI-værktøjet under udviklingen og den færdige apps database, hosting, logs og sikkerhedskopier.
+
+Harness skal støtte kommunens arbejde med sikkerhed og GDPR. Instruktioner er dog ikke adgangskontrol eller en godkendelse til at behandle personoplysninger. Den konkrete løsning skal vurderes af kommunen og de relevante fagpersoner. Grundlaget beskriver [hvilke oplysninger og kontroller vi foreslår](docs/harness-grundlag.md#data-og-drift).
+
+## Brug og tilpas de relevante dele
+
+Grundregler beskriver det fælles ansvar. Skills beskriver bestemte arbejdsopgaver. Projektprofiler skal samle valg om teknologi, design og arbejdsgang. Kommuner og leverandører skal kunne bidrage med indhold og integrationer uden at være bundet til én model, Git-tjeneste eller hostingudbyder.
+
+Appen har allerede redigerbare skills og lokale designpakker. Et fælles format til import, eksport og organisationsprofiler er stadig under udvikling. Målet er læsbare, versionsstyrede filer, hvor lokale tilpasninger bevares ved opdatering.
+
+Koden, brugeren bygger, ligger i almindelige projektfiler. Med versionsstyring og den nødvendige dokumentation kan en udvikler overtage arbejdet uden AI Harness.
+
+## Projekt og bidrag
+
+Projektet tager udgangspunkt i kommunernes behov og kan også bruges i andre sammenhænge. Ambitionen er open source; licens og vedligeholdelsesansvar skal stadig aftales. Repositoryet er foreløbig privat, og GitHub Pages er ikke publiceret.
+
+- [Bidrag med erfaringer, kode eller integrationer](CONTRIBUTING.md)
+- [Læs research og forslag til det fælles Harness](docs/harness-grundlag.md)
+- [Se de eksisterende instruktioner og skills](profiles/)
 - [Byg og vedligehold hjemmesiden](docs/website.md)
 - [Skriv tekster til projektet](docs/sprog.md)
