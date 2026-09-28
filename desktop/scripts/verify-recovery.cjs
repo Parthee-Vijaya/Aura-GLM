@@ -1,0 +1,78 @@
+const { _electron: electron } = require('playwright');
+const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const os = require('node:os');
+const http = require('node:http');
+const { GitVersions, run } = require('../core/git.cjs');
+const { skipIntroduction, menuClick, taskOptions, selectMode } = require('./ui-test-helpers.cjs');
+(async () => {
+  const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'harness-recovery-'))), project = path.join(root,'Prøve med mellemrum');
+  await fs.mkdir(path.join(project,'public'),{recursive:true}); await fs.writeFile(path.join(project,'.gitignore'),'.env\n');
+  const pageFile = path.join(project,'public/index.html'); await fs.writeFile(pageFile,'<h1>Godkendt version</h1>');
+  const git = new GitVersions(); await git.initialize(project);
+  for (const [key,value] of [['user.name','Testbruger'],['user.email','test@example.invalid'],['commit.gpgsign','false'],['core.hooksPath',path.join(root,'hooks')]]) await run(project,['config','--local',key,value]);
+  let review = await git.review(project); const first = await git.commit(project,{token:review.token,files:review.files.map(f=>f.file),message:'Godkendt udgangspunkt'});
+  await fs.writeFile(pageFile,'<h1>Anden version</h1>'); review=await git.review(project); const second=await git.commit(project,{token:review.token,files:['public/index.html'],message:'Anden prøveversion'});
+  await fs.writeFile(pageFile,'<h1>Ugemt forsøg</h1>'); await fs.writeFile(path.join(project,'.env'),'PRIVATE=kun-lokalt'); await fs.writeFile(path.join(project,'noter.txt'),'Bevar denne fil');
+  let mode='ok', requests=0, app, page;
+  const server=http.createServer(async(req,res)=>{
+    if(req.url==='/v1/models'){res.setHeader('content-type','application/json');return res.end(JSON.stringify({data:[{id:'recovery-model'}]}));}
+    requests++; let raw='';for await(const chunk of req) raw+=chunk;const body=JSON.parse(raw);
+    if(mode==='key'||mode==='quota'){res.writeHead(mode==='key'?401:402,{'content-type':'application/json'});return res.end(JSON.stringify({error:{message:'SKJULT_UDVIDERTEKST'}}));}
+    const chunk={id:'recovery-'+requests,object:'chat.completion.chunk',created:1,model:body.model,choices:[{index:0,delta:{role:'assistant',content:mode==='ok'?'Forslag: Vi bevarer den eksisterende side og dens lokale data. Næste ændring er en tydelig tilmeldingsknap. Vi bruger projektets HTML og kontrollerer knappen på mobil og computer. Ingen ny konto er nødvendig.':mode==='wait'?'Delvist svar før brugerens stop.':'Delvist svar før afbrydelsen.'},finish_reason:null}]};
+    res.writeHead(200,{'content-type':'text/event-stream'});res.write('data: '+JSON.stringify(chunk)+'\n\n');
+    if(mode==='stream'){setTimeout(()=>res.destroy(),100);return;}
+    if(mode==='wait')return;
+    res.write('data: '+JSON.stringify({...chunk,choices:[{index:0,delta:{},finish_reason:'stop'}]})+'\n\n');res.end('data: [DONE]\n\n');
+  });
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const launch=async()=>{
+    const bundle=process.env.HARNESS_TEST_PACKAGE ? path.resolve(process.env.HARNESS_TEST_PACKAGE) : null;
+    app=await electron.launch({executablePath:bundle?(bundle.endsWith('.app')?path.join(bundle,'Contents/MacOS/AI Harness'):bundle):require('electron'),args:[...(bundle?[]:[path.join(__dirname,'..')]),'--user-data-dir='+path.join(root,'appdata')],env:{...process.env,ELECTRON_RUN_AS_NODE:undefined}});
+    page=await app.firstWindow();await skipIntroduction(page);
+    await app.evaluate(({dialog},project)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[project]});},project);await page.click('#open');await page.waitForSelector('#workspace:not([hidden])');
+  };
+  const send=async text=>{
+    await page.fill('#prompt',text);await page.click('#send');
+    await page.waitForFunction(()=>document.querySelector('#data-dialog').open||!document.querySelector('#stop').hidden);
+    if(await page.locator('#data-dialog').evaluate(el=>el.open))await page.click('#accept-send');
+  };
+  try {
+    await launch();await menuClick(page,'#git-button');
+    await page.getByRole('button',{name:'Godkendt udgangspunkt ·',exact:false}).click(); await page.waitForSelector('#restore-dialog[open]');
+    await page.locator('#restore-files').filter({hasText:'Ugemt forsøg'}).waitFor();
+    await page.click('[data-close="restore-dialog"]'); assert.match(await fs.readFile(pageFile,'utf8'),/Ugemt/);
+    await page.getByRole('button',{name:'Godkendt udgangspunkt ·',exact:false}).click();await page.click('#restore-confirm');
+    await page.locator('#git-feedback').filter({hasText:'1 fil er gendannet'}).waitFor();await page.click('[data-close="git-dialog"]');
+    await page.frameLocator('#preview').getByRole('heading',{name:'Godkendt version'}).waitFor();
+    assert.equal((await git.status(project)).head,second.head); assert.equal(await fs.readFile(path.join(project,'.env'),'utf8'),'PRIVATE=kun-lokalt');
+    await page.screenshot({path:path.join(root,'gendannet.png'),animations:'disabled'});
+    await app.close();app=null;await launch();await menuClick(page,'#git-button');await page.click('#restore-undo');await page.click('#restore-confirm');
+    await page.locator('#git-feedback').filter({hasText:'er gendannet'}).waitFor();await page.click('[data-close="git-dialog"]');
+    await page.frameLocator('#preview').getByRole('heading',{name:'Ugemt forsøg'}).waitFor();
+    assert.equal((await git.status(project)).head,second.head);assert.equal(await fs.readFile(path.join(project,'noter.txt'),'utf8'),'Bevar denne fil');
+    await menuClick(page,'#connections-button');await page.selectOption('#provider-kind','compatible');await page.fill('#connection-name','Kontrolleret fejlprøve');await page.fill('#base-url',`http://127.0.0.1:${server.address().port}/v1`);await page.click('#save-connection');await page.locator('#connection-feedback').filter({hasText:'gemt'}).waitFor();await page.click('[data-close="connections-dialog"]');
+    const state=await page.evaluate(()=>window.harness.connectionState());await taskOptions(page);await page.selectOption('#connection-select',state.value.connections[0].id);await page.locator('#model-shortlist button').first().click();await selectMode(page,'plan');
+    for(const [failure,text] of [['key','prøve med forkert nøgle'],['quota','prøve med opbrugt kvote'],['stream','prøve med afbrudt forbindelse']]){
+      mode=failure;await send(text);await page.locator('#run-status').filter({hasText:'Fejl'}).waitFor({timeout:60000});
+      assert.equal(await page.inputValue('#prompt'),text);assert.equal(await page.isVisible('#plan-card'),false);
+      assert.equal((await page.locator('#messages').textContent()).includes('SKJULT_UDVIDERTEKST'),false);
+      await page.screenshot({path:path.join(root,failure+'.png'),animations:'disabled'});
+      mode='ok';await send('Prøv igen efter '+failure);await page.locator('#run-status').filter({hasText:'Klar'}).waitFor({timeout:60000});await page.waitForSelector('#plan-card:not([hidden])');
+    }
+    mode='wait';await send('Bevar denne besked efter stop');await page.locator('#messages .assistant').filter({hasText:'Delvist svar før brugerens stop.'}).waitFor({timeout:60000});await page.click('#stop');await page.locator('#run-status').filter({hasText:'Stoppet'}).waitFor();
+    assert.equal(await page.inputValue('#prompt'),'Bevar denne besked efter stop');assert.equal(await page.isVisible('#plan-card'),false);
+    mode='ok';await send('Prøv igen efter stop');await page.locator('#run-status').filter({hasText:'Klar'}).waitFor({timeout:60000});
+    assert.equal(requests,8,'Ingen automatisk gentagelse af fejlede kald');
+    await page.waitForSelector('#plan-card:not([hidden])');await menuClick(page,'#git-button');await page.getByRole('button',{name:'Godkendt udgangspunkt ·',exact:false}).click();await page.click('#restore-confirm');await page.locator('#git-feedback').filter({hasText:'er gendannet'}).waitFor();await page.click('[data-close="git-dialog"]');
+    assert.equal(await page.isVisible('#plan-card'),false);assert.equal((await page.evaluate(()=>window.harness.connectionState())).value.workspace.plan,null);
+    await menuClick(page,'#support-button'); await page.getByText('Fejlrapport uden projektindhold',{exact:true}).click(); const report=await page.locator('#support-report').textContent();
+    for(const privateText of [project,'127.0.0.1','PRIVATE','recovery-model','Prøv igen'])assert.equal(report.includes(privateText),false);
+    assert.ok(JSON.parse(report).senesteFejl.length>0);
+    const target=path.join(root,'rapport.json');await app.evaluate(({dialog},target)=>{dialog.showSaveDialog=async()=>({canceled:false,filePath:target});},target);await page.click('#support-save');await page.locator('#support-status').filter({hasText:'gemt'}).waitFor();assert.equal(JSON.parse(await fs.readFile(target)).format,1);
+    await page.screenshot({path:path.join(root,'feedback.png'),animations:'disabled'});
+    console.log(JSON.stringify({status:'bestået',root,requests,checks:['gendan og fortryd gennem UI og genstart','HEAD og private filer bevaret','forkert nøgle og kvote med kladde bevaret','afbrudt HTTP-strøm bliver en fejl','ny plan efter hver fejl og stop','fejlrapport gennem filvælger uden projektindhold'],limitation:'Kontrolleret modelserver; ingen vurdering af en rigtig models svar'}));
+  }catch(error){console.error('Testmateriale: '+root);console.error(error.message);await page?.screenshot({path:path.join(root,'fejl.png'),animations:'disabled',timeout:3000}).catch(()=>{});throw error;}
+  finally{await app?.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
+})().catch(error=>{console.error(error);process.exitCode=1;});

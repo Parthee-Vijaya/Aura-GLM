@@ -28,6 +28,14 @@ test('skills kan ændres og gendannes uden at ændre andre projekter eller grund
  await skills.save('/a', { id:original.id, content:original.content, enabled:true, reset:true });
  assert.equal((await skills.list('/a')).find(s => s.id === original.id).customized,false);
 });
+test('gendannelsens markør fjerner gamle planer, også når historikskrivning fejler',async t=>{
+ const bench=new Workbench({directory:await temp(t),profiles,emit:()=>{},safeStorage:{}});const project={root:bench.store.root,name:'Prøve'};await bench.activate(project);
+ await bench.history.update(project.root,data=>{data.plan={id:'gammel',text:'Byg den gamle fil'};data.draft='Bevar kladden';});await bench.activate(project);
+ const update=bench.history.update.bind(bench.history);bench.history.update=async()=>{throw Error('Syntetisk diskfejl');};
+ await bench.invalidatePlan('gendannelse-1');assert.equal(bench.plan,null);assert.equal(bench.workspace.plan,null);assert.equal(bench.workspace.draft,'Bevar kladden');assert.match(bench.historyWarning,/kunne ikke/);
+ bench.history.update=update;await bench.activate(project);assert.equal(bench.plan.id,'gammel');await bench.invalidatePlan('gendannelse-1');assert.equal(bench.plan,null);assert.equal((await bench.history.read(project.root)).plan,null);
+ await bench.history.update(project.root,data=>{data.plan={id:'ny',text:'Ny plan for gendannede filer'};});await bench.activate(project);await bench.invalidatePlan('gendannelse-1');assert.equal(bench.plan.id,'ny');await bench.close();
+});
 test('stop under motoropstart sender aldrig prompten', async t => {
  let entered, release, calls=0; const reached = new Promise(r=>entered=r); const blocked = new Promise(r=>release=r);
  const bench = new Workbench({ directory:await temp(t), profiles, emit:()=>{}, safeStorage:{}, engineFactory:()=>({ active:false, start:async()=>{entered();await blocked;}, send:async()=>calls++, abort:async()=>{}, close:async()=>{} }) });
@@ -47,11 +55,12 @@ test('gateway kræver nøgle, fastholder model og OpenRouter-udbyder uden fallba
  t.after(async()=>{await gateway.close();upstream.closeAllConnections();await new Promise(r=>upstream.close(r));});
  assert.equal((await fetch(gateway.url+'/chat/completions',{method:'POST',body:'{}'})).status,401);
  const send=body=>fetch(gateway.url+'/chat/completions',{method:'POST',headers:{authorization:`Bearer ${gateway.token}`,'content-type':'application/json'},body:JSON.stringify(body)});
- await send({model:'anden'}); assert.equal(received.length,0);
  assert.equal((await send({model:'test:free',provider:{allow_fallbacks:true},models:['anden']})).status,200);
  assert.deepEqual(received[0].body.provider,{only:['valgt'],allow_fallbacks:false,max_price:{prompt:0,completion:0,request:0,image:0}});
  assert.equal(received[0].body.models,undefined);
  assert.equal(received[0].headers.authorization,'Bearer prøvenøgle');
+ await send({model:'anden'}); assert.equal(received.length,1);
+ assert.equal((await send({model:'test:free'})).status,409); assert.equal(received.length,1);
 });
 test('serveradresser og ukendte vilkår er tydelige', () => {
  for(const value of ['file:///tmp/a','https://user:password@example.com','https://example.com/?key=secret']) assert.throws(()=>endpoint(value));

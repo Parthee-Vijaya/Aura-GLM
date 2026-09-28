@@ -17,5 +17,5 @@ async function generate(directory = path.join(root,'release')) {
  await fs.writeFile(path.join(directory,'SHA256SUMS.txt'),files.map(f=>`${f.sha256}  ${f.name}`).join('\n')+'\n');
  return files;
 }
-if(require.main===module)generate().then(files=>console.log(`${files.length} faktiske installationsfiler med kontrolsummer. Ingen upload.`)).catch(e=>{console.error(e.message);process.exitCode=1;});
+if(require.main===module)generate(process.argv[2] ? path.resolve(process.argv[2]) : undefined).then(files=>console.log(`${files.length} faktiske installationsfiler med kontrolsummer. Ingen upload.`)).catch(e=>{console.error(e.message);process.exitCode=1;});
 module.exports={generate};

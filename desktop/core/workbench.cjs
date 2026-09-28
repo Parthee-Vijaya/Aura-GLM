@@ -44,6 +44,14 @@ class Workbench {
     await this.history.startConversation(this.project.root);
     return this.activate(this.project);
   }
+  async invalidatePlan(restorationID) {
+    if (this.workspace?.restorationID === restorationID) return;
+    this.plan = null; this.planConversation = [];
+    const reset = data => { data.plan = null; data.planConversation = []; data.status = 'idle'; data.mode = 'plan'; data.restorationID = restorationID; };
+    if (this.workspace) reset(this.workspace);
+    try { this.workspace = await this.history.update(this.project.root, reset); }
+    catch { this.historyWarning = 'Planen er nulstillet efter gendannelse, men samtalefilen kunne ikke opdateres. Din gamle samtale er bevaret. Start en ny plan, før du bygger videre.'; }
+  }
   historySnapshot(status, clearDraft = false) {
     const messages = this.runUser ? [this.runUser] : [];
     for (const part of this.runText?.values() || []) if (this.runRoles?.get(part.messageID) === 'assistant') messages.push({ id: part.id, role: 'assistant', text: part.text || '' });
@@ -145,7 +153,10 @@ class Workbench {
       if (this.engineIdentity !== prepared.disclosure.fingerprint || !this.engine?.active) {
         await this.close(false); checkStopped();
         const key = this.store.decrypt(prepared.connection);
-        this.gateway = await startGateway(prepared.connection, prepared.model, key, prepared.route);
+        const gateway = await startGateway(prepared.connection, prepared.model, key, prepared.route, message => {
+          if (this.gateway === gateway && this.running && !this.runStopped) this.event({ type: 'engine.error', message });
+        });
+        this.gateway = gateway;
         const provider = connections.engineProvider(prepared.connection, prepared.model, this.gateway.url, this.gateway.token);
         provider.name = 'Valgt forbindelse'; provider.models[prepared.model.id].name = prepared.model.id;
         checkStopped();
@@ -178,6 +189,7 @@ class Workbench {
       const status = event.type === 'session.idle' ? 'idle' : 'error';
       this.finishing = this.checkpoints.finish().then(async () => {
         if (this.runStopped) return;
+        if (status === 'error') { this.plan = null; await this.close(false); }
         const reply = planningReply(this.runRoles || new Map(), this.runText || new Map());
         const text = reply.text;
         if (status === 'idle' && this.runMode === 'plan' && text.trim()) {
@@ -193,7 +205,7 @@ class Workbench {
     }
     if (['message.part.updated', 'message.part.delta', 'message.updated', 'session.error', 'engine.error', 'permission.asked', 'permission.replied', 'question.asked', 'question.replied', 'question.rejected', 'session.diff'].includes(event.type)) this.emit(event);
   }
-  async stop() { if (this.finishing) throw new Error('Afslutningen er i gang. Vent på resultatet.'); this.runStopped = true; this.plan = null; this.checkpoints.cancel(); ++this.generation; this.gateway?.abort(); await this.engine?.abort().catch(() => {}); if (!this.starting) { await this.checkpoints.finish(); this.running = false; } await this.saveHistory('stopped'); this.emit({ type: 'run.status', status: this.starting ? 'starting' : 'stopped' }); }
+  async stop() { if (this.finishing) throw new Error('Afslutningen er i gang. Vent på resultatet.'); this.runStopped = true; this.plan = null; this.checkpoints.cancel(); ++this.generation; this.engineIdentity = null; this.gateway?.abort(); await this.engine?.abort().catch(() => {}); if (!this.starting) { await this.checkpoints.finish(); this.running = false; } await this.saveHistory('stopped'); this.emit({ type: 'run.status', status: this.starting ? 'starting' : 'stopped' }); }
   async reply(input) { if (input.allow !== true) this.checkpoints.cancel('En handling blev afvist.'); if (!this.engine) throw new Error('Ingen aktiv agent.'); return this.engine.reply(input.id, input.allow === true); }
   async question(input) { if (!this.engine || typeof input.id !== 'string' || !Array.isArray(input.answers)) throw new Error('Ugyldigt svar.'); const result = await this.engine.request(`/question/${encodeURIComponent(input.id)}/reply`, 'POST', { answers: input.answers }); if (this.runMode === 'plan') this.planConversation.push('Svar på agentens spørgsmål: ' + JSON.stringify(input.answers)); return result; }
   async close(reset = true) {

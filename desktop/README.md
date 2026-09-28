@@ -2,6 +2,18 @@
 
 Dansk desktop-app med lokale arbejdsområder, kodeagent, modelvalg, skills, genbrugelige designpakker og forhåndsvisning. OpenCode 1.17.15 er den første agentadapter. Modellen kan køre på egen maskine, egen server eller hos en ekstern udbyder; projektfiler og agentprocessen kører fortsat lokalt.
 
+Invitation, installationskontrol og observationsopgaver er samlet i [testforløbet](../docs/testforloeb.md). [Aktuel teststatus](../docs/teststatus.md) skelner mellem automatiske prøver, rigtige modeller og kontrol af installationspakker.
+
+## Gendannelse og fejlrapport
+
+Åbn projektmenuen → Versioner, og vælg en gemt version for at gennemgå filerne før gendannelse. Appen gemmer først en lokal kopi af de berørte filer. **Kopien før sidste gendannelse** kan åbnes efter genstart og bruges til at fortryde. HEAD, index og commits ændres ikke. Gendannede filer fremstår som almindelige ændringer, der senere kan gemmes som en ny version.
+
+Kun de viste filer ændres. Nye filer uden for historikken, ignorerede filer, installerede pakker og eksterne databaser bevares. Gendannelse stopper den preview-server, appen selv har startet, og afslutter den gamle agentsession. Staged ændringer, konflikter, symbolske links, Git LFS, store filer og muligt nøgleindhold kan kræve manuel gennemgang i et Git-værktøj. Appens kopier ligger uden for projektet og er ikke en online sikkerhedskopi.
+
+Ved fejl fra modelserveren stopper forbindelsen, så agentmotorens genforsøg ikke udløser flere kald. Appen vælger ingen reserveudbyder. Beskeden bevares som kladde; brugeren vælger selv at prøve igen. En afbrudt strøm bliver behandlet som en fejl, ikke som en godkendt plan.
+
+**Indstillinger → Hjælp og feedback** viser appversion og en lokal fejlrapport med faste statusfelter. Rapporten indeholder ingen samtaler, projektfiler, stier, serveradresser, kontonavne eller API-nøgler. Den gemmes og deles kun efter brugerens eget valg. Samme sted findes vejledning til at installere næste testversion med bevarede projekter og indstillinger.
+
 ## Start fra kildekoden
 
 Kræver Node.js 22.12 eller nyere, npm og en eksisterende OpenCode-installation i præcis version 1.17.15. Appen søger i `~/.opencode/bin/`, på PATH eller i `HARNESS_OPENCODE_PATH`. Den installerer eller opgraderer ikke OpenCode. Kør fra `desktop/`:
@@ -168,15 +180,11 @@ npm run test:live
 
 En særskilt prøve med en rigtig gratis OpenRouter-model køres med `npm run test:openrouter`. Den beder om en testnøgle i terminalen uden ekko og sender kun syntetiske projektdata samt offentlige regler. Den bruger som standard `cohere/north-mini-code:free`, kontrollerer model- og rutepriser og bruger én konkret gratis rute uden fallback. For OpenRouters `:free`-varianter sætter gatewayen også nul som maksimal input-, output-, request- og billedpris. Nøglen må ikke angives som argument, i kildekoden eller i chatlogs. Testen er ikke en del af standardtestsuiten.
 
-## Aktuel afprøvning · 28. september 2026
+## Aktuel afprøvning
 
-71 automatiske tests består. De nye procesprøver omfatter ændret opsætning efter godkendelse, manglende Node, fejl fra rigtig npm, manglende pakker trods npm-succes og stop af en installation inklusive dens underproces. Alle filer er syntetiske og ligger i isolerede testmapper.
+Se [teststatus før invitation](../docs/teststatus.md) for de aktuelle resultater, installationsfiler og manglende kontroller. Den skelner mellem kontrollerede modelservere, rigtige modeller, lokale pakker og CI. De daterede afsnit nedenfor beskriver tidligere afprøvninger og erstatter ikke den aktuelle status.
 
-React/TypeScript med Vite og Astro er afprøvet i Electron på macOS med rigtig installation, opstart, klik, mobilvisning og opdatering efter filændringer. Prøven omfatter også nye frameworkfiler i et allerede åbent projekt, en afvist godkendelse efter filændring, en bevidst Astro-fejl, rettelse, basissti, stop, projektskift og genåbning uden autostart. Samme forløb består i en ny lokal, usigneret Mac ARM64-pakke med begrænset PATH og pakkens Node/npm. Det er en teknisk pakkeprøve på udviklingsmaskinen, ikke en afprøvning af installation på en anden computer.
-
-De eksisterende desktop- og chatprøver består også. Chatprøven bruger rigtig OpenCode med en kontrolleret lokal modelserver; filændringer, godkendelser, statisk preview, manuel servertilslutning og isolerede Git-versioner er gennemført. Frameworkprojekterne i den nye prøve er skrevet som testmateriale, ikke genereret af en ekstern model. Den tidligere afprøvning af samtale og kladde efter genstart er bevaret; der er ikke kørt nye eksterne modelprøver i denne omgang.
-
-Ændringerne er ikke udgivet. Windows, notarisation af den nye pakke og installation på en almindelig testers computer mangler. Designet er ikke brugertestet med kommunale medarbejdere. Rigtig Ollama-inference og Corti/Mistral gennem hele byggeforløbet er fortsat ikke verificeret.
+React/TypeScript med Vite og Astro er desuden afprøvet med rigtig installation, opstart, klik, mobilvisning og opdatering efter filændringer. Prøven omfatter en ændret godkendelse, en fremkaldt Astro-fejl, rettelse, basissti, stop, projektskift og genåbning uden autostart. Forløbet bestod i kildekoden og i den foregående lokale pakke med begrænset PATH. Frameworkprojekterne var syntetisk testmateriale, ikke resultatet af en ekstern model.
 
 ## Verifikationsstatus · 24. september 2026
 

@@ -23,6 +23,7 @@ jobs:
             target: win32-x64
             command: package:windows
             arch: x64
+            app: release/win-unpacked/AI Harness.exe
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -45,6 +46,10 @@ jobs:
       - name: Afprøv den pakkede app på Windows
         if: runner.os == 'Windows'
         run: npm run test:package -- "release/win-unpacked/AI Harness.exe"
+      - name: Afprøv gendannelse og forbindelsesfejl i pakken
+        run: npm run test:recovery
+        env:
+          HARNESS_TEST_PACKAGE: ${{ matrix.app }}
       - run: npm run release:site
       - uses: actions/upload-artifact@v4
         with:

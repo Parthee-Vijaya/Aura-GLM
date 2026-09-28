@@ -23,10 +23,15 @@ app.setPath('sessionData', existingSessionData);
 protocol.registerSchemesAsPrivileged([{ scheme: 'harness', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 let window, preview, project, busy = false;
 let assets = [];
-let github, publishing, deployments;
+let github, publishing, deployments, restoration;
 let workbench, beforeChanges, externalPreview = null;
 let devServer, detectedRuntime, forceStatic = false;
 let quitReady = false, shuttingDown = null;
+const failures = [];
+function recordFailure(area, type) { failures.push({ area, type, at: new Date().toISOString() }); if (failures.length > 10) failures.shift(); }
+function supportReport() {
+  return require('./core/diagnostics.cjs').diagnostics({ version: app.getVersion(), platform: process.platform, arch: process.arch, packaged: app.isPackaged, versions: require('./core/runtime.cjs').get()?.versions, project: Boolean(project), running: workbench?.running, preview: devServer?.state, encryption: safeStorage.isEncryptionAvailable(), failures });
+}
 function shutdown() {
   if (!shuttingDown) shuttingDown = (async () => { github?.cancel(); await devServer?.stop(); await workbench?.close(); await preview?.close(); preview = null; })().finally(() => { shuttingDown = null; });
   return shuttingDown;
@@ -38,6 +43,8 @@ if (app.isPackaged) require('./core/runtime.cjs').configure(process.resourcesPat
 async function activate(next) {
   if (workbench.running) throw new Error('Stop den aktive opgave, før du skifter projekt.');
   await workbench.activate(next);
+  try { const restored = await restoration.previous(next.root); if (restored) await workbench.invalidatePlan(restored.id); }
+  catch { await workbench.invalidatePlan(crypto.randomUUID()); workbench.historyWarning = 'Gendannelseskopien kan ikke læses. Projektfilerne er åbne, men den gamle plan er nulstillet. Kopien er bevaret i appens lokale data.'; }
   await devServer.activate(next.root);
   if (preview) await preview.close();
   project = next; preview = null; externalPreview = null; beforeChanges = null; assets = [];
@@ -51,6 +58,7 @@ function handle(channel, action) {
     if (!window || event.sender !== window.webContents || event.senderFrame !== window.webContents.mainFrame || event.senderFrame.url !== uiURL) throw new Error('Adgang afvist.');
     try { return { ok: true, value: await action(value) }; }
     catch (error) {
+      recordFailure(channel.startsWith('git:') ? 'git' : channel.startsWith('connections:') ? 'forbindelse' : 'app', ['EACCES','EPERM'].includes(error.code) ? 'adgang' : error.code === 'ENOENT' ? 'mangler-fil' : 'handling');
       const messages = { EEXIST: 'Der findes allerede en mappe med det projektnavn. Vælg et andet navn eller en anden placering.', ENOENT: 'En nødvendig fil eller mappe findes ikke. Kontrollér projektmappen.', EACCES: 'Appen har ikke adgang til den valgte mappe.', EPERM: 'Operativsystemet tillader ikke handlingen på den valgte placering.' };
       return { ok: false, error: messages[error.code] || error.message };
     }
@@ -168,10 +176,27 @@ function requireIdleProject() {
   if (['installing', 'starting', 'stopping'].includes(devServer.state)) throw new Error('Vent på opstarten af forhåndsvisningen, eller stop den først.');
   return project.root;
 }
+handle('support:report', () => supportReport());
+handle('support:save', async () => {
+  const report = supportReport();
+  const chosen = await dialog.showSaveDialog(window, { title: 'Gem fejlrapport', defaultPath: 'AI-Harness-fejlrapport.json', filters: [{ name: 'Fejlrapport', extensions: ['json'] }] });
+  if (chosen.canceled || !chosen.filePath) return false;
+  await fs.writeFile(chosen.filePath, JSON.stringify(report, null, 2), { mode: 0o600 }); return true;
+});
+handle('support:feedback', () => shell.openExternal('https://github.com/ai-alliancen-org/ai-harness/issues'));
 handle('git:status', async () => {
   const root = requireIdleProject();
-  return { ...await workbench.git.status(root), autoCheckpoint: (await workbench.store.project(root)).autoCheckpoint === true };
+  return { ...await workbench.git.status(root), restoration: await restoration.status(root), autoCheckpoint: (await workbench.store.project(root)).autoCheckpoint === true };
 });
+handle('git:restore-review', input => exclusive(() => restoration.review(requireIdleProject(), input)));
+handle('git:restore', token => exclusive(async () => {
+  const root = requireIdleProject();
+  await devServer.stop(); await workbench.close();
+  let restored, error;
+  try { restored = await restoration.apply(root, token); } catch (failure) { error = failure.message; }
+  // activate kontrollerer journalen, også efter genstart eller en delvis gendannelse.
+  return { restored, error, project: await activate(await openProject(root)) };
+}));
 handle('git:identity', value => exclusive(() => workbench.git.setIdentity(requireIdleProject(), value)));
 handle('git:init', () => exclusive(() => workbench.git.initialize(requireIdleProject())));
 handle('git:review', () => exclusive(() => workbench.git.review(requireIdleProject())));
@@ -302,10 +327,12 @@ app.whenReady().then(() => {
       ...(process.platform === 'darwin' ? [{ type: 'separator' }, { label: 'Vis alle forrest', role: 'front' }] : [])
     ] }
   ]));
-  workbench = new Workbench({ directory: path.join(app.getPath('userData'), 'harness'), safeStorage, profiles: profileRoot, emit: event => { if (window && !window.isDestroyed()) window.webContents.send('harness:event', event); } });
+  workbench = new Workbench({ directory: path.join(app.getPath('userData'), 'harness'), safeStorage, profiles: profileRoot, emit: event => { if (['session.error','engine.error'].includes(event.type)) recordFailure('agent', 'model'); if (window && !window.isDestroyed()) window.webContents.send('harness:event', event); } });
+  restoration = new (require('./core/restoration.cjs').Restoration)(workbench.git, workbench.store);
   devServer = new DevServer({
     runner: app.isPackaged ? path.join(process.resourcesPath, 'app.asar.unpacked/core/dev-server-runner.cjs') : undefined,
     emit: state => {
+      if (state.state === 'error') recordFailure('forhaandsvisning', 'server');
       if (state.root !== project?.root) return;
       if (state.state === 'running') {
         if (preview) { const old = preview; preview = null; void old.close(); }

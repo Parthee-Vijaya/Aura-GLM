@@ -81,7 +81,7 @@ class GitVersions {
   }
   async status(root) {
     const repo = await this.repository(root);
-    const history = repo.head ? (await run(root, ['log', '-12', '--format=%h%x00%s%x00'])).toString().split('\n').filter(Boolean).map(line => { const [id, message] = line.split('\0'); return { id, message }; }) : [];
+    const history = repo.head ? (await run(root, ['log', '-12', '--format=%h%x00%s%x00%H'])).toString().split('\n').filter(Boolean).map(line => { const [id, message, commit] = line.split('\0'); return { id, message, commit }; }) : [];
     return { initialized: repo.initialized, block: repo.block, wrongRoot: Boolean(repo.wrongRoot), branch: repo.branch || '', head: repo.head || '', identity: repo.identity, changes: repo.files?.length || 0, history };
   }
   async initialize(root) {
@@ -150,4 +150,4 @@ class GitVersions {
     } finally { this.busy = false; }
   }
 }
-module.exports = { GitVersions, run, secretContent, protectedPath };
+module.exports = { GitVersions, run, secretContent, protectedPath, content };

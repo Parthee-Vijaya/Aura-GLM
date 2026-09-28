@@ -5,7 +5,7 @@ async function skipIntroduction(page) {
 }
 async function menuClick(page, selector) {
   const toggles = {
-    '#setup-button': '#settings-toggle', '#connections-button': '#settings-toggle', '#skills-button': '#settings-toggle',
+    '#support-button': '#settings-toggle', '#setup-button': '#settings-toggle', '#connections-button': '#settings-toggle', '#skills-button': '#settings-toggle',
     '#git-button': '#project-menu-toggle', '#publish-button': '#project-menu-toggle', '#new-conversation': '#project-menu-toggle',
     '#attach-preview': '#preview-options'
   };

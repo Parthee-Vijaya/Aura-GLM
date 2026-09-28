@@ -2,7 +2,7 @@ const $ = selector => document.querySelector(selector);
 let current = null, revision = null, polling = false, state = null, modelRequest = 0, acceptedFingerprint = null, pendingSend = null, running = false;
 let activityGroup = null;
 let skillList = [], roles = new Map(), parts = new Map(), partTypes = new Map();
-function message(text, error = false) { const dialog = document.querySelector('dialog[open]'); if (dialog) { let notice = dialog.querySelector('.dialog-notice'); if (!notice) { notice = document.createElement('p'); notice.className = 'dialog-notice'; notice.setAttribute('role', 'status'); dialog.append(notice); } notice.textContent = text; }  $('#message').textContent = text; $('#message').classList.toggle('error', error); $('#message').hidden = false; }
+function message(text, error = false) { const dialog = [...document.querySelectorAll('dialog[open]')].at(-1); if (dialog) { let notice = dialog.querySelector('.dialog-notice'); if (!notice) { notice = document.createElement('p'); notice.className = 'dialog-notice'; notice.setAttribute('role', 'status'); dialog.append(notice); } notice.textContent = text; }  $('#message').textContent = text; $('#message').classList.toggle('error', error); $('#message').hidden = false; }
 async function call(method, value) { const result = await window.harness[method](value); if (!result.ok) throw new Error(result.error); return result.value; }
 async function action(fn) { $('#message').hidden = true; try { return await fn(); } catch (error) { message(error.message, true); } }
 function node(tag, text, className) { const el = document.createElement(tag); if (text !== undefined) el.textContent = text; if (className) el.className = className; return el; }
@@ -278,6 +278,11 @@ window.harness.onEvent(event => {
     const active = ['starting', 'working'].includes(event.status);
     const statuses = { starting: 'Starter agent …', working: 'Arbejder …', idle: 'Klar', error: 'Fejl', stopped: 'Stoppet' };
     setRunning(active, statuses[event.status] || event.status);
+    if (['stopped', 'error'].includes(event.status)) {
+      if (!$('#prompt').value) $('#prompt').value = lastSentText;
+      activePlan = null; $('#plan-card').hidden = true;
+      if ($('#work-mode').value === 'build') { $('#work-mode').value = 'plan'; updateWorkMode(); }
+    }
     if (!active) { $('#approvals').replaceChildren(); saveChatDraft(); }
   }
   if (event.type === 'message.updated') roles.set(p.info.id, p.info.role);
@@ -308,8 +313,7 @@ window.harness.onEvent(event => {
     for (const question of p.questions) { form.append(node('p', question.question)); if (question.options?.length) form.append(node('p', question.options.map(o => `${o.label}: ${o.description}`).join('\n'), 'hint')); const input = node('input'); input.required = true; input.setAttribute('aria-label', question.question); form.append(input); fields.push(input); }
     const submit = node('button', 'Svar'); submit.type = 'submit'; form.append(submit); form.onsubmit = event => { event.preventDefault(); action(async () => { await call('question', { id: p.id, answers: fields.map(f => [f.value]) }); form.remove(); $('#agent-activity').textContent = 'Dit svar er sendt. Afventer AI’en …'; }); }; $('#approvals').append(form);
   }
-  if (event.type === 'engine.error') appendMessage(event.message, 'error');
-  if (event.type === 'session.error') { if (!$('#prompt').value) $('#prompt').value = lastSentText; const reason = p.error?.data?.message || p.error?.message || 'Modelkaldet mislykkedes. Kontrollér forbindelsen og kvoten.'; appendMessage(reason, 'error'); connectionFailed(reason); }
+  if (['engine.error', 'session.error'].includes(event.type)) { if (!$('#prompt').value) $('#prompt').value = lastSentText; const reason = event.message || p.error?.data?.message || p.error?.message || 'Modelkaldet mislykkedes. Kontrollér forbindelsen og kvoten.'; appendMessage(reason, 'error'); connectionFailed(reason); }
 });
 $('#color').addEventListener('input', event => { $('#color-value').value = event.target.value; });
 for (const kind of ['logo', 'reference']) $(`#${kind}`).onclick = () => action(async () => showAssets(await call('chooseAssets', kind)));
@@ -343,7 +347,31 @@ $('#save-design').onclick = () => action(async () => { await call('saveDesign', 
 $('#design-select').onchange = () => action(async () => { updateStartupSummary(); if (!$('#design-select').value) { await clearStartupDesign(); return; } const design = await call('applyDesign', $('#design-select').value); $('#color').value = design.color; $('#color-value').value = design.color; $('#links').value = design.links.join('\n'); showAssets(design.assets); updateStartupSummary(); });
 
 
-let gitReview = null;
+let gitReview = null, restoreReview = null;
+async function reviewRestoration(input) {
+  restoreReview = null; $('#restore-confirm').disabled = true; $('#restore-files').replaceChildren(); $('#restore-feedback').textContent = ''; $('#restore-summary').textContent = 'Henter filerne fra versionen …';
+  $('#restore-dialog').showModal();
+  restoreReview = await call('restoreReview', input);
+  $('#restore-title').textContent = restoreReview.undo ? 'Kopien før sidste gendannelse' : 'Gennemgå gendannelse';
+  $('#restore-summary').textContent = `${restoreReview.files.length} filer berøres. ${restoreReview.untracked} filer uden for historikken bevares.`;
+  for (const file of restoreReview.files) {
+    const row = node('details'); row.append(node('summary', `${file.action}: ${file.file}`));
+    if (file.binary) row.append(node('p', 'Binær fil. Kontrollér billedet eller skrifttypen efter gendannelse.'));
+    else row.append(node('h4', 'Nu'), node('pre', file.before ?? '(findes ikke)'), node('h4', 'Efter gendannelse'), node('pre', file.after ?? '(slettes)'));
+    $('#restore-files').append(row);
+  }
+  $('#restore-confirm').disabled = !restoreReview.files.length;
+  if (!restoreReview.files.length) $('#restore-feedback').textContent = 'Filerne svarer allerede til den valgte version.';
+}
+$('#restore-undo').onclick = () => action(() => reviewRestoration({ undo: true }));
+$('#restore-confirm').onclick = () => action(async () => {
+  if (!restoreReview) return;
+  const token = restoreReview.token; restoreReview = null; $('#restore-confirm').disabled = true;
+  const result = await call('restoreVersion', token);
+  await displayProject(result.project); await loadGit();
+  $('#restore-dialog').close();
+  $('#git-feedback').textContent = result.error || `${result.restored.files} ${result.restored.files === 1 ? 'fil er' : 'filer er'} gendannet. Gennemse forhåndsvisningen. Ændringerne er endnu ikke gemt som en ny version.`;
+});
 async function loadGitReview() {
   gitReview = null; $('#git-save').disabled = true; $('#git-files').replaceChildren();
   gitReview = await call('gitReview');
@@ -360,7 +388,7 @@ async function loadGitReview() {
 }
 async function loadGit() {
   $('#git-dialog .dialog-notice')?.remove();
-  $('#git-auto').disabled = true;
+  $('#git-auto').disabled = true; $('#git-history').replaceChildren(); $('#restore-undo').hidden = true;
   try {
   gitReview = null; $('#git-form').hidden = true; $('#git-init').hidden = true; $('#git-settings').hidden = true;
   const result = await call('gitStatus');
@@ -371,9 +399,11 @@ async function loadGit() {
   $('#git-name').readOnly = Boolean(result.identity?.name); $('#git-email').readOnly = Boolean(result.identity?.email);
   $('#git-settings').hidden = !result.initialized || result.wrongRoot;
   $('#git-auto').checked = result.autoCheckpoint;
-  $('#git-history').replaceChildren(...result.history.map(item => node('li', `${item.id} · ${item.message}`)));
-  if (!result.history.length) $('#git-history').append(node('li', 'Ingen gemte versioner endnu.'));
   if (result.initialized && !result.block) { $('#git-form').hidden = false; await loadGitReview(); }
+  $('#git-history').replaceChildren(...result.history.map(item => { const row = node('li'); const button = node('button', `${item.message} · ${item.id}`); button.disabled = Boolean(result.block); button.title = 'Gennemgå denne version før gendannelse'; button.onclick = () => action(() => reviewRestoration({ commit: item.commit })); row.append(button); return row; }));
+  $('#restore-undo').hidden = !result.restoration; $('#restore-undo').disabled = Boolean(result.block);
+  if (result.restoration && ['failed', 'prepared', 'applying'].includes(result.restoration.state)) $('#git-feedback').textContent = 'Sidste gendannelse blev afbrudt. Gennemgå kopien for at genskabe filerne fra før gendannelsen.';
+  if (!result.history.length) $('#git-history').append(node('li', 'Ingen gemte versioner endnu.'));
   } finally { $('#git-auto').disabled = false; }
 }
 $('#git-button').onclick = () => action(async () => { $('#git-feedback').textContent = ''; $('#git-dialog').showModal(); await loadGit(); });
@@ -646,3 +676,12 @@ $('#model-chip').onclick = openTaskSettings;
 for (const id of ['settings-menu', 'project-menu', 'preview-menu']) {
   document.getElementById(id).addEventListener('click', event => { if (event.target.closest('button') && (id !== 'preview-menu' || event.target.closest('#attach-preview'))) document.getElementById(id).hidePopover(); });
 }
+
+$('#support-button').onclick = () => action(async () => {
+  $('#support-dialog').showModal(); $('#support-status').textContent = '';
+  const report = await call('supportReport');
+  $('#support-version').textContent = `AI Harness ${report.app} · ${report.system === 'darwin' ? 'macOS' : report.system === 'win32' ? 'Windows' : report.system} · ${report.arkitektur}`;
+  $('#support-report').textContent = JSON.stringify(report, null, 2);
+});
+$('#support-save').onclick = () => action(async () => { $('#support-status').textContent = await call('supportSave') ? 'Rapporten er gemt på din computer. Du vælger selv, om du vil dele den.' : 'Rapporten blev ikke gemt.'; });
+$('#support-feedback').onclick = () => action(() => call('supportFeedback'));

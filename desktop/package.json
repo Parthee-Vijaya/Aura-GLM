@@ -1,6 +1,6 @@
 {
   "name": "ai-harness-desktop",
-  "version": "0.2.0-beta.1",
+  "version": "0.2.0-beta.2",
   "private": true,
   "description": "Byg applikationer med AI, lokale projektfiler og forhåndsvisning",
   "main": "main.cjs",
@@ -23,13 +23,13 @@
     "test:package": "node scripts/verify-package.cjs",
     "release:site": "node scripts/release-site.cjs",
     "test:resume": "node scripts/verify-resume.cjs",
-    "test:frameworks": "node scripts/verify-framework-preview.cjs"
+    "test:frameworks": "node scripts/verify-framework-preview.cjs",
+    "test:recovery": "node scripts/verify-recovery.cjs"
   },
   "engines": {
     "node": ">=22.12.0"
   },
   "devDependencies": {
-    "dugite": "3.2.3",
     "electron": "44.4.4",
     "electron-builder": "26.16.1",
     "playwright": "1.63.0"
