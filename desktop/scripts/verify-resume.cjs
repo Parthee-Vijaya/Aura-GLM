@@ -1,0 +1,117 @@
+const { _electron: electron } = require('playwright');
+const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const os = require('node:os');
+const http = require('node:http');
+
+// Rigtig Electron, OpenCode og projektfiler. Modelsvarene er kontrollerede testdata.
+(async () => {
+  const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'harness-resume-')));
+  const project = path.join(root, 'Fælleshus med mellemrum');
+  const other = path.join(root, 'Et andet projekt');
+  await fs.mkdir(path.join(project, 'public'), { recursive: true }); await fs.mkdir(other);
+  await fs.writeFile(path.join(project, 'public/index.html'), '<h1>Før bygning</h1>');
+  const requests = []; let catalogs = 0;
+  const server = http.createServer(async (req, res) => {
+    if (req.url === '/v1/models') { catalogs++; res.setHeader('content-type', 'application/json'); return res.end(JSON.stringify({ data: [{ id: 'test-model' }] })); }
+    let raw = ''; for await (const chunk of req) raw += chunk;
+    const body = JSON.parse(raw); requests.push(body);
+    if (body.messages.some(m => m.role === 'user' && JSON.stringify(m.content).includes('afbrudt-test'))) {
+      res.setHeader('content-type', 'text/event-stream');
+      res.write('data: ' + JSON.stringify({id:'partial',object:'chat.completion.chunk',created:1,model:body.model,choices:[{index:0,delta:{role:'assistant',content:'Delvist svar før lukning.'},finish_reason:null}]}) + '\n\n');
+      return;
+    }
+    const planning = JSON.stringify(body.messages).includes('PLANLÆGNING:');
+    const tool = !planning && body.tools?.length && !body.messages.some(m => m.role === 'tool') ? { id: 'resume_write', type: 'function', function: { name: 'write', arguments: JSON.stringify({ filePath: path.join(project, 'public/index.html'), content: '<h1>Fælleshuset er klar</h1><button>Tilmeld</button>' }) } } : null;
+    const chunk = { id: 'resume', object: 'chat.completion.chunk', created: 1, model: body.model, choices: [{ index: 0, delta: tool ? { role: 'assistant', tool_calls: [{ index: 0, ...tool }] } : { role: 'assistant', content: planning ? 'Forslag: En overskuelig side om fælleshuset. Prøv overskriften og tilmelding på mobil.' : 'Siden er ændret. Prøv tilmeldingsknappen.' }, finish_reason: null }] };
+    res.setHeader('content-type', 'text/event-stream');
+    res.write('data: ' + JSON.stringify(chunk) + '\n\n');
+    res.write('data: ' + JSON.stringify({ ...chunk, choices: [{ index: 0, delta: {}, finish_reason: tool ? 'tool_calls' : 'stop' }], usage: { prompt_tokens: 20, completion_tokens: 10, total_tokens: 30 } }) + '\n\n'); res.end('data: [DONE]\n\n');
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  let app, page;
+  async function launch() {
+    app = await electron.launch({ executablePath: require('electron'), args: [path.join(__dirname, '..'), '--user-data-dir=' + path.join(root, 'appdata')], env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined } });
+    page = await app.firstWindow(); await require('./ui-test-helpers.cjs').skipIntroduction(page);
+  }
+  async function open(folder) {
+    await app.evaluate(({ dialog }, folder) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [folder] }); }, folder);
+    await page.click('#open'); await page.locator('#project-name').filter({ hasText: path.basename(folder) }).waitFor();
+  }
+  async function draft(text) {
+    await page.fill('#prompt', text); await page.locator('#draft-status').filter({ hasText: 'Kladde gemt' }).waitFor();
+  }
+  try {
+    await launch(); await open(project);
+    await require('./ui-test-helpers.cjs').menuClick(page, '#connections-button'); await page.selectOption('#provider-kind', 'compatible');
+    await page.fill('#connection-name', 'Kontrolleret lokal forbindelse'); await page.fill('#base-url', `http://127.0.0.1:${server.address().port}/v1`); await page.click('#save-connection');
+    await page.locator('#connection-feedback').filter({ hasText: 'Forbindelsen er gemt' }).waitFor(); await page.click('[data-close="connections-dialog"]');
+    const connection = (await page.evaluate(() => window.harness.connectionState())).value.connections[0];
+    await require('./ui-test-helpers.cjs').taskOptions(page); await page.selectOption('#connection-select', connection.id);
+    await page.locator('#model-shortlist button').first().click(); await require('./ui-test-helpers.cjs').selectMode(page, 'plan');
+    await draft('Lav en side til fælleshuset. Samtalemærke: violet-cykel.'); await page.click('#send');
+    await page.waitForSelector('#data-dialog[open]');
+    assert.match(await page.locator('#data-warning').textContent(), /ukendte|ukendt/i);
+    await page.screenshot({ animations: 'disabled', path: path.join(root, 'datagennemgang.png') }); await page.click('#accept-send');
+    await page.waitForFunction(() => !document.querySelector('#plan-card').hidden && !document.querySelector('#build-plan').disabled, { timeout: 60000 });
+    await draft('Husk plads til fem aktiviteter.'); const beforeRestart = requests.length, catalogsBefore = catalogs;
+    await app.close(); app = null; await launch();
+    await page.locator('#recent-projects button').filter({ hasText: path.basename(project) }).click();
+    await page.locator('#resume-notice:not([hidden])').waitFor();
+    assert.equal(await page.inputValue('#prompt'), 'Husk plads til fem aktiviteter.');
+    assert.match(await page.locator('#messages').textContent(), /violet-cykel/);
+    assert.equal(await page.isChecked('#include-history'), false);
+    assert.equal(await page.isVisible('#plan-card'), true);
+    assert.equal(await page.inputValue('#model-select'), 'test-model');
+    assert.equal(requests.length, beforeRestart); assert.equal(catalogs, catalogsBefore);
+    assert.equal(await fs.readFile(path.join(project, 'public/index.html'), 'utf8'), '<h1>Før bygning</h1>');
+    await page.screenshot({ animations: 'disabled', path: path.join(root, 'genoptaget.png') });
+    // Projektvalg må ikke overføre hverken kladde eller samtale.
+    await open(other); assert.equal(await page.inputValue('#prompt'), ''); assert.equal(await page.locator('#messages').textContent(), '');
+    await draft('Kladde til det andet projekt');
+    await page.locator('#recent-projects button').filter({ hasText: path.basename(project) }).click();
+    await page.waitForFunction(() => document.querySelector('#prompt').value === 'Husk plads til fem aktiviteter.');
+    await page.fill('#prompt', ''); await page.click('#build-plan'); await page.waitForSelector('#data-dialog[open]');
+    assert.match(await page.locator('#data-details').textContent(), /fælleshuset/);
+    await page.click('#accept-send');
+    await page.locator('#approvals button').filter({ hasText: 'Tillad én gang' }).waitFor({ timeout: 60000 });
+    assert.equal(await fs.readFile(path.join(project, 'public/index.html'), 'utf8'), '<h1>Før bygning</h1>');
+    await page.locator('#approvals button').filter({ hasText: 'Tillad én gang' }).click();
+    await page.frameLocator('#preview').locator('h1').filter({ hasText: 'Fælleshuset er klar' }).waitFor({ timeout: 30000 });
+    await page.locator('#run-status').filter({ hasText: 'Klar' }).waitFor({ timeout: 30000 });
+    await page.click('#resume-notice > summary'); await page.check('#include-history'); await require('./ui-test-helpers.cjs').selectMode(page, 'plan'); await draft('Vurder næste skridt.'); await page.click('#send');
+    await page.waitForSelector('#data-dialog[open]'); assert.match(await page.locator('#data-history-text').textContent(), /medsendes efter dit tilvalg/);
+    await page.click('#accept-send'); await page.locator('#run-status').filter({ hasText: 'Klar' }).waitFor({ timeout: 60000 });
+    assert.ok(requests.some(r => JSON.stringify(r.messages).includes('Tidligere samtale, som brugeren har valgt') && JSON.stringify(r.messages).includes('violet-cykel')));
+    // Ny samtale er en eksplicit handling med bevaret arkiv og uændrede projektfiler.
+    await app.evaluate(({ dialog }) => { dialog.showMessageBox = async () => ({ response: 1 }); });
+    await require('./ui-test-helpers.cjs').menuClick(page, '#new-conversation'); await page.waitForFunction(() => document.querySelector('#messages').textContent === '');
+    assert.equal(await page.inputValue('#prompt'), ''); assert.equal(await page.isVisible('#plan-card'), false);
+    const state = await page.evaluate(() => window.harness.connectionState()); assert.equal(state.value.workspace.messages.length, 0);
+    const storage = path.join(root, 'appdata', 'harness', 'workspaces');
+    assert.ok((await fs.readdir(storage)).some(file => file.endsWith('-archives')));
+    assert.match(await fs.readFile(path.join(project, 'public/index.html'), 'utf8'), /Fælleshuset er klar/);
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(980, 720));
+    await page.locator('#prompt').focus(); assert.equal(await page.evaluate(() => document.activeElement.id), 'prompt');
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await page.screenshot({ animations: 'disabled', path: path.join(root, 'lille-vindue.png') });
+    await require('./ui-test-helpers.cjs').menuClick(page, '#skills-button'); await page.screenshot({ animations: 'disabled', path: path.join(root, 'skills.png') }); await page.click('[data-close="skills-dialog"]');
+    await page.click('#deploy-button'); await page.screenshot({ animations: 'disabled', path: path.join(root, 'deling.png') });
+    await page.click('[data-close="deployment-dialog"]');
+    await draft('afbrudt-test: bevar denne besked ved lukning'); await page.click('#send');
+    await page.waitForSelector('#data-dialog[open]'); await page.click('#accept-send');
+    await page.locator('#messages .assistant').filter({hasText:'Delvist svar før lukning.'}).waitFor({timeout:60000});
+    await app.close(); app = null; await launch();
+    const requestCount = requests.length;
+    await page.locator('#recent-projects button').filter({hasText:path.basename(project)}).click();
+    await page.locator('#resume-notice summary').filter({hasText:'afbrudt'}).waitFor();
+    assert.match(await page.inputValue('#prompt'), /bevar denne besked/);
+    assert.match(await page.locator('#messages').textContent(), /Delvist svar før lukning/);
+    assert.equal(await page.isVisible('#plan-card'), false); assert.equal(requests.length,requestCount);
+    assert.equal(await page.isVisible('#stop'), false);
+
+    console.log(JSON.stringify({ status: 'bestået', root, checks: ['rigtig genstart med plan, kladde og samtale', 'genåbning uden netværkskald', 'kladders adskillelse mellem projekter', 'ny datagennemgang og filgodkendelse efter genstart', 'rigtig filændring og preview', 'aktivt tilvalg af tidligere samtale', 'ny samtale med arkiv og bevarede filer', '980 × 720, tastaturfokus og dialoger', 'lukning under streaming bevarer delvist svar uden genstart'] }));
+  } catch (error) { if (page) { await page.screenshot({ animations: 'disabled', path: path.join(root, 'fejl.png'), timeout: 3000 }).catch(() => {}); console.error('Testmateriale: ' + root); } throw error; }
+  finally { await app?.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
+})().catch(error => { console.error(error); process.exitCode = 1; });

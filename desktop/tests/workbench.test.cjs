@@ -110,3 +110,21 @@ test('planen bruger kun sidste agentsvar; tidligere arbejdsnoter bevares som kon
  assert.equal(planningReply(roles, parts).text, '', 'Et sidste svar uden tekst må ikke genbruge en tidligere arbejdsnote som plan');
  assert.equal(planningReply(new Map(),new Map()).text,'');
 });
+
+test('streamet tekst bevares ved stop, mens arbejdsnoter og tilladelser udelades', async t => {
+ const directory=await temp(t), root=path.join(directory,'projekt'); await fs.mkdir(root);
+ const bench=new Workbench({directory:path.join(directory,'data'),profiles,emit:()=>{},safeStorage:{}});
+ await bench.activate({root,name:'Prøve'});
+ bench.runUser={id:'u',role:'user',text:'Min besked'}; bench.runMode='plan'; bench.running=true;
+ bench.event({type:'message.updated',properties:{info:{id:'a',role:'assistant'}}});
+ bench.event({type:'message.part.updated',properties:{part:{id:'t',messageID:'a',type:'text',text:'Svar'}}});
+ bench.event({type:'message.part.delta',properties:{partID:'t',field:'text',delta:' som streames'}});
+ bench.event({type:'message.part.updated',properties:{part:{id:'r',messageID:'a',type:'reasoning',text:'Intern note'}}});
+ bench.event({type:'permission.asked',properties:{id:'approval',permission:'edit'}});
+ await bench.stop(); await bench.close();
+ const reopened=await bench.activate({root,name:'Prøve'});
+ assert.equal(reopened.workspace.status,'stopped'); assert.equal(reopened.workspace.plan,null);
+ assert.equal(reopened.workspace.messages[1].text,'Svar som streames');
+ assert.doesNotMatch(JSON.stringify(reopened.workspace), /Intern note|approval/);
+ await bench.close();
+});

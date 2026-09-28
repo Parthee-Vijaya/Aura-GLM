@@ -21,7 +21,8 @@
     "package:mac": "electron-builder --config electron-builder.cjs --mac --publish never",
     "package:windows": "electron-builder --config electron-builder.cjs --win --publish never",
     "test:package": "node scripts/verify-package.cjs",
-    "release:site": "node scripts/release-site.cjs"
+    "release:site": "node scripts/release-site.cjs",
+    "test:resume": "node scripts/verify-resume.cjs"
   },
   "engines": {
     "node": ">=22.12.0"

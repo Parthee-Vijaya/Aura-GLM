@@ -15,7 +15,7 @@ const readline = require('node:readline');
   process.stdout.write('Indtast testnøglen (skjult): ');execFileSync('stty',['-echo'],{stdio:'inherit'});
   const input=readline.createInterface({input:process.stdin,terminal:false});key=await new Promise(resolve=>input.once('line',resolve));input.close();execFileSync('stty',['echo'],{stdio:'inherit'});process.stdout.write('\n');
   app=await electron.launch({executablePath:require('electron'),args:[path.join(__dirname,'..'),'--user-data-dir='+path.join(root,'appdata')],env:{...process.env,ELECTRON_RUN_AS_NODE:undefined}});
-  const page=await app.firstWindow(); await require('./ui-test-helpers.cjs').skipIntroduction(page);await page.waitForSelector('#onboarding'); await page.waitForFunction(() => !document.querySelector('#new').disabled); await page.click('#setup-button');await page.click('#setup-local');
+  const page=await app.firstWindow(); await require('./ui-test-helpers.cjs').skipIntroduction(page);await page.waitForSelector('#onboarding'); await page.waitForFunction(() => !document.querySelector('#new').disabled); await require('./ui-test-helpers.cjs').menuClick(page, '#setup-button');await page.click('#setup-local');
   await app.evaluate(({dialog},project)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[project]});},project);await page.click('#open');await page.waitForSelector('#workspace:not([hidden])');
   const result=await page.evaluate(apiKey=>window.harness.saveConnection({kind:'openrouter',name:'OpenRouter gratisprøve',baseURL:'',apiKey}),key);if(!result.ok)throw new Error(result.error);
   const connection=result.value.connections[0];assert.equal(JSON.stringify(result).includes(key),false);
@@ -25,9 +25,9 @@ const readline = require('node:readline');
   const routes=await page.evaluate(value=>window.harness.routes(value),{connectionID:connection.id,modelID});if(!routes.ok)throw new Error(routes.error);
   const route=routes.value.find(r=>r.price&&r.price.prompt!=null&&r.price.completion!=null&&Object.values(r.price).every(p=>Number(p)===0));assert.ok(route,'Ingen verificeret gratis rute');
   console.log(JSON.stringify({root,model:modelID,provider:route.id,pricing:route.price,material:'Kun syntetisk startside, testbesked og fælles offentlige regler',paidFallback:false}));
-  await page.click('#connections-button');await page.click('[data-close="connections-dialog"]');await page.locator('#model-options').evaluate(el => el.open = true); await page.selectOption('#connection-select',connection.id);
+  await require('./ui-test-helpers.cjs').menuClick(page, '#connections-button');await page.click('[data-close="connections-dialog"]');await require('./ui-test-helpers.cjs').taskOptions(page); await page.selectOption('#connection-select',connection.id);
   await page.waitForFunction(id=>[...document.querySelector('#model-select').options].some(o=>o.value===id),modelID);await page.locator('#model-catalog').evaluate(el => el.open = true); await page.selectOption('#model-select',modelID);
-  await page.waitForFunction(id=>[...document.querySelector('#route-select').options].some(o=>o.value===id),route.id);await page.selectOption('#route-select',route.id);
+  await page.waitForFunction(id=>[...document.querySelector('#route-select').options].some(o=>o.value===id),route.id);await page.selectOption('#route-select',route.id); await page.click('#model-done');
   await page.evaluate(project=>{
    window.testEvents=[];window.testPermissions=[];window.harness.onEvent(event=>{window.testEvents.push(event.type);if(event.type==='permission.asked'){const p=event.properties;const allow=p.permission==='edit'&&p.patterns.every(file=>file==='public/index.html'||file===project+'/public/index.html'||file===project.slice(1)+'/public/index.html');window.testPermissions.push({permission:p.permission,patterns:p.patterns,allow});window.harness.reply({id:p.id,allow});}});
   },project);
@@ -40,7 +40,7 @@ const readline = require('node:readline');
     if(events.includes('session.error')||events.includes('engine.error'))throw new Error('Eksternt modelkald fejlede.');
   };
   if (firstApp) {
-    await page.selectOption('#work-mode','plan');
+    await require('./ui-test-helpers.cjs').selectMode(page, 'plan');
     await send('Jeg vil bygge Mødelokaler: en enkel dansk oversigt over kommunens tre fiktive mødelokaler med navn, kapacitet, sted og udstyr. Man skal kunne filtrere på mindst antal pladser og få en tydelig tom tilstand. Dette er en demonstration med opdigtede data, uden login, backend, netværk eller installationer. Brug kun public/index.html med indlejret CSS og JavaScript, fordi den skal kunne vises i den lokale forhåndsvisning. Designet skal være roligt og gennemarbejdet på mobil og desktop med god typografi, tydeligt fokus og læsbare farver. Brug en label med teksten Mindst antal pladser til et numerisk input, der straks filtrerer lokaleoversigten. Foreslå en kort plan med begrundede valg; du må vælge for mig inden for disse rammer. Læs ingen andre filer, kør ingen kommandoer, og hent ingen websider.');
     await page.waitForSelector('#plan-card:not([hidden])');
     const plan = await page.locator('#plan-text').textContent();
@@ -63,6 +63,7 @@ const readline = require('node:readline');
     assert.ok(await frame.locator('html').evaluate(el=>el.scrollWidth<=el.clientWidth+1),'Mobilvisningen må ikke kræve vandret rulning');
     await page.selectOption('#viewport-preset','fluid');
   } else {
+    await require('./ui-test-helpers.cjs').selectMode(page, 'free');
     await send('Dette er en afgrænset integrationstest. Læs kun public/index.html og skift h1-teksten fra Start til Gratis modeltest bestået. Brug read og edit eller write direkte. Kør ingen kommandoer, brug ikke Git, hent ingen websider, og læs ingen andre filer. Svar kort på dansk, når ændringen er gemt.');
     assert.match(await fs.readFile(path.join(project,'public/index.html'),'utf8'),/Gratis modeltest bestået/);
     await page.frameLocator('#preview').locator('h1').filter({hasText:'Gratis modeltest bestået'}).waitFor();

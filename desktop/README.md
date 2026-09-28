@@ -17,13 +17,17 @@ Appens navn og egne menuer er **AI Harness**. Under `npm start` bruges stadig ud
 
 ## Opstart og forbindelser
 
-Ved første start vises **Byg et værktøj til din hverdag** med Start et projekt, Prøv et eksempel og Åbn et projekt. **Spring introduktionen over** går direkte til projektoprettelsen og huskes på denne computer. Introduktionen kan åbnes igen fra sidepanelet. Den guidede vej tilbyder AI-forbindelse eller fortsættelse uden AI; derefter beskriver brugeren sin idé og får et redigerbart navneforslag. Designmateriale og avancerede projektvalg er foldet sammen. Brugeren kan oprette eller åbne et lokalt projekt uden AI- eller GitHub-konto. Velkomst og demonstration kontakter ingen modelserver. Når AI-opsætningen åbnes, henter appen automatisk Ollamas modelliste fra http://127.0.0.1:11434/api/tags med en kort timeout. Ingen modelnøgle dekrypteres under søgningen.
+Ved første start vises **Hvad vil du bygge?** med Start et projekt, Prøv et eksempel og Åbn et projekt. **Spring introduktionen over** går direkte til projektoprettelsen og huskes på denne computer. Introduktionen kan åbnes igen fra sidepanelet. Den guidede vej tilbyder AI-forbindelse eller fortsættelse uden AI; derefter beskriver brugeren sin idé og får et redigerbart navneforslag. Designmateriale og avancerede projektvalg er foldet sammen. Brugeren kan oprette eller åbne et lokalt projekt uden AI- eller GitHub-konto. Velkomst og demonstration kontakter ingen modelserver. Når AI-opsætningen åbnes, henter appen automatisk Ollamas modelliste fra http://127.0.0.1:11434/api/tags med en kort timeout. Ingen modelnøgle dekrypteres under søgningen.
 
-**Forbindelser og konto** i sidepanelet samler AI og valgfri GitHub-adgang. **Kontrollér forbindelse** henter kun den valgte servers modelkatalog. Et katalogsvar beviser ikke adgang til modelkald, kvote eller kodeværktøjer. **Fortsæt med AI** kræver et katalog med modeller; **Fortsæt uden AI** kræver ingen serveradgang. Den foretrukne forbindelse huskes lokalt, men bliver ukontrolleret efter genstart. Der skiftes aldrig automatisk til en anden model eller udbyder.
+**Indstillinger → AI-forbindelser og konto** samler AI og valgfri GitHub-adgang. **Kontrollér forbindelse** henter kun den valgte servers modelkatalog. Et katalogsvar beviser ikke adgang til modelkald, kvote eller kodeværktøjer. **Fortsæt med AI** kræver et katalog med modeller; **Fortsæt uden AI** kræver ingen serveradgang. Den foretrukne forbindelse huskes lokalt, men bliver ukontrolleret efter genstart. Der skiftes aldrig automatisk til en anden model eller udbyder.
 
-Arbejdsområdet viser samtale og preview. Modelvalget ligger foldbart ved beskedfeltet; **Brug dette valg** folder det sammen. Før afsendelse vises stadig datamodtagere, pris og vilkår, når en ny godkendelse er nødvendig. Tilføjelse af en almindelig API-forbindelse viser udbyder og nøgle; navn og serveradresse ligger under **Avanceret**. Egen server og Ollama åbner adressefelterne, fordi de skal kontrolleres. Der er endnu ingen automatisk organisationsopsætning eller Claude-abonnementsforbindelse.
+Arbejdsområdet viser samtale og preview. Modelknappen i skrivefeltet åbner **AI og materiale** med modelvalg, referencer og avanceret arbejdsmåde. Før afsendelse vises datamodtagere, pris og vilkår, når en ny godkendelse er nødvendig. Tilføjelse af en almindelig API-forbindelse viser udbyder og nøgle; navn og serveradresse ligger under **Avanceret**. Egen server og Ollama åbner adressefelterne. Der er endnu ingen automatisk organisationsopsætning eller Claude-abonnementsforbindelse.
 
-**Brug min projektidé som første besked** vælger Afklar og planlæg og udfylder en kladde. Det sender ikke noget og overskriver ikke en eksisterende kladde. I denne tilstand afviser agentmotoren filskrivning og kommandoer; brugeren vælger senere Byg første udkast. Den tekniske startskabelon er fortsat den lokale HTML/CSS/JavaScript-skabelon; opstarten foretager ikke et skjult modelkald.
+Efter projektoprettelse står idéen som en redigerbar kladde i samtalen. Intet sendes automatisk. **Afklar og planlæg** er udgangspunktet og afviser filskrivning og kommandoer i agentmotoren. Brugeren vælger senere **Byg første udkast**. Efter en vellykket byggeopgave kan næste besked bruges til at ændre resultatet, stadig med godkendelse af handlinger. En erfaren bruger kan vælge **Arbejd direkte** under AI-knappens avancerede valg.
+
+Tekniske aktiviteter er samlet under **Vis aktivitet**. Spørgsmål, fejl og godkendelser vises særskilt i samtalen. Projektmenuen **•••** indeholder versionsgemning, sikkerhedskopi og ny samtale. **Del** åbner udgivelse til test. Preview har skærmstørrelse, genindlæsning og en menu til skalering, egne mål og lokal server.
+
+Farver, afstande, typografi og principper for synlige valg er beskrevet i [designstandarden](DESIGN.md).
 
 Fejl i modelkatalog eller modelkald vises i arbejdsområdet med **Gennemgå AI-forbindelse** og **Fortsæt uden AI**. Projekt, preview og beskedkladde bevares. Ingen automatisk gentagelse eller baggrundskontrol. GitHub er valgfri sikkerhedskopi og samarbejde; manglende adgang blokerer kun publiceringen. Lokale Git-oplysninger ligger under **Avanceret · lokale værktøjer**. Manglende Git blokerer ikke oprettelse eller preview.
 
@@ -31,11 +35,21 @@ Fejl i modelkatalog eller modelkald vises i arbejdsområdet med **Gennemgå AI-f
 
 1. Opret et projekt eller åbn en eksisterende eller tom mappe. Åbning kræver ikke `harness.json` og ændrer ingen projektfiler. Et ugyldigt manifest giver en advarsel.
 2. Ved oprettelse kan du vælge farve, logo, links og referencefiler. Gem dem som en navngiven **designpakke** og vælg pakken igen ved et senere projekt. Biblioteket gemmer egne kopier lokalt i appens datamappe; flyttede originalfiler bryder derfor ikke pakken. Gentofte-adressen er kun et eksempel i inputfeltet og bliver ikke automatisk tilføjet. Pakker synkroniseres ikke mellem computere og opdaterer ikke allerede oprettede projekter.
-3. Åbn **AI-indstillinger**, vælg type, adresse og eventuel API-nøgle. **Test / hent modeller** kontrollerer kataloget; det beviser ikke, at modellen kan bruge kodeværktøjer. Vælg derefter model i arbejdsområdet. OpenRouter kræver en konkret underleverandør og bruger ingen automatisk fallback.
-4. Gennemse **Skills og regler**. Aktive instruktioner kan redigeres, deaktiveres og gendannes pr. projekt. API-nøgler hører til forbindelser, aldrig i skills. Skills er modelinstruktioner; tekniske tilladelser er adskilt.
+3. Åbn modelknappen i skrivefeltet eller **Indstillinger → Administrer forbindelser**, vælg type, adresse og eventuel API-nøgle. **Test / hent modeller** kontrollerer kataloget; det beviser ikke, at modellen kan bruge kodeværktøjer. Vælg derefter model i arbejdsområdet. OpenRouter kræver en konkret underleverandør og bruger ingen automatisk fallback.
+4. Gennemse **Indstillinger → Instruktioner og regler**. Aktive instruktioner kan redigeres, deaktiveres og gendannes pr. projekt. API-nøgler hører til forbindelser, aldrig i skills. Skills er modelinstruktioner; tekniske tilladelser er adskilt.
 5. Skriv en opgave. Før første afsendelse og ved ændrede vilkår, model, skills eller referencer viser appen modtagere, pris, behandlingssted, opbevaring, træning og dokumentationsgrundlag. Ukendte oplysninger vises som ukendte. Referencefiler vælges særskilt; links kan besøges via godkendte webopslag, inklusive relevante undersider.
 6. Gennemgå filændringer, kommandoer og webopslag, når agenten beder om tilladelse. **Stop** afbryder opgaven. **Ændringer** viser tekstindhold før og efter; oversigten kan også indeholde samtidige manuelle ændringer.
-7. En `public/index.html` vises automatisk. Under **Server** kan du tilslutte en allerede startet loopback-udviklingsserver. Ingen kommando køres ved projektåbning eller tilslutning. Manglende preview blokerer ikke chatten.
+7. En `public/index.html` vises automatisk. Under preview-menuens **Tilslut lokal server** kan du tilslutte en allerede startet loopback-udviklingsserver. Ingen kommando køres ved projektåbning eller tilslutning. Manglende preview blokerer ikke chatten.
+
+## Luk og fortsæt
+
+De seneste projekter vises i sidepanelet. Kladden, samtalen og den afsluttede plan gemmes i appens datamappe, adskilt fra projektfilerne. En hurtig lokal kopi af kladden beskytter også tekst, der endnu ikke er skrevet gennem appens lagring. Der sendes ingen AI-opgave ved genåbning. Godkendelser og valg af private referencer nulstilles.
+
+Under **Tidligere samtale** kan brugeren vælge at medtage gemte beskeder i en ny modelsession. Det præcise materiale står i datagennemgangen. En valgt plan indeholder stadig sin afklaring, og en igangværende modelsession beholder sin egen kontekst. Tilvalget er ikke en måde at slette data fra udbyderen på.
+
+Ved lukning under arbejde gemmes opgaven som afbrudt. Delvise svar vises, men agenten genstartes ikke, og brugeren opfordres til at gennemgå filerne. **Ny samtale** rydder visningen og arkiverer den tidligere samtale lokalt efter bekræftelse. Projektfilerne ændres ikke. En beskadiget historikfil bevares og kan også arkiveres ved denne handling.
+
+Samtaleindholdet er ikke krypteret. Modelnøgler gemmes fortsat separat med `safeStorage`; de kopieres ikke fra forbindelsesindstillinger til historikken. Historikvisningen gemmer højst 200 beskeder og 200.000 tegn. Ved aktivt tilvalg medsendes op til 16 beskeder og 60.000 tegn. Ældre arkiver og OpenCodes rå log slettes ikke automatisk.
 
 ## Paneler og skærmstørrelser
 
@@ -47,7 +61,7 @@ Afprøvet i Electron på macOS med et rigtigt projekt: træk, tastatur, faste og
 
 ## Lokale Git-versioner
 
-**Gem version** viser status, aktiv branch, Git-identitet og de seneste versioner. I en mappe uden Git kan brugeren aktivt oprette lokal historik. Vælg derefter filer, gennemgå indholdet før/efter og skriv en versionsbeskrivelse. Kildekodeversionen kræver Git; installationspakken medleverer Git. Ved manglende navn/e-mail viser appen en formular og gemmer kun manglende oplysninger i projektets lokale Git-konfiguration efter brugerens aktive valg. En eksisterende identitet overskrives ikke. Projektet er et almindeligt Git-repository, som kan overtages uden AI Harness.
+Projektmenuens **Gem version** viser status, aktiv branch, Git-identitet og de seneste versioner. I en mappe uden Git kan brugeren aktivt oprette lokal historik. Vælg derefter filer, gennemgå indholdet før/efter og skriv en versionsbeskrivelse. Kildekodeversionen kræver Git; installationspakken medleverer Git. Ved manglende navn/e-mail viser appen en formular og gemmer kun manglende oplysninger i projektets lokale Git-konfiguration efter brugerens aktive valg. En eksisterende identitet overskrives ikke. Projektet er et almindeligt Git-repository, som kan overtages uden AI Harness.
 
 Automatiske checkpoints er slået fra som standard og vælges pr. projekt. Gem først en version manuelt. Efter en afsluttet AI-opgave gemmer appen kun et checkpoint, når udgangspunktet var rent, historikken er uændret, og alle ændringer kan knyttes til agentens afsluttede `write`-/`edit`-værktøjer. Fejl, stop, afvisninger, shellkommandoer, patchværktøjer, hooks, filtre og uklare ændringer medfører, at automatisk gemning springes over med en forklaring. Filerne bevares. Et checkpoint er ikke en bekræftelse på, at koden virker.
 
@@ -87,7 +101,7 @@ Et bekræftet push betyder, at versionen blev set på serveren ved kontrollen. S
 - `core/connections.cjs`: normalisering, modelkatalog, egenskaber, leverandørrouting, dataoplysninger og motorkonfiguration. Anthropic Messages samt OpenAI-kompatible Chat Completions er implementeret. Responses-only modeller og modeller uden brugbare værktøjskald er ikke generelt understøttet; katalogsynlighed er ikke kompatibilitetsbevis.
 - `core/engine.cjs`: versionskontrol, adgangskodebeskyttet loopback-server, sessionsstream, stop og godkendelser. Motoren får isolerede konfigurations-/datamapper; brugerens OpenCode-opsætning overskrives ikke. Effektive tilladelser kontrolleres før start. Automatisk deling, snapshots, plugins, MCP og eksterne skills er slået fra.
 - `core/gateway.cjs`: autentificeret loopback-forbindelse mellem motor og valgt model. Den rigtige udbydernøgle bliver i hovedprocessen; motoren får en midlertidig nøgle. Ingen reserveudbyder eller automatisk ændring til en anden model.
-- `core/store.cjs`: modelvalg, skills og indstillinger under Electrons `userData/harness`, uden for repositoryet. Modelnøgler krypteres med Electron `safeStorage`; appen afviser lagring, hvis kryptering ikke er tilgængelig. Lokalt samtale-/værktøjsindhold gemmes af OpenCode i samme appområde. Der er endnu ingen automatisk slettefrist eller historikbrowser.
+- `core/store.cjs`: modelvalg, skills og indstillinger under Electrons `userData/harness`, uden for repositoryet. Modelnøgler krypteres med Electron `safeStorage`; appen afviser lagring, hvis kryptering ikke er tilgængelig. Lokalt samtale-/værktøjsindhold gemmes af OpenCode i samme appområde. Appens samtalevisning genåbner beskeder; OpenCodes rå værktøjslog og arkiverede samtaler har endnu ingen historikbrowser eller automatisk slettefrist.
 - `core/skills.cjs` og `../profiles/skills/`: synlige danske instruktioner om mål, Git, nøgler, test og designresearch; de fælles grundregler vises også som en redigerbar skill.
 - `core/preview.cjs`, `core/changes.cjs`: lokal visning og tekstbaseret ændringsoversigt med størrelsesgrænser.
 - `main.cjs`, `preload.cjs`, `ui/`: validerede native handlinger, begrænset IPC-bro og brugerflade uden Node-adgang.
@@ -114,6 +128,7 @@ npm run test:desktop
 npm run test:setup
 npm run test:agent
 npm run test:chat
+npm run test:resume
 npm run test:hosting
 ```
 
@@ -134,6 +149,14 @@ npm run test:live
 ```
 
 En særskilt prøve med en rigtig gratis OpenRouter-model køres med `npm run test:openrouter`. Den beder om en testnøgle i terminalen uden ekko og sender kun syntetiske projektdata samt offentlige regler. Den bruger som standard `cohere/north-mini-code:free`, kontrollerer model- og rutepriser og bruger én konkret gratis rute uden fallback. For OpenRouters `:free`-varianter sætter gatewayen også nul som maksimal input-, output-, request- og billedpris. Nøglen må ikke angives som argument, i kildekoden eller i chatlogs. Testen er ikke en del af standardtestsuiten.
+
+## Status for Lys præcision · 27. september 2026
+
+62 automatiske tests består. Den aktuelle kildeversion er kørt i Electron på macOS med projektoprettelse, modelopsætning, plan og bygning, filgodkendelser, preview, projektmenuer, tastaturbetjening og reduceret bevægelse. Genstart bevarer plan, samtale og kladde; lukning under streaming bevarer det delvise svar uden at genstarte opgaven. Kladders adskillelse mellem projekter og arkivering af beskadiget historik er også kontrolleret.
+
+De kontrollerede modeltests bruger den rigtige OpenCode-motor og faktiske filer. Git-tests bruger kun isolerede testrepositories. GitHub- og deployment-API-svar er simulerede i disse kontroller. Den eksterne gratis modelprøve er beskrevet i sidste afsnit.
+
+Ændringerne er ikke pakket eller udgivet. Windows, en rigtig Ollama-model, Corti/Mistral og gennemførelse på en almindelig testers computer mangler fortsat i denne version. Designet er ikke brugertestet med kommunale medarbejdere.
 
 ## Verifikationsstatus · 24. september 2026
 
@@ -240,13 +263,13 @@ Udbydervejledningen bygger på [Anthropics adgangsvejledning](https://platform.c
 
 ## Fra idé til første udkast · 25. september 2026
 
-Arbejdsområdet tilbyder tre modelkort fra den valgte forbindelses aktuelle katalog. Modeller med oplyste værktøjskald vises først, derefter sorteres alfabetisk; modeller med udtrykkeligt manglende værktøjsstøtte vises kun i det fulde katalog. Udvalget er ikke en kvalitetsrangering. **Alle modeller · avanceret** har søgning og fuld valgliste. Ingen model, betalingsrute eller reserveudbyder vælges automatisk. Input-/outputpris vises som oplyst af kataloget; andre gebyrer, kvoter og ukendte vilkår afklares fortsat i datagennemgangen. Katalogdata beviser ikke, at en model kan gennemføre kodeopgaver.
+Modelknappen i skrivefeltet tilbyder tre modelkort fra den valgte forbindelses aktuelle katalog. Modeller med oplyste værktøjskald vises først, derefter sorteres alfabetisk; modeller med udtrykkeligt manglende værktøjsstøtte vises kun i det fulde katalog. Udvalget er ikke en kvalitetsrangering. **Alle modeller · avanceret** har søgning og fuld valgliste. Ingen model, betalingsrute eller reserveudbyder vælges automatisk. Input-/outputpris vises som oplyst af kataloget; andre gebyrer, kvoter og ukendte vilkår afklares fortsat i datagennemgangen. Katalogdata beviser ikke, at en model kan gennemføre kodeopgaver.
 
-Nye projekter med en idé starter i **Afklar og planlæg**. Eksisterende mapper uden idé starter i **Arbejd direkte · avanceret**. Brugeren kan frit vælge mellem dem før afsendelse. Planlægning tillader læsning under de eksisterende filbegrænsninger, spørgsmål og godkendte webopslag; skriveværktøjer, shell og øvrige ukendte værktøjer er afvist af motorens tilladelser. Det er ikke alene en promptinstruktion. Der oprettes ingen automatiske checkpoints for planlægningsopgaver. Det er fortsat ikke en OS-sandbox mod andre processer.
+Nye og eksisterende projekter starter i **Afklar og planlæg**, medmindre en gemt samtale har en anden arbejdsmåde. Efter en afsluttet byggeopgave kan næste besked rette resultatet i samme modelsession. Arbejdsmåden kan også ændres under modelknappens avancerede indstillinger. Planlægning tillader læsning under de eksisterende filbegrænsninger, spørgsmål og godkendte webopslag; skriveværktøjer, shell og øvrige ukendte værktøjer er afvist af motorens tilladelser. Det er ikke alene en promptinstruktion. Der oprettes ingen automatiske checkpoints for planlægningsopgaver. Det er fortsat ikke en OS-sandbox mod andre processer.
 
 AI’en bliver bedt om kun at stille nødvendige spørgsmål og foreslå en kort plan med konkrete ting, brugeren skal prøve. Spørgsmål kan besvares i samtalen eller gennem agentens spørgsmålsværktøj. Seneste afsluttede forslag vises med **Byg første udkast**. Appen vurderer ikke automatisk, om forslaget er tilstrækkeligt eller alle spørgsmål er afklaret; brugeren gennemgår det. En ny planlægningsbesked ugyldiggør den tidligere plan. Bygning kræver den aktuelle plans ID og ny datagennemgang. Kommandoer og filændringer kræver stadig deres egne godkendelser.
 
-Plan og afklaringsbeskeder medsendes ved overgangen til en ny byggesession og vises under Data og vilkår. Almindelige opfølgende afklaringer kræver ikke gentaget samtykke, når model, regler, referencer og vilkår er uændrede. Planen er sessionsdata i hukommelsen og nulstilles ved genåbning af projektet; OpenCodes lokale samtalelog kan fortsat indeholde beskederne. Skift af model eller forbindelse kan sende den viste afklaring til den nye modtager efter datagennemgang.
+Plan og afklaringsbeskeder medsendes ved overgangen til en ny byggesession og vises under Data og vilkår. Almindelige opfølgende afklaringer kræver ikke gentaget samtykke, når model, regler, referencer og vilkår er uændrede. Plan og afklaringsbeskeder gemmes lokalt og genåbnes med projektet. En afbrudt opgave genstartes ikke, og dens plan kan ikke bruges til bygning. Skift af model eller forbindelse kan sende den viste afklaring til den nye modtager efter datagennemgang.
 
 Godkendelseskort forklarer på dansk, hvad en filændring, kommando, websidelæsning eller adgang uden for projektet indebærer. Målet vises altid; rå værktøjsdata ligger under Tekniske detaljer. Eventuel begrundelse fra agenten markeres som agentens egen. Forklaringerne er ikke en analyse af, om en konkret kommando er sikker.
 
@@ -340,8 +363,6 @@ HARNESS_LIVE_SCENARIO=first-app npm run test:openrouter
 
 Model vælges eventuelt med `HARNESS_LIVE_MODEL`. Testen kræver en `:free`-model med oplyste værktøjskald og nulpris samt en konkret rute med nulpris. Der vælges ikke en betalt reserveudbyder. API-nøglen indtastes skjult i terminalen. Testen bruger isolerede projektfiler og fjerner sin gemte forbindelse ved afslutning. Resultater og skærmbilleder gemmes i den midlertidige testmappe; installationspakkerne ændres ikke.
 
-Faktisk resultat: Otte relevante automatiske tests og integrationen med den rigtige OpenCode-motor mod en kontrolleret lokal server består. `cohere/north-mini-code:free` via Cohere gennemførte både en enkel filændring og senere planlægning og bygning af mødelokaleappen. Planlægningen ændrede ingen projektfiler efter rettelsen. Den udvidede prøves oprindelige filteropslag fejlede, fordi modellen gav inputfeltet et andet tilgængeligt navn end den synlige label. Opslaget er rettet til feltets rolle og meningsbærende navn. Det samme genererede projekt er derefter genåbnet i Electron og afprøvet med filter, tom tilstand, nulstilling og mobilvisning uden vandret overløb. Hele den eksterne test er ikke genkørt efter denne rettelse af testopslaget.
-
-Modellens plan og afslutning var på engelsk trods danske instruktioner. Det genererede design er et funktionelt udkast, ikke en dokumenteret kvalitetsstandard. Ingen native app, React/Astro-bygning, backend, Windows-kørsel eller ny installationspakke er afprøvet her.
+Faktisk resultat den 27. september: `cohere/north-mini-code:free` via Cohere gennemførte planlægning, godkendt filændring og preview i Electron. Filtrering, tom tilstand, nulstilling og mobilbredde bestod i samme prøve. Den svarede stadig delvist på engelsk. Det viser, at integrationen kan gennemføre opgaven; det er ikke en kvalitetsanbefaling til danske begyndere. Den efterfølgende forenkling af menuerne er desuden afprøvet med den rigtige OpenCode-motor og en kontrolleret lokal modelserver.
 
 Et allerede genereret mødelokaleprojekt kan afprøves uden nye modelkald med `node scripts/verify-generated-preview.cjs /sti/til/projekt`. Kontrollen åbner projektet med isolerede appindstillinger og ændrer ikke projektfilen.

@@ -27,7 +27,7 @@ const { execFileSync } = require('node:child_process');
   await page.waitForSelector('#workspace:not([hidden])');
   await page.frameLocator('#preview').locator('h1').filter({hasText:'Installationsprøve'}).waitFor();
   assert.equal(await app.evaluate(({app})=>app.isPackaged),true);
-  await page.click('#git-button');await page.click('#git-init');await page.waitForFunction(()=>document.querySelector('#git-init').hidden&&!document.querySelector('#git-init').disabled);
+  await require('./ui-test-helpers.cjs').menuClick(page, '#git-button');await page.click('#git-init');await page.waitForFunction(()=>document.querySelector('#git-init').hidden&&!document.querySelector('#git-init').disabled);
   const project=path.join(root,'projekt-installationspr-ve');
   await fs.mkdir(path.join(root,'hooks'));
   execFileSync(runtime.git,['-C',project,'config','--local','core.hooksPath',path.join(root,'hooks')],{env});

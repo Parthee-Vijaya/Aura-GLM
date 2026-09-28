@@ -24,6 +24,11 @@ let window, preview, project, busy = false;
 let assets = [];
 let github, publishing, deployments;
 let workbench, beforeChanges, externalPreview = null;
+let quitReady = false, shuttingDown = null;
+function shutdown() {
+  if (!shuttingDown) shuttingDown = (async () => { github?.cancel(); await workbench?.close(); await preview?.close(); preview = null; })().finally(() => { shuttingDown = null; });
+  return shuttingDown;
+}
 const uiURL = 'harness://app/index.html';
 const profileRoot = app.isPackaged ? path.join(process.resourcesPath, 'profiles') : path.join(__dirname, '..', 'profiles');
 if (app.isPackaged) require('./core/runtime.cjs').configure(process.resourcesPath);
@@ -67,6 +72,22 @@ handle('project:open', () => exclusive(async () => {
   if (selection.canceled) return null;
   return activate(await openProject(selection.filePaths[0]));
 }));
+handle('project:recent', () => workbench.history.recent());
+handle('project:reopen', id => exclusive(async () => {
+  const item = (await workbench.history.recent()).find(p => p.id === id);
+  if (!item) throw new Error('Projektet findes ikke på listen. Brug Åbn projekt for at vælge mappen.');
+  return activate(await openProject(item.root));
+}));
+handle('workspace:new-conversation', () => exclusive(async () => {
+  if (!project || workbench.running) throw new Error('Stop opgaven, før du starter en ny samtale.');
+  const choice = await dialog.showMessageBox(window, { type: 'question', title: 'Ny samtale', message: 'Start en ny samtale i dette projekt?', detail: 'Plan og kladde ryddes fra visningen. Den tidligere samtale arkiveres i appens datamappe og sendes ikke med. Projektfilerne bevares.', buttons: ['Annuller', 'Start ny samtale'], defaultId: 0, cancelId: 0 });
+  if (choice.response !== 1) return null;
+  return workbench.newConversation();
+}));
+handle('workspace:draft', input => {
+  if (!project || input.root !== project.root) throw new Error('Projektet er skiftet. Kladden blev ikke gemt i en anden mappe.');
+  return workbench.history.draft(project.root, input).then(() => true);
+});
 handle('project:new', () => exclusive(async () => {
   if (workbench.running) throw new Error('Stop den aktive opgave, før du skifter projekt.');
   await workbench.close(); workbench.project = null; externalPreview = null; beforeChanges = null;
@@ -280,15 +301,17 @@ app.whenReady().then(() => {
     callback({ responseHeaders: headers });
   });
   function createWindow() {
-    window = new BrowserWindow({ width: 1440, height: 940, minWidth: 980, minHeight: 720, backgroundColor: '#f8f9f6', title: 'AI Harness', webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, webviewTag: false } });
+    window = new BrowserWindow({ width: 1440, height: 940, minWidth: 980, minHeight: 720, backgroundColor: '#F8FAFC', title: 'AI Harness', webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, webviewTag: false } });
     window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     window.webContents.on('will-navigate', event => event.preventDefault());
     window.webContents.on('will-attach-webview', event => event.preventDefault());
-    window.on('closed', () => { github.cancel(); workbench.close(); externalPreview = null; window = null; assets = []; project = null; if (preview) { preview.close(); preview = null; } });
+    const created = window;
+    created.on('close', event => { if (quitReady) return; event.preventDefault(); shutdown().finally(() => { if (!created.isDestroyed()) created.destroy(); }); });
+    created.on('closed', () => { externalPreview = null; window = null; assets = []; project = null; });
     window.loadURL(uiURL);
   }
   createWindow();
   app.on('activate', () => { if (!window) createWindow(); });
 });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
-app.on('before-quit', () => { github?.cancel(); workbench?.close(); if (preview) preview.close(); });
+app.on('before-quit', event => { if (quitReady) return; event.preventDefault(); shutdown().finally(() => { quitReady = true; app.quit(); }); });
