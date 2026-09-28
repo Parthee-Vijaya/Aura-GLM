@@ -22,7 +22,8 @@
     "package:windows": "electron-builder --config electron-builder.cjs --win --publish never",
     "test:package": "node scripts/verify-package.cjs",
     "release:site": "node scripts/release-site.cjs",
-    "test:resume": "node scripts/verify-resume.cjs"
+    "test:resume": "node scripts/verify-resume.cjs",
+    "test:frameworks": "node scripts/verify-framework-preview.cjs"
   },
   "engines": {
     "node": ">=22.12.0"

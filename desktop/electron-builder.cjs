@@ -5,7 +5,7 @@ module.exports = {
   appId: 'org.ai-alliancen.harness', productName: 'AI Harness',
   directories: { output: 'release', buildResources: 'packaging' },
   files: ['main.cjs', 'preload.cjs', 'core/**/*', 'ui/**/*', 'package.json'],
-  asar: true, npmRebuild: false,
+  asar: true, asarUnpack: ['core/dev-server-runner.cjs'], npmRebuild: false,
   extraResources: profileResources,
   artifactName: 'AI-Harness-${version}-${os}-${arch}.${ext}',
   mac: { target: ['dmg','zip'], category: 'public.app-category.developer-tools', icon: 'packaging/icon.png', identity: process.env.HARNESS_SIGN_IDENTITY || null, hardenedRuntime: true, entitlements: 'packaging/entitlements.mac.plist', entitlementsInherit: 'packaging/entitlements.mac.plist', notarize: false },

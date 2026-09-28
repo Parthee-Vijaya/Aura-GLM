@@ -4,6 +4,7 @@ const fs = require('node:fs/promises');
 const crypto = require('node:crypto');
 const { createProject, openProject } = require('./core/projects.cjs');
 const { startPreview } = require('./core/preview.cjs');
+const { DevServer, inspect: inspectRuntime } = require('./core/dev-server.cjs');
 const { Workbench } = require('./core/workbench.cjs');
 const { GitHub } = require('./core/github.cjs');
 const { Deployments } = require('./core/deployments.cjs');
@@ -24,9 +25,10 @@ let window, preview, project, busy = false;
 let assets = [];
 let github, publishing, deployments;
 let workbench, beforeChanges, externalPreview = null;
+let devServer, detectedRuntime, forceStatic = false;
 let quitReady = false, shuttingDown = null;
 function shutdown() {
-  if (!shuttingDown) shuttingDown = (async () => { github?.cancel(); await workbench?.close(); await preview?.close(); preview = null; })().finally(() => { shuttingDown = null; });
+  if (!shuttingDown) shuttingDown = (async () => { github?.cancel(); await devServer?.stop(); await workbench?.close(); await preview?.close(); preview = null; })().finally(() => { shuttingDown = null; });
   return shuttingDown;
 }
 const uiURL = 'harness://app/index.html';
@@ -36,10 +38,12 @@ if (app.isPackaged) require('./core/runtime.cjs').configure(process.resourcesPat
 async function activate(next) {
   if (workbench.running) throw new Error('Stop den aktive opgave, før du skifter projekt.');
   await workbench.activate(next);
+  await devServer.activate(next.root);
   if (preview) await preview.close();
   project = next; preview = null; externalPreview = null; beforeChanges = null; assets = [];
-  if (next.staticPreview) preview = await startPreview(next.root);
-  return { ...project, previewURL: preview?.url || null, workbench: await workbench.state() };
+  forceStatic = false; detectedRuntime = await inspectRuntime(next.root).catch(error => ({ kind: 'unknown', supported: false, reason: error.message }));
+  if (next.staticPreview && !['vite', 'astro'].includes(detectedRuntime.kind)) preview = await startPreview(next.root);
+  return { ...project, previewURL: preview?.url || null, runtime: { ...devServer.snapshot(), project: detectedRuntime }, workbench: await workbench.state() };
 }
 
 function handle(channel, action) {
@@ -90,6 +94,7 @@ handle('workspace:draft', input => {
 });
 handle('project:new', () => exclusive(async () => {
   if (workbench.running) throw new Error('Stop den aktive opgave, før du skifter projekt.');
+  await devServer.activate(null);
   await workbench.close(); workbench.project = null; externalPreview = null; beforeChanges = null;
   if (preview) await preview.close();
   preview = null; project = null; assets = [];
@@ -117,6 +122,17 @@ handle('assets:remove', id => {
 });
 handle('preview:revision', async () => {
   if (!project || externalPreview) return null;
+  const rootNow = project.root;
+  const nextRuntime = await inspectRuntime(rootNow).catch(error => ({ kind: 'unknown', supported: false, reason: error.message }));
+  if (project?.root !== rootNow) return null;
+  if (JSON.stringify(nextRuntime) !== JSON.stringify(detectedRuntime)) {
+    detectedRuntime = nextRuntime;
+    window?.webContents.send('harness:event', { type: 'preview.runtime', ...devServer.snapshot(), project: detectedRuntime });
+  }
+  if (!forceStatic && ['vite', 'astro'].includes(nextRuntime.kind)) {
+    if (preview) { const old = preview; preview = null; await old.close(); window?.webContents.send('harness:event', { type: 'preview.ready', url: null }); }
+    return null;
+  }
   if (!preview) {
     const updated = await openProject(project.root);
     if (updated.staticPreview) { preview = await startPreview(project.root); window?.webContents.send('harness:event', { type: 'preview.ready', url: preview.url }); }
@@ -149,6 +165,7 @@ handle('designs:apply', id => exclusive(async () => { const design = await new D
 function requireIdleProject() {
   if (!project) throw new Error('Åbn et projekt først.');
   if (workbench.running || workbench.finishing) throw new Error('Vent på agenten og en eventuel versionsgemning.');
+  if (['installing', 'starting', 'stopping'].includes(devServer.state)) throw new Error('Vent på opstarten af forhåndsvisningen, eller stop den først.');
   return project.root;
 }
 handle('git:status', async () => {
@@ -221,6 +238,7 @@ handle('connections:routes', value => workbench.routes(value.connectionID, value
 handle('agent:prepare', value => exclusive(() => workbench.prepare(value)));
 handle('agent:send', value => exclusive(async () => {
   if (!project) throw new Error('Åbn et projekt først.');
+  if (['installing', 'starting', 'stopping'].includes(devServer.state)) throw new Error('Vent på opstarten af forhåndsvisningen, eller stop den først.');
   if (!beforeChanges) beforeChanges = await capture(project.root);
   return workbench.send(value);
 }));
@@ -235,15 +253,26 @@ handle('skills:save', value => exclusive(async () => {
 }));
 handle('preview:attach', value => exclusive(async () => {
   if (!project) throw new Error('Åbn et projekt først.');
-  if (!value) { externalPreview = null; if (preview) await preview.close(); const next = await openProject(project.root); preview = next.staticPreview ? await startPreview(project.root) : null; return preview?.url || null; }
+  if (!value) { await devServer.stop(); forceStatic = true; externalPreview = null; if (preview) await preview.close(); const next = await openProject(project.root); preview = next.staticPreview ? await startPreview(project.root) : null; return preview?.url || null; }
   let url; try { url = new URL(value); } catch { throw new Error('Angiv en lokal serveradresse.'); }
   if (!['http:', 'https:'].includes(url.protocol) || !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) || url.username || url.password || url.search || url.hash) throw new Error('Brug en lokal http- eller https-adresse uden login eller parametre.');
   if (workbench.engine?.url === url.origin || workbench.gateway?.url.startsWith(url.origin + '/')) throw new Error('Agentens interne server kan ikke bruges som forhåndsvisning.');
   try { const response = await fetch(url, { redirect: 'error', signal: AbortSignal.timeout(5000) }); await response.body?.cancel(); if (!response.ok) throw new Error(); }
   catch { throw new Error('Den lokale udviklingsserver svarer ikke. Start den separat; appen kører ingen kommando automatisk.'); }
+  await devServer.stop();
   if (preview) await preview.close(); preview = null; externalPreview = url.href;
   return externalPreview;
 }));
+handle('preview:runtime', () => devServer.status());
+handle('preview:prepare', value => exclusive(async () => {
+  requireIdleProject();
+  return devServer.prepare(value?.action, value?.scripts === true);
+}));
+handle('preview:execute', token => exclusive(async () => {
+  requireIdleProject(); forceStatic = false;
+  return devServer.execute(token);
+}));
+handle('preview:stop', () => devServer.stop().then(() => devServer.snapshot()));
 
 app.whenReady().then(() => {
   app.setAboutPanelOptions({ applicationName: 'AI Harness', applicationVersion: app.getVersion() });
@@ -274,13 +303,24 @@ app.whenReady().then(() => {
     ] }
   ]));
   workbench = new Workbench({ directory: path.join(app.getPath('userData'), 'harness'), safeStorage, profiles: profileRoot, emit: event => { if (window && !window.isDestroyed()) window.webContents.send('harness:event', event); } });
+  devServer = new DevServer({
+    runner: app.isPackaged ? path.join(process.resourcesPath, 'app.asar.unpacked/core/dev-server-runner.cjs') : undefined,
+    emit: state => {
+      if (state.root !== project?.root) return;
+      if (state.state === 'running') {
+        if (preview) { const old = preview; preview = null; void old.close(); }
+        externalPreview = state.url;
+      } else if (['starting', 'stopping', 'stopped', 'error'].includes(state.state)) externalPreview = null;
+      if (window && !window.isDestroyed()) window.webContents.send('harness:event', { type: 'preview.runtime', ...state, project: detectedRuntime });
+    }
+  });
   deployments = new Deployments(workbench.store);
   github = new GitHub(workbench.store); publishing = new Publishing({ store: workbench.store, git: workbench.git, provider: github });
   protocol.handle('harness', async request => {
     const url = new URL(request.url);
     const name = url.pathname.slice(1);
-    if (url.host !== 'app' || !['index.html', 'app.js', 'viewport.js', 'hosting.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name)) return new Response('Ikke fundet', { status: 404 });
-    return new Response(await fs.readFile(path.join(__dirname, 'ui', name)), { headers: { 'Content-Type': { 'index.html': 'text/html; charset=utf-8', 'app.js': 'text/javascript', 'viewport.js': 'text/javascript', 'hosting.js': 'text/javascript', 'deployment.js': 'text/javascript', 'styles.css': 'text/css', 'demo.css': 'text/css' }[name] } });
+    if (url.host !== 'app' || !['index.html', 'app.js', 'server.js', 'viewport.js', 'hosting.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name)) return new Response('Ikke fundet', { status: 404 });
+    return new Response(await fs.readFile(path.join(__dirname, 'ui', name)), { headers: { 'Content-Type': name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : 'text/html; charset=utf-8' } });
   });
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
   session.defaultSession.setPermissionCheckHandler(() => false);

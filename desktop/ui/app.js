@@ -125,6 +125,7 @@ async function displayProject(project) {
   }
   if (!$('#reference-choices').children.length) $('#reference-choices').textContent = 'Ingen referencefiler registreret i projektet.';
   showPreview(project.previewURL);
+  window.previewServer?.update(project.runtime);
   if (project.warnings?.length) message(project.warnings.join(' '));
   state = project.workbench; $('#connection-select').value = ''; renderConnections();
   const saved = state.projectSettings.selection;
@@ -266,11 +267,12 @@ function partElement(id, role) {
 }
 window.harness.onEvent(event => {
   const p = event.properties || {};
+  if (event.type === 'preview.runtime') return window.previewServer?.update(event);
   if (event.type === 'history.error') { $('#draft-status').textContent = event.message; message(event.message, true); }
   if (event.type === 'plan.ready') { activePlan = event.plan; $('#plan-card details').open = false; $('#plan-text').textContent = event.plan.text; $('#plan-card').hidden = false; requestAnimationFrame(() => $('#plan-card').scrollIntoView({ block: 'nearest' })); }
   if (event.type === 'run.review') renderRunReview(event);
   if (event.type === 'git.checkpoint') { appendMessage(event.message, 'system'); return; }
-  if (event.type === 'preview.ready') return showPreview(event.url);
+  if (event.type === 'preview.ready') { showPreview(event.url); window.previewServer?.refresh(); return; }
   if (event.type === 'session.new') { roles.clear(); parts.clear(); partTypes.clear(); partElement('session-' + Date.now(), 'tool').textContent = 'Ny modelsession. Valgt plan og afklaring følger med; øvrig gemt samtale kræver tilvalg.'; }
   if (event.type === 'run.status') {
     const active = ['starting', 'working'].includes(event.status);
@@ -327,7 +329,7 @@ $('#skills-button').onclick = () => action(async () => { skillList = await call(
 $('#skill-select').onchange = showSkill;
 for (const reset of [true, false]) $(reset ? '#skill-reset' : '#skill-save').onclick = () => action(async () => { const id = $('#skill-select').value; skillList = await call('saveSkill', { id, content: $('#skill-content').value, enabled: $('#skill-enabled').checked, reset }); acceptedFingerprint = null; showSkill(); message('Skill-valget er gemt for dette projekt. Det træder i kraft i næste modelsession.'); });
 $('#changes-button').onclick = () => action(async () => { const result = await call('changes'); $('#changes-list').replaceChildren(); if (!result.files.length) $('#changes-list').append(node('p', 'Ingen tekstændringer registreret siden første besked.')); for (const file of result.files) { const detail = node('details'); detail.append(node('summary', file.file), node('h3', 'Før'), node('pre', file.before ?? '(ny fil)'), node('h3', 'Efter'), node('pre', file.after ?? '(slettet fil)')); $('#changes-list').append(detail); } if (result.skipped) $('#changes-list').append(node('p', `${result.skipped} filregistreringer blev udeladt af hensyn til størrelse eller filtype.`)); $('#changes-dialog').showModal(); });
-$('#attach-preview').onclick = () => $('#preview-dialog').showModal();
+$('#attach-preview').onclick = () => window.previewServer.open();
 $('#preview-form').onsubmit = event => { event.preventDefault(); action(async () => { const url = await call('attachPreview', $('#preview-url').value); showPreview(url, true); $('#preview-dialog').close(); }); };
 $('#static-preview').onclick = () => action(async () => { showPreview(await call('attachPreview', '')); $('#preview-dialog').close(); });
 $('#refresh').onclick = () => { if (current?.previewURL) $('#preview').src = current.previewURL; };

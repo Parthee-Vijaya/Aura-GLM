@@ -9,7 +9,7 @@ Designretning for AI Harness. Arbejdsområdet skal give plads til samtalen og de
 - Skrivefeltet er den vigtigste handling. Modelknappen åbner AI, referencer og avancerede valg.
 - Planlægning fører til et konkret forslag. Brugeren vælger at bygge; efter bygning kan man fortsætte med rettelser.
 - Projektmenuen indeholder versionsgemning, sikkerhedskopi og ny samtale. Del åbner udgivelse til test.
-- Preview viser skærmstørrelse og genindlæsning. Server, skalering og egne mål ligger i en menu.
+- Preview viser skærmstørrelse og genindlæsning. Server, skalering og egne mål ligger i en menu. Hvis en framework-app mangler sin server, vises én handling i det tomme preview: Start forhåndsvisning. Installation og start gennemgås i en dialog; procesloggen er foldet sammen.
 
 ## Hvad der vises hvornår
 

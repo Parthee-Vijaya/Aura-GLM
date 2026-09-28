@@ -1,5 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 const methods = {
+  previewRuntime: 'preview:runtime', previewPrepare: 'preview:prepare', previewExecute: 'preview:execute', previewStop: 'preview:stop',
   newConversation: 'workspace:new-conversation', recentProjects: 'project:recent', reopenProject: 'project:reopen', saveDraft: 'workspace:draft',
   deploymentState: 'deployment:state', deploymentReview: 'deployment:review', deploymentSend: 'deployment:send', deploymentCheck: 'deployment:check', deploymentOpen: 'deployment:open',
   preferencesGet: 'preferences:get', preferencesSave: 'preferences:save', clearAssets: 'designs:clear',

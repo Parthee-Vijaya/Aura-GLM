@@ -39,7 +39,7 @@ Fejl i modelkatalog eller modelkald vises i arbejdsområdet med **Gennemgå AI-f
 4. Gennemse **Indstillinger → Instruktioner og regler**. Aktive instruktioner kan redigeres, deaktiveres og gendannes pr. projekt. API-nøgler hører til forbindelser, aldrig i skills. Skills er modelinstruktioner; tekniske tilladelser er adskilt.
 5. Skriv en opgave. Før første afsendelse og ved ændrede vilkår, model, skills eller referencer viser appen modtagere, pris, behandlingssted, opbevaring, træning og dokumentationsgrundlag. Ukendte oplysninger vises som ukendte. Referencefiler vælges særskilt; links kan besøges via godkendte webopslag, inklusive relevante undersider.
 6. Gennemgå filændringer, kommandoer og webopslag, når agenten beder om tilladelse. **Stop** afbryder opgaven. **Ændringer** viser tekstindhold før og efter; oversigten kan også indeholde samtidige manuelle ændringer.
-7. En `public/index.html` vises automatisk. Under preview-menuens **Tilslut lokal server** kan du tilslutte en allerede startet loopback-udviklingsserver. Ingen kommando køres ved projektåbning eller tilslutning. Manglende preview blokerer ikke chatten.
+7. En statisk `public/index.html` vises automatisk. React med Vite og Astro får i stedet **Start forhåndsvisning**, som fører til gennemgang af installation og serverstart. Under preview-menuens **Server og opstart** kan du også tilslutte en allerede startet loopback-server. Projektåbning kører ingen kommando. Manglende preview blokerer ikke chatten.
 
 ## Luk og fortsæt
 
@@ -103,7 +103,8 @@ Et bekræftet push betyder, at versionen blev set på serveren ved kontrollen. S
 - `core/gateway.cjs`: autentificeret loopback-forbindelse mellem motor og valgt model. Den rigtige udbydernøgle bliver i hovedprocessen; motoren får en midlertidig nøgle. Ingen reserveudbyder eller automatisk ændring til en anden model.
 - `core/store.cjs`: modelvalg, skills og indstillinger under Electrons `userData/harness`, uden for repositoryet. Modelnøgler krypteres med Electron `safeStorage`; appen afviser lagring, hvis kryptering ikke er tilgængelig. Lokalt samtale-/værktøjsindhold gemmes af OpenCode i samme appområde. Appens samtalevisning genåbner beskeder; OpenCodes rå værktøjslog og arkiverede samtaler har endnu ingen historikbrowser eller automatisk slettefrist.
 - `core/skills.cjs` og `../profiles/skills/`: synlige danske instruktioner om mål, Git, nøgler, test og designresearch; de fælles grundregler vises også som en redigerbar skill.
-- `core/preview.cjs`, `core/changes.cjs`: lokal visning og tekstbaseret ændringsoversigt med størrelsesgrænser.
+- `core/preview.cjs`, `core/dev-server.cjs`, `core/dev-server-runner.cjs`: statisk visning samt godkendt npm-installation og styring af lokale frameworkservere.
+- `core/changes.cjs`: tekstbaseret ændringsoversigt med størrelsesgrænser.
 - `main.cjs`, `preload.cjs`, `ui/`: validerede native handlinger, begrænset IPC-bro og brugerflade uden Node-adgang.
 
 ## Begrænsninger
@@ -112,11 +113,27 @@ Agenten er **ikke en OS-sandbox**. Godkendte kommandoer kan bruge den indloggede
 
 Previewets renderer har ikke Node-/IPC-adgang. Statisk preview serverer kun almindelige filer under `public/`, afviser skjulte filer og symbolske links og blokerer eksternt netværk. Tilsluttet udviklingsserver tillader sin egen origin og WebSocket-forbindelse, men ikke andre tjenester. Serverens egne indlejringsregler bevares. Nogle apps kræver derfor yderligere integration. Filkontrollen beskytter ikke mod en anden lokal proces, der udskifter mapper under læsning. Brug betroede projektmapper.
 
-Statisk preview genindlæser ved filændringer; det er ikke rammespecifik HMR. Filgrænsen er 10 MB. Ændringsoversigten udelader afhængigheder, kendte hemmelighedsfiler, referencer, binære/store filer og overstiger ikke 1.000 tekstfiler/10 MB samlet. Filnavne alene identificerer ikke alle hemmeligheder.
+Statisk preview genindlæser ved filændringer; Vite og Astro bruger deres egen HMR. Filgrænsen for statiske filer er 10 MB. Ændringsoversigten udelader afhængigheder, kendte hemmelighedsfiler, referencer, binære/store filer og overstiger ikke 1.000 tekstfiler/10 MB samlet. Filnavne alene identificerer ikke alle hemmeligheder.
 
 DGX Spark bruger **Egen server / DGX Spark** med den faktiske Tailscale-adresse, port og kompatible modeltjeneste. Appen ændrer ikke Tailscale eller serveren. Adresse og netværk fortæller ikke i sig selv, hvor modellen behandler data eller om den videresender til cloud.
 
-Cloud-arbejdsområder, kommunale rettighedspolitikker, automatisk npm-/Docker-opsætning og andre deploymenttyper end dem beskrevet nedenfor er ikke tilsluttet. GitHub er den eneste færdige kodepubliceringsadapter. Modelplacering og arbejdsområdets placering er separate valg i arkitekturen; denne version tilbyder kun lokale arbejdsområder. En cloud-implementering kræver et aftalt host-/loginmodul og håndhævelse af kommunens rettigheder. Azure er ikke valgt som obligatorisk destination. Claude-abonnement er utilgængeligt; Anthropic API-nøgle er den implementerede forbindelsesvej.
+Cloud-arbejdsområder, kommunale rettighedspolitikker, Docker-opsætning og andre deploymenttyper end dem beskrevet nedenfor er ikke tilsluttet. GitHub er den eneste færdige kodepubliceringsadapter. Modelplacering og arbejdsområdets placering er separate valg i arkitekturen; denne version tilbyder kun lokale arbejdsområder. En cloud-implementering kræver et aftalt host-/loginmodul og håndhævelse af kommunens rettigheder. Azure er ikke valgt som obligatorisk destination. Claude-abonnement er utilgængeligt; Anthropic API-nøgle er den implementerede forbindelsesvej.
+
+## Start React og Astro i appen
+
+Når projektet får en `package.json`, genkender appen Vite og Astro uden at køre kode. En gammel `public/index.html` bliver ikke vist som frameworkets resultat. Vælg **Start forhåndsvisning**, gennemgå installationen, og start derefter serveren. Det samme forløb ligger under preview-menuens **Server og opstart**.
+
+Den indbyggede opstart understøtter npm-projekter med `dev: "vite"`, `"vite dev"`, `"vite serve"` eller `"astro dev"`. Andre scripts, pakkehåndteringer og flerprojektsopsætninger henvises til manuel servertilslutning. Det ændrer ikke projektets valgte værktøjer.
+
+- Installationen bruger `npm ci`, når en npm-lockfil findes; ellers `npm install`. `node_modules` kan erstattes, og uden lockfil kan `package-lock.json` oprettes eller ændres. Pakker hentes fra projektets og brugerens npm-opsætning, som også kan indeholde private registre. Installation kræver særskilt godkendelse.
+- Installationsscripts er slået fra som standard. De kan tillades under **Detaljer og fejlfinding** ved en ny gennemgang. Start bruger frameworkets API direkte og kører ikke npm `predev` eller `postdev`.
+- Godkendelsen gælder én handling i ét projekt. Ændringer i manifest, lockfiler, npm-opsætning eller de kendte frameworkkonfigurationer kræver ny gennemgang. Starten fastlåser ikke alle projektets kildefiler.
+- Serveren bindes til `127.0.0.1` på en ledig port. Siden kontrolleres over HTTP før visning. Stop findes i dialogen; skift af projekt og lukning stopper også processen. Genåbning starter den ikke igen. Afbrudt installation bevarer filer og eventuelt delvise pakker, som kan geninstalleres efter gennemgang.
+- Projektkode, konfiguration og tilladte pakkescripts har brugerens adgang til filer og netværk. Det er ikke en OS-sandbox. Appens miljønøgler og `NODE_OPTIONS` arves ikke; projektkode kan stadig selv læse lokale filer og opsætning. Procesloggen er afgrænset og bliver i hukommelsen. Kendte nøglemønstre maskeres, men loggen skal gennemgås før deling.
+
+Pakkerne har Node/npm med. Ved kørsel fra kildekoden bruges en eksisterende Node-installation fra PATH. Serverstarteren pakkes uden for `app.asar`, så almindelig Node kan læse den. Intet installeres globalt.
+
+`npm run test:frameworks` henter fastlåste testpakker til nye midlertidige mapper og gennemfører forløbet i Electron. Den bruger React 19.3.0, Vite 8.3.1 og Astro 7.3.5 med syntetisk indhold. Den er derfor separat fra `npm test`. Andre frameworkversioner kan have ændrede API'er, især Astro, hvis program-API er eksperimentelt. Se [Vites API](https://vite.dev/guide/api-javascript), [Astros API](https://docs.astro.build/en/reference/programmatic-reference/) og [npm ci](https://docs.npmjs.com/cli/v11/commands/npm-ci/), kontrolleret 28. september 2026.
 
 ## Afprøvning
 
@@ -129,6 +146,7 @@ npm run test:setup
 npm run test:agent
 npm run test:chat
 npm run test:resume
+npm run test:frameworks
 npm run test:hosting
 ```
 
@@ -150,13 +168,15 @@ npm run test:live
 
 En særskilt prøve med en rigtig gratis OpenRouter-model køres med `npm run test:openrouter`. Den beder om en testnøgle i terminalen uden ekko og sender kun syntetiske projektdata samt offentlige regler. Den bruger som standard `cohere/north-mini-code:free`, kontrollerer model- og rutepriser og bruger én konkret gratis rute uden fallback. For OpenRouters `:free`-varianter sætter gatewayen også nul som maksimal input-, output-, request- og billedpris. Nøglen må ikke angives som argument, i kildekoden eller i chatlogs. Testen er ikke en del af standardtestsuiten.
 
-## Status for Lys præcision · 27. september 2026
+## Aktuel afprøvning · 28. september 2026
 
-62 automatiske tests består. Den aktuelle kildeversion er kørt i Electron på macOS med projektoprettelse, modelopsætning, plan og bygning, filgodkendelser, preview, projektmenuer, tastaturbetjening og reduceret bevægelse. Genstart bevarer plan, samtale og kladde; lukning under streaming bevarer det delvise svar uden at genstarte opgaven. Kladders adskillelse mellem projekter og arkivering af beskadiget historik er også kontrolleret.
+71 automatiske tests består. De nye procesprøver omfatter ændret opsætning efter godkendelse, manglende Node, fejl fra rigtig npm, manglende pakker trods npm-succes og stop af en installation inklusive dens underproces. Alle filer er syntetiske og ligger i isolerede testmapper.
 
-De kontrollerede modeltests bruger den rigtige OpenCode-motor og faktiske filer. Git-tests bruger kun isolerede testrepositories. GitHub- og deployment-API-svar er simulerede i disse kontroller. Den eksterne gratis modelprøve er beskrevet i sidste afsnit.
+React/TypeScript med Vite og Astro er afprøvet i Electron på macOS med rigtig installation, opstart, klik, mobilvisning og opdatering efter filændringer. Prøven omfatter også nye frameworkfiler i et allerede åbent projekt, en afvist godkendelse efter filændring, en bevidst Astro-fejl, rettelse, basissti, stop, projektskift og genåbning uden autostart. Samme forløb består i en ny lokal, usigneret Mac ARM64-pakke med begrænset PATH og pakkens Node/npm. Det er en teknisk pakkeprøve på udviklingsmaskinen, ikke en afprøvning af installation på en anden computer.
 
-Ændringerne er ikke pakket eller udgivet. Windows, en rigtig Ollama-model, Corti/Mistral og gennemførelse på en almindelig testers computer mangler fortsat i denne version. Designet er ikke brugertestet med kommunale medarbejdere.
+De eksisterende desktop- og chatprøver består også. Chatprøven bruger rigtig OpenCode med en kontrolleret lokal modelserver; filændringer, godkendelser, statisk preview, manuel servertilslutning og isolerede Git-versioner er gennemført. Frameworkprojekterne i den nye prøve er skrevet som testmateriale, ikke genereret af en ekstern model. Den tidligere afprøvning af samtale og kladde efter genstart er bevaret; der er ikke kørt nye eksterne modelprøver i denne omgang.
+
+Ændringerne er ikke udgivet. Windows, notarisation af den nye pakke og installation på en almindelig testers computer mangler. Designet er ikke brugertestet med kommunale medarbejdere. Rigtig Ollama-inference og Corti/Mistral gennem hele byggeforløbet er fortsat ikke verificeret.
 
 ## Verifikationsstatus · 24. september 2026
 
@@ -345,7 +365,7 @@ AI-opsætningen søger efter en kørende Ollama på standardadressen på denne c
 
 Modeller med cloudmarkører vises som mulige cloudmodeller. Fravær af markøren beviser ikke lokal databehandling. Modelvalg og datagennemgang gælder fortsat før første afsendelse.
 
-Agenten får nu fælles instruktioner om at begrunde teknologivalg, bevare eksisterende kode, afklare behov for backend og login samt foreslå et konkret design. React/TypeScript, Astro og designbiblioteker er muligheder i samtalen, ikke nye indbyggede skabeloner. Agenten skal foreslå ét designvalg, tilbyde relevante alternativer og respektere brugerens valg før installation. Tailscale behandles separat som netværksadgang. Planlægningen omfatter også målplatform, offlinebrug, fælles data, login og valget mellem ingen backend, serverless, administrerede tjenester og egen backend. Native teknologier kan foreslås, men appen har ingen indbygget native bygning, simulator eller appbutiksudgivelse. Framework-servere startes fortsat særskilt.
+Agenten får nu fælles instruktioner om at begrunde teknologivalg, bevare eksisterende kode, afklare behov for backend og login samt foreslå et konkret design. React/TypeScript, Astro og designbiblioteker er muligheder i samtalen, ikke nye indbyggede skabeloner. Agenten skal foreslå ét designvalg, tilbyde relevante alternativer og respektere brugerens valg før installation. Tailscale behandles separat som netværksadgang. Planlægningen omfatter også målplatform, offlinebrug, fælles data, login og valget mellem ingen backend, serverless, administrerede tjenester og egen backend. Native teknologier kan foreslås, men appen har ingen indbygget native bygning, simulator eller appbutiksudgivelse. React med Vite og Astro kan installeres og startes fra previewets gennemgang. Andre framework-servere startes særskilt.
 
 Verifikation: Ti relevante automatiske tests består, inklusive HTTP-katalog og afviste redirects. Opstarten er kørt i Electron på macOS med kontrolleret Ollama-katalog og et faktisk prøveprojekt med preview. Ingen rigtig Ollama-model, Corti-opgave, Windows-installation eller kvalitetsvurdering af et modelgenereret design er afprøvet i denne milepæl. De nye agentinstruktioner er skrevet og koblet til afsendelsen; deres effekt kræver en live-opgave.
 

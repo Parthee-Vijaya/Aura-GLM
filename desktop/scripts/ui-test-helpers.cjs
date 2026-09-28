@@ -11,6 +11,7 @@ async function menuClick(page, selector) {
   };
   if (!await page.locator(selector).isVisible()) await page.click(toggles[selector]);
   await page.click(selector);
+  if (selector === '#attach-preview' && !await page.locator('#server-manual').evaluate(el => el.open)) await page.click('#server-manual > summary');
 }
 async function taskOptions(page) {
   if (!await page.locator('#task-dialog').evaluate(el => el.open)) await page.click('#model-chip');
