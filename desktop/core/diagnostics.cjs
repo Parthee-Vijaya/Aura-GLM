@@ -9,7 +9,7 @@ function diagnostics(input) {
     vaerktoejer: Object.fromEntries(['node','git','opencode'].map(key => [key, version(input.versions?.[key])])),
     projektAabent: input.project === true, aiAktiv: input.running === true,
     forhaandsvisning: choose(input.preview, ['idle','stopped','installing','starting','running','stopping','error']),
-    noeglelagring: input.encryption === true ? 'tilgængelig' : 'ikke tilgængelig',
+    noeglelagring: input.encryption === true ? 'tilgængelig' : input.encryption === false ? 'ikke tilgængelig' : 'ikke kontrolleret',
     senesteFejl: (input.failures || []).slice(-10).map(item => ({ omraade: choose(item.area, ['app','agent','forhaandsvisning','git','forbindelse']), type: choose(item.type, ['adgang','mangler-fil','handling','model','server']), tidspunkt: /^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/.test(item.at) ? item.at : 'ukendt' }))
   };
 }

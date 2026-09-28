@@ -18,6 +18,7 @@ const http = require('node:http');
   try{
     await fs.cp(oldBundle,installed,{recursive:true,verbatimSymlinks:true});await launch();
     const oldVersion=await app.evaluate(({app})=>app.getVersion());
+    console.log('Tidligere version startet: '+oldVersion);
     await app.evaluate(({dialog},root)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[root]});},root);
     await page.fill('#name','Bevaret projekt');await page.fill('#purpose','Syntetisk prøve af opdatering');await page.click('#create');await page.waitForSelector('#workspace:not([hidden])');
     const project=await page.locator('#project-path').textContent();const original=await fs.readFile(path.join(project,'public/index.html'));
@@ -27,10 +28,15 @@ const http = require('node:http');
     const designSupported=await page.evaluate(()=>typeof window.harness.saveDesign==='function');
     if(designSupported){const saved=await page.evaluate(()=>window.harness.saveDesign({name:'Bevaret design',color:'#0052cc',links:['https://design.gentofte.dk/']}));assert.equal(saved.ok,true);}
     const draftSupported=await page.evaluate(()=>typeof window.harness.saveDraft==='function');
-    if(draftSupported){const saved=await page.evaluate(root=>window.harness.saveDraft({root,text:'Bevar kladden gennem opdatering',mode:'plan'}),project);assert.equal(saved.ok,true);}
+    if(draftSupported){
+      await page.fill('#prompt','Bevar kladden gennem opdatering');
+      await page.waitForFunction(async()=>{const result=await window.harness.connectionState();return result.ok&&result.value.workspace?.draft==='Bevar kladden gennem opdatering';});
+    }
+    console.log('Projekt, forbindelse og design er gemt. Udskifter testappen.');
     await app.close();app=null;
     await fs.rm(installed,{recursive:true});await fs.cp(newBundle,installed,{recursive:true,verbatimSymlinks:true});await launch();
     const newVersion=await app.evaluate(({app})=>app.getVersion());assert.notEqual(newVersion,oldVersion);
+    console.log('Ny version startet: '+newVersion);
     assert.equal(requests,1,'Opdatering må ikke selv sende til den gemte forbindelse');
     const state=await page.evaluate(()=>window.harness.connectionState());assert.ok(state.value.connections.some(c=>c.id===id));assert.equal(JSON.stringify(state).includes(key),false);
     const after=await page.evaluate(id=>window.harness.models(id),id);assert.equal(after.ok,true,'Den samme signerede app skal kunne bruge den gemte syntetiske nøgle');assert.equal(requests,2);

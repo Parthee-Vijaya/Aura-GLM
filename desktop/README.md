@@ -23,7 +23,7 @@ npm ci
 npm start
 ```
 
-Der findes lokale betapakker til macOS (Apple Silicon og Intel) og Windows x64; se installationsafsnittet nedenfor. Mac-pakkerne er signerede, men afventer notarisation. Kun Apple Silicon-pakken er kørt. Electron kan kræve netadgang ved installation fra kildekoden.
+Der findes lokale betapakker og pakker fra GitHub Actions; se [teststatus](../docs/teststatus.md) for præcis version og platform. Den aktuelle lokale Apple Silicon-pakke er signeret, men afventer notarisation. CI-pakkerne er usignerede. Electron kan kræve netadgang ved installation fra kildekoden.
 
 Appens navn og egne menuer er **AI Harness**. Under `npm start` bruges stadig udviklingsprogrammet `Electron.app` på macOS; systemets Dock, procesvisning og visse systemdialoger kan derfor fortsat vise Electron. Fuld systemnavngivning kræver en pakket app med egne bundle-oplysninger. Der ændres ikke i den installerede Electron-afhængighed. Navneskiftet bevarer eksisterende data- og sessionsmapper.
 
@@ -31,7 +31,9 @@ Appens navn og egne menuer er **AI Harness**. Under `npm start` bruges stadig ud
 
 Ved første start vises **Hvad vil du bygge?** med Start et projekt, Prøv et eksempel og Åbn et projekt. **Spring introduktionen over** går direkte til projektoprettelsen og huskes på denne computer. Introduktionen kan åbnes igen fra sidepanelet. Den guidede vej tilbyder AI-forbindelse eller fortsættelse uden AI; derefter beskriver brugeren sin idé og får et redigerbart navneforslag. Designmateriale og avancerede projektvalg er foldet sammen. Brugeren kan oprette eller åbne et lokalt projekt uden AI- eller GitHub-konto. Velkomst og demonstration kontakter ingen modelserver. Når AI-opsætningen åbnes, henter appen automatisk Ollamas modelliste fra http://127.0.0.1:11434/api/tags med en kort timeout. Ingen modelnøgle dekrypteres under søgningen.
 
-**Indstillinger → AI-forbindelser og konto** samler AI og valgfri GitHub-adgang. **Kontrollér forbindelse** henter kun den valgte servers modelkatalog. Et katalogsvar beviser ikke adgang til modelkald, kvote eller kodeværktøjer. **Fortsæt med AI** kræver et katalog med modeller; **Fortsæt uden AI** kræver ingen serveradgang. Den foretrukne forbindelse huskes lokalt, men bliver ukontrolleret efter genstart. Der skiftes aldrig automatisk til en anden model eller udbyder.
+AI-opsætningen viser to store valg: **Jeg har en adgangsnøgle** og **AI på min computer**. En gemt forbindelse vises som et tredje valg. Den guidede introduktion skjuler sidepanelet og viser ét trin ad gangen. **Vælg senere** går videre uden AI og bevarer idéen. Tilbage vender til valgene uden at sende en besked; et indtastet nøglefelt tømmes.
+
+**Gem og kontrollér** gemmer forbindelsen og henter modellisten. Ved en tom liste eller en fejl kan oplysningerne rettes og kontrollen gentages. **Fortsæt** bliver tilgængelig, når listen indeholder modeller. Et katalogsvar beviser ikke adgang til modelkald, kvote eller kodeværktøjer. Model og datavilkår vælges stadig i projektet. Den foretrukne forbindelse huskes lokalt, men bliver ukontrolleret efter genstart. Der skiftes aldrig automatisk til en anden model eller udbyder. **Indstillinger → AI-forbindelser og konto** åbner samme guide; GitHub og lokale værktøjer findes under **Avanceret opsætning**.
 
 Arbejdsområdet viser samtale og preview. Modelknappen i skrivefeltet åbner **AI og materiale** med modelvalg, referencer og avanceret arbejdsmåde. Før afsendelse vises datamodtagere, pris og vilkår, når en ny godkendelse er nødvendig. Tilføjelse af en almindelig API-forbindelse viser udbyder og nøgle; navn og serveradresse ligger under **Avanceret**. Egen server og Ollama åbner adressefelterne. Der er endnu ingen automatisk organisationsopsætning eller Claude-abonnementsforbindelse.
 
@@ -41,7 +43,7 @@ Tekniske aktiviteter er samlet under **Vis aktivitet**. Spørgsmål, fejl og god
 
 Farver, afstande, typografi og principper for synlige valg er beskrevet i [designstandarden](DESIGN.md).
 
-Fejl i modelkatalog eller modelkald vises i arbejdsområdet med **Gennemgå AI-forbindelse** og **Fortsæt uden AI**. Projekt, preview og beskedkladde bevares. Ingen automatisk gentagelse eller baggrundskontrol. GitHub er valgfri sikkerhedskopi og samarbejde; manglende adgang blokerer kun publiceringen. Lokale Git-oplysninger ligger under **Avanceret · lokale værktøjer**. Manglende Git blokerer ikke oprettelse eller preview.
+Fejl i modelkatalog eller modelkald vises i arbejdsområdet med **Gennemgå AI-forbindelse** og **Fortsæt uden AI**. Projekt, preview og beskedkladde bevares. Ingen automatisk gentagelse eller baggrundskontrol. GitHub er valgfri sikkerhedskopi og samarbejde; manglende adgang blokerer kun publiceringen. Manglende Git blokerer ikke oprettelse eller preview.
 
 ## Brugerrejse
 

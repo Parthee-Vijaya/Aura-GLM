@@ -67,7 +67,9 @@ const { skipIntroduction, menuClick, taskOptions, selectMode } = require('./ui-t
     assert.equal(requests,8,'Ingen automatisk gentagelse af fejlede kald');
     await page.waitForSelector('#plan-card:not([hidden])');await menuClick(page,'#git-button');await page.getByRole('button',{name:'Godkendt udgangspunkt ·',exact:false}).click();await page.click('#restore-confirm');await page.locator('#git-feedback').filter({hasText:'er gendannet'}).waitFor();await page.click('[data-close="git-dialog"]');
     assert.equal(await page.isVisible('#plan-card'),false);assert.equal((await page.evaluate(()=>window.harness.connectionState())).value.workspace.plan,null);
+    await app.evaluate(({safeStorage})=>{ safeStorage.isEncryptionAvailable=()=>{throw new Error('Hjælp må ikke kontakte nøgleringen');}; });
     await menuClick(page,'#support-button'); await page.getByText('Fejlrapport uden projektindhold',{exact:true}).click(); const report=await page.locator('#support-report').textContent();
+    assert.equal(JSON.parse(report).noeglelagring,'ikke kontrolleret');
     for(const privateText of [project,'127.0.0.1','PRIVATE','recovery-model','Prøv igen'])assert.equal(report.includes(privateText),false);
     assert.ok(JSON.parse(report).senesteFejl.length>0);
     const target=path.join(root,'rapport.json');await app.evaluate(({dialog},target)=>{dialog.showSaveDialog=async()=>({canceled:false,filePath:target});},target);await page.click('#support-save');await page.locator('#support-status').filter({hasText:'gemt'}).waitFor();assert.equal(JSON.parse(await fs.readFile(target)).format,1);

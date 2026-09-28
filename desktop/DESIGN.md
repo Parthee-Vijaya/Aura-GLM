@@ -4,6 +4,8 @@ Designretning for AI Harness. Arbejdsområdet skal give plads til samtalen og de
 
 ## Det, man møder
 
+- Den guidede opstart viser ét spørgsmål ad gangen med stor overskrift og to eller tre store valg. Først vælger man adgangsnøgle eller AI på computeren; en gemt forbindelse bliver et tredje valg. Sidepanelet er skjult under introduktionen.
+- Næste trin viser kun det valgte forløb. Nøglehjælp og tekniske oplysninger er foldet sammen. GitHub og lokale værktøjer ligger under Avanceret opsætning. Tilbage og Vælg senere er altid tilgængelige.
 - Sidepanelet indeholder projekter, Nyt projekt, Åbn projekt og Indstillinger.
 - Arbejdsområdet består af samtale og preview med en flytbar skillelinje.
 - Skrivefeltet er den vigtigste handling. Modelknappen åbner AI, referencer og avancerede valg.

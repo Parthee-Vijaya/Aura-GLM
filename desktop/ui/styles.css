@@ -174,7 +174,7 @@ iframe { border: 0; width: 100%; height: 100%; background: #fff; }
 #connection-warning { margin: 10px; }
 #connection-warning p { margin-bottom: 8px; }
 #connection-warning button { margin: 3px; font-size: 11px; }
-#setup-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 24px 0; }
+#setup-choice { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 32px 0; }
 #setup-choice button { text-align: left; padding: 18px; background: #fff; }
 #setup-choice strong, #setup-choice span { display: block; }
 #setup-choice strong { margin-bottom: 6px; font-size: 14px; }
@@ -268,3 +268,33 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus { outline: none; }
 .activity-log summary { font-size: 11px; font-weight: 400; }
 .activity-log .tool { border: 0; padding: 0; margin: 8px 0; }
 #connection-status { display: none; }
+
+/* Guidens trin afløser hinanden. Tekniske valg ligger uden for første skærm. */
+body.setup-guided .sidebar, body.setup-guided .app-content > header { display: none; }
+body.setup-guided .app-content { margin-left: 0; }
+#setup { max-width: 900px; padding: clamp(28px, 8vh, 88px) 40px 32px; }
+.setup-heading { margin: 28px 0 32px; }
+.setup-heading .eyebrow { color: var(--muted); letter-spacing: .12em; font-size: 11px; font-weight: 650; }
+.setup-heading h1 { font-size: clamp(28px, 3vw, 38px); letter-spacing: -.04em; line-height: 1.15; max-width: 650px; margin: 12px 0 16px; }
+#setup-subtitle { color: var(--muted); font-size: 16px; line-height: 1.6; }
+#setup-choice button { padding: 28px; min-height: 220px; border-radius: 16px; text-align: left; display: flex; flex-direction: column; align-items: flex-start; background: white; transition: border-color var(--motion-step), transform var(--motion-step); }
+#setup-choice button:hover { border-color: var(--accent); transform: translateY(-2px); }
+#setup-choice strong { font-size: 22px; line-height: 1.25; letter-spacing: -.025em; margin: 18px 0 10px; max-width: 240px; }
+#setup-choice span { font-size: 14px; line-height: 1.55; }
+#setup-choice .setup-symbol { font-size: 25px; line-height: 1; color: var(--accent); }
+[data-setup-step]:not([hidden]) { animation: step-arrive var(--motion-step) var(--ease-out); }
+#setup-provider, #setup-local-step, #setup-saved, #setup-tools { max-width: 520px; }
+#setup-provider-body { padding: 0; }
+#setup-provider .dialog-actions { justify-content: flex-end; }
+#setup-provider .key-guide { background: transparent; padding: 0; font-size: 13px; }
+#setup-provider #connection-advanced { margin: 18px 0; }
+#setup-provider #api-key, #setup-provider #provider-kind { font-size: 16px; padding: 13px; }
+#setup-provider #connection-cost { font-size: 12px; }
+#setup-saved details, #setup-local-step details { margin-top: 24px; font-size: 13px; }
+#setup-ai, #local-discovery-status { font-size: 16px; line-height: 1.7; }
+#setup-local-address { margin-top: 20px; }
+.setup-footer { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 36px; }
+#setup-advanced { color: var(--muted); font-size: 12px; }
+#setup .primary { padding: 12px 22px; }
+@media (max-width: 700px) { #setup { padding: 24px; } #setup-choice { grid-template-columns: 1fr; } #setup-choice button { min-height: 160px; padding: 20px; } #setup-choice strong { max-width: none; } }
+@media (prefers-reduced-motion: reduce) { #setup-choice button:hover { transform: none; } }

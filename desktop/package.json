@@ -1,6 +1,6 @@
 {
   "name": "ai-harness-desktop",
-  "version": "0.2.0-beta.2",
+  "version": "0.2.0-beta.3",
   "private": true,
   "description": "Byg applikationer med AI, lokale projektfiler og forhåndsvisning",
   "main": "main.cjs",

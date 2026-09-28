@@ -29,7 +29,7 @@ Udfyld først invitationen, når download og den aftalte model er afprøvet. Der
 
 ## Det testeren skal prøve
 
-1. Installer og åbn appen uden terminalkommandoer. Gå gennem introduktionen, og forbind den aftalte AI. Prøv også at finde muligheden for at fortsætte uden AI.
+1. Installer og åbn appen uden terminalkommandoer. Gå gennem introduktionen, og forbind den aftalte AI via adgangsnøgle eller AI på computeren. Prøv også Tilbage og Vælg senere. Noter, om hvert trin er forståeligt uden forklaring.
 2. Beskriv din idé med egne ord. Opret projektet i en mappe, du kan genfinde. Forklar med dine egne ord, hvad appen vil sende til modellen.
 3. Læs AI’ens forslag, og bed om en ændring af planen. Byg derefter første udkast. Gennemgå eventuelle godkendelser, før du accepterer dem.
 4. Prøv appen i preview på computer- og mobilbredde. Bed AI’en rette én konkret ting, og kontroller resultatet.
@@ -50,7 +50,7 @@ Sproget vurderes ved at læse den faktiske plan og det færdige indhold. Noter e
 
 ## Fejl og opdatering
 
-Fejlrapporten i appen indeholder faste statusfelter. Den medtager ikke samtaler, projektfiler, filstier, serveradresser, kontonavne eller nøgler. Brugeren vælger selv at gemme og sende den. Et skærmbillede kan derimod indeholde projektdata og skal gennemgås før deling.
+Fejlrapporten i appen indeholder faste statusfelter. Den medtager ikke samtaler, projektfiler, filstier, serveradresser, kontonavne eller nøgler. Hjælp og eksport af rapporten kontakter ikke nøgleringen. Brugeren vælger selv at gemme og sende rapporten. Et skærmbillede kan derimod indeholde projektdata og skal gennemgås før deling.
 
 Ved opdatering lukkes appen. På Mac erstattes appen i Programmer; på Windows køres installationsprogrammet igen. Projektmapper og appens lokale datamappe skal bevares. Test opdateringen med syntetiske projekter først. Der er ikke automatisk opdatering eller automatisk upload af fejlrapporter.
 
@@ -91,10 +91,11 @@ Ved brug af `compatible` skal adressen omfatte API-basestien. Den automatiske pr
 Pakkeprøve og opdatering på Mac, efter at begge versioner er bygget:
 
 ```sh
-npm run test:package -- "release/beta.2/mac-arm64/AI Harness.app"
-HARNESS_TEST_PACKAGE="release/beta.2/mac-arm64/AI Harness.app" npm run test:recovery
-node scripts/verify-upgrade.cjs "release/mac-arm64/AI Harness.app" "release/beta.2/mac-arm64/AI Harness.app"
-npm run release:site -- release/beta.2
+npm run test:package -- "release/beta.3/mac-arm64/AI Harness.app"
+HARNESS_TEST_PACKAGE="release/beta.3/mac-arm64/AI Harness.app" npm run test:introduction
+HARNESS_TEST_PACKAGE="release/beta.3/mac-arm64/AI Harness.app" npm run test:recovery
+node scripts/verify-upgrade.cjs "release/beta.2/mac-arm64/AI Harness.app" "release/beta.3/mac-arm64/AI Harness.app"
+npm run release:site -- release/beta.3
 ```
 
 Opdateringsprøven erstatter appen på samme sted i en midlertidig mappe. Den bruger samme isolerede appdata før og efter og kontrollerer projektfiler, forbindelsen, en syntetisk krypteret nøgle og gemte designpakker. En kladde kontrolleres også, hvis den gamle version understøtter kladdelagring. Prøven ændrer ikke den normalt installerede app eller brugerens projekter. Mac'en skal være låst op under de grafiske prøver.
