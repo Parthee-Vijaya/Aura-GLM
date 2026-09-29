@@ -8,7 +8,13 @@ AI Harness skal samle en fælles arbejdsmetode for kommunal udvikling med AI fra
 
 [Det faglige grundlag](harness-grundlag.md) indeholder research og forslag til skills, teknologivalg og integration. [Projektkontrol](projektkontrol.md) beskriver forslag til konkrete risikoregistreringer, versionsbundne beslutninger, Git og tilslutning af eksisterende projekter. De tekniske forslag er endnu ikke implementeret eller godkendt som organisationspolitik. Tekstinstruktioner må ikke omtales som teknisk håndhævelse eller en garanti for GDPR.
 
-## Tidligere notater
+## Præcisering af målgruppe og teknisk grundlag
+
+Afklaret i projektsamtalen 28. september 2026: Den primære målgruppe er udviklere, IT-medarbejdere og teknisk interesserede kolleger, som vil bygge med AI, men ønsker hjælp til kode og udviklingsarbejdsgang. De skal fortsat kunne tage stilling til tjenester, data og hosting med deres organisation. Guidet opstart og et enkelt sprog bevares. Harness kræver ikke et Promte-abonnement; det indebærer ikke, at valgte modeller eller hostingtjenester er gratis.
+
+Kildegennemgangen bekræfter det oprindelige forslag om en egen brugerflade og konfiguration omkring OpenCode uden en fork. Det samlede forslag om organisationsstyring, revisionsspor og isolation er ikke implementeret. Pi skal vurderes som mulig alternativ motor; der er ikke besluttet eller udført et skift. Se [teknisk grundlag](teknisk-grundlag.md).
+
+## Historiske møde- og produktnotater
 
 **Aktuel implementeringsstatus:** POC 1 er implementeret. POC 2 omfatter lokal kodeagent via OpenCode 1.17.15, modeladaptere, synlige skills, dataoplysninger, vilkårlig projektåbning og genbrugelige designpakker. Se [desktopvejledningen](../desktop/README.md) for den faktiske verifikation og begrænsninger. Noterne nedenfor er historiske.
 

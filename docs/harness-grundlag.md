@@ -4,11 +4,13 @@ Research og produktforslag, 28. september 2026. Formålet og de to brugsveje er 
 
 ## Det fælles produkt
 
-AI Harness skal hjælpe kommuner med at udvikle applikationer med AI fra idé til drift. Det skal give medarbejdere uden udviklerbaggrund støtte til valg, som en erfaren udvikler ellers ville hjælpe med: afgrænsning, teknologi, data, sikkerhed, afprøvning og vedligeholdelse.
+AI Harness skal hjælpe kommuner med at udvikle applikationer med AI fra idé til drift. Den primære målgruppe er udviklere, IT-medarbejdere og teknisk interesserede kolleger, som vil have støtte til afgrænsning, teknologi, data, sikkerhed, afprøvning og vedligeholdelse. Man behøver ikke kunne skrive hele løsningen selv, men skal kunne tage stilling til integrationer og drift med hjælp fra relevante fagpersoner. Den enkle brugerflade skal understøtte den forståelse.
 
 Der er to ligeværdige brugsveje. Brugeren kan lære arbejdsgangen og installere instruktionerne i sit eget kodeværktøj eller bruge den samlede AI Harness-app. Webguiden skal kunne stå alene. Appen må ikke være nødvendig for at hente, forstå eller vedligeholde det fælles indhold.
 
 Vejledningen til mennesket skal forklare valgene. Instruktionerne til agenten skal beskrive handlingerne. Begge skal bygge på samme faglige beslutninger, men behøver ikke indeholde den samme tekst.
+
+[Det tekniske grundlag](teknisk-grundlag.md) skelner mellem det oprindelige arkitekturforslag og den byggede app. [Værktøjsoversigten](../site/dist/vaerktoejer.html) undersøger ti andre kodeværktøjer og mulige veje til at bruge det fælles indhold.
 
 ## Hvad researchen understøtter
 

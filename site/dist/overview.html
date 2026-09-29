@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>AI Harness · Fra idé til en app i drift</title>
-  <meta name="description" content="En fælles arbejdsmetode til kommuner, der bygger med AI. Brug vejledninger og instruktioner i dit eget kodeværktøj, eller prøv AI Harness-appen.">
+  <meta name="description" content="Byg med AI og forstå din løsning. Et udviklingsværktøj og fælles vejledninger til IT-folk og teknisk interesserede medarbejdere i kommunerne.">
   <link rel="stylesheet" href="overview.css">
 </head>
 <body>
@@ -13,7 +13,7 @@
   <main>
     <p class="eyebrow">FÆLLES PRAKSIS FOR UDVIKLING MED AI</p>
     <h1>Fra idé til<br>en app i drift.</h1>
-    <p class="lead">AI Harness skal hjælpe kommunale medarbejdere med at bygge gode applikationer med AI, også uden en udviklerbaggrund. Vi samler vejledninger og værktøjer til kodekvalitet, sikkerhed og ansvarlig brug af data gennem hele forløbet.</p>
+    <p class="lead">Til IT-folk og teknisk interesserede medarbejdere, der vil bygge med AI og forstå deres løsning. AI Harness samler vejledninger og værktøjer til kode, afprøvning og drift med kommunernes behov som udgangspunkt.</p>
 
     <section id="valg" class="choices" aria-label="To måder at bruge AI Harness">
       <article>
@@ -28,6 +28,14 @@
         <p>Beskriv din idé, byg med din egen AI, og se resultatet ved siden af samtalen. Appen samler kodeændringer, forhåndsvisning og versionsgemning.</p>
         <a class="choice-link" href="#desktop">Se appen og testadgang →</a>
       </article>
+    </section>
+
+    <p class="explore"><a href="vaerktoejer.html">Bruger du et andet kodeværktøj? Se ti alternativer →</a></p>
+
+    <section class="note" aria-labelledby="maalgruppe-title">
+      <h2 id="maalgruppe-title">Hvem er Harness til?</h2>
+      <p>Du behøver ikke kunne kode hele løsningen selv. Harness skal hjælpe dig med arbejdet og forklare de valg, du møder. Du vælger model og hosting inden for din organisations rammer og får projektfiler, andre udviklere kan arbejde videre med.</p>
+      <p>Det kræver, at du vil sætte dig ind i de tilsluttede tjenester, gennemgå ændringer og afklare ansvar for data og drift. Vejledningerne og appen kan bruges uden et Promte-abonnement. De tjenester, du vælger, har deres egne vilkår og eventuelle udgifter.</p>
     </section>
 
     <section class="note" aria-labelledby="forloeb-title">
@@ -61,6 +69,14 @@
       <p>Projektfilerne ligger lokalt. Du forbinder selv en AI hos en udbyder eller på din egen modelserver. Installationspakken indeholder OpenCode, Git og Node/npm.</p>
       <!-- artifacts --><p>Der er endnu ingen udgivet installationspakke på denne side. Testadgang er foreløbig for inviterede med adgang til det private repository.</p><!-- /artifacts -->
       <p><a href="desktop.html">Installation og hjælp →</a></p>
+    </section>
+
+    <section class="note" aria-labelledby="grundlag-title">
+      <h2 id="grundlag-title">Hvordan appen er bygget</h2>
+      <p>AI Harness er vores egen Electron-app til Mac og Windows. OpenCode kører lokalt som kodeagent under brugerfladen. Vi bruger en fast version med vores egen konfiguration og har ikke lavet en fork af OpenCode.</p>
+      <p>Harness samler opstart, instruktioner, modelforbindelser, godkendelser, forhåndsvisning og Git. Modellen vælges separat. Når du bruger vores instruktionspakker i et andet kodeværktøj, arbejder du med det værktøjs egen agent.</p>
+      <p>Fælles organisationslogin og en isoleret afvikling af hele agenten er endnu ikke bygget. Pi er en mulig alternativ motor, som vi har undersøgt i dokumentationen; appen bruger fortsat OpenCode.</p>
+      <a href="https://github.com/ai-alliancen-org/ai-harness/blob/main/docs/teknisk-grundlag.md">Læs om arkitekturen og Pi ↗</a>
     </section>
 
     <section class="note" aria-labelledby="status-title">

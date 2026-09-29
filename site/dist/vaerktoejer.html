@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Ti andre kodeværktøjer · AI Harness</title>
+  <meta name="description" content="Cursor, GitHub Copilot, Gemini CLI, Cline, Continue, Aider, Pi, Devin Desktop, Lovable og Replit Agent. Hvad kan de betyde for AI Harness?">
+  <link rel="stylesheet" href="overview.css">
+</head>
+<body>
+  <a class="skip" href="#oversigt">Gå til værktøjerne</a>
+  <header><a href="./">AI Harness</a><a href="pakker.html">Webguide og pakker →</a></header>
+  <main class="tool-index">
+    <p class="eyebrow">BRUG DIT EGET VÆRKTØJ</p>
+    <h1>Flere måder<br>at bygge med AI.</h1>
+    <p class="lead">Claude Code, Codex og OpenCode er tre muligheder. Her er ti andre, vi har undersøgt, fordi de kan være relevante for kommunernes arbejde og vores fælles instruktioner.</p>
+    <p>Udvalget bygger på værktøjernes dokumentation og deres muligheder for projekter, regler og integration. Vi har ikke afprøvet Harness i disse ti værktøjer. De nuværende <a href="pakker.html">tre downloadpakker</a> er fortsat dem, der kan hentes.</p>
+    <p class="review-date">Dokumentationen er gennemgået 28. september 2026.</p>
+    <nav class="tool-nav" aria-label="Typer af kodeværktøjer">
+      <a href="#editorer">Arbejd i en editor</a><a href="#agenter">Brug en kodeagent</a><a href="#platforme">Byg i en webplatform</a>
+    </nav>
+
+    <div id="oversigt">
+      <section id="editorer" class="note" aria-labelledby="editorer-title">
+        <h2 id="editorer-title">Arbejd i en editor</h2>
+        <p>Til dig, der vil arbejde med filer og kode i et udviklingsmiljø og lade AI hjælpe med opgaverne.</p>
+        <div class="tool-list">
+          <article class="tool-entry">
+            <h3>Cursor</h3>
+            <p class="tool-type">Editor med kodeagent</p>
+            <p>Projektregler og skills kan give agenten fælles arbejdsgange. En Harness-vejledning vil kunne bygge på de funktioner uden at kræve vores desktopapp.</p>
+            <p><strong>Mulig indgang:</strong> <code>.cursor/rules</code> og <code>SKILL.md</code>.</p>
+            <p><a href="https://cursor.com/docs/rules">Regler ↗</a> · <a href="https://cursor.com/docs/skills">Skills ↗</a></p>
+          </article>
+          <article class="tool-entry">
+            <h3>GitHub Copilot</h3>
+            <p class="tool-type">Kodeassistent i editor, CLI og GitHub</p>
+            <p>Relevant for teams, som allerede bruger GitHub eller VS Code. Instruktioner og skills kan følge projektet; understøttelsen varierer mellem Copilots forskellige brugerflader.</p>
+            <p><strong>Mulig indgang:</strong> <code>.github/copilot-instructions.md</code> og <code>.github/skills</code>.</p>
+            <p><a href="https://docs.github.com/en/copilot/reference/custom-instructions-support">Instruktioner ↗</a> · <a href="https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills">Skills ↗</a></p>
+          </article>
+          <article class="tool-entry">
+            <h3>Cline</h3>
+            <p class="tool-type">Kodeagent i blandt andet VS Code</p>
+            <p>Kan læse fælles projektregler fra Markdown-filer. Reglerne kan opdeles efter opgave og vælges til og fra, hvilket passer til et Harness-bibliotek med afgrænsede vejledninger.</p>
+            <p><strong>Mulig indgang:</strong> <code>.clinerules/</code>.</p>
+            <p><a href="https://docs.cline.bot/customization/cline-rules">Projektregler ↗</a></p>
+          </article>
+          <article class="tool-entry">
+            <h3>Continue</h3>
+            <p class="tool-type">Kodeassistent med konfigurerbare regler og modeller</p>
+            <p>Projektets regler bruges i agent-, chat- og redigeringstilstand. Det giver en konkret vej til at vedligeholde Harness-instruktioner sammen med resten af koden.</p>
+            <p><strong>Mulig indgang:</strong> <code>.continue/rules</code>.</p>
+            <p><a href="https://docs.continue.dev/customize/rules">Regler i Continue ↗</a></p>
+          </article>
+          <article class="tool-entry">
+            <h3>Devin Desktop</h3>
+            <p class="tool-type">Tidligere Windsurf</p>
+            <p>Et udviklingsmiljø med kodeagenter. Cascade-agentens projektregler er en mulig vej til Harness-indhold. Producenten beskriver Devin Desktop som det nye navn for Windsurf.</p>
+            <p><strong>Mulig indgang:</strong> projektregler og <code>AGENTS.md</code> i Cascade. Andre agenter skal vurderes særskilt.</p>
+            <p><a href="https://devin.ai/desktop">Produkt og navneskift ↗</a> · <a href="https://docs.devin.ai/desktop/cascade/memories">Regler ↗</a></p>
+          </article>
+        </div>
+      </section>
+
+      <section id="agenter" class="note" aria-labelledby="agenter-title">
+        <h2 id="agenter-title">Brug en kodeagent</h2>
+        <p>Til arbejde i terminalen eller, hvor værktøjet har et integrationsinterface, som en del af en anden app.</p>
+        <div class="tool-list">
+          <article class="tool-entry">
+            <h3>Gemini CLI</h3>
+            <p class="tool-type">Kodeagent til terminalen</p>
+            <p>Understøtter Agent Skills og installation af skills fra et repository. Det er relevant for ønsket om at hente Harness-indhold direkte, uden at installere vores app.</p>
+            <p><strong>Mulig indgang:</strong> <code>.gemini/skills</code> eller <code>.agents/skills</code>.</p>
+            <p><a href="https://geminicli.com/docs/cli/using-agent-skills/">Brug og installation af skills ↗</a></p>
+          </article>
+          <article class="tool-entry">
+            <h3>Aider</h3>
+            <p class="tool-type">Kodeagent til terminalen</p>
+            <p>Kan få projektets kodekonventioner som en fil, der indlæses med <code>--read</code>. Harness kan dermed tilpasses som instruktioner, selv uden samme skillformat som de øvrige værktøjer.</p>
+            <p><strong>Mulig indgang:</strong> en eksplicit indlæst <code>CONVENTIONS.md</code>.</p>
+            <p><a href="https://aider.chat/docs/usage/conventions.html">Kodekonventioner ↗</a></p>
+          </article>
+          <article id="pi" class="tool-entry">
+            <h3>Pi</h3>
+            <p class="tool-type">Kodeagent og mulig motor til andre apps</p>
+            <p>Har både Agent Skills og et SDK, der kan indbygges i en app. Pi er derfor relevant både for egne Harness-instruktioner og som mulig alternativ motor til OpenCode.</p>
+            <p><strong>Mulig indgang:</strong> <code>SKILL.md</code>, SDK eller RPC. Ingen Pi-adapter er bygget i Harness.</p>
+            <p><a href="https://pi.dev/docs/latest/skills">Skills ↗</a> · <a href="https://pi.dev/docs/latest/sdk">SDK ↗</a></p>
+          </article>
+        </div>
+      </section>
+
+      <section id="platforme" class="note" aria-labelledby="platforme-title">
+        <h2 id="platforme-title">Byg i en webplatform</h2>
+        <p>Her indgår udviklingsmiljøet i en samlet tjeneste. Vores vejledninger kan være relevante, men regler og data skal vurderes i platformens egen sammenhæng.</p>
+        <div class="tool-list">
+          <article class="tool-entry">
+            <h3>Lovable</h3>
+            <p class="tool-type">Appbygning i browseren</p>
+            <p>Workspace- og project knowledge kan beskrive konventioner og hensyn, som agenten skal følge. Harness-indhold vil skulle tilpasses disse felter og afprøves i tjenesten.</p>
+            <p><strong>Mulig indgang:</strong> projektets knowledge.</p>
+            <p><a href="https://docs.lovable.dev/features/knowledge">Knowledge i Lovable ↗</a></p>
+          </article>
+          <article class="tool-entry">
+            <h3>Replit Agent</h3>
+            <p class="tool-type">Appbygning i Replits udviklingsmiljø</p>
+            <p>Agenten læser projektets <code>replit.md</code> med konventioner, struktur og ønsker. Den kan også opdatere filen, så fælles regler skal gennemgås ved ændringer.</p>
+            <p><strong>Mulig indgang:</strong> <code>replit.md</code>.</p>
+            <p><a href="https://docs.replit.com/features/project-setup/replit-dot-md">Projektinstruktioner ↗</a></p>
+          </article>
+        </div>
+      </section>
+    </div>
+
+    <section class="note" aria-labelledby="valg-title">
+      <h2 id="valg-title">Hvad betyder det for Harness?</h2>
+      <p>Vores forslag er at prioritere vejledninger til Cursor, GitHub Copilot, Gemini CLI og Cline, når flere værktøjer skal dækkes. De har dokumenterede måder at indlæse fælles instruktioner. Pi bør vurderes særskilt som agentmotor. Det er en faglig prioritering, ikke et resultat af sammenlignende brugertest.</p>
+      <p>Et fælles filformat giver ikke samme adfærd eller adgangskontrol overalt. Hver integration skal afprøves med det valgte værktøj og den konkrete model, herunder eksisterende projektregler, Git, filadgang og afviste handlinger. Oversigten er heller ikke en vurdering af leverandørernes datavilkår.</p>
+      <p><a href="https://github.com/ai-alliancen-org/ai-harness/blob/main/docs/teknisk-grundlag.md">Læs om vores nuværende motor og vurderingen af Pi ↗</a></p>
+    </section>
+  </main>
+  <footer><a href="./">Til forsiden</a><a href="pakker.html">Hent de nuværende grundregler</a></footer>
+</body>
+</html>
