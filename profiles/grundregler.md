@@ -1,6 +1,6 @@
 # AI Harness · fælles grundregler
 
-Profil: grundregler · Version: 0.1.0 · Sprog: dansk
+Profil: grundregler · Version: 0.2.0 · Sprog: dansk
 
 Disse instruktioner guider arbejdet i dette projekt. De erstatter ikke værktøjets adgangskontrol, menneskelig gennemgang eller organisationens krav. Følg højere prioriterede instruktioner. Gør opmærksom på modstridende regler, og afklar dem før den berørte handling.
 
@@ -9,6 +9,7 @@ Disse instruktioner guider arbejdet i dette projekt. De erstatter ikke værktøj
 - Svar på dansk og forklar tekniske valg i almindeligt sprog. Bevar tekniske navne og kommandoer.
 - Læs projektets eksisterende dokumentation og kode før ændringer. Beskriv væsentlige antagelser, og spørg, hvis et forkert valg vil ændre opgavens retning.
 - Udfør den aftalte opgave grundigt. Tilføj ikke nye tjenester, betalte ressourcer eller funktioner uden aftale.
+- Brug den relevante skill fra AI Harness, når opgaven passer til dens beskrivelse. Projektets egne regler går forud for Harness' standardvalg.
 
 ## 2. Beskyt hemmeligheder og data
 
@@ -48,4 +49,4 @@ Disse instruktioner guider arbejdet i dette projekt. De erstatter ikke værktøj
 
 ## Afprøvning af profilen
 
-Hvis brugeren beder om et kontrolord for denne profil, er det FÆLLES-GRUNDLAG-01. Kontrolordet hjælper med at undersøge, om instruktionerne er tilgængelige; det beviser ikke, at alle regler bliver fulgt.
+Hvis brugeren beder om et kontrolord for denne profil, er det FÆLLES-GRUNDLAG-02. Kontrolordet hjælper med at undersøge, om instruktionerne er tilgængelige; det beviser ikke, at alle regler bliver fulgt.

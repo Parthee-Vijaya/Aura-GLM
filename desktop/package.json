@@ -24,7 +24,10 @@
     "release:site": "node scripts/release-site.cjs",
     "test:resume": "node scripts/verify-resume.cjs",
     "test:frameworks": "node scripts/verify-framework-preview.cjs",
-    "test:recovery": "node scripts/verify-recovery.cjs"
+    "test:recovery": "node scripts/verify-recovery.cjs",
+    "test:tools": "node scripts/verify-tools.cjs",
+    "test:skills-claude": "node scripts/verify-harness-claude.cjs",
+    "test:skills-opencode": "node scripts/verify-harness-opencode.cjs"
   },
   "engines": {
     "node": ">=22.12.0"

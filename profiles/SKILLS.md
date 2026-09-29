@@ -1,0 +1,209 @@
+# Skills i AI Harness 0.2.0
+
+Genereret fra `profiles/catalog.json` af `scripts/build-packages.cjs`. Ret kataloget eller skillfilerne, ikke denne fil.
+
+AI Harness indeholder fælles grundregler og 12 skills. Grundreglerne gælder altid. En skill er en kort vejledning til kodeagenten om én arbejdsopgave, som bruges, når opgaven passer.
+
+## Idé og afgrænsning
+
+`harness-ide-og-afgraensning` · [SKILL.md](skills/harness-ide-og-afgraensning/SKILL.md)
+
+**Hvad gør den?** Hjælper dig og agenten med at blive enige om opgaven: hvem løsningen er til, hvad den skal kunne, hvilke data den bruger, og hvad der ikke er med. Agenten stiller kun de spørgsmål, der ændrer et væsentligt valg, og skriver resten som antagelser, du kan rette.
+
+**Hvornår bruges den?** Når du starter et nyt projekt, beskriver en ny funktion, eller når en opgave skifter retning undervejs.
+
+**Hvad får du?** En kort opgavebeskrivelse med acceptkriterier, du selv kan afprøve, gemt i projektet, fx i docs/opgave.md.
+
+**Hvad gør den ikke?** Den vælger ikke teknologi og skriver ikke kode. Den afgør heller ikke, om en behandling af personoplysninger er lovlig.
+
+## Eksisterende projekt
+
+`harness-eksisterende-projekt` · [SKILL.md](skills/harness-eksisterende-projekt/SKILL.md)
+
+**Hvad gør den?** Agenten gennemgår projektet uden at køre kommandoer: instruktioner, teknologi, låsefiler, start- og testkommandoer, Git-status, CI og hosting. Derefter får du en kort oversigt og forslag, der passer til projektet.
+
+**Hvornår bruges den?** Når du åbner et projekt første gang, overtager det fra andre eller vil tilføje AI Harness til et projekt, der allerede findes.
+
+**Hvad får du?** Et overblik over projektet med kendte risici og usikkerheder samt forslag med præcise filændringer, som du selv vælger imellem.
+
+**Hvad gør den ikke?** Den skifter ikke teknologi, pakkehåndtering eller Git-model, og den rydder ikke op med reset, rebase eller force-push.
+
+## Arkitektur og teknologi
+
+`harness-arkitektur-og-teknologi` · [SKILL.md](skills/harness-arkitektur-og-teknologi/SKILL.md)
+
+**Hvad gør den?** Hjælper med de valg, der er svære at lave om senere: platform, framework, datalagring, backend, login og hosting. Agenten foreslår ét begrundet valg, nævner relevante alternativer og forklarer konti, udgifter, drift og hvor data behandles. I offentlige organisationer peger den på genbrug gennem OS2, login med MitID og fælles registre.
+
+**Hvornår bruges den?** Når et nyt projekt skal have sin første opsætning, eller når en opgave kræver en ny tjeneste, database, login eller hostingløsning.
+
+**Hvad får du?** En anbefaling med begrundelse, alternativer, konsekvenser og de godkendelser, der skal på plads, før noget oprettes.
+
+**Hvad gør den ikke?** Den opretter ingen konti, tjenester eller betalte ressourcer og skifter ikke teknologi i et eksisterende projekt uden en grund.
+
+Kilder: [React om at oprette en ny app](https://react.dev/learn/creating-a-react-app), [Astros anvendelsesområde](https://docs.astro.build/en/concepts/why-astro/), [TypeScript strict](https://www.typescriptlang.org/tsconfig/strict), [OS2](https://www.os2.eu/), [Lov om MitID og NemLog-in](https://www.retsinformation.dk/eli/lta/2025/333), [Vejledning om open source i den offentlige sektor](https://arkitektur.digst.dk/Vejledning-om-brug-af-open-source-i-den-offentlige-sektor)
+
+## Data og leverandører
+
+`harness-data-og-leverandoerer` · [SKILL.md](skills/harness-data-og-leverandoerer/SKILL.md)
+
+**Hvad gør den?** Holder styr på, hvilke data løsningen bruger, hvem der modtager dem, hvor de behandles og gemmes, og hvad der stadig er uafklaret. Den skelner mellem data i udviklingen og i den færdige app og kender de danske offentlige krav, der typisk udløses: databehandleraftale, fortegnelse, konsekvensanalyse, anmeldelse af brud og journalisering.
+
+**Hvornår bruges den?** Når løsningen får et nyt dataforløb, en ny tjeneste eller leverandør, eller når der skal bruges personoplysninger.
+
+**Hvad får du?** En opdateret dataoversigt i projektet med kilder, kontroldatoer og konkrete spørgsmål til fx databeskyttelsesrådgiver og informationssikkerhed.
+
+**Hvad gør den ikke?** Den erklærer ingen behandling for lovlig og godkender ikke på organisationens vegne. En registrering i filen er ikke en verificeret godkendelse.
+
+Kilder: [Datatilsynet om cloud](https://www.datatilsynet.dk/regler-og-vejledning/cloud), [Databeskyttelse gennem design og standardindstillinger](https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/databeskyttelse-gennem-design-og-standardindstillinger), [Konsekvensanalyse](https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/konsekvensanalyse), [GDPR](https://eur-lex.europa.eu/eli/reg/2016/679/oj), [Datatilsynet om testdata](https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/testdata-anvendelse-af-personoplysninger-ved-udvikling-og-test-af-it-systemer), [Offentlighedsloven](https://www.retsinformation.dk/eli/lta/2020/145), [AI-forordningen](https://eur-lex.europa.eu/eli/reg/2024/1689/oj)
+
+## Nøgler og afhængigheder
+
+`harness-noegler-og-afhaengigheder` · [SKILL.md](skills/harness-noegler-og-afhaengigheder/SKILL.md)
+
+**Hvad gør den?** Sørger for, at API-nøgler, tokens og adgangskoder hverken ender i koden, i browserens filer, i logs eller i Git. Før en ny pakke tilføjes, forklarer agenten behovet, kontrollerer navn, licens og kendte sårbarheder og bruger projektets låsefil.
+
+**Hvornår bruges den?** Når løsningen skal forbindes til en anden tjeneste, når der skal bruges en nøgle, og når pakker tilføjes eller opdateres.
+
+**Hvad får du?** Konfiguration med navngivne miljøvariabler uden værdier, en begrundelse for hver ny pakke og en besked, hvis en hemmelighed er eksponeret.
+
+**Hvad gør den ikke?** Den finder ikke alle hemmeligheder automatisk og erstatter ikke en egentlig hemmelighedsscanning eller udskiftning af en lækket nøgle.
+
+Kilder: [OWASP Secrets Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html), [Vite om miljøvariabler i browserkode](https://vite.dev/guide/env-and-mode), [npm ci](https://docs.npmjs.com/cli/v11/commands/npm-ci/)
+
+## Design og tilgængelighed
+
+`harness-design-og-tilgaengelighed` · [SKILL.md](skills/harness-design-og-tilgaengelighed/SKILL.md)
+
+**Hvad gør den?** Hjælper med et sammenhængende design ud fra kommunens designsystem eller dine referencer og kontrollerer tilgængelighed: tastatur, fokus, kontrast, fejlbeskeder, overskrifter og små skærme. Den bygger efter WCAG på niveau AA og minder om tilgængelighedserklæringen, som offentlige websteder og apps skal have.
+
+**Hvornår bruges den?** Når en side, formular eller komponent bygges eller ændres, og før en offentlig side udgives.
+
+**Hvad får du?** En brugerflade, der er set i browseren på computer- og mobilbredde, og en liste over, hvad der er kontrolleret, og hvad der mangler.
+
+**Hvad gør den ikke?** Den erklærer ikke løsningen tilgængelig. Et automatisk værktøj kan ikke alene afgøre, om en side er tilgængelig.
+
+Kilder: [Lov om tilgængelighed af offentlige organers websteder og mobilapplikationer](https://www.retsinformation.dk/eli/lta/2018/692), [Digitaliseringsstyrelsen om tilgængelighedserklæringen](https://digst.dk/digital-inklusion/webtilgaengelighed/om-tilgaengelighedserklaeringen/), [W3C om evaluering af tilgængelighed](https://www.w3.org/WAI/test-evaluate/), [WCAG 2.2](https://www.w3.org/TR/WCAG22/)
+
+## Kodestil og vedligeholdelse
+
+`harness-kodestil` · [SKILL.md](skills/harness-kodestil/SKILL.md)
+
+**Hvad gør den?** Får agenten til at følge projektets konventioner og skrive kode, en anden udvikler kan overtage: forståelige navne, enkle funktioner, ingen død kode og kommentarer, der forklarer begrundelser frem for at gentage koden. I nye projekter foreslås engelske kodenavne og dansk brugerflade.
+
+**Hvornår bruges den?** Når der skrives eller ændres kode, og når en ændring gennemgås før et commit.
+
+**Hvad får du?** Kode, der ligner resten af projektet, og en kort gennemgang af ændringen med eventuelle bevidste afvigelser.
+
+**Hvad gør den ikke?** Den indfører ikke en ny formatter eller stil i et eksisterende projekt uden aftale.
+
+Kilder: [Google om kodegennemgang](https://google.github.io/eng-practices/review/reviewer/looking-for.html), [TypeScript strict](https://www.typescriptlang.org/tsconfig/strict)
+
+## Afprøvning og fejlretning
+
+`harness-afproevning-og-fejlretning` · [SKILL.md](skills/harness-afproevning-og-fejlretning/SKILL.md)
+
+**Hvad gør den?** Agenten vælger relevante tests, reproducerer fejl før rettelsen og afprøver den faktiske brugerrejse. Den skelner mellem skrevet, unit-testet, afprøvet på rigtigt materiale og i drift og observeret og påstår aldrig mere, end den har vist.
+
+**Hvornår bruges den?** Ved enhver kodeændring, når noget ikke virker, og før agenten melder en opgave færdig.
+
+**Hvad får du?** En aflevering med de kørte kontroller og deres resultat, manuelle trin du selv kan prøve, og det der ikke er afprøvet.
+
+**Hvad gør den ikke?** Den gør ikke en høj testdækning til et mål i sig selv og retter ikke tests, så de passer til forkert kode.
+
+Kilder: [NIST SSDF 1.1](https://csrc.nist.gov/pubs/sp/800/218/final)
+
+## Git og samarbejde
+
+`harness-git-og-samarbejde` · [SKILL.md](skills/harness-git-og-samarbejde/SKILL.md)
+
+**Hvad gør den?** Forklarer og følger forskellen på at gemme en fil, lave et checkpoint, pushe, åbne en pull request og udgive. Agenten foreslår sammenhængende versioner med en præcis commit-besked, men laver kun Git-handlinger, du udtrykkeligt beder om. Branches vælges efter, om du arbejder alene eller i et team.
+
+**Hvornår bruges den?** Ved milepæle, før et commit eller push og når arbejdet skal deles med andre.
+
+**Hvad får du?** En gennemgået ændring med kun de tilsigtede filer, et forslag til commit-besked og en anbefaling til branches, der passer til samarbejdet.
+
+**Hvad gør den ikke?** Den laver ikke force-push, rebase eller oprydning i historikken og ændrer ikke Git-identitet eller branchbeskyttelse.
+
+Kilder: [GitHub flow](https://docs.github.com/en/get-started/using-github/github-flow), [Git worktree](https://git-scm.com/docs/git-worktree), [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
+
+## Sikkerhedsgennemgang
+
+`harness-sikkerhedsgennemgang` · [SKILL.md](skills/harness-sikkerhedsgennemgang/SKILL.md)
+
+**Hvad gør den?** Agenten gennemgår de dele, ændringen berører, med en tjekliste til små webapps: adgangskontrol på serveren, validering og escaping, hemmeligheder, afhængigheder, logning og adskillelse af brugeres data. Fund registreres med alvor og næste handling.
+
+**Hvornår bruges den?** Når en ændring berører login, adgang, formularer, filupload, data eller eksterne tjenester, og altid før en app sættes i drift.
+
+**Hvad får du?** En liste over fund med sted, alvor, forslag og status samt en beskrivelse af, hvad der er kontrolleret, og hvad der ikke er.
+
+**Hvad gør den ikke?** Den gør ikke appen sikker og er ikke en penetrationstest. Fravær af fund er ikke bevis for fravær af problemer.
+
+Kilder: [OWASP ASVS](https://owasp.org/www-project-application-security-verification-standard/), [OWASP Top 10](https://owasp.org/Top10/), [OWASP Top 10 for LLM-applikationer](https://genai.owasp.org/llm-top-10/), [NIS2-loven](https://www.retsinformation.dk/eli/lta/2025/434)
+
+## Udgivelse og gendannelse
+
+`harness-udgivelse-og-gendannelse` · [SKILL.md](skills/harness-udgivelse-og-gendannelse/SKILL.md)
+
+**Hvad gør den?** Før en udgivelse gennemgår agenten version, miljø, konfiguration, dataændringer, nødvendige godkendelser og vejen tilbage sammen med dig. Efter udgivelsen afprøves den rigtige adresse, adgangsbegrænsninger og logs.
+
+**Hvornår bruges den?** Når du vil udgive til et test- eller driftsmiljø, eller når en version skal rulles tilbage.
+
+**Hvad får du?** En tjekliste, en udgivelsesnote med commit, miljø og kontroller og en afprøvet vej tilbage.
+
+**Hvad gør den ikke?** Den udgiver ikke til drift og opretter ikke betalte ressourcer uden din udtrykkelige godkendelse. En godkendelse registreret i en fil er ikke en verificeret identitet.
+
+Kilder: [GitHub om udgivelsesmiljøer](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments)
+
+## Overdragelse og drift
+
+`harness-overdragelse-og-drift` · [SKILL.md](skills/harness-overdragelse-og-drift/SKILL.md)
+
+**Hvad gør den?** Gør appen klar til, at en anden kan starte, drive, opdatere og gendanne den uden den oprindelige udvikler eller AI-værktøjet. Agenten skriver en afprøvet startvejledning og en driftsvejledning og afklarer ejerskab af konti og udgifter.
+
+**Hvornår bruges den?** Før en app sættes i drift, når projektet skal overdrages, og når driftsopsætningen ændres.
+
+**Hvad får du?** En opdateret README og driftsvejledning samt en liste over åbne spørgsmål, der skal afklares før overdragelse.
+
+**Hvad gør den ikke?** Den skriver aldrig adgangskoder, nøgler eller personoplysninger i dokumentationen.
+
+## Spørgsmål og svar
+
+### Hvad er en skill?
+
+En skill er en kort vejledning til kodeagenten om én bestemt arbejdsopgave, fx en sikkerhedsgennemgang eller en udgivelse. Den ligger som en almindelig tekstfil, SKILL.md, i projektet. Agenten læser først kun navn og beskrivelse og henter resten, når opgaven passer. Det holder instruktionerne korte i det daglige arbejde.
+
+### Bruges alle skills hver gang?
+
+Nej. Mange værktøjer vælger selv en skill, når opgaven passer til beskrivelsen, og du kan også bede om en bestemt skill. En tekstændring skal fx ikke udløse en sikkerhedsgennemgang. Hvordan skills startes, afhænger af værktøjet; se værktøjets vejledning i webguiden.
+
+### Hvad er forskellen på grundregler og skills?
+
+Grundreglerne gælder altid: nøgler, Git, afprøvning og ærlig rapportering. De står i fx AGENTS.md eller CLAUDE.md. Skills er de længere arbejdsgange, der kun bruges, når opgaven kræver dem.
+
+### Kan jeg ændre en skill?
+
+Ja. Filerne er dine. Hvis du ændrer en installeret fil, springer en senere opdatering netop den fil over og fortæller dig det. Projektets egne regler skrives uden for AI Harness-afsnittet i AGENTS.md eller CLAUDE.md, så de aldrig overskrives.
+
+### Sender AI Harness mine data nogen steder hen?
+
+Nej. Installationen kopierer tekstfiler til dit projekt. Dit kodeværktøj og den model, du har valgt, læser filerne som en del af dit arbejde. Hvor de data behandles, afhænger af værktøjet og modellen.
+
+### Gør skillsene min app sikker eller lovlig?
+
+Nej. Skills er vejledning til agenten. De er ikke adgangskontrol, en sikkerhedsgodkendelse eller en vurdering efter databeskyttelsesreglerne. De hjælper med at stille de rigtige spørgsmål og inddrage de rigtige fagpersoner, men ansvaret for løsningen ligger fortsat hos organisationen.
+
+### Bliver koden bedre af det?
+
+Det har vi endnu ikke målt for vores målgruppe. Undersøgelser fra 2026 viser, at generelle instruktionsfiler sjældent gør kodeagenter mere korrekte og koster ekstra tokens, mens fokuserede skills kan hjælpe ved bestemte opgaver. Derfor er grundreglerne korte, og skills indlæses kun, når opgaven passer. Vi vil sammenligne de samme opgaver med og uden Harness på flere modeller.
+
+### Kan en skill gøre skade?
+
+En skill fra en ukendt kilde skal behandles som software, fordi den kan få agenten til at køre kommandoer. AI Harness' skills indeholder kun tekst, ingen scripts, og giver ingen værktøjstilladelser. Du kan læse dem alle på denne side, før du installerer dem.
+
+### Hvordan opdaterer eller fjerner jeg AI Harness?
+
+Installér en ny version på samme måde. Harness opdaterer kun filer, der er uændrede siden installationen, og viser konflikter for resten. Fjernelse sletter kun uændrede filer og afsnit. Oplysningerne står i .harness/installation.json, som også skal med i Git.
+
+### Hvilke kodeværktøjer virker det med?
+
+Webguiden viser hvert værktøj med status. "Afprøvet" betyder, at vi har set værktøjet indlæse grundregler og skills og sende dem til modellen. "Efter dokumentation" betyder, at filplaceringen følger værktøjets officielle dokumentation, men endnu ikke er afprøvet af os. Ingen af delene viser, hvor godt en bestemt model følger instruktionerne.

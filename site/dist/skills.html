@@ -1,0 +1,1099 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Skills i AI Harness</title>
+  <meta name="description" content="Se hvilke skills der følger med AI Harness: hvad hver skill gør, hvornår den bruges, og hvad den ikke gør.">
+  <link rel="stylesheet" href="overview.css">
+</head>
+<body>
+  <a class="skip" href="#skills">Gå til skillsene</a>
+  <header><a href="./">AI Harness</a><a href="pakker.html">Webguide og pakker →</a></header>
+  <main class="tool-index">
+    <p class="eyebrow">DET FØLGER MED</p>
+    <h1>Skills i AI Harness.</h1>
+    <p class="lead">AI Harness 0.2.0 indeholder fælles grundregler og 12 skills. Grundreglerne gælder altid. En skill er en kort vejledning til kodeagenten om én arbejdsopgave, som bruges, når opgaven passer.</p>
+    <p>Alle skills følger med i pakkerne til de understøttede kodeværktøjer og installeres også af AI Harness-appen. Filerne er almindelige tekstfiler på dansk, som du kan læse og tilpasse.</p>
+    <nav class="tool-nav" aria-label="Skills"><a href="#harness-ide-og-afgraensning">Idé og afgrænsning</a><a href="#harness-eksisterende-projekt">Eksisterende projekt</a><a href="#harness-arkitektur-og-teknologi">Arkitektur og teknologi</a><a href="#harness-data-og-leverandoerer">Data og leverandører</a><a href="#harness-noegler-og-afhaengigheder">Nøgler og afhængigheder</a><a href="#harness-design-og-tilgaengelighed">Design og tilgængelighed</a><a href="#harness-kodestil">Kodestil og vedligeholdelse</a><a href="#harness-afproevning-og-fejlretning">Afprøvning og fejlretning</a><a href="#harness-git-og-samarbejde">Git og samarbejde</a><a href="#harness-sikkerhedsgennemgang">Sikkerhedsgennemgang</a><a href="#harness-udgivelse-og-gendannelse">Udgivelse og gendannelse</a><a href="#harness-overdragelse-og-drift">Overdragelse og drift</a></nav>
+    <section id="skills" aria-label="Skills">
+      <article class="tool-entry skill-entry" id="harness-ide-og-afgraensning">
+        <p class="tool-type">01 · <code>harness-ide-og-afgraensning</code></p>
+        <h3>Idé og afgrænsning</h3>
+        <p>Afklarer brugere, vigtigste handling, data og acceptkriterier, før der bygges.</p>
+        <dl class="faq">
+          <dt>Hvad gør den?</dt><dd>Hjælper dig og agenten med at blive enige om opgaven: hvem løsningen er til, hvad den skal kunne, hvilke data den bruger, og hvad der ikke er med. Agenten stiller kun de spørgsmål, der ændrer et væsentligt valg, og skriver resten som antagelser, du kan rette.</dd>
+          <dt>Hvornår bruges den?</dt><dd>Når du starter et nyt projekt, beskriver en ny funktion, eller når en opgave skifter retning undervejs.</dd>
+          <dt>Hvad får du?</dt><dd>En kort opgavebeskrivelse med acceptkriterier, du selv kan afprøve, gemt i projektet, fx i docs/opgave.md.</dd>
+          <dt>Hvad gør den ikke?</dt><dd>Den vælger ikke teknologi og skriver ikke kode. Den afgør heller ikke, om en behandling af personoplysninger er lovlig.</dd>
+        </dl>
+        <details><summary>Se instruktionen til agenten</summary><pre>---
+name: harness-ide-og-afgraensning
+description: Afklarer en ny app, en ny funktion eller en opgave, der skifter retning, før der skrives kode. Finder brugerne, den vigtigste handling, de nødvendige data og konkrete acceptkriterier og stiller kun spørgsmål, der ændrer et væsentligt valg. Brug den ved projektstart, når brugeren beskriver en idé, og når opgaven er uklar eller vokser undervejs.
+---
+
+# Idé og afgrænsning
+
+Målet er en kort, aftalt beskrivelse af opgaven, som brugeren kan genkende, og som kan afprøves. Byg ikke, før beskrivelsen er bekræftet.
+
+## Fremgangsmåde
+
+1. Læs det, der findes: README, noter om projektet, eksisterende kode og tidligere beslutninger. Byg videre på det, der allerede er aftalt.
+2. Find svar på disse spørgsmål, gerne ud fra det brugeren allerede har skrevet:
+   - Hvem skal bruge løsningen, og i hvilken situation?
+   - Hvad er den vigtigste handling, brugeren skal kunne gennemføre?
+   - Hvilke data skal løsningen vise, gemme eller sende? Indgår personoplysninger eller fortrolige oplysninger?
+   - Skal data deles mellem flere brugere eller overleve en genstart?
+   - Hvad hører ikke med i denne omgang?
+3. Stil højst tre spørgsmål ad gangen og kun om valg, der ændrer retningen. Skriv reversible antagelser tydeligt i beskrivelsen i stedet for at spørge om dem.
+4. Skriv beskrivelsen efter skabelonen nedenfor, og bed brugeren bekræfte eller rette den.
+5. Gem den bekræftede beskrivelse, hvor projektet samler sin dokumentation. I et nyt projekt: `docs/opgave.md`.
+6. Når opgaven skifter retning, så opdatér beskrivelsen og sig, hvad der er ændret. En teknisk ændring må ikke i stilhed ændre formålet.
+
+## Skabelon
+
+```markdown
+# &lt;Kort navn på opgaven&gt;
+
+## Formål
+&lt;Én eller to sætninger: hvem, hvad og hvorfor.&gt;
+
+## Brugere og situation
+&lt;Hvem bruger løsningen, og hvornår?&gt;
+
+## Det skal brugeren kunne
+- Brugeren kan &lt;konkret handling&gt;.
+- Brugeren kan &lt;konkret handling&gt;.
+
+## Data
+&lt;Hvilke data, hvor de kommer fra, og om der er personoplysninger. Skriv &quot;kun opdigtede eksempeldata&quot; under udviklingen, når det er aftalt.&gt;
+
+## Ikke med i denne omgang
+- &lt;Afgrænsning&gt;
+
+## Antagelser
+- &lt;Antagelse, der kan ændres senere&gt;
+
+## Sådan prøver vi det
+- &lt;Konkret prøve, fx &quot;Søg på et lokale med plads til 8, og se kun de lokaler, der passer.&quot;&gt;
+```
+
+## Gode acceptkriterier
+
+- Beskriv en handling og et synligt resultat, ikke en teknologi. Skriv &quot;Brugeren kan filtrere lokaler efter antal pladser&quot;, ikke &quot;Tilføj et filter-komponent&quot;.
+- Tag de vigtigste fejltilfælde med: tom liste, ugyldigt input, manglende adgang.
+- Et kriterium skal kunne afprøves af en person, der ikke har skrevet koden.
+
+## Stop og inddrag andre
+
+- Løsningen skal behandle personoplysninger, fortrolige oplysninger eller rigtige sager: aftal opdigtede data til udviklingen, og brug `harness-data-og-leverandoerer`.
+- Løsningen kræver login, integration til kommunens systemer, betaling eller en ny tjeneste: sig det tidligt, og brug `harness-arkitektur-og-teknologi`.
+- Brugeren beder om noget, der rækker ud over opgaven: foreslå det som en særskilt opgave i stedet for at bygge det med.
+</pre></details>
+        
+      </article>
+      <article class="tool-entry skill-entry" id="harness-eksisterende-projekt">
+        <p class="tool-type">02 · <code>harness-eksisterende-projekt</code></p>
+        <h3>Eksisterende projekt</h3>
+        <p>Læser et eksisterende projekt, før der foreslås ændringer, og bevarer dets konventioner.</p>
+        <dl class="faq">
+          <dt>Hvad gør den?</dt><dd>Agenten gennemgår projektet uden at køre kommandoer: instruktioner, teknologi, låsefiler, start- og testkommandoer, Git-status, CI og hosting. Derefter får du en kort oversigt og forslag, der passer til projektet.</dd>
+          <dt>Hvornår bruges den?</dt><dd>Når du åbner et projekt første gang, overtager det fra andre eller vil tilføje AI Harness til et projekt, der allerede findes.</dd>
+          <dt>Hvad får du?</dt><dd>Et overblik over projektet med kendte risici og usikkerheder samt forslag med præcise filændringer, som du selv vælger imellem.</dd>
+          <dt>Hvad gør den ikke?</dt><dd>Den skifter ikke teknologi, pakkehåndtering eller Git-model, og den rydder ikke op med reset, rebase eller force-push.</dd>
+        </dl>
+        <details><summary>Se instruktionen til agenten</summary><pre>---
+name: harness-eksisterende-projekt
+description: Undersøger et eksisterende eller ældre projekt, før der foreslås ændringer eller nye konventioner. Laver en læsende gennemgang af instruktioner, teknologi, start- og testkommandoer, Git-status, CI og hosting og foreslår derefter kun de Harness-dele, der passer. Brug den, når et projekt åbnes første gang, overtages fra andre eller skal have AI Harness tilføjet.
+---
+
+# Eksisterende projekt
+
+Et eksisterende projekt har valg, som andre har truffet af en grund. Forstå dem, før du foreslår noget nyt, og lad projektets egne konventioner gå forud for Harness&#39; standardvalg.
+
+## 1. Læs, før du kører noget
+
+Gennemgangen er læsende. Kør ikke projektets kommandoer, installer ikke pakker og upload intet blot for at forstå projektet. Spørg, før du kører tests eller bygger.
+
+Find og notér:
+
+- **Instruktioner:** `AGENTS.md`, `CLAUDE.md`, `.cursor/rules/`, `.github/copilot-instructions.md`, `GEMINI.md`, `CONTRIBUTING.md` og lignende. Læg mærke til modstridende regler.
+- **Formål og dokumentation:** README, docs-mappe, arkitekturnoter og tidligere beslutninger.
+- **Teknologi:** sprog, frameworks, pakkehåndtering og låsefiler (`package-lock.json`, `pnpm-lock.yaml`, `poetry.lock` osv.). Brug den pakkehåndtering, låsefilen viser.
+- **Kommandoer:** start, test, build og lint, som de står i dokumentationen eller i fx `package.json`. Kør dem ikke endnu.
+- **Git:** aktuel branch, uncommittede og staged ændringer, remotes og om der er igangværende merge eller rebase.
+- **CI og drift:** workflows, deploymentfiler (`Dockerfile`, `vercel.json`, `staticwebapp.config.json` m.fl.) og miljøer.
+- **Konfiguration:** navne på miljøvariabler fra fx `.env.example`. Læs aldrig værdierne i `.env` eller andre hemmelighedsfiler.
+- **Integrationer og data:** eksterne tjenester, databaser og hvilke data løsningen håndterer.
+
+## 2. Giv en kort oversigt
+
+Skriv til brugeren:
+
+- Hvad projektet er, og hvordan det startes og afprøves ifølge dokumentationen.
+- De vigtigste konventioner, du vil følge.
+- Det, der mangler eller er uklart. Manglende dokumentation er en usikkerhed, ikke et bevis på, at noget ikke findes.
+- Kendte risici, fx gamle afhængigheder, hemmeligheder i koden eller manglende tests. Beskriv dem som fund i projektet, ikke som fejl i den nye ændring.
+
+## 3. Foreslå, før du ændrer
+
+- Foreslå de relevante Harness-dele og vis de præcise filændringer. Lad brugeren vælge.
+- Tilføj ikke en ny formatter, pakkehåndtering, Git-model, branchestrategi, testramme eller hostingtjeneste som en skjult følge af opgaven.
+- Bevar projektets eksisterende instruktioner. Nye regler placeres, så de ikke overskriver dem, og konflikter nævnes, før den berørte handling.
+
+## Beskyt brugerens arbejde
+
+- Bevar både staged og unstaged ændringer. En ændring fra agenten må kun omfatte det, der hører til opgaven.
+- Brug aldrig `git add .`, `git reset --hard`, `git clean`, rebase eller force-push som oprydning.
+- Hvis dine og brugerens ændringer i samme fil ikke kan adskilles sikkert, så stop og bed om en manuel gennemgang.
+- Gamle problemer må ikke tilskrives den nye ændring, og manglende historik må ikke omskrives til en tidligere godkendelse.
+</pre></details>
+        
+      </article>
+      <article class="tool-entry skill-entry" id="harness-arkitektur-og-teknologi">
+        <p class="tool-type">03 · <code>harness-arkitektur-og-teknologi</code></p>
+        <h3>Arkitektur og teknologi</h3>
+        <p>Anbefaler én begrundet løsning til platform, framework, data, login og hosting med alternativer og konsekvenser.</p>
+        <dl class="faq">
+          <dt>Hvad gør den?</dt><dd>Hjælper med de valg, der er svære at lave om senere: platform, framework, datalagring, backend, login og hosting. Agenten foreslår ét begrundet valg, nævner relevante alternativer og forklarer konti, udgifter, drift og hvor data behandles. I offentlige organisationer peger den på genbrug gennem OS2, login med MitID og fælles registre.</dd>
+          <dt>Hvornår bruges den?</dt><dd>Når et nyt projekt skal have sin første opsætning, eller når en opgave kræver en ny tjeneste, database, login eller hostingløsning.</dd>
+          <dt>Hvad får du?</dt><dd>En anbefaling med begrundelse, alternativer, konsekvenser og de godkendelser, der skal på plads, før noget oprettes.</dd>
+          <dt>Hvad gør den ikke?</dt><dd>Den opretter ingen konti, tjenester eller betalte ressourcer og skifter ikke teknologi i et eksisterende projekt uden en grund.</dd>
+        </dl>
+        <details><summary>Se instruktionen til agenten</summary><pre>---
+name: harness-arkitektur-og-teknologi
+description: Anbefaler én begrundet løsning, når et projekt skal vælge platform, framework, datalagring, backend, login eller hosting. Tager udgangspunkt i eksisterende systemer og organisationens aftaler, sammenligner kun relevante alternativer og forklarer konti, udgifter, drift, hvor data behandles, og hvordan løsningen kan flyttes. Brug den ved ny projektopsætning og når en opgave kræver en ny tjeneste, database, login eller hosting.
+---
+
+# Arkitektur og teknologi
+
+Vælg det enkleste, der løser opgaven, og som organisationen kan drive og vedligeholde. Brugeren skal ikke kende frameworknavne for at kunne godkende valget; forklar konsekvenserne i almindeligt sprog.
+
+## Genbrug før nybyg
+
+1. Bevar teknologien i et eksisterende projekt, medmindre opgaven kræver et begrundet skift. Brug `harness-eksisterende-projekt` først.
+2. Spørg, om organisationen allerede har et system, en fælles løsning eller en godkendt tjeneste til opgaven. Kommuner kan fx have løsninger fra fællesoffentlige eller fælleskommunale samarbejder.
+3. Spørg til organisationens godkendte hosting, identitetsløsning og designsystem, før du foreslår nye.
+4. I danske offentlige organisationer: læs [offentlig infrastruktur](references/offentlig-infrastruktur.md) om OS2, login med MitID, fælles registre og hosting.
+
+## Standardvalg til nye webprojekter
+
+| Behov | Udgangspunkt |
+|-------|--------------|
+| Enkel informationsside uden fælles data | HTML, CSS og lidt JavaScript |
+| Indholdstungt website med mange sider | Astro |
+| Interaktiv app i browseren | React med TypeScript og Vite |
+| App med routing, serverfunktioner eller datahentning på serveren | Et React-framework, valgt bevidst |
+
+- Brug TypeScript med `strict` slået til. Valider stadig data, der kommer udefra.
+- Native mobil- og desktopapps har egne krav til udviklingsværktøjer, signering, afprøvning på enheder og distribution. En webforhåndsvisning viser ikke, at en iOS-app virker.
+
+## Data og backend vælges for sig
+
+Afklar først, om data skal deles mellem brugere, overleve en genstart, have adgangskontrol, bruge baggrundsjob eller integrationer. Sammenlign derefter kun de relevante muligheder:
+
+1. **Ingen backend:** data i statiske filer eller kun i brugerens browser.
+2. **Serverfunktioner hos hostingudbyderen:** små funktioner uden egen server.
+3. **Administreret tjeneste:** database, login eller lager som tjeneste.
+4. **Egen backend med database:** mest kontrol og mest drift.
+
+En hostingudbyder er ikke det samme som en backend-arkitektur. En demo, der kun gemmer i hukommelsen eller i browseren, skal kaldes en demo.
+
+## Login
+
+- Brug en etableret identitetsløsning. Byg aldrig et eget system til adgangskoder til en løsning i drift.
+- Medarbejdere logger typisk ind med organisationens egen identitetsløsning. Spørg den it-ansvarlige, hvilken der skal bruges.
+- Kræver en offentlig selvbetjeningsløsning sikker login for borgere eller virksomheder, skal myndigheden bruge NemLog-in med MitID. Det kræver aftale og opsætning; lov det ikke som en hurtig tilføjelse.
+
+## Design og komponenter
+
+Organisationens designsystem kommer før et nyt tema. Foreslå ét begrundet valg og nævn relevante alternativer: Tailwind CSS er CSS-værktøjer, shadcn/ui er komponenter i projektets egen kode oven på Tailwind, og MUI og Bootstrap er komponentbiblioteker med egne forudsætninger. Installer ikke flere af dem på én gang.
+
+## Løsninger, der selv bruger AI
+
+Hvis løsningen kalder en AI-model, er det et nyt dataforløb og et nyt sted, hvor utroværdigt input kommer ind. Brug `harness-data-og-leverandoerer` og `harness-sikkerhedsgennemgang`. Brugerne skal kunne se, at de interagerer med en AI, og organisationen skal vurdere, om særlige regler for AI-systemer gælder.
+
+## Anbefalingen
+
+Skriv:
+
+1. **Anbefaling og begrundelse** i to til fire sætninger.
+2. **Alternativer**, og hvornår de ville være bedre.
+3. **Konsekvenser:** konti, udgifter, drift og vedligeholdelse, hvor data behandles og gemmes, og hvor let løsningen kan flyttes til en anden leverandør.
+4. **Det skal afklares:** godkendelser, aftaler og fagpersoner, der skal inddrages.
+
+Opret ingen konti, tjenester eller betalte ressourcer uden brugerens udtrykkelige godkendelse. Lov ikke funktioner eller integrationer, som værktøjerne ikke har.
+</pre><p class="tool-type"><code>references/offentlig-infrastruktur.md</code></p><pre># Offentlig infrastruktur og genbrug
+
+Pejlemærker til løsninger for danske offentlige organisationer. Kontrollér med organisationens it-arkitekt, før noget vælges. Kilderne er kontrolleret 29. september 2026.
+
+## Genbrug før nybyg
+
+- **OS2** er et offentligt digitaliseringsfællesskab, hvor myndigheder udvikler og forvalter løsninger sammen. Se produktkataloget og koden på GitHub, før der bygges nyt: https://www.os2.eu/os2-it-loesninger og https://github.com/OS2offdig
+- **Digitaliseringskataloget** beskriver fælleskommunale løsninger og infrastruktur: https://digitaliseringskataloget.dk
+- Digitaliseringsstyrelsens vejledning om open source anbefaler at undersøge eksisterende løsninger før nyudvikling og at bruge udbredte licenser.
+- Fællesoffentlig digital arkitektur anbefaler at undgå afhængighed af enkelte leverandører og proprietære teknologier (arkitekturregel 2.3).
+
+## Login
+
+- **Borgere og virksomheder:** kræver en selvbetjeningsløsning til en myndighedsopgave sikker autentifikation, skal myndigheden bruge NemLog-in til login med MitID. NemLog-in anskaffes gennem Digitaliseringsstyrelsen og kræver aftale og opsætning.
+- **Medarbejdere i andre virksomheder:** MitID Erhverv.
+- **Kommunens egne medarbejdere:** brug kommunens egen identitetsløsning. Spørg den identitetsansvarlige.
+- **KOMBIT Fælleskommunal Adgangsstyring:** relevant, når løsningen skal hente data fra den fælleskommunale infrastruktur på vegne af medarbejdere. Kræver registrering i Fælleskommunalt Administrationsmodul.
+
+## Data fra fælles registre
+
+- **Serviceplatformen (KOMBIT)** giver adgang til fx CPR og CVR. Adgang kræver registrering af systemet, certifikat og en serviceaftale. Der findes en testmyndighed til udvikling.
+- **Datafordeleren** er indgangen til grunddata. Meget er frit tilgængeligt efter oprettelse; fx CPR kræver særskilt adgang. CPR-data skal på sigt hentes fra Datafordeleren i stedet for Serviceplatformens replika.
+- Brug aldrig rigtige CPR- eller sagsdata i prototyper. Brug opdigtede data og testmiljøer.
+
+## Hosting og placering
+
+- Der er ikke fundet en generel dansk regel om, at data skal hostes i EU/EØS. Overførsler reguleres af GDPR; brug `harness-data-og-leverandoerer`.
+- Digitaliseringsstyrelsen og Datatilsynet har vejledninger om brug af cloud, og Digitaliseringsstyrelsen har materiale om digital suverænitet. Brug dem som beslutningsstøtte sammen med organisationens egne krav.
+
+## Informationssikkerhed
+
+- NIS2-loven gælder fra 1. juli 2025. Kommuner kan være omfattet, og kravene er risikobaserede. Inddrag informationssikkerhedskoordinatoren ved nye systemer og leverandører.
+- KL anbefaler tekniske minimumskrav for kommuner, og kommuner følger principperne i ISO/IEC 27001.
+
+## Kilder
+
+- OS2: https://www.os2.eu/
+- Vejledning om open source i den offentlige sektor: https://arkitektur.digst.dk/Vejledning-om-brug-af-open-source-i-den-offentlige-sektor
+- Arkitekturregel 2.3: https://arkitektur.digst.dk/principper/princip-2-arkitektur-fremmer-sammenhaeng-innovation-og-effektivitet/arkitekturregel-23
+- Lov om MitID og NemLog-in: https://www.retsinformation.dk/eli/lta/2025/333
+- NemLog-in om lovgivning: https://www.nemlog-in.dk/om-nemlog-in/lovgivning/
+- Fælleskommunal adgangsstyring: https://digitaliseringskataloget.dk/l%C3%B8sninger/adgangsstyring-brugere
+- Tilslutning til Serviceplatformen: https://digitaliseringskataloget.dk/tilslutningsguide-anvendersystem
+- Datafordeleren: https://datafordeler.dk/
+- Digitaliseringsstyrelsens cloudvejledning: https://digst.dk/data/vejledning-til-anvendelse-af-cloudservices/
+- Digital suverænitet: https://digst.dk/digital-transformation/digital-suveraenitet/
+- NIS2-loven: https://www.retsinformation.dk/eli/lta/2025/434
+- KL om informationssikkerhed i kommunerne: https://www.kl.dk/media/rojd4u0o/informationssikkerhed-i-kommunerne-jan-2024.pdf
+</pre></details>
+        <p class="sources">Kilder: <a href="https://react.dev/learn/creating-a-react-app">React om at oprette en ny app ↗</a> · <a href="https://docs.astro.build/en/concepts/why-astro/">Astros anvendelsesområde ↗</a> · <a href="https://www.typescriptlang.org/tsconfig/strict">TypeScript strict ↗</a> · <a href="https://www.os2.eu/">OS2 ↗</a> · <a href="https://www.retsinformation.dk/eli/lta/2025/333">Lov om MitID og NemLog-in ↗</a> · <a href="https://arkitektur.digst.dk/Vejledning-om-brug-af-open-source-i-den-offentlige-sektor">Vejledning om open source i den offentlige sektor ↗</a></p>
+      </article>
+      <article class="tool-entry skill-entry" id="harness-data-og-leverandoerer">
+        <p class="tool-type">04 · <code>harness-data-og-leverandoerer</code></p>
+        <h3>Data og leverandører</h3>
+        <p>Fører en dataoversigt over dataforløb, leverandører og åbne spørgsmål og peger på de rette fagpersoner.</p>
+        <dl class="faq">
+          <dt>Hvad gør den?</dt><dd>Holder styr på, hvilke data løsningen bruger, hvem der modtager dem, hvor de behandles og gemmes, og hvad der stadig er uafklaret. Den skelner mellem data i udviklingen og i den færdige app og kender de danske offentlige krav, der typisk udløses: databehandleraftale, fortegnelse, konsekvensanalyse, anmeldelse af brud og journalisering.</dd>
+          <dt>Hvornår bruges den?</dt><dd>Når løsningen får et nyt dataforløb, en ny tjeneste eller leverandør, eller når der skal bruges personoplysninger.</dd>
+          <dt>Hvad får du?</dt><dd>En opdateret dataoversigt i projektet med kilder, kontroldatoer og konkrete spørgsmål til fx databeskyttelsesrådgiver og informationssikkerhed.</dd>
+          <dt>Hvad gør den ikke?</dt><dd>Den erklærer ingen behandling for lovlig og godkender ikke på organisationens vegne. En registrering i filen er ikke en verificeret godkendelse.</dd>
+        </dl>
+        <details><summary>Se instruktionen til agenten</summary><pre>---
+name: harness-data-og-leverandoerer
+description: Holder styr på, hvilke data en løsning bruger, hvem der modtager dem, hvor de behandles og gemmes, og hvad der stadig er uafklaret. Fører en dataoversigt i projektet, skelner mellem data i udviklingen og i den færdige app og peger på de rette fagpersoner ved personoplysninger. Brug den ved nye dataforløb, nye tjenester eller leverandører og når der skal bruges personoplysninger.
+---
+
+# Data og leverandører
+
+Der er to adskilte dataforløb, og begge skal kunne forklares:
+
+1. **Udviklingen:** kodeværktøjet sender kode, filer, fejlbeskeder og samtalen til den valgte model. En lokal app betyder ikke, at modellen kører lokalt.
+2. **Den færdige løsning:** database, hosting, logs, sikkerhedskopier, e-mail, analyse og andre tjenester, som brugernes data passerer.
+
+## Fremgangsmåde
+
+1. Brug opdigtede eller offentlige data under udviklingen, også i tests, eksempler og skærmbilleder.
+2. Før en dataoversigt efter [skabelonen](references/dataoversigt.md), fx i `docs/data-og-leverandoerer.md`. Opdatér den, når et dataforløb eller en tjeneste ændres.
+3. Beskriv for hver tjeneste: datakategorier, formål, hvor data behandles og gemmes, underleverandører, supportadgang, logs, sikkerhedskopier, slettefrist, brug til træning og mulighed for eksport. Angiv kilde og kontroldato. Skriv &quot;ukendt&quot; frem for at gætte.
+4. Giv hvert åbent forhold en status: skal undersøges, kræver handling, afventer ansvarlig, løst og kontrolleret, eller ikke relevant med begrundelse.
+5. Formulér konkrete spørgsmål til de rette roller, fx: &quot;Tjenesten gemmer logs med e-mailadresser i 30 dage i USA. Er det dækket af vores aftaler?&quot;
+
+Brug de mindst mulige datamængder og rettigheder. En regionsangivelse fra en leverandør er ikke hele svaret; underleverandører, supportadgang og overførsler skal også med.
+
+## Stop og inddrag andre
+
+Skal løsningen bruges i en dansk offentlig organisation, så læs [de offentlige krav](references/offentlige-krav.md) og brug dem til at pege på de rigtige roller.
+
+- **Personoplysninger i drift:** inddrag den ansvarlige for behandlingen og organisationens databeskyttelsesrådgiver, før rigtige data bruges. Hver leverandør, der behandler personoplysninger, kræver en databehandleraftale, og behandlingen skal med i organisationens fortegnelse. Ved sandsynlig høj risiko skal der laves en konsekvensanalyse først.
+- **Følsomme oplysninger,** fx helbred, CPR-numre eller oplysninger om børn: stop, og få afklaret rammerne først.
+- **Tjenester uden for EU/EØS eller med ukendt placering:** markér det som et åbent forhold til vurdering.
+- **Muligt brud på persondatasikkerheden:** fortæl det straks, og følg organisationens procedure. Anmeldelse til Datatilsynet skal ske inden for 72 timer, når det er muligt.
+- **Dokumenter i sager:** modtager, sender eller danner løsningen sagsdokumenter, skal de journaliseres og bevares i organisationens ESDH- eller fagsystem. Løsningen må ikke være den eneste kopi.
+- **Løsningen bruger selv AI:** brugerne skal kunne se, at de interagerer med en AI, og nogle offentlige anvendelser er højrisiko efter AI-forordningen. Inddrag jura og den AI-ansvarlige.
+
+## Det må du ikke
+
+- Erklære en behandling lovlig eller godkende noget på organisationens vegne.
+- Kalde en markering i en fil for en godkendelse. Når en person selv har skrevet sit navn og tidspunkt, så skriv &quot;registreret lokalt af brugeren&quot;, ikke &quot;godkendt&quot;.
+- Kopiere rigtige personoplysninger ind i kode, tests, prompts, logs eller dokumentation.
+- Lægge aftaler, følsomme fund eller navne på borgere i et offentligt repository. Henvis i stedet til, hvor de administreres.
+</pre><p class="tool-type"><code>references/dataoversigt.md</code></p><pre># Skabelon til dataoversigt
+
+Oversigten beskriver dataforløbene, så en anden kan forstå dem og stille de rigtige spørgsmål. Den er ikke en juridisk vurdering. Skriv &quot;ukendt&quot;, når en oplysning mangler.
+
+```markdown
+# Data og leverandører · &lt;appens navn&gt;
+
+Sidst opdateret: &lt;dato&gt; af &lt;rolle&gt;
+
+## Kort fortalt
+&lt;Hvilke data løsningen bruger, til hvad, og om der er personoplysninger.&gt;
+
+## Data i udviklingen
+| Værktøj og model | Hvad sendes | Hvor behandles det | Træning | Kilde og kontroldato |
+|------------------|-------------|--------------------|---------|----------------------|
+| &lt;fx kodeværktøj og model&gt; | Kode, filer og samtale; kun opdigtede data | &lt;region eller ukendt&gt; | &lt;ja/nej/ukendt&gt; | &lt;link, dato&gt; |
+
+## Data i den færdige løsning
+| Data | Formål | Personoplysninger | Hvem har adgang | Slettefrist |
+|------|--------|-------------------|-----------------|-------------|
+
+## Tjenester og leverandører
+| Tjeneste | Rolle i løsningen | Data | Placering og underleverandører | Supportadgang | Logs og backup | Aftale | Kilde og kontroldato |
+|----------|-------------------|------|--------------------------------|---------------|----------------|--------|----------------------|
+
+## Åbne forhold
+| Id | Forhold | Berører | Ansvarlig rolle | Status | Næste handling |
+|----|---------|---------|-----------------|--------|----------------|
+| D-1 | &lt;konkret beskrivelse&gt; | &lt;data, tjeneste, funktion&gt; | &lt;rolle&gt; | Skal undersøges | &lt;handling&gt; |
+
+Status: Skal undersøges · Kræver handling · Afventer ansvarlig · Løst og kontrolleret · Ikke relevant med begrundelse
+
+## Beslutninger
+Tilføj nye linjer; ret ikke i tidligere beslutninger.
+
+| Dato | Beslutning | Omfang og version | Truffet af (rolle) | Registrering |
+|------|------------|-------------------|--------------------|--------------|
+| &lt;dato&gt; | &lt;beslutning&gt; | &lt;commit, miljø&gt; | &lt;rolle&gt; | Registreret lokalt af brugeren |
+```
+
+Skriv ingen rigtige personoplysninger, aftaletekster eller hemmeligheder i oversigten. Hvis projektet er offentligt, så hold oversigten på et overordnet niveau, og henvis til organisationens egne systemer for detaljer.
+</pre><p class="tool-type"><code>references/offentlige-krav.md</code></p><pre># Krav i danske offentlige organisationer
+
+Pejlemærker til, hvornår en fagperson skal inddrages. Det er ikke juridisk rådgivning, og organisationens egne procedurer går forud. Kilderne er kontrolleret 29. september 2026; kontrollér dem igen, før de bruges i en beslutning.
+
+## Personoplysninger
+
+- **Databeskyttelsesrådgiver (DPO):** offentlige myndigheder skal have en. Inddrag DPO&#39;en, før en løsning behandler personoplysninger i drift. (GDPR art. 37)
+- **Databehandleraftale:** skal være på plads med hver leverandør, der behandler personoplysninger for organisationen, fx hosting, SaaS og AI-tjenester. (GDPR art. 28)
+- **Fortegnelse:** organisationens fortegnelse over behandlingsaktiviteter skal opdateres ved en ny behandling. Systemejeren står typisk for det. (GDPR art. 30)
+- **Konsekvensanalyse (DPIA):** skal laves før en behandling, der sandsynligvis indebærer høj risiko. Datatilsynets liste nævner blandt andet ny teknologi som AI, profilering, automatiske afgørelser og følsomme oplysninger om sårbare personer. (GDPR art. 35)
+- **Brud på persondatasikkerheden:** skal anmeldes til Datatilsynet uden unødig forsinkelse og om muligt inden 72 timer. Sig det straks til brugeren, og følg organisationens procedure. (GDPR art. 33)
+- **Testdata:** brug fiktive eller anonymiserede data i udvikling og test. Produktionsdata i test kræver hjemmel, dataminimering, sletning og samme sikkerhed som i drift.
+
+## Leverandører uden for EU/EØS
+
+- Der er ikke fundet en generel dansk regel om, at data skal ligge i EU/EØS. Overførsler til tredjelande reguleres af GDPR kapitel V.
+- Fjernadgang eller support fra et land uden for EU/EØS tæller også som en overførsel.
+- Til USA kræves, at modtageren er certificeret under EU-US Data Privacy Framework, eller et andet overførselsgrundlag.
+
+## Sager og arkiv
+
+- **Journalisering:** dokumenter, der modtages eller sendes som led i sagsbehandling, skal journaliseres. Hensynet til åbenhed skal indgå, når nye it-løsninger udvikles. (Offentlighedsloven § 15 og § 1, stk. 2)
+- **Arkivering:** myndigheder skal bevare elektroniske arkivalier, så de kan afleveres, og må ikke slette data i it-systemer uden bemyndigelse. (Arkivloven § 8)
+- Modtager, sender eller danner appen sagsdokumenter som ansøgninger, henvendelser eller afgørelser, skal den kobles til organisationens ESDH- eller fagsystem. Appen må aldrig være den eneste kopi. Inddrag den journal- eller arkivansvarlige.
+
+## AI i løsningen
+
+- Brugere skal oplyses om, at de interagerer med et AI-system, fx en chatbot. En organisation, der selv udvikler og tager et AI-system i brug under eget navn, kan være udbyder efter AI-forordningen. (AI-forordningen art. 50)
+- Organisationen skal støtte personalets AI-færdigheder. (Art. 4)
+- Nogle offentlige anvendelser er højrisiko, fx vurdering af, om borgere er berettiget til offentlige ydelser. Her gælder skærpede krav og en konsekvensanalyse for grundlæggende rettigheder. Stop, og inddrag jura og ledelse. (Bilag III og art. 27)
+- Digitaliseringsstyrelsens guide til offentlige myndigheder om brug af kunstig intelligens beskriver blandt andet, at personoplysninger kun må bruges i vurderede og godkendte værktøjer.
+
+## Roller at inddrage
+
+| Forhold | Typisk rolle |
+|---------|--------------|
+| Personoplysninger, DPIA, overførsler | Databeskyttelsesrådgiver, jurist, systemejer |
+| Aftaler med leverandører | Indkøb, jurist, systemejer |
+| Sager, journalisering og arkiv | Journal- eller ESDH-ansvarlig, arkivansvarlig |
+| AI i løsningen | Digitaliserings- eller AI-ansvarlig, jurist, ledelse |
+
+## Kilder
+
+- GDPR: https://eur-lex.europa.eu/eli/reg/2016/679/oj
+- Datatilsynet om konsekvensanalyse: https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/konsekvensanalyse
+- Datatilsynet om testdata: https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/testdata-anvendelse-af-personoplysninger-ved-udvikling-og-test-af-it-systemer
+- Datatilsynet om tredjelandsoverførsler: https://www.datatilsynet.dk/internationalt/tredjelandsoverfoersler
+- Datatilsynet om overførsler til USA: https://www.datatilsynet.dk/internationalt/overfoersler-til-usa
+- Offentlighedsloven: https://www.retsinformation.dk/eli/lta/2020/145
+- Arkivloven: https://www.retsinformation.dk/eli/lta/2016/1201
+- AI-forordningen: https://eur-lex.europa.eu/eli/reg/2024/1689/oj
+- Digitaliseringsstyrelsens guide om kunstig intelligens: https://digst.dk/kunstig-intelligens/guides-til-brug-af-kunstig-intelligens/guide-offentlige-myndigheder/
+</pre></details>
+        <p class="sources">Kilder: <a href="https://www.datatilsynet.dk/regler-og-vejledning/cloud">Datatilsynet om cloud ↗</a> · <a href="https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/databeskyttelse-gennem-design-og-standardindstillinger">Databeskyttelse gennem design og standardindstillinger ↗</a> · <a href="https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/konsekvensanalyse">Konsekvensanalyse ↗</a> · <a href="https://eur-lex.europa.eu/eli/reg/2016/679/oj">GDPR ↗</a> · <a href="https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/testdata-anvendelse-af-personoplysninger-ved-udvikling-og-test-af-it-systemer">Datatilsynet om testdata ↗</a> · <a href="https://www.retsinformation.dk/eli/lta/2020/145">Offentlighedsloven ↗</a> · <a href="https://eur-lex.europa.eu/eli/reg/2024/1689/oj">AI-forordningen ↗</a></p>
+      </article>
+      <article class="tool-entry skill-entry" id="harness-noegler-og-afhaengigheder">
+        <p class="tool-type">05 · <code>harness-noegler-og-afhaengigheder</code></p>
+        <h3>Nøgler og afhængigheder</h3>
+        <p>Holder nøgler ude af kode, logs og Git og kontrollerer nye pakker, før de tilføjes.</p>
+        <dl class="faq">
+          <dt>Hvad gør den?</dt><dd>Sørger for, at API-nøgler, tokens og adgangskoder hverken ender i koden, i browserens filer, i logs eller i Git. Før en ny pakke tilføjes, forklarer agenten behovet, kontrollerer navn, licens og kendte sårbarheder og bruger projektets låsefil.</dd>
+          <dt>Hvornår bruges den?</dt><dd>Når løsningen skal forbindes til en anden tjeneste, når der skal bruges en nøgle, og når pakker tilføjes eller opdateres.</dd>
+          <dt>Hvad får du?</dt><dd>Konfiguration med navngivne miljøvariabler uden værdier, en begrundelse for hver ny pakke og en besked, hvis en hemmelighed er eksponeret.</dd>
+          <dt>Hvad gør den ikke?</dt><dd>Den finder ikke alle hemmeligheder automatisk og erstatter ikke en egentlig hemmelighedsscanning eller udskiftning af en lækket nøgle.</dd>
+        </dl>
+        <details><summary>Se instruktionen til agenten</summary><pre>---
+name: harness-noegler-og-afhaengigheder
+description: Beskytter API-nøgler, tokens og adgangskoder og kontrollerer nye pakker og integrationer, før de tilføjes. Holder hemmeligheder ude af kode, logs, browserfiler og Git og vurderer nødvendighed, vedligeholdelse, licens og kendte sårbarheder ved afhængigheder. Brug den ved integrationer, konfiguration, nye pakker og opdateringer af pakker.
+---
+
+# Nøgler og afhængigheder
+
+## Hemmeligheder
+
+- Læs, udskriv eller videresend aldrig værdier fra `.env`, nøglefiler, credentials-filer eller nøglelagre. Arbejd med navnene på variablerne.
+- Skriv aldrig nøgler, tokens eller adgangskoder i kode, chat, logs, tests, eksempler eller commits. Brug tydelige pladsholdere som `DIN_NOEGLE_HER`.
+- Dokumentér nødvendige miljøvariabler med navn og formål i fx `.env.example`, uden værdier.
+- `.env` og lignende filer skal stå i `.gitignore`, før de oprettes.
+- En værdi i browserens kode er offentlig. Variabler med præfikser som `VITE_`, `NEXT_PUBLIC_` eller `PUBLIC_` bliver indlejret i de filer, brugeren henter. Serverhemmeligheder hører til på serveren.
+- Bed brugeren lægge hemmeligheder i værktøjets eller hostingtjenestens sikre indstillinger. Bed aldrig om at få dem indsat i samtalen.
+
+### Hvis en hemmelighed er eksponeret
+
+1. Stop den berørte del af arbejdet, og gengiv ikke værdien.
+2. Fortæl brugeren, hvor eksponeringen skete: fil, commit, log, skærmbillede eller besked.
+3. Anbefal at tilbagekalde og udskifte nøglen hos udbyderen. At slette filen fjerner ikke tidligere eksponering, heller ikke fra Git-historikken.
+
+## Nye afhængigheder
+
+Før du tilføjer en pakke, så forklar kort:
+
+- **Behov:** hvad pakken løser, og om det kan løses med det, projektet allerede har.
+- **Pakkens tilstand:** vedligeholdelse, udbredelse og om det er den rigtige pakke. Kontrollér det præcise navn; stavefejl i pakkenavne bruges til ondsindede kopier.
+- **Licens:** at licensen passer til projektet og organisationens regler.
+- **Sikkerhed:** kendte sårbarheder, fx med `npm audit` eller projektets tilsvarende værktøj.
+
+Brug projektets pakkehåndtering, og bevar låsefilen. Brug `npm ci` eller tilsvarende i CI og ved gentagelige installationer. Kør ikke ukendte installationsscripts, og installer intet globalt uden aftale.
+
+## Opdateringer
+
+- Opdatér i små skridt, og læs udgivelsesnoter for større versionsspring.
+- Kør tests og den vigtigste brugerrejse efter opdateringen.
+- Fjern pakker, der ikke længere bruges.
+
+## Integrationer til andre tjenester
+
+- Brug den mindst mulige adgang: et token med præcis de rettigheder, opgaven kræver, og gerne med udløbsdato.
+- Placér nøglen på serveren, og kald tjenesten derfra, ikke direkte fra browseren.
+- Håndter fejl, timeout og begrænsninger i antal kald.
+- En ny tjeneste er også et nyt dataforløb. Brug `harness-data-og-leverandoerer`, før der sendes rigtige data.
+</pre></details>
+        <p class="sources">Kilder: <a href="https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html">OWASP Secrets Management Cheat Sheet ↗</a> · <a href="https://vite.dev/guide/env-and-mode">Vite om miljøvariabler i browserkode ↗</a> · <a href="https://docs.npmjs.com/cli/v11/commands/npm-ci/">npm ci ↗</a></p>
+      </article>
+      <article class="tool-entry skill-entry" id="harness-design-og-tilgaengelighed">
+        <p class="tool-type">06 · <code>harness-design-og-tilgaengelighed</code></p>
+        <h3>Design og tilgængelighed</h3>
+        <p>Bygger brugerfladen efter godkendte designreferencer og afprøver tilgængelighed med både værktøjer og hænder.</p>
+        <dl class="faq">
+          <dt>Hvad gør den?</dt><dd>Hjælper med et sammenhængende design ud fra kommunens designsystem eller dine referencer og kontrollerer tilgængelighed: tastatur, fokus, kontrast, fejlbeskeder, overskrifter og små skærme. Den bygger efter WCAG på niveau AA og minder om tilgængelighedserklæringen, som offentlige websteder og apps skal have.</dd>
+          <dt>Hvornår bruges den?</dt><dd>Når en side, formular eller komponent bygges eller ændres, og før en offentlig side udgives.</dd>
+          <dt>Hvad får du?</dt><dd>En brugerflade, der er set i browseren på computer- og mobilbredde, og en liste over, hvad der er kontrolleret, og hvad der mangler.</dd>
+          <dt>Hvad gør den ikke?</dt><dd>Den erklærer ikke løsningen tilgængelig. Et automatisk værktøj kan ikke alene afgøre, om en side er tilgængelig.</dd>
+        </dl>
+        <details><summary>Se instruktionen til agenten</summary><pre>---
+name: harness-design-og-tilgaengelighed
+description: Bygger brugerflader ud fra organisationens designsystem eller godkendte referencer og afprøver tilgængelighed med både værktøjer og hænder. Kontrollerer tastatur, fokus, kontrast, formularer, fejlbeskeder, overskrifter og små skærme og ser resultatet i browseren. Brug den, når en side, formular eller komponent bygges eller ændres, og før en offentlig side udgives.
+---
+
+# Design og tilgængelighed
+
+En brugerflade er først færdig, når den er set i browseren og kan bruges med tastatur, skærmlæser og på en lille skærm.
+
+## Design
+
+1. Brug organisationens designsystem og designguide først. Læs de referencer, brugeren har valgt, og angiv, hvad du bygger på. Opfind ikke indhold fra sider, du ikke kunne læse.
+2. Design det første sammenhængende brugerforløb: layout, typografi, farver, navigation og realistisk, opdigtet dansk eksempelindhold.
+3. Tænk mobil først, og tag tomme tilstande, fejltilstande og indlæsning med.
+4. Skriv brugerfladetekster i et klart, konkret dansk. Knapper siger, hvad der sker.
+5. Kopiér ikke logoer, billeder eller tekster med uafklarede rettigheder.
+6. Undgå dekorative dashboards og generiske marketingtekster, som ikke hjælper opgaven.
+
+## Tilgængelighed
+
+Danske offentlige organers websteder og apps skal overholde standarden EN 301 549, som i praksis betyder WCAG 2.1 på niveau AA. Byg efter WCAG 2.2 AA, som den nyeste udgave af standarden bygger på. Hvert websted og hver app skal have en tilgængelighedserklæring i Digitaliseringsstyrelsens WAS-tool, og den skal opdateres ved ændringer og mindst én gang om året. Brug [tjeklisten](references/tilgaengelighed.md).
+
+Kontrollér altid i hånden:
+
+- Hele forløbet kan gennemføres med tastatur, og fokus er synligt og følger en logisk rækkefølge.
+- Formularfelter har synlige labels, og fejlbeskeder forklarer problemet ved det rigtige felt.
+- Overskrifter følger en logisk struktur, og siden har `lang=&quot;da&quot;`.
+- Tekst har tilstrækkelig kontrast, og information bæres ikke af farve alene.
+- Siden kan forstørres til 200 procent og bruges på en smal skærm uden vandret rulning.
+- Billeder har meningsfulde alternative tekster, og dekorative billeder skjules for skærmlæsere.
+
+Kør også et automatisk værktøj som axe eller Lighthouse, hvis det er muligt. Et automatisk værktøj finder kun en del af problemerne og kan ikke alene afgøre, om en side er tilgængelig.
+
+## Se resultatet
+
+Åbn siden i browseren på computer- og mobilbredde. Tag skærmbilleder, hvis værktøjet kan, og sammenlign med referencerne. Påstå ikke, at brugeren har godkendt designet.
+
+## Aflevering
+
+Skriv, hvad der er kontrolleret automatisk, hvad der er kontrolleret i hånden, og hvilke kendte problemer der er tilbage. Kald ikke løsningen tilgængelig på baggrund af en automatisk scanning.
+</pre><p class="tool-type"><code>references/tilgaengelighed.md</code></p><pre># Tjekliste til tilgængelighed
+
+Et udvalg af de vigtigste kontroller efter WCAG på niveau AA til små webapps. Skriv for hvert punkt: i orden, fund eller ikke relevant.
+
+## Tastatur og fokus
+
+- [ ] Alle funktioner kan bruges med tastatur, uden fælder, hvor fokus sidder fast.
+- [ ] Fokus er tydeligt synligt og skjules ikke bag andre elementer.
+- [ ] Fokusrækkefølgen følger den visuelle rækkefølge.
+- [ ] Dialoger flytter fokus ind, kan lukkes med Escape og sender fokus tilbage.
+- [ ] Der er et &quot;gå til indhold&quot;-link på sider med gentagen navigation.
+
+## Struktur og sprog
+
+- [ ] Siden har `lang=&quot;da&quot;` og en beskrivende titel.
+- [ ] Overskrifter følger en logisk rækkefølge uden spring.
+- [ ] Knapper er `&lt;button&gt;`, og links er `&lt;a&gt;`. Klikbare `&lt;div&gt;`-elementer bruges ikke.
+- [ ] Landmarks som `&lt;header&gt;`, `&lt;main&gt;` og `&lt;nav&gt;` bruges.
+
+## Formularer og fejl
+
+- [ ] Hvert felt har en synlig label, der er koblet til feltet.
+- [ ] Påkrævede felter er markeret i tekst, ikke kun med farve eller stjerne.
+- [ ] Fejlbeskeder står ved feltet, forklarer problemet og annonceres for skærmlæsere.
+- [ ] Brugeren kan rette og indsende igen uden at miste det indtastede.
+
+## Syn og visning
+
+- [ ] Almindelig tekst har en kontrast på mindst 4,5:1 og stor tekst mindst 3:1.
+- [ ] Knapper, felter og fokusmarkeringer har en kontrast på mindst 3:1 mod omgivelserne.
+- [ ] Information bæres ikke af farve alene.
+- [ ] Siden kan forstørres til 200 procent, og indholdet fungerer ved 320 CSS-pixels bredde uden vandret rulning.
+- [ ] Bevægelse og animation kan undgås, og intet blinker mere end tre gange i sekundet.
+
+## Billeder og medier
+
+- [ ] Meningsfulde billeder har en alternativ tekst, der dækker indholdet.
+- [ ] Dekorative billeder har tom alternativ tekst.
+- [ ] Video har undertekster, og lyd har en tekstversion.
+
+## Afprøvning
+
+- [ ] Automatisk kontrol med fx axe eller Lighthouse er kørt, og fundene er vurderet.
+- [ ] Hele brugerforløbet er gennemført med tastatur alene.
+- [ ] En skærmlæser er brugt på de vigtigste sider, fx VoiceOver på Mac eller NVDA på Windows.
+- [ ] Siden er set på en smal mobilbredde.
+
+## Offentlige websteder
+
+- [ ] Tilgængelighedserklæringen er oprettet eller opdateret i Digitaliseringsstyrelsens WAS-tool og linket fra sidefoden, og det er aftalt, hvem i organisationen der vedligeholder den.
+- [ ] Undtagelser, fx indhold fra tredjepart, og eventuelle fravigelser er begrundet i erklæringen.
+
+Kilder, kontrolleret 29. september 2026: lov om tilgængelighed af offentlige organers websteder og mobilapplikationer (https://www.retsinformation.dk/eli/lta/2018/692), bekendtgørelsen om standarden (https://www.retsinformation.dk/eli/lta/2021/2180) og Digitaliseringsstyrelsen om tilgængelighedserklæringen (https://digst.dk/digital-inklusion/webtilgaengelighed/om-tilgaengelighedserklaeringen/).
+</pre></details>
+        <p class="sources">Kilder: <a href="https://www.retsinformation.dk/eli/lta/2018/692">Lov om tilgængelighed af offentlige organers websteder og mobilapplikationer ↗</a> · <a href="https://digst.dk/digital-inklusion/webtilgaengelighed/om-tilgaengelighedserklaeringen/">Digitaliseringsstyrelsen om tilgængelighedserklæringen ↗</a> · <a href="https://www.w3.org/WAI/test-evaluate/">W3C om evaluering af tilgængelighed ↗</a> · <a href="https://www.w3.org/TR/WCAG22/">WCAG 2.2 ↗</a></p>
+      </article>
+      <article class="tool-entry skill-entry" id="harness-kodestil">
+        <p class="tool-type">07 · <code>harness-kodestil</code></p>
+        <h3>Kodestil og vedligeholdelse</h3>
+        <p>Holder koden læsbar for andre med klare navne, enkle funktioner og kommentarer, der forklarer hvorfor.</p>
+        <dl class="faq">
+          <dt>Hvad gør den?</dt><dd>Får agenten til at følge projektets konventioner og skrive kode, en anden udvikler kan overtage: forståelige navne, enkle funktioner, ingen død kode og kommentarer, der forklarer begrundelser frem for at gentage koden. I nye projekter foreslås engelske kodenavne og dansk brugerflade.</dd>
+          <dt>Hvornår bruges den?</dt><dd>Når der skrives eller ændres kode, og når en ændring gennemgås før et commit.</dd>
+          <dt>Hvad får du?</dt><dd>Kode, der ligner resten af projektet, og en kort gennemgang af ændringen med eventuelle bevidste afvigelser.</dd>
+          <dt>Hvad gør den ikke?</dt><dd>Den indfører ikke en ny formatter eller stil i et eksisterende projekt uden aftale.</dd>
+        </dl>
+        <details><summary>Se instruktionen til agenten</summary><pre>---
+name: harness-kodestil
+description: Holder koden læsbar og til at overtage for en anden udvikler. Følger projektets konventioner, giver klare navne og kommentarer, der forklarer hvorfor, og holder kompleksiteten nede. Brug den, når der skrives eller ændres kode, og når en ændring gennemgås før et commit.
+---
+
+# Kodestil og vedligeholdelse
+
+Koden skal kunne læses, rettes og overtages af en anden udvikler uden AI-værktøjet. Projektets eksisterende konventioner går forud for alt nedenfor.
+
+## Følg projektet
+
+- Brug projektets formatter, linter, mappestruktur og navngivning. Kør dem, hvis de findes, og ret de fund, din ændring skaber.
+- Skriv ny kode, så den ligner koden omkring den. Indfør ikke en ny stil i én fil.
+- Bevar låsefiler og den valgte pakkehåndtering.
+
+## Standardvalg i nye projekter
+
+- Kodenavne på engelsk og brugerfladetekster på dansk. Oversæt ikke fagbegreber, hvis oversættelsen bliver forkert. Et dansk domæneord kan være det mest præcise navn.
+- Navne skal vise formål og om nødvendigt enhed: `timeoutMs`, `maxAttendees`, `isArchived`.
+- TypeScript med `strict` slået til i nye TypeScript-projekter. Typer beskytter under udviklingen, men erstatter ikke validering af data udefra.
+- Valider input ved systemets grænser: formularer, API-kald, filer og data fra andre tjenester.
+
+## Hold det enkelt
+
+- Én funktion eller komponent skal have én tydelig opgave. Del op, når en funktion bliver svær at beskrive i én sætning.
+- Byg ikke abstraktioner til behov, der ikke findes endnu. Tre ens linjer er ofte bedre end en for tidlig fællesfunktion.
+- Slet død kode i stedet for at kommentere den ud. Git husker den gamle version.
+- Undgå magiske tal og tekster. Giv dem et navn, eller saml dem i konfiguration.
+- Håndter fejl, hvor de kan håndteres. Skjul dem ikke med tomme `catch`-blokke.
+- Fejlbeskeder til brugeren skal forklare problemet og næste mulige handling på dansk. Logbeskeder må ikke indeholde personoplysninger, nøgler eller adgangskoder.
+
+## Kommentarer
+
+- Forklar hvorfor, kontrakter og begrænsninger: en forretningsregel, et krav fra en ekstern tjeneste, en kendt fejl i en afhængighed.
+- Gentag ikke det, koden allerede siger. `i++ // læg én til` hjælper ingen.
+- Hold kommentarer sande. Ret eller slet dem, når koden ændres.
+- Offentlige funktioner og moduler i fælles kode kan have en kort beskrivelse af formål, input og output.
+
+## Før du afleverer
+
+Gennemgå din egen ændring som en kollega ville:
+
+1. Løser ændringen opgaven og kun den?
+2. Er der unødig kompleksitet, gentagelser eller døde grene?
+3. Er navne og kommentarer forståelige for en, der ikke har set samtalen?
+4. Er fejltilfælde håndteret, og er der tests for det, der kan gå galt?
+5. Er dokumentationen opdateret, hvis adfærd, opsætning eller kommandoer er ændret?
+
+Nævn bevidste afvigelser fra konventionerne og begrundelsen for dem.
+</pre></details>
+        <p class="sources">Kilder: <a href="https://google.github.io/eng-practices/review/reviewer/looking-for.html">Google om kodegennemgang ↗</a> · <a href="https://www.typescriptlang.org/tsconfig/strict">TypeScript strict ↗</a></p>
+      </article>
+      <article class="tool-entry skill-entry" id="harness-afproevning-og-fejlretning">
+        <p class="tool-type">08 · <code>harness-afproevning-og-fejlretning</code></p>
+        <h3>Afprøvning og fejlretning</h3>
+        <p>Viser med faktisk afprøvning, at en ændring virker, og rapporterer præcist, hvor langt afprøvningen er nået.</p>
+        <dl class="faq">
+          <dt>Hvad gør den?</dt><dd>Agenten vælger relevante tests, reproducerer fejl før rettelsen og afprøver den faktiske brugerrejse. Den skelner mellem skrevet, unit-testet, afprøvet på rigtigt materiale og i drift og observeret og påstår aldrig mere, end den har vist.</dd>
+          <dt>Hvornår bruges den?</dt><dd>Ved enhver kodeændring, når noget ikke virker, og før agenten melder en opgave færdig.</dd>
+          <dt>Hvad får du?</dt><dd>En aflevering med de kørte kontroller og deres resultat, manuelle trin du selv kan prøve, og det der ikke er afprøvet.</dd>
+          <dt>Hvad gør den ikke?</dt><dd>Den gør ikke en høj testdækning til et mål i sig selv og retter ikke tests, så de passer til forkert kode.</dd>
+        </dl>
+        <details><summary>Se instruktionen til agenten</summary><pre>---
+name: harness-afproevning-og-fejlretning
+description: Viser med faktisk afprøvning, at en ændring virker, og finder årsagen til fejl, før de rettes. Vælger relevante tests, reproducerer fejl, afprøver brugerrejsen og rapporterer præcist, hvor langt afprøvningen er nået. Brug den ved enhver kodeændring, ved fejlretning og før der meldes færdig.
+---
+
+# Afprøvning og fejlretning
+
+En ændring er ikke færdig, fordi koden er skrevet. Den er færdig, når der er vist, at den virker, og brugeren ved præcis, hvad der er vist.
+
+## Rapportér evidensen præcist
+
+Brug disse trin, og påstå aldrig et højere trin, end evidensen understøtter:
+
+1. **Skrevet:** koden findes, men er ikke kørt.
+2. **Unit-testet:** automatiske tests af de enkelte dele består.
+3. **Afprøvet på rigtigt materiale:** den faktiske brugerrejse er gennemført i appen, med rigtige filer, rigtig browser eller rigtig tjeneste.
+4. **I drift og observeret:** den udgivne version er kontrolleret på sin rigtige adresse.
+
+&quot;Testene består&quot; er trin 2 og siger intet om, hvorvidt funktionen er koblet rigtigt sammen. Hvis du ikke kan køre en kontrol, så sig det og forklar hvorfor.
+
+## Vælg afprøvningen efter ændringen
+
+- **Regler og databehandling:** unit-tests af beregninger, validering og filtrering.
+- **Systemgrænser:** integrationstests mod API, database eller fil, gerne med en lokal testudgave af tjenesten.
+- **Brugerrejser:** gennemfør den vigtigste handling i browseren eller appen, også på mobilbredde, når brugerfladen er ændret.
+- **Fejltilfælde:** tom liste, ugyldigt input, manglende adgang, afbrudt forbindelse og langsom tjeneste, når ændringen berører dem.
+
+Følg projektets teststrategi og kommandoer. Ingen procentgrænse for testdækning kan stå alene som kvalitetsmål. TDD er en mulig arbejdsform, ikke et krav til hver tekst- eller layoutændring.
+
+## Ret fejl i den rigtige rækkefølge
+
+1. Læs hele fejlbeskeden og loggen. Notér, hvad der forventes, og hvad der sker.
+2. Reproducér fejlen med færrest mulige trin. Skriv en test, der fejler af den rigtige grund, når det er praktisk muligt.
+3. Opstil en forklaring, og afprøv den. Ændr én ting ad gangen.
+4. Ret årsagen, ikke symptomet. Skjul ikke fejlen med et tomt `catch`, en længere timeout eller en slået-fra test.
+5. Kør reproduktionen og de relevante tests igen. Behold testen som regressionstest.
+
+## Snyd ikke
+
+- Ret ikke en test, så den passer til forkert kode. Hvis testen er forkert, så forklar hvorfor, før du ændrer den.
+- Hardcod ikke forventede svar, og spring ikke tests over for at få en grøn kørsel.
+- Opfind aldrig testresultater. Skriv de kommandoer, du har kørt, og resultatet.
+
+## Aflevering
+
+Afslut med:
+
+- Hvad der er ændret.
+- Hvilke kontroller der er kørt, med kommando og resultat.
+- Hvilke manuelle trin brugeren selv bør prøve.
+- Hvad der ikke er afprøvet, og hvorfor.
+</pre></details>
+        <p class="sources">Kilder: <a href="https://csrc.nist.gov/pubs/sp/800/218/final">NIST SSDF 1.1 ↗</a></p>
+      </article>
+      <article class="tool-entry skill-entry" id="harness-git-og-samarbejde">
+        <p class="tool-type">09 · <code>harness-git-og-samarbejde</code></p>
+        <h3>Git og samarbejde</h3>
+        <p>Skelner mellem gem, checkpoint, push, pull request og udgivelse og lader brugeren styre historikken.</p>
+        <dl class="faq">
+          <dt>Hvad gør den?</dt><dd>Forklarer og følger forskellen på at gemme en fil, lave et checkpoint, pushe, åbne en pull request og udgive. Agenten foreslår sammenhængende versioner med en præcis commit-besked, men laver kun Git-handlinger, du udtrykkeligt beder om. Branches vælges efter, om du arbejder alene eller i et team.</dd>
+          <dt>Hvornår bruges den?</dt><dd>Ved milepæle, før et commit eller push og når arbejdet skal deles med andre.</dd>
+          <dt>Hvad får du?</dt><dd>En gennemgået ændring med kun de tilsigtede filer, et forslag til commit-besked og en anbefaling til branches, der passer til samarbejdet.</dd>
+          <dt>Hvad gør den ikke?</dt><dd>Den laver ikke force-push, rebase eller oprydning i historikken og ændrer ikke Git-identitet eller branchbeskyttelse.</dd>
+        </dl>
+        <details><summary>Se instruktionen til agenten</summary><pre>---
+name: harness-git-og-samarbejde
+description: Håndterer Git, så brugeren bevarer kontrollen over historikken. Skelner mellem at gemme filer, lave et checkpoint, pushe, åbne en pull request og udgive, foreslår sammenhængende versioner med en præcis commit-besked og vælger branches efter samarbejdsformen. Brug den ved milepæle, før commit eller push og når arbejdet skal deles med andre.
+---
+
+# Git og samarbejde
+
+Brugeren ejer historikken. Du hjælper med at holde den ren, forståelig og sikker, men du laver kun Git-handlinger, som brugeren udtrykkeligt har bedt om.
+
+## Fem forskellige handlinger
+
+1. **Gem fil:** beskytter kladden på computeren. Det er ikke en version.
+2. **Checkpoint (commit):** en lokal, sammenhængende version, der kan gendannes.
+3. **Push:** sender versionerne til en fjernkopi, fx GitHub, GitLab eller Codeberg.
+4. **Pull request:** beder andre gennemgå en ændring, før den kommer ind i hovedgrenen.
+5. **Udgivelse:** gør en bestemt version tilgængelig for brugere. Det er en særskilt beslutning; brug `harness-udgivelse-og-gendannelse`.
+
+Lav aldrig commit, push, merge, rebase, nye branches, tags eller pull requests uden en udtrykkelig anmodning om netop den handling. &quot;Gør det færdigt&quot; eller &quot;send det af sted&quot; er ikke en sådan anmodning. Spørg, hvis du er i tvivl.
+
+## Checkpoints ved milepæle
+
+- Foreslå et checkpoint, når en afgrænset opgave er færdig og afprøvet. En prompt er ikke en milepæl; én opgave kan kræve flere prompts, og en afbrudt opgave kan efterlade halve ændringer.
+- Før du foreslår et commit: kør `git status` og `git diff`, og kontrollér, at kun de tilsigtede filer er med, og at der ingen hemmeligheder, lokale indstillinger eller store genererede filer er.
+- Tilføj filer enkeltvis eller efter mappe. Brug ikke `git add .` uden at have set alt, der kommer med.
+- Afslut milepælen med en oversigt over ændringerne, den faktiske afprøvning, kendte begrænsninger og et forslag til commit-besked.
+
+## Commit-beskeder
+
+- Kort, i bydeform og om den faktiske ændring: `tilføj filter efter antal pladser`.
+- Følg projektets sprog og form. Mange projekter bruger et præfiks som `feat:`, `fix:`, `docs:`, `test:`, `refactor:` eller `ci:`.
+- Én sammenhængende ændring pr. commit. Bland ikke oprydning med ny funktionalitet, hvis det kan undgås.
+- Tilføj ikke modelnavne, medforfattere eller &quot;genereret af&quot; i beskeden, medmindre projektet selv ønsker det.
+
+## Branches efter samarbejdsform
+
+- **Alene på et prøveprojekt:** en enkel historik på hovedgrenen kan være tilstrækkelig.
+- **Flere udviklere:** beskyt hovedgrenen, lav korte opgavegrene og brug pull requests med automatiske kontroller og review.
+- **Parallelt arbejde:** worktrees giver separate arbejdsmapper til forskellige branches. Brug dem kun, når der faktisk arbejdes parallelt. De isolerer ikke processer, netværk eller hemmeligheder.
+- **Miljøer:** test og produktion bør pege på kendte commits eller byggede versioner, ikke på permanente `test`- og `prod`-branches.
+
+Et eksisterende projekt beholder sin egen proces. Foreslå ikke en ny model uden en grund.
+
+## Aldrig uden særskilt aftale
+
+- Force-push, rebase af delte branches eller omskrivning af historik, der allerede er delt.
+- `git reset --hard`, `git clean` eller sletning af branches som oprydning.
+- Ændring af Git-identitet, remotes, hooks eller branchbeskyttelse.
+
+## Hemmeligheder i historikken
+
+En `.gitignore` fjerner ikke filer, der allerede er sporet. Hvis en nøgle er committet, så stop, fortæl brugeren hvor, og anbefal at tilbagekalde og udskifte nøglen. Det er ikke nok at slette filen i et nyt commit, fordi nøglen stadig findes i historikken. Omskrivning af historik kræver brugerens beslutning.
+</pre></details>
+        <p class="sources">Kilder: <a href="https://docs.github.com/en/get-started/using-github/github-flow">GitHub flow ↗</a> · <a href="https://git-scm.com/docs/git-worktree">Git worktree ↗</a> · <a href="https://www.conventionalcommits.org/en/v1.0.0/">Conventional Commits ↗</a></p>
+      </article>
+      <article class="tool-entry skill-entry" id="harness-sikkerhedsgennemgang">
+        <p class="tool-type">10 · <code>harness-sikkerhedsgennemgang</code></p>
+        <h3>Sikkerhedsgennemgang</h3>
+        <p>Gennemgår adgang, input, hemmeligheder og dataadskillelse og registrerer konkrete fund før drift.</p>
+        <dl class="faq">
+          <dt>Hvad gør den?</dt><dd>Agenten gennemgår de dele, ændringen berører, med en tjekliste til små webapps: adgangskontrol på serveren, validering og escaping, hemmeligheder, afhængigheder, logning og adskillelse af brugeres data. Fund registreres med alvor og næste handling.</dd>
+          <dt>Hvornår bruges den?</dt><dd>Når en ændring berører login, adgang, formularer, filupload, data eller eksterne tjenester, og altid før en app sættes i drift.</dd>
+          <dt>Hvad får du?</dt><dd>En liste over fund med sted, alvor, forslag og status samt en beskrivelse af, hvad der er kontrolleret, og hvad der ikke er.</dd>
+          <dt>Hvad gør den ikke?</dt><dd>Den gør ikke appen sikker og er ikke en penetrationstest. Fravær af fund er ikke bevis for fravær af problemer.</dd>
+        </dl>
+        <details><summary>Se instruktionen til agenten</summary><pre>---
+name: harness-sikkerhedsgennemgang
+description: Gennemgår sikkerheden, når en ændring berører login, adgang, input, filupload, data eller eksterne tjenester, og altid før en app sættes i drift. Kontrollerer adgangskontrol på serveren, validering og escaping, hemmeligheder, afhængigheder, logning og adskillelse af brugeres data og registrerer konkrete fund med alvor og næste handling. Brug den ved sikkerhedsrelevante ændringer og før udgivelse.
+---
+
+# Sikkerhedsgennemgang
+
+En gennemgang finder konkrete fund. Den gør ikke en app sikker, og fravær af fund er ikke bevis for fravær af problemer. Beskriv præcist, hvad der er kontrolleret.
+
+## Hvornår
+
+- Ændringen berører login, roller, adgang, formularer, filupload, API&#39;er, databaser, eksterne tjenester eller personoplysninger.
+- Før en app udgives første gang og før større udgivelser.
+- Når en afhængighed med kendte sårbarheder opdages.
+
+## Fremgangsmåde
+
+1. Tegn kort, hvor data kommer ind, hvor de gemmes, og hvor de sendes hen. Marker grænserne mellem browser, server, database og andre tjenester.
+2. Gennemgå punkterne i [tjeklisten](references/tjekliste.md), der er relevante for ændringen. Spring ikke adgangskontrol og input over.
+3. Afprøv de vigtigste fund i praksis, fx at en bruger uden adgang faktisk bliver afvist på serveren, og at indtastet HTML ikke bliver udført.
+4. Registrér hvert fund med sted, beskrivelse, alvor, forslag til rettelse og status. Brug projektets register, hvis det findes; ellers `docs/sikkerhed.md`.
+5. Ret de fund, der hører til opgaven, og afprøv rettelsen. Andre fund foreslås som særskilte opgaver.
+
+## De vigtigste regler
+
+- **Adgangskontrol på serveren ved hver forespørgsel.** En skjult knap eller en kontrol i browseren er ikke adgangskontrol. Kontrollér også, at en bruger kun kan hente sine egne objekter, når id&#39;et ændres i adressen.
+- **Brug etableret login.** Byg ikke eget system til adgangskoder eller kryptering. Brug organisationens identitetsløsning eller en anerkendt tjeneste.
+- **Valider input, og escape output.** Brug ikke `innerHTML` eller tilsvarende med brugerinput. Brug parameteriserede databaseforespørgsler.
+- **Hemmeligheder på serveren.** Ingen nøgler i browserens kode, i Git eller i logs.
+- **Adskil data.** Brugere og organisationer må ikke kunne se hinandens data. Afprøv det med to testbrugere.
+- **Sikre standarder.** HTTPS, sikre cookies, begrænsning af antal forsøg ved login og fejlbeskeder uden interne detaljer.
+
+## Apps, der selv bruger en AI-model
+
+Behandl modellens svar som utroværdigt input: escape det, og lad det ikke alene udføre handlinger. Tekst fra brugere, dokumenter og websider kan indeholde instruktioner til modellen. Send ikke hemmeligheder eller unødvendige personoplysninger i prompten.
+
+## Stop og inddrag andre
+
+- Løsningen skal i drift med personoplysninger, login eller integration til kommunens systemer: inddrag organisationens informationssikkerhedsfunktion, før den udgives. Kommuner kan være omfattet af NIS2-loven, som har korte frister for varsling om væsentlige hændelser.
+- Du finder en eksponeret hemmelighed eller et fund, der kan være et sikkerhedsbrud: stop, fortæl det straks, og følg `harness-noegler-og-afhaengigheder`. Et brud på persondatasikkerheden skal håndteres efter organisationens procedure.
+</pre><p class="tool-type"><code>references/tjekliste.md</code></p><pre># Tjekliste til sikkerhedsgennemgang
+
+Vælg de afsnit, ændringen berører. Skriv for hvert punkt: kontrolleret og i orden, fund, eller ikke relevant med kort begrundelse.
+
+## Adgang og login
+
+- [ ] Hver beskyttet side og API-handling kontrollerer adgang på serveren, også ved direkte kald uden brugerfladen.
+- [ ] Adgang nægtes som udgangspunkt; kun det tilladte åbnes.
+- [ ] En bruger kan ikke hente eller ændre andres objekter ved at ændre et id i adressen eller forespørgslen.
+- [ ] Roller og administratorfunktioner er adskilt og afprøvet med en almindelig testbruger.
+- [ ] Login bruger organisationens identitetsløsning eller en anerkendt tjeneste; ingen egne adgangskoder eller egen kryptering.
+- [ ] Sessioner udløber, logout virker, og cookies er `Secure`, `HttpOnly` og har en passende `SameSite`.
+- [ ] Formularer, der ændrer data med cookie-baseret login, er beskyttet mod CSRF.
+- [ ] Antal loginforsøg og tunge handlinger er begrænset.
+
+## Input og output
+
+- [ ] Alt input valideres på serveren: type, længde, format og tilladte værdier.
+- [ ] Output escapes efter sammenhæng. Brugerinput sættes ikke ind med `innerHTML`, `dangerouslySetInnerHTML` eller tilsvarende.
+- [ ] Databaseforespørgsler er parameteriserede. Ingen sammensatte SQL-strenge med input.
+- [ ] Filupload begrænser type og størrelse, gemmes uden for webroden og vises ikke som HTML.
+- [ ] Adresser, som serveren selv henter, er begrænset til kendte mål.
+
+## Data og hemmeligheder
+
+- [ ] Ingen nøgler, tokens eller adgangskoder i kode, Git-historik, browserfiler eller logs.
+- [ ] Data er adskilt mellem brugere og organisationer og afprøvet med to testbrugere.
+- [ ] Kun nødvendige data gemmes, og der er en slettefrist.
+- [ ] Logs registrerer sikkerhedshændelser uden personoplysninger eller hemmeligheder.
+- [ ] Sikkerhedskopier findes, og gendannelse er afprøvet eller planlagt.
+
+## Konfiguration og drift
+
+- [ ] HTTPS overalt; HTTP viderestilles.
+- [ ] Sikkerhedsheadere er sat, fx `Content-Security-Policy`, `Strict-Transport-Security` og `X-Content-Type-Options`.
+- [ ] Fejlsider viser ikke stakspor, interne stier eller versionsnumre.
+- [ ] Test- og udviklingsfunktioner er slået fra i drift.
+- [ ] Afhængigheder er kontrolleret for kendte sårbarheder, og låsefilen er committet.
+
+## Apps med en AI-model
+
+- [ ] Modellens svar behandles som utroværdigt input og escapes.
+- [ ] Modellen kan ikke alene udføre ændringer, betalinger eller afsendelser uden kontrol.
+- [ ] Prompten indeholder ingen hemmeligheder og kun nødvendige data.
+- [ ] Brugerne kan se, at de interagerer med en AI, hvor det er relevant.
+
+## Registrér fund
+
+| Fund | Sted | Alvor | Forslag | Status |
+|------|------|-------|---------|--------|
+| | | Kritisk / Høj / Middel / Lav | | Skal undersøges / Kræver handling / Afventer ansvarlig / Løst og kontrolleret / Ikke relevant med begrundelse |
+
+Tjeklisten bygger på de gennemgående områder i OWASP ASVS og OWASP Top 10. Den er et udvalg til små webapps og erstatter ikke en fuld sikkerhedsvurdering.
+</pre></details>
+        <p class="sources">Kilder: <a href="https://owasp.org/www-project-application-security-verification-standard/">OWASP ASVS ↗</a> · <a href="https://owasp.org/Top10/">OWASP Top 10 ↗</a> · <a href="https://genai.owasp.org/llm-top-10/">OWASP Top 10 for LLM-applikationer ↗</a> · <a href="https://www.retsinformation.dk/eli/lta/2025/434">NIS2-loven ↗</a></p>
+      </article>
+      <article class="tool-entry skill-entry" id="harness-udgivelse-og-gendannelse">
+        <p class="tool-type">11 · <code>harness-udgivelse-og-gendannelse</code></p>
+        <h3>Udgivelse og gendannelse</h3>
+        <p>Gennemgår version, miljø, data og godkendelser før udgivelse og afprøver den rigtige adresse bagefter.</p>
+        <dl class="faq">
+          <dt>Hvad gør den?</dt><dd>Før en udgivelse gennemgår agenten version, miljø, konfiguration, dataændringer, nødvendige godkendelser og vejen tilbage sammen med dig. Efter udgivelsen afprøves den rigtige adresse, adgangsbegrænsninger og logs.</dd>
+          <dt>Hvornår bruges den?</dt><dd>Når du vil udgive til et test- eller driftsmiljø, eller når en version skal rulles tilbage.</dd>
+          <dt>Hvad får du?</dt><dd>En tjekliste, en udgivelsesnote med commit, miljø og kontroller og en afprøvet vej tilbage.</dd>
+          <dt>Hvad gør den ikke?</dt><dd>Den udgiver ikke til drift og opretter ikke betalte ressourcer uden din udtrykkelige godkendelse. En godkendelse registreret i en fil er ikke en verificeret identitet.</dd>
+        </dl>
+        <details><summary>Se instruktionen til agenten</summary><pre>---
+name: harness-udgivelse-og-gendannelse
+description: Forbereder og kontrollerer en udgivelse til et test- eller driftsmiljø. Gennemgår version, miljø, konfiguration, dataændringer, nødvendige godkendelser og vejen tilbage, og afprøver den udgivne tjeneste på dens rigtige adresse bagefter. Brug den, når brugeren vil deploye, udgive, sætte i drift eller rulle en version tilbage.
+---
+
+# Udgivelse og gendannelse
+
+En udgivelse er en beslutning om en bestemt version i et bestemt miljø. Et vellykket upload er ikke bevis for, at appen virker.
+
+Udgiv aldrig til drift, opret aldrig betalte ressourcer og ændr aldrig domæner eller adgangsindstillinger uden brugerens udtrykkelige godkendelse af netop den handling.
+
+## Før udgivelsen
+
+Gennemgå [tjeklisten](references/udgivelsestjekliste.md) sammen med brugeren. Det vigtigste:
+
+1. **Version:** hvilket commit udgives? Er der ændringer, som ikke er committet, og som derfor ikke kommer med?
+2. **Miljø:** test eller drift, hvilken tjeneste, hvilken region og hvilken konto. Udgiv til et testmiljø først, når det er muligt.
+3. **Konfiguration:** er miljøvariabler og hemmeligheder sat i tjenesten? Nævn kun navnene.
+4. **Data:** er der databaseændringer? Hvordan rettes de, hvis udgivelsen skal rulles tilbage? En tilbagerulning af koden ruller ikke data tilbage.
+5. **Kontroller:** hvilke tests og gennemgange er kørt på netop denne version, og hvad er stadig åbent?
+6. **Godkendelser:** hvilke godkendelser kræver organisationen, og foreligger de fra de rette roller? Nye dataforløb, leverandører, login eller en offentligt tilgængelig adresse kan kræve en særskilt vurdering.
+7. **Udgift og ejerskab:** hvem ejer kontoen, og hvad koster det?
+
+Hvis en nødvendig beslutning mangler, så udgiv ikke til drift. Arbejdet kan fortsætte med opdigtede data i et testmiljø.
+
+## Efter udgivelsen
+
+1. Åbn den rigtige adresse, og gennemfør den vigtigste brugerrejse.
+2. Kontrollér, at adgangsbegrænsninger virker: en bruger uden adgang skal afvises.
+3. Se efter fejl i tjenestens logs.
+4. Registrér udgivelsen med [udgivelsesnoten](references/udgivelsestjekliste.md): commit, tidspunkt, miljø, adresse og hvad der er kontrolleret.
+
+Skriv præcist, hvad der er observeret. &quot;Uploadet&quot; og &quot;virker på adressen&quot; er to forskellige udsagn.
+
+## Vejen tilbage
+
+- Kend den forrige version, og hvordan den udgives igen.
+- Tag en sikkerhedskopi af data før ændringer i databasens struktur.
+- Afprøv tilbagerulningen i testmiljøet, før den kan blive nødvendig i drift.
+- Ved fejl efter udgivelse: stop, beskriv hvad der er observeret, og foreslå tilbagerulning eller rettelse. Gentag ikke udgivelsen blindt; et afbrudt upload kan have et ukendt udfald.
+</pre><p class="tool-type"><code>references/udgivelsestjekliste.md</code></p><pre># Tjekliste og udgivelsesnote
+
+## Tjekliste før udgivelse
+
+- [ ] Arbejdsmappen er ren, og den udgivne version er et kendt commit.
+- [ ] Bygningen er lavet fra den version, ikke fra lokale filer, der ikke er committet.
+- [ ] Miljø, tjeneste, region og konto er bekræftet af brugeren.
+- [ ] Miljøvariabler og hemmeligheder er sat i tjenesten. Ingen hemmeligheder i koden.
+- [ ] Databaseændringer har en sikkerhedskopi og en plan for tilbagerulning.
+- [ ] Relevante tests og den vigtigste brugerrejse er afprøvet på denne version.
+- [ ] Sikkerhedsgennemgangen er gennemført for ændringer i login, adgang, input og data.
+- [ ] Dataoversigten er opdateret, og nye dataforløb eller leverandører er vurderet af de rette roller.
+- [ ] Offentlige websteder og apps har en opdateret tilgængelighedserklæring i Digitaliseringsstyrelsens WAS-tool.
+- [ ] Personoplysninger i drift: databehandleraftaler og fortegnelse er på plads, og en konsekvensanalyse er lavet ved høj risiko.
+- [ ] Sagsdokumenter journaliseres og bevares i organisationens ESDH- eller fagsystem.
+- [ ] Udgift og ejerskab af kontoen er afklaret.
+- [ ] Den forrige version kan udgives igen.
+- [ ] Brugeren har godkendt netop denne udgivelse til netop dette miljø.
+
+## Kontrol efter udgivelse
+
+- [ ] Den rigtige adresse svarer over HTTPS.
+- [ ] Den vigtigste brugerrejse er gennemført på adressen.
+- [ ] En bruger uden adgang afvises.
+- [ ] Logs viser ingen nye fejl.
+
+## Udgivelsesnote
+
+```markdown
+## &lt;dato&gt; · &lt;miljø&gt;
+
+- Version: &lt;commit-id og kort beskrivelse&gt;
+- Adresse: &lt;URL&gt;
+- Tjeneste og region: &lt;...&gt;
+- Godkendt af: &lt;rolle&gt;, &lt;tidspunkt&gt;. Registreret lokalt af brugeren, ikke verificeret identitet.
+- Kontrolleret før udgivelse: &lt;tests, gennemgange&gt;
+- Kontrolleret efter udgivelse: &lt;brugerrejse, adgang, logs&gt;
+- Dataændringer: &lt;ingen / beskrivelse og backup&gt;
+- Vejen tilbage: &lt;forrige version og fremgangsmåde&gt;
+- Åbne forhold: &lt;...&gt;
+```
+</pre></details>
+        <p class="sources">Kilder: <a href="https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments">GitHub om udgivelsesmiljøer ↗</a></p>
+      </article>
+      <article class="tool-entry skill-entry" id="harness-overdragelse-og-drift">
+        <p class="tool-type">12 · <code>harness-overdragelse-og-drift</code></p>
+        <h3>Overdragelse og drift</h3>
+        <p>Dokumenterer opstart, drift, ejerskab, opdateringer og gendannelse, så andre kan overtage.</p>
+        <dl class="faq">
+          <dt>Hvad gør den?</dt><dd>Gør appen klar til, at en anden kan starte, drive, opdatere og gendanne den uden den oprindelige udvikler eller AI-værktøjet. Agenten skriver en afprøvet startvejledning og en driftsvejledning og afklarer ejerskab af konti og udgifter.</dd>
+          <dt>Hvornår bruges den?</dt><dd>Før en app sættes i drift, når projektet skal overdrages, og når driftsopsætningen ændres.</dd>
+          <dt>Hvad får du?</dt><dd>En opdateret README og driftsvejledning samt en liste over åbne spørgsmål, der skal afklares før overdragelse.</dd>
+          <dt>Hvad gør den ikke?</dt><dd>Den skriver aldrig adgangskoder, nøgler eller personoplysninger i dokumentationen.</dd>
+        </dl>
+        <details><summary>Se instruktionen til agenten</summary><pre>---
+name: harness-overdragelse-og-drift
+description: Gør en app klar til, at andre kan starte, drive, opdatere og gendanne den uden den oprindelige udvikler eller AI-værktøjet. Skriver start- og driftsvejledning uden adgangsoplysninger og afklarer ejerskab af konti, udgifter, overvågning, opdateringer og sikkerhedskopier. Brug den, før en app sættes i drift, når projektet skal overdrages, og når driftsopsætningen ændres.
+---
+
+# Overdragelse og drift
+
+En app i drift skal kunne vedligeholdes af en anden end den, der byggede den. Dokumentationen er en del af leverancen, ikke en eftertanke.
+
+## Fremgangsmåde
+
+1. Læs den eksisterende dokumentation, og find huller med [skabelonen](references/driftsvejledning.md).
+2. Opdatér README med formål, lokal opstart, afprøvning og udgivelse. Kør selv kommandoerne, så vejledningen er afprøvet.
+3. Skriv en driftsvejledning, fx `docs/drift.md`, med de afsnit fra skabelonen, der er relevante.
+4. Markér det, du ikke kan afgøre, fx hvem der ejer en konto, som et åbent spørgsmål til brugeren.
+
+## Afklar ejerskab
+
+- **Konti og tjenester:** hosting, domæne, database, e-mail og modeltjenester bør ejes af organisationen, ikke af en privat konto. Notér, hvem der administrerer dem.
+- **Udgifter:** hvem betaler, og hvem får besked, hvis forbruget stiger.
+- **Ansvar:** hvem er ansvarlig for drift, opdateringer og henvendelser fra brugerne. Skriv roller frem for personnavne, hvis dokumentationen er offentlig.
+- **Adgang ved fratrædelse:** hvordan den oprindelige udviklers adgang fjernes, og nøgler udskiftes.
+
+## Drift
+
+- **Overvågning:** en simpel kontrol af, at appen svarer, og besked ved fejl.
+- **Logs:** hvor de ligger, hvor længe de gemmes, og at de ikke indeholder personoplysninger eller hemmeligheder.
+- **Opdateringer:** en fast rytme for sikkerhedsopdateringer af afhængigheder og platform.
+- **Sikkerhedskopier og gendannelse:** hvad der tages backup af, hvor ofte, hvor den ligger, og hvornår gendannelse sidst er afprøvet.
+- **Nedlukning:** hvordan appen og dens data slettes eller arkiveres, når den ikke længere skal bruges.
+
+## Aldrig i dokumentationen
+
+Adgangskoder, nøgler, tokens, personlige kontooplysninger eller rigtige personoplysninger. Henvis til, hvor de administreres, fx hostingtjenestens hemmelighedsindstillinger eller organisationens adgangssystem.
+
+## Aflevering
+
+Afslut med en liste over, hvad der er dokumenteret, hvad der er afprøvet, og hvilke spørgsmål der stadig skal afklares, før en anden kan overtage.
+</pre><p class="tool-type"><code>references/driftsvejledning.md</code></p><pre># Skabelon til driftsvejledning
+
+Brug de afsnit, der passer til appen. Skriv &quot;ikke relevant&quot; med en kort begrundelse frem for at udelade et afsnit i stilhed.
+
+```markdown
+# Drift af &lt;appens navn&gt;
+
+## Formål og brugere
+&lt;Hvad appen gør, og hvem der bruger den.&gt;
+
+## Ansvar
+- Systemejer: &lt;rolle&gt;
+- Teknisk ansvarlig: &lt;rolle&gt;
+- Henvendelser fra brugere: &lt;kanal&gt;
+
+## Arkitektur
+&lt;Kort beskrivelse: frontend, backend, database, eksterne tjenester. Gerne en enkel tegning.&gt;
+
+## Tjenester og konti
+| Tjeneste | Formål | Ejer af kontoen | Region | Udgift | Aftale |
+|----------|--------|-----------------|--------|--------|--------|
+
+## Konfiguration
+| Miljøvariabel | Formål | Hvor den administreres |
+|---------------|--------|------------------------|
+&lt;Kun navne, aldrig værdier.&gt;
+
+## Lokal opstart og afprøvning
+&lt;Kommandoer, der er afprøvet.&gt;
+
+## Udgivelse
+&lt;Hvordan en ny version bygges, afprøves og udgives, og hvem der godkender.&gt;
+
+## Gendannelse
+- Tidligere version: &lt;hvordan&gt;
+- Data: &lt;backup, hyppighed, placering, sidst afprøvet&gt;
+- Databaseændringer: &lt;hvordan en migrering rulles tilbage eller rettes&gt;
+
+## Overvågning og logs
+&lt;Hvad der overvåges, hvem der får besked, hvor logs ligger og hvor længe.&gt;
+
+## Opdateringer
+&lt;Rytme for afhængigheder og platform, og hvem der gør det.&gt;
+
+## Data
+&lt;Henvisning til dataoversigten og slettefrister.&gt;
+
+## Kendte begrænsninger og åbne spørgsmål
+- &lt;...&gt;
+
+## Nedlukning
+&lt;Hvordan appen, data og konti afvikles.&gt;
+```
+</pre></details>
+        
+      </article>
+    </section>
+    <section class="note" aria-labelledby="spoergsmaal">
+      <h2 id="spoergsmaal">Spørgsmål og svar</h2>
+      <div class="faq-list">
+        <details><summary>Hvad er en skill?</summary><p>En skill er en kort vejledning til kodeagenten om én bestemt arbejdsopgave, fx en sikkerhedsgennemgang eller en udgivelse. Den ligger som en almindelig tekstfil, SKILL.md, i projektet. Agenten læser først kun navn og beskrivelse og henter resten, når opgaven passer. Det holder instruktionerne korte i det daglige arbejde.</p></details>
+        <details><summary>Bruges alle skills hver gang?</summary><p>Nej. Mange værktøjer vælger selv en skill, når opgaven passer til beskrivelsen, og du kan også bede om en bestemt skill. En tekstændring skal fx ikke udløse en sikkerhedsgennemgang. Hvordan skills startes, afhænger af værktøjet; se værktøjets vejledning i webguiden.</p></details>
+        <details><summary>Hvad er forskellen på grundregler og skills?</summary><p>Grundreglerne gælder altid: nøgler, Git, afprøvning og ærlig rapportering. De står i fx AGENTS.md eller CLAUDE.md. Skills er de længere arbejdsgange, der kun bruges, når opgaven kræver dem.</p></details>
+        <details><summary>Kan jeg ændre en skill?</summary><p>Ja. Filerne er dine. Hvis du ændrer en installeret fil, springer en senere opdatering netop den fil over og fortæller dig det. Projektets egne regler skrives uden for AI Harness-afsnittet i AGENTS.md eller CLAUDE.md, så de aldrig overskrives.</p></details>
+        <details><summary>Sender AI Harness mine data nogen steder hen?</summary><p>Nej. Installationen kopierer tekstfiler til dit projekt. Dit kodeværktøj og den model, du har valgt, læser filerne som en del af dit arbejde. Hvor de data behandles, afhænger af værktøjet og modellen.</p></details>
+        <details><summary>Gør skillsene min app sikker eller lovlig?</summary><p>Nej. Skills er vejledning til agenten. De er ikke adgangskontrol, en sikkerhedsgodkendelse eller en vurdering efter databeskyttelsesreglerne. De hjælper med at stille de rigtige spørgsmål og inddrage de rigtige fagpersoner, men ansvaret for løsningen ligger fortsat hos organisationen.</p></details>
+        <details><summary>Bliver koden bedre af det?</summary><p>Det har vi endnu ikke målt for vores målgruppe. Undersøgelser fra 2026 viser, at generelle instruktionsfiler sjældent gør kodeagenter mere korrekte og koster ekstra tokens, mens fokuserede skills kan hjælpe ved bestemte opgaver. Derfor er grundreglerne korte, og skills indlæses kun, når opgaven passer. Vi vil sammenligne de samme opgaver med og uden Harness på flere modeller.</p></details>
+        <details><summary>Kan en skill gøre skade?</summary><p>En skill fra en ukendt kilde skal behandles som software, fordi den kan få agenten til at køre kommandoer. AI Harness&#39; skills indeholder kun tekst, ingen scripts, og giver ingen værktøjstilladelser. Du kan læse dem alle på denne side, før du installerer dem.</p></details>
+        <details><summary>Hvordan opdaterer eller fjerner jeg AI Harness?</summary><p>Installér en ny version på samme måde. Harness opdaterer kun filer, der er uændrede siden installationen, og viser konflikter for resten. Fjernelse sletter kun uændrede filer og afsnit. Oplysningerne står i .harness/installation.json, som også skal med i Git.</p></details>
+        <details><summary>Hvilke kodeværktøjer virker det med?</summary><p>Webguiden viser hvert værktøj med status. &quot;Afprøvet&quot; betyder, at vi har set værktøjet indlæse grundregler og skills og sende dem til modellen. &quot;Efter dokumentation&quot; betyder, at filplaceringen følger værktøjets officielle dokumentation, men endnu ikke er afprøvet af os. Ingen af delene viser, hvor godt en bestemt model følger instruktionerne.</p></details>
+      </div>
+    </section>
+    <p class="note">Skillsene er vejledning til kodeagenten. De er ikke adgangskontrol, en sikkerhedsgodkendelse eller en vurdering efter databeskyttelsesreglerne. Kilderne er kontrolleret 2026-09-29.</p>
+  </main>
+</body>
+</html>

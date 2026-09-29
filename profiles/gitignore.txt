@@ -1,5 +1,4 @@
-# Sammenflet med projektets eksisterende .gitignore; overskriv den ikke.
-# Allerede sporede filer påvirkes ikke af disse regler.
+# AI Harness: holder hemmeligheder og lokale filer ude af Git. Allerede sporede filer påvirkes ikke.
 .env
 .env.*
 !.env.example
@@ -17,4 +16,4 @@ __pycache__/
 Thumbs.db
 *.log
 
-# Instruktionsfiler og låsefiler skal kunne versionsstyres.
+# Instruktionsfiler, skills og låsefiler skal kunne versionsstyres.

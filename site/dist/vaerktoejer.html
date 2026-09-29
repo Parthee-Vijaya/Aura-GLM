@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Ti andre kodeværktøjer · AI Harness</title>
-  <meta name="description" content="Cursor, GitHub Copilot, Gemini CLI, Cline, Continue, Aider, Pi, Devin Desktop, Lovable og Replit Agent. Hvad kan de betyde for AI Harness?">
+  <title>Kodeværktøjer · AI Harness</title>
+  <meta name="description" content="Brug AI Harness' grundregler og skills i 24 kodeværktøjer og webplatforme, fx Claude Code, Codex, Cursor, GitHub Copilot og Gemini CLI.">
   <link rel="stylesheet" href="overview.css">
 </head>
 <body>
@@ -12,114 +12,326 @@
   <header><a href="./">AI Harness</a><a href="pakker.html">Webguide og pakker →</a></header>
   <main class="tool-index">
     <p class="eyebrow">BRUG DIT EGET VÆRKTØJ</p>
-    <h1>Flere måder<br>at bygge med AI.</h1>
-    <p class="lead">Claude Code, Codex og OpenCode er tre muligheder. Her er ti andre, vi har undersøgt, fordi de kan være relevante for kommunernes arbejde og vores fælles instruktioner.</p>
-    <p>Udvalget bygger på værktøjernes dokumentation og deres muligheder for projekter, regler og integration. Vi har ikke afprøvet Harness i disse ti værktøjer. De nuværende <a href="pakker.html">tre downloadpakker</a> er fortsat dem, der kan hentes.</p>
-    <p class="review-date">Dokumentationen er gennemgået 28. september 2026.</p>
-    <nav class="tool-nav" aria-label="Typer af kodeværktøjer">
-      <a href="#editorer">Arbejd i en editor</a><a href="#agenter">Brug en kodeagent</a><a href="#platforme">Byg i en webplatform</a>
-    </nav>
-
+    <h1>Harness i dit<br>eget kodeværktøj.</h1>
+    <p class="lead">AI Harness' grundregler og 12 <a href="skills.html">skills</a> kan bruges i 24 kodeværktøjer og webplatforme. Her kan du se, hvor filerne lægges, hvordan du kontrollerer, at de er indlæst, og hvad du skal være opmærksom på.</p>
+    <p><strong>Afprøvet med AI Harness</strong> betyder, at vi har set værktøjet indlæse grundregler og skills og sende dem til modellen. <strong>Efter værktøjets dokumentation</strong> betyder, at filplaceringen følger værktøjets officielle dokumentation, men endnu ikke er afprøvet af os. <strong>Tekst til platformens egne felter</strong> betyder, at platformen ikke læser filer fra en pakke.</p>
+    <p class="review-date">Filplaceringerne er kontrolleret mod værktøjernes dokumentation 2026-09-29.</p>
+    <nav class="tool-nav" aria-label="Typer af kodeværktøjer"><a href="#agent">Kodeagenter</a><a href="#editor">Editorer og udviklingsmiljøer</a><a href="#web">Webplatforme</a></nav>
     <div id="oversigt">
-      <section id="editorer" class="note" aria-labelledby="editorer-title">
-        <h2 id="editorer-title">Arbejd i en editor</h2>
-        <p>Til dig, der vil arbejde med filer og kode i et udviklingsmiljø og lade AI hjælpe med opgaverne.</p>
+      <section id="agent" class="note" aria-labelledby="agent-title">
+        <h2 id="agent-title">Kodeagenter</h2>
         <div class="tool-list">
-          <article class="tool-entry">
-            <h3>Cursor</h3>
-            <p class="tool-type">Editor med kodeagent</p>
-            <p>Projektregler og skills kan give agenten fælles arbejdsgange. En Harness-vejledning vil kunne bygge på de funktioner uden at kræve vores desktopapp.</p>
-            <p><strong>Mulig indgang:</strong> <code>.cursor/rules</code> og <code>SKILL.md</code>.</p>
-            <p><a href="https://cursor.com/docs/rules">Regler ↗</a> · <a href="https://cursor.com/docs/skills">Skills ↗</a></p>
+          <article class="tool-entry" id="claude-code">
+            <h3>Claude Code</h3>
+            <p class="tool-type">Anthropic · Afprøvet med AI Harness</p>
+            <p>Anthropics kodeagent i terminalen, i editoren og i Claude-appen.</p>
+            <p><strong>Grundregler:</strong> <code>CLAUDE.md</code>, som importerer <code>AGENTS.md</code></p>
+            <p><strong>Skills:</strong> <code>.claude/skills</code></p>
+            <p><strong>Kontrollér:</strong> Start en ny session i projektets rodmappe. Skriv /context eller /memory for at se de indlæste instruktionsfiler, og /skills for at se Harness-skillsene. Du kan starte en skill direkte, fx /harness-sikkerhedsgennemgang.</p>
+            <p><strong>Afprøvet:</strong> Claude Code 2.1.150 den 29. september 2026 med en kontrolleret modelserver: CLAUDE.md importerede AGENTS.md, alle 12 skills blev vist for modellen, og en skill blev indlæst ved brug.</p>
+            <p class="caveat">CLAUDE.md importerer AGENTS.md med @AGENTS.md, som Anthropic selv anbefaler. Uden CLAUDE.md læser nyere versioner af Claude Code AGENTS.md direkte, men en eksisterende CLAUDE.md slår det fra. Personlige skills med samme navn i ~/.claude/skills går forud for projektets.</p>
+            <p><a href="https://code.claude.com/docs/en/memory">Claude Code om CLAUDE.md og AGENTS.md ↗</a> · <a href="https://code.claude.com/docs/en/skills">Claude Code om skills ↗</a></p>
+            <p><a href="pakker.html?vaerktoej=claude-code">Hent pakken til Claude Code →</a></p>
           </article>
-          <article class="tool-entry">
-            <h3>GitHub Copilot</h3>
-            <p class="tool-type">Kodeassistent i editor, CLI og GitHub</p>
-            <p>Relevant for teams, som allerede bruger GitHub eller VS Code. Instruktioner og skills kan følge projektet; understøttelsen varierer mellem Copilots forskellige brugerflader.</p>
-            <p><strong>Mulig indgang:</strong> <code>.github/copilot-instructions.md</code> og <code>.github/skills</code>.</p>
-            <p><a href="https://docs.github.com/en/copilot/reference/custom-instructions-support">Instruktioner ↗</a> · <a href="https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills">Skills ↗</a></p>
+          <article class="tool-entry" id="codex">
+            <h3>Codex</h3>
+            <p class="tool-type">OpenAI · Efter værktøjets dokumentation</p>
+            <p>OpenAIs kodeagent i terminalen, i editoren og i Codex-appen.</p>
+            <p><strong>Grundregler:</strong> Et afsnit i <code>AGENTS.md</code></p>
+            <p><strong>Skills:</strong> <code>.agents/skills</code></p>
+            <p><strong>Kontrollér:</strong> Start Codex i projektets rodmappe, og markér projektet som betroet. Skriv /skills for at se Harness-skillsene, og bed agenten opsummere de aktive projektinstruktioner. Du kan starte en skill direkte med $harness-sikkerhedsgennemgang.</p>
+            
+            <p class="caveat">Codex springer projektets AGENTS.md over i projekter, der ikke er betroede. AGENTS.override.md i samme mappe går forud for AGENTS.md, og Codex læser højst 32 KiB projektinstruktioner i alt. Ændringer kræver en ny session.</p>
+            <p><a href="https://learn.chatgpt.com/docs/agent-configuration/agents-md">Codex om AGENTS.md ↗</a> · <a href="https://learn.chatgpt.com/docs/build-skills">Codex om skills ↗</a></p>
+            <p><a href="pakker.html?vaerktoej=codex">Hent pakken til Codex →</a></p>
           </article>
-          <article class="tool-entry">
-            <h3>Cline</h3>
-            <p class="tool-type">Kodeagent i blandt andet VS Code</p>
-            <p>Kan læse fælles projektregler fra Markdown-filer. Reglerne kan opdeles efter opgave og vælges til og fra, hvilket passer til et Harness-bibliotek med afgrænsede vejledninger.</p>
-            <p><strong>Mulig indgang:</strong> <code>.clinerules/</code>.</p>
-            <p><a href="https://docs.cline.bot/customization/cline-rules">Projektregler ↗</a></p>
+          <article class="tool-entry" id="opencode">
+            <h3>OpenCode</h3>
+            <p class="tool-type">SST · Afprøvet med AI Harness</p>
+            <p>Kodeagent med åben kildekode til terminalen, editoren og desktop. Bruges også som motor i AI Harness-appen.</p>
+            <p><strong>Grundregler:</strong> Et afsnit i <code>AGENTS.md</code></p>
+            <p><strong>Skills:</strong> <code>.opencode/skills</code></p>
+            <p><strong>Kontrollér:</strong> Start OpenCode i projektets rodmappe. Tryk / for at se Harness-skillsene som kommandoer, eller kør opencode debug skill for en liste. Bed agenten opsummere de aktive regler.</p>
+            <p><strong>Afprøvet:</strong> OpenCode 1.17.15 den 29. september 2026 med en kontrolleret modelserver: AGENTS.md og alle 12 skills blev sendt til modellen, og en skill blev indlæst ved brug.</p>
+            <p class="caveat">Findes AGENTS.md, ignorerer OpenCode projektets CLAUDE.md. OpenCode læser skills fra .opencode/skills, .claude/skills og .agents/skills; ligger den samme skill flere steder, bruges én af dem. Globale regler og skills fra din egen opsætning indlæses også.</p>
+            <p><a href="https://opencode.ai/docs/rules/">OpenCode om regler ↗</a> · <a href="https://opencode.ai/docs/skills/">OpenCode om skills ↗</a> · <a href="https://github.com/anomalyco/opencode">OpenCode på GitHub ↗</a></p>
+            <p><a href="pakker.html?vaerktoej=opencode">Hent pakken til OpenCode →</a></p>
           </article>
-          <article class="tool-entry">
-            <h3>Continue</h3>
-            <p class="tool-type">Kodeassistent med konfigurerbare regler og modeller</p>
-            <p>Projektets regler bruges i agent-, chat- og redigeringstilstand. Det giver en konkret vej til at vedligeholde Harness-instruktioner sammen med resten af koden.</p>
-            <p><strong>Mulig indgang:</strong> <code>.continue/rules</code>.</p>
-            <p><a href="https://docs.continue.dev/customize/rules">Regler i Continue ↗</a></p>
-          </article>
-          <article class="tool-entry">
-            <h3>Devin Desktop</h3>
-            <p class="tool-type">Tidligere Windsurf</p>
-            <p>Et udviklingsmiljø med kodeagenter. Cascade-agentens projektregler er en mulig vej til Harness-indhold. Producenten beskriver Devin Desktop som det nye navn for Windsurf.</p>
-            <p><strong>Mulig indgang:</strong> projektregler og <code>AGENTS.md</code> i Cascade. Andre agenter skal vurderes særskilt.</p>
-            <p><a href="https://devin.ai/desktop">Produkt og navneskift ↗</a> · <a href="https://docs.devin.ai/desktop/cascade/memories">Regler ↗</a></p>
-          </article>
-        </div>
-      </section>
-
-      <section id="agenter" class="note" aria-labelledby="agenter-title">
-        <h2 id="agenter-title">Brug en kodeagent</h2>
-        <p>Til arbejde i terminalen eller, hvor værktøjet har et integrationsinterface, som en del af en anden app.</p>
-        <div class="tool-list">
-          <article class="tool-entry">
+          <article class="tool-entry" id="gemini-cli">
             <h3>Gemini CLI</h3>
-            <p class="tool-type">Kodeagent til terminalen</p>
-            <p>Understøtter Agent Skills og installation af skills fra et repository. Det er relevant for ønsket om at hente Harness-indhold direkte, uden at installere vores app.</p>
-            <p><strong>Mulig indgang:</strong> <code>.gemini/skills</code> eller <code>.agents/skills</code>.</p>
-            <p><a href="https://geminicli.com/docs/cli/using-agent-skills/">Brug og installation af skills ↗</a></p>
+            <p class="tool-type">Google · Efter værktøjets dokumentation</p>
+            <p>Googles kodeagent til terminalen.</p>
+            <p><strong>Grundregler:</strong> <code>GEMINI.md</code>, som importerer <code>AGENTS.md</code></p>
+            <p><strong>Skills:</strong> <code>.agents/skills</code></p>
+            <p><strong>Kontrollér:</strong> Start gemini i projektets rodmappe, og markér mappen som betroet. Kør /memory show for at se de indlæste instruktioner og /skills list for at se Harness-skillsene.</p>
+            
+            <p class="caveat">Gemini CLI læser GEMINI.md, som importerer AGENTS.md. Skills findes kun i den mappe, Gemini startes fra, og Gemini beder om samtykke, før en skill aktiveres.</p>
+            <p><a href="https://geminicli.com/docs/cli/gemini-md/">Gemini CLI om GEMINI.md ↗</a> · <a href="https://geminicli.com/docs/cli/skills/">Gemini CLI om skills ↗</a></p>
+            <p><a href="pakker.html?vaerktoej=gemini-cli">Hent pakken til Gemini CLI →</a></p>
           </article>
-          <article class="tool-entry">
-            <h3>Aider</h3>
-            <p class="tool-type">Kodeagent til terminalen</p>
-            <p>Kan få projektets kodekonventioner som en fil, der indlæses med <code>--read</code>. Harness kan dermed tilpasses som instruktioner, selv uden samme skillformat som de øvrige værktøjer.</p>
-            <p><strong>Mulig indgang:</strong> en eksplicit indlæst <code>CONVENTIONS.md</code>.</p>
-            <p><a href="https://aider.chat/docs/usage/conventions.html">Kodekonventioner ↗</a></p>
+          <article class="tool-entry" id="mistral-vibe">
+            <h3>Mistral Vibe</h3>
+            <p class="tool-type">Mistral AI · Efter værktøjets dokumentation</p>
+            <p>Mistrals kodeagent til terminalen og VS Code fra en europæisk leverandør.</p>
+            <p><strong>Grundregler:</strong> Et afsnit i <code>AGENTS.md</code></p>
+            <p><strong>Skills:</strong> <code>.agents/skills</code></p>
+            <p><strong>Kontrollér:</strong> Start vibe i projektets rodmappe, og marker mappen som betroet. Tryk / for at se Harness-skillsene. /reload indlæser instruktioner og skills igen.</p>
+            
+            <p class="caveat">Vibe læser kun projektets AGENTS.md og skills i betroede mapper, og skills findes kun i den mappe, Vibe startes fra. Telemetri er slået til som standard og slås fra med enable_telemetry = false.</p>
+            <p><a href="https://docs.mistral.ai/vibe/code/cli/skills">Mistral Vibe om skills ↗</a> · <a href="https://docs.mistral.ai/vibe/code/cli/agents">Mistral Vibe om AGENTS.md ↗</a> · <a href="https://github.com/mistralai/mistral-vibe">Mistral Vibe på GitHub ↗</a></p>
+            <p><a href="pakker.html?vaerktoej=mistral-vibe">Hent pakken til Mistral Vibe →</a></p>
           </article>
-          <article id="pi" class="tool-entry">
+          <article class="tool-entry" id="pi">
             <h3>Pi</h3>
-            <p class="tool-type">Kodeagent og mulig motor til andre apps</p>
-            <p>Har både Agent Skills og et SDK, der kan indbygges i en app. Pi er derfor relevant både for egne Harness-instruktioner og som mulig alternativ motor til OpenCode.</p>
-            <p><strong>Mulig indgang:</strong> <code>SKILL.md</code>, SDK eller RPC. Ingen Pi-adapter er bygget i Harness.</p>
-            <p><a href="https://pi.dev/docs/latest/skills">Skills ↗</a> · <a href="https://pi.dev/docs/latest/sdk">SDK ↗</a></p>
+            <p class="tool-type">Earendil · Efter værktøjets dokumentation</p>
+            <p>Kodeagent med åben kildekode til terminalen, som også kan indbygges i andre apps.</p>
+            <p><strong>Grundregler:</strong> Et afsnit i <code>AGENTS.md</code></p>
+            <p><strong>Skills:</strong> <code>.agents/skills</code></p>
+            <p><strong>Kontrollér:</strong> Start pi i projektets rodmappe, og markér projektet som betroet. Opstartens overskrift viser de indlæste instruktioner og ressourcer. Start en skill med /skill:harness-sikkerhedsgennemgang.</p>
+            
+            <p class="caveat">Pi indlæser projektets skills, når projektet er betroet. Findes AGENTS.md, ignorerer Pi CLAUDE.md i samme mappe.</p>
+            <p><a href="https://pi.dev/docs/latest/configuration">Pi om konfiguration ↗</a> · <a href="https://pi.dev/docs/latest/skills">Pi om skills ↗</a></p>
+            <p><a href="pakker.html?vaerktoej=pi">Hent pakken til Pi →</a></p>
+          </article>
+          <article class="tool-entry" id="amp">
+            <h3>Amp</h3>
+            <p class="tool-type">Amp · Efter værktøjets dokumentation</p>
+            <p>Kodeagent til terminalen og editoren.</p>
+            <p><strong>Grundregler:</strong> Et afsnit i <code>AGENTS.md</code></p>
+            <p><strong>Skills:</strong> <code>.agents/skills</code></p>
+            <p><strong>Kontrollér:</strong> Kør amp skills list i projektets rodmappe for at se skillsene. Kommandoen agents-md list i kommandopaletten viser de indlæste AGENTS.md-filer.</p>
+            
+            <p class="caveat">Skills i din brugermappe med samme navn går forud for projektets. Nævn skillen ved navn, hvis du vil bruge den bevidst.</p>
+            <p><a href="https://ampcode.com/docs/customize/agents-md">Amp om AGENTS.md ↗</a> · <a href="https://ampcode.com/docs/customize/skills">Amp om skills ↗</a></p>
+            <p><a href="pakker.html?vaerktoej=amp">Hent pakken til Amp →</a></p>
+          </article>
+          <article class="tool-entry" id="goose">
+            <h3>goose</h3>
+            <p class="tool-type">Agentic AI Foundation · Efter værktøjets dokumentation</p>
+            <p>Kodeagent med åben kildekode til terminalen og desktop.</p>
+            <p><strong>Grundregler:</strong> Et afsnit i <code>AGENTS.md</code></p>
+            <p><strong>Skills:</strong> <code>.agents/skills</code></p>
+            <p><strong>Kontrollér:</strong> Start goose i projektets rodmappe. Kør goose skills list eller /skills for at se skillsene.</p>
+            
+            <p class="caveat">Skills findes kun i den mappe, goose startes fra, og Developer-udvidelsen skal være slået til, for at AGENTS.md indlæses.</p>
+            <p><a href="https://goose-docs.ai/docs/guides/context-engineering/using-goosehints/">goose om hints og AGENTS.md ↗</a> · <a href="https://goose-docs.ai/docs/guides/context-engineering/using-skills/">goose om skills ↗</a></p>
+            <p><a href="pakker.html?vaerktoej=goose">Hent pakken til goose →</a></p>
+          </article>
+          <article class="tool-entry" id="openhands">
+            <h3>OpenHands</h3>
+            <p class="tool-type">All Hands AI · Efter værktøjets dokumentation</p>
+            <p>Kodeagent med åben kildekode, som kan køres på egen infrastruktur.</p>
+            <p><strong>Grundregler:</strong> Et afsnit i <code>AGENTS.md</code></p>
+            <p><strong>Skills:</strong> <code>.agents/skills</code></p>
+            <p><strong>Kontrollér:</strong> Start en samtale i projektet, og bed agenten opsummere projektets regler og nævne sine skills.</p>
+            
+            <p class="caveat">Filplaceringen følger OpenHands&#39; dokumentation og er ikke afprøvet med Harness.</p>
+            <p><a href="https://docs.openhands.dev/overview/skills">OpenHands om skills ↗</a></p>
+            <p><a href="pakker.html?vaerktoej=openhands">Hent pakken til OpenHands →</a></p>
+          </article>
+          <article class="tool-entry" id="factory-droid">
+            <h3>Factory Droid</h3>
+            <p class="tool-type">Factory · Efter værktøjets dokumentation</p>
+            <p>Kodeagent til terminalen og editoren.</p>
+            <p><strong>Grundregler:</strong> Et afsnit i <code>AGENTS.md</code></p>
+            <p><strong>Skills:</strong> <code>.agents/skills</code></p>
+            <p><strong>Kontrollér:</strong> Start droid i projektets rodmappe, og bed agenten opsummere projektets regler og nævne sine skills.</p>
+            
+            <p class="caveat">Filplaceringen følger Factorys dokumentation og er ikke afprøvet med Harness.</p>
+            <p><a href="https://docs.factory.ai/cli/configuration/agents-md">Factory om AGENTS.md ↗</a> · <a href="https://docs.factory.ai/cli/configuration/skills">Factory om skills ↗</a></p>
+            <p><a href="pakker.html?vaerktoej=factory-droid">Hent pakken til Factory Droid →</a></p>
+          </article>
+          <article class="tool-entry" id="aider">
+            <h3>Aider</h3>
+            <p class="tool-type">Aider · Efter værktøjets dokumentation</p>
+            <p>Kodeagent med åben kildekode til terminalen.</p>
+            <p><strong>Grundregler:</strong> Et afsnit i <code>AGENTS.md</code></p>
+            <p><strong>Skills:</strong> Indlæses ikke af værktøjet selv. Grundreglerne henviser til filerne i <code>.agents/skills</code>.</p>
+            <p><strong>Kontrollér:</strong> Start med aider --read AGENTS.md, eller tilføj read: AGENTS.md i .aider.conf.yml. Ved start skriver Aider, at AGENTS.md er tilføjet. Læs en skill ind med /read .agents/skills/&lt;navn&gt;/SKILL.md, når opgaven passer.</p>
+            
+            <p class="caveat">Aider indlæser hverken AGENTS.md eller skills af sig selv. Harness ændrer ikke .aider.conf.yml.</p>
+            <p><a href="https://aider.chat/docs/usage/conventions.html">Aider om konventioner ↗</a> · <a href="https://aider.chat/docs/config/aider_conf.html">Aider om .aider.conf.yml ↗</a></p>
+            <p><a href="pakker.html?vaerktoej=aider">Hent pakken til Aider →</a></p>
+          </article>
+          <article class="tool-entry" id="warp">
+            <h3>Warp</h3>
+            <p class="tool-type">Warp · Efter værktøjets dokumentation</p>
+            <p>Terminal med indbygget kodeagent.</p>
+            <p><strong>Grundregler:</strong> Et afsnit i <code>AGENTS.md</code></p>
+            <p><strong>Skills:</strong> <code>.agents/skills</code></p>
+            <p><strong>Kontrollér:</strong> Spørg agenten &quot;Hvilke skills har jeg?&quot;, eller brug /skills i Warps CLI. Brugte regler vises under References i svaret.</p>
+            
+            <p class="caveat">Findes WARP.md i samme mappe som AGENTS.md, bruger Warp WARP.md. Warp læser skills fra mange værktøjers mapper, så den samme skill kan optræde flere gange.</p>
+            <p><a href="https://docs.warp.dev/agents/capabilities/rules/">Warp om regler ↗</a> · <a href="https://docs.warp.dev/agents/capabilities/skills/">Warp om skills ↗</a></p>
+            <p><a href="pakker.html?vaerktoej=warp">Hent pakken til Warp →</a></p>
+          </article>
+          <article class="tool-entry" id="augment">
+            <h3>Augment Code</h3>
+            <p class="tool-type">Augment Code · Efter værktøjets dokumentation</p>
+            <p>Kodeagent til VS Code, JetBrains og terminalen (Auggie).</p>
+            <p><strong>Grundregler:</strong> Et afsnit i <code>AGENTS.md</code></p>
+            <p><strong>Skills:</strong> <code>.agents/skills</code></p>
+            <p><strong>Kontrollér:</strong> Kør /rules og /skills i Auggie for at se de indlæste regler og skills med kilde.</p>
+            
+            <p class="caveat">Skills i din brugermappe går forud for projektets. I editorerne er skills en betafunktion, der skal slås til.</p>
+            <p><a href="https://docs.augmentcode.com/cli/rules">Augment om regler ↗</a> · <a href="https://docs.augmentcode.com/cli/skills">Augment om skills ↗</a></p>
+            <p><a href="pakker.html?vaerktoej=augment">Hent pakken til Augment Code →</a></p>
           </article>
         </div>
       </section>
-
-      <section id="platforme" class="note" aria-labelledby="platforme-title">
-        <h2 id="platforme-title">Byg i en webplatform</h2>
-        <p>Her indgår udviklingsmiljøet i en samlet tjeneste. Vores vejledninger kan være relevante, men regler og data skal vurderes i platformens egen sammenhæng.</p>
+      <section id="editor" class="note" aria-labelledby="editor-title">
+        <h2 id="editor-title">Editorer og udviklingsmiljøer</h2>
         <div class="tool-list">
-          <article class="tool-entry">
-            <h3>Lovable</h3>
-            <p class="tool-type">Appbygning i browseren</p>
-            <p>Workspace- og project knowledge kan beskrive konventioner og hensyn, som agenten skal følge. Harness-indhold vil skulle tilpasses disse felter og afprøves i tjenesten.</p>
-            <p><strong>Mulig indgang:</strong> projektets knowledge.</p>
-            <p><a href="https://docs.lovable.dev/features/knowledge">Knowledge i Lovable ↗</a></p>
+          <article class="tool-entry" id="cursor">
+            <h3>Cursor</h3>
+            <p class="tool-type">Anysphere · Efter værktøjets dokumentation</p>
+            <p>Editor med indbygget kodeagent og en CLI.</p>
+            <p><strong>Grundregler:</strong> Et afsnit i <code>AGENTS.md</code></p>
+            <p><strong>Skills:</strong> <code>.agents/skills</code></p>
+            <p><strong>Kontrollér:</strong> Åbn Customize, og se under Rules og Skills. Skriv / i chatten for at se Harness-skillsene, og start fx /harness-sikkerhedsgennemgang.</p>
+            
+            <p class="caveat">Cursor læser både AGENTS.md og CLAUDE.md. Har projektet begge, bruger Cursor begge. Nye skills opdages ved opstart, så genstart Cursor efter installationen.</p>
+            <p><a href="https://cursor.com/docs/rules">Cursor om regler ↗</a> · <a href="https://cursor.com/docs/skills">Cursor om skills ↗</a></p>
+            <p><a href="pakker.html?vaerktoej=cursor">Hent pakken til Cursor →</a></p>
           </article>
-          <article class="tool-entry">
+          <article class="tool-entry" id="github-copilot">
+            <h3>GitHub Copilot</h3>
+            <p class="tool-type">GitHub · Efter værktøjets dokumentation</p>
+            <p>Kodeassistent i VS Code og andre editorer, i Copilot CLI og som kodeagent på GitHub.</p>
+            <p><strong>Grundregler:</strong> Et afsnit i <code>AGENTS.md</code></p>
+            <p><strong>Skills:</strong> <code>.github/skills</code></p>
+            <p><strong>Kontrollér:</strong> I VS Code: kør Chat: Open Customizations, eller skriv /skills i chatten. I Copilot CLI: /skills list og /instructions. Brugte instruktioner vises under References i svaret.</p>
+            
+            <p class="caveat">VS Code læser AGENTS.md i roden som standard; AGENTS.md i undermapper kræver en indstilling. Copilot CLI læser også CLAUDE.md og GEMINI.md, så reglerne kan optræde flere gange, hvis projektet har dem. Ændringer kræver en ny session i CLI.</p>
+            <p><a href="https://docs.github.com/en/copilot/reference/custom-instructions-support">GitHub om instruktioner ↗</a> · <a href="https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills">GitHub om skills i Copilot CLI ↗</a> · <a href="https://code.visualstudio.com/docs/agent-customization/agent-skills">VS Code om skills ↗</a></p>
+            <p><a href="pakker.html?vaerktoej=github-copilot">Hent pakken til GitHub Copilot →</a></p>
+          </article>
+          <article class="tool-entry" id="devin-desktop">
+            <h3>Devin Desktop</h3>
+            <p class="tool-type">Cognition · Efter værktøjets dokumentation</p>
+            <p>Udviklingsmiljø med kodeagenter, tidligere Windsurf.</p>
+            <p><strong>Grundregler:</strong> Et afsnit i <code>AGENTS.md</code></p>
+            <p><strong>Skills:</strong> <code>.agents/skills</code></p>
+            <p><strong>Kontrollér:</strong> Åbn Customizations for at se de indlæste regler og skills. I Devin Local viser Open customizations alt, sessionen har indlæst.</p>
+            
+            <p class="caveat">Devin Desktop har to agenter: Devin Local, som er standard, og den ældre Cascade. Begge læser AGENTS.md og .agents/skills. Devin Local læser også CLAUDE.md, så reglerne kan optræde to gange, hvis projektet har begge.</p>
+            <p><a href="https://docs.devin.ai/desktop/cascade/agents-md">Devin Desktop om AGENTS.md ↗</a> · <a href="https://docs.devin.ai/desktop/devin-local">Devin Local ↗</a> · <a href="https://docs.devin.ai/cli/extensibility/skills/overview">Devin om skills ↗</a></p>
+            <p><a href="pakker.html?vaerktoej=devin-desktop">Hent pakken til Devin Desktop →</a></p>
+          </article>
+          <article class="tool-entry" id="cline">
+            <h3>Cline</h3>
+            <p class="tool-type">Cline · Efter værktøjets dokumentation</p>
+            <p>Kodeagent med åben kildekode i VS Code og som CLI.</p>
+            <p><strong>Grundregler:</strong> Et afsnit i <code>AGENTS.md</code></p>
+            <p><strong>Skills:</strong> <code>.cline/skills</code></p>
+            <p><strong>Kontrollér:</strong> Klik på vægt-ikonet under Cline-panelet for at se fanerne Rules og Skills. Skriv / for at starte en skill direkte.</p>
+            
+            <p class="caveat">Cline læser AGENTS.md i projektets rod. Globale skills med samme navn går forud for projektets. Slår du en skill fra i Cline, skriver Cline det i SKILL.md, og en senere opdatering springer filen over.</p>
+            <p><a href="https://docs.cline.bot/customization/cline-rules">Cline om regler ↗</a> · <a href="https://docs.cline.bot/customization/skills">Cline om skills ↗</a></p>
+            <p><a href="pakker.html?vaerktoej=cline">Hent pakken til Cline →</a></p>
+          </article>
+          <article class="tool-entry" id="kilo-code">
+            <h3>Kilo Code</h3>
+            <p class="tool-type">Kilo Code · Efter værktøjets dokumentation</p>
+            <p>Kodeagent med åben kildekode i VS Code og som CLI.</p>
+            <p><strong>Grundregler:</strong> Et afsnit i <code>AGENTS.md</code></p>
+            <p><strong>Skills:</strong> <code>.agents/skills</code></p>
+            <p><strong>Kontrollér:</strong> Kør kilo debug skill for en liste over skills, og /reload efter ændringer. Et brugt skill-kald vises i samtalen.</p>
+            
+            <p class="caveat">Kilo Code indlæser altid AGENTS.md. I VS Code læses .claude-mapper kun med en særskilt indstilling, derfor bruger Harness .agents/skills.</p>
+            <p><a href="https://kilo.ai/docs/customize/agents-md">Kilo Code om AGENTS.md ↗</a> · <a href="https://kilo.ai/docs/customize/skills">Kilo Code om skills ↗</a></p>
+            <p><a href="pakker.html?vaerktoej=kilo-code">Hent pakken til Kilo Code →</a></p>
+          </article>
+          <article class="tool-entry" id="zed">
+            <h3>Zed</h3>
+            <p class="tool-type">Zed Industries · Efter værktøjets dokumentation</p>
+            <p>Editor med indbygget kodeagent.</p>
+            <p><strong>Grundregler:</strong> Et afsnit i <code>AGENTS.md</code></p>
+            <p><strong>Skills:</strong> <code>.agents/skills</code></p>
+            <p><strong>Kontrollér:</strong> Åbn Settings → AI → Skills, eller Agent Panel → … → Skills. Markér projektet som betroet, så projektets skills indlæses.</p>
+            
+            <p class="caveat">Zed bruger kun den første instruktionsfil, den finder. Har projektet fx .rules, .cursorrules eller .github/copilot-instructions.md, bliver AGENTS.md ikke læst. Skills virker i Zeds egen agent, ikke i eksterne agenter.</p>
+            <p><a href="https://zed.dev/docs/ai/instructions">Zed om instruktioner ↗</a> · <a href="https://zed.dev/docs/ai/skills">Zed om skills ↗</a></p>
+            <p><a href="pakker.html?vaerktoej=zed">Hent pakken til Zed →</a></p>
+          </article>
+          <article class="tool-entry" id="antigravity">
+            <h3>Google Antigravity</h3>
+            <p class="tool-type">Google · Efter værktøjets dokumentation</p>
+            <p>Googles udviklingsmiljø med kodeagenter.</p>
+            <p><strong>Grundregler:</strong> Et afsnit i <code>AGENTS.md</code></p>
+            <p><strong>Skills:</strong> <code>.agents/skills</code></p>
+            <p><strong>Kontrollér:</strong> Åbn projektet, og bed agenten opsummere projektets regler og nævne sine skills.</p>
+            
+            <p class="caveat">Filplaceringen følger Googles dokumentation og er ikke afprøvet med Harness.</p>
+            <p><a href="https://antigravity.google/docs/rules/">Antigravity om regler ↗</a> · <a href="https://antigravity.google/docs/skills/">Antigravity om skills ↗</a></p>
+            <p><a href="pakker.html?vaerktoej=antigravity">Hent pakken til Google Antigravity →</a></p>
+          </article>
+          <article class="tool-entry" id="kiro">
+            <h3>Kiro</h3>
+            <p class="tool-type">AWS · Efter værktøjets dokumentation</p>
+            <p>Udviklingsmiljø og CLI med kodeagent fra AWS.</p>
+            <p><strong>Grundregler:</strong> Et afsnit i <code>AGENTS.md</code></p>
+            <p><strong>Skills:</strong> <code>.kiro/skills</code></p>
+            <p><strong>Kontrollér:</strong> Åbn panelet Agent Steering &amp; Skills i Kiro. I CLI viser /context show og /config skills, hvad der er indlæst.</p>
+            
+            <p class="caveat">Kiro læser skills fra .kiro/skills, ikke fra de fælles skillmapper. AGENTS.md indlæses altid sammen med projektets steering-filer.</p>
+            <p><a href="https://kiro.dev/docs/steering/">Kiro om steering og AGENTS.md ↗</a> · <a href="https://kiro.dev/docs/skills/">Kiro om skills ↗</a></p>
+            <p><a href="pakker.html?vaerktoej=kiro">Hent pakken til Kiro →</a></p>
+          </article>
+          <article class="tool-entry" id="junie">
+            <h3>Junie</h3>
+            <p class="tool-type">JetBrains · Efter værktøjets dokumentation</p>
+            <p>JetBrains&#39; kodeagent i IntelliJ, PyCharm og de øvrige JetBrains-editorer samt som CLI.</p>
+            <p><strong>Grundregler:</strong> Et afsnit i <code>AGENTS.md</code></p>
+            <p><strong>Skills:</strong> <code>.agents/skills</code></p>
+            <p><strong>Kontrollér:</strong> Brug /skills i Junie for at se skillsene. Kontrollér, at projektet er markeret som betroet.</p>
+            
+            <p class="caveat">Findes .junie/AGENTS.md, bruger Junie kun den og ignorerer projektets AGENTS.md. Junie CLI læser .agents/skills; understøttelsen i editor-pluginet er uafklaret i JetBrains&#39; egen dokumentation.</p>
+            <p><a href="https://junie.jetbrains.com/docs/junie-ide-plugin.html">Junie om regler i editoren ↗</a> · <a href="https://junie.jetbrains.com/docs/agent-skills.html">Junie om skills ↗</a></p>
+            <p><a href="pakker.html?vaerktoej=junie">Hent pakken til Junie →</a></p>
+          </article>
+        </div>
+      </section>
+      <section id="web" class="note" aria-labelledby="web-title">
+        <h2 id="web-title">Webplatforme</h2>
+        <div class="tool-list">
+          <article class="tool-entry" id="replit">
             <h3>Replit Agent</h3>
-            <p class="tool-type">Appbygning i Replits udviklingsmiljø</p>
-            <p>Agenten læser projektets <code>replit.md</code> med konventioner, struktur og ønsker. Den kan også opdatere filen, så fælles regler skal gennemgås ved ændringer.</p>
-            <p><strong>Mulig indgang:</strong> <code>replit.md</code>.</p>
-            <p><a href="https://docs.replit.com/features/project-setup/replit-dot-md">Projektinstruktioner ↗</a></p>
+            <p class="tool-type">Replit · Efter værktøjets dokumentation</p>
+            <p>Appbygning i Replits udviklingsmiljø i browseren.</p>
+            <p><strong>Grundregler:</strong> Et afsnit i <code>replit.md</code></p>
+            <p><strong>Skills:</strong> <code>.agents/skills</code></p>
+            <p><strong>Kontrollér:</strong> Læg filerne i Replit-projektet, fx gennem Git eller upload. Bed Agent nævne projektets instruktioner og skills.</p>
+            
+            <p class="caveat">Replit Agent kan selv ændre replit.md. Ændres AI Harness-afsnittet, springer en senere opdatering det over.</p>
+            <p><a href="https://docs.replit.com/features/project-setup/replit-dot-md">Replit om replit.md ↗</a> · <a href="https://docs.replit.com/features/agent/skills">Replit om skills ↗</a></p>
+            <p><a href="pakker.html?vaerktoej=replit">Hent pakken til Replit Agent →</a></p>
+          </article>
+          <article class="tool-entry" id="lovable">
+            <h3>Lovable</h3>
+            <p class="tool-type">Lovable · Tekst til platformens egne felter</p>
+            <p>Appbygning i browseren med projekt- og arbejdsområdeviden.</p>
+            <p><strong>Grundregler:</strong> Indsættes i platformens egne felter. Pakken følger ikke med.</p>
+            <p><strong>Skills:</strong> Følger ikke med teksten.</p>
+            <p><strong>Kontrollér:</strong> Indsæt teksten i projektets viden (Project knowledge), og bed agenten opsummere reglerne. Er projektet forbundet til GitHub, læser Lovable også AGENTS.md i roden.</p>
+            
+            <p class="caveat">Lovable tillader højst 10.000 tegn pr. vidensfelt. Skills importeres i Lovables egen brugerflade og følger ikke med teksten.</p>
+            <p><a href="https://docs.lovable.dev/features/knowledge">Lovable om knowledge ↗</a> · <a href="https://docs.lovable.dev/features/skills">Lovable om skills ↗</a></p>
+            <p><a href="pakker.html?vaerktoej=lovable">Kopiér teksten i webguiden →</a></p>
           </article>
         </div>
       </section>
     </div>
-
+    <section class="note" aria-labelledby="udgaaet-title">
+      <h2 id="udgaaet-title">Udgåede værktøjer</h2>
+      <p>Continue blev købt af Cursor i juni 2026 og udvikles ikke længere. Roo Code lukkede i maj 2026 og henviser til Cline. Vi laver derfor ikke pakker til dem. <a href="https://www.continue.dev/">Continue ↗</a> · <a href="https://roocodeinc.github.io/Roo-Code/">Roo Code ↗</a></p>
+    </section>
     <section class="note" aria-labelledby="valg-title">
-      <h2 id="valg-title">Hvad betyder det for Harness?</h2>
-      <p>Vores forslag er at prioritere vejledninger til Cursor, GitHub Copilot, Gemini CLI og Cline, når flere værktøjer skal dækkes. De har dokumenterede måder at indlæse fælles instruktioner. Pi bør vurderes særskilt som agentmotor. Det er en faglig prioritering, ikke et resultat af sammenlignende brugertest.</p>
-      <p>Et fælles filformat giver ikke samme adfærd eller adgangskontrol overalt. Hver integration skal afprøves med det valgte værktøj og den konkrete model, herunder eksisterende projektregler, Git, filadgang og afviste handlinger. Oversigten er heller ikke en vurdering af leverandørernes datavilkår.</p>
+      <h2 id="valg-title">Samme filer, forskellig adfærd</h2>
+      <p>Et fælles filformat giver ikke samme adfærd eller adgangskontrol overalt. Værktøjerne læser regler og skills forskelligt, og modellen afgør, hvor godt instruktionerne følges. Kontrollér indlæsningen i dit eget værktøj, og gennemgå agentens arbejde. Oversigten er ikke en vurdering af leverandørernes datavilkår.</p>
       <p><a href="https://github.com/ai-alliancen-org/ai-harness/blob/main/docs/teknisk-grundlag.md">Læs om vores nuværende motor og vurderingen af Pi ↗</a></p>
     </section>
   </main>
-  <footer><a href="./">Til forsiden</a><a href="pakker.html">Hent de nuværende grundregler</a></footer>
+  <footer><a href="./">Til forsiden</a><a href="pakker.html">Hent grundregler og skills</a></footer>
 </body>
 </html>

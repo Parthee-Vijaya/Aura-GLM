@@ -14,6 +14,20 @@ Afklaret i projektsamtalen 28. september 2026: Den primære målgruppe er udvikl
 
 Kildegennemgangen bekræfter det oprindelige forslag om en egen brugerflade og konfiguration omkring OpenCode uden en fork. Det samlede forslag om organisationsstyring, revisionsspor og isolation er ikke implementeret. Pi skal vurderes som mulig alternativ motor; der er ikke besluttet eller udført et skift. Se [teknisk grundlag](teknisk-grundlag.md).
 
+## Fælles bibliotek og installation i eget kodeværktøj · 29. september 2026
+
+Besluttet i projektsamtalen: Standardvalgene i [det faglige grundlag](harness-grundlag.md) er grundlaget for skillsene, det skal være let at læse om hver skill som en FAQ, og pakkerne skal dække flere værktøjer end Claude Code, Codex og OpenCode.
+
+Tekniske valg i implementeringen:
+
+- **Én kilde:** `profiles/catalog.json`, `profiles/grundregler.md` og `profiles/skills/` er kilden til appens installation, `scripts/harness.cjs`, webguidens ZIP-pakker og de genererede sider. Filplaceringer pr. værktøj er data, ikke kode.
+- **Portable skills:** navne med præfikset `harness-` i ASCII, kun `name` og `description` i frontmatter, kun Markdown og ingen scripts eller værktøjstilladelser. Menneskelige beskrivelser og kilder står i kataloget, instruktionerne til agenten i SKILL.md.
+- **Regler:** `AGENTS.md` er fælles regelfil. Claude Code og Gemini CLI får en `CLAUDE.md` eller `GEMINI.md`, der importerer den, så indholdet ikke står to gange. Aider og Zed kræver særskilt opmærksomhed og er beskrevet i deres forbehold.
+- **Skillmapper:** så få mapper som muligt, så alle valgte værktøjer kan se skillsene; `.agents/skills` dækker de fleste. Ved lige dækning vælges værktøjets egen foretrukne mappe.
+- **Sikker installation:** afgrænsede afsnit mellem faste markører i eksisterende filer, aldrig overskrivning, `.harness/installation.json` med version og kontrolsummer, konflikter ved ændrede filer, gennemgang med engangsnøgle og fjernelse af kun uændrede filer. Installationen gælder ét projekt ad gangen.
+- **Udgåede værktøjer:** Continue og Roo Code får ingen pakker, fordi de ikke længere udvikles.
+- **Appens egen agent:** bruger fortsat sine egne instruktioner, nu i `profiles/app`. Overgangen til det fælles bibliotek med indlæsning efter behov er en særskilt beslutning, fordi den ændrer den afprøvede agentadfærd.
+
 ## Historiske møde- og produktnotater
 
 **Aktuel implementeringsstatus:** POC 1 er implementeret. POC 2 omfatter lokal kodeagent via OpenCode 1.17.15, modeladaptere, synlige skills, dataoplysninger, vilkårlig projektåbning og genbrugelige designpakker. Se [desktopvejledningen](../desktop/README.md) for den faktiske verifikation og begrænsninger. Noterne nedenfor er historiske.

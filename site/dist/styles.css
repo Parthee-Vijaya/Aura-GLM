@@ -669,3 +669,90 @@ footer {
   font-size:.875rem
 }
 
+/* Version 0.2: grupperede værktøjer, filvælger, tre installationsveje og skills. */
+.links {
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px 24px
+}
+.tool-groups {
+  display:grid;
+  gap:18px;
+  margin:0 0 22px
+}
+.tool-groups .tool-picker {
+  margin:0
+}
+.tool-picker legend {
+  font-size:.78rem;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:8px;
+  padding:0
+}
+.file-select {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:0 20px 12px;
+  font-size:.8rem
+}
+.file-select select {
+  flex:1;
+  min-width:0;
+  font:inherit;
+  padding:6px 8px;
+  border:1px solid var(--line);
+  border-radius:6px;
+  background:white
+}
+.status-label {
+  display:inline-block;
+  font-size:.75rem;
+  border:1px solid var(--line);
+  border-radius:20px;
+  padding:2px 10px;
+  margin:4px 0 10px
+}
+.pack-warnings {
+  margin:0 0 12px;
+  padding-left:18px;
+  font-size:.82rem;
+  color:#7a4b00
+}
+.pack-warnings:empty {
+  display:none
+}
+#knowledge p {
+  font-size:.88rem
+}
+.work-grid.without-files {
+  grid-template-columns:minmax(0,420px)
+}
+.routes .prompt {
+  font-size:.82rem;
+  background:white;
+  border:1px solid var(--line);
+  border-radius:6px;
+  padding:10px 12px;
+  color:var(--ink)
+}
+.check-box .step {
+  margin-right:8px
+}
+#sources a {
+  font-size:.82rem
+}
+.skills-overview .rule-list a {
+  white-space:nowrap
+}
+@media(max-width:680px) {
+  .file-select {
+    flex-direction:column;
+    align-items:stretch
+  }
+  .work-grid.without-files {
+    grid-template-columns:1fr
+  }
+}

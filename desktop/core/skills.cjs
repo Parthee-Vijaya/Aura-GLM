@@ -8,7 +8,7 @@ class Skills {
     return Promise.all(IDS.map(async id => {
       const original = id === 'faelles-grundregler' ? '---\nname: faelles-grundregler\ndescription: Fælles arbejdsgrundlag for AI Harness-projekter.\ndisable-model-invocation: true\n---\n\n' + await fs.readFile(path.join(this.root, '..', 'grundregler.md'), 'utf8') : await fs.readFile(path.join(this.root, id, 'SKILL.md'), 'utf8');
       const override = settings.skills?.[id];
-      return { id, original, content: override?.content ?? original, enabled: override?.enabled ?? true, customized: Boolean(override), source: 'AI Harness · fælles bibliotek' };
+      return { id, original, content: override?.content ?? original, enabled: override?.enabled ?? true, customized: Boolean(override), source: 'AI Harness-appen' };
     }));
   }
   async save(projectRoot, input) {

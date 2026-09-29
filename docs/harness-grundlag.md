@@ -103,7 +103,7 @@ Ikke alle skills skal køre på hver opgave. En tekstændring skal eksempelvis i
 
 ## Sådan skal brugeren få indholdet
 
-Ved første åbning af appen foreslår vi to store valg: **Brug AI Harness-appen** og **Brug Harness i mit kodeværktøj**. Valget hører til appens første skærm; operativsystemets installer skal fortsat håndtere installation. Brugeren skal senere kunne skifte vej.
+Ved første åbning viser appen to store valg: **Byg i AI Harness-appen** og **Brug Harness i mit kodeværktøj**. Valget hører til appens første skærm; operativsystemets installer håndterer fortsat installationen. Begge veje kan åbnes igen fra sidepanelet.
 
 Sporet til eget værktøj skal spørge om værktøj og projektmappe, vise et anbefalet udvalg og derefter vise de konkrete filændringer. Det skal ikke kræve en modelnøgle til Harness. Avancerede valg, herunder installation for alle brugerens projekter, åbnes særskilt. Webguiden skal tilbyde samme indhold, manuel ZIP-installation og en vejledning, som den eksisterende agent kan følge fra repositoryet.
 
@@ -115,11 +115,22 @@ Der skal være særskilte adaptere til indlæsning og kontrol:
 
 Installationen skal bevare eksisterende regler og tilpasninger. Den skal have en gennemgang før skrivning, version og indholdsoversigt, håndtering af navnekonflikter samt mulighed for at fortryde uden at slette andre filer. Den må ikke ændre modelkonti, tilladelser eller køre medfølgende scripts uden særskilt aftale. Opdateringer skal vise ændringer i indhold og bevare lokale tilpasninger. En kontrolsum kan påvise ændret indhold; den beviser ikke alene afsenderens identitet.
 
-## Forskellen til det, der findes nu
+## Det er bygget, og det mangler
 
-De faktiske ZIP-pakker indeholder grundregler, `.gitignore`, vejledning og manifest. De indeholder ikke de fem eksisterende skills i `profiles/skills/`. Appens `Skills.context()` sender alle aktive skills med som én samlet tekst. Noget indhold henviser direkte til appens indstillinger eller et bestemt værktøjsnavn og skal tilpasses, før det er portabelt.
+Status 29. september 2026:
 
-Der mangler derfor et fælles katalog, indhold til resten af forløbet, adaptere med kontrolleret installation og en afprøvning af indlæsning og adfærd i de faktiske kodeværktøjer. Appens to produktvalg er heller ikke implementeret endnu. Hjemmesiden og README beskriver retningen og viser de nuværende muligheder.
+- **Skillbiblioteket** med de 12 fagområder ovenfor ligger i `profiles/skills` som skills efter Agent Skills-formatet. Navnene begynder med `harness-` og bruger kun ASCII. Frontmatter har kun `name` og `description`, så filerne kan valideres og bruges i alle værktøjer. Detaljer og skabeloner ligger i `references/`, herunder danske offentlige krav om webtilgængelighed, databeskyttelse, login med MitID, journalisering, AI-forordningen og NIS2. [FAQ om skillsene](../profiles/SKILLS.md).
+- **Adaptere til 23 kodeværktøjer og en tekst til Lovable** er beskrevet som data i `profiles/catalog.json`. `AGENTS.md` er fælles regelfil; Claude Code og Gemini CLI får en `CLAUDE.md` eller `GEMINI.md`, der importerer den. Skills lægges i `.agents/skills`, som de fleste værktøjer læser, og i værktøjets egen mappe, når det er nødvendigt, fx `.claude/skills` til Claude Code og `.kiro/skills` til Kiro. [Værktøjsoversigten](../site/dist/vaerktoejer.html) viser placering, kontrol og forbehold pr. værktøj.
+- **Installationen** viser ændringerne før skrivning, overskriver aldrig, tilføjer afgrænsede afsnit mellem faste markører, registrerer version og kontrolsummer i `.harness/installation.json`, springer ændrede filer over ved opdatering og fjerner kun uændrede filer. Den bruges af appens førstevalg "Brug Harness i mit kodeværktøj", af `scripts/harness.cjs` og af byggescriptet til webguidens ZIP-pakker.
+- **Webguiden** har pakker til alle værktøjerne, en vejledning, som brugerens egen kodeagent kan følge, og en FAQ om skillsene.
+
+Det mangler stadig:
+
+- En måling af, om skillsene forbedrer arbejdet for målgruppen, og om modellerne vælger den rigtige skill. Se afsnittet nedenfor.
+- Afprøvning i de 21 værktøjer, der kun følger dokumentationen, og i Codex med en rigtig session.
+- Installation for alle brugerens projekter på én gang, organisationsprofiler med kommunens egne krav og en måde at distribuere biblioteket uden adgang til repositoryet.
+- At appens indbyggede agent bruger det fælles bibliotek med indlæsning efter behov. Den bruger i dag sine egne instruktioner i `profiles/app`.
+- Registrering af data, beslutninger og godkendelse før udgivelse som funktion i appen. Skillen om data og leverandører giver indtil videre en dataoversigt i en Markdown-fil.
 
 Repositoryet er privat. En agent, der skal hente derfra, skal bruge brugerens eksisterende godkendte adgang. Ingen vejledning må bede om at indsætte tokens i prompts eller downloadadresser. Der er endnu ikke en publiceret GitHub Pages-side.
 
@@ -131,4 +142,4 @@ Vi foreslår at sammenligne samme opgaver uden Harness, med grundreglerne og med
 
 Prøverne skal blandt andet vise, at agenten reagerer på en syntetisk nøgle, respekterer afvist handling, bevarer andre ændringer og ikke gennemfører en udgivelse med manglende nødvendige beslutninger. De skal også vise, at en irrelevant skill ikke udløser ekstra arbejde. En person uden udviklererfaring skal kunne forklare næste skridt og genkende, hvornår en fagperson skal inddrages.
 
-Denne research er skrevet og sammenholdt med officielle kilder og den nuværende kode. De nye skills, installationsadaptere og projektkontroller er ikke implementeret eller afprøvet. Der er endnu ingen måling af, om de foreslåede instruktioner forbedrer kodekvaliteten for målgruppen.
+Researchen er sammenholdt med officielle kilder og den nuværende kode. Skills og installationsadaptere er implementeret; projektkontrollerne er ikke. Der er endnu ingen måling af, om instruktionerne forbedrer kodekvaliteten for målgruppen. Nyere undersøgelser fra 2026 finder, at generelle kontekstfiler sjældent gør agenter mere korrekte, mens fokuserede skills kan hjælpe ved bestemte opgaver, og at det er et reelt fejlpunkt, om modellen faktisk vælger skillen. [SkillsBench](https://arxiv.org/abs/2602.12670), [SWE-Skills-Bench](https://arxiv.org/abs/2603.15401).

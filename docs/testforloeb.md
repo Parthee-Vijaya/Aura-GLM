@@ -37,6 +37,7 @@ Udfyld først invitationen, når download og den aftalte model er afprøvet. Der
 6. Skriv en kladde, luk AI Harness, og åbn projektet igen. Find kladden, samtalen og filerne.
 7. Stop en AI-opgave. Beskriv, hvad du tror er gemt, og hvordan du vil fortsætte. Find Hjælp og feedback, og se fejlrapporten før eventuel deling.
 8. Installer den næste testversion oven på den første, og åbn samme projekt. Kontroller filer, kladde, gemt designpakke og forbindelsesvalg. En nøgle kan kræve ny indtastning; nulstil aldrig systemets nøglering.
+9. Vælg **Harness i dit kodeværktøj** i sidepanelet. Læs under **Det følger med**, hvad to af skillsene gør, og forklar dem med dine egne ord. Installer Harness i en kopi af et projekt til det kodeværktøj, du bruger. Gennemgå ændringerne, åbn projektet i værktøjet, og spørg efter kontrolordet. Fjern derefter installationen igen, og kontroller, at dine egne filer er uændrede.
 
 Test af React/Vite eller Astro omfatter også gennemgang af installation, start, mobilvisning, stop og genstart af preview. Apps med native platformskrav skal vurderes særskilt; denne test beviser ikke iOS-, Android- eller appbutiksunderstøttelse.
 

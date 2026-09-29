@@ -1,33 +1,1078 @@
 {
-  "version": "0.1.0",
-  "checkedAt": "2026-09-22",
+  "schemaVersion": 2,
+  "version": "0.2.0",
+  "checkedAt": "2026-09-29",
+  "controlWord": "FÆLLES-GRUNDLAG-02",
+  "skillDirs": [
+    ".agents/skills",
+    ".claude/skills",
+    ".github/skills",
+    ".cursor/skills",
+    ".gemini/skills",
+    ".opencode/skills",
+    ".kiro/skills",
+    ".junie/skills",
+    ".vibe/skills",
+    ".augment/skills",
+    ".goose/skills",
+    ".factory/skills",
+    ".cline/skills",
+    ".devin/skills",
+    ".pi/skills",
+    ".kilo/skills"
+  ],
+  "neutralSkillDir": ".agents/skills",
+  "questions": [
+    {
+      "q": "Hvad er en skill?",
+      "a": "En skill er en kort vejledning til kodeagenten om én bestemt arbejdsopgave, fx en sikkerhedsgennemgang eller en udgivelse. Den ligger som en almindelig tekstfil, SKILL.md, i projektet. Agenten læser først kun navn og beskrivelse og henter resten, når opgaven passer. Det holder instruktionerne korte i det daglige arbejde."
+    },
+    {
+      "q": "Bruges alle skills hver gang?",
+      "a": "Nej. Mange værktøjer vælger selv en skill, når opgaven passer til beskrivelsen, og du kan også bede om en bestemt skill. En tekstændring skal fx ikke udløse en sikkerhedsgennemgang. Hvordan skills startes, afhænger af værktøjet; se værktøjets vejledning i webguiden."
+    },
+    {
+      "q": "Hvad er forskellen på grundregler og skills?",
+      "a": "Grundreglerne gælder altid: nøgler, Git, afprøvning og ærlig rapportering. De står i fx AGENTS.md eller CLAUDE.md. Skills er de længere arbejdsgange, der kun bruges, når opgaven kræver dem."
+    },
+    {
+      "q": "Kan jeg ændre en skill?",
+      "a": "Ja. Filerne er dine. Hvis du ændrer en installeret fil, springer en senere opdatering netop den fil over og fortæller dig det. Projektets egne regler skrives uden for AI Harness-afsnittet i AGENTS.md eller CLAUDE.md, så de aldrig overskrives."
+    },
+    {
+      "q": "Sender AI Harness mine data nogen steder hen?",
+      "a": "Nej. Installationen kopierer tekstfiler til dit projekt. Dit kodeværktøj og den model, du har valgt, læser filerne som en del af dit arbejde. Hvor de data behandles, afhænger af værktøjet og modellen."
+    },
+    {
+      "q": "Gør skillsene min app sikker eller lovlig?",
+      "a": "Nej. Skills er vejledning til agenten. De er ikke adgangskontrol, en sikkerhedsgodkendelse eller en vurdering efter databeskyttelsesreglerne. De hjælper med at stille de rigtige spørgsmål og inddrage de rigtige fagpersoner, men ansvaret for løsningen ligger fortsat hos organisationen."
+    },
+    {
+      "q": "Bliver koden bedre af det?",
+      "a": "Det har vi endnu ikke målt for vores målgruppe. Undersøgelser fra 2026 viser, at generelle instruktionsfiler sjældent gør kodeagenter mere korrekte og koster ekstra tokens, mens fokuserede skills kan hjælpe ved bestemte opgaver. Derfor er grundreglerne korte, og skills indlæses kun, når opgaven passer. Vi vil sammenligne de samme opgaver med og uden Harness på flere modeller."
+    },
+    {
+      "q": "Kan en skill gøre skade?",
+      "a": "En skill fra en ukendt kilde skal behandles som software, fordi den kan få agenten til at køre kommandoer. AI Harness' skills indeholder kun tekst, ingen scripts, og giver ingen værktøjstilladelser. Du kan læse dem alle på denne side, før du installerer dem."
+    },
+    {
+      "q": "Hvordan opdaterer eller fjerner jeg AI Harness?",
+      "a": "Installér en ny version på samme måde. Harness opdaterer kun filer, der er uændrede siden installationen, og viser konflikter for resten. Fjernelse sletter kun uændrede filer og afsnit. Oplysningerne står i .harness/installation.json, som også skal med i Git."
+    },
+    {
+      "q": "Hvilke kodeværktøjer virker det med?",
+      "a": "Webguiden viser hvert værktøj med status. \"Afprøvet\" betyder, at vi har set værktøjet indlæse grundregler og skills og sende dem til modellen. \"Efter dokumentation\" betyder, at filplaceringen følger værktøjets officielle dokumentation, men endnu ikke er afprøvet af os. Ingen af delene viser, hvor godt en bestemt model følger instruktionerne."
+    }
+  ],
+  "skills": [
+    {
+      "name": "harness-ide-og-afgraensning",
+      "title": "Idé og afgrænsning",
+      "summary": "Afklarer brugere, vigtigste handling, data og acceptkriterier, før der bygges.",
+      "faq": {
+        "hvad": "Hjælper dig og agenten med at blive enige om opgaven: hvem løsningen er til, hvad den skal kunne, hvilke data den bruger, og hvad der ikke er med. Agenten stiller kun de spørgsmål, der ændrer et væsentligt valg, og skriver resten som antagelser, du kan rette.",
+        "hvornaar": "Når du starter et nyt projekt, beskriver en ny funktion, eller når en opgave skifter retning undervejs.",
+        "resultat": "En kort opgavebeskrivelse med acceptkriterier, du selv kan afprøve, gemt i projektet, fx i docs/opgave.md.",
+        "ikke": "Den vælger ikke teknologi og skriver ikke kode. Den afgør heller ikke, om en behandling af personoplysninger er lovlig."
+      },
+      "sources": []
+    },
+    {
+      "name": "harness-eksisterende-projekt",
+      "title": "Eksisterende projekt",
+      "summary": "Læser et eksisterende projekt, før der foreslås ændringer, og bevarer dets konventioner.",
+      "faq": {
+        "hvad": "Agenten gennemgår projektet uden at køre kommandoer: instruktioner, teknologi, låsefiler, start- og testkommandoer, Git-status, CI og hosting. Derefter får du en kort oversigt og forslag, der passer til projektet.",
+        "hvornaar": "Når du åbner et projekt første gang, overtager det fra andre eller vil tilføje AI Harness til et projekt, der allerede findes.",
+        "resultat": "Et overblik over projektet med kendte risici og usikkerheder samt forslag med præcise filændringer, som du selv vælger imellem.",
+        "ikke": "Den skifter ikke teknologi, pakkehåndtering eller Git-model, og den rydder ikke op med reset, rebase eller force-push."
+      },
+      "sources": []
+    },
+    {
+      "name": "harness-arkitektur-og-teknologi",
+      "title": "Arkitektur og teknologi",
+      "summary": "Anbefaler én begrundet løsning til platform, framework, data, login og hosting med alternativer og konsekvenser.",
+      "faq": {
+        "hvad": "Hjælper med de valg, der er svære at lave om senere: platform, framework, datalagring, backend, login og hosting. Agenten foreslår ét begrundet valg, nævner relevante alternativer og forklarer konti, udgifter, drift og hvor data behandles. I offentlige organisationer peger den på genbrug gennem OS2, login med MitID og fælles registre.",
+        "hvornaar": "Når et nyt projekt skal have sin første opsætning, eller når en opgave kræver en ny tjeneste, database, login eller hostingløsning.",
+        "resultat": "En anbefaling med begrundelse, alternativer, konsekvenser og de godkendelser, der skal på plads, før noget oprettes.",
+        "ikke": "Den opretter ingen konti, tjenester eller betalte ressourcer og skifter ikke teknologi i et eksisterende projekt uden en grund."
+      },
+      "sources": [
+        {
+          "title": "React om at oprette en ny app",
+          "url": "https://react.dev/learn/creating-a-react-app"
+        },
+        {
+          "title": "Astros anvendelsesområde",
+          "url": "https://docs.astro.build/en/concepts/why-astro/"
+        },
+        {
+          "title": "TypeScript strict",
+          "url": "https://www.typescriptlang.org/tsconfig/strict"
+        },
+        {
+          "title": "OS2",
+          "url": "https://www.os2.eu/"
+        },
+        {
+          "title": "Lov om MitID og NemLog-in",
+          "url": "https://www.retsinformation.dk/eli/lta/2025/333"
+        },
+        {
+          "title": "Vejledning om open source i den offentlige sektor",
+          "url": "https://arkitektur.digst.dk/Vejledning-om-brug-af-open-source-i-den-offentlige-sektor"
+        }
+      ]
+    },
+    {
+      "name": "harness-data-og-leverandoerer",
+      "title": "Data og leverandører",
+      "summary": "Fører en dataoversigt over dataforløb, leverandører og åbne spørgsmål og peger på de rette fagpersoner.",
+      "faq": {
+        "hvad": "Holder styr på, hvilke data løsningen bruger, hvem der modtager dem, hvor de behandles og gemmes, og hvad der stadig er uafklaret. Den skelner mellem data i udviklingen og i den færdige app og kender de danske offentlige krav, der typisk udløses: databehandleraftale, fortegnelse, konsekvensanalyse, anmeldelse af brud og journalisering.",
+        "hvornaar": "Når løsningen får et nyt dataforløb, en ny tjeneste eller leverandør, eller når der skal bruges personoplysninger.",
+        "resultat": "En opdateret dataoversigt i projektet med kilder, kontroldatoer og konkrete spørgsmål til fx databeskyttelsesrådgiver og informationssikkerhed.",
+        "ikke": "Den erklærer ingen behandling for lovlig og godkender ikke på organisationens vegne. En registrering i filen er ikke en verificeret godkendelse."
+      },
+      "sources": [
+        {
+          "title": "Datatilsynet om cloud",
+          "url": "https://www.datatilsynet.dk/regler-og-vejledning/cloud"
+        },
+        {
+          "title": "Databeskyttelse gennem design og standardindstillinger",
+          "url": "https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/databeskyttelse-gennem-design-og-standardindstillinger"
+        },
+        {
+          "title": "Konsekvensanalyse",
+          "url": "https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/konsekvensanalyse"
+        },
+        {
+          "title": "GDPR",
+          "url": "https://eur-lex.europa.eu/eli/reg/2016/679/oj"
+        },
+        {
+          "title": "Datatilsynet om testdata",
+          "url": "https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/testdata-anvendelse-af-personoplysninger-ved-udvikling-og-test-af-it-systemer"
+        },
+        {
+          "title": "Offentlighedsloven",
+          "url": "https://www.retsinformation.dk/eli/lta/2020/145"
+        },
+        {
+          "title": "AI-forordningen",
+          "url": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj"
+        }
+      ]
+    },
+    {
+      "name": "harness-noegler-og-afhaengigheder",
+      "title": "Nøgler og afhængigheder",
+      "summary": "Holder nøgler ude af kode, logs og Git og kontrollerer nye pakker, før de tilføjes.",
+      "faq": {
+        "hvad": "Sørger for, at API-nøgler, tokens og adgangskoder hverken ender i koden, i browserens filer, i logs eller i Git. Før en ny pakke tilføjes, forklarer agenten behovet, kontrollerer navn, licens og kendte sårbarheder og bruger projektets låsefil.",
+        "hvornaar": "Når løsningen skal forbindes til en anden tjeneste, når der skal bruges en nøgle, og når pakker tilføjes eller opdateres.",
+        "resultat": "Konfiguration med navngivne miljøvariabler uden værdier, en begrundelse for hver ny pakke og en besked, hvis en hemmelighed er eksponeret.",
+        "ikke": "Den finder ikke alle hemmeligheder automatisk og erstatter ikke en egentlig hemmelighedsscanning eller udskiftning af en lækket nøgle."
+      },
+      "sources": [
+        {
+          "title": "OWASP Secrets Management Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html"
+        },
+        {
+          "title": "Vite om miljøvariabler i browserkode",
+          "url": "https://vite.dev/guide/env-and-mode"
+        },
+        {
+          "title": "npm ci",
+          "url": "https://docs.npmjs.com/cli/v11/commands/npm-ci/"
+        }
+      ]
+    },
+    {
+      "name": "harness-design-og-tilgaengelighed",
+      "title": "Design og tilgængelighed",
+      "summary": "Bygger brugerfladen efter godkendte designreferencer og afprøver tilgængelighed med både værktøjer og hænder.",
+      "faq": {
+        "hvad": "Hjælper med et sammenhængende design ud fra kommunens designsystem eller dine referencer og kontrollerer tilgængelighed: tastatur, fokus, kontrast, fejlbeskeder, overskrifter og små skærme. Den bygger efter WCAG på niveau AA og minder om tilgængelighedserklæringen, som offentlige websteder og apps skal have.",
+        "hvornaar": "Når en side, formular eller komponent bygges eller ændres, og før en offentlig side udgives.",
+        "resultat": "En brugerflade, der er set i browseren på computer- og mobilbredde, og en liste over, hvad der er kontrolleret, og hvad der mangler.",
+        "ikke": "Den erklærer ikke løsningen tilgængelig. Et automatisk værktøj kan ikke alene afgøre, om en side er tilgængelig."
+      },
+      "sources": [
+        {
+          "title": "Lov om tilgængelighed af offentlige organers websteder og mobilapplikationer",
+          "url": "https://www.retsinformation.dk/eli/lta/2018/692"
+        },
+        {
+          "title": "Digitaliseringsstyrelsen om tilgængelighedserklæringen",
+          "url": "https://digst.dk/digital-inklusion/webtilgaengelighed/om-tilgaengelighedserklaeringen/"
+        },
+        {
+          "title": "W3C om evaluering af tilgængelighed",
+          "url": "https://www.w3.org/WAI/test-evaluate/"
+        },
+        {
+          "title": "WCAG 2.2",
+          "url": "https://www.w3.org/TR/WCAG22/"
+        }
+      ]
+    },
+    {
+      "name": "harness-kodestil",
+      "title": "Kodestil og vedligeholdelse",
+      "summary": "Holder koden læsbar for andre med klare navne, enkle funktioner og kommentarer, der forklarer hvorfor.",
+      "faq": {
+        "hvad": "Får agenten til at følge projektets konventioner og skrive kode, en anden udvikler kan overtage: forståelige navne, enkle funktioner, ingen død kode og kommentarer, der forklarer begrundelser frem for at gentage koden. I nye projekter foreslås engelske kodenavne og dansk brugerflade.",
+        "hvornaar": "Når der skrives eller ændres kode, og når en ændring gennemgås før et commit.",
+        "resultat": "Kode, der ligner resten af projektet, og en kort gennemgang af ændringen med eventuelle bevidste afvigelser.",
+        "ikke": "Den indfører ikke en ny formatter eller stil i et eksisterende projekt uden aftale."
+      },
+      "sources": [
+        {
+          "title": "Google om kodegennemgang",
+          "url": "https://google.github.io/eng-practices/review/reviewer/looking-for.html"
+        },
+        {
+          "title": "TypeScript strict",
+          "url": "https://www.typescriptlang.org/tsconfig/strict"
+        }
+      ]
+    },
+    {
+      "name": "harness-afproevning-og-fejlretning",
+      "title": "Afprøvning og fejlretning",
+      "summary": "Viser med faktisk afprøvning, at en ændring virker, og rapporterer præcist, hvor langt afprøvningen er nået.",
+      "faq": {
+        "hvad": "Agenten vælger relevante tests, reproducerer fejl før rettelsen og afprøver den faktiske brugerrejse. Den skelner mellem skrevet, unit-testet, afprøvet på rigtigt materiale og i drift og observeret og påstår aldrig mere, end den har vist.",
+        "hvornaar": "Ved enhver kodeændring, når noget ikke virker, og før agenten melder en opgave færdig.",
+        "resultat": "En aflevering med de kørte kontroller og deres resultat, manuelle trin du selv kan prøve, og det der ikke er afprøvet.",
+        "ikke": "Den gør ikke en høj testdækning til et mål i sig selv og retter ikke tests, så de passer til forkert kode."
+      },
+      "sources": [
+        {
+          "title": "NIST SSDF 1.1",
+          "url": "https://csrc.nist.gov/pubs/sp/800/218/final"
+        }
+      ]
+    },
+    {
+      "name": "harness-git-og-samarbejde",
+      "title": "Git og samarbejde",
+      "summary": "Skelner mellem gem, checkpoint, push, pull request og udgivelse og lader brugeren styre historikken.",
+      "faq": {
+        "hvad": "Forklarer og følger forskellen på at gemme en fil, lave et checkpoint, pushe, åbne en pull request og udgive. Agenten foreslår sammenhængende versioner med en præcis commit-besked, men laver kun Git-handlinger, du udtrykkeligt beder om. Branches vælges efter, om du arbejder alene eller i et team.",
+        "hvornaar": "Ved milepæle, før et commit eller push og når arbejdet skal deles med andre.",
+        "resultat": "En gennemgået ændring med kun de tilsigtede filer, et forslag til commit-besked og en anbefaling til branches, der passer til samarbejdet.",
+        "ikke": "Den laver ikke force-push, rebase eller oprydning i historikken og ændrer ikke Git-identitet eller branchbeskyttelse."
+      },
+      "sources": [
+        {
+          "title": "GitHub flow",
+          "url": "https://docs.github.com/en/get-started/using-github/github-flow"
+        },
+        {
+          "title": "Git worktree",
+          "url": "https://git-scm.com/docs/git-worktree"
+        },
+        {
+          "title": "Conventional Commits",
+          "url": "https://www.conventionalcommits.org/en/v1.0.0/"
+        }
+      ]
+    },
+    {
+      "name": "harness-sikkerhedsgennemgang",
+      "title": "Sikkerhedsgennemgang",
+      "summary": "Gennemgår adgang, input, hemmeligheder og dataadskillelse og registrerer konkrete fund før drift.",
+      "faq": {
+        "hvad": "Agenten gennemgår de dele, ændringen berører, med en tjekliste til små webapps: adgangskontrol på serveren, validering og escaping, hemmeligheder, afhængigheder, logning og adskillelse af brugeres data. Fund registreres med alvor og næste handling.",
+        "hvornaar": "Når en ændring berører login, adgang, formularer, filupload, data eller eksterne tjenester, og altid før en app sættes i drift.",
+        "resultat": "En liste over fund med sted, alvor, forslag og status samt en beskrivelse af, hvad der er kontrolleret, og hvad der ikke er.",
+        "ikke": "Den gør ikke appen sikker og er ikke en penetrationstest. Fravær af fund er ikke bevis for fravær af problemer."
+      },
+      "sources": [
+        {
+          "title": "OWASP ASVS",
+          "url": "https://owasp.org/www-project-application-security-verification-standard/"
+        },
+        {
+          "title": "OWASP Top 10",
+          "url": "https://owasp.org/Top10/"
+        },
+        {
+          "title": "OWASP Top 10 for LLM-applikationer",
+          "url": "https://genai.owasp.org/llm-top-10/"
+        },
+        {
+          "title": "NIS2-loven",
+          "url": "https://www.retsinformation.dk/eli/lta/2025/434"
+        }
+      ]
+    },
+    {
+      "name": "harness-udgivelse-og-gendannelse",
+      "title": "Udgivelse og gendannelse",
+      "summary": "Gennemgår version, miljø, data og godkendelser før udgivelse og afprøver den rigtige adresse bagefter.",
+      "faq": {
+        "hvad": "Før en udgivelse gennemgår agenten version, miljø, konfiguration, dataændringer, nødvendige godkendelser og vejen tilbage sammen med dig. Efter udgivelsen afprøves den rigtige adresse, adgangsbegrænsninger og logs.",
+        "hvornaar": "Når du vil udgive til et test- eller driftsmiljø, eller når en version skal rulles tilbage.",
+        "resultat": "En tjekliste, en udgivelsesnote med commit, miljø og kontroller og en afprøvet vej tilbage.",
+        "ikke": "Den udgiver ikke til drift og opretter ikke betalte ressourcer uden din udtrykkelige godkendelse. En godkendelse registreret i en fil er ikke en verificeret identitet."
+      },
+      "sources": [
+        {
+          "title": "GitHub om udgivelsesmiljøer",
+          "url": "https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments"
+        }
+      ]
+    },
+    {
+      "name": "harness-overdragelse-og-drift",
+      "title": "Overdragelse og drift",
+      "summary": "Dokumenterer opstart, drift, ejerskab, opdateringer og gendannelse, så andre kan overtage.",
+      "faq": {
+        "hvad": "Gør appen klar til, at en anden kan starte, drive, opdatere og gendanne den uden den oprindelige udvikler eller AI-værktøjet. Agenten skriver en afprøvet startvejledning og en driftsvejledning og afklarer ejerskab af konti og udgifter.",
+        "hvornaar": "Før en app sættes i drift, når projektet skal overdrages, og når driftsopsætningen ændres.",
+        "resultat": "En opdateret README og driftsvejledning samt en liste over åbne spørgsmål, der skal afklares før overdragelse.",
+        "ikke": "Den skriver aldrig adgangskoder, nøgler eller personoplysninger i dokumentationen."
+      },
+      "sources": []
+    }
+  ],
   "tools": [
     {
-      "id": "claude",
+      "id": "claude-code",
       "name": "Claude Code",
-      "file": "CLAUDE.md",
-      "summary": "Til Claude Code i terminalen eller din editor.",
-      "source": "https://code.claude.com/docs/en/memory",
-      "verification": "Start en ny session i projektmappen. Brug /memory til at undersøge, om projektets CLAUDE.md er med. Spørg derefter efter profilens kontrolord.",
-      "caveat": "Andre CLAUDE.md-filer og administrerede indstillinger kan også påvirke sessionen. Denne pakke er til Claude Code, ikke en almindelig Claude-chat."
+      "vendor": "Anthropic",
+      "category": "agent",
+      "status": "afproevet",
+      "summary": "Anthropics kodeagent i terminalen, i editoren og i Claude-appen.",
+      "rules": {
+        "file": "CLAUDE.md",
+        "mode": "blok",
+        "import": "AGENTS.md"
+      },
+      "skills": {
+        "dirs": [
+          ".claude/skills"
+        ]
+      },
+      "verification": "Start en ny session i projektets rodmappe. Skriv /context eller /memory for at se de indlæste instruktionsfiler, og /skills for at se Harness-skillsene. Du kan starte en skill direkte, fx /harness-sikkerhedsgennemgang.",
+      "caveat": "CLAUDE.md importerer AGENTS.md med @AGENTS.md, som Anthropic selv anbefaler. Uden CLAUDE.md læser nyere versioner af Claude Code AGENTS.md direkte, men en eksisterende CLAUDE.md slår det fra. Personlige skills med samme navn i ~/.claude/skills går forud for projektets.",
+      "sources": [
+        {
+          "title": "Claude Code om CLAUDE.md og AGENTS.md",
+          "url": "https://code.claude.com/docs/en/memory"
+        },
+        {
+          "title": "Claude Code om skills",
+          "url": "https://code.claude.com/docs/en/skills"
+        }
+      ],
+      "testedWith": "Claude Code 2.1.150 den 29. september 2026 med en kontrolleret modelserver: CLAUDE.md importerede AGENTS.md, alle 12 skills blev vist for modellen, og en skill blev indlæst ved brug."
     },
     {
       "id": "codex",
       "name": "Codex",
-      "file": "AGENTS.md",
-      "summary": "Til projektinstruktioner i Codex.",
-      "source": "https://learn.chatgpt.com/docs/agent-configuration/agents-md",
-      "verification": "Åbn projektet, og start en ny Codex-session fra projektets rodmappe. Bed agenten opsummere de aktive projektinstruktioner og oplyse profilens kontrolord.",
-      "caveat": "AGENTS.override.md kan erstatte AGENTS.md i samme mappe. Instruktioner i undermapper og globale indstillinger kan ændre, hvad der gælder for arbejdet."
+      "vendor": "OpenAI",
+      "category": "agent",
+      "status": "dokumenteret",
+      "summary": "OpenAIs kodeagent i terminalen, i editoren og i Codex-appen.",
+      "rules": {
+        "file": "AGENTS.md",
+        "mode": "blok"
+      },
+      "skills": {
+        "dirs": [
+          ".agents/skills"
+        ]
+      },
+      "verification": "Start Codex i projektets rodmappe, og markér projektet som betroet. Skriv /skills for at se Harness-skillsene, og bed agenten opsummere de aktive projektinstruktioner. Du kan starte en skill direkte med $harness-sikkerhedsgennemgang.",
+      "caveat": "Codex springer projektets AGENTS.md over i projekter, der ikke er betroede. AGENTS.override.md i samme mappe går forud for AGENTS.md, og Codex læser højst 32 KiB projektinstruktioner i alt. Ændringer kræver en ny session.",
+      "sources": [
+        {
+          "title": "Codex om AGENTS.md",
+          "url": "https://learn.chatgpt.com/docs/agent-configuration/agents-md"
+        },
+        {
+          "title": "Codex om skills",
+          "url": "https://learn.chatgpt.com/docs/build-skills"
+        }
+      ]
     },
     {
       "id": "opencode",
       "name": "OpenCode",
-      "file": "AGENTS.md",
-      "summary": "Til projektregler i OpenCode.",
-      "source": "https://opencode.ai/docs/rules/",
-      "verification": "Åbn OpenCode i projektets rodmappe, og start en ny session. Bed agenten opsummere de aktive projektinstruktioner og oplyse profilens kontrolord.",
-      "caveat": "OpenCode kan også indlæse globale regler og instruktioner fra sin konfiguration. Pakken ændrer ikke dine modeller, nøgler eller værktøjstilladelser."
+      "vendor": "SST",
+      "category": "agent",
+      "status": "afproevet",
+      "summary": "Kodeagent med åben kildekode til terminalen, editoren og desktop. Bruges også som motor i AI Harness-appen.",
+      "rules": {
+        "file": "AGENTS.md",
+        "mode": "blok"
+      },
+      "skills": {
+        "dirs": [
+          ".opencode/skills",
+          ".claude/skills",
+          ".agents/skills"
+        ],
+        "duplicates": "Indholdet er det samme, så det er ligegyldigt, hvilken kopi OpenCode bruger."
+      },
+      "verification": "Start OpenCode i projektets rodmappe. Tryk / for at se Harness-skillsene som kommandoer, eller kør opencode debug skill for en liste. Bed agenten opsummere de aktive regler.",
+      "caveat": "Findes AGENTS.md, ignorerer OpenCode projektets CLAUDE.md. OpenCode læser skills fra .opencode/skills, .claude/skills og .agents/skills; ligger den samme skill flere steder, bruges én af dem. Globale regler og skills fra din egen opsætning indlæses også.",
+      "sources": [
+        {
+          "title": "OpenCode om regler",
+          "url": "https://opencode.ai/docs/rules/"
+        },
+        {
+          "title": "OpenCode om skills",
+          "url": "https://opencode.ai/docs/skills/"
+        },
+        {
+          "title": "OpenCode på GitHub",
+          "url": "https://github.com/anomalyco/opencode"
+        }
+      ],
+      "testedWith": "OpenCode 1.17.15 den 29. september 2026 med en kontrolleret modelserver: AGENTS.md og alle 12 skills blev sendt til modellen, og en skill blev indlæst ved brug."
+    },
+    {
+      "id": "gemini-cli",
+      "name": "Gemini CLI",
+      "vendor": "Google",
+      "category": "agent",
+      "status": "dokumenteret",
+      "summary": "Googles kodeagent til terminalen.",
+      "rules": {
+        "file": "GEMINI.md",
+        "mode": "blok",
+        "import": "AGENTS.md"
+      },
+      "skills": {
+        "dirs": [
+          ".agents/skills",
+          ".gemini/skills"
+        ]
+      },
+      "verification": "Start gemini i projektets rodmappe, og markér mappen som betroet. Kør /memory show for at se de indlæste instruktioner og /skills list for at se Harness-skillsene.",
+      "caveat": "Gemini CLI læser GEMINI.md, som importerer AGENTS.md. Skills findes kun i den mappe, Gemini startes fra, og Gemini beder om samtykke, før en skill aktiveres.",
+      "sources": [
+        {
+          "title": "Gemini CLI om GEMINI.md",
+          "url": "https://geminicli.com/docs/cli/gemini-md/"
+        },
+        {
+          "title": "Gemini CLI om skills",
+          "url": "https://geminicli.com/docs/cli/skills/"
+        }
+      ]
+    },
+    {
+      "id": "mistral-vibe",
+      "name": "Mistral Vibe",
+      "vendor": "Mistral AI",
+      "category": "agent",
+      "status": "dokumenteret",
+      "summary": "Mistrals kodeagent til terminalen og VS Code fra en europæisk leverandør.",
+      "rules": {
+        "file": "AGENTS.md",
+        "mode": "blok"
+      },
+      "skills": {
+        "dirs": [
+          ".agents/skills",
+          ".vibe/skills"
+        ]
+      },
+      "verification": "Start vibe i projektets rodmappe, og marker mappen som betroet. Tryk / for at se Harness-skillsene. /reload indlæser instruktioner og skills igen.",
+      "caveat": "Vibe læser kun projektets AGENTS.md og skills i betroede mapper, og skills findes kun i den mappe, Vibe startes fra. Telemetri er slået til som standard og slås fra med enable_telemetry = false.",
+      "sources": [
+        {
+          "title": "Mistral Vibe om skills",
+          "url": "https://docs.mistral.ai/vibe/code/cli/skills"
+        },
+        {
+          "title": "Mistral Vibe om AGENTS.md",
+          "url": "https://docs.mistral.ai/vibe/code/cli/agents"
+        },
+        {
+          "title": "Mistral Vibe på GitHub",
+          "url": "https://github.com/mistralai/mistral-vibe"
+        }
+      ]
+    },
+    {
+      "id": "pi",
+      "name": "Pi",
+      "vendor": "Earendil",
+      "category": "agent",
+      "status": "dokumenteret",
+      "summary": "Kodeagent med åben kildekode til terminalen, som også kan indbygges i andre apps.",
+      "rules": {
+        "file": "AGENTS.md",
+        "mode": "blok"
+      },
+      "skills": {
+        "dirs": [
+          ".agents/skills",
+          ".pi/skills"
+        ]
+      },
+      "verification": "Start pi i projektets rodmappe, og markér projektet som betroet. Opstartens overskrift viser de indlæste instruktioner og ressourcer. Start en skill med /skill:harness-sikkerhedsgennemgang.",
+      "caveat": "Pi indlæser projektets skills, når projektet er betroet. Findes AGENTS.md, ignorerer Pi CLAUDE.md i samme mappe.",
+      "sources": [
+        {
+          "title": "Pi om konfiguration",
+          "url": "https://pi.dev/docs/latest/configuration"
+        },
+        {
+          "title": "Pi om skills",
+          "url": "https://pi.dev/docs/latest/skills"
+        }
+      ]
+    },
+    {
+      "id": "amp",
+      "name": "Amp",
+      "vendor": "Amp",
+      "category": "agent",
+      "status": "dokumenteret",
+      "summary": "Kodeagent til terminalen og editoren.",
+      "rules": {
+        "file": "AGENTS.md",
+        "mode": "blok"
+      },
+      "skills": {
+        "dirs": [
+          ".agents/skills",
+          ".claude/skills"
+        ],
+        "duplicates": "Amp bruger den første skill med et givet navn."
+      },
+      "verification": "Kør amp skills list i projektets rodmappe for at se skillsene. Kommandoen agents-md list i kommandopaletten viser de indlæste AGENTS.md-filer.",
+      "caveat": "Skills i din brugermappe med samme navn går forud for projektets. Nævn skillen ved navn, hvis du vil bruge den bevidst.",
+      "sources": [
+        {
+          "title": "Amp om AGENTS.md",
+          "url": "https://ampcode.com/docs/customize/agents-md"
+        },
+        {
+          "title": "Amp om skills",
+          "url": "https://ampcode.com/docs/customize/skills"
+        }
+      ]
+    },
+    {
+      "id": "goose",
+      "name": "goose",
+      "vendor": "Agentic AI Foundation",
+      "category": "agent",
+      "status": "dokumenteret",
+      "summary": "Kodeagent med åben kildekode til terminalen og desktop.",
+      "rules": {
+        "file": "AGENTS.md",
+        "mode": "blok"
+      },
+      "skills": {
+        "dirs": [
+          ".agents/skills",
+          ".goose/skills",
+          ".claude/skills"
+        ],
+        "duplicates": "goose bruger den første skill med et givet navn."
+      },
+      "verification": "Start goose i projektets rodmappe. Kør goose skills list eller /skills for at se skillsene.",
+      "caveat": "Skills findes kun i den mappe, goose startes fra, og Developer-udvidelsen skal være slået til, for at AGENTS.md indlæses.",
+      "sources": [
+        {
+          "title": "goose om hints og AGENTS.md",
+          "url": "https://goose-docs.ai/docs/guides/context-engineering/using-goosehints/"
+        },
+        {
+          "title": "goose om skills",
+          "url": "https://goose-docs.ai/docs/guides/context-engineering/using-skills/"
+        }
+      ]
+    },
+    {
+      "id": "openhands",
+      "name": "OpenHands",
+      "vendor": "All Hands AI",
+      "category": "agent",
+      "status": "dokumenteret",
+      "summary": "Kodeagent med åben kildekode, som kan køres på egen infrastruktur.",
+      "rules": {
+        "file": "AGENTS.md",
+        "mode": "blok"
+      },
+      "skills": {
+        "dirs": [
+          ".agents/skills"
+        ]
+      },
+      "verification": "Start en samtale i projektet, og bed agenten opsummere projektets regler og nævne sine skills.",
+      "caveat": "Filplaceringen følger OpenHands' dokumentation og er ikke afprøvet med Harness.",
+      "sources": [
+        {
+          "title": "OpenHands om skills",
+          "url": "https://docs.openhands.dev/overview/skills"
+        }
+      ]
+    },
+    {
+      "id": "factory-droid",
+      "name": "Factory Droid",
+      "vendor": "Factory",
+      "category": "agent",
+      "status": "dokumenteret",
+      "summary": "Kodeagent til terminalen og editoren.",
+      "rules": {
+        "file": "AGENTS.md",
+        "mode": "blok"
+      },
+      "skills": {
+        "dirs": [
+          ".agents/skills",
+          ".factory/skills"
+        ]
+      },
+      "verification": "Start droid i projektets rodmappe, og bed agenten opsummere projektets regler og nævne sine skills.",
+      "caveat": "Filplaceringen følger Factorys dokumentation og er ikke afprøvet med Harness.",
+      "sources": [
+        {
+          "title": "Factory om AGENTS.md",
+          "url": "https://docs.factory.ai/cli/configuration/agents-md"
+        },
+        {
+          "title": "Factory om skills",
+          "url": "https://docs.factory.ai/cli/configuration/skills"
+        }
+      ]
+    },
+    {
+      "id": "aider",
+      "name": "Aider",
+      "vendor": "Aider",
+      "category": "agent",
+      "status": "dokumenteret",
+      "summary": "Kodeagent med åben kildekode til terminalen.",
+      "rules": {
+        "file": "AGENTS.md",
+        "mode": "blok"
+      },
+      "skills": null,
+      "verification": "Start med aider --read AGENTS.md, eller tilføj read: AGENTS.md i .aider.conf.yml. Ved start skriver Aider, at AGENTS.md er tilføjet. Læs en skill ind med /read .agents/skills/<navn>/SKILL.md, når opgaven passer.",
+      "caveat": "Aider indlæser hverken AGENTS.md eller skills af sig selv. Harness ændrer ikke .aider.conf.yml.",
+      "sources": [
+        {
+          "title": "Aider om konventioner",
+          "url": "https://aider.chat/docs/usage/conventions.html"
+        },
+        {
+          "title": "Aider om .aider.conf.yml",
+          "url": "https://aider.chat/docs/config/aider_conf.html"
+        }
+      ]
+    },
+    {
+      "id": "warp",
+      "name": "Warp",
+      "vendor": "Warp",
+      "category": "agent",
+      "status": "dokumenteret",
+      "summary": "Terminal med indbygget kodeagent.",
+      "rules": {
+        "file": "AGENTS.md",
+        "mode": "blok"
+      },
+      "skills": {
+        "dirs": [
+          ".agents/skills",
+          ".claude/skills",
+          ".github/skills",
+          ".cursor/skills",
+          ".gemini/skills",
+          ".opencode/skills",
+          ".factory/skills"
+        ]
+      },
+      "verification": "Spørg agenten \"Hvilke skills har jeg?\", eller brug /skills i Warps CLI. Brugte regler vises under References i svaret.",
+      "caveat": "Findes WARP.md i samme mappe som AGENTS.md, bruger Warp WARP.md. Warp læser skills fra mange værktøjers mapper, så den samme skill kan optræde flere gange.",
+      "sources": [
+        {
+          "title": "Warp om regler",
+          "url": "https://docs.warp.dev/agents/capabilities/rules/"
+        },
+        {
+          "title": "Warp om skills",
+          "url": "https://docs.warp.dev/agents/capabilities/skills/"
+        }
+      ]
+    },
+    {
+      "id": "augment",
+      "name": "Augment Code",
+      "vendor": "Augment Code",
+      "category": "agent",
+      "status": "dokumenteret",
+      "summary": "Kodeagent til VS Code, JetBrains og terminalen (Auggie).",
+      "rules": {
+        "file": "AGENTS.md",
+        "mode": "blok"
+      },
+      "skills": {
+        "dirs": [
+          ".agents/skills",
+          ".augment/skills",
+          ".claude/skills"
+        ]
+      },
+      "verification": "Kør /rules og /skills i Auggie for at se de indlæste regler og skills med kilde.",
+      "caveat": "Skills i din brugermappe går forud for projektets. I editorerne er skills en betafunktion, der skal slås til.",
+      "sources": [
+        {
+          "title": "Augment om regler",
+          "url": "https://docs.augmentcode.com/cli/rules"
+        },
+        {
+          "title": "Augment om skills",
+          "url": "https://docs.augmentcode.com/cli/skills"
+        }
+      ]
+    },
+    {
+      "id": "cursor",
+      "name": "Cursor",
+      "vendor": "Anysphere",
+      "category": "editor",
+      "status": "dokumenteret",
+      "summary": "Editor med indbygget kodeagent og en CLI.",
+      "rules": {
+        "file": "AGENTS.md",
+        "mode": "blok"
+      },
+      "skills": {
+        "dirs": [
+          ".agents/skills",
+          ".cursor/skills",
+          ".claude/skills"
+        ],
+        "duplicates": "Cursors håndtering af samme skill i flere mapper er ikke dokumenteret."
+      },
+      "verification": "Åbn Customize, og se under Rules og Skills. Skriv / i chatten for at se Harness-skillsene, og start fx /harness-sikkerhedsgennemgang.",
+      "caveat": "Cursor læser både AGENTS.md og CLAUDE.md. Har projektet begge, bruger Cursor begge. Nye skills opdages ved opstart, så genstart Cursor efter installationen.",
+      "sources": [
+        {
+          "title": "Cursor om regler",
+          "url": "https://cursor.com/docs/rules"
+        },
+        {
+          "title": "Cursor om skills",
+          "url": "https://cursor.com/docs/skills"
+        }
+      ]
+    },
+    {
+      "id": "github-copilot",
+      "name": "GitHub Copilot",
+      "vendor": "GitHub",
+      "category": "editor",
+      "status": "dokumenteret",
+      "summary": "Kodeassistent i VS Code og andre editorer, i Copilot CLI og som kodeagent på GitHub.",
+      "rules": {
+        "file": "AGENTS.md",
+        "mode": "blok"
+      },
+      "skills": {
+        "dirs": [
+          ".github/skills",
+          ".agents/skills",
+          ".claude/skills"
+        ],
+        "duplicates": "Copilot CLI bruger den første skill med et givet navn."
+      },
+      "verification": "I VS Code: kør Chat: Open Customizations, eller skriv /skills i chatten. I Copilot CLI: /skills list og /instructions. Brugte instruktioner vises under References i svaret.",
+      "caveat": "VS Code læser AGENTS.md i roden som standard; AGENTS.md i undermapper kræver en indstilling. Copilot CLI læser også CLAUDE.md og GEMINI.md, så reglerne kan optræde flere gange, hvis projektet har dem. Ændringer kræver en ny session i CLI.",
+      "sources": [
+        {
+          "title": "GitHub om instruktioner",
+          "url": "https://docs.github.com/en/copilot/reference/custom-instructions-support"
+        },
+        {
+          "title": "GitHub om skills i Copilot CLI",
+          "url": "https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-skills"
+        },
+        {
+          "title": "VS Code om skills",
+          "url": "https://code.visualstudio.com/docs/agent-customization/agent-skills"
+        }
+      ]
+    },
+    {
+      "id": "devin-desktop",
+      "name": "Devin Desktop",
+      "vendor": "Cognition",
+      "category": "editor",
+      "status": "dokumenteret",
+      "summary": "Udviklingsmiljø med kodeagenter, tidligere Windsurf.",
+      "rules": {
+        "file": "AGENTS.md",
+        "mode": "blok"
+      },
+      "skills": {
+        "dirs": [
+          ".agents/skills",
+          ".devin/skills"
+        ]
+      },
+      "verification": "Åbn Customizations for at se de indlæste regler og skills. I Devin Local viser Open customizations alt, sessionen har indlæst.",
+      "caveat": "Devin Desktop har to agenter: Devin Local, som er standard, og den ældre Cascade. Begge læser AGENTS.md og .agents/skills. Devin Local læser også CLAUDE.md, så reglerne kan optræde to gange, hvis projektet har begge.",
+      "sources": [
+        {
+          "title": "Devin Desktop om AGENTS.md",
+          "url": "https://docs.devin.ai/desktop/cascade/agents-md"
+        },
+        {
+          "title": "Devin Local",
+          "url": "https://docs.devin.ai/desktop/devin-local"
+        },
+        {
+          "title": "Devin om skills",
+          "url": "https://docs.devin.ai/cli/extensibility/skills/overview"
+        }
+      ]
+    },
+    {
+      "id": "cline",
+      "name": "Cline",
+      "vendor": "Cline",
+      "category": "editor",
+      "status": "dokumenteret",
+      "summary": "Kodeagent med åben kildekode i VS Code og som CLI.",
+      "rules": {
+        "file": "AGENTS.md",
+        "mode": "blok"
+      },
+      "skills": {
+        "dirs": [
+          ".cline/skills",
+          ".agents/skills",
+          ".claude/skills"
+        ]
+      },
+      "verification": "Klik på vægt-ikonet under Cline-panelet for at se fanerne Rules og Skills. Skriv / for at starte en skill direkte.",
+      "caveat": "Cline læser AGENTS.md i projektets rod. Globale skills med samme navn går forud for projektets. Slår du en skill fra i Cline, skriver Cline det i SKILL.md, og en senere opdatering springer filen over.",
+      "sources": [
+        {
+          "title": "Cline om regler",
+          "url": "https://docs.cline.bot/customization/cline-rules"
+        },
+        {
+          "title": "Cline om skills",
+          "url": "https://docs.cline.bot/customization/skills"
+        }
+      ]
+    },
+    {
+      "id": "kilo-code",
+      "name": "Kilo Code",
+      "vendor": "Kilo Code",
+      "category": "editor",
+      "status": "dokumenteret",
+      "summary": "Kodeagent med åben kildekode i VS Code og som CLI.",
+      "rules": {
+        "file": "AGENTS.md",
+        "mode": "blok"
+      },
+      "skills": {
+        "dirs": [
+          ".agents/skills",
+          ".kilo/skills"
+        ]
+      },
+      "verification": "Kør kilo debug skill for en liste over skills, og /reload efter ændringer. Et brugt skill-kald vises i samtalen.",
+      "caveat": "Kilo Code indlæser altid AGENTS.md. I VS Code læses .claude-mapper kun med en særskilt indstilling, derfor bruger Harness .agents/skills.",
+      "sources": [
+        {
+          "title": "Kilo Code om AGENTS.md",
+          "url": "https://kilo.ai/docs/customize/agents-md"
+        },
+        {
+          "title": "Kilo Code om skills",
+          "url": "https://kilo.ai/docs/customize/skills"
+        }
+      ]
+    },
+    {
+      "id": "zed",
+      "name": "Zed",
+      "vendor": "Zed Industries",
+      "category": "editor",
+      "status": "dokumenteret",
+      "summary": "Editor med indbygget kodeagent.",
+      "rules": {
+        "file": "AGENTS.md",
+        "mode": "blok"
+      },
+      "skills": {
+        "dirs": [
+          ".agents/skills"
+        ]
+      },
+      "verification": "Åbn Settings → AI → Skills, eller Agent Panel → … → Skills. Markér projektet som betroet, så projektets skills indlæses.",
+      "caveat": "Zed bruger kun den første instruktionsfil, den finder. Har projektet fx .rules, .cursorrules eller .github/copilot-instructions.md, bliver AGENTS.md ikke læst. Skills virker i Zeds egen agent, ikke i eksterne agenter.",
+      "sources": [
+        {
+          "title": "Zed om instruktioner",
+          "url": "https://zed.dev/docs/ai/instructions"
+        },
+        {
+          "title": "Zed om skills",
+          "url": "https://zed.dev/docs/ai/skills"
+        }
+      ]
+    },
+    {
+      "id": "antigravity",
+      "name": "Google Antigravity",
+      "vendor": "Google",
+      "category": "editor",
+      "status": "dokumenteret",
+      "summary": "Googles udviklingsmiljø med kodeagenter.",
+      "rules": {
+        "file": "AGENTS.md",
+        "mode": "blok"
+      },
+      "skills": {
+        "dirs": [
+          ".agents/skills"
+        ]
+      },
+      "verification": "Åbn projektet, og bed agenten opsummere projektets regler og nævne sine skills.",
+      "caveat": "Filplaceringen følger Googles dokumentation og er ikke afprøvet med Harness.",
+      "sources": [
+        {
+          "title": "Antigravity om regler",
+          "url": "https://antigravity.google/docs/rules/"
+        },
+        {
+          "title": "Antigravity om skills",
+          "url": "https://antigravity.google/docs/skills/"
+        }
+      ]
+    },
+    {
+      "id": "kiro",
+      "name": "Kiro",
+      "vendor": "AWS",
+      "category": "editor",
+      "status": "dokumenteret",
+      "summary": "Udviklingsmiljø og CLI med kodeagent fra AWS.",
+      "rules": {
+        "file": "AGENTS.md",
+        "mode": "blok"
+      },
+      "skills": {
+        "dirs": [
+          ".kiro/skills"
+        ]
+      },
+      "verification": "Åbn panelet Agent Steering & Skills i Kiro. I CLI viser /context show og /config skills, hvad der er indlæst.",
+      "caveat": "Kiro læser skills fra .kiro/skills, ikke fra de fælles skillmapper. AGENTS.md indlæses altid sammen med projektets steering-filer.",
+      "sources": [
+        {
+          "title": "Kiro om steering og AGENTS.md",
+          "url": "https://kiro.dev/docs/steering/"
+        },
+        {
+          "title": "Kiro om skills",
+          "url": "https://kiro.dev/docs/skills/"
+        }
+      ]
+    },
+    {
+      "id": "junie",
+      "name": "Junie",
+      "vendor": "JetBrains",
+      "category": "editor",
+      "status": "dokumenteret",
+      "summary": "JetBrains' kodeagent i IntelliJ, PyCharm og de øvrige JetBrains-editorer samt som CLI.",
+      "rules": {
+        "file": "AGENTS.md",
+        "mode": "blok"
+      },
+      "skills": {
+        "dirs": [
+          ".agents/skills",
+          ".junie/skills"
+        ]
+      },
+      "verification": "Brug /skills i Junie for at se skillsene. Kontrollér, at projektet er markeret som betroet.",
+      "caveat": "Findes .junie/AGENTS.md, bruger Junie kun den og ignorerer projektets AGENTS.md. Junie CLI læser .agents/skills; understøttelsen i editor-pluginet er uafklaret i JetBrains' egen dokumentation.",
+      "sources": [
+        {
+          "title": "Junie om regler i editoren",
+          "url": "https://junie.jetbrains.com/docs/junie-ide-plugin.html"
+        },
+        {
+          "title": "Junie om skills",
+          "url": "https://junie.jetbrains.com/docs/agent-skills.html"
+        }
+      ]
+    },
+    {
+      "id": "replit",
+      "name": "Replit Agent",
+      "vendor": "Replit",
+      "category": "web",
+      "status": "dokumenteret",
+      "summary": "Appbygning i Replits udviklingsmiljø i browseren.",
+      "rules": {
+        "file": "replit.md",
+        "mode": "blok"
+      },
+      "skills": {
+        "dirs": [
+          ".agents/skills"
+        ]
+      },
+      "verification": "Læg filerne i Replit-projektet, fx gennem Git eller upload. Bed Agent nævne projektets instruktioner og skills.",
+      "caveat": "Replit Agent kan selv ændre replit.md. Ændres AI Harness-afsnittet, springer en senere opdatering det over.",
+      "sources": [
+        {
+          "title": "Replit om replit.md",
+          "url": "https://docs.replit.com/features/project-setup/replit-dot-md"
+        },
+        {
+          "title": "Replit om skills",
+          "url": "https://docs.replit.com/features/agent/skills"
+        }
+      ]
+    },
+    {
+      "id": "lovable",
+      "name": "Lovable",
+      "vendor": "Lovable",
+      "category": "web",
+      "status": "manuel",
+      "summary": "Appbygning i browseren med projekt- og arbejdsområdeviden.",
+      "verification": "Indsæt teksten i projektets viden (Project knowledge), og bed agenten opsummere reglerne. Er projektet forbundet til GitHub, læser Lovable også AGENTS.md i roden.",
+      "caveat": "Lovable tillader højst 10.000 tegn pr. vidensfelt. Skills importeres i Lovables egen brugerflade og følger ikke med teksten.",
+      "sources": [
+        {
+          "title": "Lovable om knowledge",
+          "url": "https://docs.lovable.dev/features/knowledge"
+        },
+        {
+          "title": "Lovable om skills",
+          "url": "https://docs.lovable.dev/features/skills"
+        }
+      ]
     }
   ]
 }

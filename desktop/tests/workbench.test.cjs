@@ -20,7 +20,7 @@ test('nøglelager afviser manglende kryptering; offentlige forbindelser udelader
  assert.equal((await store.project('/projekt-b')).selection, 'b');
 });
 test('skills kan ændres og gendannes uden at ændre andre projekter eller grundfiler', async t => {
- const store = new Store(await temp(t)); const skills = new Skills(path.join(profiles,'skills'), store);
+ const store = new Store(await temp(t)); const skills = new Skills(path.join(profiles,'app'), store);
  const original = (await skills.list('/a')).find(s => s.id === 'git-og-versioner');
  await skills.save('/a', { id: original.id, content: original.content+'\nEkstra prøvekrav.', enabled:false });
  assert.ok(!(await skills.context('/a')).includes('Ekstra prøvekrav.'));

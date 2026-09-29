@@ -12,6 +12,7 @@ const { Publishing } = require('./core/publishing.cjs');
 const { Preferences } = require('./core/preferences.cjs');
 const { Designs } = require('./core/designs.cjs');
 const { capture, changes } = require('./core/changes.cjs');
+const { OwnTools } = require('./core/own-tools.cjs');
 
 // Bevar eksisterende forbindelser, designpakker og rendererindstillinger ved navneskift.
 const existingUserData = app.getPath('userData');
@@ -25,6 +26,7 @@ let window, preview, project, busy = false;
 let assets = [];
 let github, publishing, deployments, restoration;
 let workbench, beforeChanges, externalPreview = null;
+let ownTools;
 let devServer, detectedRuntime, forceStatic = false;
 let quitReady = false, shuttingDown = null;
 const failures = [];
@@ -170,6 +172,21 @@ handle('designs:clear', () => exclusive(() => { assets = []; return []; }));
 handle('designs:list', () => new Designs(workbench.store).list());
 handle('designs:save', input => exclusive(() => new Designs(workbench.store).save(input, assets)));
 handle('designs:apply', id => exclusive(async () => { const design = await new Designs(workbench.store).get(id); assets = design.assets; return { color: design.color, links: design.links, assets: assets.map(({ id, kind, name }) => ({ id, kind, name })) }; }));
+// Harness i brugerens eget kodeværktøj. Mappen vælges her i hovedprocessen; brugerfladen sender ingen stier.
+const tools = () => ownTools ??= new OwnTools({ profiles: profileRoot, git: workbench.git });
+handle('tools:catalog', () => tools().catalog());
+handle('tools:folder', () => exclusive(async () => {
+  const result = await dialog.showOpenDialog(window, { title: 'Vælg projektmappen', buttonLabel: 'Vælg mappe', properties: ['openDirectory', 'createDirectory'] });
+  return result.canceled || !result.filePaths[0] ? null : tools().choose(result.filePaths[0]);
+}));
+handle('tools:review', input => exclusive(() => {
+  if (!Array.isArray(input?.tools) || input.tools.length > 40 || input.tools.some(id => typeof id !== 'string')) throw new Error('Vælg gyldige værktøjer.');
+  return tools().plan(input.tools);
+}));
+handle('tools:install', input => exclusive(() => tools().install({ skipConflicts: input?.skipConflicts === true })));
+handle('tools:removal', () => exclusive(() => tools().planRemoval()));
+handle('tools:remove', () => exclusive(() => tools().remove()));
+handle('tools:reveal', async () => { const error = await shell.openPath(tools().requireTarget()); if (error) throw new Error('Mappen kunne ikke åbnes.'); });
 
 function requireIdleProject() {
   if (!project) throw new Error('Åbn et projekt først.');

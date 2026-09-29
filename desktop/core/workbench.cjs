@@ -24,7 +24,7 @@ function planningReply(roles, parts) {
 
 class Workbench {
   constructor({ directory, safeStorage, profiles, emit, engineFactory = options => new OpenCodeEngine(options) }) {
-    this.store = new Store(directory, safeStorage); this.history = new WorkspaceHistory(this.store); this.skills = new Skills(path.join(profiles, 'skills'), this.store);
+    this.store = new Store(directory, safeStorage); this.history = new WorkspaceHistory(this.store); this.skills = new Skills(path.join(profiles, 'app'), this.store);
     this.git = new GitVersions(); this.checkpoints = new Checkpoints(this.git, emit); this.finishing = null;
     this.engineFactory = engineFactory; this.generation = 0; this.starting = false; this.profiles = profiles; this.emit = emit; this.catalogs = new Map(); this.prepared = null; this.running = false; 
   }

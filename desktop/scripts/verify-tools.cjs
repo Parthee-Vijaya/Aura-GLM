@@ -1,0 +1,105 @@
+// Afprøver "Brug Harness i mit kodeværktøj" i Electron med et rigtigt Git-projekt og rigtige filer.
+const { _electron: electron } = require('playwright');
+const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const os = require('node:os');
+const { execFileSync } = require('node:child_process');
+(async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'harness-vaerktoejer-')); let app; const errors = [];
+  const project = path.join(root, 'mit projekt æøå');
+  const own = '# Vores regler\n\nBrug tabulatorer.\n';
+  try {
+    await fs.mkdir(project);
+    await fs.writeFile(path.join(project, 'AGENTS.md'), own);
+    await fs.writeFile(path.join(project, '.gitignore'), '.claude/\n');
+    const git = args => execFileSync('git', args, { cwd: project, env: { ...process.env, GIT_AUTHOR_NAME: 'Test', GIT_AUTHOR_EMAIL: 'test@example.invalid', GIT_COMMITTER_NAME: 'Test', GIT_COMMITTER_EMAIL: 'test@example.invalid' } });
+    git(['init', '-q']); git(['add', 'AGENTS.md', '.gitignore']); git(['commit', '-q', '-m', 'start']);
+    const bundle = process.env.HARNESS_TEST_PACKAGE ? path.resolve(process.env.HARNESS_TEST_PACKAGE) : null;
+    app = await electron.launch({ executablePath: bundle ? (bundle.endsWith('.app') ? path.join(bundle, 'Contents/MacOS/AI Harness') : bundle) : require('electron'), args: [...(bundle ? [] : [path.join(__dirname, '..')]), '--user-data-dir=' + path.join(root, 'appdata')], env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined } });
+    const page = await app.firstWindow(); page.on('pageerror', e => errors.push(e.message));
+    await app.evaluate(({ dialog }, folder) => { global.modelRequests = 0; global.fetch = async () => { global.modelRequests++; throw Error('Ingen netværkskald i dette forløb'); }; dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [folder] }); }, project);
+    await page.waitForFunction(() => !document.querySelector('#welcome-build').disabled);
+    assert.equal(await page.isVisible('#welcome-path'), true);
+    await page.screenshot({ path: path.join(root, '01-foerstevalg.png'), animations: 'disabled' });
+    await page.click('#path-tools');
+    await page.waitForSelector('#tools-dialog[open]');
+    assert.equal(await page.locator('#welcome-dialog').evaluate(el => el.open), false);
+    assert.equal(await page.evaluate(() => localStorage.getItem('harness.introduction.v1')), 'tools');
+    await page.waitForFunction(() => document.querySelectorAll('#tools-list input[type=checkbox]').length > 0);
+    assert.equal(await page.locator('#tools-skills details').count(), 12);
+    const installable = await page.locator('#tools-list input[type=checkbox]').count();
+    assert.ok(installable >= 20, `${installable} værktøjer`);
+    assert.equal(await page.getByRole('button', { name: 'Kopiér tekst til Lovable' }).count(), 1);
+    assert.equal(await page.isDisabled('#tools-review'), true);
+    assert.match(await page.textContent('#tools-included-summary'), /grundregler og 12 skills/);
+    await page.click('#tools-included-summary');
+    await page.locator('#tools-skills details summary').first().click();
+    assert.match(await page.locator('#tools-skills details').first().textContent(), /Hvad gør den ikke\?/);
+    await page.screenshot({ path: path.join(root, '02-vaelg-vaerktoej.png'), animations: 'disabled' });
+
+    await page.click('#tools-folder');
+    await page.locator('#tools-folder-status').filter({ hasText: 'mit projekt æøå' }).waitFor();
+    await page.check('#tools-list input[value="claude-code"]'); await page.check('#tools-list input[value="codex"]');
+    assert.equal(await page.isDisabled('#tools-review'), false);
+    await page.click('#tools-review');
+    await page.waitForSelector('#tools-step-review:not([hidden])');
+    assert.match(await page.textContent('#tools-review-summary'), /Claude Code, Codex/);
+    assert.match(await page.textContent('#tools-notes'), /\.gitignore udelader .*\.claude\/skills/);
+    assert.match(await page.textContent('#tools-operations'), /Tilføj afsnit · 2/, 'projektets AGENTS.md og .gitignore får hver et afsnit');
+    assert.equal(await page.isDisabled('#tools-install'), false);
+    await page.screenshot({ path: path.join(root, '03-gennemgang.png'), animations: 'disabled', fullPage: true });
+    assert.equal((await fs.readFile(path.join(project, 'AGENTS.md'), 'utf8')), own, 'intet skrives før installationen');
+
+    await page.click('#tools-install');
+    await page.waitForSelector('#tools-step-done:not([hidden])');
+    assert.equal(await page.locator('#tools-verify > div').count(), 2);
+    await page.screenshot({ path: path.join(root, '04-installeret.png'), animations: 'disabled', fullPage: true });
+    const agents = await fs.readFile(path.join(project, 'AGENTS.md'), 'utf8');
+    assert.ok(agents.startsWith(own.trimEnd()));
+    assert.match(agents, /<!-- ai-harness:start -->[\s\S]*FÆLLES-GRUNDLAG-02[\s\S]*<!-- ai-harness:slut -->/);
+    assert.match(await fs.readFile(path.join(project, 'CLAUDE.md'), 'utf8'), /\n@AGENTS\.md\n/);
+    for (const dir of ['.claude/skills', '.agents/skills']) assert.equal((await fs.readdir(path.join(project, dir))).filter(name => name.startsWith('harness-')).length, 12, dir);
+    const manifest = JSON.parse(await fs.readFile(path.join(project, '.harness/installation.json'), 'utf8'));
+    assert.deepEqual(manifest.tools, ['claude-code', 'codex']);
+
+    await page.click('#tools-done');
+    await page.click('#tools-button');
+    await page.waitForSelector('#tools-dialog[open]');
+    await page.click('#tools-folder');
+    await page.locator('#tools-folder-status').filter({ hasText: 'allerede installeret' }).waitFor();
+    assert.equal(await page.isChecked('#tools-list input[value="codex"]'), true);
+    await page.click('#tools-review');
+    await page.waitForSelector('#tools-step-review:not([hidden])');
+    assert.equal(await page.textContent('#tools-install'), 'Registrér installationen');
+    assert.doesNotMatch(await page.textContent('#tools-operations'), /Opret|Tilføj afsnit/);
+
+    const changed = path.join(project, '.agents/skills/harness-kodestil/SKILL.md');
+    await fs.appendFile(changed, '\nVores egen regel om navngivning.\n');
+    await page.click('#tools-back'); await page.click('#tools-review');
+    await page.locator('#tools-operations').filter({ hasText: 'Konflikt' }).waitFor();
+    assert.equal(await page.isDisabled('#tools-install'), true);
+    assert.equal(await page.isVisible('#tools-skip-label'), true);
+    await page.screenshot({ path: path.join(root, '05-konflikt.png'), animations: 'disabled', fullPage: true });
+    await page.check('#tools-skip');
+    await page.click('#tools-install');
+    await page.waitForSelector('#tools-step-done:not([hidden])');
+    assert.match(await page.textContent('#tools-done-summary'), /sprunget over/);
+    assert.match(await fs.readFile(changed, 'utf8'), /Vores egen regel/);
+
+    await page.click('#tools-removal');
+    await page.waitForSelector('#tools-step-remove:not([hidden])');
+    await page.click('#tools-remove');
+    await page.waitForSelector('#tools-step-choose:not([hidden])');
+    assert.match(await page.textContent('#tools-folder-status'), /fjernet/);
+    assert.equal(await fs.readFile(path.join(project, 'AGENTS.md'), 'utf8'), own);
+    await assert.rejects(fs.access(path.join(project, 'CLAUDE.md')));
+    await assert.rejects(fs.access(path.join(project, '.harness')));
+    await assert.rejects(fs.access(path.join(project, '.claude')));
+    assert.match(await fs.readFile(changed, 'utf8'), /Vores egen regel/, 'ændrede filer bevares ved fjernelse');
+    assert.equal(git(['status', '--porcelain', '--', 'AGENTS.md', '.gitignore']).toString(), '');
+    assert.equal(await app.evaluate(() => global.modelRequests), 0);
+    assert.deepEqual(errors, []);
+    console.log(JSON.stringify({ status: 'bestået', root, checks: ['førstevalg fører til værktøjsforløbet', '12 skills med FAQ og tekst til webplatforme', 'intet skrives før gennemgang', 'eget AGENTS.md bevares med afsnit og import i CLAUDE.md', 'advarsel om .gitignore, der udelader skills', 'gentagelse uden ændringer', 'konflikt ved ændret skill og aktivt tilvalg af spring over', 'fjernelse gendanner projektets egne filer og bevarer ændret skill', 'ingen netværks- eller modelkald'] }, null, 2));
+  } finally { await app?.close(); }
+})().catch(e => { console.error(e); process.exitCode = 1; });

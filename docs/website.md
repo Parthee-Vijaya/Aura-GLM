@@ -1,13 +1,13 @@
 # Vedligeholdelse af hjemmeside og downloads
 
-## Kør POC 1 lokalt
+## Byg pakker og sider lokalt
 
-Kræver Python 3.10 eller nyere. Der er ingen eksterne afhængigheder, konti eller API-nøgler.
+Kræver Node.js 22.12 eller nyere. Der er ingen eksterne afhængigheder, konti eller API-nøgler.
 
-Byg downloadpakkerne fra det fælles profilgrundlag:
+Byg pakkerne, kataloget og de genererede sider fra det fælles bibliotek:
 
 ```bash
-python3 scripts/build.py
+node scripts/build-packages.cjs
 ```
 
 Start en lokal webserver fra projektets rodmappe:
@@ -20,27 +20,30 @@ python3 -m http.server 4173 --bind 127.0.0.1 --directory site/dist
 
 ## Indhold og vedligeholdelse
 
-- `profiles/grundregler.md`: fælles danske instruktioner.
-- `profiles/gitignore.txt`: forslag til modtagerens .gitignore; ingen personlige projektregler.
-- `profiles/catalog.json`: værktøjernes filnavne, vejledning, kilder og version.
-- `scripts/build.py`: genererer læsbare filer, indholdsmanifest og reproducerbare ZIP-pakker.
-- `site/dist/`: den statiske hjemmeside og dens offentlige downloadfiler. Filerne i denne mappe skal med i Git.
+- `profiles/grundregler.md`: fælles danske grundregler med version og kontrolord.
+- `profiles/skills/<navn>/SKILL.md`: de 12 skills til agenten. Kun Markdown, ingen scripts, og kun felterne `name` og `description`.
+- `profiles/catalog.json`: skillsenes beskrivelser til mennesker, spørgsmål og svar, kilder og værktøjernes filplaceringer.
+- `profiles/gitignore.txt`: afsnittet til projektets `.gitignore`.
+- `profiles/app/`: appens egne instruktioner til sin indbyggede agent. De indgår ikke i pakkerne.
+- `desktop/core/library.cjs`, `adapters.cjs` og `installer.cjs`: indlæsning og validering af biblioteket, filplacering pr. værktøj og sikker installation. Appen, `scripts/harness.cjs` og byggescriptet bruger de samme moduler.
+- `scripts/build-packages.cjs`: genererer ZIP-pakker, `site/dist/catalog.json`, `skills.html`, `vaerktoejer.html`, de direkte downloads i `index.html` og `profiles/SKILLS.md`. Ret kilden i `profiles/`, og byg igen. Ret ikke de genererede filer.
 
-Ret profilerne ved kilden, og byg igen. Ved versionsændringer opdateres også de direkte downloadlinks og versionsangivelsen i `site/dist/index.html`. Downloadpakker må ikke indeholde lokale arbejdsregler, nøgler eller privat materiale.
+Nye værktøjer tilføjes i kataloget med regelfil, skillmapper, kontrol, forbehold og officielle kilder. Status `afproevet` kræver en beskrivelse af version, dato og metode i `testedWith`. Downloadpakker må ikke indeholde lokale arbejdsregler, nøgler eller privat materiale.
 
 ## Afprøvning
 
 ```bash
-python3 -m unittest discover -s tests -v
+cd desktop
+npm test
 ```
 
-Kontrollér også siden i en browser: vælg alle tre værktøjer, se filerne, hent pakkerne og følg vejledningen i et separat prøveprojekt. Pakkerne er instruktioner, ikke teknisk håndhævelse. Modeladfærd skal afprøves særskilt med det konkrete værktøj og den konkrete model.
+`packages.test.cjs` kontrollerer de faktiske ZIP-filer mod installationens filer, manifestets kontrolsummer, at bygningen er reproducerbar og opdateret, og at alle lokale links i den samlede side findes. `library.test.cjs` installerer og fjerner hvert værktøjs pakke i en tom mappe. Kontrollér også siden i en browser på computer- og mobilbredde. Pakkerne er instruktioner, ikke teknisk håndhævelse. Modeladfærd skal afprøves særskilt med det konkrete værktøj og den konkrete model.
 
 ## Downloadside og GitHub Pages
 
 `site/dist/overview.html` er forsiden med projektets formål og de to brugsveje: eget kodeværktøj og AI Harness-appen. `desktop.html` er installationsvejledningen, og `index.html` er kilden til instruktionssiden `pakker.html`. Det faglige grundlag og de foreslåede kontroller ligger i [harness-grundlag.md](harness-grundlag.md) og [projektkontrol.md](projektkontrol.md); de er ikke en erklæring om implementerede funktioner.
 
-`vaerktoejer.html` er en kildebelagt oversigt over ti andre kodeværktøjer. Den beskriver mulige integrationer og må ikke læses som en liste over afprøvet Harness-understøttelse. [Teknisk grundlag](teknisk-grundlag.md) dokumenterer den faktiske OpenCode-arkitektur, Pi som kandidat og mulighederne for en senere webudgave. Brug den samlede Pages-bygning nedenfor, når navigationen mellem forside, værktøjsoversigt og pakker skal afprøves.
+`vaerktoejer.html` og `skills.html` genereres fra kataloget. Værktøjsoversigten viser for hvert værktøj, hvor filerne lægges, hvordan indlæsningen kontrolleres, og om placeringen er afprøvet eller følger dokumentationen. `skills.html` er FAQ'en om de skills, der følger med. [Teknisk grundlag](teknisk-grundlag.md) dokumenterer den faktiske OpenCode-arkitektur, Pi som kandidat og mulighederne for en senere webudgave. Brug den samlede Pages-bygning nedenfor, når navigationen mellem forside, værktøjsoversigt og pakker skal afprøves.
 
 `scripts/build-pages.cjs` bygger forsiden fra faktiske GitHub Releases. Instruktionspakkerne bevares som `pakker.html`. Kun publicerede releasefiler vises; kladder og ukendte filtyper udelades. GitHubs kontrolsum vises, når den foreligger. Notarisation udledes ikke af filnavnet; installationsstatus skal dokumenteres i udgivelsesnoterne.
 

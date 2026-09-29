@@ -9,7 +9,7 @@
   <div class="nav-label">ARBEJDSOMRÅDE</div><div id="active-project" class="project-item">Intet projekt åbent</div>
   <div id="recent-projects" aria-label="Seneste projekter"></div>
   <button id="settings-toggle" class="text-button" popovertarget="settings-menu">Indstillinger</button><div id="settings-menu" popover aria-label="Indstillinger"><button id="setup-button"><span aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2"/></svg></span> AI-forbindelser og konto</button><button id="connections-button"><span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16l-4-4M20 17H4l4 4"/></svg></span> Administrer forbindelser</button><button id="skills-button" disabled><span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg></span> Instruktioner og regler</button><button id="support-button">Hjælp og feedback</button></div>
-  <button id="intro-button" class="text-button">Vis introduktion</button><div class="sidebar-bottom"><div><span class="dot"></span> Lokalt arbejdsområde</div><p id="connection-status">Ingen model valgt</p><span class="badge">POC 2 · Udviklingsversion</span></div>
+  <button id="tools-button" class="text-button">Harness i dit kodeværktøj</button><button id="intro-button" class="text-button">Vis introduktion</button><div class="sidebar-bottom"><div><span class="dot"></span> Lokalt arbejdsområde</div><p id="connection-status">Ingen model valgt</p><span class="badge">POC 2 · Udviklingsversion</span></div>
 </aside>
 <div class="app-content">
 <header><span id="view-title">Projektopstart</span><span class="local">Projektfiler på din computer</span></header>
@@ -152,10 +152,43 @@
 <label class="check-label"><input id="deployment-ack" type="checkbox"> Jeg har gennemgået version, destination, adgang og mulige omkostninger. Eventuelle miljøvariabler og hemmeligheder er opsat til test hos udbyderen.</label><button id="deployment-send" disabled class="primary">Upload og udgiv til test</button></section></fieldset>
 <p id="deployment-feedback" role="status"></p><section id="deployment-result" hidden><p id="deployment-state"></p><p id="deployment-verification"></p><button id="deployment-check">Kontrollér status</button><button id="deployment-open">Åbn testlink</button><button id="deployment-portal">Åbn hos udbyderen</button></section>
 </dialog>
+<dialog id="tools-dialog" class="tools-dialog" aria-labelledby="tools-title">
+<div class="dialog-heading"><h2 id="tools-title">Harness i dit kodeværktøj</h2><button type="button" data-close="tools-dialog">Luk</button></div>
+<p id="tools-error" class="error" role="alert" hidden></p>
+<section id="tools-step-choose">
+<p class="hint">Giv dit eget kodeværktøj AI Harness' grundregler og <span id="tools-skill-count"></span> skills. Filerne lægges i projektmappen, så de følger projektet i Git. Du ser de præcise ændringer, før noget skrives. Appen skal ikke have en AI-forbindelse til dette.</p>
+<details class="tools-included"><summary id="tools-included-summary">Det følger med</summary><p class="hint">Grundreglerne gælder altid. En skill bruges, når opgaven passer til dens beskrivelse. Klik på en skill for at læse, hvad den gør, og hvad den ikke gør.</p><div id="tools-skills"></div></details>
+<fieldset class="tools-list"><legend>Hvilke kodeværktøjer bruger du i projektet?</legend><div id="tools-list"></div></fieldset>
+<div class="tools-folder"><div><strong>Projektmappe</strong><p id="tools-folder-status" class="hint">Ingen mappe valgt.</p></div><button type="button" id="tools-folder">Vælg mappe</button></div>
+<div class="dialog-actions"><button type="button" id="tools-review" class="primary" disabled>Gennemgå ændringerne</button></div>
+</section>
+<section id="tools-step-review" hidden>
+<h3 id="tools-review-title" tabindex="-1">Gennemgå ændringerne</h3>
+<p id="tools-review-summary"></p>
+<ul id="tools-notes" class="tools-notes"></ul>
+<div id="tools-operations" class="tools-operations"></div>
+<label class="check-label" id="tools-skip-label" hidden><input type="checkbox" id="tools-skip"> Installer resten, og spring filerne med konflikter over</label>
+<div class="dialog-actions"><button type="button" id="tools-back">Tilbage</button><button type="button" id="tools-install" class="primary">Installer</button></div>
+</section>
+<section id="tools-step-done" hidden>
+<h3 id="tools-done-title" tabindex="-1">AI Harness er installeret</h3>
+<p id="tools-done-summary"></p>
+<div id="tools-verify" class="tools-verify"></div>
+<div class="tools-prompt"><p><strong>Kontrollér i en ny samtale</strong></p><p id="tools-prompt-text"></p><button type="button" id="tools-copy-prompt">Kopiér</button></div>
+<div class="dialog-actions"><button type="button" id="tools-reveal">Åbn mappen</button><button type="button" id="tools-removal">Fjern igen</button><button type="button" id="tools-done" class="primary">Færdig</button></div>
+</section>
+<section id="tools-step-remove" hidden>
+<h3 id="tools-remove-title" tabindex="-1">Fjern AI Harness fra projektet</h3>
+<p class="hint">Kun filer og afsnit, der er uændrede siden installationen, fjernes. Dine egne ændringer bevares.</p>
+<div id="tools-remove-operations" class="tools-operations"></div>
+<div class="dialog-actions"><button type="button" id="tools-remove-back">Tilbage</button><button type="button" id="tools-remove" class="primary">Fjern</button></div>
+</section>
+</dialog>
 <dialog id="welcome-dialog" aria-labelledby="welcome-title">
 <div class="welcome-header"><span>AI Harness</span><button id="welcome-skip" class="text-button">Spring introduktionen over</button></div>
-<section id="welcome-start"><p class="eyebrow">AI HARNESS</p><h1 id="welcome-title" tabindex="-1">Hvad vil du bygge?</h1><p class="welcome-description">Beskriv din idé, og se den tage form ved siden af samtalen. Du kan ændre den undervejs.</p>
-<div class="welcome-actions"><button id="welcome-build" class="primary" disabled>Start et projekt</button><button id="welcome-example" disabled>Prøv et eksempel</button><button id="welcome-open" class="text-button" disabled>Åbn et projekt</button></div>
+<section id="welcome-path"><p class="eyebrow">AI HARNESS</p><h1 id="welcome-path-title" tabindex="-1">Hvordan vil du bruge AI Harness?</h1><p class="welcome-description">Du kan bygge i appen eller give dit eget kodeværktøj Harness' grundregler og skills. Du kan skifte vej senere.</p><div class="path-choices"><button type="button" id="path-app" class="path-choice"><strong>Byg i AI Harness-appen</strong><span>Beskriv din idé, byg med din egen AI, og se resultatet ved siden af samtalen.</span></button><button type="button" id="path-tools" class="path-choice"><strong>Brug Harness i mit kodeværktøj</strong><span>Læg grundregler og skills i fx Claude Code, Codex, Cursor eller Copilot. Du ser ændringerne, før noget skrives, og skal ikke forbinde en AI her.</span></button></div></section>
+<section id="welcome-start" hidden><p class="eyebrow">AI HARNESS</p><h1 id="welcome-title" tabindex="-1">Hvad vil du bygge?</h1><p class="welcome-description">Beskriv din idé, og se den tage form ved siden af samtalen. Du kan ændre den undervejs.</p>
+<div class="welcome-actions"><button id="welcome-build" class="primary" disabled>Start et projekt</button><button id="welcome-example" disabled>Prøv et eksempel</button><button id="welcome-open" class="text-button" disabled>Åbn et projekt</button><button id="welcome-back" class="text-button">Tilbage</button></div>
 <p class="hint">Du behøver ikke kende til kode eller have en GitHub-konto. Intet sendes til en AI eller udgives, når du åbner appen.</p></section>
 <section id="welcome-demo" hidden aria-labelledby="demo-title"><h2 id="demo-title" tabindex="-1">Fra besked til forhåndsvisning</h2><p>En lokal demonstration med faste svar. Ingen AI, konto eller filer bruges.</p><div class="demo-layout"><div><p class="demo-message">Lav en oversigt over bibliotekets aktiviteter.</p><p id="demo-answer" role="status">Her er et eksempel med to aktiviteter. Prøv at ændre visningen.</p><button id="demo-change">Vis aktiviteterne som en liste</button></div><iframe id="demo-preview" sandbox="" title="Eksempel på en aktivitetsoversigt"></iframe></div><div class="welcome-actions"><button id="demo-build" class="primary">Byg mit eget projekt</button><button id="demo-back">Tilbage</button></div></section>
 <p class="hint welcome-footnote">Erfaren bruger? Spring over for at gå direkte til projektoprettelse. Dit valg huskes på denne computer. Datagennemgang og tilladelser gælder stadig.</p>

@@ -1,6 +1,6 @@
 const path = require('node:path');
 const { Arch } = require('builder-util');
-const profileResources = [{ from: '../profiles', to: 'profiles', filter: ['grundregler.md','gitignore.txt','skills/**/*'] }];
+const profileResources = [{ from: '../profiles', to: 'profiles', filter: ['grundregler.md','gitignore.txt','catalog.json','app/**/*','skills/**/*'] }];
 module.exports = {
   appId: 'org.ai-alliancen.harness', productName: 'AI Harness',
   directories: { output: 'release', buildResources: 'packaging' },

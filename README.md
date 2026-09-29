@@ -10,21 +10,25 @@ Du behøver ikke kunne kode en hel løsning fra bunden. Du skal være villig til
 
 ### Brug dit eget kodeværktøj
 
-Behold Claude Code, Codex eller OpenCode, og brug Harness til at lære arbejdsgangen og give agenten fælles instruktioner. Du kan læse og tilpasse filerne uden at installere AI Harness eller forbinde en model til vores app.
+Behold det kodeværktøj, du bruger i dag, og giv det AI Harness' grundregler og 12 skills til arbejdet fra idé til drift. Der er pakker til 23 kodeværktøjer, blandt andet Claude Code, Codex, OpenCode, Cursor, GitHub Copilot, Gemini CLI, Mistral Vibe og Zed. Lovable får en tekst til platformens egne felter.
 
-De nuværende pakker indeholder grundregler om blandt andet Git, hemmeligheder og afprøvning samt en trinvis vejledning:
+- [Læs, hvad hver skill gør, og hvad den ikke gør](profiles/SKILLS.md). Samme oversigt findes som webside i [skills.html](site/dist/skills.html).
+- [Se, hvor filerne lægges i hvert værktøj](site/dist/vaerktoejer.html), og hvordan du kontrollerer, at de er indlæst.
+- [Hent pakken til dit værktøj i webguiden](site/dist/index.html).
 
-- [Claude Code](site/dist/downloads/claude/LAES-MIG.md)
-- [Codex](site/dist/downloads/codex/LAES-MIG.md)
-- [OpenCode](site/dist/downloads/opencode/LAES-MIG.md)
+Der er tre måder at installere på: med AI Harness-appen, ved at bede din egen kodeagent følge vejledningen i pakken eller manuelt. Udviklere med adgang til repositoryet kan også bruge kommandolinjen:
 
-Webguiden og filerne findes i [hjemmesidens kilde](site/dist/). Automatisk installation fra repositoryet og eksport af det fulde skillbibliotek er endnu ikke implementeret.
+```bash
+node scripts/harness.cjs install --tools claude-code,cursor --project ../mit-projekt
+```
 
-Der findes også andre relevante værktøjer. Vi har undersøgt [ti alternativer og deres muligheder for fælles instruktioner](site/dist/vaerktoejer.html), herunder Cursor, GitHub Copilot, Gemini CLI og Pi. De er kandidater til videre afprøvning; vores nuværende downloadpakker dækker de tre værktøjer ovenfor.
+Installationen viser de præcise ændringer, før noget skrives. Eksisterende filer overskrives aldrig: Harness tilføjer et afgrænset afsnit i fx `AGENTS.md` og `.gitignore` og springer ændrede filer over. `.harness/installation.json` registrerer version og kontrolsummer, så en opdatering eller fjernelse kun rører uændrede filer. Skillsene indeholder kun tekst, ingen scripts og ingen værktøjstilladelser.
+
+I Claude Code og OpenCode er det afprøvet med en kontrolleret modelserver, at grundregler og skills bliver sendt til modellen. De øvrige værktøjer følger deres officielle dokumentation. Hvor godt en bestemt model følger instruktionerne, er ikke målt.
 
 ### Brug AI Harness-appen
 
-Appen samler samtale med din AI, kodeændringer, forhåndsvisning og versionsgemning. Du bruger din egen modelforbindelse, og projektfilerne ligger på din computer. Der er også hjælp til testudgivelse hos de hostingtjenester, der er understøttet.
+Appen samler samtale med din AI, kodeændringer, forhåndsvisning og versionsgemning. Du bruger din egen modelforbindelse, og projektfilerne ligger på din computer. Der er også hjælp til testudgivelse hos de hostingtjenester, der er understøttet. Ved første start vælger du mellem at bygge i appen og at lægge Harness i dit eget kodeværktøj; begge veje kan åbnes igen senere.
 
 Se [installation og opsætning](desktop/README.md) og [den konkrete teststatus](docs/teststatus.md). Appen er en testversion til inviterede brugere. Et komplet forløb fra download til drift er endnu ikke afprøvet på en almindelig testers egen computer.
 
@@ -58,7 +62,7 @@ Harness skal støtte kommunens arbejde med sikkerhed og GDPR. Instruktioner er d
 
 Grundregler beskriver det fælles ansvar. Skills beskriver bestemte arbejdsopgaver. Projektprofiler skal samle valg om teknologi, design og arbejdsgang. Kommuner og leverandører skal kunne bidrage med indhold og integrationer uden at være bundet til én model, Git-tjeneste eller hostingudbyder.
 
-Appen har allerede redigerbare skills og lokale designpakker. Et fælles format til import, eksport og organisationsprofiler er stadig under udvikling. Målet er læsbare, versionsstyrede filer, hvor lokale tilpasninger bevares ved opdatering.
+Grundregler og skills ligger i [profiles](profiles/) som læsbare filer, og [kataloget](profiles/catalog.json) beskriver hvert værktøjs filplaceringer. Lokale tilpasninger bevares ved opdatering. Organisationsprofiler med kommunens egne krav og standardvalg er endnu ikke bygget, og appens egen agent bruger fortsat sine egne instruktioner i `profiles/app`.
 
 Koden, brugeren bygger, ligger i almindelige projektfiler. Med versionsstyring og den nødvendige dokumentation kan en udvikler overtage arbejdet uden AI Harness.
 

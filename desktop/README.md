@@ -4,6 +4,32 @@ Dansk desktop-app med lokale arbejdsområder, kodeagent, modelvalg, skills, genb
 
 Invitation, installationskontrol og observationsopgaver er samlet i [testforløbet](../docs/testforloeb.md). [Aktuel teststatus](../docs/teststatus.md) skelner mellem automatiske prøver, rigtige modeller og kontrol af installationspakker.
 
+## Harness i dit eget kodeværktøj
+
+Vælg **Brug Harness i mit kodeværktøj** ved første start, eller **Harness i dit kodeværktøj** i sidepanelet. Vælg de værktøjer, du bruger i projektet, og projektmappen. Under **Det følger med** står hver skill med, hvad den gør, hvornår den bruges, hvad du får, og hvad den ikke gør. Appen skal ikke have en AI-forbindelse til dette og sender intet over netværket.
+
+**Gennemgå ændringerne** viser hver fil, der oprettes, og hvert afsnit, der tilføjes. Intet skrives før **Installer**. Eksisterende filer overskrives aldrig: I fx `AGENTS.md`, `CLAUDE.md` og `.gitignore` tilføjes et afsnit mellem markørerne `ai-harness:start` og `ai-harness:slut`, og projektets egne regler bevares. En fil, der er ændret siden installationen, bliver en konflikt og springes kun over efter et aktivt tilvalg. Gennemgangen advarer, hvis mappen ikke bruger Git, har ændringer, der ikke er gemt, eller hvis projektets `.gitignore` udelader skillmapper.
+
+`.harness/installation.json` registrerer version, værktøjer og kontrolsummer; tidspunktet kommer fra computerens ur. Filen skal med i Git, så andre kan opdatere eller fjerne installationen sikkert. **Fjern igen** sletter kun uændrede filer og afsnit. Mappen vælges i hovedprocessen, og brugerfladen sender kun værktøjsvalg og bekræftelser. En gennemgang kan kun bruges én gang, og projektet kontrolleres igen før skrivning.
+
+Webplatforme, der ikke læser filer fra projektet, som Lovable, får en tekst, der kan kopieres til platformens egne felter.
+
+Afprøvning fra `desktop/`:
+
+```bash
+npm run test:tools
+```
+
+```bash
+npm run test:skills-claude
+```
+
+```bash
+npm run test:skills-opencode
+```
+
+`test:tools` gennemfører forløbet i Electron med et rigtigt Git-projekt. De to andre installerer i et syntetisk projekt og kører den installerede Claude Code eller OpenCode mod en kontrolleret lokal modelserver. De viser, at grundregler og skills sendes til modellen, og at en skill indlæses ved brug. De kræver ingen konto eller nøgle og siger intet om, hvor godt en rigtig model følger instruktionerne.
+
 ## Gendannelse og fejlrapport
 
 Åbn projektmenuen → Versioner, og vælg en gemt version for at gennemgå filerne før gendannelse. Appen gemmer først en lokal kopi af de berørte filer. **Kopien før sidste gendannelse** kan åbnes efter genstart og bruges til at fortryde. HEAD, index og commits ændres ikke. Gendannede filer fremstår som almindelige ændringer, der senere kan gemmes som en ny version.
@@ -29,7 +55,7 @@ Appens navn og egne menuer er **AI Harness**. Under `npm start` bruges stadig ud
 
 ## Opstart og forbindelser
 
-Ved første start vises **Hvad vil du bygge?** med Start et projekt, Prøv et eksempel og Åbn et projekt. **Spring introduktionen over** går direkte til projektoprettelsen og huskes på denne computer. Introduktionen kan åbnes igen fra sidepanelet. Den guidede vej tilbyder AI-forbindelse eller fortsættelse uden AI; derefter beskriver brugeren sin idé og får et redigerbart navneforslag. Designmateriale og avancerede projektvalg er foldet sammen. Brugeren kan oprette eller åbne et lokalt projekt uden AI- eller GitHub-konto. Velkomst og demonstration kontakter ingen modelserver. Når AI-opsætningen åbnes, henter appen automatisk Ollamas modelliste fra http://127.0.0.1:11434/api/tags med en kort timeout. Ingen modelnøgle dekrypteres under søgningen.
+Ved første start vælger brugeren mellem **Byg i AI Harness-appen** og **Brug Harness i mit kodeværktøj**. Den første vej viser **Hvad vil du bygge?** med Start et projekt, Prøv et eksempel og Åbn et projekt. **Spring introduktionen over** går direkte til projektoprettelsen og huskes på denne computer. Introduktionen kan åbnes igen fra sidepanelet. Den guidede vej tilbyder AI-forbindelse eller fortsættelse uden AI; derefter beskriver brugeren sin idé og får et redigerbart navneforslag. Designmateriale og avancerede projektvalg er foldet sammen. Brugeren kan oprette eller åbne et lokalt projekt uden AI- eller GitHub-konto. Velkomst og demonstration kontakter ingen modelserver. Når AI-opsætningen åbnes, henter appen automatisk Ollamas modelliste fra http://127.0.0.1:11434/api/tags med en kort timeout. Ingen modelnøgle dekrypteres under søgningen.
 
 AI-opsætningen viser to store valg: **Jeg har en adgangsnøgle** og **AI på min computer**. En gemt forbindelse vises som et tredje valg. Den guidede introduktion skjuler sidepanelet og viser ét trin ad gangen. **Vælg senere** går videre uden AI og bevarer idéen. Tilbage vender til valgene uden at sende en besked; et indtastet nøglefelt tømmes.
 
