@@ -14,6 +14,14 @@ Afklaret i projektsamtalen 28. september 2026: Den primære målgruppe er udvikl
 
 Kildegennemgangen bekræfter det oprindelige forslag om en egen brugerflade og konfiguration omkring OpenCode uden en fork. Det samlede forslag om organisationsstyring, revisionsspor og isolation er ikke implementeret. Pi skal vurderes som mulig alternativ motor; der er ikke besluttet eller udført et skift. Se [teknisk grundlag](teknisk-grundlag.md).
 
+## Få valg og udvælgelse af skills · 29. september 2026
+
+Besluttet i projektsamtalen: Hvert beslutningspunkt har ét eller to hovedvalg og højst tre til fire synlige muligheder med resten bag ét link, fx "Bruger du en anden udbyder? Vælg en anden". Opsætningen skal kunne gennemføres uden tvivlsspørgsmål af en person uden teknisk baggrund. Reglen står i `AGENTS.md` og `desktop/DESIGN.md`.
+
+Skills kan vælges til og fra som i en cookie-dialog: grundreglerne er altid med, og de 12 skills er delt i fire kategorier, som kan slås til og fra samlet eller enkeltvis. Udvalget gemmes i `.harness/installation.json` og bruges igen ved næste installation. Henvisninger mellem skills skal tåle, at den anden skill er fravalgt.
+
+Standardvalg i implementeringen, som kan ændres i kataloget eller koden: fire fremhævede kodeværktøjer (Claude Code, GitHub Copilot, Codex og Cursor), tre udbyderkort (Claude, Mistral og Corti) og anbefalede modeller pr. udbyder i `desktop/ui/model-advice.js`.
+
 ## Fælles bibliotek og installation i eget kodeværktøj · 29. september 2026
 
 Besluttet i projektsamtalen: Standardvalgene i [det faglige grundlag](harness-grundlag.md) er grundlaget for skillsene, det skal være let at læse om hver skill som en FAQ, og pakkerne skal dække flere værktøjer end Claude Code, Codex og OpenCode.

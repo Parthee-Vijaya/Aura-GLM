@@ -756,3 +756,29 @@ footer {
     grid-template-columns:1fr
   }
 }
+.tool-picker[hidden] {
+  display:none
+}
+#show-all-tools {
+  margin:0 0 22px
+}
+.tool-picker[data-group="featured"] {
+  grid-template-columns:repeat(4,minmax(0,1fr))
+}
+@media(max-width:900px) {
+  .tool-picker[data-group="featured"] {
+    grid-template-columns:repeat(2,minmax(0,1fr))
+  }
+}
+@media(max-width:680px) {
+  .tool-picker[data-group="featured"] {
+    grid-template-columns:1fr
+  }
+}
+.skill-group {
+  font-size:.75rem;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin:18px 0 4px
+}

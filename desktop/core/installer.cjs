@@ -127,7 +127,7 @@ async function plan(directory, layout, { version, tools }) {
   for (const op of operations) if (blocked.has(op.group) && ['opret', 'opdater', 'uaendret'].includes(op.action)) Object.assign(op, { action: 'konflikt', reason: 'En anden fil i samme skill er i konflikt, så hele skillen springes over.' });
   for (const [file, hash] of Object.entries(manifest?.files || {})) if (!wanted.has(file)) operations.push(await removal(root, file, 'fil', hash));
   for (const [file, block] of Object.entries(manifest?.blocks || {})) if (!wanted.has(file)) operations.push(await removal(root, file, 'blok', block.hash, block.created));
-  const result = { root, version, tools, operations, conflicts: operations.filter(op => op.action === 'konflikt'), manifest: manifest ? { version: manifest.version, tools: manifest.tools } : null };
+  const result = { root, version, tools, operations, conflicts: operations.filter(op => op.action === 'konflikt'), manifest: manifest ? { version: manifest.version, tools: manifest.tools, skills: manifest.skills } : null };
   result.token = token(root, operations);
   return result;
 }
@@ -183,8 +183,8 @@ async function apply(directory, layout, options, reviewed, { skipConflicts = fal
     else blocks[op.path] = { hash: sha(op.content.replace(/\s+$/, '')), created: op.action === 'opret' || Boolean(previous?.blocks[op.path]?.created) };
   }
   const skipped = fresh.conflicts.map(op => op.path);
-  const same = previous && JSON.stringify([previous.version, previous.tools, previous.files, previous.blocks, previous.skipped]) === JSON.stringify([options.version, options.tools, files, blocks, skipped]);
-  const manifest = same ? previous : { schemaVersion: 1, version: options.version, tools: options.tools, installedAt: new Date().toISOString(), timeSource: 'computerens ur', files, blocks, skipped };
+  const same = previous && JSON.stringify([previous.version, previous.tools, previous.skills, previous.files, previous.blocks, previous.skipped]) === JSON.stringify([options.version, options.tools, options.skills, files, blocks, skipped]);
+  const manifest = same ? previous : { schemaVersion: 1, version: options.version, tools: options.tools, skills: options.skills, installedAt: new Date().toISOString(), timeSource: 'computerens ur', files, blocks, skipped };
   if (!same) await writeAtomic(path.join(root, MANIFEST), JSON.stringify(manifest, null, 2) + '\n');
   return { root, manifest, operations: fresh.operations.map(({ content, result, ...op }) => op) };
 }

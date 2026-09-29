@@ -2,9 +2,17 @@
 
 Genereret fra `profiles/catalog.json` af `scripts/build-packages.cjs`. Ret kataloget eller skillfilerne, ikke denne fil.
 
-AI Harness indeholder fælles grundregler og 12 skills. Grundreglerne gælder altid. En skill er en kort vejledning til kodeagenten om én arbejdsopgave, som bruges, når opgaven passer.
+AI Harness indeholder fælles grundregler og 12 skills i 4 kategorier. Grundreglerne gælder altid. En skill er en kort vejledning til kodeagenten om én arbejdsopgave, som bruges, når opgaven passer. I AI Harness-appen kan kategorier og enkelte skills slås til og fra.
 
-## Idé og afgrænsning
+## Grundregler · altid med
+
+Grundreglerne gælder i hele projektet og kan ikke fravælges. De står i [grundregler.md](grundregler.md).
+
+## Planlægning og design
+
+Afklar idéen, forstå et eksisterende projekt, og vælg teknologi og design.
+
+### Idé og afgrænsning
 
 `harness-ide-og-afgraensning` · [SKILL.md](skills/harness-ide-og-afgraensning/SKILL.md)
 
@@ -16,7 +24,7 @@ AI Harness indeholder fælles grundregler og 12 skills. Grundreglerne gælder al
 
 **Hvad gør den ikke?** Den vælger ikke teknologi og skriver ikke kode. Den afgør heller ikke, om en behandling af personoplysninger er lovlig.
 
-## Eksisterende projekt
+### Eksisterende projekt
 
 `harness-eksisterende-projekt` · [SKILL.md](skills/harness-eksisterende-projekt/SKILL.md)
 
@@ -28,7 +36,7 @@ AI Harness indeholder fælles grundregler og 12 skills. Grundreglerne gælder al
 
 **Hvad gør den ikke?** Den skifter ikke teknologi, pakkehåndtering eller Git-model, og den rydder ikke op med reset, rebase eller force-push.
 
-## Arkitektur og teknologi
+### Arkitektur og teknologi
 
 `harness-arkitektur-og-teknologi` · [SKILL.md](skills/harness-arkitektur-og-teknologi/SKILL.md)
 
@@ -42,35 +50,7 @@ AI Harness indeholder fælles grundregler og 12 skills. Grundreglerne gælder al
 
 Kilder: [React om at oprette en ny app](https://react.dev/learn/creating-a-react-app), [Astros anvendelsesområde](https://docs.astro.build/en/concepts/why-astro/), [TypeScript strict](https://www.typescriptlang.org/tsconfig/strict), [OS2](https://www.os2.eu/), [Lov om MitID og NemLog-in](https://www.retsinformation.dk/eli/lta/2025/333), [Vejledning om open source i den offentlige sektor](https://arkitektur.digst.dk/Vejledning-om-brug-af-open-source-i-den-offentlige-sektor)
 
-## Data og leverandører
-
-`harness-data-og-leverandoerer` · [SKILL.md](skills/harness-data-og-leverandoerer/SKILL.md)
-
-**Hvad gør den?** Holder styr på, hvilke data løsningen bruger, hvem der modtager dem, hvor de behandles og gemmes, og hvad der stadig er uafklaret. Den skelner mellem data i udviklingen og i den færdige app og kender de danske offentlige krav, der typisk udløses: databehandleraftale, fortegnelse, konsekvensanalyse, anmeldelse af brud og journalisering.
-
-**Hvornår bruges den?** Når løsningen får et nyt dataforløb, en ny tjeneste eller leverandør, eller når der skal bruges personoplysninger.
-
-**Hvad får du?** En opdateret dataoversigt i projektet med kilder, kontroldatoer og konkrete spørgsmål til fx databeskyttelsesrådgiver og informationssikkerhed.
-
-**Hvad gør den ikke?** Den erklærer ingen behandling for lovlig og godkender ikke på organisationens vegne. En registrering i filen er ikke en verificeret godkendelse.
-
-Kilder: [Datatilsynet om cloud](https://www.datatilsynet.dk/regler-og-vejledning/cloud), [Databeskyttelse gennem design og standardindstillinger](https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/databeskyttelse-gennem-design-og-standardindstillinger), [Konsekvensanalyse](https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/konsekvensanalyse), [GDPR](https://eur-lex.europa.eu/eli/reg/2016/679/oj), [Datatilsynet om testdata](https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/testdata-anvendelse-af-personoplysninger-ved-udvikling-og-test-af-it-systemer), [Offentlighedsloven](https://www.retsinformation.dk/eli/lta/2020/145), [AI-forordningen](https://eur-lex.europa.eu/eli/reg/2024/1689/oj)
-
-## Nøgler og afhængigheder
-
-`harness-noegler-og-afhaengigheder` · [SKILL.md](skills/harness-noegler-og-afhaengigheder/SKILL.md)
-
-**Hvad gør den?** Sørger for, at API-nøgler, tokens og adgangskoder hverken ender i koden, i browserens filer, i logs eller i Git. Før en ny pakke tilføjes, forklarer agenten behovet, kontrollerer navn, licens og kendte sårbarheder og bruger projektets låsefil.
-
-**Hvornår bruges den?** Når løsningen skal forbindes til en anden tjeneste, når der skal bruges en nøgle, og når pakker tilføjes eller opdateres.
-
-**Hvad får du?** Konfiguration med navngivne miljøvariabler uden værdier, en begrundelse for hver ny pakke og en besked, hvis en hemmelighed er eksponeret.
-
-**Hvad gør den ikke?** Den finder ikke alle hemmeligheder automatisk og erstatter ikke en egentlig hemmelighedsscanning eller udskiftning af en lækket nøgle.
-
-Kilder: [OWASP Secrets Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html), [Vite om miljøvariabler i browserkode](https://vite.dev/guide/env-and-mode), [npm ci](https://docs.npmjs.com/cli/v11/commands/npm-ci/)
-
-## Design og tilgængelighed
+### Design og tilgængelighed
 
 `harness-design-og-tilgaengelighed` · [SKILL.md](skills/harness-design-og-tilgaengelighed/SKILL.md)
 
@@ -84,7 +64,11 @@ Kilder: [OWASP Secrets Management Cheat Sheet](https://cheatsheetseries.owasp.or
 
 Kilder: [Lov om tilgængelighed af offentlige organers websteder og mobilapplikationer](https://www.retsinformation.dk/eli/lta/2018/692), [Digitaliseringsstyrelsen om tilgængelighedserklæringen](https://digst.dk/digital-inklusion/webtilgaengelighed/om-tilgaengelighedserklaeringen/), [W3C om evaluering af tilgængelighed](https://www.w3.org/WAI/test-evaluate/), [WCAG 2.2](https://www.w3.org/TR/WCAG22/)
 
-## Kodestil og vedligeholdelse
+## Kode og kvalitet
+
+Læsbar kode, afprøvning, fejlretning og styr på Git.
+
+### Kodestil og vedligeholdelse
 
 `harness-kodestil` · [SKILL.md](skills/harness-kodestil/SKILL.md)
 
@@ -98,7 +82,7 @@ Kilder: [Lov om tilgængelighed af offentlige organers websteder og mobilapplika
 
 Kilder: [Google om kodegennemgang](https://google.github.io/eng-practices/review/reviewer/looking-for.html), [TypeScript strict](https://www.typescriptlang.org/tsconfig/strict)
 
-## Afprøvning og fejlretning
+### Afprøvning og fejlretning
 
 `harness-afproevning-og-fejlretning` · [SKILL.md](skills/harness-afproevning-og-fejlretning/SKILL.md)
 
@@ -112,7 +96,7 @@ Kilder: [Google om kodegennemgang](https://google.github.io/eng-practices/review
 
 Kilder: [NIST SSDF 1.1](https://csrc.nist.gov/pubs/sp/800/218/final)
 
-## Git og samarbejde
+### Git og samarbejde
 
 `harness-git-og-samarbejde` · [SKILL.md](skills/harness-git-og-samarbejde/SKILL.md)
 
@@ -126,7 +110,39 @@ Kilder: [NIST SSDF 1.1](https://csrc.nist.gov/pubs/sp/800/218/final)
 
 Kilder: [GitHub flow](https://docs.github.com/en/get-started/using-github/github-flow), [Git worktree](https://git-scm.com/docs/git-worktree), [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
 
-## Sikkerhedsgennemgang
+## Sikkerhed og data
+
+Nøgler, afhængigheder, persondata, leverandører og sikkerhedsgennemgang.
+
+### Nøgler og afhængigheder
+
+`harness-noegler-og-afhaengigheder` · [SKILL.md](skills/harness-noegler-og-afhaengigheder/SKILL.md)
+
+**Hvad gør den?** Sørger for, at API-nøgler, tokens og adgangskoder hverken ender i koden, i browserens filer, i logs eller i Git. Før en ny pakke tilføjes, forklarer agenten behovet, kontrollerer navn, licens og kendte sårbarheder og bruger projektets låsefil.
+
+**Hvornår bruges den?** Når løsningen skal forbindes til en anden tjeneste, når der skal bruges en nøgle, og når pakker tilføjes eller opdateres.
+
+**Hvad får du?** Konfiguration med navngivne miljøvariabler uden værdier, en begrundelse for hver ny pakke og en besked, hvis en hemmelighed er eksponeret.
+
+**Hvad gør den ikke?** Den finder ikke alle hemmeligheder automatisk og erstatter ikke en egentlig hemmelighedsscanning eller udskiftning af en lækket nøgle.
+
+Kilder: [OWASP Secrets Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html), [Vite om miljøvariabler i browserkode](https://vite.dev/guide/env-and-mode), [npm ci](https://docs.npmjs.com/cli/v11/commands/npm-ci/)
+
+### Data og leverandører
+
+`harness-data-og-leverandoerer` · [SKILL.md](skills/harness-data-og-leverandoerer/SKILL.md)
+
+**Hvad gør den?** Holder styr på, hvilke data løsningen bruger, hvem der modtager dem, hvor de behandles og gemmes, og hvad der stadig er uafklaret. Den skelner mellem data i udviklingen og i den færdige app og kender de danske offentlige krav, der typisk udløses: databehandleraftale, fortegnelse, konsekvensanalyse, anmeldelse af brud og journalisering.
+
+**Hvornår bruges den?** Når løsningen får et nyt dataforløb, en ny tjeneste eller leverandør, eller når der skal bruges personoplysninger.
+
+**Hvad får du?** En opdateret dataoversigt i projektet med kilder, kontroldatoer og konkrete spørgsmål til fx databeskyttelsesrådgiver og informationssikkerhed.
+
+**Hvad gør den ikke?** Den erklærer ingen behandling for lovlig og godkender ikke på organisationens vegne. En registrering i filen er ikke en verificeret godkendelse.
+
+Kilder: [Datatilsynet om cloud](https://www.datatilsynet.dk/regler-og-vejledning/cloud), [Databeskyttelse gennem design og standardindstillinger](https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/databeskyttelse-gennem-design-og-standardindstillinger), [Konsekvensanalyse](https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/konsekvensanalyse), [GDPR](https://eur-lex.europa.eu/eli/reg/2016/679/oj), [Datatilsynet om testdata](https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/testdata-anvendelse-af-personoplysninger-ved-udvikling-og-test-af-it-systemer), [Offentlighedsloven](https://www.retsinformation.dk/eli/lta/2020/145), [AI-forordningen](https://eur-lex.europa.eu/eli/reg/2024/1689/oj)
+
+### Sikkerhedsgennemgang
 
 `harness-sikkerhedsgennemgang` · [SKILL.md](skills/harness-sikkerhedsgennemgang/SKILL.md)
 
@@ -140,7 +156,11 @@ Kilder: [GitHub flow](https://docs.github.com/en/get-started/using-github/github
 
 Kilder: [OWASP ASVS](https://owasp.org/www-project-application-security-verification-standard/), [OWASP Top 10](https://owasp.org/Top10/), [OWASP Top 10 for LLM-applikationer](https://genai.owasp.org/llm-top-10/), [NIS2-loven](https://www.retsinformation.dk/eli/lta/2025/434)
 
-## Udgivelse og gendannelse
+## Udgivelse og drift
+
+Sæt i drift, rul tilbage, og gør arbejdet klar til at blive overtaget.
+
+### Udgivelse og gendannelse
 
 `harness-udgivelse-og-gendannelse` · [SKILL.md](skills/harness-udgivelse-og-gendannelse/SKILL.md)
 
@@ -154,7 +174,7 @@ Kilder: [OWASP ASVS](https://owasp.org/www-project-application-security-verifica
 
 Kilder: [GitHub om udgivelsesmiljøer](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments)
 
-## Overdragelse og drift
+### Overdragelse og drift
 
 `harness-overdragelse-og-drift` · [SKILL.md](skills/harness-overdragelse-og-drift/SKILL.md)
 

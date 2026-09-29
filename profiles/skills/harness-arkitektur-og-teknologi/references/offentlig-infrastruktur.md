@@ -24,7 +24,7 @@ Pejlemærker til løsninger for danske offentlige organisationer. Kontrollér me
 
 ## Hosting og placering
 
-- Der er ikke fundet en generel dansk regel om, at data skal hostes i EU/EØS. Overførsler reguleres af GDPR; brug `harness-data-og-leverandoerer`.
+- Der er ikke fundet en generel dansk regel om, at data skal hostes i EU/EØS. Overførsler reguleres af GDPR; brug `harness-data-og-leverandoerer`, hvis den er installeret.
 - Digitaliseringsstyrelsen og Datatilsynet har vejledninger om brug af cloud, og Digitaliseringsstyrelsen har materiale om digital suverænitet. Brug dem som beslutningsstøtte sammen med organisationens egne krav.
 
 ## Informationssikkerhed

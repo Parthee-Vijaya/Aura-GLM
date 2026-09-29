@@ -55,6 +55,8 @@ Vælg "Brug Harness i mit kodeværktøj", vælg ${tool.name} og din projektmappe
 4. ${blocks.map(file => `\`${file}\``).join(', ')}: Hvis filen ikke findes i dit projekt, så kopiér den. Hvis den findes, så overskriv den ikke. Kopiér i stedet afsnittet fra markøren \`ai-harness:start\` til \`ai-harness:slut\`, og indsæt det nederst i din egen fil.
 5. Kopiér \`.harness/installation.json\` med. Den gør det muligt senere at opdatere eller fjerne AI Harness uden at røre dine egne ændringer.
 
+Vil du kun bruge nogle af skillsene, så brug AI Harness-appen. Den lader dig slå kategorier og enkelte skills til og fra og husker valget ved opdatering.
+
 ## Kontrollér, at det virker
 
 ${tool.verification}
@@ -92,7 +94,7 @@ ${tool.sources.map(source => `- ${source.title}: ${source.url}`).join('\n')}
 function packageFiles(library, tool) {
   const layout = layoutFor(library, [tool.id]);
   const files = layout.entries.map(entry => ({ path: entry.path, kind: entry.kind, content: entry.kind === 'blok' ? withBlock('', entry.path, entry.content) : entry.content, entry }));
-  const manifest = { schemaVersion: 1, version: library.version, tools: layout.tools, installedAt: null, timeSource: 'manuel kopi fra ZIP-pakke', files: {}, blocks: {}, skipped: [] };
+  const manifest = { schemaVersion: 1, version: library.version, tools: layout.tools, skills: layout.skills, installedAt: null, timeSource: 'manuel kopi fra ZIP-pakke', files: {}, blocks: {}, skipped: [] };
   for (const file of files) {
     if (file.kind === 'fil') manifest.files[file.path] = sha(file.content);
     else manifest.blocks[file.path] = { hash: sha(file.entry.content.replace(/\s+$/, '')), created: true };
@@ -119,9 +121,17 @@ function skillsMarkdown(library) {
 
 Genereret fra \`profiles/catalog.json\` af \`scripts/build-packages.cjs\`. Ret kataloget eller skillfilerne, ikke denne fil.
 
-AI Harness indeholder fælles grundregler og ${library.skills.length} skills. Grundreglerne gælder altid. En skill er en kort vejledning til kodeagenten om én arbejdsopgave, som bruges, når opgaven passer.
+AI Harness indeholder fælles grundregler og ${library.skills.length} skills i ${library.categories.length} kategorier. Grundreglerne gælder altid. En skill er en kort vejledning til kodeagenten om én arbejdsopgave, som bruges, når opgaven passer. I AI Harness-appen kan kategorier og enkelte skills slås til og fra.
 
-${library.skills.map(skill => `## ${skill.title}
+## Grundregler · altid med
+
+Grundreglerne gælder i hele projektet og kan ikke fravælges. De står i [grundregler.md](grundregler.md).
+
+${library.categories.map(category => `## ${category.title}
+
+${category.summary}
+
+${category.skills.map(name => library.skills.find(skill => skill.name === name)).map(skill => `### ${skill.title}
 
 \`${skill.name}\` · [SKILL.md](skills/${skill.name}/SKILL.md)
 
@@ -132,15 +142,16 @@ ${library.skills.map(skill => `## ${skill.title}
 **Hvad får du?** ${skill.faq.resultat}
 
 **Hvad gør den ikke?** ${skill.faq.ikke}
-${skill.sources.length ? `\nKilder: ${skill.sources.map(source => `[${source.title}](${source.url})`).join(', ')}\n` : ''}`).join('\n')}
+${skill.sources.length ? `\nKilder: ${skill.sources.map(source => `[${source.title}](${source.url})`).join(', ')}\n` : ''}`).join('\n')}`).join('\n')}
 ## Spørgsmål og svar
 
 ${library.questions.map(item => `### ${item.q}\n\n${item.a}\n`).join('\n')}`;
 }
 
 function skillsPage(library) {
-  const nav = library.skills.map(skill => `<a href="#${skill.name}">${escape(skill.title)}</a>`).join('');
-  const entries = library.skills.map((skill, index) => `
+  const nav = library.categories.map(category => `<a href="#${category.id}">${escape(category.title)}</a>`).join('');
+  const number = name => library.skills.findIndex(skill => skill.name === name);
+  const entry = (skill, index) => `
       <article class="tool-entry skill-entry" id="${skill.name}">
         <p class="tool-type">${String(index + 1).padStart(2, '0')} · <code>${skill.name}</code></p>
         <h3>${escape(skill.title)}</h3>
@@ -153,7 +164,13 @@ function skillsPage(library) {
         </dl>
         <details><summary>Se instruktionen til agenten</summary><pre>${escape(skill.files.find(file => file.path === 'SKILL.md').content)}</pre>${skill.files.filter(file => file.path !== 'SKILL.md').map(file => `<p class="tool-type"><code>${escape(file.path)}</code></p><pre>${escape(file.content)}</pre>`).join('')}</details>
         ${skill.sources.length ? `<p class="sources">Kilder: ${skill.sources.map(source => `<a href="${escape(source.url)}">${escape(source.title)} ↗</a>`).join(' · ')}</p>` : ''}
-      </article>`).join('');
+      </article>`;
+  const entries = `
+      <section class="note" id="grundregler" aria-labelledby="grundregler-title"><h2 id="grundregler-title">Grundregler · altid med</h2><p>Grundreglerne gælder i hele projektet og kan ikke fravælges: hemmeligheder holdes ude af kode og Git, brugeren styrer Git, ændringer afprøves, og agenten rapporterer ærligt, hvad der er kontrolleret.</p></section>` + library.categories.map(category => `
+      <section class="note" id="${category.id}" aria-labelledby="${category.id}-title">
+        <h2 id="${category.id}-title">${escape(category.title)}</h2>
+        <p>${escape(category.summary)}</p>${category.skills.map(name => entry(library.skills[number(name)], number(name))).join('')}
+      </section>`).join('');
   const questions = library.questions.map(item => `<details><summary>${escape(item.q)}</summary><p>${escape(item.a)}</p></details>`).join('\n        ');
   return `<!doctype html>
 <html lang="da">
@@ -171,7 +188,7 @@ function skillsPage(library) {
     <p class="eyebrow">DET FØLGER MED</p>
     <h1>Skills i AI Harness.</h1>
     <p class="lead">AI Harness ${library.version} indeholder fælles grundregler og ${library.skills.length} skills. Grundreglerne gælder altid. En skill er en kort vejledning til kodeagenten om én arbejdsopgave, som bruges, når opgaven passer.</p>
-    <p>Alle skills følger med i pakkerne til de understøttede kodeværktøjer og installeres også af AI Harness-appen. Filerne er almindelige tekstfiler på dansk, som du kan læse og tilpasse.</p>
+    <p>Skillsene er delt i fire kategorier. Pakkerne til kodeværktøjerne indeholder dem alle. I AI Harness-appen kan du slå kategorier og enkelte skills til og fra, ligesom i en cookie-dialog; grundreglerne er altid med. Filerne er almindelige tekstfiler på dansk, som du kan læse og tilpasse.</p>
     <nav class="tool-nav" aria-label="Skills">${nav}</nav>
     <section id="skills" aria-label="Skills">${entries}
     </section>
@@ -274,7 +291,7 @@ async function build({ profiles = path.join(root, 'profiles'), output = path.joi
     await fs.writeFile(path.join(output, archive), zip([{ name: 'LAES-MIG.md', data: readme }, ...files.map(file => ({ name: `projekt/${file.path}`, data: file.content }))], library.checkedAt));
     publicTools.push({ ...base, installable: true, archive, dirs: layout.dirs, warnings: layout.warnings, files: files.map(file => publicFile(library, file, contents)) });
   }
-  const catalog = { version: library.version, checkedAt: library.checkedAt, controlWord: library.controlWord, agentPrompt: agentPrompt(library), categories: categoryText, statuses: statusText, questions: library.questions, skills: library.skills.map(({ files, ...skill }) => ({ ...skill, files })), tools: publicTools, contents };
+  const catalog = { version: library.version, checkedAt: library.checkedAt, controlWord: library.controlWord, featuredTools: library.featuredTools, categories: library.categories, agentPrompt: agentPrompt(library), categories: categoryText, statuses: statusText, questions: library.questions, skills: library.skills.map(({ files, ...skill }) => ({ ...skill, files })), tools: publicTools, contents };
   await fs.writeFile(path.join(output, 'catalog.json'), JSON.stringify(catalog, null, 2) + '\n');
   await fs.writeFile(path.join(output, 'skills.html'), skillsPage(library));
   await fs.writeFile(path.join(output, 'vaerktoejer.html'), toolsPage(library, publicTools));

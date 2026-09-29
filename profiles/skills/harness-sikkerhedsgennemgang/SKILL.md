@@ -37,4 +37,4 @@ Behandl modellens svar som utroværdigt input: escape det, og lad det ikke alene
 ## Stop og inddrag andre
 
 - Løsningen skal i drift med personoplysninger, login eller integration til kommunens systemer: inddrag organisationens informationssikkerhedsfunktion, før den udgives. Kommuner kan være omfattet af NIS2-loven, som har korte frister for varsling om væsentlige hændelser.
-- Du finder en eksponeret hemmelighed eller et fund, der kan være et sikkerhedsbrud: stop, fortæl det straks, og følg `harness-noegler-og-afhaengigheder`. Et brud på persondatasikkerheden skal håndteres efter organisationens procedure.
+- Du finder en eksponeret hemmelighed eller et fund, der kan være et sikkerhedsbrud: stop, fortæl det straks, og anbefal at tilbagekalde og udskifte nøglen. `harness-noegler-og-afhaengigheder` beskriver fremgangsmåden, hvis den er installeret. Et brud på persondatasikkerheden skal håndteres efter organisationens procedure.

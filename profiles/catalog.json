@@ -22,6 +22,54 @@
     ".kilo/skills"
   ],
   "neutralSkillDir": ".agents/skills",
+  "featuredTools": [
+    "claude-code",
+    "github-copilot",
+    "codex",
+    "cursor"
+  ],
+  "categories": [
+    {
+      "id": "planlaegning",
+      "title": "Planlægning og design",
+      "summary": "Afklar idéen, forstå et eksisterende projekt, og vælg teknologi og design.",
+      "skills": [
+        "harness-ide-og-afgraensning",
+        "harness-eksisterende-projekt",
+        "harness-arkitektur-og-teknologi",
+        "harness-design-og-tilgaengelighed"
+      ]
+    },
+    {
+      "id": "kode",
+      "title": "Kode og kvalitet",
+      "summary": "Læsbar kode, afprøvning, fejlretning og styr på Git.",
+      "skills": [
+        "harness-kodestil",
+        "harness-afproevning-og-fejlretning",
+        "harness-git-og-samarbejde"
+      ]
+    },
+    {
+      "id": "sikkerhed",
+      "title": "Sikkerhed og data",
+      "summary": "Nøgler, afhængigheder, persondata, leverandører og sikkerhedsgennemgang.",
+      "skills": [
+        "harness-noegler-og-afhaengigheder",
+        "harness-data-og-leverandoerer",
+        "harness-sikkerhedsgennemgang"
+      ]
+    },
+    {
+      "id": "drift",
+      "title": "Udgivelse og drift",
+      "summary": "Sæt i drift, rul tilbage, og gør arbejdet klar til at blive overtaget.",
+      "skills": [
+        "harness-udgivelse-og-gendannelse",
+        "harness-overdragelse-og-drift"
+      ]
+    }
+  ],
   "questions": [
     {
       "q": "Hvad er en skill?",

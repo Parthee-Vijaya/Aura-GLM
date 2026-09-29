@@ -101,6 +101,11 @@ async function loadLibrary(profileRoot) {
     const files = await readSkillFiles(path.join(profileRoot, 'skills', entry.name));
     skills.push({ ...entry, ...validateSkill(entry, files), files });
   }
+  // En skill kan fravælges. Henvisninger til andre skills skal derfor pege på en kendt skill og tåle, at den mangler.
+  for (const skill of skills) for (const file of skill.files) for (const line of file.content.split('\n')) for (const [, name] of line.matchAll(/`(harness-[a-z0-9-]+)`/g)) {
+    if (!names.has(name)) throw new Error(`Skill ${skill.name}: ${file.path} henviser til en ukendt skill, ${name}.`);
+    if (!/hvis (den|de) er installeret/.test(line)) throw new Error(`Skill ${skill.name}: Henvisningen til ${name} skal tåle, at skillen er fravalgt. Skriv fx "hvis den er installeret".`);
+  }
   const onDisk = (await fs.readdir(path.join(profileRoot, 'skills'))).filter(name => !name.startsWith('.'));
   for (const name of onDisk) if (!names.has(name)) throw new Error(`Mappen profiles/skills/${name} står ikke i kataloget.`);
   const ids = new Set();
@@ -109,8 +114,16 @@ async function loadLibrary(profileRoot) {
     ids.add(tool.id);
     validateTool(tool, catalog.skillDirs);
   }
+  if (!Array.isArray(catalog.featuredTools) || !catalog.featuredTools.length || catalog.featuredTools.length > 4 || new Set(catalog.featuredTools).size !== catalog.featuredTools.length || catalog.featuredTools.some(id => !catalog.tools.find(tool => tool.id === id)?.rules)) throw new Error('Kataloget skal fremhæve ét til fire installerbare værktøjer.');
+  // Hver skill hører til præcis én kategori, så udvælgelsen i appen altid dækker hele biblioteket.
+  if (!Array.isArray(catalog.categories) || !catalog.categories.length) throw new Error('Kataloget skal inddele skills i kategorier.');
+  const placed = catalog.categories.flatMap(category => {
+    if (!NAME.test(category.id || '') || typeof category.title !== 'string' || !category.title || typeof category.summary !== 'string' || !category.summary || !Array.isArray(category.skills) || !category.skills.length) throw new Error(`Kategorien ${category.id || '(uden id)'} mangler id, titel, beskrivelse eller skills.`);
+    return category.skills;
+  });
+  if (new Set(catalog.categories.map(category => category.id)).size !== catalog.categories.length || placed.length !== names.size || placed.some(name => !names.has(name)) || new Set(placed).size !== placed.length) throw new Error('Hver skill skal stå i præcis én kategori.');
   if (!Array.isArray(catalog.questions) || catalog.questions.some(item => typeof item.q !== 'string' || !item.q || typeof item.a !== 'string' || !item.a)) throw new Error('Spørgsmål og svar i kataloget skal have tekst.');
-  return { version: catalog.version, checkedAt: catalog.checkedAt, controlWord: catalog.controlWord, skillDirs: catalog.skillDirs, neutralSkillDir: catalog.neutralSkillDir, rules, gitignore, questions: catalog.questions, skills, tools: catalog.tools };
+  return { version: catalog.version, checkedAt: catalog.checkedAt, controlWord: catalog.controlWord, skillDirs: catalog.skillDirs, neutralSkillDir: catalog.neutralSkillDir, rules, gitignore, questions: catalog.questions, featuredTools: catalog.featuredTools, categories: catalog.categories, skills, tools: catalog.tools };
 }
 
 module.exports = { loadLibrary, parseFrontmatter, safeRelative };

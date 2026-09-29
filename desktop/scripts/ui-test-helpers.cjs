@@ -28,4 +28,6 @@ async function selectMode(page, mode) {
 async function previewOptions(page) {
   if (!await page.locator('#preview-menu').evaluate(el => el.matches(':popover-open'))) await page.click('#preview-options');
 }
-module.exports = { skipIntroduction, menuClick, taskOptions, closeTaskOptions, selectMode, previewOptions };
+// Projektskærmens valgfrie sektioner ligger bag Flere valg.
+async function projectOptions(page) { if (!await page.locator('#project-options').evaluate(el => el.open)) await page.click('#project-options > summary'); }
+module.exports = { skipIntroduction, menuClick, taskOptions, closeTaskOptions, selectMode, previewOptions, projectOptions };

@@ -57,6 +57,6 @@ Målet er en kort, aftalt beskrivelse af opgaven, som brugeren kan genkende, og 
 
 ## Stop og inddrag andre
 
-- Løsningen skal behandle personoplysninger, fortrolige oplysninger eller rigtige sager: aftal opdigtede data til udviklingen, og brug `harness-data-og-leverandoerer`.
-- Løsningen kræver login, integration til kommunens systemer, betaling eller en ny tjeneste: sig det tidligt, og brug `harness-arkitektur-og-teknologi`.
+- Løsningen skal behandle personoplysninger, fortrolige oplysninger eller rigtige sager: aftal opdigtede data til udviklingen, og beskriv dataforløbet, gerne med `harness-data-og-leverandoerer`, hvis den er installeret.
+- Løsningen kræver login, integration til kommunens systemer, betaling eller en ny tjeneste: sig det tidligt, og få valget afklaret, gerne med `harness-arkitektur-og-teknologi`, hvis den er installeret.
 - Brugeren beder om noget, der rækker ud over opgaven: foreslå det som en særskilt opgave i stedet for at bygge det med.

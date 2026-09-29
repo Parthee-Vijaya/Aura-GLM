@@ -15,7 +15,7 @@ class OwnTools {
   async catalog() {
     const library = await this.library();
     return {
-      version: library.version, checkedAt: library.checkedAt, controlWord: library.controlWord, questions: library.questions,
+      version: library.version, checkedAt: library.checkedAt, controlWord: library.controlWord, questions: library.questions, featuredTools: library.featuredTools, categories: library.categories,
       skills: library.skills.map(({ name, title, summary, faq, sources }) => ({ name, title, summary, faq, sources })),
       tools: library.tools.map(({ id, name, vendor, category, status, testedWith, summary, verification, caveat, sources, rules }) => ({ id, name, vendor, category, status, testedWith, summary, verification, caveat, sources, installable: Boolean(rules) })),
       knowledge: knowledgeFor(library)
@@ -34,7 +34,7 @@ class OwnTools {
   async describe() {
     const root = this.requireTarget();
     const { manifest } = await installer.status(root);
-    return { name: path.basename(root), path: root, manifest: manifest && { version: manifest.version, tools: manifest.tools, installedAt: manifest.installedAt, timeSource: manifest.timeSource }, git: await this.gitState(root) };
+    return { name: path.basename(root), path: root, manifest: manifest && { version: manifest.version, tools: manifest.tools, skills: manifest.skills, installedAt: manifest.installedAt, timeSource: manifest.timeSource }, git: await this.gitState(root) };
   }
 
   async gitState(root) {
@@ -55,16 +55,16 @@ class OwnTools {
     catch (error) { return error.code === 1 ? [] : null; }
   }
 
-  async plan(toolIds) {
+  async plan(toolIds, skills) {
     const root = this.requireTarget();
     const library = await this.library();
-    const layout = layoutFor(library, toolIds);
-    const settings = { version: library.version, tools: layout.tools };
+    const layout = layoutFor(library, toolIds, { skills });
+    const settings = { version: library.version, tools: layout.tools, skills: layout.skills };
     const plan = await installer.plan(root, layout.entries, settings);
-    this.review = { kind: 'installer', root, tools: layout.tools, token: plan.token };
+    this.review = { kind: 'installer', root, tools: layout.tools, skills: layout.skills, token: plan.token };
     const written = plan.operations.filter(op => ['opret', 'tilfoej', 'opdater', 'uaendret'].includes(op.action)).map(op => op.path);
     return {
-      folder: path.basename(root), version: library.version, tools: layout.tools, dirs: layout.dirs, warnings: layout.warnings, manifest: plan.manifest,
+      folder: path.basename(root), version: library.version, tools: layout.tools, skills: layout.skills, dirs: layout.dirs, warnings: layout.warnings, manifest: plan.manifest,
       operations: plan.operations.map(({ path: file, kind, action, reason, content }) => ({ path: file, kind, action, reason: reason || null, preview: ['opret', 'tilfoej', 'opdater'].includes(action) ? content : null })),
       conflicts: plan.conflicts.length, git: await this.gitState(root), ignored: await this.ignored(root, [...written, installer.MANIFEST])
     };
@@ -74,11 +74,11 @@ class OwnTools {
     const root = this.requireTarget();
     if (this.review?.kind !== 'installer' || this.review.root !== root) throw new Error('Gennemgå ændringerne først.');
     const library = await this.library();
-    const layout = layoutFor(library, this.review.tools);
+    const layout = layoutFor(library, this.review.tools, { skills: this.review.skills });
     const { token } = this.review;
     this.review = null;
-    const result = await installer.apply(root, layout.entries, { version: library.version, tools: layout.tools }, token, { skipConflicts: skipConflicts === true });
-    return { folder: path.basename(root), version: result.manifest.version, tools: result.manifest.tools, skipped: result.manifest.skipped, operations: result.operations.map(({ path: file, action, reason }) => ({ path: file, action, reason: reason || null })) };
+    const result = await installer.apply(root, layout.entries, { version: library.version, tools: layout.tools, skills: layout.skills }, token, { skipConflicts: skipConflicts === true });
+    return { folder: path.basename(root), version: result.manifest.version, tools: result.manifest.tools, skills: result.manifest.skills, skipped: result.manifest.skipped, operations: result.operations.map(({ path: file, action, reason }) => ({ path: file, action, reason: reason || null })) };
   }
 
   async planRemoval() {

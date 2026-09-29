@@ -22,7 +22,7 @@ Der er tre måder at installere på: med AI Harness-appen, ved at bede din egen 
 node scripts/harness.cjs install --tools claude-code,cursor --project ../mit-projekt
 ```
 
-Installationen viser de præcise ændringer, før noget skrives. Eksisterende filer overskrives aldrig: Harness tilføjer et afgrænset afsnit i fx `AGENTS.md` og `.gitignore` og springer ændrede filer over. `.harness/installation.json` registrerer version og kontrolsummer, så en opdatering eller fjernelse kun rører uændrede filer. Skillsene indeholder kun tekst, ingen scripts og ingen værktøjstilladelser.
+I appen kan du vælge skills til og fra i fire kategorier; grundreglerne er altid med. Installationen viser de præcise ændringer, før noget skrives. Eksisterende filer overskrives aldrig: Harness tilføjer et afgrænset afsnit i fx `AGENTS.md` og `.gitignore` og springer ændrede filer over. `.harness/installation.json` registrerer version og kontrolsummer, så en opdatering eller fjernelse kun rører uændrede filer. Skillsene indeholder kun tekst, ingen scripts og ingen værktøjstilladelser.
 
 I Claude Code og OpenCode er det afprøvet med en kontrolleret modelserver, at grundregler og skills bliver sendt til modellen. De øvrige værktøjer følger deres officielle dokumentation. Hvor godt en bestemt model følger instruktionerne, er ikke målt.
 

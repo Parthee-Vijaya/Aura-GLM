@@ -181,7 +181,8 @@ handle('tools:folder', () => exclusive(async () => {
 }));
 handle('tools:review', input => exclusive(() => {
   if (!Array.isArray(input?.tools) || input.tools.length > 40 || input.tools.some(id => typeof id !== 'string')) throw new Error('Vælg gyldige værktøjer.');
-  return tools().plan(input.tools);
+  if (input.skills !== undefined && (!Array.isArray(input.skills) || input.skills.length > 60 || input.skills.some(name => typeof name !== 'string'))) throw new Error('Vælg gyldige skills.');
+  return tools().plan(input.tools, input.skills);
 }));
 handle('tools:install', input => exclusive(() => tools().install({ skipConflicts: input?.skipConflicts === true })));
 handle('tools:removal', () => exclusive(() => tools().planRemoval()));
@@ -364,7 +365,7 @@ app.whenReady().then(() => {
   protocol.handle('harness', async request => {
     const url = new URL(request.url);
     const name = url.pathname.slice(1);
-    if (url.host !== 'app' || !['index.html', 'app.js', 'server.js', 'viewport.js', 'hosting.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name)) return new Response('Ikke fundet', { status: 404 });
+    if (url.host !== 'app' || !['index.html', 'app.js', 'model-advice.js', 'server.js', 'viewport.js', 'hosting.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name)) return new Response('Ikke fundet', { status: 404 });
     return new Response(await fs.readFile(path.join(__dirname, 'ui', name)), { headers: { 'Content-Type': name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : 'text/html; charset=utf-8' } });
   });
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));

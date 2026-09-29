@@ -123,6 +123,7 @@ Status 29. september 2026:
 - **Adaptere til 23 kodeværktøjer og en tekst til Lovable** er beskrevet som data i `profiles/catalog.json`. `AGENTS.md` er fælles regelfil; Claude Code og Gemini CLI får en `CLAUDE.md` eller `GEMINI.md`, der importerer den. Skills lægges i `.agents/skills`, som de fleste værktøjer læser, og i værktøjets egen mappe, når det er nødvendigt, fx `.claude/skills` til Claude Code og `.kiro/skills` til Kiro. [Værktøjsoversigten](../site/dist/vaerktoejer.html) viser placering, kontrol og forbehold pr. værktøj.
 - **Installationen** viser ændringerne før skrivning, overskriver aldrig, tilføjer afgrænsede afsnit mellem faste markører, registrerer version og kontrolsummer i `.harness/installation.json`, springer ændrede filer over ved opdatering og fjerner kun uændrede filer. Den bruges af appens førstevalg "Brug Harness i mit kodeværktøj", af `scripts/harness.cjs` og af byggescriptet til webguidens ZIP-pakker.
 - **Webguiden** har pakker til alle værktøjerne, en vejledning, som brugerens egen kodeagent kan følge, og en FAQ om skillsene.
+- **Udvælgelse:** skillsene er delt i fire kategorier. I appen kan kategorier og enkelte skills slås til og fra; grundreglerne er altid med, og udvalget huskes i installationen.
 
 Det mangler stadig:
 

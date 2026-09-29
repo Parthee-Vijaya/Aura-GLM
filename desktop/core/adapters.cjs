@@ -27,50 +27,65 @@ function chooseSkillDirs(library, selected) {
   return chosen;
 }
 
-function rulesBody(library, dirs) {
-  const where = dirs.map(dir => `\`${dir}/\``).join(' og ');
-  const index = library.skills.map(skill => `- \`${skill.name}\`: ${skill.summary}`).join('\n');
-  return [
+function rulesBody(library, dirs, skills = library.skills) {
+  const intro = [
     `Dette afsnit vedligeholdes af AI Harness, version ${library.version}. Skriv projektets egne regler uden for afsnittet; ændringer herinde bliver ikke overskrevet, men stopper automatiske opdateringer.`,
     '',
-    library.rules.trim(),
+    library.rules.trim()
+  ];
+  if (!skills.length) return intro.join('\n');
+  const where = dirs.map(dir => `\`${dir}/\``).join(' og ');
+  return [
+    ...intro,
     '',
     '## Skills fra AI Harness',
     '',
     `Skillsene ligger i ${where}. Mange kodeværktøjer finder dem selv. Hvis dit værktøj ikke gør, så læs \`<mappe>/<navn>/SKILL.md\`, før du løser en opgave, der passer til beskrivelsen.`,
     '',
-    index
+    skills.map(skill => `- \`${skill.name}\`: ${skill.summary}`).join('\n')
   ].join('\n');
+}
+
+// Udvalget af skills. Uden et udvalg følger alle med; ukendte navne afvises.
+function selectSkills(library, names) {
+  if (names === undefined) return library.skills;
+  if (!Array.isArray(names) || names.some(name => typeof name !== 'string')) throw new Error('Vælg skills fra listen.');
+  const unknown = names.filter(name => !library.skills.some(skill => skill.name === name));
+  if (unknown.length) throw new Error(`Ukendt skill: ${unknown.join(', ')}`);
+  return library.skills.filter(skill => names.includes(skill.name));
 }
 
 function importBody(file) {
   return `AI Harness' fælles grundregler og oversigten over skills står i ${file}:\n\n@${file}`;
 }
 
-function readme(library, selected, dirs) {
+function readme(library, selected, dirs, skills) {
+  const left = library.skills.filter(skill => !skills.includes(skill));
   return [
     '# AI Harness i dette projekt',
     '',
-    `Projektet bruger AI Harness ${library.version} til ${selected.map(tool => tool.name).join(', ')}. Harness giver kodeagenten fælles grundregler og ${library.skills.length} skills til arbejdet fra idé til drift.`,
+    `Projektet bruger AI Harness ${library.version} til ${selected.map(tool => tool.name).join(', ')}. Harness giver kodeagenten fælles grundregler og ${skills.length} af ${library.skills.length} skills til arbejdet fra idé til drift.`,
     '',
     `- Grundreglerne står i et afgrænset afsnit i ${[...new Set(selected.map(tool => tool.rules.import || tool.rules.file))].join(' og ')}.`,
-    `- Skillsene ligger i ${dirs.map(dir => `\`${dir}/\``).join(' og ')}.`,
+    skills.length ? `- Skillsene ligger i ${dirs.map(dir => `\`${dir}/\``).join(' og ')}.` : '- Der er ikke valgt nogen skills.',
     '- `installation.json` registrerer version og kontrolsummer, så en opdatering eller fjernelse kun rører uændrede filer.',
     '',
     'Skriv projektets egne regler uden for AI Harness-afsnittet. Hvis du ændrer en installeret skill, bevarer Harness din ændring og springer filen over ved opdatering.',
     '',
     '## Skills',
     '',
-    ...library.skills.map(skill => `- **${skill.title}** (\`${skill.name}\`): ${skill.summary}`),
+    ...(skills.length ? skills.map(skill => `- **${skill.title}** (\`${skill.name}\`): ${skill.summary}`) : ['Ingen skills er valgt.']),
+    ...(left.length ? ['', `Fravalgt: ${left.map(skill => skill.title).join(', ')}. De kan vælges igen i AI Harness-appen.`] : []),
     '',
     'Instruktionerne er vejledning til kodeagenten. De er ikke adgangskontrol, en sikkerhedsgodkendelse eller en vurdering efter databeskyttelsesreglerne.'
   ].join('\n') + '\n';
 }
 
-function layoutFor(library, ids) {
+function layoutFor(library, ids, { skills: names } = {}) {
   const selected = tools(library, ids);
-  const dirs = chooseSkillDirs(library, selected);
-  const body = rulesBody(library, dirs);
+  const skills = selectSkills(library, names);
+  const dirs = skills.length ? chooseSkillDirs(library, selected) : [];
+  const body = rulesBody(library, dirs, skills);
   const entries = new Map();
   const add = entry => {
     const existing = entries.get(entry.path);
@@ -83,14 +98,14 @@ function layoutFor(library, ids) {
     else if (rules.import) { add({ kind: 'blok', path: rules.import, content: body }); add({ kind: 'blok', path: rules.file, content: importBody(rules.import) }); }
     else add({ kind: 'blok', path: rules.file, content: body });
   }
-  for (const dir of dirs) for (const skill of library.skills) for (const file of skill.files) add({ kind: 'fil', path: `${dir}/${skill.name}/${file.path}`, content: file.content, group: `${dir}/${skill.name}` });
+  for (const dir of dirs) for (const skill of skills) for (const file of skill.files) add({ kind: 'fil', path: `${dir}/${skill.name}/${file.path}`, content: file.content, group: `${dir}/${skill.name}` });
   add({ kind: 'blok', path: '.gitignore', content: library.gitignore.trim() });
-  add({ kind: 'fil', path: '.harness/LAES-MIG.md', content: readme(library, selected, dirs) });
+  add({ kind: 'fil', path: '.harness/LAES-MIG.md', content: readme(library, selected, dirs, skills) });
   const seen = tool => dirs.filter(dir => tool.skills.dirs.includes(dir));
   const warnings = selected.filter(tool => tool.skills && seen(tool).length > 1)
     .map(tool => `${tool.name} kan læse skills fra både ${seen(tool).join(' og ')}. ${tool.skills.duplicates || 'Kontrollér, at hver skill kun vises én gang.'}`);
-  const withoutSkills = selected.filter(tool => !tool.skills).map(tool => `${tool.name} indlæser ikke skills selv. Grundreglerne henviser til skillfilerne, så agenten kan læse dem ved behov.`);
-  return { entries: [...entries.values()], tools: selected.map(tool => tool.id), dirs, warnings: [...warnings, ...withoutSkills] };
+  const withoutSkills = skills.length ? selected.filter(tool => !tool.skills).map(tool => `${tool.name} indlæser ikke skills selv. Grundreglerne henviser til skillfilerne, så agenten kan læse dem ved behov.`) : [];
+  return { entries: [...entries.values()], tools: selected.map(tool => tool.id), skills: skills.map(skill => skill.name), dirs, warnings: [...(skills.length ? warnings : []), ...withoutSkills] };
 }
 
 // Tekst til webplatforme, hvor reglerne indsættes i platformens egne felter.

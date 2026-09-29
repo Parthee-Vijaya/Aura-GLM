@@ -14,9 +14,13 @@
     <p class="eyebrow">DET FØLGER MED</p>
     <h1>Skills i AI Harness.</h1>
     <p class="lead">AI Harness 0.2.0 indeholder fælles grundregler og 12 skills. Grundreglerne gælder altid. En skill er en kort vejledning til kodeagenten om én arbejdsopgave, som bruges, når opgaven passer.</p>
-    <p>Alle skills følger med i pakkerne til de understøttede kodeværktøjer og installeres også af AI Harness-appen. Filerne er almindelige tekstfiler på dansk, som du kan læse og tilpasse.</p>
-    <nav class="tool-nav" aria-label="Skills"><a href="#harness-ide-og-afgraensning">Idé og afgrænsning</a><a href="#harness-eksisterende-projekt">Eksisterende projekt</a><a href="#harness-arkitektur-og-teknologi">Arkitektur og teknologi</a><a href="#harness-data-og-leverandoerer">Data og leverandører</a><a href="#harness-noegler-og-afhaengigheder">Nøgler og afhængigheder</a><a href="#harness-design-og-tilgaengelighed">Design og tilgængelighed</a><a href="#harness-kodestil">Kodestil og vedligeholdelse</a><a href="#harness-afproevning-og-fejlretning">Afprøvning og fejlretning</a><a href="#harness-git-og-samarbejde">Git og samarbejde</a><a href="#harness-sikkerhedsgennemgang">Sikkerhedsgennemgang</a><a href="#harness-udgivelse-og-gendannelse">Udgivelse og gendannelse</a><a href="#harness-overdragelse-og-drift">Overdragelse og drift</a></nav>
+    <p>Skillsene er delt i fire kategorier. Pakkerne til kodeværktøjerne indeholder dem alle. I AI Harness-appen kan du slå kategorier og enkelte skills til og fra, ligesom i en cookie-dialog; grundreglerne er altid med. Filerne er almindelige tekstfiler på dansk, som du kan læse og tilpasse.</p>
+    <nav class="tool-nav" aria-label="Skills"><a href="#planlaegning">Planlægning og design</a><a href="#kode">Kode og kvalitet</a><a href="#sikkerhed">Sikkerhed og data</a><a href="#drift">Udgivelse og drift</a></nav>
     <section id="skills" aria-label="Skills">
+      <section class="note" id="grundregler" aria-labelledby="grundregler-title"><h2 id="grundregler-title">Grundregler · altid med</h2><p>Grundreglerne gælder i hele projektet og kan ikke fravælges: hemmeligheder holdes ude af kode og Git, brugeren styrer Git, ændringer afprøves, og agenten rapporterer ærligt, hvad der er kontrolleret.</p></section>
+      <section class="note" id="planlaegning" aria-labelledby="planlaegning-title">
+        <h2 id="planlaegning-title">Planlægning og design</h2>
+        <p>Afklar idéen, forstå et eksisterende projekt, og vælg teknologi og design.</p>
       <article class="tool-entry skill-entry" id="harness-ide-og-afgraensning">
         <p class="tool-type">01 · <code>harness-ide-og-afgraensning</code></p>
         <h3>Idé og afgrænsning</h3>
@@ -86,8 +90,8 @@ Målet er en kort, aftalt beskrivelse af opgaven, som brugeren kan genkende, og 
 
 ## Stop og inddrag andre
 
-- Løsningen skal behandle personoplysninger, fortrolige oplysninger eller rigtige sager: aftal opdigtede data til udviklingen, og brug `harness-data-og-leverandoerer`.
-- Løsningen kræver login, integration til kommunens systemer, betaling eller en ny tjeneste: sig det tidligt, og brug `harness-arkitektur-og-teknologi`.
+- Løsningen skal behandle personoplysninger, fortrolige oplysninger eller rigtige sager: aftal opdigtede data til udviklingen, og beskriv dataforløbet, gerne med `harness-data-og-leverandoerer`, hvis den er installeret.
+- Løsningen kræver login, integration til kommunens systemer, betaling eller en ny tjeneste: sig det tidligt, og få valget afklaret, gerne med `harness-arkitektur-og-teknologi`, hvis den er installeret.
 - Brugeren beder om noget, der rækker ud over opgaven: foreslå det som en særskilt opgave i stedet for at bygge det med.
 </pre></details>
         
@@ -171,7 +175,7 @@ Vælg det enkleste, der løser opgaven, og som organisationen kan drive og vedli
 
 ## Genbrug før nybyg
 
-1. Bevar teknologien i et eksisterende projekt, medmindre opgaven kræver et begrundet skift. Brug `harness-eksisterende-projekt` først.
+1. Bevar teknologien i et eksisterende projekt, medmindre opgaven kræver et begrundet skift. Undersøg først projektets opsætning, gerne med `harness-eksisterende-projekt`, hvis den er installeret.
 2. Spørg, om organisationen allerede har et system, en fælles løsning eller en godkendt tjeneste til opgaven. Kommuner kan fx have løsninger fra fællesoffentlige eller fælleskommunale samarbejder.
 3. Spørg til organisationens godkendte hosting, identitetsløsning og designsystem, før du foreslår nye.
 4. I danske offentlige organisationer: læs [offentlig infrastruktur](references/offentlig-infrastruktur.md) om OS2, login med MitID, fælles registre og hosting.
@@ -211,7 +215,7 @@ Organisationens designsystem kommer før et nyt tema. Foreslå ét begrundet val
 
 ## Løsninger, der selv bruger AI
 
-Hvis løsningen kalder en AI-model, er det et nyt dataforløb og et nyt sted, hvor utroværdigt input kommer ind. Brug `harness-data-og-leverandoerer` og `harness-sikkerhedsgennemgang`. Brugerne skal kunne se, at de interagerer med en AI, og organisationen skal vurdere, om særlige regler for AI-systemer gælder.
+Hvis løsningen kalder en AI-model, er det et nyt dataforløb og et nyt sted, hvor utroværdigt input kommer ind. Beskriv dataforløbet, og behandl modellens svar som utroværdigt input; brug `harness-data-og-leverandoerer` og `harness-sikkerhedsgennemgang`, hvis de er installeret. Brugerne skal kunne se, at de interagerer med en AI, og organisationen skal vurdere, om særlige regler for AI-systemer gælder.
 
 ## Anbefalingen
 
@@ -249,7 +253,7 @@ Pejlemærker til løsninger for danske offentlige organisationer. Kontrollér me
 
 ## Hosting og placering
 
-- Der er ikke fundet en generel dansk regel om, at data skal hostes i EU/EØS. Overførsler reguleres af GDPR; brug `harness-data-og-leverandoerer`.
+- Der er ikke fundet en generel dansk regel om, at data skal hostes i EU/EØS. Overførsler reguleres af GDPR; brug `harness-data-og-leverandoerer`, hvis den er installeret.
 - Digitaliseringsstyrelsen og Datatilsynet har vejledninger om brug af cloud, og Digitaliseringsstyrelsen har materiale om digital suverænitet. Brug dem som beslutningsstøtte sammen med organisationens egne krav.
 
 ## Informationssikkerhed
@@ -273,209 +277,6 @@ Pejlemærker til løsninger for danske offentlige organisationer. Kontrollér me
 - KL om informationssikkerhed i kommunerne: https://www.kl.dk/media/rojd4u0o/informationssikkerhed-i-kommunerne-jan-2024.pdf
 </pre></details>
         <p class="sources">Kilder: <a href="https://react.dev/learn/creating-a-react-app">React om at oprette en ny app ↗</a> · <a href="https://docs.astro.build/en/concepts/why-astro/">Astros anvendelsesområde ↗</a> · <a href="https://www.typescriptlang.org/tsconfig/strict">TypeScript strict ↗</a> · <a href="https://www.os2.eu/">OS2 ↗</a> · <a href="https://www.retsinformation.dk/eli/lta/2025/333">Lov om MitID og NemLog-in ↗</a> · <a href="https://arkitektur.digst.dk/Vejledning-om-brug-af-open-source-i-den-offentlige-sektor">Vejledning om open source i den offentlige sektor ↗</a></p>
-      </article>
-      <article class="tool-entry skill-entry" id="harness-data-og-leverandoerer">
-        <p class="tool-type">04 · <code>harness-data-og-leverandoerer</code></p>
-        <h3>Data og leverandører</h3>
-        <p>Fører en dataoversigt over dataforløb, leverandører og åbne spørgsmål og peger på de rette fagpersoner.</p>
-        <dl class="faq">
-          <dt>Hvad gør den?</dt><dd>Holder styr på, hvilke data løsningen bruger, hvem der modtager dem, hvor de behandles og gemmes, og hvad der stadig er uafklaret. Den skelner mellem data i udviklingen og i den færdige app og kender de danske offentlige krav, der typisk udløses: databehandleraftale, fortegnelse, konsekvensanalyse, anmeldelse af brud og journalisering.</dd>
-          <dt>Hvornår bruges den?</dt><dd>Når løsningen får et nyt dataforløb, en ny tjeneste eller leverandør, eller når der skal bruges personoplysninger.</dd>
-          <dt>Hvad får du?</dt><dd>En opdateret dataoversigt i projektet med kilder, kontroldatoer og konkrete spørgsmål til fx databeskyttelsesrådgiver og informationssikkerhed.</dd>
-          <dt>Hvad gør den ikke?</dt><dd>Den erklærer ingen behandling for lovlig og godkender ikke på organisationens vegne. En registrering i filen er ikke en verificeret godkendelse.</dd>
-        </dl>
-        <details><summary>Se instruktionen til agenten</summary><pre>---
-name: harness-data-og-leverandoerer
-description: Holder styr på, hvilke data en løsning bruger, hvem der modtager dem, hvor de behandles og gemmes, og hvad der stadig er uafklaret. Fører en dataoversigt i projektet, skelner mellem data i udviklingen og i den færdige app og peger på de rette fagpersoner ved personoplysninger. Brug den ved nye dataforløb, nye tjenester eller leverandører og når der skal bruges personoplysninger.
----
-
-# Data og leverandører
-
-Der er to adskilte dataforløb, og begge skal kunne forklares:
-
-1. **Udviklingen:** kodeværktøjet sender kode, filer, fejlbeskeder og samtalen til den valgte model. En lokal app betyder ikke, at modellen kører lokalt.
-2. **Den færdige løsning:** database, hosting, logs, sikkerhedskopier, e-mail, analyse og andre tjenester, som brugernes data passerer.
-
-## Fremgangsmåde
-
-1. Brug opdigtede eller offentlige data under udviklingen, også i tests, eksempler og skærmbilleder.
-2. Før en dataoversigt efter [skabelonen](references/dataoversigt.md), fx i `docs/data-og-leverandoerer.md`. Opdatér den, når et dataforløb eller en tjeneste ændres.
-3. Beskriv for hver tjeneste: datakategorier, formål, hvor data behandles og gemmes, underleverandører, supportadgang, logs, sikkerhedskopier, slettefrist, brug til træning og mulighed for eksport. Angiv kilde og kontroldato. Skriv &quot;ukendt&quot; frem for at gætte.
-4. Giv hvert åbent forhold en status: skal undersøges, kræver handling, afventer ansvarlig, løst og kontrolleret, eller ikke relevant med begrundelse.
-5. Formulér konkrete spørgsmål til de rette roller, fx: &quot;Tjenesten gemmer logs med e-mailadresser i 30 dage i USA. Er det dækket af vores aftaler?&quot;
-
-Brug de mindst mulige datamængder og rettigheder. En regionsangivelse fra en leverandør er ikke hele svaret; underleverandører, supportadgang og overførsler skal også med.
-
-## Stop og inddrag andre
-
-Skal løsningen bruges i en dansk offentlig organisation, så læs [de offentlige krav](references/offentlige-krav.md) og brug dem til at pege på de rigtige roller.
-
-- **Personoplysninger i drift:** inddrag den ansvarlige for behandlingen og organisationens databeskyttelsesrådgiver, før rigtige data bruges. Hver leverandør, der behandler personoplysninger, kræver en databehandleraftale, og behandlingen skal med i organisationens fortegnelse. Ved sandsynlig høj risiko skal der laves en konsekvensanalyse først.
-- **Følsomme oplysninger,** fx helbred, CPR-numre eller oplysninger om børn: stop, og få afklaret rammerne først.
-- **Tjenester uden for EU/EØS eller med ukendt placering:** markér det som et åbent forhold til vurdering.
-- **Muligt brud på persondatasikkerheden:** fortæl det straks, og følg organisationens procedure. Anmeldelse til Datatilsynet skal ske inden for 72 timer, når det er muligt.
-- **Dokumenter i sager:** modtager, sender eller danner løsningen sagsdokumenter, skal de journaliseres og bevares i organisationens ESDH- eller fagsystem. Løsningen må ikke være den eneste kopi.
-- **Løsningen bruger selv AI:** brugerne skal kunne se, at de interagerer med en AI, og nogle offentlige anvendelser er højrisiko efter AI-forordningen. Inddrag jura og den AI-ansvarlige.
-
-## Det må du ikke
-
-- Erklære en behandling lovlig eller godkende noget på organisationens vegne.
-- Kalde en markering i en fil for en godkendelse. Når en person selv har skrevet sit navn og tidspunkt, så skriv &quot;registreret lokalt af brugeren&quot;, ikke &quot;godkendt&quot;.
-- Kopiere rigtige personoplysninger ind i kode, tests, prompts, logs eller dokumentation.
-- Lægge aftaler, følsomme fund eller navne på borgere i et offentligt repository. Henvis i stedet til, hvor de administreres.
-</pre><p class="tool-type"><code>references/dataoversigt.md</code></p><pre># Skabelon til dataoversigt
-
-Oversigten beskriver dataforløbene, så en anden kan forstå dem og stille de rigtige spørgsmål. Den er ikke en juridisk vurdering. Skriv &quot;ukendt&quot;, når en oplysning mangler.
-
-```markdown
-# Data og leverandører · &lt;appens navn&gt;
-
-Sidst opdateret: &lt;dato&gt; af &lt;rolle&gt;
-
-## Kort fortalt
-&lt;Hvilke data løsningen bruger, til hvad, og om der er personoplysninger.&gt;
-
-## Data i udviklingen
-| Værktøj og model | Hvad sendes | Hvor behandles det | Træning | Kilde og kontroldato |
-|------------------|-------------|--------------------|---------|----------------------|
-| &lt;fx kodeværktøj og model&gt; | Kode, filer og samtale; kun opdigtede data | &lt;region eller ukendt&gt; | &lt;ja/nej/ukendt&gt; | &lt;link, dato&gt; |
-
-## Data i den færdige løsning
-| Data | Formål | Personoplysninger | Hvem har adgang | Slettefrist |
-|------|--------|-------------------|-----------------|-------------|
-
-## Tjenester og leverandører
-| Tjeneste | Rolle i løsningen | Data | Placering og underleverandører | Supportadgang | Logs og backup | Aftale | Kilde og kontroldato |
-|----------|-------------------|------|--------------------------------|---------------|----------------|--------|----------------------|
-
-## Åbne forhold
-| Id | Forhold | Berører | Ansvarlig rolle | Status | Næste handling |
-|----|---------|---------|-----------------|--------|----------------|
-| D-1 | &lt;konkret beskrivelse&gt; | &lt;data, tjeneste, funktion&gt; | &lt;rolle&gt; | Skal undersøges | &lt;handling&gt; |
-
-Status: Skal undersøges · Kræver handling · Afventer ansvarlig · Løst og kontrolleret · Ikke relevant med begrundelse
-
-## Beslutninger
-Tilføj nye linjer; ret ikke i tidligere beslutninger.
-
-| Dato | Beslutning | Omfang og version | Truffet af (rolle) | Registrering |
-|------|------------|-------------------|--------------------|--------------|
-| &lt;dato&gt; | &lt;beslutning&gt; | &lt;commit, miljø&gt; | &lt;rolle&gt; | Registreret lokalt af brugeren |
-```
-
-Skriv ingen rigtige personoplysninger, aftaletekster eller hemmeligheder i oversigten. Hvis projektet er offentligt, så hold oversigten på et overordnet niveau, og henvis til organisationens egne systemer for detaljer.
-</pre><p class="tool-type"><code>references/offentlige-krav.md</code></p><pre># Krav i danske offentlige organisationer
-
-Pejlemærker til, hvornår en fagperson skal inddrages. Det er ikke juridisk rådgivning, og organisationens egne procedurer går forud. Kilderne er kontrolleret 29. september 2026; kontrollér dem igen, før de bruges i en beslutning.
-
-## Personoplysninger
-
-- **Databeskyttelsesrådgiver (DPO):** offentlige myndigheder skal have en. Inddrag DPO&#39;en, før en løsning behandler personoplysninger i drift. (GDPR art. 37)
-- **Databehandleraftale:** skal være på plads med hver leverandør, der behandler personoplysninger for organisationen, fx hosting, SaaS og AI-tjenester. (GDPR art. 28)
-- **Fortegnelse:** organisationens fortegnelse over behandlingsaktiviteter skal opdateres ved en ny behandling. Systemejeren står typisk for det. (GDPR art. 30)
-- **Konsekvensanalyse (DPIA):** skal laves før en behandling, der sandsynligvis indebærer høj risiko. Datatilsynets liste nævner blandt andet ny teknologi som AI, profilering, automatiske afgørelser og følsomme oplysninger om sårbare personer. (GDPR art. 35)
-- **Brud på persondatasikkerheden:** skal anmeldes til Datatilsynet uden unødig forsinkelse og om muligt inden 72 timer. Sig det straks til brugeren, og følg organisationens procedure. (GDPR art. 33)
-- **Testdata:** brug fiktive eller anonymiserede data i udvikling og test. Produktionsdata i test kræver hjemmel, dataminimering, sletning og samme sikkerhed som i drift.
-
-## Leverandører uden for EU/EØS
-
-- Der er ikke fundet en generel dansk regel om, at data skal ligge i EU/EØS. Overførsler til tredjelande reguleres af GDPR kapitel V.
-- Fjernadgang eller support fra et land uden for EU/EØS tæller også som en overførsel.
-- Til USA kræves, at modtageren er certificeret under EU-US Data Privacy Framework, eller et andet overførselsgrundlag.
-
-## Sager og arkiv
-
-- **Journalisering:** dokumenter, der modtages eller sendes som led i sagsbehandling, skal journaliseres. Hensynet til åbenhed skal indgå, når nye it-løsninger udvikles. (Offentlighedsloven § 15 og § 1, stk. 2)
-- **Arkivering:** myndigheder skal bevare elektroniske arkivalier, så de kan afleveres, og må ikke slette data i it-systemer uden bemyndigelse. (Arkivloven § 8)
-- Modtager, sender eller danner appen sagsdokumenter som ansøgninger, henvendelser eller afgørelser, skal den kobles til organisationens ESDH- eller fagsystem. Appen må aldrig være den eneste kopi. Inddrag den journal- eller arkivansvarlige.
-
-## AI i løsningen
-
-- Brugere skal oplyses om, at de interagerer med et AI-system, fx en chatbot. En organisation, der selv udvikler og tager et AI-system i brug under eget navn, kan være udbyder efter AI-forordningen. (AI-forordningen art. 50)
-- Organisationen skal støtte personalets AI-færdigheder. (Art. 4)
-- Nogle offentlige anvendelser er højrisiko, fx vurdering af, om borgere er berettiget til offentlige ydelser. Her gælder skærpede krav og en konsekvensanalyse for grundlæggende rettigheder. Stop, og inddrag jura og ledelse. (Bilag III og art. 27)
-- Digitaliseringsstyrelsens guide til offentlige myndigheder om brug af kunstig intelligens beskriver blandt andet, at personoplysninger kun må bruges i vurderede og godkendte værktøjer.
-
-## Roller at inddrage
-
-| Forhold | Typisk rolle |
-|---------|--------------|
-| Personoplysninger, DPIA, overførsler | Databeskyttelsesrådgiver, jurist, systemejer |
-| Aftaler med leverandører | Indkøb, jurist, systemejer |
-| Sager, journalisering og arkiv | Journal- eller ESDH-ansvarlig, arkivansvarlig |
-| AI i løsningen | Digitaliserings- eller AI-ansvarlig, jurist, ledelse |
-
-## Kilder
-
-- GDPR: https://eur-lex.europa.eu/eli/reg/2016/679/oj
-- Datatilsynet om konsekvensanalyse: https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/konsekvensanalyse
-- Datatilsynet om testdata: https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/testdata-anvendelse-af-personoplysninger-ved-udvikling-og-test-af-it-systemer
-- Datatilsynet om tredjelandsoverførsler: https://www.datatilsynet.dk/internationalt/tredjelandsoverfoersler
-- Datatilsynet om overførsler til USA: https://www.datatilsynet.dk/internationalt/overfoersler-til-usa
-- Offentlighedsloven: https://www.retsinformation.dk/eli/lta/2020/145
-- Arkivloven: https://www.retsinformation.dk/eli/lta/2016/1201
-- AI-forordningen: https://eur-lex.europa.eu/eli/reg/2024/1689/oj
-- Digitaliseringsstyrelsens guide om kunstig intelligens: https://digst.dk/kunstig-intelligens/guides-til-brug-af-kunstig-intelligens/guide-offentlige-myndigheder/
-</pre></details>
-        <p class="sources">Kilder: <a href="https://www.datatilsynet.dk/regler-og-vejledning/cloud">Datatilsynet om cloud ↗</a> · <a href="https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/databeskyttelse-gennem-design-og-standardindstillinger">Databeskyttelse gennem design og standardindstillinger ↗</a> · <a href="https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/konsekvensanalyse">Konsekvensanalyse ↗</a> · <a href="https://eur-lex.europa.eu/eli/reg/2016/679/oj">GDPR ↗</a> · <a href="https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/testdata-anvendelse-af-personoplysninger-ved-udvikling-og-test-af-it-systemer">Datatilsynet om testdata ↗</a> · <a href="https://www.retsinformation.dk/eli/lta/2020/145">Offentlighedsloven ↗</a> · <a href="https://eur-lex.europa.eu/eli/reg/2024/1689/oj">AI-forordningen ↗</a></p>
-      </article>
-      <article class="tool-entry skill-entry" id="harness-noegler-og-afhaengigheder">
-        <p class="tool-type">05 · <code>harness-noegler-og-afhaengigheder</code></p>
-        <h3>Nøgler og afhængigheder</h3>
-        <p>Holder nøgler ude af kode, logs og Git og kontrollerer nye pakker, før de tilføjes.</p>
-        <dl class="faq">
-          <dt>Hvad gør den?</dt><dd>Sørger for, at API-nøgler, tokens og adgangskoder hverken ender i koden, i browserens filer, i logs eller i Git. Før en ny pakke tilføjes, forklarer agenten behovet, kontrollerer navn, licens og kendte sårbarheder og bruger projektets låsefil.</dd>
-          <dt>Hvornår bruges den?</dt><dd>Når løsningen skal forbindes til en anden tjeneste, når der skal bruges en nøgle, og når pakker tilføjes eller opdateres.</dd>
-          <dt>Hvad får du?</dt><dd>Konfiguration med navngivne miljøvariabler uden værdier, en begrundelse for hver ny pakke og en besked, hvis en hemmelighed er eksponeret.</dd>
-          <dt>Hvad gør den ikke?</dt><dd>Den finder ikke alle hemmeligheder automatisk og erstatter ikke en egentlig hemmelighedsscanning eller udskiftning af en lækket nøgle.</dd>
-        </dl>
-        <details><summary>Se instruktionen til agenten</summary><pre>---
-name: harness-noegler-og-afhaengigheder
-description: Beskytter API-nøgler, tokens og adgangskoder og kontrollerer nye pakker og integrationer, før de tilføjes. Holder hemmeligheder ude af kode, logs, browserfiler og Git og vurderer nødvendighed, vedligeholdelse, licens og kendte sårbarheder ved afhængigheder. Brug den ved integrationer, konfiguration, nye pakker og opdateringer af pakker.
----
-
-# Nøgler og afhængigheder
-
-## Hemmeligheder
-
-- Læs, udskriv eller videresend aldrig værdier fra `.env`, nøglefiler, credentials-filer eller nøglelagre. Arbejd med navnene på variablerne.
-- Skriv aldrig nøgler, tokens eller adgangskoder i kode, chat, logs, tests, eksempler eller commits. Brug tydelige pladsholdere som `DIN_NOEGLE_HER`.
-- Dokumentér nødvendige miljøvariabler med navn og formål i fx `.env.example`, uden værdier.
-- `.env` og lignende filer skal stå i `.gitignore`, før de oprettes.
-- En værdi i browserens kode er offentlig. Variabler med præfikser som `VITE_`, `NEXT_PUBLIC_` eller `PUBLIC_` bliver indlejret i de filer, brugeren henter. Serverhemmeligheder hører til på serveren.
-- Bed brugeren lægge hemmeligheder i værktøjets eller hostingtjenestens sikre indstillinger. Bed aldrig om at få dem indsat i samtalen.
-
-### Hvis en hemmelighed er eksponeret
-
-1. Stop den berørte del af arbejdet, og gengiv ikke værdien.
-2. Fortæl brugeren, hvor eksponeringen skete: fil, commit, log, skærmbillede eller besked.
-3. Anbefal at tilbagekalde og udskifte nøglen hos udbyderen. At slette filen fjerner ikke tidligere eksponering, heller ikke fra Git-historikken.
-
-## Nye afhængigheder
-
-Før du tilføjer en pakke, så forklar kort:
-
-- **Behov:** hvad pakken løser, og om det kan løses med det, projektet allerede har.
-- **Pakkens tilstand:** vedligeholdelse, udbredelse og om det er den rigtige pakke. Kontrollér det præcise navn; stavefejl i pakkenavne bruges til ondsindede kopier.
-- **Licens:** at licensen passer til projektet og organisationens regler.
-- **Sikkerhed:** kendte sårbarheder, fx med `npm audit` eller projektets tilsvarende værktøj.
-
-Brug projektets pakkehåndtering, og bevar låsefilen. Brug `npm ci` eller tilsvarende i CI og ved gentagelige installationer. Kør ikke ukendte installationsscripts, og installer intet globalt uden aftale.
-
-## Opdateringer
-
-- Opdatér i små skridt, og læs udgivelsesnoter for større versionsspring.
-- Kør tests og den vigtigste brugerrejse efter opdateringen.
-- Fjern pakker, der ikke længere bruges.
-
-## Integrationer til andre tjenester
-
-- Brug den mindst mulige adgang: et token med præcis de rettigheder, opgaven kræver, og gerne med udløbsdato.
-- Placér nøglen på serveren, og kald tjenesten derfra, ikke direkte fra browseren.
-- Håndter fejl, timeout og begrænsninger i antal kald.
-- En ny tjeneste er også et nyt dataforløb. Brug `harness-data-og-leverandoerer`, før der sendes rigtige data.
-</pre></details>
-        <p class="sources">Kilder: <a href="https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html">OWASP Secrets Management Cheat Sheet ↗</a> · <a href="https://vite.dev/guide/env-and-mode">Vite om miljøvariabler i browserkode ↗</a> · <a href="https://docs.npmjs.com/cli/v11/commands/npm-ci/">npm ci ↗</a></p>
       </article>
       <article class="tool-entry skill-entry" id="harness-design-og-tilgaengelighed">
         <p class="tool-type">06 · <code>harness-design-og-tilgaengelighed</code></p>
@@ -583,6 +384,10 @@ Kilder, kontrolleret 29. september 2026: lov om tilgængelighed af offentlige or
 </pre></details>
         <p class="sources">Kilder: <a href="https://www.retsinformation.dk/eli/lta/2018/692">Lov om tilgængelighed af offentlige organers websteder og mobilapplikationer ↗</a> · <a href="https://digst.dk/digital-inklusion/webtilgaengelighed/om-tilgaengelighedserklaeringen/">Digitaliseringsstyrelsen om tilgængelighedserklæringen ↗</a> · <a href="https://www.w3.org/WAI/test-evaluate/">W3C om evaluering af tilgængelighed ↗</a> · <a href="https://www.w3.org/TR/WCAG22/">WCAG 2.2 ↗</a></p>
       </article>
+      </section>
+      <section class="note" id="kode" aria-labelledby="kode-title">
+        <h2 id="kode-title">Kode og kvalitet</h2>
+        <p>Læsbar kode, afprøvning, fejlretning og styr på Git.</p>
       <article class="tool-entry skill-entry" id="harness-kodestil">
         <p class="tool-type">07 · <code>harness-kodestil</code></p>
         <h3>Kodestil og vedligeholdelse</h3>
@@ -734,7 +539,7 @@ Brugeren ejer historikken. Du hjælper med at holde den ren, forståelig og sikk
 2. **Checkpoint (commit):** en lokal, sammenhængende version, der kan gendannes.
 3. **Push:** sender versionerne til en fjernkopi, fx GitHub, GitLab eller Codeberg.
 4. **Pull request:** beder andre gennemgå en ændring, før den kommer ind i hovedgrenen.
-5. **Udgivelse:** gør en bestemt version tilgængelig for brugere. Det er en særskilt beslutning; brug `harness-udgivelse-og-gendannelse`.
+5. **Udgivelse:** gør en bestemt version tilgængelig for brugere. Det er en særskilt beslutning; brug `harness-udgivelse-og-gendannelse`, hvis den er installeret.
 
 Lav aldrig commit, push, merge, rebase, nye branches, tags eller pull requests uden en udtrykkelig anmodning om netop den handling. &quot;Gør det færdigt&quot; eller &quot;send det af sted&quot; er ikke en sådan anmodning. Spørg, hvis du er i tvivl.
 
@@ -772,6 +577,213 @@ Et eksisterende projekt beholder sin egen proces. Foreslå ikke en ny model uden
 En `.gitignore` fjerner ikke filer, der allerede er sporet. Hvis en nøgle er committet, så stop, fortæl brugeren hvor, og anbefal at tilbagekalde og udskifte nøglen. Det er ikke nok at slette filen i et nyt commit, fordi nøglen stadig findes i historikken. Omskrivning af historik kræver brugerens beslutning.
 </pre></details>
         <p class="sources">Kilder: <a href="https://docs.github.com/en/get-started/using-github/github-flow">GitHub flow ↗</a> · <a href="https://git-scm.com/docs/git-worktree">Git worktree ↗</a> · <a href="https://www.conventionalcommits.org/en/v1.0.0/">Conventional Commits ↗</a></p>
+      </article>
+      </section>
+      <section class="note" id="sikkerhed" aria-labelledby="sikkerhed-title">
+        <h2 id="sikkerhed-title">Sikkerhed og data</h2>
+        <p>Nøgler, afhængigheder, persondata, leverandører og sikkerhedsgennemgang.</p>
+      <article class="tool-entry skill-entry" id="harness-noegler-og-afhaengigheder">
+        <p class="tool-type">05 · <code>harness-noegler-og-afhaengigheder</code></p>
+        <h3>Nøgler og afhængigheder</h3>
+        <p>Holder nøgler ude af kode, logs og Git og kontrollerer nye pakker, før de tilføjes.</p>
+        <dl class="faq">
+          <dt>Hvad gør den?</dt><dd>Sørger for, at API-nøgler, tokens og adgangskoder hverken ender i koden, i browserens filer, i logs eller i Git. Før en ny pakke tilføjes, forklarer agenten behovet, kontrollerer navn, licens og kendte sårbarheder og bruger projektets låsefil.</dd>
+          <dt>Hvornår bruges den?</dt><dd>Når løsningen skal forbindes til en anden tjeneste, når der skal bruges en nøgle, og når pakker tilføjes eller opdateres.</dd>
+          <dt>Hvad får du?</dt><dd>Konfiguration med navngivne miljøvariabler uden værdier, en begrundelse for hver ny pakke og en besked, hvis en hemmelighed er eksponeret.</dd>
+          <dt>Hvad gør den ikke?</dt><dd>Den finder ikke alle hemmeligheder automatisk og erstatter ikke en egentlig hemmelighedsscanning eller udskiftning af en lækket nøgle.</dd>
+        </dl>
+        <details><summary>Se instruktionen til agenten</summary><pre>---
+name: harness-noegler-og-afhaengigheder
+description: Beskytter API-nøgler, tokens og adgangskoder og kontrollerer nye pakker og integrationer, før de tilføjes. Holder hemmeligheder ude af kode, logs, browserfiler og Git og vurderer nødvendighed, vedligeholdelse, licens og kendte sårbarheder ved afhængigheder. Brug den ved integrationer, konfiguration, nye pakker og opdateringer af pakker.
+---
+
+# Nøgler og afhængigheder
+
+## Hemmeligheder
+
+- Læs, udskriv eller videresend aldrig værdier fra `.env`, nøglefiler, credentials-filer eller nøglelagre. Arbejd med navnene på variablerne.
+- Skriv aldrig nøgler, tokens eller adgangskoder i kode, chat, logs, tests, eksempler eller commits. Brug tydelige pladsholdere som `DIN_NOEGLE_HER`.
+- Dokumentér nødvendige miljøvariabler med navn og formål i fx `.env.example`, uden værdier.
+- `.env` og lignende filer skal stå i `.gitignore`, før de oprettes.
+- En værdi i browserens kode er offentlig. Variabler med præfikser som `VITE_`, `NEXT_PUBLIC_` eller `PUBLIC_` bliver indlejret i de filer, brugeren henter. Serverhemmeligheder hører til på serveren.
+- Bed brugeren lægge hemmeligheder i værktøjets eller hostingtjenestens sikre indstillinger. Bed aldrig om at få dem indsat i samtalen.
+
+### Hvis en hemmelighed er eksponeret
+
+1. Stop den berørte del af arbejdet, og gengiv ikke værdien.
+2. Fortæl brugeren, hvor eksponeringen skete: fil, commit, log, skærmbillede eller besked.
+3. Anbefal at tilbagekalde og udskifte nøglen hos udbyderen. At slette filen fjerner ikke tidligere eksponering, heller ikke fra Git-historikken.
+
+## Nye afhængigheder
+
+Før du tilføjer en pakke, så forklar kort:
+
+- **Behov:** hvad pakken løser, og om det kan løses med det, projektet allerede har.
+- **Pakkens tilstand:** vedligeholdelse, udbredelse og om det er den rigtige pakke. Kontrollér det præcise navn; stavefejl i pakkenavne bruges til ondsindede kopier.
+- **Licens:** at licensen passer til projektet og organisationens regler.
+- **Sikkerhed:** kendte sårbarheder, fx med `npm audit` eller projektets tilsvarende værktøj.
+
+Brug projektets pakkehåndtering, og bevar låsefilen. Brug `npm ci` eller tilsvarende i CI og ved gentagelige installationer. Kør ikke ukendte installationsscripts, og installer intet globalt uden aftale.
+
+## Opdateringer
+
+- Opdatér i små skridt, og læs udgivelsesnoter for større versionsspring.
+- Kør tests og den vigtigste brugerrejse efter opdateringen.
+- Fjern pakker, der ikke længere bruges.
+
+## Integrationer til andre tjenester
+
+- Brug den mindst mulige adgang: et token med præcis de rettigheder, opgaven kræver, og gerne med udløbsdato.
+- Placér nøglen på serveren, og kald tjenesten derfra, ikke direkte fra browseren.
+- Håndter fejl, timeout og begrænsninger i antal kald.
+- En ny tjeneste er også et nyt dataforløb. Beskriv det, før der sendes rigtige data, gerne med `harness-data-og-leverandoerer`, hvis den er installeret.
+</pre></details>
+        <p class="sources">Kilder: <a href="https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html">OWASP Secrets Management Cheat Sheet ↗</a> · <a href="https://vite.dev/guide/env-and-mode">Vite om miljøvariabler i browserkode ↗</a> · <a href="https://docs.npmjs.com/cli/v11/commands/npm-ci/">npm ci ↗</a></p>
+      </article>
+      <article class="tool-entry skill-entry" id="harness-data-og-leverandoerer">
+        <p class="tool-type">04 · <code>harness-data-og-leverandoerer</code></p>
+        <h3>Data og leverandører</h3>
+        <p>Fører en dataoversigt over dataforløb, leverandører og åbne spørgsmål og peger på de rette fagpersoner.</p>
+        <dl class="faq">
+          <dt>Hvad gør den?</dt><dd>Holder styr på, hvilke data løsningen bruger, hvem der modtager dem, hvor de behandles og gemmes, og hvad der stadig er uafklaret. Den skelner mellem data i udviklingen og i den færdige app og kender de danske offentlige krav, der typisk udløses: databehandleraftale, fortegnelse, konsekvensanalyse, anmeldelse af brud og journalisering.</dd>
+          <dt>Hvornår bruges den?</dt><dd>Når løsningen får et nyt dataforløb, en ny tjeneste eller leverandør, eller når der skal bruges personoplysninger.</dd>
+          <dt>Hvad får du?</dt><dd>En opdateret dataoversigt i projektet med kilder, kontroldatoer og konkrete spørgsmål til fx databeskyttelsesrådgiver og informationssikkerhed.</dd>
+          <dt>Hvad gør den ikke?</dt><dd>Den erklærer ingen behandling for lovlig og godkender ikke på organisationens vegne. En registrering i filen er ikke en verificeret godkendelse.</dd>
+        </dl>
+        <details><summary>Se instruktionen til agenten</summary><pre>---
+name: harness-data-og-leverandoerer
+description: Holder styr på, hvilke data en løsning bruger, hvem der modtager dem, hvor de behandles og gemmes, og hvad der stadig er uafklaret. Fører en dataoversigt i projektet, skelner mellem data i udviklingen og i den færdige app og peger på de rette fagpersoner ved personoplysninger. Brug den ved nye dataforløb, nye tjenester eller leverandører og når der skal bruges personoplysninger.
+---
+
+# Data og leverandører
+
+Der er to adskilte dataforløb, og begge skal kunne forklares:
+
+1. **Udviklingen:** kodeværktøjet sender kode, filer, fejlbeskeder og samtalen til den valgte model. En lokal app betyder ikke, at modellen kører lokalt.
+2. **Den færdige løsning:** database, hosting, logs, sikkerhedskopier, e-mail, analyse og andre tjenester, som brugernes data passerer.
+
+## Fremgangsmåde
+
+1. Brug opdigtede eller offentlige data under udviklingen, også i tests, eksempler og skærmbilleder.
+2. Før en dataoversigt efter [skabelonen](references/dataoversigt.md), fx i `docs/data-og-leverandoerer.md`. Opdatér den, når et dataforløb eller en tjeneste ændres.
+3. Beskriv for hver tjeneste: datakategorier, formål, hvor data behandles og gemmes, underleverandører, supportadgang, logs, sikkerhedskopier, slettefrist, brug til træning og mulighed for eksport. Angiv kilde og kontroldato. Skriv &quot;ukendt&quot; frem for at gætte.
+4. Giv hvert åbent forhold en status: skal undersøges, kræver handling, afventer ansvarlig, løst og kontrolleret, eller ikke relevant med begrundelse.
+5. Formulér konkrete spørgsmål til de rette roller, fx: &quot;Tjenesten gemmer logs med e-mailadresser i 30 dage i USA. Er det dækket af vores aftaler?&quot;
+
+Brug de mindst mulige datamængder og rettigheder. En regionsangivelse fra en leverandør er ikke hele svaret; underleverandører, supportadgang og overførsler skal også med.
+
+## Stop og inddrag andre
+
+Skal løsningen bruges i en dansk offentlig organisation, så læs [de offentlige krav](references/offentlige-krav.md) og brug dem til at pege på de rigtige roller.
+
+- **Personoplysninger i drift:** inddrag den ansvarlige for behandlingen og organisationens databeskyttelsesrådgiver, før rigtige data bruges. Hver leverandør, der behandler personoplysninger, kræver en databehandleraftale, og behandlingen skal med i organisationens fortegnelse. Ved sandsynlig høj risiko skal der laves en konsekvensanalyse først.
+- **Følsomme oplysninger,** fx helbred, CPR-numre eller oplysninger om børn: stop, og få afklaret rammerne først.
+- **Tjenester uden for EU/EØS eller med ukendt placering:** markér det som et åbent forhold til vurdering.
+- **Muligt brud på persondatasikkerheden:** fortæl det straks, og følg organisationens procedure. Anmeldelse til Datatilsynet skal ske inden for 72 timer, når det er muligt.
+- **Dokumenter i sager:** modtager, sender eller danner løsningen sagsdokumenter, skal de journaliseres og bevares i organisationens ESDH- eller fagsystem. Løsningen må ikke være den eneste kopi.
+- **Løsningen bruger selv AI:** brugerne skal kunne se, at de interagerer med en AI, og nogle offentlige anvendelser er højrisiko efter AI-forordningen. Inddrag jura og den AI-ansvarlige.
+
+## Det må du ikke
+
+- Erklære en behandling lovlig eller godkende noget på organisationens vegne.
+- Kalde en markering i en fil for en godkendelse. Når en person selv har skrevet sit navn og tidspunkt, så skriv &quot;registreret lokalt af brugeren&quot;, ikke &quot;godkendt&quot;.
+- Kopiere rigtige personoplysninger ind i kode, tests, prompts, logs eller dokumentation.
+- Lægge aftaler, følsomme fund eller navne på borgere i et offentligt repository. Henvis i stedet til, hvor de administreres.
+</pre><p class="tool-type"><code>references/dataoversigt.md</code></p><pre># Skabelon til dataoversigt
+
+Oversigten beskriver dataforløbene, så en anden kan forstå dem og stille de rigtige spørgsmål. Den er ikke en juridisk vurdering. Skriv &quot;ukendt&quot;, når en oplysning mangler.
+
+```markdown
+# Data og leverandører · &lt;appens navn&gt;
+
+Sidst opdateret: &lt;dato&gt; af &lt;rolle&gt;
+
+## Kort fortalt
+&lt;Hvilke data løsningen bruger, til hvad, og om der er personoplysninger.&gt;
+
+## Data i udviklingen
+| Værktøj og model | Hvad sendes | Hvor behandles det | Træning | Kilde og kontroldato |
+|------------------|-------------|--------------------|---------|----------------------|
+| &lt;fx kodeværktøj og model&gt; | Kode, filer og samtale; kun opdigtede data | &lt;region eller ukendt&gt; | &lt;ja/nej/ukendt&gt; | &lt;link, dato&gt; |
+
+## Data i den færdige løsning
+| Data | Formål | Personoplysninger | Hvem har adgang | Slettefrist |
+|------|--------|-------------------|-----------------|-------------|
+
+## Tjenester og leverandører
+| Tjeneste | Rolle i løsningen | Data | Placering og underleverandører | Supportadgang | Logs og backup | Aftale | Kilde og kontroldato |
+|----------|-------------------|------|--------------------------------|---------------|----------------|--------|----------------------|
+
+## Åbne forhold
+| Id | Forhold | Berører | Ansvarlig rolle | Status | Næste handling |
+|----|---------|---------|-----------------|--------|----------------|
+| D-1 | &lt;konkret beskrivelse&gt; | &lt;data, tjeneste, funktion&gt; | &lt;rolle&gt; | Skal undersøges | &lt;handling&gt; |
+
+Status: Skal undersøges · Kræver handling · Afventer ansvarlig · Løst og kontrolleret · Ikke relevant med begrundelse
+
+## Beslutninger
+Tilføj nye linjer; ret ikke i tidligere beslutninger.
+
+| Dato | Beslutning | Omfang og version | Truffet af (rolle) | Registrering |
+|------|------------|-------------------|--------------------|--------------|
+| &lt;dato&gt; | &lt;beslutning&gt; | &lt;commit, miljø&gt; | &lt;rolle&gt; | Registreret lokalt af brugeren |
+```
+
+Skriv ingen rigtige personoplysninger, aftaletekster eller hemmeligheder i oversigten. Hvis projektet er offentligt, så hold oversigten på et overordnet niveau, og henvis til organisationens egne systemer for detaljer.
+</pre><p class="tool-type"><code>references/offentlige-krav.md</code></p><pre># Krav i danske offentlige organisationer
+
+Pejlemærker til, hvornår en fagperson skal inddrages. Det er ikke juridisk rådgivning, og organisationens egne procedurer går forud. Kilderne er kontrolleret 29. september 2026; kontrollér dem igen, før de bruges i en beslutning.
+
+## Personoplysninger
+
+- **Databeskyttelsesrådgiver (DPO):** offentlige myndigheder skal have en. Inddrag DPO&#39;en, før en løsning behandler personoplysninger i drift. (GDPR art. 37)
+- **Databehandleraftale:** skal være på plads med hver leverandør, der behandler personoplysninger for organisationen, fx hosting, SaaS og AI-tjenester. (GDPR art. 28)
+- **Fortegnelse:** organisationens fortegnelse over behandlingsaktiviteter skal opdateres ved en ny behandling. Systemejeren står typisk for det. (GDPR art. 30)
+- **Konsekvensanalyse (DPIA):** skal laves før en behandling, der sandsynligvis indebærer høj risiko. Datatilsynets liste nævner blandt andet ny teknologi som AI, profilering, automatiske afgørelser og følsomme oplysninger om sårbare personer. (GDPR art. 35)
+- **Brud på persondatasikkerheden:** skal anmeldes til Datatilsynet uden unødig forsinkelse og om muligt inden 72 timer. Sig det straks til brugeren, og følg organisationens procedure. (GDPR art. 33)
+- **Testdata:** brug fiktive eller anonymiserede data i udvikling og test. Produktionsdata i test kræver hjemmel, dataminimering, sletning og samme sikkerhed som i drift.
+
+## Leverandører uden for EU/EØS
+
+- Der er ikke fundet en generel dansk regel om, at data skal ligge i EU/EØS. Overførsler til tredjelande reguleres af GDPR kapitel V.
+- Fjernadgang eller support fra et land uden for EU/EØS tæller også som en overførsel.
+- Til USA kræves, at modtageren er certificeret under EU-US Data Privacy Framework, eller et andet overførselsgrundlag.
+
+## Sager og arkiv
+
+- **Journalisering:** dokumenter, der modtages eller sendes som led i sagsbehandling, skal journaliseres. Hensynet til åbenhed skal indgå, når nye it-løsninger udvikles. (Offentlighedsloven § 15 og § 1, stk. 2)
+- **Arkivering:** myndigheder skal bevare elektroniske arkivalier, så de kan afleveres, og må ikke slette data i it-systemer uden bemyndigelse. (Arkivloven § 8)
+- Modtager, sender eller danner appen sagsdokumenter som ansøgninger, henvendelser eller afgørelser, skal den kobles til organisationens ESDH- eller fagsystem. Appen må aldrig være den eneste kopi. Inddrag den journal- eller arkivansvarlige.
+
+## AI i løsningen
+
+- Brugere skal oplyses om, at de interagerer med et AI-system, fx en chatbot. En organisation, der selv udvikler og tager et AI-system i brug under eget navn, kan være udbyder efter AI-forordningen. (AI-forordningen art. 50)
+- Organisationen skal støtte personalets AI-færdigheder. (Art. 4)
+- Nogle offentlige anvendelser er højrisiko, fx vurdering af, om borgere er berettiget til offentlige ydelser. Her gælder skærpede krav og en konsekvensanalyse for grundlæggende rettigheder. Stop, og inddrag jura og ledelse. (Bilag III og art. 27)
+- Digitaliseringsstyrelsens guide til offentlige myndigheder om brug af kunstig intelligens beskriver blandt andet, at personoplysninger kun må bruges i vurderede og godkendte værktøjer.
+
+## Roller at inddrage
+
+| Forhold | Typisk rolle |
+|---------|--------------|
+| Personoplysninger, DPIA, overførsler | Databeskyttelsesrådgiver, jurist, systemejer |
+| Aftaler med leverandører | Indkøb, jurist, systemejer |
+| Sager, journalisering og arkiv | Journal- eller ESDH-ansvarlig, arkivansvarlig |
+| AI i løsningen | Digitaliserings- eller AI-ansvarlig, jurist, ledelse |
+
+## Kilder
+
+- GDPR: https://eur-lex.europa.eu/eli/reg/2016/679/oj
+- Datatilsynet om konsekvensanalyse: https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/konsekvensanalyse
+- Datatilsynet om testdata: https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/testdata-anvendelse-af-personoplysninger-ved-udvikling-og-test-af-it-systemer
+- Datatilsynet om tredjelandsoverførsler: https://www.datatilsynet.dk/internationalt/tredjelandsoverfoersler
+- Datatilsynet om overførsler til USA: https://www.datatilsynet.dk/internationalt/overfoersler-til-usa
+- Offentlighedsloven: https://www.retsinformation.dk/eli/lta/2020/145
+- Arkivloven: https://www.retsinformation.dk/eli/lta/2016/1201
+- AI-forordningen: https://eur-lex.europa.eu/eli/reg/2024/1689/oj
+- Digitaliseringsstyrelsens guide om kunstig intelligens: https://digst.dk/kunstig-intelligens/guides-til-brug-af-kunstig-intelligens/guide-offentlige-myndigheder/
+</pre></details>
+        <p class="sources">Kilder: <a href="https://www.datatilsynet.dk/regler-og-vejledning/cloud">Datatilsynet om cloud ↗</a> · <a href="https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/databeskyttelse-gennem-design-og-standardindstillinger">Databeskyttelse gennem design og standardindstillinger ↗</a> · <a href="https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/konsekvensanalyse">Konsekvensanalyse ↗</a> · <a href="https://eur-lex.europa.eu/eli/reg/2016/679/oj">GDPR ↗</a> · <a href="https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/testdata-anvendelse-af-personoplysninger-ved-udvikling-og-test-af-it-systemer">Datatilsynet om testdata ↗</a> · <a href="https://www.retsinformation.dk/eli/lta/2020/145">Offentlighedsloven ↗</a> · <a href="https://eur-lex.europa.eu/eli/reg/2024/1689/oj">AI-forordningen ↗</a></p>
       </article>
       <article class="tool-entry skill-entry" id="harness-sikkerhedsgennemgang">
         <p class="tool-type">10 · <code>harness-sikkerhedsgennemgang</code></p>
@@ -822,7 +834,7 @@ Behandl modellens svar som utroværdigt input: escape det, og lad det ikke alene
 ## Stop og inddrag andre
 
 - Løsningen skal i drift med personoplysninger, login eller integration til kommunens systemer: inddrag organisationens informationssikkerhedsfunktion, før den udgives. Kommuner kan være omfattet af NIS2-loven, som har korte frister for varsling om væsentlige hændelser.
-- Du finder en eksponeret hemmelighed eller et fund, der kan være et sikkerhedsbrud: stop, fortæl det straks, og følg `harness-noegler-og-afhaengigheder`. Et brud på persondatasikkerheden skal håndteres efter organisationens procedure.
+- Du finder en eksponeret hemmelighed eller et fund, der kan være et sikkerhedsbrud: stop, fortæl det straks, og anbefal at tilbagekalde og udskifte nøglen. `harness-noegler-og-afhaengigheder` beskriver fremgangsmåden, hvis den er installeret. Et brud på persondatasikkerheden skal håndteres efter organisationens procedure.
 </pre><p class="tool-type"><code>references/tjekliste.md</code></p><pre># Tjekliste til sikkerhedsgennemgang
 
 Vælg de afsnit, ændringen berører. Skriv for hvert punkt: kontrolleret og i orden, fund, eller ikke relevant med kort begrundelse.
@@ -879,6 +891,10 @@ Tjeklisten bygger på de gennemgående områder i OWASP ASVS og OWASP Top 10. De
 </pre></details>
         <p class="sources">Kilder: <a href="https://owasp.org/www-project-application-security-verification-standard/">OWASP ASVS ↗</a> · <a href="https://owasp.org/Top10/">OWASP Top 10 ↗</a> · <a href="https://genai.owasp.org/llm-top-10/">OWASP Top 10 for LLM-applikationer ↗</a> · <a href="https://www.retsinformation.dk/eli/lta/2025/434">NIS2-loven ↗</a></p>
       </article>
+      </section>
+      <section class="note" id="drift" aria-labelledby="drift-title">
+        <h2 id="drift-title">Udgivelse og drift</h2>
+        <p>Sæt i drift, rul tilbage, og gør arbejdet klar til at blive overtaget.</p>
       <article class="tool-entry skill-entry" id="harness-udgivelse-og-gendannelse">
         <p class="tool-type">11 · <code>harness-udgivelse-og-gendannelse</code></p>
         <h3>Udgivelse og gendannelse</h3>
@@ -1077,6 +1093,7 @@ Brug de afsnit, der passer til appen. Skriv &quot;ikke relevant&quot; med en kor
 </pre></details>
         
       </article>
+      </section>
     </section>
     <section class="note" aria-labelledby="spoergsmaal">
       <h2 id="spoergsmaal">Spørgsmål og svar</h2>

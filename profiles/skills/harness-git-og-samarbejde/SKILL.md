@@ -13,7 +13,7 @@ Brugeren ejer historikken. Du hjælper med at holde den ren, forståelig og sikk
 2. **Checkpoint (commit):** en lokal, sammenhængende version, der kan gendannes.
 3. **Push:** sender versionerne til en fjernkopi, fx GitHub, GitLab eller Codeberg.
 4. **Pull request:** beder andre gennemgå en ændring, før den kommer ind i hovedgrenen.
-5. **Udgivelse:** gør en bestemt version tilgængelig for brugere. Det er en særskilt beslutning; brug `harness-udgivelse-og-gendannelse`.
+5. **Udgivelse:** gør en bestemt version tilgængelig for brugere. Det er en særskilt beslutning; brug `harness-udgivelse-og-gendannelse`, hvis den er installeret.
 
 Lav aldrig commit, push, merge, rebase, nye branches, tags eller pull requests uden en udtrykkelig anmodning om netop den handling. "Gør det færdigt" eller "send det af sted" er ikke en sådan anmodning. Spørg, hvis du er i tvivl.
 

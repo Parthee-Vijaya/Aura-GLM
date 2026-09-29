@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="da"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; frame-src http://127.0.0.1:* http://localhost:* http://[::1]:* https://127.0.0.1:* https://localhost:* https://[::1]:*; object-src 'none'; base-uri 'none'; form-action 'none'">
-<title>AI Harness</title><link rel="stylesheet" href="styles.css"><script src="app.js" defer></script><script src="hosting.js" defer></script><script src="deployment.js" defer></script><script src="viewport.js" defer></script><script src="server.js" defer></script></head>
+<title>AI Harness</title><link rel="stylesheet" href="styles.css"><script src="model-advice.js" defer></script><script src="app.js" defer></script><script src="hosting.js" defer></script><script src="deployment.js" defer></script><script src="viewport.js" defer></script><script src="server.js" defer></script></head>
 <body>
 <aside class="sidebar" aria-label="Projektnavigation">
   <div class="brand"><span class="brand-icon" aria-hidden="true">⌘</span> AI Harness</div>
@@ -22,7 +22,7 @@
     <button id="setup-find-local"><span class="setup-symbol" aria-hidden="true">⌘</span><strong>AI på min computer</strong><span id="setup-local-hint">Brug en model, du har i Ollama.</span></button>
     <button id="setup-use-saved" hidden><span class="setup-symbol" aria-hidden="true">↻</span><strong>Brug en gemt forbindelse</strong><span id="setup-saved-hint"></span></button>
   </section>
-  <section id="setup-provider" data-setup-step="provider" hidden><div id="setup-provider-body"></div></section>
+  <section id="setup-provider" data-setup-step="provider" hidden><div id="provider-cards" class="provider-cards" role="group" aria-label="Udbyder"></div><button type="button" id="provider-other" class="text-button">Bruger du en anden udbyder? Vælg en anden</button><div id="setup-provider-body" hidden></div></section>
   <section id="setup-local-step" class="local-discovery" data-setup-step="local" hidden>
     <p id="local-discovery-status" role="status">Leder efter Ollama …</p>
     <details><summary>Modeller og oplysninger</summary><ul id="local-discovery-models"></ul><p class="hint">Vi henter kun modellisten på denne computer. Ingen projektfiler eller beskeder sendes. En Ollama-forbindelse kan også indeholde cloudmodeller.</p></details>
@@ -48,6 +48,7 @@
       <label for="purpose">Beskriv din idé</label><textarea id="purpose" required maxlength="3000" rows="4" placeholder="Jeg vil lave en side, hvor naboer kan finde og dele aktiviteter i vores fælleshave …"></textarea>
       <label for="name">Projektnavn · du kan ændre forslaget</label><input id="name" required maxlength="80" placeholder="Fx Fælleshaven"><p id="idea-draft-status" class="hint">Idé og projektnavn gemmes som kladde på denne computer. Ingen AI kontaktes endnu.</p>
     </section>
+    <details id="project-options" class="project-options"><summary id="project-options-summary">Flere valg · valgfrit</summary>
     <details class="startup-summary" aria-label="Dine opstartsvalg"><summary>Dine standardvalg · valgfrit</summary><p id="startup-summary" role="status">Indlæser dine valg …</p><button id="startup-customize" type="button">Tilpas</button><button id="startup-skip" type="button">Beslut senere</button><p id="startup-warning" class="hint"></p></details>
     <details class="panel" id="startup-options"><summary>AI og hosting · valgfrit</summary>
       <label for="startup-connection">Din foretrukne AI-forbindelse</label><select id="startup-connection"><option value="">Beslut senere</option></select><p class="hint">Vi husker valget uden at kontakte serveren. Model og datavilkår vælges før afsendelse.</p>
@@ -62,6 +63,7 @@
     </details>
     <details class="panel advanced"><summary>Avanceret · projekttype og tests</summary><p>Startskabelon: en lokal hjemmeside med HTML, CSS og JavaScript. Den kræver hverken npm eller Docker. AI’en kan foreslå anden teknologi ud fra din idé. En framework-app kræver installation af afhængigheder og en særskilt startet udviklingsserver.</p><label for="tests">Ønsket teststrategi til agenten</label><select id="tests"><option value="senere">Beslut senere</option><option value="manuel">Manuel gennemgang af brugerrejsen</option><option value="automatiske">Automatiske tests og manuel gennemgang</option></select><p class="hint">Valget gemmes; denne version opretter ikke tests. De fælles danske AI-regler følger med projektet.</p></details>
     <label class="check-label"><input id="remember-startup" type="checkbox"> Husk disse valg til nye projekter</label><p class="hint">Husker AI-forbindelse, hostingønske, designpakke og teststrategi. Godkendelser og private referencevalg huskes ikke.</p><button id="forget-startup" type="button" class="text-button">Glem mine standardvalg</button>
+        </details>
     <div class="create-footer"><p>Du vælger placeringen i næste trin.<br>Vi opretter en ny mappe og bevarer dine eksisterende filer.</p><button id="create" class="primary" type="submit">Opret og fortsæt →</button></div>
   </form>
 </main>
@@ -155,32 +157,49 @@
 <dialog id="tools-dialog" class="tools-dialog" aria-labelledby="tools-title">
 <div class="dialog-heading"><h2 id="tools-title">Harness i dit kodeværktøj</h2><button type="button" data-close="tools-dialog">Luk</button></div>
 <p id="tools-error" class="error" role="alert" hidden></p>
-<section id="tools-step-choose">
-<p class="hint">Giv dit eget kodeværktøj AI Harness' grundregler og <span id="tools-skill-count"></span> skills. Filerne lægges i projektmappen, så de følger projektet i Git. Du ser de præcise ændringer, før noget skrives. Appen skal ikke have en AI-forbindelse til dette.</p>
-<details class="tools-included"><summary id="tools-included-summary">Det følger med</summary><p class="hint">Grundreglerne gælder altid. En skill bruges, når opgaven passer til dens beskrivelse. Klik på en skill for at læse, hvad den gør, og hvad den ikke gør.</p><div id="tools-skills"></div></details>
-<fieldset class="tools-list"><legend>Hvilke kodeværktøjer bruger du i projektet?</legend><div id="tools-list"></div></fieldset>
-<div class="tools-folder"><div><strong>Projektmappe</strong><p id="tools-folder-status" class="hint">Ingen mappe valgt.</p></div><button type="button" id="tools-folder">Vælg mappe</button></div>
-<div class="dialog-actions"><button type="button" id="tools-review" class="primary" disabled>Gennemgå ændringerne</button></div>
+<section id="tools-step-choose" class="tools-step">
+<h3 id="tools-choose-title" tabindex="-1">Hvilket kodeværktøj bruger du?</h3>
+<p class="tools-lead">Vi lægger AI Harness' grundregler og <span id="tools-skill-count"></span> skills i dit projekt, så dit værktøj kan bruge dem. Du ser ændringerne, før noget skrives.</p>
+<div id="tools-featured" class="tools-cards"></div>
+<button type="button" id="tools-more" class="text-button">Et andet værktøj</button>
+<div id="tools-all" class="tools-all" hidden><label for="tools-search">Find dit værktøj</label><input id="tools-search" type="search" autocomplete="off" placeholder="Fx Zed eller Mistral"><div id="tools-list"></div></div>
+<details class="tools-included"><summary id="tools-included-summary">Hvad følger med?</summary><p class="hint">Grundreglerne gælder altid. En skill bruges, når opgaven passer til dens beskrivelse.</p><div id="tools-skills"></div></details>
 </section>
-<section id="tools-step-review" hidden>
-<h3 id="tools-review-title" tabindex="-1">Gennemgå ændringerne</h3>
-<p id="tools-review-summary"></p>
+<section id="tools-step-folder" class="tools-step" hidden>
+<h3 id="tools-folder-title" tabindex="-1">Hvor ligger dit projekt?</h3>
+<p class="tools-lead" id="tools-folder-lead"></p>
+<div class="dialog-actions"><button type="button" id="tools-back-choose">Tilbage</button><button type="button" id="tools-folder" class="primary">Vælg projektmappe</button></div>
+</section>
+<section id="tools-step-review" class="tools-step" hidden>
+<h3 id="tools-review-title" tabindex="-1">Klar til at installere</h3>
+<p class="tools-lead" id="tools-review-summary"></p>
+<div class="tools-skillsline"><span id="tools-skills-status"></span><button type="button" id="tools-customize" class="text-button">Tilpas</button></div>
+<ul id="tools-plan" class="tools-plan"></ul>
 <ul id="tools-notes" class="tools-notes"></ul>
-<div id="tools-operations" class="tools-operations"></div>
-<label class="check-label" id="tools-skip-label" hidden><input type="checkbox" id="tools-skip"> Installer resten, og spring filerne med konflikter over</label>
+<details class="tools-details"><summary>Se de præcise ændringer</summary><div id="tools-operations" class="tools-operations"></div></details>
 <div class="dialog-actions"><button type="button" id="tools-back">Tilbage</button><button type="button" id="tools-install" class="primary">Installer</button></div>
 </section>
-<section id="tools-step-done" hidden>
-<h3 id="tools-done-title" tabindex="-1">AI Harness er installeret</h3>
-<p id="tools-done-summary"></p>
-<div id="tools-verify" class="tools-verify"></div>
-<div class="tools-prompt"><p><strong>Kontrollér i en ny samtale</strong></p><p id="tools-prompt-text"></p><button type="button" id="tools-copy-prompt">Kopiér</button></div>
-<div class="dialog-actions"><button type="button" id="tools-reveal">Åbn mappen</button><button type="button" id="tools-removal">Fjern igen</button><button type="button" id="tools-done" class="primary">Færdig</button></div>
+<section id="tools-step-skills" class="tools-step" hidden>
+<h3 id="tools-skills-title" tabindex="-1">Hvilke skills skal med?</h3>
+<p class="tools-lead">Grundreglerne er altid med. Slå en kategori til eller fra, eller fold den ud for at vælge de enkelte skills.</p>
+<div class="skill-picker">
+<div class="skill-category skill-locked"><label class="check-label"><input type="checkbox" checked disabled> <span><strong>Grundregler</strong> <small class="skill-count">Altid med</small><small>Nøgler, Git, afprøvning og ærlig rapportering. Gælder i hele projektet.</small></span></label></div>
+<div id="tools-categories"></div>
+</div>
+<div class="tools-skillsline"><span id="tools-skill-total"></span><button type="button" id="tools-skills-all" class="text-button">Vælg alle</button></div>
+<div class="dialog-actions"><button type="button" id="tools-skills-back">Tilbage</button><button type="button" id="tools-skills-save" class="primary">Gem valg</button></div>
 </section>
-<section id="tools-step-remove" hidden>
-<h3 id="tools-remove-title" tabindex="-1">Fjern AI Harness fra projektet</h3>
-<p class="hint">Kun filer og afsnit, der er uændrede siden installationen, fjernes. Dine egne ændringer bevares.</p>
-<div id="tools-remove-operations" class="tools-operations"></div>
+<section id="tools-step-done" class="tools-step" hidden>
+<h3 id="tools-done-title" tabindex="-1">Færdig</h3>
+<p class="tools-lead" id="tools-done-summary"></p>
+<div class="tools-prompt"><p id="tools-prompt-intro"></p><p id="tools-prompt-text" class="tools-prompt-text"></p><button type="button" id="tools-copy-prompt">Kopiér</button></div>
+<details class="tools-details"><summary id="tools-verify-summary">Sådan kontrollerer du det</summary><div id="tools-verify" class="tools-verify"></div></details>
+<div class="dialog-actions"><button type="button" id="tools-removal" class="text-button">Fjern igen</button><span class="tools-actions"><button type="button" id="tools-reveal">Åbn mappen</button><button type="button" id="tools-done" class="primary">Færdig</button></span></div>
+</section>
+<section id="tools-step-remove" class="tools-step" hidden>
+<h3 id="tools-remove-title" tabindex="-1">Fjern AI Harness fra projektet?</h3>
+<p class="tools-lead">Kun filer og afsnit, der er uændrede siden installationen, fjernes. Dine egne ændringer bevares.</p>
+<details class="tools-details"><summary>Se de præcise ændringer</summary><div id="tools-remove-operations" class="tools-operations"></div></details>
 <div class="dialog-actions"><button type="button" id="tools-remove-back">Tilbage</button><button type="button" id="tools-remove" class="primary">Fjern</button></div>
 </section>
 </dialog>

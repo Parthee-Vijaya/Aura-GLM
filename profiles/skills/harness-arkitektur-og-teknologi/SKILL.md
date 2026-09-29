@@ -9,7 +9,7 @@ Vælg det enkleste, der løser opgaven, og som organisationen kan drive og vedli
 
 ## Genbrug før nybyg
 
-1. Bevar teknologien i et eksisterende projekt, medmindre opgaven kræver et begrundet skift. Brug `harness-eksisterende-projekt` først.
+1. Bevar teknologien i et eksisterende projekt, medmindre opgaven kræver et begrundet skift. Undersøg først projektets opsætning, gerne med `harness-eksisterende-projekt`, hvis den er installeret.
 2. Spørg, om organisationen allerede har et system, en fælles løsning eller en godkendt tjeneste til opgaven. Kommuner kan fx have løsninger fra fællesoffentlige eller fælleskommunale samarbejder.
 3. Spørg til organisationens godkendte hosting, identitetsløsning og designsystem, før du foreslår nye.
 4. I danske offentlige organisationer: læs [offentlig infrastruktur](references/offentlig-infrastruktur.md) om OS2, login med MitID, fælles registre og hosting.
@@ -49,7 +49,7 @@ Organisationens designsystem kommer før et nyt tema. Foreslå ét begrundet val
 
 ## Løsninger, der selv bruger AI
 
-Hvis løsningen kalder en AI-model, er det et nyt dataforløb og et nyt sted, hvor utroværdigt input kommer ind. Brug `harness-data-og-leverandoerer` og `harness-sikkerhedsgennemgang`. Brugerne skal kunne se, at de interagerer med en AI, og organisationen skal vurdere, om særlige regler for AI-systemer gælder.
+Hvis løsningen kalder en AI-model, er det et nyt dataforløb og et nyt sted, hvor utroværdigt input kommer ind. Beskriv dataforløbet, og behandl modellens svar som utroværdigt input; brug `harness-data-og-leverandoerer` og `harness-sikkerhedsgennemgang`, hvis de er installeret. Brugerne skal kunne se, at de interagerer med en AI, og organisationen skal vurdere, om særlige regler for AI-systemer gælder.
 
 ## Anbefalingen
 

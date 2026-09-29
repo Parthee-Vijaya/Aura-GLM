@@ -44,6 +44,7 @@ function renderFiles() {
 
 function selectTool(id) {
   selectedTool = catalog.tools.find((tool) => tool.id === id) || catalog.tools[0];
+  if (!catalog.featuredTools.includes(selectedTool.id)) showAllTools();
   document.querySelectorAll('input[name="tool"]').forEach((input) => { input.checked = input.value === selectedTool.id; });
   byId('pack-title').textContent = selectedTool.name;
   byId('pack-summary').textContent = selectedTool.summary;
@@ -75,38 +76,54 @@ function selectTool(id) {
   announce(`Pakken til ${selectedTool.name} er valgt.`);
 }
 
+// De mest brugte værktøjer vises først. Resten ligger bag én knap.
 function renderTools() {
-  byId('tool-picker').replaceChildren(...Object.entries(catalog.categories).map(([category, label]) => {
+  const featured = catalog.featuredTools.map((id) => catalog.tools.find((tool) => tool.id === id));
+  const groups = [['featured', 'De mest brugte', featured], ...Object.entries(catalog.categories).map(([category, label]) => [category, label, catalog.tools.filter((tool) => tool.category === category && !catalog.featuredTools.includes(tool.id))])];
+  byId('tool-picker').replaceChildren(...groups.filter(([, , tools]) => tools.length).map(([key, label, tools]) => {
     const fieldset = element('fieldset', undefined, 'tool-picker');
+    fieldset.dataset.group = key;
+    fieldset.hidden = key !== 'featured';
     fieldset.append(element('legend', label));
-    for (const tool of catalog.tools.filter((item) => item.category === category)) {
+    for (const tool of tools) {
       const option = element('label', undefined, 'tool');
       const input = element('input');
       input.type = 'radio'; input.name = 'tool'; input.value = tool.id;
       input.addEventListener('change', () => selectTool(tool.id));
       const text = element('span');
       text.append(element('strong', tool.name), element('small', `${tool.vendor} · ${catalog.statuses[tool.status]}`));
-      option.append(input, text, element('span', undefined, 'radio-mark'));
-      option.querySelector('.radio-mark').setAttribute('aria-hidden', 'true');
+      const mark = element('span', undefined, 'radio-mark');
+      mark.setAttribute('aria-hidden', 'true');
+      option.append(input, text, mark);
       fieldset.append(option);
     }
     return fieldset;
   }));
+  byId('show-all-tools').textContent = `Bruger du et andet værktøj? Vis alle ${catalog.tools.length}`;
+  byId('show-all-tools').hidden = false;
+}
+
+function showAllTools() {
+  document.querySelectorAll('#tool-picker fieldset').forEach((fieldset) => { fieldset.hidden = false; });
+  byId('show-all-tools').hidden = true;
 }
 
 function renderSkills() {
   byId('skill-count').textContent = catalog.skills.length;
-  byId('skill-list').replaceChildren(...catalog.skills.map((skill, index) => {
+  let index = 0;
+  byId('skill-list').replaceChildren(...catalog.categories.flatMap((category) => [element('p', `${category.title} · ${category.skills.length}`, 'skill-group'), ...category.skills.map((name) => {
+    const skill = catalog.skills.find((item) => item.name === name);
+    index += 1;
     const details = element('details');
     const summary = element('summary');
-    summary.append(element('span', String(index + 1).padStart(2, '0')), document.createTextNode(skill.title));
+    summary.append(element('span', String(index).padStart(2, '0')), document.createTextNode(skill.title));
     const more = element('a', 'Læs mere →');
     more.href = `skills.html#${skill.name}`;
     const text = element('p', `${skill.summary} `);
     text.append(more);
     details.append(summary, text);
     return details;
-  }));
+  })]));
 }
 
 async function copy(text, button, fallback) {
@@ -131,6 +148,7 @@ async function copy(text, button, fallback) {
 }
 
 byId('file-select').addEventListener('change', (event) => showFile(event.target.value));
+byId('show-all-tools').addEventListener('click', () => { showAllTools(); document.querySelector('#tool-picker fieldset:not([data-group="featured"]) input')?.focus(); });
 byId('copy-prompt').addEventListener('click', (event) => copy(byId('test-prompt').textContent, event.currentTarget, byId('test-prompt')));
 byId('copy-agent-prompt').addEventListener('click', (event) => copy(byId('agent-prompt').textContent, event.currentTarget, byId('agent-prompt')));
 byId('copy-file').addEventListener('click', (event) => { if (selectedFile) copy(fileContent(selectedFile), event.currentTarget, byId('file-content')); });
@@ -148,7 +166,7 @@ fetch('catalog.json').then((response) => {
   renderTools();
   renderSkills();
   const requested = new URLSearchParams(location.search).get('vaerktoej');
-  selectTool(catalog.tools.some((tool) => tool.id === requested) ? requested : catalog.tools[0].id);
+  selectTool(catalog.tools.some((tool) => tool.id === requested) ? requested : catalog.featuredTools[0]);
   byId('content').hidden = false;
 }).catch(() => {
   byId('load-error').hidden = false;

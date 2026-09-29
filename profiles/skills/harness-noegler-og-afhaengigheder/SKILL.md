@@ -42,4 +42,4 @@ Brug projektets pakkehåndtering, og bevar låsefilen. Brug `npm ci` eller tilsv
 - Brug den mindst mulige adgang: et token med præcis de rettigheder, opgaven kræver, og gerne med udløbsdato.
 - Placér nøglen på serveren, og kald tjenesten derfra, ikke direkte fra browseren.
 - Håndter fejl, timeout og begrænsninger i antal kald.
-- En ny tjeneste er også et nyt dataforløb. Brug `harness-data-og-leverandoerer`, før der sendes rigtige data.
+- En ny tjeneste er også et nyt dataforløb. Beskriv det, før der sendes rigtige data, gerne med `harness-data-og-leverandoerer`, hvis den er installeret.

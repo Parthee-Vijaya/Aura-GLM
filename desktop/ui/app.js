@@ -52,7 +52,7 @@ function moveConnectionForm(guided) {
 function setupPage(step) {
   ++setupGeneration;
   setupStep = step;
-  const headings = { choice: ['Hvordan vil du forbinde din AI?', 'Vælg den adgang, du allerede har.'], provider: ['Forbind din AI', 'Brug oplysningerne fra din arbejdsplads eller udbyder.'], local: ['AI på din computer', 'Vi leder efter modeller, du allerede har i Ollama.'], saved: ['Din AI-forbindelse', 'Kontrollér forbindelsen, før du fortsætter.'], tools: ['Avanceret opsætning', 'Forbindelser og lokale værktøjer.'] };
+  const headings = { choice: ['Hvordan vil du forbinde din AI?', 'Vælg den adgang, du allerede har.'], provider: ['Hvem er din udbyder?', 'Vælg den udbyder, du har en nøgle til. Har du fået adgang af din arbejdsplads, så brug deres oplysninger.'], local: ['AI på din computer', 'Vi leder efter modeller, du allerede har i Ollama.'], saved: ['Din AI-forbindelse', 'Kontrollér forbindelsen, før du fortsætter.'], tools: ['Avanceret opsætning', 'Forbindelser og lokale værktøjer.'] };
   $('#setup-title').textContent = headings[step][0]; $('#setup-subtitle').textContent = headings[step][1];
   for (const el of document.querySelectorAll('[data-setup-step]')) el.hidden = el.dataset.setupStep !== step;
   moveConnectionForm(step === 'provider');
@@ -60,11 +60,41 @@ function setupPage(step) {
   $('#setup').dataset.step = step;
   $('#setup-title').focus(); window.scrollTo(0, 0); setupControls();
 }
+// Den guidede opsætning viser tre udbydere som kort. Resten ligger bag "Vælg en anden".
+const featuredProviders = [
+  { kind: 'anthropic', name: 'Claude', text: 'Anthropics modeller. Stærke til kode.' },
+  { kind: 'mistral', name: 'Mistral', text: 'Europæisk udbyder.' },
+  { kind: 'corti', name: 'Corti', text: 'Dansk udbyder med modeller i EU.' }
+];
+function chooseProvider(kind) {
+  $('#provider-kind').value = kind; updateProvider();
+  for (const card of document.querySelectorAll('#provider-cards button')) card.setAttribute('aria-pressed', String(card.dataset.kind === kind));
+  $('#setup-provider-body').hidden = false; $('#api-key').focus();
+}
+function renderProviderCards() {
+  $('#provider-cards').replaceChildren(...featuredProviders.map(item => {
+    const card = node('button', undefined, 'provider-card'); card.type = 'button'; card.dataset.kind = item.kind; card.setAttribute('aria-pressed', 'false');
+    card.append(node('strong', item.name), node('span', item.text));
+    card.onclick = () => chooseProvider(item.kind);
+    return card;
+  }));
+}
+$('#provider-other').onclick = () => {
+  $('#connection-form').classList.add('all-providers');
+  for (const card of document.querySelectorAll('#provider-cards button')) card.setAttribute('aria-pressed', 'false');
+  if (featuredProviders.some(item => item.kind === $('#provider-kind').value)) { $('#provider-kind').value = 'openrouter'; updateProvider(); }
+  $('#setup-provider-body').hidden = false; $('#provider-kind').focus();
+};
 function setupProvider(connection) {
   $('#connection-form').reset(); $('#connection-id').value = connection?.id || ''; $('#connection-feedback').textContent = '';
-  $('#provider-kind').value = connection?.kind || 'corti'; updateProvider();
+  $('#connection-form').classList.remove('all-providers'); renderProviderCards();
+  $('#provider-kind').value = connection?.kind || 'anthropic'; updateProvider();
   if (connection) { $('#connection-name').value = connection.name; $('#base-url').value = connection.baseURL; }
   $('.key-guide').open = false; setupPage('provider');
+  const featured = featuredProviders.some(item => item.kind === $('#provider-kind').value);
+  if (connection && featured) chooseProvider(connection.kind);
+  else if (connection) $('#provider-other').onclick();
+  else $('#setup-provider-body').hidden = true;
 }
 function renderSetup() {
   const previous = $('#setup-connection').value || preferredConnection;
@@ -127,7 +157,7 @@ $('#setup-test').onclick = () => action(testSetupConnection);
 $('#setup-use-saved').onclick = () => { setupPage('saved'); if (!$('#setup-connection').value && state.connections.length === 1) $('#setup-connection').value = state.connections[0].id; setupControls(); };
 $('#setup-advanced').onclick = () => { setupPage('tools'); action(setupGit); };
 $('#setup-edit').onclick = () => setupProvider(state.connections.find(c => c.id === $('#setup-connection').value));
-$('#setup-local-address').onclick = () => { setupProvider(); $('#provider-kind').value = 'ollama'; updateProvider(); };
+$('#setup-local-address').onclick = () => { setupProvider(); $('#provider-other').onclick(); $('#provider-kind').value = 'ollama'; updateProvider(); };
 function showAssets(assets) {
   $('#assets').replaceChildren();
   for (const asset of assets) {
@@ -517,6 +547,8 @@ function updateStartupSummary() {
   const connection = state?.connections.find(c => c.id === values.connectionID)?.name || 'AI vælges senere';
   const design = values.designID ? $('#design-select').selectedOptions[0]?.textContent : 'Intet design valgt';
   $('#startup-summary').textContent = `${connection} · ${hostingLabel(values.hosting)} · ${design} · ${testLabel(values.tests)}`;
+  const chosen = values.connectionID || values.designID || values.hosting || values.tests !== 'senere';
+  $('#project-options-summary').textContent = chosen ? 'Flere valg · dine standardvalg bruges' : 'Flere valg · valgfrit';
 }
 async function clearStartupDesign() {
   showAssets(await call('clearAssets')); $('#design-select').value = ''; $('#color').value = '#326556'; $('#color-value').value = '#326556'; $('#links').value = ''; updateStartupSummary();
@@ -532,7 +564,7 @@ async function loadStartup() {
     try { const design = await call('applyDesign', result.values.designID); $('#color').value = design.color; $('#color-value').value = design.color; $('#links').value = design.links.join('\n'); showAssets(design.assets); }
     catch { await clearStartupDesign(); $('#startup-warning').textContent = 'Designpakken kunne ikke indlæses. Vælg en anden, eller fortsæt uden design.'; }
   }
-  for (const selector of ['#startup-options', '#design-options', '#onboarding .advanced']) $(selector).open = false;
+  for (const selector of ['#project-options', '#startup-options', '#design-options', '#onboarding .advanced']) $(selector).open = false;
   updateStartupSummary();
   } finally { $('#create').disabled = false; }
 }
@@ -590,78 +622,119 @@ $('#welcome-back').onclick = () => showIntroduction('path');
 $('#path-tools').onclick = () => { completeIntroduction('tools'); closeIntroduction(); openTools(); };
 $('#tools-button').onclick = () => openTools();
 
-// Harness i brugerens eget kodeværktøj. Hovedprocessen vælger mappen og skriver filerne efter en gennemgang.
-let toolsCatalog = null, toolsFolder = null, toolsInstalled = null;
-const toolStatus = { afproevet: 'Afprøvet med AI Harness', dokumenteret: 'Efter værktøjets dokumentation', manuel: 'Tekst til platformens egne felter' };
-const toolGroups = { agent: 'Kodeagenter', editor: 'Editorer og udviklingsmiljøer', web: 'Webplatforme' };
+// Harness i brugerens eget kodeværktøj. Ét spørgsmål pr. trin; hovedprocessen vælger mappen og skriver filerne efter en gennemgang.
+let toolsCatalog = null, toolsFolder = null, toolsChoice = null, toolsReviewState = null, toolsSkills = null;
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
-const operationText = { opret: 'Opret', tilfoej: 'Tilføj afsnit', opdater: 'Opdatér', uaendret: 'Uændret', konflikt: 'Konflikt · skrives ikke', fjern: 'Fjern', 'fjern-afsnit': 'Fjern afsnit', bevar: 'Bevares' };
+const operationText = { opret: 'Opret', tilfoej: 'Tilføj afsnit', opdater: 'Opdatér', uaendret: 'Uændret', konflikt: 'Ændret af dig · røres ikke', fjern: 'Fjern', 'fjern-afsnit': 'Fjern afsnit', bevar: 'Bevares' };
 async function toolsAction(fn) {
   $('#tools-error').hidden = true;
   try { return await fn(); } catch (error) { $('#tools-error').textContent = error.message; $('#tools-error').hidden = false; }
 }
 function toolsStep(step) {
-  for (const id of ['choose', 'review', 'done', 'remove']) $(`#tools-step-${id}`).hidden = id !== step;
-  const title = { review: '#tools-review-title', done: '#tools-done-title', remove: '#tools-remove-title' }[step];
-  if (title) $(title).focus();
+  for (const id of ['choose', 'folder', 'review', 'skills', 'done', 'remove']) $(`#tools-step-${id}`).hidden = id !== step;
+  $(`#tools-${step}-title`).focus();
 }
-function selectedTools() { return [...document.querySelectorAll('#tools-list input[type=checkbox]:checked')].map(input => input.value); }
-function updateToolsReview() { $('#tools-review').disabled = !toolsFolder || !selectedTools().length; }
+const toolById = id => toolsCatalog.tools.find(tool => tool.id === id);
 async function copyText(text, button) {
   const label = button.textContent;
   try { await navigator.clipboard.writeText(text); button.textContent = 'Kopieret'; } catch { button.textContent = 'Kunne ikke kopiere'; }
   setTimeout(() => { button.textContent = label; }, 1800);
 }
+function toolCard(tool) {
+  const button = node('button', undefined, 'tools-card'); button.type = 'button'; button.dataset.tool = tool.id;
+  button.append(node('strong', tool.name), node('span', tool.summary));
+  button.onclick = () => chooseTool(tool.id);
+  return button;
+}
+function renderAllTools(query) {
+  const words = query.trim().toLocaleLowerCase('da');
+  const others = toolsCatalog.tools.filter(tool => !toolsCatalog.featuredTools.includes(tool.id) && (!words || `${tool.name} ${tool.vendor}`.toLocaleLowerCase('da').includes(words)));
+  $('#tools-list').replaceChildren(...(others.length ? others.map(tool => {
+    const row = node('div', undefined, 'tools-row');
+    const text = node('span'); text.append(node('strong', tool.name), node('small', tool.installable ? ` · ${tool.vendor}` : ` · ${tool.vendor} · kopiér teksten til platformens egne felter`));
+    const button = node('button', tool.installable ? 'Vælg' : 'Kopiér tekst'); button.type = 'button'; button.dataset.tool = tool.id;
+    button.onclick = tool.installable ? () => chooseTool(tool.id) : () => copyText(toolsCatalog.knowledge, button);
+    row.append(text, button); return row;
+  }) : [node('p', 'Ingen værktøjer passer til søgningen.', 'hint')]));
+}
 function renderToolsCatalog() {
   $('#tools-skill-count').textContent = toolsCatalog.skills.length;
-  $('#tools-included-summary').textContent = `Det følger med: grundregler og ${toolsCatalog.skills.length} skills`;
+  $('#tools-included-summary').textContent = `Hvad følger med? Grundregler og ${toolsCatalog.skills.length} skills`;
   $('#tools-skills').replaceChildren(...toolsCatalog.skills.map(skill => {
     const details = node('details', undefined, 'tools-skill');
     const summary = node('summary'); summary.append(node('strong', skill.title), node('span', ` · ${skill.summary}`));
     const list = node('dl');
     for (const [label, key] of [['Hvad gør den?', 'hvad'], ['Hvornår bruges den?', 'hvornaar'], ['Hvad får du?', 'resultat'], ['Hvad gør den ikke?', 'ikke']]) list.append(node('dt', label), node('dd', skill.faq[key]));
-    details.append(summary, list, node('p', skill.name, 'hint'));
+    details.append(summary, list);
     return details;
   }));
-  $('#tools-list').replaceChildren(...Object.entries(toolGroups).map(([category, label]) => {
-    const group = node('div', undefined, 'tools-group');
-    group.append(node('p', label, 'tools-group-title'));
-    for (const tool of toolsCatalog.tools.filter(item => item.category === category)) {
-      const row = node('div', undefined, 'tools-row');
-      const text = node('span'); text.append(node('strong', tool.name), node('small', ` · ${tool.vendor} · ${toolStatus[tool.status]}`));
-      if (!tool.installable) {
-        const copy = node('button', `Kopiér tekst til ${tool.name}`); copy.type = 'button'; copy.onclick = () => copyText(toolsCatalog.knowledge, copy);
-        row.append(text, copy);
-      } else {
-        const label = node('label', undefined, 'check-label'); const input = node('input'); input.type = 'checkbox'; input.value = tool.id;
-        input.checked = Boolean(toolsInstalled?.tools.includes(tool.id)); input.onchange = updateToolsReview;
-        label.append(input, text); row.append(label);
-      }
-      group.append(row);
-    }
-    return group;
-  }));
+  $('#tools-featured').replaceChildren(...toolsCatalog.featuredTools.map(id => toolCard(toolById(id))));
+  renderAllTools('');
 }
+$('#tools-more').onclick = () => { $('#tools-all').hidden = false; $('#tools-more').hidden = true; $('#tools-search').focus(); };
+$('#tools-search').oninput = () => renderAllTools($('#tools-search').value);
 async function openTools() {
-  toolsStep('choose'); $('#tools-error').hidden = true;
+  $('#tools-error').hidden = true;
   if (!$('#tools-dialog').open) $('#tools-dialog').showModal();
-  await toolsAction(async () => { toolsCatalog ??= await call('toolsCatalog'); renderToolsCatalog(); updateToolsReview(); });
+  await toolsAction(async () => { toolsCatalog ??= await call('toolsCatalog'); renderToolsCatalog(); });
+  $('#tools-all').hidden = true; $('#tools-more').hidden = false; $('#tools-search').value = '';
+  toolsStep('choose');
 }
-function describeFolder(folder) {
-  const parts = [`${folder.name}`];
-  if (folder.manifest) parts.push(`AI Harness ${folder.manifest.version} er allerede installeret til ${folder.manifest.tools.map(id => toolsCatalog.tools.find(tool => tool.id === id)?.name || id).join(', ')}.`);
-  if (folder.git?.initialized === false) parts.push('Mappen bruger ikke Git. Opret versionsstyring først, hvis du vil kunne se og fortryde ændringerne.');
-  else if (folder.git?.changes) parts.push(`Der er ${plural(folder.git.changes, 'ændring', 'ændringer')}, som ikke er gemt i Git. Gem en version først, så Harness' ændringer kan ses for sig.`);
-  return parts.join(' ');
+function chooseTool(id) {
+  toolsChoice = id;
+  $('#tools-folder-lead').textContent = `Vælg den mappe, du åbner i ${toolById(id).name}. Det er ofte den mappe, hvor README.md og .git ligger.`;
+  toolsStep('folder');
 }
+$('#tools-back-choose').onclick = () => toolsStep('choose');
 $('#tools-folder').onclick = () => toolsAction(async () => {
   const folder = await call('toolsFolder');
   if (!folder) return;
-  toolsFolder = folder; toolsInstalled = folder.manifest;
-  if (toolsInstalled) for (const input of document.querySelectorAll('#tools-list input[type=checkbox]')) input.checked = toolsInstalled.tools.includes(input.value);
-  $('#tools-folder-status').textContent = describeFolder(folder);
-  updateToolsReview();
+  toolsFolder = folder;
+  // Et tidligere udvalg bevares; ellers følger alle skills med.
+  toolsSkills = new Set(folder.manifest?.skills || toolsCatalog.skills.map(skill => skill.name));
+  await reviewTools();
 });
+// Resumé i almindeligt dansk. De præcise filændringer ligger under "Se de præcise ændringer".
+function planLines(review) {
+  const lines = [];
+  const active = review.operations.filter(op => !['uaendret', 'konflikt', 'bevar'].includes(op.action));
+  for (const op of active.filter(item => item.kind === 'blok' && item.path !== '.gitignore')) {
+    const pointer = /@AGENTS\.md/.test(op.preview || '');
+    const removing = op.action === 'fjern' || op.action === 'fjern-afsnit';
+    if (removing) lines.push(`AI Harness-afsnittet i ${op.path} fjernes.`);
+    else if (pointer) lines.push(op.action === 'opret' ? `${op.path} oprettes med en henvisning til AGENTS.md.` : op.action === 'tilfoej' ? `${op.path} får en henvisning til AGENTS.md. Dine egne regler bevares.` : `Henvisningen i ${op.path} opdateres.`);
+    else lines.push(op.action === 'opret' ? `Grundreglerne lægges i en ny ${op.path}.` : op.action === 'tilfoej' ? `Grundreglerne tilføjes nederst i ${op.path}. Dine egne regler bevares.` : `Grundreglerne i ${op.path} opdateres til version ${review.version}.`);
+  }
+  const skills = new Map();
+  for (const op of active.filter(item => /\/harness-[a-z0-9-]+\//.test(item.path))) {
+    const [, dir, name] = /^(.*)\/(harness-[a-z0-9-]+)\//.exec(op.path);
+    const key = `${dir}|${op.action === 'fjern' ? 'fjern' : op.action === 'opret' ? 'opret' : 'opdater'}`;
+    if (!skills.has(key)) skills.set(key, new Set());
+    skills.get(key).add(name);
+  }
+  for (const [key, names] of skills) {
+    const [dir, kind] = key.split('|');
+    lines.push(kind === 'opret' ? `${plural(names.size, 'skill', 'skills')} lægges i ${dir}.` : kind === 'fjern' ? `${plural(names.size, 'skill', 'skills')} fra en tidligere installation fjernes fra ${dir}.` : `${plural(names.size, 'skill', 'skills')} opdateres i ${dir}.`);
+  }
+  const ignore = active.find(item => item.path === '.gitignore');
+  if (ignore) lines.push(ignore.action === 'opret' ? 'En ny .gitignore holder hemmeligheder og lokale filer ude af Git.' : ignore.action === 'tilfoej' ? '.gitignore får et afsnit, der holder hemmeligheder og lokale filer ude af Git.' : 'Afsnittet i .gitignore opdateres.');
+  if (active.some(item => item.path.startsWith('.harness/') && item.action === 'opret')) lines.push('En kort forklaring og en oversigt over installationen lægges i .harness.');
+  return lines;
+}
+function reviewNotes(review) {
+  const notes = [];
+  if (review.conflicts) notes.push(`${plural(review.conflicts, 'fil er', 'filer er')} ændret af dig og bliver ikke rørt.`);
+  if (review.git.initialized === false) notes.push('Mappen bruger ikke Git, så ændringerne kan ikke fortrydes med en tidligere version.');
+  else if (review.git.changes) notes.push(`Der er ${plural(review.git.changes, 'ændring', 'ændringer')}, som ikke er gemt i Git. Gem gerne en version først, så Harness' ændringer kan ses for sig.`);
+  if (review.ignored === null) notes.push('Det kunne ikke kontrolleres, om projektets .gitignore udelader nogle af filerne.');
+  else if (review.ignored.length) {
+    const groups = new Map();
+    for (const file of review.ignored) { const dir = review.dirs.find(item => file.startsWith(`${item}/`)); const key = dir ? `${dir}/` : file; groups.set(key, (groups.get(key) || 0) + 1); }
+    const summary = [...groups].map(([key, count]) => key.endsWith('/') ? `${key} (${plural(count, 'fil', 'filer')})` : key).join(', ');
+    notes.push(`Projektets .gitignore udelader ${summary}. Filerne kommer ikke med, når andre henter projektet. Ret .gitignore, hvis de skal deles.`);
+  }
+  return [...notes, ...review.warnings];
+}
 function renderOperations(target, operations) {
   const groups = new Map();
   for (const op of operations) { if (!groups.has(op.action)) groups.set(op.action, []); groups.get(op.action).push(op); }
@@ -680,50 +753,95 @@ function renderOperations(target, operations) {
     return details;
   }));
 }
-$('#tools-review').onclick = () => toolsAction(async () => {
-  const review = await call('toolsReview', { tools: selectedTools() });
-  const names = review.tools.map(id => toolsCatalog.tools.find(tool => tool.id === id).name).join(', ');
-  $('#tools-review-summary').textContent = `AI Harness ${review.version} til ${names} i mappen ${review.folder}. Skills lægges i ${review.dirs.join(' og ')}. Eksisterende filer overskrives ikke.`;
-  const notes = [...review.warnings];
-  if (review.git.initialized === false) notes.push('Mappen bruger ikke Git. Ændringerne kan ikke ses eller fortrydes i en versionshistorik.');
-  else if (review.git.changes) notes.push(`Der er ${plural(review.git.changes, 'ændring', 'ændringer')}, som ikke er gemt i Git.`);
-  if (review.ignored === null) notes.push('Det kunne ikke kontrolleres, om projektets .gitignore udelader nogle af filerne.');
-  else if (review.ignored.length) {
-    const groups = new Map();
-    for (const file of review.ignored) { const dir = review.dirs.find(item => file.startsWith(`${item}/`)); const key = dir ? `${dir}/` : file; groups.set(key, (groups.get(key) || 0) + 1); }
-    const summary = [...groups].map(([key, count]) => key.endsWith('/') ? `${key} (${plural(count, 'fil', 'filer')})` : key).join(', ');
-    notes.push(`Projektets .gitignore udelader ${summary}. Filerne kommer ikke med, når andre henter projektet. Ret .gitignore, hvis de skal deles.`);
-  }
-  if (review.conflicts) notes.push(review.conflicts === 1 ? '1 fil er i konflikt og bliver ikke skrevet. Ret den selv, eller spring den over.' : `${review.conflicts} filer er i konflikt og bliver ikke skrevet. Ret dem selv, eller spring dem over.`);
-  $('#tools-notes').replaceChildren(...notes.map(text => node('li', text)));
+async function reviewTools() {
+  const installed = toolsFolder.manifest?.tools || [];
+  const review = await call('toolsReview', { tools: [...new Set([...installed, toolsChoice])], skills: [...toolsSkills] });
+  toolsReviewState = review;
+  const name = toolById(toolsChoice).name;
+  const nothing = review.operations.every(op => op.action === 'uaendret');
+  const others = installed.filter(id => id !== toolsChoice).map(id => toolById(id)?.name || id);
+  $('#tools-review-summary').textContent = nothing ? `AI Harness er allerede installeret til ${name} i ${review.folder}. Intet ændres.` : others.length && !installed.includes(toolsChoice) ? `AI Harness er allerede installeret til ${others.join(', ')} i ${review.folder}. ${name} tilføjes, når du installerer:` : `Det sker i ${review.folder}, når du installerer til ${name}:`;
+  const left = toolsCatalog.skills.filter(skill => !toolsSkills.has(skill.name));
+  $('#tools-skills-status').textContent = `Skills: ${toolsSkills.size} af ${toolsCatalog.skills.length} valgt${left.length ? ` · fravalgt: ${left.map(skill => skill.title).join(', ')}` : ''}`;
+  const lines = planLines(review);
+  $('#tools-plan').replaceChildren(...lines.map(text => node('li', text))); $('#tools-plan').hidden = !lines.length;
+  const notes = reviewNotes(review);
+  $('#tools-notes').replaceChildren(...notes.map(text => node('li', text))); $('#tools-notes').hidden = !notes.length;
   renderOperations($('#tools-operations'), review.operations);
-  $('#tools-skip').checked = false; $('#tools-skip-label').hidden = !review.conflicts;
-  $('#tools-install').disabled = Boolean(review.conflicts);
-  $('#tools-install').textContent = review.operations.every(op => op.action === 'uaendret') ? 'Registrér installationen' : 'Installer';
+  $('#tools-install').textContent = nothing ? 'Registrér installationen' : review.conflicts ? 'Installer resten' : 'Installer';
   toolsStep('review');
+}
+// Udvælgelse som i en cookie-dialog: kategorier kan slås til og fra samlet, og hver kan foldes ud til de enkelte skills.
+function renderSkillPicker() {
+  $('#tools-categories').replaceChildren(...toolsCatalog.categories.map(category => {
+    const box = node('div', undefined, 'skill-category');
+    const head = node('div', undefined, 'skill-category-head');
+    const label = node('label', undefined, 'check-label');
+    const toggle = node('input'); toggle.type = 'checkbox'; toggle.dataset.category = category.id;
+    const text = node('span'); text.append(node('strong', category.title), node('small', '', 'skill-count'), node('small', category.summary));
+    label.append(toggle, text);
+    const expand = node('button', 'Vis skills', 'text-button'); expand.type = 'button'; expand.setAttribute('aria-expanded', 'false');
+    const list = node('div', undefined, 'skill-list'); list.hidden = true;
+    expand.onclick = () => { list.hidden = !list.hidden; expand.setAttribute('aria-expanded', String(!list.hidden)); expand.textContent = list.hidden ? 'Vis skills' : 'Skjul skills'; };
+    for (const name of category.skills) {
+      const skill = toolsCatalog.skills.find(item => item.name === name);
+      const row = node('label', undefined, 'check-label');
+      const input = node('input'); input.type = 'checkbox'; input.dataset.skill = name; input.checked = toolsSkills.has(name);
+      input.onchange = updateSkillPicker;
+      const detail = node('span'); detail.append(node('strong', skill.title), node('small', skill.summary));
+      row.append(input, detail); list.append(row);
+    }
+    toggle.onchange = () => { for (const input of list.querySelectorAll('input')) input.checked = toggle.checked; updateSkillPicker(); };
+    head.append(label, expand); box.append(head, list);
+    return box;
+  }));
+  updateSkillPicker();
+}
+function updateSkillPicker() {
+  let total = 0;
+  for (const category of toolsCatalog.categories) {
+    const inputs = [...document.querySelectorAll(`#tools-categories input[data-skill]`)].filter(input => category.skills.includes(input.dataset.skill));
+    const chosen = inputs.filter(input => input.checked).length; total += chosen;
+    const toggle = document.querySelector(`#tools-categories input[data-category="${category.id}"]`);
+    toggle.checked = chosen === inputs.length; toggle.indeterminate = chosen > 0 && chosen < inputs.length;
+    toggle.closest('.skill-category').querySelector('.skill-count').textContent = `${chosen} af ${inputs.length}`;
+  }
+  $('#tools-skill-total').textContent = `${total} af ${toolsCatalog.skills.length} skills valgt. Grundreglerne er altid med.`;
+}
+$('#tools-customize').onclick = () => { renderSkillPicker(); toolsStep('skills'); };
+$('#tools-skills-all').onclick = () => { for (const input of document.querySelectorAll('#tools-categories input[data-skill]')) input.checked = true; updateSkillPicker(); };
+$('#tools-skills-back').onclick = () => toolsStep('review');
+$('#tools-skills-save').onclick = () => toolsAction(async () => {
+  toolsSkills = new Set([...document.querySelectorAll('#tools-categories input[data-skill]')].filter(input => input.checked).map(input => input.dataset.skill));
+  await reviewTools();
 });
-$('#tools-skip').onchange = () => { $('#tools-install').disabled = !$('#tools-skip').checked; };
-$('#tools-back').onclick = () => toolsStep('choose');
+$('#tools-back').onclick = () => toolsStep('folder');
 $('#tools-install').onclick = () => toolsAction(async () => {
-  const result = await call('toolsInstall', { skipConflicts: $('#tools-skip').checked });
-  toolsInstalled = { version: result.version, tools: result.tools };
-  $('#tools-done-summary').textContent = `AI Harness ${result.version} ligger nu i ${result.folder}.${result.skipped.length ? ` ${plural(result.skipped.length, 'fil med konflikt er', 'filer med konflikter er')} sprunget over.` : ''} Gennemgå ændringerne i Git, før du gemmer en version.`;
-  $('#tools-verify').replaceChildren(...result.tools.map(id => { const tool = toolsCatalog.tools.find(item => item.id === id); const box = node('div'); box.append(node('strong', tool.name), node('p', tool.verification), node('p', tool.caveat, 'hint')); return box; }));
-  $('#tools-prompt-text').textContent = `Hvilke projektinstruktioner og skills fra AI Harness har du adgang til? Hvad er kontrolordet i AI Harness-profilen? Ændr ingen filer. Forvent ${toolsCatalog.controlWord}.`;
-  toolsFolder = { ...toolsFolder, manifest: toolsInstalled };
+  const result = await call('toolsInstall', { skipConflicts: Boolean(toolsReviewState?.conflicts) });
+  const tool = toolById(toolsChoice);
+  toolsFolder = { ...toolsFolder, manifest: { version: result.version, tools: result.tools } };
+  $('#tools-prompt-intro').closest('.tools-prompt').hidden = false; $('#tools-verify').closest('details').hidden = false; $('#tools-removal').hidden = false; $('#tools-reveal').hidden = false;
+  $('#tools-done-title').textContent = `${tool.name} kan nu bruge AI Harness`;
+  $('#tools-done-summary').textContent = `Grundreglerne og ${plural(result.skills.length, 'skill', 'skills')} ligger i ${result.folder}.${result.skipped.length ? ` ${plural(result.skipped.length, 'fil, du har ændret, er', 'filer, du har ændret, er')} ikke rørt.` : ''} Gennemgå ændringerne i Git, før du gemmer en version.`;
+  $('#tools-prompt-intro').textContent = `Åbn ${result.folder} i ${tool.name}, start en ny samtale, og skriv:`;
+  $('#tools-prompt-text').textContent = 'Hvilke projektinstruktioner og skills fra AI Harness har du adgang til? Hvad er kontrolordet i AI Harness-profilen? Ændr ingen filer.';
+  $('#tools-prompt-text').dataset.expect = `Svaret bør nævne kontrolordet ${toolsCatalog.controlWord}.`;
+  $('#tools-verify-summary').textContent = `Sådan kontrollerer du det i ${tool.name}`;
+  $('#tools-verify').replaceChildren(...result.tools.map(id => { const item = toolById(id); const box = node('div'); box.append(node('strong', item.name), node('p', item.verification), node('p', item.caveat, 'hint')); return box; }), node('p', $('#tools-prompt-text').dataset.expect, 'hint'));
   toolsStep('done');
 });
-$('#tools-copy-prompt').onclick = () => copyText($('#tools-prompt-text').textContent.replace(/ Forvent .*$/, ''), $('#tools-copy-prompt'));
+$('#tools-copy-prompt').onclick = () => copyText($('#tools-prompt-text').textContent, $('#tools-copy-prompt'));
 $('#tools-reveal').onclick = () => toolsAction(() => call('toolsReveal'));
 $('#tools-done').onclick = () => $('#tools-dialog').close();
 $('#tools-removal').onclick = () => toolsAction(async () => { renderOperations($('#tools-remove-operations'), (await call('toolsRemoval')).operations); toolsStep('remove'); });
 $('#tools-remove-back').onclick = () => toolsStep('done');
 $('#tools-remove').onclick = () => toolsAction(async () => {
   const result = await call('toolsRemove');
-  toolsInstalled = null; toolsFolder = { ...toolsFolder, manifest: null };
-  for (const input of document.querySelectorAll('#tools-list input[type=checkbox]')) input.checked = false;
-  $('#tools-folder-status').textContent = `AI Harness er fjernet fra ${result.folder}.${result.kept.length ? ` Disse ændrede filer er bevaret: ${result.kept.join(', ')}.` : ''}`;
-  updateToolsReview(); toolsStep('choose');
+  toolsFolder = { ...toolsFolder, manifest: null };
+  $('#tools-done-title').textContent = 'AI Harness er fjernet';
+  $('#tools-done-summary').textContent = `AI Harness er fjernet fra ${result.folder}.${result.kept.length ? ` Disse filer, du har ændret, er bevaret: ${result.kept.join(', ')}.` : ''}`;
+  $('#tools-prompt-intro').closest('.tools-prompt').hidden = true; $('#tools-verify').closest('details').hidden = true; $('#tools-removal').hidden = true; $('#tools-reveal').hidden = true;
+  toolsStep('done');
 });
 $('#provider-account').onclick = () => action(() => call('providerAccount', $('#provider-kind').value));
 function saveIdeaDraft() {
@@ -757,15 +875,16 @@ function modelDescription(model) {
   return `${cost} · ${model.capabilities?.tools === true ? 'Værktøjskald angivet i kataloget' : model.capabilities?.tools === false ? 'Ingen værktøjskald angivet' : 'Kodeværktøjer ikke verificeret'}`;
 }
 function renderShortlist() {
-  const candidates = modelCatalog.filter(m => m.capabilities?.tools !== false).sort((a, b) => Number(b.capabilities?.tools === true) - Number(a.capabilities?.tools === true) || a.name.localeCompare(b.name, 'da')).slice(0, 3);
+  const kind = state.connections.find(c => c.id === $('#connection-select').value)?.kind;
+  const { curated, picks } = window.ModelAdvice.suggest(modelCatalog, kind);
   $('#model-shortlist').replaceChildren();
-  for (const model of candidates) {
+  for (const { model, text } of picks) {
     const button = node('button', undefined, 'model-choice'); button.type = 'button';
-    button.append(node('strong', model.name), node('span', modelDescription(model)));
+    button.append(node('strong', model.name), node('span', text));
     button.onclick = () => action(async () => { $('#model-select').value = model.id; $('#model-evidence').textContent = `${model.name}: ${modelDescription(model)}. Modtager: ${state.connections.find(c => c.id === $('#connection-select').value)?.name || 'valgt forbindelse'}. Endelig udbyder og vilkår gennemgås før afsendelse.`; updateModelSummary(); await loadRoutes(); });
     $('#model-shortlist').append(button);
   }
-  $('#model-shortlist').append(node('p', candidates.length ? 'Et udvalg fra din forbindelse: modeller med oplyste værktøjskald først, derefter alfabetisk. Ingen kvalitetsrangering. *Andre gebyrer, kvoter og udbydervilkår kan gælde.' : 'Ingen forslag med kendt eller ukendt værktøjsstøtte. Gennemgå kataloget under Avanceret.', 'hint'));
+  $('#model-shortlist').append(node('p', !picks.length ? 'Ingen forslag fra din forbindelse. Se alle modeller under Avanceret.' : curated ? 'Anbefalingerne er AI Harness\' standardvalg. Pris og vilkår vises, når du har valgt, og før du sender. Alle modeller finder du under Avanceret.' : 'Et udvalg fra din forbindelse, ikke en anbefaling. Pris og vilkår vises, når du har valgt, og før du sender.', 'hint'));
 }
 $('#model-search').oninput = () => { const query = $('#model-search').value.toLocaleLowerCase(); for (const item of $('#model-select').options) item.hidden = Boolean(item.value && item.value !== $('#model-select').value && !item.textContent.toLocaleLowerCase().includes(query)); };
 function updateWorkMode() {

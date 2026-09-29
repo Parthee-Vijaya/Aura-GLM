@@ -22,9 +22,9 @@ function library(version = '0.2.0', extra = '') {
   };
 }
 async function project(t) { const root = await fs.mkdtemp(path.join(os.tmpdir(), 'harness-installer-')); t.after(() => fs.rm(root, { recursive: true, force: true })); return fs.realpath(root); }
-async function install(root, lib, tools, options) {
-  const layout = layoutFor(lib, tools);
-  const settings = { version: lib.version, tools: layout.tools };
+async function install(root, lib, tools, options, skills) {
+  const layout = layoutFor(lib, tools, { skills });
+  const settings = { version: lib.version, tools: layout.tools, skills: layout.skills };
   const plan = await installer.plan(root, layout.entries, settings);
   return { plan, layout, settings, apply: () => installer.apply(root, layout.entries, settings, plan.token, options) };
 }
@@ -169,4 +169,25 @@ test('filer med samme indhold overtages, og en anden skill med samme navn blande
   await installer.apply(root, run.layout.entries, run.settings, run.plan.token, { skipConflicts: true });
   assert.equal(await exists(root, '.agents/skills/harness-b/references/detaljer.md'), false);
   assert.ok(JSON.parse(await read(root, installer.MANIFEST)).files['.agents/skills/harness-a/SKILL.md']);
+});
+
+test('et udvalg af skills installeres, fravalgte fjernes ved næste installation, og oversigten følger udvalget', async t => {
+  const root = await project(t);
+  await (await install(root, library(), ['codex'], undefined, ['harness-a'])).apply();
+  assert.equal(await exists(root, '.agents/skills/harness-b'), false);
+  assert.match(await read(root, 'AGENTS.md'), /`harness-a`/);
+  assert.doesNotMatch(await read(root, 'AGENTS.md'), /`harness-b`/);
+  assert.deepEqual(JSON.parse(await read(root, installer.MANIFEST)).skills, ['harness-a']);
+  assert.match(await read(root, '.harness/LAES-MIG.md'), /1 af 2 skills[\s\S]*Fravalgt: harness-b/);
+  const more = await install(root, library(), ['codex'], undefined, ['harness-b']);
+  assert.equal(more.plan.operations.find(op => op.path === '.agents/skills/harness-a/SKILL.md').action, 'fjern');
+  assert.equal(more.plan.operations.find(op => op.path === '.agents/skills/harness-b/SKILL.md').action, 'opret');
+  await more.apply();
+  assert.equal(await exists(root, '.agents/skills/harness-a'), false);
+  const none = await install(root, library(), ['codex'], undefined, []);
+  await none.apply();
+  assert.equal(await exists(root, '.agents'), false);
+  assert.doesNotMatch(await read(root, 'AGENTS.md'), /## Skills fra AI Harness/);
+  assert.match(await read(root, 'AGENTS.md'), /# Grundregler/);
+  assert.throws(() => layoutFor(library(), ['codex'], { skills: ['harness-ukendt'] }), /Ukendt skill/);
 });

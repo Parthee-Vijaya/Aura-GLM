@@ -13,7 +13,7 @@ const skill = { name: 'harness-a', title: 'A', summary: 'Gør A.', faq: { hvad: 
 const tool = { id: 'codex', name: 'Codex', vendor: 'OpenAI', category: 'agent', status: 'dokumenteret', summary: 's', verification: 'v', caveat: 'c', sources: [{ title: 'Kilde', url: 'https://example.org' }], rules: { file: 'AGENTS.md', mode: 'blok' }, skills: { dirs: ['.agents/skills'] } };
 async function fixture(t, change = {}) {
   const root = await temp(t, 'harness-bibliotek-');
-  const catalog = { schemaVersion: 2, version: '0.2.0', checkedAt: '2026-09-29', controlWord: 'PRØVE-02', skillDirs: ['.agents/skills', '.claude/skills'], neutralSkillDir: '.agents/skills', questions: [{ q: 'Spørgsmål?', a: 'Svar.' }], skills: [skill], tools: [tool], ...change.catalog };
+  const catalog = { schemaVersion: 2, version: '0.2.0', checkedAt: '2026-09-29', controlWord: 'PRØVE-02', skillDirs: ['.agents/skills', '.claude/skills'], neutralSkillDir: '.agents/skills', featuredTools: ['codex'], categories: [{ id: 'alt', title: 'Alt', summary: 'Alle skills.', skills: ['harness-a'] }], questions: [{ q: 'Spørgsmål?', a: 'Svar.' }], skills: [skill], tools: [tool], ...change.catalog };
   await fs.writeFile(path.join(root, 'catalog.json'), JSON.stringify(catalog));
   await fs.writeFile(path.join(root, 'grundregler.md'), change.rules ?? 'Version: 0.2.0\nKontrolord: PRØVE-02\n');
   await fs.writeFile(path.join(root, 'gitignore.txt'), '.env\n');
@@ -82,4 +82,10 @@ test('afviser ugyldige skills, værktøjer og uoverensstemmelser', async t => {
   await rejects({ catalog: { tools: [{ ...tool, rules: { file: '../AGENTS.md', mode: 'blok' } }] } }, /fil og form/);
   await rejects({ catalog: { tools: [{ ...tool, category: 'web', status: 'dokumenteret', rules: undefined, skills: null }] } }, /status manuel/);
   await rejects({ catalog: { tools: [tool, tool] } }, /flere gange/);
+  await rejects({ catalog: { featuredTools: ['codex', 'codex'] } }, /fremhæve ét til fire/);
+  await rejects({ catalog: { featuredTools: ['ukendt'] } }, /fremhæve ét til fire/);
+  await rejects({ catalog: { categories: [] } }, /inddele skills i kategorier/);
+  await rejects({ skill: '---\nname: harness-a\ndescription: Gør A, når opgaven kræver det.\n---\n# A\nLæs references/detaljer.md, og brug `harness-ukendt`, hvis den er installeret.\n' }, /ukendt skill/);
+  await rejects({ skill: '---\nname: harness-a\ndescription: Gør A, når opgaven kræver det.\n---\n# A\nLæs references/detaljer.md, og brug `harness-a`.\n' }, /tåle, at skillen er fravalgt/);
+  await rejects({ catalog: { categories: [{ id: 'a', title: 'A', summary: 'A.', skills: ['harness-a'] }, { id: 'b', title: 'B', summary: 'B.', skills: ['harness-a'] }] } }, /præcis én kategori/);
 });
