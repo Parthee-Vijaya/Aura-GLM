@@ -17,11 +17,16 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: read
+    outputs:
+      udgiv: ${{ steps.adgang.outputs.udgiv }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: main
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - name: Hent faktiske udgivelser
@@ -31,11 +36,33 @@ jobs:
           gh api repos/ai-alliancen-org/ai-harness/releases?per_page=100 > "$RUNNER_TEMP/releases.json"
           gh api repos/ai-alliancen-org/ai-harness > "$RUNNER_TEMP/repository.json"
           node scripts/build-pages.cjs "$RUNNER_TEMP/releases.json" "$RUNNER_TEMP/repository.json"
-      - uses: actions/upload-pages-artifact@v3
+      - name: Afgør om siden må udgives
+        id: adgang
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if synlighed=$(gh api repos/ai-alliancen-org/ai-harness/pages --jq '.public' 2> "$RUNNER_TEMP/pages-fejl.txt"); then
+            if [ "$synlighed" != false ]; then
+              echo "::error title=Pages er ikke adgangsbeskyttet::Siden udgives kun, når Pages-API'et oplyser public: false. Svaret var: $synlighed"
+              exit 1
+            fi
+            echo "udgiv=true" >> "$GITHUB_OUTPUT"
+          elif grep -q 'HTTP 404' "$RUNNER_TEMP/pages-fejl.txt"; then
+            echo "udgiv=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Downloadsiden er ikke udgivet::GitHub Pages er ikke slået til (Pages-API'et svarede HTTP 404). Siden er bygget, men intet er udgivet."
+          else
+            cat "$RUNNER_TEMP/pages-fejl.txt" >&2
+            exit 1
+          fi
+      # Downloadpakkernes .gitignore-filer skal med; v4 og nyere udelader ellers filer, der starter med punktum.
+      - uses: actions/upload-pages-artifact@v5
+        if: steps.adgang.outputs.udgiv == 'true'
         with:
           path: .cache/pages
+          include-hidden-files: true
   deploy:
     needs: build
+    if: needs.build.outputs.udgiv == 'true'
     runs-on: ubuntu-latest
     permissions:
       pages: write
@@ -50,6 +77,6 @@ jobs:
         run: |
           gh api repos/ai-alliancen-org/ai-harness/pages --jq '.public == false' > "$RUNNER_TEMP/private-pages.txt"
           test "$(cat "$RUNNER_TEMP/private-pages.txt")" = true
-      - uses: actions/configure-pages@v5
-      - uses: actions/deploy-pages@v4
+      - uses: actions/configure-pages@v6
+      - uses: actions/deploy-pages@v5
         id: deployment
