@@ -12,6 +12,29 @@ Kontrolleret 28. september 2026. Dette er status for den aktuelle arbejdsmappe, 
 - En tidligere plan nulstilles efter gendannelse. Markøren kontrolleres ved genåbning, også når samtalefilen ikke kunne opdateres ved første forsøg.
 - Fejlrapporten er gennemgået og gemt gennem filvælgeren. Den bruger faste statusfelter og udelader projektindhold, filstier, serveradresser, kontonavne og nøgler. Hjælpeskærmens unødvendige kontakt til nøgleringen er fjernet. Nøglelagring står som ikke kontrolleret; en fejlrapport må ikke udløse et nøgleopslag.
 
+## Rolige skærme · 30. september 2026
+
+Afprøvet på Mac med OpenCode 1.18.33:
+
+- **Målt i Electron:** `npm run measure:screens` åbner 32 skærme og dialoger med en kontrolleret model og tæller det, der er synligt i første lag.
+  - Synlige ord faldt fra 3.789 til 1.923, 49 % færre.
+  - Valg faldt fra 209 til 186, plus 46 ⓘ.
+  - Klik pr. opgave er uændret: 5 for at forbinde Claude, 5 fra idé til første udkast og 2 for at fortryde.
+  - Der var ingen sidefejl.
+  - De største fald er "Se alle oplysninger" fra 1.162 til 250 ord, nøglehjælpen fra 217 til 100 og AI-forbindelser fra 107 til 9.
+- **Enhedstestet:** 117 automatiske tests består, når testfilerne køres én ad gangen.
+- **Afprøvet i Electron med en kontrolleret modelserver:** Alle 15 Electron- og motorprøver består efter tilpasningen til de nye skærme. Det samme gør begge skill-prøver og begyndergennemgangen med 27 skærmbilleder uden sidefejl.
+  - Testene tilføjer nu forbindelser ad samme vej som en bruger: AI-forbindelser › Tilføj forbindelse › Vælg en anden.
+  - `test:preferences` afprøver den flade liste og de automatisk huskede valg.
+  - `test:features` afprøver, at ⓘ åbner og lukker, både i og uden for en dialog. Kontrollen fandt en fejl, som er rettet: Et nyt klik på samme ⓘ åbnede boblen igen i stedet for at lukke den.
+  - Rettelsen kom efter den samlede kørsel og er kun afprøvet med `test:features`. Ingen andre prøver klikker på ⓘ.
+
+Ikke afprøvet:
+
+- En person uden teknisk baggrund, der bruger skærmene. Målingen viser mængden af tekst, ikke om teksten forstås.
+- Skærmlæser og tastatur i ⓘ-boblen ud over fokus og Escape.
+- Windows og en pakket app.
+
 ## Funktioner og fælles skills · 30. september 2026
 
 Afprøvet på Mac med OpenCode 1.18.33:
@@ -45,7 +68,7 @@ Afprøvet på Mac med OpenCode 1.18.33:
   7. et projekt uden versioner, som hverken får Git eller versionsknapper
   8. genstart, hvor valget er husket og spørgsmålet ikke stilles igen
 
-  Introduktionsprøven viser spørgsmålet ved første start med to valg, hvor Hele pakken er anbefalet. De øvrige tolv Electron-prøver og skill-prøverne i eget kodeværktøj består også: OpenCode 1.18.33 og 1.17.15 samt Claude Code 2.1.150. `verify-framework-preview` bestod ved anden kørsel. Begyndergennemgangen gav 27 skærmbilleder uden sidefejl.
+  Introduktionsprøven viser spørgsmålet ved første start med to valg, hvor Hele pakken er anbefalet. Deling og udgivelse er ikke med i Hele pakken. Prøverne af Del og Sikkerhedskopi slår den derfor til først, og begyndergennemgangen gør det gennem panelet Funktioner. `verify-resume` ventede reelt kun 20 sekunder på planen, fordi ventetiden stod på den forkerte plads. Det er rettet. `verify-hosting` er rettet til den nuværende opsætning og består. De øvrige tolv Electron-prøver og skill-prøverne i eget kodeværktøj består også: OpenCode 1.18.33 og 1.17.15 samt Claude Code 2.1.150. `verify-framework-preview` bestod ved anden kørsel. Begyndergennemgangen gav 27 skærmbilleder uden sidefejl.
 
 Målt: Med alle funktioner slået til er systemprompten vokset fra ca. 23.400 til 29.900 tegn pr. modelkald. Det skyldes listen over de 12 skills, som modellen skal kende for at kunne hente dem. Med færre funktioner bliver den kortere. En skills fulde tekst sendes kun, når den hentes.
 
@@ -111,7 +134,7 @@ Ikke afprøvet:
   - Zens gratis modeller afviser appen, fordi den melder sig som `harness`.
   - Prøven med Mistrals gratis plan (`npm run test:live-app`) ventede 30 minutter uden nøgle og blev derefter stoppet efter aftale.
 - En pakket app med OpenCode 1.18.33, Windows, Intel-Mac og en person uden teknisk baggrund.
-- `verify-hosting` fejler også på den committede version, fordi den leder efter en foldeboks, der ikke findes længere. `verify-generated-preview` er en manuel prøve, der kræver en projektmappe.
+- `verify-hosting` fejlede på den committede version, fordi den ledte efter en foldeboks og filvalg, der er flyttet. Den er rettet 30. september 2026 og består. `verify-generated-preview` er en manuel prøve, der kræver en projektmappe.
 
 ## Få valg og udvælgelse af skills · 29. september 2026
 

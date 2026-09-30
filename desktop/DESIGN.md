@@ -30,19 +30,45 @@ Tæl de synlige valg, før en skærm kaldes færdig, og gennemfør forløbet i a
   - Skills og "Altid slået til" er foldet sammen.
   - Med et projekt åbent vælger man Alle projekter eller Kun projektet. En undtagelse står under funktionen med Brug standarden.
   - En slået fra funktion skjuler sine knapper, fx Del, Sikkerhedskopi, Gem version eller designvalgene. Den sletter intet.
-- "Hvad vil du bygge?" viser idé, projektnavn og Opret og fortsæt. Projektet gemmes i Dokumenter › AI Harness uden mappedialog; "Vælg en anden placering" er et link. Standardvalg, AI og hosting, design og avancerede valg ligger under Flere valg.
+- "Hvad vil du bygge?" viser idé, projektnavn og Opret og fortsæt. Projektet gemmes i Dokumenter › AI Harness uden mappedialog; "Vælg en anden placering" er et link.
+  - Flere valg er én flad liste med AI, udgivelse, tests og design, hver med ⓘ. Farve, logo og inspiration ligger ét lag længere nede.
+  - De seneste valg huskes til næste projekt uden afkrydsning. "Glem dem" nulstiller dem.
 - Harness i dit kodeværktøj viser fire kort og "Et andet værktøj" med søgning. Et klik fører videre til mappevalget og derefter til et resumé i almindeligt dansk; de præcise filændringer ligger under Se de præcise ændringer.
 - Næste trin viser kun det valgte forløb. Nøglehjælp og tekniske oplysninger er foldet sammen. GitHub og lokale værktøjer ligger under Avanceret opsætning. Tilbage og Vælg senere er altid tilgængelige.
-- Sidepanelet indeholder projekter, Nyt projekt, Åbn projekt og Indstillinger.
+- Sidepanelet indeholder projekter, Nyt projekt, Åbn projekt og Indstillinger. Indstillinger har AI-forbindelser, Funktioner og Hjælp og feedback.
+- AI-forbindelser er en liste med Rediger på hver forbindelse. Tilføj forbindelse går gennem den guidede opsætning med de tre udbyderkort. Rediger viser formularen med Test forbindelse og Fjern forbindelse.
 - Arbejdsområdet består af samtale og preview med en flytbar skillelinje.
 - Skrivefeltet er den vigtigste handling. Under det står den aktive model, udbyder og indsats og samtalens tokens ind og ud med en anslået pris. Modelknappen åbner Din AI. Den viser højst tre modeller: for kendte udbydere udbyderens eget udgangspunkt og to alternativer med faktuelle forklaringer, ellers et udvalg. Et klik på et modelkort vælger og lukker. Alle modeller og forbindelser ligger under Avanceret. Referencer vises kun, når projektet har referencefiler.
-- Før første afsendelse viser "Før du sender" fire linjer: AI, hvor, træning og pris. Resten ligger under "Se alle oplysninger". Resuméet vises igen, når modtager, model, pris, vilkår eller delt materiale ændrer sig, ikke ved skift fra plan til bygning.
+- Før første afsendelse viser "Før du sender" fire linjer: AI, hvor, træning og pris.
+  - Under dem står én linje om pris og data med ⓘ. Tidligere samtale nævnes kun, når den sendes med.
+  - "Se alle oplysninger" er korte rækker, og lange tekster som appens vejledning og planen har hver sin fold.
+  - Resuméet vises igen, når modtager, model, pris, vilkår eller delt materiale ændrer sig, ikke ved skift fra plan til bygning.
 - Første filændring i en opgave spørger, om AI'en må ændre filer i projektet. Filen vises med sin sti i projektet. "Tillad for denne opgave" gælder kun projektmappen og kun til opgaven slutter; kommandoer, web og filer udenfor spørger hver gang.
 - Planlægning fører til et konkret forslag. Brugeren vælger at bygge; efter bygning kan man fortsætte med rettelser.
 - Nye projekter har versioner fra start. Efter hver AI-opgave gemmes en version, og resultatkortet tilbyder Fortryd opgaven. Versioner viser "Alt er gemt" eller antallet af ugemte ændringer, én knap til Gem version og en historik med tidspunkter og Gå tilbage hertil. Filvalg, branch og identitet ligger under Avanceret og Se detaljer.
 - Appen åbner det projekt, der sidst var åbent. Et projekt, der er lukket med Nyt projekt, åbnes ikke igen.
-- Projektmenuen indeholder versioner, sikkerhedskopi og ny samtale. Del åbner udgivelse til test.
+- Projektmenuen indeholder versioner, sikkerhedskopi og ny samtale. Del åbner udgivelse til test. Del og Sikkerhedskopi vises kun, når Deling og udgivelse er slået til. Funktionen er ikke med i den anbefalede pakke, så længe Del kræver udviklerværktøjer.
 - Preview viser skærmstørrelse og genindlæsning. Server, skalering og egne mål ligger i en menu. Hvis en framework-app mangler sin server, vises én handling i det tomme preview: Start forhåndsvisning. Installation og start gennemgås i en dialog; procesloggen er foldet sammen.
+
+## Rolige skærme
+
+Hver skærm og dialog følger samme mønster:
+- **Én ting øverst:** ét spørgsmål eller én status i almindelige ord og én primær knap.
+- **Højst én linje forklaring.** Resten ligger bag en ⓘ eller Se detaljer. Fagord som branch, commit, identitet, endpoint og token står kun under Avanceret.
+- **Indstillinger som lister:** en kontakt eller en liste pr. række. Detaljer ligger på et lag længere nede, ikke foldet ud på samme skærm.
+- **Det, der afgør beslutningen, er synligt:** Modtageren af data, prisen og handlinger, der ikke kan fortrydes, står altid som én kort linje. Tidligere samtale nævnes, når den sendes med.
+
+ⓘ er en lille rund knap:
+- Et klik åbner en boble ved knappen, og Escape eller et klik udenfor lukker den. Den åbner aldrig kun ved, at man holder musen over.
+- Teksten står i knappens `data-info`, og knappen har et tilgængeligt navn, fx "Mere om pris".
+- Inde i en dialog flyttes boblen ind i dialogen, så skærmlæsere kan nå den.
+
+`npm run measure:screens` måler alle skærme med en kontrolleret model:
+- synlige ord, valg, ⓘ og felter pr. skærm;
+- klik pr. opgave;
+- et skærmbillede af hver.
+
+Kør målingen før og efter en ændring af en skærm, og sammenlign. Der er ingen fast grænse; tallene viser, om en skærm vokser.
 
 ## Hvad der vises hvornår
 

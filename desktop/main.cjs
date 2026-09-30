@@ -101,7 +101,8 @@ handle('project:create', input => exclusive(async () => {
     try { await workbench.git.startProject(created.root); }
     catch (error) { versionWarning = `Versioner kunne ikke slås til: ${error.message} Projektet er oprettet, og du kan gemme versioner senere.`; }
   }
-  if (input.remember === true) await new Preferences(workbench.store).save(startup.values);
+  // De seneste valg er udgangspunktet for næste projekt. Brugeren kan glemme dem under Flere valg.
+  await new Preferences(workbench.store).save(startup.values);
   const opened = await openProject(created.root);
   if (versionWarning) opened.warnings.push(versionWarning);
   return activate(opened);

@@ -10,12 +10,13 @@ const { permissions, writeSkills } = require('../core/engine.cjs');
 const { appRules } = require('../core/project-guidance.cjs');
 const profiles = path.join(__dirname, '../../profiles');
 async function temp(t) { const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'harness-funktioner-'))); t.after(() => fs.rm(root, { recursive: true, force: true })); return root; }
-const definitions = [{ id: 'versioner' }, { id: 'design' }, { id: 'deling', requires: ['versioner'] }];
+const definitions = [{ id: 'versioner' }, { id: 'design' }, { id: 'deling', requires: ['versioner'], default: false }];
 
-test('uden valg er alle funktioner slået til, og en funktion følger den, den bygger på', () => {
-  assert.deepEqual(resolve(definitions), { versioner: true, design: true, deling: true });
+test('uden valg gælder den anbefalede pakke, og en funktion følger den, den bygger på', () => {
+  assert.deepEqual(resolve(definitions), { versioner: true, design: true, deling: false });
+  assert.deepEqual(resolve(definitions, { deling: true }), { versioner: true, design: true, deling: true });
   assert.deepEqual(resolve(definitions, { versioner: false }), { versioner: false, design: true, deling: false });
-  assert.deepEqual(resolve(definitions, { design: false }, { design: true }), { versioner: true, design: true, deling: true }, 'en undtagelse går forud for standarden');
+  assert.deepEqual(resolve(definitions, { design: false }, { design: true }), { versioner: true, design: true, deling: false }, 'en undtagelse går forud for standarden');
   assert.deepEqual(couple(definitions, { deling: true }), { deling: true, versioner: true });
   assert.deepEqual(couple(definitions, { versioner: false }), { versioner: false, deling: false });
 });
@@ -24,7 +25,7 @@ test('standarden gælder alle projekter; undtagelser gemmes kun, når de afviger
   const store = new Store(await temp(t)), features = new Features(store, () => loadLibrary(profiles));
   const first = await features.get();
   assert.equal(first.chosen, ''); assert.equal(first.list.length, 6);
-  assert.ok(Object.values(first.effective).every(Boolean), 'uden et valg er hele pakken slået til');
+  assert.deepEqual(Object.keys(first.effective).filter(id => !first.effective[id]), ['deling'], 'uden et valg er alt undtagen deling slået til');
   assert.equal(first.list.find(feature => feature.id === 'kvalitet').skills[0].title, 'Kodestil og vedligeholdelse');
   // Vælg selv ved første start: kun versioner.
   const picked = await features.save(null, { scope: 'alle', chosen: 'valgt', values: { versioner: true, planlaegning: false, design: false, sikkerhed: false, kvalitet: false, deling: false } });
@@ -42,6 +43,10 @@ test('standarden gælder alle projekter; undtagelser gemmes kun, når de afviger
   // Når standarden ændres til det samme som undtagelsen, betyder undtagelsen ikke noget, men den bevares til den ændres.
   const all = await features.save('/projekt', { scope: 'alle', values: { design: true } });
   assert.equal(all.chosen, 'valgt', 'valget ved første start bevares'); assert.equal(all.defaults.design, true);
+  // Hele pakken følger igen katalogets anbefaling, også efter Vælg selv.
+  const recommended = await features.save(null, { scope: 'alle', chosen: 'alle', values: {} });
+  assert.equal(recommended.chosen, 'alle'); assert.deepEqual(recommended.defaults, first.defaults);
+  assert.deepEqual((await store.read()).features.on, {}, 'intet valg gemmes, så en ny anbefaling slår igennem');
   for (const input of [null, { scope: 'alle', values: { ukendt: true } }, { scope: 'alle', values: { design: 'ja' } }, { scope: 'alle', values: { design: null } }, { scope: 'projekt', values: {}, chosen: 'alle' }, { scope: 'alle', values: {}, chosen: 'nogle' }])
     await assert.rejects(features.save('/projekt', input), /Ugyldigt valg|Ukendt funktion/);
   await assert.rejects(features.save(null, { scope: 'projekt', values: { design: true } }), /Åbn et projekt/);
@@ -99,7 +104,7 @@ test('appens regler følger funktionerne', () => {
   assert.match(full, /gemmer selv en version efter hver AI-opgave/); assert.match(full, /Del-knap/); assert.match(full, /designlinks/); assert.match(full, /skill-værktøjet: harness-kodestil/);
   assert.doesNotMatch(full, /planlægning før bygning fra/);
   const none = appRules({ ...all, versioner: false, deling: false, planlaegning: false, design: false }, { links: ['https://design.example'], mode: 'free' });
-  assert.match(none, /slået versioner fra/); assert.match(none, /slået deling og udgivelse fra/); assert.match(none, /Byg direkte/); assert.match(none, /ikke slået skills fra AI Harness til/);
+  assert.match(none, /slået versioner fra/); assert.match(none, /Deling og udgivelse er slået fra/); assert.match(none, /Byg direkte/); assert.match(none, /ikke slået skills fra AI Harness til/);
   assert.doesNotMatch(none, /designlinks/);
   assert.match(appRules(all, { autoCheckpoint: false }), /Brugeren gemmer versioner i appen/);
   for (const text of [full, none]) assert.match(text, /Bed aldrig om API-nøgler/);

@@ -92,6 +92,7 @@ test('afviser ugyldige skills, værktøjer og uoverensstemmelser', async t => {
   await rejects({ catalog: { features: [{ id: 'a', title: 'A', summary: 'A.', skills: ['harness-a'] }, { id: 'b', title: 'B', summary: 'B.', skills: ['harness-a'] }] } }, /præcis én funktion/);
   await rejects({ catalog: { features: [{ id: 'a', title: 'A', summary: 'A.', skills: [] }] } }, /mangler id, titel/);
   await rejects({ catalog: { features: [{ id: 'a', title: 'A', summary: 'A.', requires: ['ukendt'], skills: ['harness-a'] }] } }, /ukendt funktion/);
+  await rejects({ catalog: { features: [{ id: 'a', title: 'A', summary: 'A.', default: 'nej', skills: ['harness-a'] }] } }, /ugyldig standard/);
 });
 
 test('funktionerne i appen dækker hele biblioteket og bygger kun på kendte funktioner', async () => {
@@ -99,4 +100,5 @@ test('funktionerne i appen dækker hele biblioteket og bygger kun på kendte fun
   assert.deepEqual(library.features.map(feature => feature.id), ['versioner', 'planlaegning', 'design', 'sikkerhed', 'kvalitet', 'deling']);
   assert.deepEqual(library.features.flatMap(feature => feature.skills).sort(), library.skills.map(skill => skill.name).sort());
   assert.deepEqual(library.features.find(feature => feature.id === 'deling').requires, ['versioner'], 'Del og sikkerhedskopi udgiver fra en gemt version');
+  assert.deepEqual(library.features.filter(feature => feature.default === false).map(feature => feature.id), ['deling'], 'Del er ikke med i den anbefalede pakke, så længe den kræver udviklerværktøjer');
 });

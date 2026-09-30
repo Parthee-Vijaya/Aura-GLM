@@ -268,13 +268,16 @@ Brugeren besluttede tre ting:
   - **Deling og udgivelse:** Del og Sikkerhedskopi. Skills: udgivelse og gendannelse, overdragelse og drift.
 
   Deling bygger på versionerne, fordi Del og Sikkerhedskopi udgiver fra en gemt version. Slås den ene til, følger den anden med, og omvendt.
+- **Anbefalet pakke:** Hele pakken er alle funktioner undtagen Deling og udgivelse. Brugeren besluttede, at testere ikke skal møde Del, så længe den kræver Vercel CLI eller Azure CLI. Deling kan slås til under Indstillinger › Funktioner.
+  - Kataloget markerer det med `"default": false`.
+  - Hele pakken gemmer ingen enkeltvalg, så en senere ændring af anbefalingen også gælder dem, der valgte den.
 - **Altid slået til:** Disse kan ikke slås fra:
   - grundreglerne;
   - overblikket før afsendelse;
   - godkendelse af kommandoer, websider og filer uden for projektet;
   - krypterede API-nøgler;
   - model, tokens og pris under skrivefeltet.
-- **Første start:** Efter AI-trinnet spørger appen: "Hvad skal AI Harness hjælpe med?". Der er to valg: Hele pakken (anbefalet) og Vælg selv. Vælg selv starter med alt slået fra, og knappen siger, hvor mange funktioner man fortsætter med. Vælg senere beholder standarden, som er alle funktioner. Brugere, der har været igennem introduktionen før, bliver ikke spurgt.
+- **Første start:** Efter AI-trinnet spørger appen: "Hvad skal AI Harness hjælpe med?". Der er to valg: Hele pakken (anbefalet) og Vælg selv. Vælg selv starter med alt slået fra, og knappen siger, hvor mange funktioner man fortsætter med. Vælg senere beholder den anbefalede pakke. Brugere, der har været igennem introduktionen før, bliver ikke spurgt.
 - **Indstillinger › Funktioner:**
   - Én kontakt pr. funktion. Man vælger mellem Alle projekter og Kun det åbne projekt.
   - En undtagelse gemmes kun, hvis den afviger fra standarden, og kan fjernes med Brug standarden.
@@ -295,3 +298,70 @@ Brugeren besluttede tre ting:
   - Omvendt kunne udvalgte referencer ikke læses i projekter uden Git.
   - Reglerne skrives nu i begge former. Det er afprøvet mod den rigtige OpenCode med og uden Git.
 
+## Foreslåede retninger · 30. september 2026
+
+Brugeren foreslog to retninger under milepælen Funktioner. Rolige skærme er bygget; se afsnittet nedenfor. Integrationsskills er ikke besluttet.
+
+### Rolige skærme
+
+Brugeren oplever mange af appens skærme som tekstmættede og svære at bruge, fx Versioner, Tilslut din AI, indstillinger og Del. De skal være enklere, med lange forklaringer skjult i små forklaringer eller sammenfoldede afsnit.
+
+Tilgangen, brugeren har valgt som næste milepæl:
+- **Ét mønster for alle skærme:**
+  - ét spørgsmål eller én status i almindelige ord;
+  - én primær knap og højst én linje forklaring;
+  - resten bag ⓘ eller Se detaljer;
+  - indstillinger som lister med kontakter og detaljer på et nyt lag;
+  - fagord som branch, commit, identitet og endpoint kun under Avanceret.
+- **Det, der afgør beslutningen, står synligt:** modtageren af data, pris og handlinger, der ikke kan fortrydes, står som én kort linje. Forklaringer bag ⓘ åbnes med et klik og kan bruges med tastatur.
+- **Målt før og efter:** antal ord, synlige valg og klik pr. opgave for hver skærm.
+
+### Integrationsskills fra leverandører og kommuner
+
+Leverandører, der vil gøre det let for kommuner at integrere, kan bidrage med skills som pull requests. Kommuner kan på samme måde bidrage med fx gratis hostingmuligheder eller nye standarder.
+- **Foreslåede standardskills:** Promte, Datafordeleren, CVR, websøgning, KMD Opus, eDoc/P360, KMD Nexus og SharePoint.
+- **Eksempelskills:** skal vise, hvordan man opretter en bruger, får en API-nøgle og får åbnet i en firewall.
+
+Forbehold, der skal på plads, før der åbnes for bidrag:
+- **Gennemgang:** en ansvarlig for review og en fast skabelon. Hver skill angiver ejer, kilder, kontroldato og hvilke data der sendes hvorhen. En leverandør vedligeholder kun sin egen skill.
+- **Neutralitet som ved AI-udbyderne:** faktuelle skills, der står side om side. En fælles standard får sin egen skill, og leverandørens skill bygger ovenpå.
+- **Adgang via IT:** Adgang, der kræver aftaler eller certifikater, fører til en færdig bestilling til IT-afdelingen i stedet for trin, en begynder selv udfører.
+- **Følsomme data:** Skills til systemer med fx helbredsdata starter med syntetiske data, databeskyttelsesrådgiveren og en konsekvensanalyse.
+- **Nøgler og værktøjer:** Integrationsnøgler kræver et sikkert sted i appen, og websøgning kræver et værktøj med sin egen pris og sit eget dataflow. Begge er appfunktioner, ikke kun skills.
+- **Rækkefølge:** skabelon og bidragsregler, derefter to eller tre åbne registre, der kan afprøves fra ende til anden, og til sidst ét eksempel via IT-afdelingen. Adgangskravene undersøges pr. system med kilder.
+
+## Rolige skærme · 30. september 2026
+
+Brugeren oplevede appens skærme som tekstmættede og svære at bruge. Alle skærme følger nu mønsteret i [DESIGN.md](../desktop/DESIGN.md#rolige-skærme):
+- én ting øverst og højst én linje forklaring;
+- resten bag en ⓘ, der åbnes med et klik;
+- indstillinger som lister;
+- modtager, pris og handlinger, der ikke kan fortrydes, altid synlige.
+
+Brugeren besluttede:
+- **Ingen fast grænse.** Skærmene måles før og efter med `npm run measure:screens`, men en test fejler ikke, hvis en skærm vokser.
+- **De seneste valg huskes automatisk** i projektopstarten. Afkrydsningen "Husk disse valg" er fjernet; "Glem dem" nulstiller.
+
+Ændret:
+- **AI-forbindelser** er ét menupunkt i stedet for to:
+  - en liste med Rediger på hver forbindelse;
+  - Tilføj forbindelse går gennem den guidede opsætning med de tre udbyderkort;
+  - Rediger har Test forbindelse og Fjern forbindelse.
+- **Nøglehjælpen:** Hvert trin er én kort linje med sin knap og en ⓘ til uddybningen. Prisen står én gang: "Du betaler pr. token, og prisen varierer meget med opgavens kompleksitet."
+- **Flere valg** er én flad liste: AI, udgivelse, tests og design. Kun farve, logo og inspiration ligger et lag længere nede.
+- **Før du sender:**
+  - Første lag har de fire linjer og én linje om betaling og data.
+  - Tidligere samtale nævnes kun, når den sendes med.
+  - Under "Se alle oplysninger" har lange tekster hver sin fold.
+- **Versioner:** Automatisk gemning er en kontakt, versionsnavne forkortes, og filvalg, branch og identitet samles under Avanceret.
+- **Funktioner:** Skills står bag en ⓘ, og hver funktion har en beskrivelse på én linje.
+- **Arbejdsområdet:** "Forbered første besked" vises kun, når skrivefeltet er tomt.
+
+Målt i Electron med en kontrolleret model på 32 skærme:
+- **Synlige ord:** fra 3.789 til 1.923, 49 % færre.
+- **Valg:** fra 209 til 186, plus 46 ⓘ.
+- **Klik pr. opgave:** uændret, nemlig 5 for at forbinde Claude, 5 fra idé til første udkast og 2 for at fortryde.
+- **Største fald:**
+  - "Se alle oplysninger" fra 1.162 til 250 ord;
+  - nøglehjælpen fra 217 til 100;
+  - AI-forbindelser fra 107 til 9.

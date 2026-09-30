@@ -23,7 +23,7 @@ const readline = require('node:readline');
   const input=readline.createInterface({input:process.stdin,terminal:false});key=await new Promise(resolve=>input.once('line',resolve));input.close();execFileSync('stty',['echo'],{stdio:'inherit'});process.stdout.write('\n');
   }
   app=await electron.launch({executablePath:require('electron'),args:[path.join(__dirname,'..'),'--user-data-dir='+path.join(root,'appdata')],env:{...process.env,ELECTRON_RUN_AS_NODE:undefined}});
-  const page=await app.firstWindow(); await require('./ui-test-helpers.cjs').skipIntroduction(page);await page.waitForSelector('#onboarding'); await page.waitForFunction(() => !document.querySelector('#new').disabled); await require('./ui-test-helpers.cjs').menuClick(page, '#setup-button');await page.click('#setup-local');
+  const page=await app.firstWindow(); await require('./ui-test-helpers.cjs').skipIntroduction(page);await page.waitForSelector('#onboarding'); await page.waitForFunction(() => !document.querySelector('#new').disabled); await require('./ui-test-helpers.cjs').openSetup(page);await page.click('#setup-local');
   await app.evaluate(({dialog},project)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[project]});},project);await page.click('#open');await page.waitForSelector('#workspace:not([hidden])');
   const result=await page.evaluate(value=>window.harness.saveConnection(value),{kind:provider,name:'Afgrænset modelprøve',baseURL:provider==='openrouter'?'':process.env.HARNESS_LIVE_URL||'http://127.0.0.1:11434',apiKey:key});if(!result.ok)throw new Error(result.error);
   const connection=result.value.connections[0];if(key)assert.equal(JSON.stringify(result).includes(key),false);

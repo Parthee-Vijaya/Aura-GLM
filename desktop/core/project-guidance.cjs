@@ -25,7 +25,7 @@ function appRules(features, { skills = [], links = [], mode = 'free', autoCheckp
       : 'Brugeren har slået versioner fra i appen. Kør ikke Git-kommandoer, der ændrer historik, index, branches eller remotes, og bed ikke brugeren oprette et repository. Sig tydeligt før større ændringer, at de ikke kan fortrydes med en version.',
     features.deling
       ? 'Udgivelse sker kun gennem appens Del-knap efter brugerens gennemgang. Udgiv ikke selv, og opret ikke konti eller betalte tjenester.'
-      : 'Brugeren har slået deling og udgivelse fra i appen. Udgiv ikke, og opret ikke konti eller tjenester til hosting.'];
+      : 'Deling og udgivelse er slået fra i appen. Udgiv ikke, og opret ikke konti eller tjenester til hosting.'];
   if (!features.planlaegning && mode === 'free') lines.push('Brugeren har slået planlægning før bygning fra. Byg direkte ud fra beskeden, og stil kun spørgsmål, der ændrer resultatet væsentligt.');
   if (features.design && links.length) lines.push(designResearch);
   lines.push(skills.length

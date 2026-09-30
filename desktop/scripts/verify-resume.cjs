@@ -43,18 +43,15 @@ const http = require('node:http');
     await page.fill('#prompt', text); await page.locator('#draft-status').filter({ hasText: 'Kladde gemt' }).waitFor();
   }
   try {
-    await launch(); await open(project);
-    await require('./ui-test-helpers.cjs').menuClick(page, '#connections-button'); await page.selectOption('#provider-kind', 'compatible');
-    await page.fill('#connection-name', 'Kontrolleret lokal forbindelse'); await page.fill('#base-url', `http://127.0.0.1:${server.address().port}/v1`); await page.click('#save-connection');
-    await page.locator('#connection-feedback').filter({ hasText: 'Forbindelsen er gemt' }).waitFor(); await page.click('[data-close="connections-dialog"]');
-    const connection = (await page.evaluate(() => window.harness.connectionState())).value.connections[0];
+    await launch(); await require('./ui-test-helpers.cjs').enableSharing(page); await open(project);
+    const connection = await require('./ui-test-helpers.cjs').addConnection(page, { name: 'Kontrolleret lokal forbindelse', baseURL: `http://127.0.0.1:${server.address().port}/v1` });
     await require('./ui-test-helpers.cjs').taskOptions(page); await page.selectOption('#connection-select', connection.id);
     await page.locator('#model-shortlist button').first().click(); await require('./ui-test-helpers.cjs').selectMode(page, 'plan');
     await draft('Lav en side til fælleshuset. Samtalemærke: violet-cykel.'); await page.click('#send');
     await page.waitForSelector('#data-dialog[open]');
     assert.match(await page.locator('#data-warning').textContent(), /ukendte|ukendt/i);
     await page.screenshot({ animations: 'disabled', path: path.join(root, 'datagennemgang.png') }); await page.click('#accept-send');
-    await page.waitForFunction(() => !document.querySelector('#plan-card').hidden && !document.querySelector('#build-plan').disabled, { timeout: 60000 });
+    await page.waitForFunction(() => !document.querySelector('#plan-card').hidden && !document.querySelector('#build-plan').disabled, null, { timeout: 60000 });
     await draft('Husk plads til fem aktiviteter.'); const beforeRestart = requests.length, catalogsBefore = catalogs;
     // Projektet, der var åbent ved lukning, åbnes igen af sig selv med samtale og kladde.
     await app.close(); app = null; await launch();

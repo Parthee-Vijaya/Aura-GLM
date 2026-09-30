@@ -30,7 +30,7 @@ Udfyld først invitationen, når download og den aftalte model er afprøvet. Der
 ## Det testeren skal prøve
 
 1. Installer og åbn appen uden terminalkommandoer. Gå gennem introduktionen, og forbind den aftalte AI via adgangsnøgle eller AI på computeren. Prøv også Tilbage og Vælg senere. Når appen spørger "Hvad skal AI Harness hjælpe med?", så forklar med dine egne ord forskellen på Hele pakken og Vælg selv, før du vælger. Noter, om hvert trin er forståeligt uden forklaring.
-2. Beskriv din idé med egne ord, og opret projektet. Find bagefter projektmappen under Dokumenter › AI Harness. Forklar med dine egne ord, hvad appen vil sende til modellen, når resuméet **Før du sender** vises.
+2. Beskriv din idé med egne ord, og opret projektet. Mangler du en forklaring undervejs, så åbn en ⓘ, og sig, om den hjalp. Find bagefter projektmappen under Dokumenter › AI Harness. Forklar med dine egne ord, hvad appen vil sende til modellen, når resuméet **Før du sender** vises.
 3. Læs AI’ens forslag, og bed om en ændring af planen. Byg derefter første udkast. Når AI’en spørger, om den må ændre filer, så forklar forskellen på **Tillad for denne opgave** og **Kun denne fil**, før du vælger.
 4. Prøv appen i preview på computer- og mobilbredde. Bed AI’en rette én konkret ting, og kontroller resultatet.
 5. Efter en AI-opgave: brug Fortryd opgaven på resultatkortet, og kontroller forhåndsvisningen. Åbn Versioner i projektmenuen, og gå tilbage til AI'ens version med Gå tilbage hertil. Lav en lille ændring selv, og gem den med Gem version. Forklar med dine egne ord, hvad en version er.
@@ -81,12 +81,13 @@ npm test
 npm run test:introduction
 npm run test:features
 npm run test:app-skills
+npm run measure:screens
 npm run test:resume
 npm run test:recovery
 npm run test:frameworks
 ```
 
-`test:features` gennemgår Funktioner i Electron: første start med Vælg selv, undtagelser pr. projekt, et projekt uden versioner og genstart. `test:app-skills` kører appens tilladelser og skills i den rigtige OpenCode med og uden Git. Den viser, at kun aktive skills kan hentes, og at ikke valgte private referencer, `.env` og `.git` afvises.
+`test:features` gennemgår Funktioner i Electron: første start med Vælg selv, undtagelser pr. projekt, et projekt uden versioner og genstart. `measure:screens` tæller synlige ord, valg, ⓘ og felter på alle skærme og tager et skærmbillede af hver. Kør den før og efter en ændring af en skærm. `test:app-skills` kører appens tilladelser og skills i den rigtige OpenCode med og uden Git. Den viser, at kun aktive skills kan hentes, og at ikke valgte private referencer, `.env` og `.git` afvises.
 
 `test:recovery` bruger rigtig Electron, OpenCode, HTTP, Git og projektfiler. Modelserveren leverer kontrollerede svar og fejl. Den kontrollerer gendannelse, fortrydelse efter genstart, forkert nøgle, kvote, afbrudt strøm, Stop, ny opgave og en lokal fejlrapport. Git-commits oprettes kun i nye syntetiske testrepositories.
 

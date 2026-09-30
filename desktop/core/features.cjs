@@ -1,10 +1,11 @@
 // Funktioner, som brugeren selv slår til og fra. Standarden gælder alle projekter, og et projekt kan have undtagelser.
-// Hver funktion har sine skills i det fælles bibliotek. Uden et valg er alle funktioner slået til.
+// Hver funktion har sine skills i det fælles bibliotek. Uden et valg gælder appens anbefalede pakke fra kataloget:
+// alle funktioner undtagen dem med "default": false, fx Deling og udgivelse, så længe Del kræver udviklerværktøjer.
 const CHOICES = ['alle', 'valgt'];
 
 // En funktion, der bygger på en anden, er kun slået til sammen med den, fx Deling og udgivelse med Versioner og fortryd.
 function resolve(definitions, defaults = {}, exceptions = {}) {
-  const on = Object.fromEntries(definitions.map(feature => [feature.id, exceptions[feature.id] ?? defaults[feature.id] ?? true]));
+  const on = Object.fromEntries(definitions.map(feature => [feature.id, exceptions[feature.id] ?? defaults[feature.id] ?? feature.default !== false]));
   for (const feature of definitions) if ((feature.requires || []).some(id => !on[id])) on[feature.id] = false;
   return on;
 }
@@ -49,7 +50,9 @@ class Features {
     const values = couple(definitions, Object.fromEntries(Object.entries(input.values).filter(([, value]) => value !== null)));
     if (input.scope === 'alle') {
       await this.store.update(state => {
-        state.features = { ...(input.chosen || state.features?.chosen ? { chosen: input.chosen || state.features.chosen } : {}), on: { ...resolve(definitions, state.features?.on), ...values } };
+        // Hele pakken følger appens anbefaling i kataloget, også når den ændres i en senere version.
+        const base = input.chosen === 'alle' ? {} : resolve(definitions, state.features?.on), chosen = input.chosen || state.features?.chosen;
+        state.features = { ...(chosen ? { chosen } : {}), on: { ...base, ...values } };
       });
     } else {
       // En undtagelse gemmes kun, når den afviger fra standarden, så markeringen i panelet betyder noget.

@@ -52,7 +52,7 @@ const { skipIntroduction, menuClick, taskOptions, selectMode } = require('./ui-t
     await page.locator('#git-feedback').filter({hasText:'er gendannet'}).waitFor();await page.click('[data-close="git-dialog"]');
     await page.frameLocator('#preview').getByRole('heading',{name:'Ugemt forsøg'}).waitFor();
     assert.equal((await git.status(project)).head,second.head);assert.equal(await fs.readFile(path.join(project,'noter.txt'),'utf8'),'Bevar denne fil');
-    await menuClick(page,'#connections-button');await page.selectOption('#provider-kind','compatible');await page.fill('#connection-name','Kontrolleret fejlprøve');await page.fill('#base-url',`http://127.0.0.1:${server.address().port}/v1`);await page.click('#save-connection');await page.locator('#connection-feedback').filter({hasText:'gemt'}).waitFor();await page.click('[data-close="connections-dialog"]');
+    await require('./ui-test-helpers.cjs').addConnection(page,{name:'Kontrolleret fejlprøve',baseURL:`http://127.0.0.1:${server.address().port}/v1`});
     const state=await page.evaluate(()=>window.harness.connectionState());await taskOptions(page);await page.selectOption('#connection-select',state.value.connections[0].id);await page.locator('#model-shortlist button').first().click();await selectMode(page,'plan');
     for(const [failure,text] of [['key','prøve med forkert nøgle'],['quota','prøve med opbrugt kvote'],['stream','prøve med afbrudt forbindelse']]){
       mode=failure;await send(text);await page.locator('#run-status').filter({hasText:'Fejl'}).waitFor({timeout:60000});

@@ -20,7 +20,7 @@ const root = path.join(__dirname, '..', '..');
     if (expectProject) { await page.waitForSelector('#workspace:not([hidden])'); assert.equal(await page.locator('#project-name').textContent(), expectProject); await page.frameLocator('#preview').locator('h1').waitFor(); }
     else { await page.waitForFunction(() => !document.querySelector('#new').disabled); await page.waitForTimeout(500); assert.equal(await page.locator('#workspace').isVisible(), false); }
     await require('./ui-test-helpers.cjs').toOnboarding(page);
-    await page.waitForSelector('#onboarding'); await page.waitForFunction(() => !document.querySelector('#new').disabled); await require('./ui-test-helpers.cjs').menuClick(page, '#setup-button'); await page.click('#setup-local'); await page.waitForSelector('#create-form');
+    await page.waitForSelector('#onboarding'); await page.waitForFunction(() => !document.querySelector('#new').disabled); await require('./ui-test-helpers.cjs').openSetup(page); await page.click('#setup-local'); await page.waitForSelector('#create-form');
     const identity = await app.evaluate(({app, Menu}) => ({ name: app.getName(), userData: app.getPath('userData'), labels: Menu.getApplicationMenu().items.map(item => item.label) }));
     assert.equal(identity.name, 'AI Harness');
     assert.equal(await fs.realpath(identity.userData), await fs.realpath(path.join(testRoot, 'electron-data')));
@@ -58,7 +58,7 @@ const root = path.join(__dirname, '..', '..');
     assert.equal(await page.inputValue('#work-mode'), 'plan');
     assert.match(await page.inputValue('#prompt'), /Find og del aktiviteter/);
     assert.equal(await page.locator('#messages').textContent(), '');
-    await page.fill('#prompt', 'Min egen kladde'); await page.click('#start-idea');
+    await page.fill('#prompt', 'Min egen kladde'); assert.equal(await page.isVisible('#start-idea'), false, 'en kladde kan ikke overskrives');
     assert.equal(await page.inputValue('#prompt'), 'Min egen kladde');
     assert.equal(await page.locator('#messages').textContent(), '');
     await page.fill('#prompt', '');

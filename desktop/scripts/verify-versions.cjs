@@ -50,10 +50,7 @@ const helpers = require('./ui-test-helpers.cjs');
     assert.equal((await run(project, ['config', 'user.name'])).toString().trim(), 'AI Harness-bruger');
     assert.equal((await run(project, ['config', 'user.email'])).toString().trim(), 'bruger@ai-harness.invalid');
     const starter = await fs.readFile(path.join(project, 'public/index.html'), 'utf8');
-    await helpers.menuClick(page, '#connections-button'); await page.selectOption('#provider-kind', 'compatible');
-    await page.fill('#connection-name', 'Kontrolleret model'); await page.fill('#base-url', `http://127.0.0.1:${server.address().port}/v1`);
-    await page.click('#save-connection'); await page.locator('#connection-feedback').filter({ hasText: 'Forbindelsen er gemt' }).waitFor(); await page.click('[data-close="connections-dialog"]');
-    const connection = (await page.evaluate(() => window.harness.connectionState())).value.connections[0];
+    const connection = await helpers.addConnection(page, { name: 'Kontrolleret model', baseURL: `http://127.0.0.1:${server.address().port}/v1` });
     await helpers.taskOptions(page); await page.selectOption('#connection-select', connection.id);
     await page.waitForFunction(() => document.querySelector('#model-select').options.length === 2); await page.locator('#model-shortlist button').first().click();
     // 2. En AI-opgave gemmes automatisk som en version, og kortet tilbyder at fortryde den.

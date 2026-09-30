@@ -74,7 +74,7 @@
     {
       "id": "versioner",
       "title": "Versioner og fortryd",
-      "summary": "Gemmer en version efter hver AI-opgave, så du kan fortryde den og gå tilbage til en tidligere version.",
+      "summary": "En version efter hver AI-opgave, så du kan fortryde.",
       "skills": [
         "harness-git-og-samarbejde"
       ]
@@ -82,7 +82,7 @@
     {
       "id": "planlaegning",
       "title": "Planlægning før bygning",
-      "summary": "AI’en afklarer idéen og foreslår en plan, som du godkender, før den bygger.",
+      "summary": "AI’en foreslår en plan, som du godkender først.",
       "skills": [
         "harness-ide-og-afgraensning",
         "harness-eksisterende-projekt",
@@ -92,7 +92,7 @@
     {
       "id": "design",
       "title": "Design og tilgængelighed",
-      "summary": "Designpakker, logo og links til din designguide, og hjælp til en side, som alle kan bruge.",
+      "summary": "Designpakker, logo og en side, som alle kan bruge.",
       "skills": [
         "harness-design-og-tilgaengelighed"
       ]
@@ -100,7 +100,7 @@
     {
       "id": "sikkerhed",
       "title": "Sikkerhed og data",
-      "summary": "Hjælp med nøgler, pakker, persondata, leverandører og en sikkerhedsgennemgang.",
+      "summary": "Hjælp med nøgler, persondata og sikkerhed.",
       "skills": [
         "harness-noegler-og-afhaengigheder",
         "harness-data-og-leverandoerer",
@@ -119,10 +119,11 @@
     {
       "id": "deling",
       "title": "Deling og udgivelse",
-      "summary": "Del en testversion på nettet, og tag en sikkerhedskopi på GitHub. Bygger på versionerne.",
+      "summary": "Del en testversion, og tag en sikkerhedskopi på GitHub.",
       "requires": [
         "versioner"
       ],
+      "default": false,
       "skills": [
         "harness-udgivelse-og-gendannelse",
         "harness-overdragelse-og-drift"

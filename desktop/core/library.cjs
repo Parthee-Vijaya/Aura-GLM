@@ -141,6 +141,7 @@ function validateFeatures(features, names) {
   for (const feature of features) {
     if (!NAME.test(feature.id || '') || typeof feature.title !== 'string' || !feature.title || typeof feature.summary !== 'string' || !feature.summary || !Array.isArray(feature.skills) || !feature.skills.length) throw new Error(`Funktionen ${feature.id || '(uden id)'} mangler id, titel, beskrivelse eller skills.`);
     if (feature.requires !== undefined && (!Array.isArray(feature.requires) || feature.requires.some(id => id === feature.id || !ids.has(id)))) throw new Error(`Funktionen ${feature.id} bygger på en ukendt funktion.`);
+    if (feature.default !== undefined && typeof feature.default !== 'boolean') throw new Error(`Funktionen ${feature.id} har en ugyldig standard.`);
   }
   const placed = features.flatMap(feature => feature.skills);
   if (placed.length !== names.size || placed.some(name => !names.has(name)) || new Set(placed).size !== placed.length) throw new Error('Hver skill skal høre til præcis én funktion.');

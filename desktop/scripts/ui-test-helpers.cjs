@@ -10,7 +10,7 @@ async function toOnboarding(page) {
 }
 async function menuClick(page, selector) {
   const toggles = {
-    '#support-button': '#settings-toggle', '#setup-button': '#settings-toggle', '#connections-button': '#settings-toggle', '#features-button': '#settings-toggle',
+    '#support-button': '#settings-toggle', '#connections-button': '#settings-toggle', '#features-button': '#settings-toggle',
     '#git-button': '#project-menu-toggle', '#publish-button': '#project-menu-toggle', '#new-conversation': '#project-menu-toggle',
     '#attach-preview': '#preview-options'
   };
@@ -49,4 +49,29 @@ async function chooseLocation(app, page, folder) {
   await page.click('#choose-location');
   await page.waitForFunction(folder => document.querySelector('#project-location').title === folder, await require('node:fs/promises').realpath(folder));
 }
-module.exports = { skipIntroduction, toOnboarding, menuClick, taskOptions, closeTaskOptions, selectMode, previewOptions, projectOptions, isolateDocuments, chooseLocation };
+// Deling og udgivelse er ikke med i den anbefalede pakke. Prøver af Del og Sikkerhedskopi slår den til og genindlæser siden.
+async function enableSharing(page) {
+  const result = await page.evaluate(() => window.harness.featuresSave({ scope: 'alle', values: { deling: true } }));
+  if (!result.ok) throw new Error(result.error);
+  await page.reload(); await page.waitForFunction(() => !document.querySelector('#create').disabled && !document.querySelector('#new').disabled);
+}
+// Den guidede opsætning åbnes fra Indstillinger › AI-forbindelser › Tilføj forbindelse.
+async function openSetup(page) {
+  await menuClick(page, '#connections-button'); await page.click('#connection-add'); await page.waitForSelector('#setup:not([hidden])');
+}
+// En forbindelse tilføjes ad samme vej som en bruger: Tilføj forbindelse › Jeg har en adgangsnøgle › Vælg en anden.
+// Svarer serveren med modeller, fortsætter prøven med forbindelsen; ellers vælger den senere.
+async function addConnection(page, { kind = 'compatible', name, baseURL, apiKey } = {}) {
+  await openSetup(page); await page.click('#setup-add-provider'); await page.click('#provider-other');
+  await page.selectOption('#provider-kind', kind);
+  if ((name !== undefined || baseURL !== undefined) && !await page.locator('#connection-advanced').evaluate(el => el.open)) await page.click('#connection-advanced > summary');
+  if (name !== undefined) await page.fill('#connection-name', name);
+  if (baseURL !== undefined) await page.fill('#base-url', baseURL);
+  if (apiKey) await page.fill('#api-key', apiKey);
+  await page.click('#save-connection');
+  await page.waitForFunction(() => document.querySelector('#setup').dataset.step === 'saved' && !/Henter/.test(document.querySelector('#setup-ai').textContent));
+  if (await page.isVisible('#setup-continue') && await page.isEnabled('#setup-continue')) await page.click('#setup-continue'); else await page.click('#setup-local');
+  await page.waitForSelector('#setup', { state: 'hidden' });
+  return (await page.evaluate(() => window.harness.connectionState())).value.connections.at(-1);
+}
+module.exports = { openSetup, addConnection, enableSharing, skipIntroduction, toOnboarding, menuClick, taskOptions, closeTaskOptions, selectMode, previewOptions, projectOptions, isolateDocuments, chooseLocation };
