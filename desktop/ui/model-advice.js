@@ -1,13 +1,20 @@
-// Anbefalede modeller pr. udbyder. Højst tre forslag; for kendte udbydere er de AI Harness' egne standardvalg
-// i prioriteret rækkefølge, ellers et udvalg fra kataloget. Bruges af brugerfladen og af unit-testene.
+// Modelkort pr. udbyder. AI Harness anbefaler ikke udbydere eller modeller. Første kort er udbyderens eget udgangspunkt,
+// som udbyderen selv angiver det i sin dokumentation; det bruges som standard og kan skiftes med ét klik.
+// Teksterne er faktuelle. Kontrolleret hos udbyderne 29. september 2026. Bruges af brugerfladen og af unit-testene.
 (function (root) {
   const advice = {
-    anthropic: [[/sonnet/i, 'Anbefalet · god balance mellem kvalitet, hastighed og pris'], [/opus/i, 'Mest grundig · dyrere'], [/haiku/i, 'Hurtigst og billigst · til små opgaver']],
-    mistral: [[/devstral/i, 'Anbefalet · Mistrals model til kode'], [/codestral/i, 'Mistrals model til kodeforslag'], [/mistral-(large|medium)/i, 'Mistrals generelle model']],
-    corti: [[/s1/i, 'Anbefalet · Cortis model i EU']],
-    openrouter: [[/claude.*sonnet|sonnet/i, 'Anbefalet · Claude gennem OpenRouter'], [/devstral|codestral/i, 'Mistrals kodemodel gennem OpenRouter'], [/qwen.*coder/i, 'Åben kodemodel gennem OpenRouter']],
-    zen: [[/big-pickle/i, 'Gratis model fra OpenCode Zen'], [/free/i, 'Gratis model · begrænset kapacitet']]
+    // Anthropic: "If you're unsure which model to use, start with Claude Opus 5.5" (platform.claude.com/docs/en/about-claude/models/overview).
+    anthropic: [[/opus/i, 'Anthropics eget udgangspunkt'], [/sonnet/i, 'Hurtigere og billigere end Opus'], [/haiku/i, 'Hurtigst og billigst']],
+    // Mistral udfasede Devstral 31. juli 2026 og peger på Mistral Medium 3.5 til agenter og kode. Codestral er lavet til kodeforslag.
+    mistral: [[/^mistral-medium-(latest|3-5)/i, 'Mistrals model til agenter og kode'], [/^mistral-large-(latest|2512)/i, 'Mistrals store model · billigere pr. token'], [/devstral/i, 'Mistrals ældre kodemodel']],
+    corti: [[/^corti-s1$/i, 'Cortis hovedmodel'], [/^corti-s1-mini$/i, 'Mindre og billigere'], [/s1/i, 'Cortis model i EU']],
+    openrouter: [[/claude.*(opus|sonnet)/i, 'Claude gennem OpenRouter'], [/devstral|codestral|mistral-medium/i, 'Mistral gennem OpenRouter'], [/qwen.*coder/i, 'Åben kodemodel gennem OpenRouter']],
+    // Zens gratis modeller virker kun fra OpenCodes egne programmer.
+    zen: [[/^claude-opus/i, 'Claude gennem OpenCode Zen'], [/^claude-sonnet/i, 'Claude gennem OpenCode Zen']]
   };
+  // Standardindsats for Anthropics nuværende modeller, når appen ikke selv vælger en. OpenCode sender ingen indsats, så API'ets standard gælder.
+  const efforts = [[/^claude-fable-5/, 'høj'], [/^claude-opus-5-5/, 'mellem'], [/^claude-sonnet-5-5/, 'høj']];
+  function effort(kind, id) { if (!['anthropic', 'zen', 'openrouter'].includes(kind)) return null; const bare = String(id).replace(/^anthropic\//, ''); return efforts.find(([pattern]) => pattern.test(bare))?.[1] || null; }
   // Versionsnumre sammenlignes tal for tal; datoer med seks eller flere cifre tæller ikke med.
   const versionKey = id => (id.match(/\d+/g) || []).filter(part => part.length < 6).map(Number);
   function newestFirst(a, b) {
@@ -26,6 +33,6 @@
     const fallback = [...usable].sort((a, b) => Number(b.capabilities?.tools === true) - Number(a.capabilities?.tools === true) || a.name.localeCompare(b.name, 'da')).slice(0, 3);
     return { curated: false, picks: fallback.map(model => ({ model, text: model.capabilities?.tools === true ? 'Kan bruge kodeværktøjer ifølge kataloget' : 'Understøttelse af kodeværktøjer er ukendt' })) };
   }
-  const api = { suggest, newestFirst };
+  const api = { suggest, newestFirst, effort };
   if (typeof module === 'object' && module.exports) module.exports = api; else root.ModelAdvice = api;
 })(typeof window === 'object' ? window : globalThis);

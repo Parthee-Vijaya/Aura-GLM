@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
-const { createProject, openProject } = require('../core/projects.cjs');
+const { createProject, openProject, folderSlug } = require('../core/projects.cjs');
 const profiles = path.join(__dirname, '..', '..', 'profiles');
 const input = { name: 'Fælleshaven', purpose: 'Del aktiviteter <script>alert(1)</script>', color: '#326556', links: ['https://example.com/design'], tests: 'manuel' };
 async function temporary(t) { const root = await fs.mkdtemp(path.join(os.tmpdir(), 'harness-test-')); t.after(() => fs.rm(root, { recursive: true, force: true })); return root; }
@@ -16,7 +16,11 @@ test('opret og genåbn et rigtigt projekt med profiler og adskilte materialer', 
   assert.match(project.assets[0].file, /^references\//);
   const html = await fs.readFile(path.join(project.root, 'public/index.html'), 'utf8');
   assert.ok(!html.includes('<script>')); assert.match(html, /&lt;script&gt;/);
-  await assert.rejects(createProject(parent, input, [], profiles), { code: 'EEXIST' });
+  assert.equal(path.basename(project.root), 'projekt-faelleshaven');
+  // Samme navn igen giver en ny, nummereret mappe. Den første røres ikke.
+  const second = await createProject(parent, input, [], profiles);
+  assert.equal(path.basename(second.root), 'projekt-faelleshaven-2');
+  assert.match(await fs.readFile(path.join(project.root, 'README.md'), 'utf8'), /Fælleshaven/);
   assert.equal(await fs.readFile(path.join(project.root, project.assets[0].file), 'utf8'), 'Internt materiale');
 });
 test('afvis forkert input før oprettelse, også aktive links og ugyldige farver', async t => {
@@ -40,4 +44,12 @@ test('åbn tomme og eksisterende mapper uden filændringer', async t => {
   await fs.writeFile(path.join(root, 'harness.json'), '{ugyldig');
   assert.equal((await openProject(root)).warnings.length, 1);
   assert.equal(await fs.readFile(path.join(root, 'harness.json'), 'utf8'), '{ugyldig');
+});
+
+test('mappenavne bevarer danske ord i læsbar form', () => {
+  assert.equal(folderSlug('Oversigt over tre fiktive mødelokaler'), 'oversigt-over-tre-fiktive-moedelokaler');
+  assert.equal(folderSlug('Æblegården på Ålborgvej'), 'aeblegaarden-paa-aalborgvej');
+  assert.equal(folderSlug('Café Noël'), 'cafe-noel');
+  assert.equal(folderSlug('---'), 'projekt');
+  assert.ok(folderSlug('a'.repeat(200)).length <= 60);
 });

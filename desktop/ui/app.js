@@ -44,6 +44,7 @@ function setupControls() {
 }
 function moveConnectionForm(guided) {
   const parent = guided ? $('#setup-provider-body') : $('#connection-form-home');
+  if (!guided) $('#connection-advanced').hidden = false;
   parent.append($('#connection-form'), $('#connection-feedback'));
   $('#save-connection').textContent = guided ? 'Gem og kontrollér' : 'Gem forbindelse';
   $('#reset-connection').hidden = guided;
@@ -52,7 +53,7 @@ function moveConnectionForm(guided) {
 function setupPage(step) {
   ++setupGeneration;
   setupStep = step;
-  const headings = { choice: ['Hvordan vil du forbinde din AI?', 'Vælg den adgang, du allerede har.'], provider: ['Hvem er din udbyder?', 'Vælg den udbyder, du har en nøgle til. Har du fået adgang af din arbejdsplads, så brug deres oplysninger.'], local: ['AI på din computer', 'Vi leder efter modeller, du allerede har i Ollama.'], saved: ['Din AI-forbindelse', 'Kontrollér forbindelsen, før du fortsætter.'], tools: ['Avanceret opsætning', 'Forbindelser og lokale værktøjer.'] };
+  const headings = { choice: ['Hvordan vil du forbinde din AI?', 'Vælg den adgang, du allerede har.'], provider: ['Hvem er din udbyder?', 'Vælg den udbyder, du vil bruge. Har du ikke en nøgle endnu, viser vi dig, hvordan du får en.'], local: ['AI på din computer', 'Vi leder efter modeller, du allerede har i Ollama.'], saved: ['Din AI-forbindelse', 'Kontrollér forbindelsen, før du fortsætter.'], tools: ['Avanceret opsætning', 'Forbindelser og lokale værktøjer.'] };
   $('#setup-title').textContent = headings[step][0]; $('#setup-subtitle').textContent = headings[step][1];
   for (const el of document.querySelectorAll('[data-setup-step]')) el.hidden = el.dataset.setupStep !== step;
   moveConnectionForm(step === 'provider');
@@ -60,14 +61,14 @@ function setupPage(step) {
   $('#setup').dataset.step = step;
   $('#setup-title').focus(); window.scrollTo(0, 0); setupControls();
 }
-// Den guidede opsætning viser tre udbydere som kort. Resten ligger bag "Vælg en anden".
+// Den guidede opsætning viser tre ligestillede udbydere som kort med faktuelle oplysninger; appen anbefaler ingen af dem. Resten ligger bag "Vælg en anden".
 const featuredProviders = [
-  { kind: 'anthropic', name: 'Claude', text: 'Anthropics modeller. Stærke til kode.' },
-  { kind: 'mistral', name: 'Mistral', text: 'Europæisk udbyder.' },
-  { kind: 'corti', name: 'Corti', text: 'Dansk udbyder med modeller i EU.' }
+  { kind: 'anthropic', name: 'Claude', text: 'Fra Anthropic i USA.' },
+  { kind: 'mistral', name: 'Mistral', text: 'Fra Mistral AI i Frankrig.' },
+  { kind: 'corti', name: 'Corti', text: 'Fra Corti i Danmark. Modeller i EU.' }
 ];
 function chooseProvider(kind) {
-  $('#provider-kind').value = kind; updateProvider();
+  $('#provider-kind').value = kind; updateProvider(); $('#connection-advanced').hidden = true;
   for (const card of document.querySelectorAll('#provider-cards button')) card.setAttribute('aria-pressed', String(card.dataset.kind === kind));
   $('#setup-provider-body').hidden = false; $('#api-key').focus();
 }
@@ -80,7 +81,7 @@ function renderProviderCards() {
   }));
 }
 $('#provider-other').onclick = () => {
-  $('#connection-form').classList.add('all-providers');
+  $('#connection-form').classList.add('all-providers'); $('#connection-advanced').hidden = false;
   for (const card of document.querySelectorAll('#provider-cards button')) card.setAttribute('aria-pressed', 'false');
   if (featuredProviders.some(item => item.kind === $('#provider-kind').value)) { $('#provider-kind').value = 'openrouter'; updateProvider(); }
   $('#setup-provider-body').hidden = false; $('#provider-kind').focus();
@@ -149,7 +150,9 @@ async function testSetupConnection() {
     const models = await call('models', id);
     if (generation !== setupGeneration || id !== $('#setup-connection').value) return;
     verifiedConnection = models.length ? id : '';
-    $('#setup-ai').textContent = models.length ? 'Forbindelsen svarer. Du vælger din model i projektet.' : 'Forbindelsen svarer uden modeller. Tjek adgangen hos udbyderen, eller ret oplysningerne.';
+    const featured = featuredProviders.some(item => item.kind === state.connections.find(c => c.id === id)?.kind);
+    $('#setup-ai').textContent = !models.length ? 'Forbindelsen svarer uden modeller. Tjek adgangen hos udbyderen, eller ret oplysningerne.' : featured ? 'Forbindelsen virker. Appen starter med udbyderens eget udgangspunkt, som du kan skifte under skrivefeltet.' : 'Forbindelsen svarer. Du vælger model i projektet.';
+    if (models.length) $('#setup-subtitle').textContent = 'Din AI er klar.';
   } catch (error) { if (generation === setupGeneration) $('#setup-ai').textContent = `Kontrollen mislykkedes: ${error.message} Rediger forbindelsen, eller prøv igen.`; }
   finally { if (generation === setupGeneration) setupControls(); }
 }
@@ -189,10 +192,11 @@ async function displayProject(project) {
     label.append(input, document.createTextNode(asset.name)); $('#reference-choices').append(label);
   }
   if (!$('#reference-choices').children.length) $('#reference-choices').textContent = 'Ingen referencefiler registreret i projektet.';
+  $('#task-dialog .reference-choice').hidden = !(project.assets || []).some(a => a.kind === 'reference');
   showPreview(project.previewURL);
   window.previewServer?.update(project.runtime);
   if (project.warnings?.length) message(project.warnings.join(' '));
-  state = project.workbench; $('#connection-select').value = ''; renderConnections();
+  state = project.workbench; $('#connection-select').value = ''; renderConnections(); renderUsage(state.usage);
   const saved = state.projectSettings.selection;
   if (autoConnect && saved && state.connections.some(c => c.id === saved.connectionID)) { $('#connection-select').value = saved.connectionID; await loadModels(saved); }
   else if (autoConnect && state.connections.some(c => c.id === preferredConnection)) { $('#connection-select').value = preferredConnection; await loadModels(); }
@@ -246,10 +250,48 @@ function renderConnections() {
   else { $('#model-select').replaceChildren(option('', 'Hent modeller fra forbindelsen')); $('#route-row').hidden = true; }
   renderSetup(); renderStartupConnections();
 }
+// Trin for trin til en nøgle hos de tre udbydere i opsætningen. Knapperne åbner faste sider via hovedprocessen. Kontrolleret 29. september 2026.
+const keyGuides = {
+  anthropic: {
+    steps: [['Opret en konto i Claude Console, Anthropics side for udviklere. Den er ikke det samme som Claude.ai. Anthropic kan spørge til din brug og i nogle tilfælde bede om ID.', 'start', 'Åbn Claude Console'],
+      ['Køb kredit under Billing. Du betaler forud med kort.', 'billing', 'Åbn Billing'],
+      ['Sæt en månedlig grænse under Spend limits på samme side, så forbruget ikke kan løbe løbsk.'],
+      ['Opret en API-nøgle, og kopiér den. Den vises kun én gang.', 'keys', 'Åbn API-nøgler'],
+      ['Indsæt nøglen i feltet herunder, og tryk Gem og kontrollér.']],
+    cost: 'Vær opmærksom på, at du betaler pr. token gennem denne løsning. Priserne varierer meget afhængigt af opgavens kompleksitet. Du ser prisen for modellen, før noget sendes, og forbruget under skrivefeltet.'
+  },
+  mistral: {
+    steps: [['Opret en konto i Mistral Studio. På mistral.ai hedder det Login → Studio. Gratisplanen kræver ikke kort, men Mistral må bruge data fra gratisplanen til træning.', 'start', 'Åbn Mistral Studio'],
+      ['Slå betalt forbrug til, og sæt en månedlig grænse under Billing.', 'billing', 'Åbn Billing'],
+      ['Fravælg træning under Privacy.', 'privacy', 'Åbn Privacy'],
+      ['Opret en API-nøgle, og kopiér den. Den vises kun én gang.', 'keys', 'Åbn API-nøgler'],
+      ['Indsæt nøglen i feltet herunder, og tryk Gem og kontrollér.']],
+    cost: 'Vær opmærksom på, at du betaler pr. token gennem denne løsning, når gratisplanens kredit er brugt. Priserne varierer meget afhængigt af opgavens kompleksitet. Du ser prisen for modellen, før noget sendes, og forbruget under skrivefeltet.'
+  },
+  corti: {
+    steps: [['Opret en konto i Corti Console med din arbejdsmail.', 'start', 'Åbn Corti Console'],
+      ['Opret et projekt, og vælg regionen EU. Det giver 50 USD i prøvekredit.', 'console', 'Åbn Corti Console'],
+      ['Sæt en månedlig grænse under Billing i Corti Console.'],
+      ['Hent en API-nøgle under Corti Models, og kopiér den.', 'keys', 'Åbn Corti Models'],
+      ['Indsæt nøglen i feltet herunder, og tryk Gem og kontrollér.']],
+    cost: 'Vær opmærksom på, at du betaler pr. token gennem denne løsning, når prøvekreditten er brugt. Priserne varierer meget afhængigt af opgavens kompleksitet. Du ser prisen for modellen, før noget sendes, og forbruget under skrivefeltet.'
+  }
+};
+function renderKeyGuide(kind) {
+  const guide = keyGuides[kind];
+  $('#key-steps').replaceChildren(...(guide?.steps || []).map(([text, page, label]) => {
+    const item = node('li', text);
+    if (page) { const button = node('button', label, 'text-button'); button.type = 'button'; button.onclick = () => action(() => call('providerAccount', { kind, page })); item.append(' ', button); }
+    return item;
+  }));
+  $('#key-steps').hidden = !guide; $('#key-cost').textContent = guide?.cost || ''; $('#key-cost').hidden = !guide;
+  $('#provider-account').hidden = Boolean(guide);
+  $('#key-guide-summary').textContent = guide ? 'Har du ikke en nøgle? Sådan får du en' : 'Hvor finder jeg min nøgle?';
+}
 function updateProvider() {
   const definition = state?.definitions[$('#provider-kind').value]; if (!definition) return;
-  const help = { corti: 'Brug en Corti API-nøgle fra et EU-projekt. Hent det aktuelle katalog, og vælg fx corti-s1, hvis din konto har adgang. Ingen automatisk overgang til USA eller en anden model.', mistral: 'Brug en Mistral API-nøgle. Chatmodeller hentes fra din konto; kontrollér pris, træningsvalg og opbevaring i Mistral Studio.', anthropic: 'Brug en Anthropic API-nøgle. Et Claude-abonnement kan endnu ikke forbindes her.', openrouter: 'Brug din OpenRouter-nøgle. Du vælger selv model og den udbyder, der modtager dine data. Gratis modeller er markeret i listen.', zen: 'Brug din OpenCode Zen-nøgle. Du vælger model og gennemgår pris og datavilkår før afsendelse.', ollama: 'Forbind til en Ollama-server, som allerede kører. Kontrollér adressen nedenfor; appen installerer ikke modeller.', compatible: 'Brug adressen fra din organisation eller egen modelserver, fx DGX Spark. Appen ændrer ikke serveren eller Tailscale.' };
-  $('#provider-help').textContent = help[$('#provider-kind').value];
+  const help = { corti: 'Du skal bruge en API-nøgle fra et Corti-projekt i EU. Appen skifter aldrig automatisk til USA eller en anden model.', mistral: 'Du skal bruge en API-nøgle fra Mistral.', anthropic: 'Du skal bruge en API-nøgle fra Anthropic. Et Claude Pro- eller Max-abonnement kan ikke bruges her.', openrouter: 'Brug din OpenRouter-nøgle. Du vælger selv model og den udbyder, der modtager dine data. Gratis modeller er markeret i listen.', zen: 'Brug en nøgle fra OpenCode Zen. Zens gratis modeller virker ikke i AI Harness, fordi Zen kun giver gratis adgang fra OpenCodes egne programmer. Zens modeller kører i USA.', ollama: 'Forbind til en Ollama-server, som allerede kører. Kontrollér adressen nedenfor; appen installerer ikke modeller.', compatible: 'Brug adressen fra din organisation eller egen modelserver, fx DGX Spark. Appen ændrer ikke serveren eller Tailscale.' };
+  $('#provider-help').textContent = help[$('#provider-kind').value]; renderKeyGuide($('#provider-kind').value);
   $('.key-guide').hidden = ['ollama', 'compatible'].includes($('#provider-kind').value);
   $('#base-url').value = definition.baseURL; $('#connection-advanced').open = ['ollama', 'compatible'].includes($('#provider-kind').value); $('#base-url').readOnly = !['ollama', 'compatible'].includes($('#provider-kind').value);
   if (!$('#connection-id').value) $('#connection-name').value = definition.name;
@@ -269,7 +311,8 @@ async function loadModels(saved = {}) {
       $('#model-select').append(option(model.id, `${model.name}${free ? ' · gratis*' : ''}`));
     }
     if (saved.modelID && models.some(m => m.id === saved.modelID)) { $('#model-select').value = saved.modelID; await loadRoutes(saved.routeID); }
-    updateModelSummary(); $('#connection-warning').hidden = true; $('#connection-status').textContent = state.connections.find(c => c.id === id)?.name || 'Ingen model valgt';
+    else preselectRecommended(id);
+    markChosenModel(); updateModelSummary(); $('#connection-warning').hidden = true; $('#connection-status').textContent = state.connections.find(c => c.id === id)?.name || 'Ingen model valgt';
   } catch (error) { if (generation === modelRequest) { $('#model-select').replaceChildren(option('', 'Forbindelsen kunne ikke læses')); connectionFailed(error.message); } throw error; }
 }
 async function loadRoutes(saved = '') {
@@ -285,13 +328,16 @@ async function loadRoutes(saved = '') {
 }
 function selection() { return { includeHistory: $('#include-history').checked, mode: $('#work-mode').value, planID: activePlan?.id, connectionID: $('#connection-select').value, modelID: $('#model-select').value, routeID: $('#route-select').value, references: [...document.querySelectorAll('#reference-choices input:checked')].map(el => el.value) }; }
 const detailLabels = { mode: 'Arbejdsmåde', conversation: 'Tidligere samtale, der sendes', projectGuidance: 'Appens vejledning om projektvalg og design', planContext: 'Plan og afklaring, der sendes', projectChoices: 'Projektets opstartsvalg', connection: 'Forbindelse', model: 'Model', endpoint: 'Serveradresse', recipients: 'Modtagere', region: 'Behandlingssted', retention: 'Opbevaring', training: 'Brug til træning', price: 'Pris og gratisbegrænsninger', capabilities: 'Modelmuligheder', material: 'Hvad sendes?', references: 'Udvalgte private referencer', skills: 'Aktive skills', localStorage: 'Lokal historik og yderligere netværk', security: 'Forbindelsens sikkerhed', source: 'Kilde', checkedAt: 'Dokumentation kontrolleret', evidence: 'Grundlag' };
+// Kort resumé i almindeligt dansk. Alle oplysninger ligger under "Se alle oplysninger".
 function showData(data, canSend) {
   $('#data-summary').replaceChildren();
-  $('#data-warning').hidden = ![data.region, data.retention, data.training, data.price].some(v => /ukendt/i.test(String(v)));
-  $('#data-warning').textContent = 'Nogle vilkår er ukendte. Læs oplysningerne, og brug kun data, du må dele med denne forbindelse.';
+  const unknown = [data.region, data.retention, data.training, data.price].filter(v => /ukendt|ikke verificeret/i.test(String(v)));
+  $('#data-warning').hidden = !unknown.length;
+  $('#data-warning').textContent = 'Nogle vilkår er ukendte for denne forbindelse. Del kun det, du er sikker på, at du må dele.';
+  $('#data-lead').textContent = `Din besked, planen og de projektfiler, AI’en læser, sendes til ${data.provider || data.connection}.`;
   $('#data-material-text').textContent = data.material;
   $('#data-history-text').textContent = data.historyIncluded ? 'Tidligere samtale medsendes efter dit tilvalg. Se det præcise indhold under detaljerne.' : 'Gemt samtale fra tidligere sessioner medsendes ikke særskilt. Den aktive samtale og en valgt plan med afklaring indgår stadig.';
-  for (const [label, value] of Object.entries({ 'Din AI': `${data.model} · ${data.connection}`, 'Modtagere': data.recipients, 'Behandlingssted': data.region, 'Pris': data.price, 'Opbevaring': data.retention, 'Træning': data.training })) {
+  for (const [label, value] of Object.entries({ 'AI': data.modelName ? `${data.modelName} · ${data.provider || data.connection}` : `${data.model} · ${data.connection}`, 'Hvor': data.regionShort || data.region, 'Træning': data.trainingShort || data.training, 'Pris': data.priceShort || data.price })) {
     $('#data-summary').append(node('dt', label), node('dd', Array.isArray(value) ? value.join(', ') : value));
   }
   $('#data-details').replaceChildren();
@@ -333,6 +379,7 @@ function partElement(id, role) {
 window.harness.onEvent(event => {
   const p = event.properties || {};
   if (event.type === 'preview.runtime') return window.previewServer?.update(event);
+  if (event.type === 'usage') return renderUsage(event.usage);
   if (event.type === 'history.error') { $('#draft-status').textContent = event.message; message(event.message, true); }
   if (event.type === 'plan.ready') { activePlan = event.plan; $('#plan-card details').open = false; $('#plan-text').textContent = event.plan.text; $('#plan-card').hidden = false; requestAnimationFrame(() => $('#plan-card').scrollIntoView({ block: 'nearest' })); }
   if (event.type === 'run.review') renderRunReview(event);
@@ -360,16 +407,25 @@ window.harness.onEvent(event => {
     if (part.type === 'tool') partElement(part.id, 'tool').textContent = `${toolLabels[part.tool] || part.tool} · ${toolStatuses[part.state?.status] || part.state?.status || ''}${part.state?.title ? '\n' + part.state.title : ''}`;
   }
   if (event.type === 'message.part.delta' && p.field === 'text' && partTypes.get(p.partID) === 'text' && roles.get(p.messageID) !== 'user') partElement(p.partID, 'assistant').textContent += p.delta;
+  if (event.type === 'permission.auto') { partElement('auto-' + Date.now() + Math.random(), 'tool').textContent = `Rediger fil · tilladt for denne opgave\n${event.file}`; return; }
   if (event.type === 'permission.asked') {
     $('#agent-activity').textContent = 'Venter på din godkendelse. Gennemgå handlingen i samtalen.';
     const box = node('section', undefined, 'approval'); box.dataset.id = p.id;
-    const explanation = approvalExplanation(p);
+    const target = approvalTarget(p);
+    const explanation = approvalExplanation(p, target);
     box.append(node('strong', explanation.title), node('p', explanation.effect));
-    box.append(node('p', (p.patterns || []).join('\n'), 'action-target'));
-    if (p.metadata?.description) box.append(node('p', `Agentens begrundelse: ${p.metadata.description}`, 'hint'));
+    if (target.text) box.append(node('p', target.text, 'action-target'));
+    if (p.metadata?.description) box.append(node('p', `AI’ens begrundelse: ${p.metadata.description}`, 'hint'));
     const details = node('details'); details.append(node('summary', 'Tekniske detaljer'), node('pre', JSON.stringify({ paths: p.patterns, details: p.metadata }, null, 2))); box.append(details);
-    for (const allow of [false, true]) { const button = node('button', allow ? 'Tillad én gang' : 'Afvis'); button.onclick = () => action(async () => { await call('reply', { id: p.id, allow }); box.remove(); $('#agent-activity').textContent = allow ? 'Godkendelsen er sendt. Afventer AI’en …' : 'Handlingen er afvist. Afventer AI’en …'; }); box.append(button); }
-    $('#approvals').append(box); box.scrollIntoView({ block: 'nearest' });
+    // Filændringer i projektet kan tillades for resten af opgaven. Alt andet spørger hver gang.
+    const choices = target.projectFile ? [['Afvis', false], ['Kun denne fil', true], ['Tillad for denne opgave', true, 'task']] : [['Afvis', false], ['Tillad én gang', true]];
+    const row = node('div', undefined, 'approval-actions');
+    for (const [label, allow, scope] of choices) {
+      const button = node('button', label, scope ? 'primary' : undefined); button.type = 'button';
+      button.onclick = () => action(async () => { await call('reply', { id: p.id, allow, scope }); box.remove(); $('#agent-activity').textContent = !allow ? 'Handlingen er afvist. Afventer AI’en …' : scope ? 'Filændringer i projektet er tilladt, indtil opgaven er færdig.' : 'Godkendelsen er sendt. Afventer AI’en …'; });
+      row.append(button);
+    }
+    box.append(row); $('#approvals').append(box); box.scrollIntoView({ block: 'nearest' });
   }
   if (event.type === 'permission.replied') for (const box of $('#approvals').children) if (box.dataset.id === p.requestID) box.remove();
   if (event.type === 'question.asked') {
@@ -411,7 +467,7 @@ $('#connection-form').onsubmit = event => {
 };
 $('#connection-select').onchange = () => { autoConnect = true; action(() => loadModels()); }; $('#model-select').onchange = () => { updateModelSummary(); action(() => loadRoutes()); };
 $('#data-button').onclick = () => action(async () => showData(await call('prepare', selection()), false));
-$('#chat-form').onsubmit = event => { event.preventDefault(); action(async () => { const text = $('#prompt').value.trim(); if (!text || running) return; if (!$('#connection-select').value) { openTaskSettings(); showConnectionWarning('Forbind en AI for at sende beskeden. Din kladde er bevaret.'); return; } if (!$('#model-select').value || (!$('#route-row').hidden && !$('#route-select').value)) { openTaskSettings(); message('Vælg model og eventuel modeludbyder.', true); return; } $('#send').disabled = true; try { const data = await call('prepare', selection()); if (data.fingerprint === acceptedFingerprint) await sendNow(data, text); else { pendingSend = { data, text }; showData(data, true); } } catch (error) { connectionFailed(error.message); throw error; } finally { $('#send').disabled = running; } }); };
+$('#chat-form').onsubmit = event => { event.preventDefault(); action(async () => { const text = $('#prompt').value.trim(); if (!text || running) return; if (!$('#connection-select').value) { openTaskSettings(); showConnectionWarning('Forbind en AI for at sende beskeden. Din kladde er bevaret.'); return; } if (!$('#model-select').value || (!$('#route-row').hidden && !$('#route-select').value)) { openTaskSettings(); message('Vælg model og eventuel modeludbyder.', true); return; } $('#send').disabled = true; try { const data = await call('prepare', selection()); if (data.accepted || data.fingerprint === acceptedFingerprint) await sendNow(data, text); else { pendingSend = { data, text }; showData(data, true); } } catch (error) { connectionFailed(error.message); throw error; } finally { $('#send').disabled = running; } }); };
 $('#accept-send').onclick = () => action(async () => { const pending = pendingSend; pendingSend = null; if (pending) await sendNow(pending.data, pending.text); });
 $('#stop').onclick = () => action(() => call('stop'));
 $('#skills-button').onclick = () => action(async () => { skillList = await call('skills'); $('#skill-select').replaceChildren(...skillList.map(s => option(s.id, s.id))); showSkill(); $('#skills-dialog').showModal(); });
@@ -425,7 +481,7 @@ $('#refresh').onclick = () => { if (current?.previewURL) $('#preview').src = cur
 for (const button of document.querySelectorAll('[data-close]')) button.onclick = () => document.getElementById(button.dataset.close).close();
 $('#connections-dialog').addEventListener('close', () => { $('#api-key').value = ''; });
 setInterval(async () => { if (!current || polling) return; polling = true; const project = current; try { const next = await call('revision'); if (current !== project || !next) return; if (revision && next !== revision) $('#preview').src = current.previewURL; revision = next; $('#preview-status').textContent = 'Lokal forhåndsvisning'; } catch { $('#preview-status').textContent = 'Kan ikke læse siden – kontrollér projektfilerne'; } finally { polling = false; } }, 1500);
-action(async () => { $('#create').disabled = true; try { state = await call('connectionState'); renderConnections(); updateProvider(); await loadDesigns(); await loadStartup(); restoreIdeaDraft(); await refreshRecent(); setupControls(); for (const id of ['#welcome-build', '#welcome-example', '#welcome-open']) $(id).disabled = false; if ($('#welcome-dialog').open) $('#welcome-title').focus(); else $('#purpose').focus(); } finally { $('#create').disabled = false; } });
+action(async () => { $('#create').disabled = true; try { state = await call('connectionState'); renderConnections(); updateProvider(); await loadDesigns(); await loadStartup(); renderLocation(await call('projectLocation')); restoreIdeaDraft(); await refreshRecent(); setupControls(); for (const id of ['#welcome-build', '#welcome-example', '#welcome-open']) $(id).disabled = false; if ($('#welcome-dialog').open) $('#welcome-title').focus(); else $('#purpose').focus(); } finally { $('#create').disabled = false; } });
 
 async function loadDesigns() { const designs = await call('listDesigns'); $('#design-select').replaceChildren(option('', 'Vælg en tidligere gemt pakke'), ...designs.map(d => option(d.id, `${d.name} · ${d.files} filer`))); }
 $('#save-design').onclick = () => action(async () => { await call('saveDesign', { name: $('#design-name').value, color: $('#color').value, links: $('#links').value.split('\n').map(s => s.trim()).filter(Boolean) }); await loadDesigns(); message('Designpakken er gemt lokalt og kan vælges i andre projekter.'); });
@@ -505,12 +561,27 @@ $('#git-form').onsubmit = event => { event.preventDefault(); action(async () => 
 }); };
 
 // Enkel adgang uden at skjule datagodkendelse eller ændre model automatisk.
+// Under skrivefeltet står altid den aktive model, udbyderen og indsatsen, ligesom i Claude Code.
 function updateModelSummary() {
   const model = $('#model-select');
+  const connection = state?.connections.find(c => c.id === $('#connection-select').value);
+  const provider = state?.definitions?.[connection?.kind]?.provider || connection?.name || '';
+  const effort = model.value && window.ModelAdvice.effort(connection?.kind, model.value);
+  const label = model.value ? [model.selectedOptions[0].textContent, provider, effort && `indsats ${effort}`].filter(Boolean).join(' · ') : 'Vælg AI';
   $('#model-summary').textContent = model.value ? model.selectedOptions[0].textContent : 'Vælg din AI';
-  $('#model-chip').textContent = model.value ? model.selectedOptions[0].textContent : 'Vælg AI';
-  $('#model-chip').title = 'AI, referencer og avancerede valg';
+  $('#model-chip').textContent = label;
+  $('#model-chip').title = effort ? `Indsats ${effort} er udbyderens standard for modellen. Klik for at skifte model.` : 'Klik for at skifte model eller forbindelse.';
   $('#connection-status').textContent = model.value ? (state?.connections.find(c => c.id === $('#connection-select').value)?.name || 'Valgt forbindelse') + ' · ' + model.value : 'Ingen model valgt';
+}
+// Forbruget i samtalen: tokens ind og ud og en anslået pris ud fra udbyderens prisliste. Det faktiske forbrug står hos udbyderen.
+const tokenCount = value => Math.round(value).toLocaleString('da-DK');
+function renderUsage(usage) {
+  const target = $('#usage-status');
+  if (!usage || !usage.calls) { target.textContent = 'Intet forbrug i denne samtale endnu'; target.title = ''; return; }
+  const input = usage.input + usage.cacheRead + usage.cacheWrite;
+  const price = usage.unpriced === usage.calls ? 'pris ukendt' : usage.cost < 0.01 ? 'under 0,01 USD' : `ca. ${usage.cost.toLocaleString('da-DK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD${usage.unpriced ? ' + ukendt' : ''}`;
+  target.textContent = `Denne samtale: ${tokenCount(input)} tokens ind · ${tokenCount(usage.output + usage.reasoning)} ud · ${price}`;
+  target.title = `${usage.calls} modelkald. Ind: ${tokenCount(usage.input)} nye, ${tokenCount(usage.cacheRead)} fra cache og ${tokenCount(usage.cacheWrite)} skrevet til cache. Ud: ${tokenCount(usage.output)} svar og ${tokenCount(usage.reasoning)} ræsonnement. Prisen er et overslag ud fra udbyderens listepris og kan afvige fra din faktura; se det faktiske forbrug hos udbyderen.`;
 }
 function showConnectionWarning(reason) {
   $('#connection-warning-text').textContent = reason;
@@ -844,6 +915,8 @@ $('#tools-remove').onclick = () => toolsAction(async () => {
   toolsStep('done');
 });
 $('#provider-account').onclick = () => action(() => call('providerAccount', $('#provider-kind').value));
+function renderLocation(location) { $('#project-location').textContent = `Projektet gemmes i ${location.label}.`; $('#project-location').title = location.path; }
+$('#choose-location').onclick = () => action(async () => renderLocation(await call('chooseProjectLocation')));
 function saveIdeaDraft() {
   try { localStorage.setItem(ideaDraftKey, JSON.stringify({name: $('#name').value, purpose: $('#purpose').value, nameTouched})); $('#idea-draft-status').textContent = 'Idé og projektnavn er gemt som kladde på denne computer.'; } catch { $('#idea-draft-status').textContent = 'Kladden kan ikke gemmes automatisk på denne computer.'; }
 }
@@ -857,11 +930,20 @@ function restoreIdeaDraft() {
   } catch {}
 }
 $('#name').addEventListener('input', () => { nameTouched = true; saveIdeaDraft(); });
-$('#purpose').addEventListener('input', () => {
-  if (!nameTouched) {
-    const words = $('#purpose').value.trim().replace(/^(jeg vil (gerne )?(lave|bygge)|vi vil (lave|bygge))\s+/i, '').split(/\s+/).slice(0,7).join(' ');
-    $('#name').value = (words.charAt(0).toLocaleUpperCase('da') + words.slice(1)).slice(0,80);
+// Et kort navneforslag ud fra idéen: det, der skal laves, uden resten af sætningen. Brugeren kan altid rette det.
+const genericNames = new Set(['side', 'app', 'hjemmeside', 'webside', 'løsning', 'værktøj', 'system', 'program', 'platform', 'portal', 'oversigt', 'liste', 'formular', 'applikation', 'prototype', 'tjeneste', 'webapp']);
+function suggestName(purpose) {
+  const text = purpose.trim().replace(/^(jeg|vi)\s+(vil|skal|ønsker at|kunne godt tænke (mig|os) at)\s+(gerne\s+)?(lave|bygge|skabe|have|udvikle)\s+/i, '').replace(/^(en|et|nogle|min|mit|mine|vores)\s+/i, '');
+  let words = text.split(/[,.;:!?\n]|\s(?:hvor|som|der|så|til at|for at)\s/i)[0].trim().split(/\s+/).filter(Boolean);
+  if (words.length === 1 && genericNames.has(words[0].toLocaleLowerCase('da'))) {
+    const place = /(?:^|\s)(?:i|til|for|om|på)\s+(?:vores|min|mit|mine|jeres|den|det|de)?\s*([\p{L}-]{4,}(?:\s+[\p{L}-]+){0,2})/iu.exec(text);
+    words = place ? place[1].split(/\s+/) : text.split(/\s+/).slice(0, 5);
   }
+  const name = words.slice(0, 5).join(' ');
+  return (name.charAt(0).toLocaleUpperCase('da') + name.slice(1)).slice(0, 80);
+}
+$('#purpose').addEventListener('input', () => {
+  if (!nameTouched) $('#name').value = suggestName($('#purpose').value);
   saveIdeaDraft();
 });
 try { if (!localStorage.getItem(introductionKey)) showIntroduction(); } catch { showIntroduction(); }
@@ -874,17 +956,31 @@ function modelDescription(model) {
   const cost = !known ? 'Pris ukendt' : Number(price.prompt) === 0 && Number(price.completion) === 0 ? '0 USD for input/output*' : `${Number(price.prompt) * 1e6} / ${Number(price.completion) * 1e6} USD pr. mio. input-/outputtokens`;
   return `${cost} · ${model.capabilities?.tools === true ? 'Værktøjskald angivet i kataloget' : model.capabilities?.tools === false ? 'Ingen værktøjskald angivet' : 'Kodeværktøjer ikke verificeret'}`;
 }
+// For udbyderne i opsætningen vælges udbyderens eget udgangspunkt på forhånd. Det er ikke en anbefaling fra appen; modellen står under skrivefeltet og i resuméet før første afsendelse.
+function preselectRecommended(connectionID) {
+  const kind = state.connections.find(c => c.id === connectionID)?.kind;
+  if (!featuredProviders.some(item => item.kind === kind)) return;
+  const { curated, picks } = window.ModelAdvice.suggest(modelCatalog, kind);
+  if (curated && picks[0]) $('#model-select').value = picks[0].model.id;
+}
+function markChosenModel() { for (const button of document.querySelectorAll('#model-shortlist .model-choice')) button.setAttribute('aria-pressed', String(button.dataset.model === $('#model-select').value)); }
 function renderShortlist() {
   const kind = state.connections.find(c => c.id === $('#connection-select').value)?.kind;
   const { curated, picks } = window.ModelAdvice.suggest(modelCatalog, kind);
   $('#model-shortlist').replaceChildren();
   for (const { model, text } of picks) {
-    const button = node('button', undefined, 'model-choice'); button.type = 'button';
+    const button = node('button', undefined, 'model-choice'); button.type = 'button'; button.dataset.model = model.id;
     button.append(node('strong', model.name), node('span', text));
-    button.onclick = () => action(async () => { $('#model-select').value = model.id; $('#model-evidence').textContent = `${model.name}: ${modelDescription(model)}. Modtager: ${state.connections.find(c => c.id === $('#connection-select').value)?.name || 'valgt forbindelse'}. Endelig udbyder og vilkår gennemgås før afsendelse.`; updateModelSummary(); await loadRoutes(); });
+    // Et klik vælger modellen og lukker dialogen. Kun OpenRouter kræver bagefter et valg af udbyder.
+    button.onclick = () => action(async () => {
+      $('#model-select').value = model.id; $('#model-evidence').textContent = `${model.name}: ${modelDescription(model)}. Modtager: ${state.connections.find(c => c.id === $('#connection-select').value)?.name || 'valgt forbindelse'}.`;
+      markChosenModel(); updateModelSummary(); await loadRoutes();
+      if ($('#route-row').hidden) { $('#model-options').open = false; $('#task-dialog').close(); $('#prompt').focus(); }
+    });
     $('#model-shortlist').append(button);
   }
-  $('#model-shortlist').append(node('p', !picks.length ? 'Ingen forslag fra din forbindelse. Se alle modeller under Avanceret.' : curated ? 'Anbefalingerne er AI Harness\' standardvalg. Pris og vilkår vises, når du har valgt, og før du sender. Alle modeller finder du under Avanceret.' : 'Et udvalg fra din forbindelse, ikke en anbefaling. Pris og vilkår vises, når du har valgt, og før du sender.', 'hint'));
+  $('#model-shortlist').append(node('p', !picks.length ? 'Ingen forslag fra din forbindelse. Se alle modeller nedenfor.' : curated ? 'Et udvalg af udbyderens modeller. Det første er udbyderens eget udgangspunkt; AI Harness anbefaler ingen model. Du ser pris og modtager, før noget sendes.' : 'Et udvalg fra din forbindelse. Du ser pris og modtager, før noget sendes.', 'hint'));
+  markChosenModel();
 }
 $('#model-search').oninput = () => { const query = $('#model-search').value.toLocaleLowerCase(); for (const item of $('#model-select').options) item.hidden = Boolean(item.value && item.value !== $('#model-select').value && !item.textContent.toLocaleLowerCase().includes(query)); };
 function updateWorkMode() {
@@ -906,16 +1002,23 @@ $('#build-plan').onclick = () => {
   $('#prompt').value = 'Byg første udkast efter den plan, jeg har gennemgået. Afslut med konkrete ting, jeg skal prøve i forhåndsvisningen.';
   $('#chat-form').requestSubmit();
 };
-function approvalExplanation(p) {
+// Målet vises som en sti i projektet, når det er muligt. OpenCode regner mønstre ud fra Git-roden eller fra computerens rod.
+function approvalTarget(p) {
+  const file = typeof p.metadata?.filepath === 'string' ? p.metadata.filepath : '';
+  const root = current?.root || '';
+  if (p.permission === 'edit' && file && root && (file.startsWith(root + '/') || file.startsWith(root + '\\'))) return { projectFile: true, text: file.slice(root.length + 1).replaceAll('\\', '/') };
+  if (p.permission === 'bash') return { text: p.metadata?.command || (p.patterns || []).join('\n') };
+  return { text: (p.patterns || []).join('\n') };
+}
+function approvalExplanation(p, target) {
   const explanations = {
-    edit: ['Må AI’en ændre disse filer?', 'Ændringen bliver gemt i projektet. Gennemgå bagefter resultat og fildiff; der gemmes ikke automatisk en Git-version, medmindre du har valgt checkpoints.'],
-    write: ['Må AI’en skrive denne fil?', 'En eksisterende fil kan blive erstattet. Gennemgå ændringen bagefter.'],
-    bash: ['Må AI’en køre denne kommando?', 'Kommandoen kan ændre eller slette filer, installere pakker og kontakte tjenester med dine rettigheder. Godkend kun, hvis formålet og kommandoen giver mening.'],
-    webfetch: ['Må AI’en besøge denne hjemmeside?', 'Hjemmesiden modtager forespørgslen. Det hentede indhold kan sendes videre til din valgte AI som kontekst.'],
-    external_directory: ['Må AI’en få adgang uden for projektet?', 'Denne adgang omfatter en anden mappe på computeren. Den kan indeholde materiale, du ikke vil dele med modellen.'],
-    grep: ['Må AI’en søge i filernes indhold?', 'Søgeresultaterne kan indgå i den kontekst, der sendes til modellen.']
+    edit: target.projectFile ? ['Må AI’en ændre filer i projektet?', 'Vælg Tillad for denne opgave, så spørger vi ikke igen om filer i projektmappen, før opgaven er færdig. Du kan se alle ændringer bagefter under Ændringer.'] : ['Må AI’en ændre en fil uden for projektet?', 'Filen ligger ikke i projektmappen. Tillad kun, hvis du ved, hvorfor den skal ændres.'],
+    bash: ['Må AI’en køre en kommando?', 'En kommando kan ændre eller slette filer, installere programmer og kontakte andre tjenester med dine rettigheder. Tillad kun, hvis du forstår, hvad den gør.'],
+    webfetch: ['Må AI’en åbne en hjemmeside?', 'Hjemmesiden får besked om besøget, og indholdet sendes videre til din AI.'],
+    external_directory: ['Må AI’en se en mappe uden for projektet?', 'Mappen kan indeholde materiale, du ikke vil dele med din AI.'],
+    grep: ['Må AI’en søge i projektets filer?', 'Det, AI’en finder, sendes videre til din AI.']
   };
-  const [title, effect] = explanations[p.permission] || ['Gennemgå denne handling', 'Læs målet og de tekniske detaljer, før du giver tilladelse.'];
+  const [title, effect] = explanations[p.permission] || ['Gennemgå denne handling', 'Læs de tekniske detaljer, før du tillader den.'];
   return { title, effect };
 }
 function renderRunReview(result) {

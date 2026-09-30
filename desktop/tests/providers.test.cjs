@@ -31,3 +31,39 @@ for(const kind of ['corti','mistral']) test(`${kind}: katalog, streaming, værkt
  const response=await send();assert.match(await response.text(),/tool_calls/);assert.equal(received[0].tools[0].function.name,'read');
  fail=true;const rejected=await send();assert.equal(rejected.status,401);assert.doesNotMatch(await rejected.text(),/hemmelig/);assert.equal(received.length,2);
 });
+test('kendte modeller får deres dokumenterede tokengrænser; ukendte beholder de forsigtige', () => {
+ const { modelLimits } = require('../core/connections.cjs');
+ assert.deepEqual(modelLimits({ kind: 'anthropic' }, { id: 'claude-sonnet-5-5' }), { context: 200000, output: 32000 });
+ assert.deepEqual(modelLimits({ kind: 'anthropic' }, { id: 'claude-3-haiku-20240307' }), { context: 200000, output: 4096 });
+ assert.deepEqual(modelLimits({ kind: 'ollama' }, { id: 'qwen3:8b' }), { context: 32768, output: 4096 });
+ // Kataloget har forrang, men et svar kan aldrig fylde mere end halvdelen af konteksten.
+ assert.deepEqual(modelLimits({ kind: 'compatible' }, { id: 'lille', limits: { context: 8192, output: 8192 } }), { context: 8192, output: 4096 });
+ assert.equal(engineProvider({ kind: 'anthropic', name: 'a' }, { id: 'claude-opus-5-5' }, 'http://127.0.0.1:1/v1', 't').models['claude-opus-5-5'].limit.output, 32000);
+});
+test('gatewayen lader en langsom strøm køre færdig, men stopper stilstand', async t => {
+ let stall = false;
+ const server = http.createServer(async (req, res) => {
+  for await (const chunk of req) void chunk;
+  res.writeHead(200, { 'content-type': 'text/event-stream' });
+  // Fem bidder med 150 ms mellemrum: samlet længere end grænsen for stilstand, men aldrig stille så længe.
+  for (let i = 0; i < 5; i++) { res.write(`data: {"del":${i}}\n\n`); await new Promise(r => setTimeout(r, 150)); if (stall && i === 1) await new Promise(r => setTimeout(r, 1000)); }
+  res.end('data: [DONE]\n\n');
+ });
+ await new Promise(r => server.listen(0, '127.0.0.1', r));
+ const failures = [];
+ const gateway = await startGateway({ kind: 'compatible', name: 'Prøve', baseURL: `http://127.0.0.1:${server.address().port}/v1` }, { id: 'kode' }, '', null, message => failures.push(message), { idleLimit: 400 });
+ t.after(async () => { await gateway.close(); server.closeAllConnections(); await new Promise(r => server.close(r)); });
+ const send = () => fetch(gateway.url + '/chat/completions', { method: 'POST', headers: { authorization: `Bearer ${gateway.token}` }, body: JSON.stringify({ model: 'kode', stream: true, messages: [] }) });
+ const text = await (await send()).text();
+ assert.match(text, /"del":4/); assert.match(text, /\[DONE\]/); assert.deepEqual(failures, []);
+ stall = true;
+ await assert.rejects((await send()).text());
+ assert.match(failures[0], /afbrudt/);
+});
+test('Zens vilkår vises for hver model', () => {
+ const zen = { kind: 'zen', name: 'Zen', baseURL: 'https://opencode.ai/zen/v1' };
+ assert.match(disclosure(zen, { id: 'longcat-2.5-preview-free' }).trainingShort, /bruges ikke til træning/);
+ assert.match(disclosure(zen, { id: 'muse-spark-1.3-contributor-free' }).trainingShort, /Metas modeller/);
+ assert.match(disclosure(zen, { id: 'big-pickle' }).trainingShort, /forbedre modellen/);
+ assert.equal(disclosure(zen, { id: 'claude-sonnet-5-5' }).regionShort, 'USA');
+});

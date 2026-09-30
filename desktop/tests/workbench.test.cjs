@@ -137,3 +137,62 @@ test('streamet tekst bevares ved stop, mens arbejdsnoter og tilladelser udelades
  assert.doesNotMatch(JSON.stringify(reopened.workspace), /Intern note|approval/);
  await bench.close();
 });
+
+test('Tillad for denne opgave gælder kun filer i projektmappen og kun indtil opgaven slutter', async t => {
+ const emitted = [], replies = [], root = await temp(t);
+ const bench = new Workbench({ directory: await temp(t), profiles, emit: event => emitted.push(event), safeStorage: {} });
+ bench.project = { root }; bench.running = true; bench.historyWarning = 'Ingen historik i denne prøve.';
+ bench.engine = { pending: new Map(), reply: async (id, allow) => { replies.push([id, allow]); } };
+ const ask = (id, permission, metadata = {}) => { const properties = { id, permission, metadata, patterns: [] }; bench.engine.pending.set(id, properties); bench.event({ type: 'permission.asked', properties }); };
+ const settle = () => new Promise(resolve => setImmediate(resolve));
+ ask('1', 'edit', { filepath: path.join(root, 'public/index.html') });
+ assert.equal(emitted.at(-1).properties.id, '1'); assert.deepEqual(replies, []);
+ // Kun en filændring i projektet kan tillades for hele opgaven.
+ ask('2', 'bash', { command: 'ls' });
+ await assert.rejects(bench.reply({ id: '2', allow: true, scope: 'task' }), /projektmappen/);
+ assert.equal(bench.allowProjectEdits, false);
+ await bench.reply({ id: '1', allow: true, scope: 'task' });
+ ask('3', 'edit', { filepath: path.join(root, 'public/styles.css') }); await settle();
+ assert.deepEqual(replies, [['1', true], ['3', true]]);
+ assert.deepEqual(emitted.at(-1), { type: 'permission.auto', file: 'public/styles.css' });
+ // Uden for projektet, Git-historik, hemmeligheder, kommandoer og web spørger stadig.
+ for (const [id, permission, metadata] of [['4', 'edit', { filepath: path.join(path.dirname(root), 'andet', 'fil.txt') }], ['5', 'edit', { filepath: path.join(root, '.git', 'config') }], ['6', 'edit', { filepath: path.join(root, '.env.local') }], ['7', 'edit', { filepath: path.join(root, 'noegler', 'server.pem') }], ['8', 'edit', { filepath: 'public/relativ.html' }], ['9', 'bash', { command: 'rm -rf public' }], ['10', 'webfetch']]) {
+  ask(id, permission, metadata); await settle();
+  assert.equal(emitted.at(-1).properties?.id, id, `handling ${id} skal vises for brugeren`);
+ }
+ assert.equal(replies.length, 2);
+ // Når opgaven er slut, gælder tilladelsen ikke længere.
+ bench.event({ type: 'session.idle' }); await bench.finishing;
+ assert.equal(bench.allowProjectEdits, false);
+ bench.running = true;
+ ask('11', 'edit', { filepath: path.join(root, 'public/index.html') }); await settle();
+ assert.equal(emitted.at(-1).properties?.id, '11'); assert.equal(replies.length, 2);
+});
+
+
+test('forbruget tælles pr. modelkald og prissættes med ræsonnement som output', async t => {
+ const emitted = [];
+ const bench = new Workbench({ directory: await temp(t), profiles, emit: event => emitted.push(event), safeStorage: {} });
+ const root = await temp(t); await bench.activate({ root, name: 'Prøve' });
+ assert.deepEqual(bench.currentUsage(), { input: 0, output: 0, reasoning: 0, cacheRead: 0, cacheWrite: 0, calls: 0, cost: 0, unpriced: 0 });
+ bench.runSteps = new Map(); bench.runPrice = require('../core/connections.cjs').priceFor({ kind: 'anthropic' }, { id: 'claude-opus-5-5' });
+ const step = (id, tokens) => bench.event({ type: 'message.part.updated', properties: { part: { id, type: 'step-finish', tokens } } });
+ step('a', { input: 1000, output: 200, reasoning: 100, cache: { read: 10000, write: 2000 } });
+ step('a', { input: 1000, output: 200, reasoning: 100, cache: { read: 10000, write: 2000 } });
+ step('b', { input: 500, output: 100, reasoning: 0, cache: { read: 0, write: 0 } });
+ const usage = bench.currentUsage();
+ assert.equal(usage.calls, 2, 'samme modelkald tælles kun én gang');
+ assert.equal(usage.input, 1500); assert.equal(usage.output, 300); assert.equal(usage.reasoning, 100);
+ // Opus 5.5: 4 USD ind, 20 USD ud, 0,2 USD fra cache og 5 USD til cache pr. million tokens.
+ assert.ok(Math.abs(usage.cost - (1500 * 4 + 400 * 20 + 10000 * 0.2 + 2000 * 5) / 1e6) < 1e-12);
+ assert.equal(emitted.filter(e => e.type === 'usage').length, 2);
+ // Forbruget gemmes med samtalen og er nulstillet i en ny samtale.
+ bench.running = true; await bench.saveHistory('idle'); bench.running = false;
+ await bench.activate({ root, name: 'Prøve' });
+ assert.equal(bench.currentUsage().calls, 2);
+ await bench.newConversation();
+ assert.equal(bench.currentUsage().calls, 0);
+ bench.runPrice = null; step('c', { input: 10, output: 5 });
+ assert.equal(bench.currentUsage().unpriced, 1);
+ await bench.close();
+});

@@ -1,13 +1,56 @@
 const { randomUUID, createHash } = require('node:crypto');
 const definitions = {
-  corti: { name: 'Corti S1 · EU', baseURL: 'https://ai.eu.corti.app/v1', protocol: 'openai', keyRequired: true, source: 'https://docs.corti.ai/models/regions', checkedAt: '2026-09-25', training: 'Corti oplyser, at EU-modeldata ikke bruges til træning. Kontrollér aftalen for jeres projekt.', region: 'EU ifølge Cortis dokumentation. Denne adapter bruger kun EU-endpointet; den konkrete installation er ikke uafhængigt verificeret.' },
-  mistral: { name: 'Mistral API', baseURL: 'https://api.mistral.ai/v1', protocol: 'openai', keyRequired: true, source: 'https://help.mistral.ai/en/articles/347617-do-you-use-my-user-data-to-train-your-artificial-intelligence-models', checkedAt: '2026-09-25', training: 'Afhænger af abonnement, model og træningsvalg i Mistral Studio. Gratis adgang og Labs/Preview kan have andre vilkår. Appen kontrollerer ikke kontoens fravalg.', retention: 'Afhænger af konto, endpoint og eventuel Zero Data Retention-aftale. Træningsfravalg er ikke det samme som ingen opbevaring.' },
-  anthropic: { name: 'Anthropic API', baseURL: 'https://api.anthropic.com/v1', protocol: 'anthropic', keyRequired: true, source: 'https://privacy.claude.com/en/articles/7996868-is-my-data-used-for-model-training', training: 'Anthropic oplyser: API-data bruges ikke som standard til træning; aftaler og aktivt tilvalg kan ændre dette.' },
+  // Vilkår for de tre udbydere i opsætningen er kontrolleret hos udbyderne 29. september 2026. De korte tekster vises i resuméet før afsendelse.
+  corti: { name: 'Corti S1 · EU', provider: 'Corti', baseURL: 'https://ai.eu.corti.app/v1', protocol: 'openai', keyRequired: true, source: 'https://docs.corti.ai/models/regions', checkedAt: '2026-09-29',
+    training: 'Corti oplyser, at data i EU-projekter aldrig bruges til træning. Kontrollér aftalen for jeres projekt.', trainingShort: 'Bruges ikke til træning, ifølge Corti',
+    region: 'EU ifølge Cortis dokumentation: EU-projekter kører på Cortis egen klynge i EU. Denne adapter bruger kun EU-endpointet; den konkrete installation er ikke uafhængigt verificeret.', regionShort: 'EU, på Cortis egne servere',
+    retention: 'Corti oplyser, at prompts og svar i EU-projekter aldrig gemmes eller logges.', retentionShort: 'Gemmes ikke, ifølge Corti' },
+  mistral: { name: 'Mistral API', provider: 'Mistral', baseURL: 'https://api.mistral.ai/v1', protocol: 'openai', keyRequired: true, source: 'https://help.mistral.ai/en/articles/347617-do-you-use-my-user-data-to-train-your-artificial-intelligence-models', checkedAt: '2026-09-29',
+    training: 'På Mistrals gratis plan kan input og svar bruges til træning. Med betalt forbrug kan du fravælge det under Privacy i Mistral Admin. Appen kontrollerer ikke kontoens valg.', trainingShort: 'Kan bruges til træning på gratisplanen',
+    region: 'Mistral hoster data i EU, men det globale endpoint api.mistral.ai lover ikke, hvor selve behandlingen sker. Garanteret EU-behandling kræver Mistrals EU-endpoint, som appen ikke bruger endnu.', regionShort: 'Hostes i EU, behandlingssted ikke garanteret',
+    retention: 'Gemmes i 30 dage til misbrugskontrol. Nuldataopbevaring kan aftales ved betalt forbrug.', retentionShort: 'Gemmes i 30 dage' },
+  anthropic: { name: 'Anthropic API', provider: 'Anthropic', baseURL: 'https://api.anthropic.com/v1', protocol: 'anthropic', keyRequired: true, source: 'https://platform.claude.com/docs/en/manage-claude/data-residency', checkedAt: '2026-09-29',
+    training: 'Anthropic oplyser: API-data bruges ikke som standard til træning; aftaler og aktivt tilvalg kan ændre dette.', trainingShort: 'Bruges ikke til træning som standard',
+    region: 'Globalt. Anthropic kan behandle data i flere lande, også uden for EU, og gemmer data i USA. Der findes ingen EU-mulighed.', regionShort: 'Globalt, også uden for EU',
+    retention: 'Slettes inden for 30 dage. Indhold, der markeres for misbrug, kan gemmes i op til 2 år.', retentionShort: 'Slettes inden for 30 dage' },
   openrouter: { name: 'OpenRouter', baseURL: 'https://openrouter.ai/api/v1', protocol: 'openai', keyRequired: true, source: 'https://openrouter.ai/docs/guides/privacy/provider-logging', training: 'Afhænger af den valgte modeludbyder og kontoens indstillinger.' },
-  zen: { name: 'OpenCode Zen', baseURL: 'https://opencode.ai/zen/v1', protocol: 'openai', keyRequired: false, source: 'https://opencode.ai/docs/en/zen/#privacy', training: 'Modelafhængigt. Flere gratis modeller kan bruge data til forbedring eller træning.', region: 'USA ifølge Zen-dokumentationen; ikke uafhængigt verificeret.' },
+  // Zen-vilkår kontrolleret på opencode.ai/docs/zen 29. september 2026. Træning afhænger af modellen; se zenTerms.
+  zen: { name: 'OpenCode Zen', provider: 'OpenCode Zen', baseURL: 'https://opencode.ai/zen/v1', protocol: 'openai', keyRequired: false, source: 'https://opencode.ai/docs/zen/', checkedAt: '2026-09-29',
+    training: 'Afhænger af modellen. Flere af Zens gratis modeller kan bruge dine data til at forbedre eller træne modeller.', region: 'USA. Zen oplyser, at alle modeller hostes i USA.', regionShort: 'USA',
+    retention: 'Afhænger af modellen. Zen oplyser nul opbevaring for de fleste modeller og 30 dage for OpenAI og Anthropic.' },
   ollama: { name: 'Ollama', baseURL: 'http://127.0.0.1:11434', protocol: 'openai', keyRequired: false, source: 'https://docs.ollama.com/api/introduction', training: 'Afhænger af den valgte lokale modelserver og eventuel cloud-videresendelse.' },
   compatible: { name: 'Egen server / DGX Spark', baseURL: '', protocol: 'openai', keyRequired: false, source: '', training: 'Ukendt. Kontroller serverens konfiguration og eventuel videresendelse.' }
 };
+// Zens gratis modeller har forskellige vilkår. Kontrolleret på opencode.ai/docs/zen 29. september 2026.
+const zenTerms = [
+  [/^(space-bunny|longcat)/, 'Gemmes ikke og bruges ikke til træning, ifølge Zen', 'Zen oplyser nul opbevaring, og at data ikke bruges.'],
+  [/^muse-spark/, 'Bruges til at træne Metas modeller', 'Zen oplyser, at prompts og svar må bruges til at træne fremtidige Meta-modeller.'],
+  [/^(big-pickle|mimo|ling|nemotron|jev|deepseek)/, 'Kan bruges til at forbedre modellen', 'Zen oplyser, at indsamlede data kan bruges til at forbedre modellen.']
+];
+// Oplyste API-priser i USD pr. million tokens for de modeller, appen anbefaler. Kontrolleret 29. september 2026.
+// Kataloget har forrang, når det selv oplyser en pris.
+const knownPrices = [
+  ['anthropic', /^claude-fable-5/, 10, 50], ['anthropic', /^claude-opus-5/, 4, 20], ['anthropic', /^claude-sonnet-5/, 2, 10], ['anthropic', /^claude-haiku-4-5/, 1, 5],
+  ['mistral', /^mistral-medium-(3-5|latest)/, 1.5, 7.5], ['mistral', /^mistral-large-(2512|latest)/, 0.5, 1.5], ['mistral', /^codestral-(2508|latest)/, 0.3, 0.9],
+  ['corti', /^corti-s1-mini/, 1, 4], ['corti', /^corti-s1/, 2, 8]
+];
+const priceSources = { anthropic: 'https://platform.claude.com/docs/en/about-claude/pricing', mistral: 'https://docs.mistral.ai/inference/pricing', corti: 'https://docs.corti.ai/models/models' };
+// Pris i USD pr. million tokens til et anslået forbrug. Cachelæsning og -skrivning følger udbydernes prislister;
+// kendes cacheprisen ikke, regnes den som almindeligt input.
+function priceFor(connection, model, route = null) {
+  const catalog = route?.price || model.price;
+  if (catalog && catalog.prompt != null && catalog.completion != null) {
+    const per = value => Number(value) * 1e6, input = per(catalog.prompt);
+    if (!Number.isFinite(input) || !Number.isFinite(per(catalog.completion))) return null;
+    return { input, output: per(catalog.completion), cacheRead: catalog.input_cache_read != null ? per(catalog.input_cache_read) : input, cacheWrite: catalog.input_cache_write != null ? per(catalog.input_cache_write) : input };
+  }
+  const known = knownPrice(connection.kind, model.id);
+  if (!known) return null;
+  const read = connection.kind === 'anthropic' ? (/^claude-fable-5/.test(model.id) ? 0.025 : /^claude-opus-5-5/.test(model.id) ? 0.05 : 0.1) : connection.kind === 'corti' ? 0.1 : 1;
+  return { input: known.input, output: known.output, cacheRead: known.input * read, cacheWrite: connection.kind === 'anthropic' ? known.input * 1.25 : known.input };
+}
+function knownPrice(kind, id) { const found = knownPrices.find(([provider, pattern]) => provider === kind && pattern.test(id)); return found ? { input: found[2], output: found[3], source: priceSources[kind] } : null; }
+const usd = value => value.toLocaleString('da-DK', { maximumFractionDigits: 2 });
 function endpoint(value) {
   let url; try { url = new URL(value); } catch { throw new Error('Angiv en fuld serveradresse med http:// eller https://.'); }
   if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) throw new Error('Serveradressen må ikke indeholde login, parametre eller fragmenter.');
@@ -47,6 +90,7 @@ async function listModels(connection, key) {
   return models.slice(0, 5000).filter(model => model && model.capabilities?.completion_chat !== false && !(connection.kind === 'corti' && /embedding/.test(model.id))).map(model => ({
     id: ollama ? model.name : model.id, name: model.name || model.display_name || model.id,
     price: model.pricing || null, capabilities: { tools: model.capabilities?.function_calling ?? model.supported_parameters?.includes('tools') ?? null },
+    limits: { context: tokenCount(model.context_length ?? model.max_context_length ?? model.context_window ?? model.max_input_tokens), output: tokenCount(model.top_provider?.max_completion_tokens ?? model.max_output_tokens ?? model.max_tokens) },
     local: ollama && !model.remote_host && !/:.*cloud/.test(model.name) ? 'Ikke verificeret' : null
   })).filter(model => typeof model.id === 'string');
 }
@@ -61,12 +105,16 @@ function disclosure(connection, model, route = null) {
   const loopback = ['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname);
   const price = route?.price || model.price;
   const free = price && Number(price.prompt) === 0 && Number(price.completion) === 0;
+  const known = knownPrice(connection.kind, model.id);
+  const zen = connection.kind === 'zen' ? zenTerms.find(([pattern]) => pattern.test(model.id)) : null;
   const data = {
     connection: connection.name, model: model.id, endpoint: connection.baseURL,
     recipients: connection.kind === 'openrouter' ? `OpenRouter → ${route?.name || 'Ukendt modeludbyder'}` : `${def.name} · ${url.hostname}`,
     region: def.region || (loopback ? 'Forbindelsen går til denne computer. Selve modellens behandlingssted er endnu ikke verificeret.' : 'Ukendt; serveradressen dokumenterer ikke behandlingsstedet.'),
     retention: def.retention || 'Ikke verificeret for denne forbindelse. Konto-, model- og servervilkår kan variere.',
-    training: def.training, price: free ? '0 i oplyst pris for input/output. Kvoter, øvrige gebyrer og senere prisændringer kan gælde.' : price ? `Oplyst API-pris: ${JSON.stringify(price)}` : 'Ukendt pris eller egen drift. Ingen garanti om gratis brug.',
+    training: zen ? zen[2] : def.training, price: free ? '0 i oplyst pris for input/output. Kvoter, øvrige gebyrer og senere prisændringer kan gælde.' : price ? `Oplyst API-pris: ${JSON.stringify(price)}` : known ? `${usd(known.input)} USD pr. million tokens, du sender, og ${usd(known.output)} USD pr. million tokens i svar, ifølge ${def.provider}s prisliste (kontrolleret ${def.checkedAt}). Prisen kan ændre sig; se dit forbrug hos udbyderen.` : 'Ukendt pris eller egen drift. Ingen garanti om gratis brug.',
+    provider: def.provider || def.name, regionShort: def.regionShort || null, trainingShort: zen?.[1] || def.trainingShort || null, retentionShort: def.retentionShort || null,
+    priceShort: free ? 'Gratis ifølge kataloget. Kvoter kan gælde.' : known && !price ? `${usd(known.input)} USD ind og ${usd(known.output)} USD ud pr. million tokens` : null,
     capabilities: model.capabilities?.tools === true ? 'Kataloget angiver værktøjskald; faktisk kodearbejde er ikke verificeret for denne model.' : model.capabilities?.tools === false ? 'Kataloget angiver ikke værktøjsunderstøttelse. Modellen kan være uegnet som kodeagent.' : 'Værktøjsunderstøttelse er ukendt. Modelkataloget er ikke et kompatibilitetsbevis.',
     material: 'Beskeder, samtalehistorik, fælles regler, projektkontekst og de filer/værktøjsresultater agenten læser. Referencefiler kræver særskilt tilvalg. Modelskift starter en ny session.',
     security: url.protocol === 'http:' && !loopback ? 'HTTP uden TLS. Tailscale-kryptering er kun gældende, hvis forbindelsen faktisk går gennem Tailscale; det er ikke verificeret her.' : 'Forbindelsesadressen er kontrolleret. Det er ikke en sikkerhedsgodkendelse af tjenesten.',
@@ -74,10 +122,30 @@ function disclosure(connection, model, route = null) {
   };
   return { ...data, fingerprint: createHash('sha256').update(JSON.stringify(data)).digest('hex') };
 }
+// Tal fra et modelkatalog bruges kun, når de ligner rigtige tokengrænser.
+function tokenCount(value) { const number = Number(value); return Number.isInteger(number) && number >= 1024 && number <= 10_000_000 ? number : null; }
+// Dokumenterede grænser for de modeller, appen anbefaler. Kataloget har forrang, når det oplyser grænserne.
+// Ukendte modeller beholder de forsigtige standarder, så en lille lokal model ikke får for store kald.
+const knownLimits = [
+  ['anthropic', /^claude-3-haiku/, { context: 200000, output: 4096 }],
+  ['anthropic', /^claude-3-5-/, { context: 200000, output: 8192 }],
+  // Claude 5 kan rumme en million tokens. Samtalen komprimeres alligevel ved 200.000, så hvert kald ikke bliver dyrt.
+  ['anthropic', /^claude-/, { context: 200000, output: 32000 }],
+  ['zen', /^claude-/, { context: 200000, output: 32000 }],
+  ['mistral', /^mistral-(large|medium)/, { context: 200000, output: 16384 }],
+  ['mistral', /codestral|devstral/, { context: 128000, output: 16384 }]
+];
+function modelLimits(connection, model) {
+  const known = knownLimits.find(([kind, pattern]) => kind === connection.kind && pattern.test(model.id))?.[2];
+  const context = model.limits?.context || known?.context || 32768;
+  // OpenCode sender højst 32.000 svartokens pr. kald. Et svar må aldrig kunne fylde hele konteksten.
+  const output = Math.min(model.limits?.output || known?.output || 4096, 32000, Math.floor(context / 2));
+  return { context, output };
+}
 function engineProvider(connection, model, gatewayURL, token) {
   const anthropic = connection.kind === 'anthropic' || (connection.kind === 'zen' && /^claude-/.test(model.id));
   return { npm: anthropic ? '@ai-sdk/anthropic' : '@ai-sdk/openai-compatible', name: connection.name,
     options: { baseURL: gatewayURL, apiKey: token },
-    models: { [model.id]: { name: model.name, tool_call: true, limit: { context: 32768, output: 4096 } } } };
+    models: { [model.id]: { name: model.name, tool_call: true, limit: modelLimits(connection, model) } } };
 }
-module.exports = { definitions, endpoint, normalize, requestJSON, listModels, routes, disclosure, engineProvider };
+module.exports = { definitions, endpoint, normalize, requestJSON, listModels, routes, disclosure, engineProvider, modelLimits, priceFor };

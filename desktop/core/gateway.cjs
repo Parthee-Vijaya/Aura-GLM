@@ -1,8 +1,9 @@
 const http = require('node:http');
 const { randomBytes } = require('node:crypto');
 
+const IDLE_LIMIT = 120_000, TOTAL_LIMIT = 20 * 60_000;
 // Kun agentmotoren får en midlertidig adgangskode. Den rigtige modelnøgle bliver i hovedprocessen.
-async function startGateway(connection, model, key, route, onFailure = () => {}) {
+async function startGateway(connection, model, key, route, onFailure = () => {}, { idleLimit = IDLE_LIMIT, totalLimit = TOTAL_LIMIT } = {}) {
   const token = randomBytes(32).toString('hex');
   const active = new Set();
   let failed = false, stopped = false;
@@ -13,6 +14,9 @@ async function startGateway(connection, model, key, route, onFailure = () => {})
     if (failed || stopped) { res.writeHead(409, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: { message: 'Forbindelsen er stoppet. Start selv en ny opgave i appen.', type: 'api_error' } })); }
     const controller = new AbortController(); active.add(controller);
     res.on('close', () => { controller.abort(); active.delete(controller); });
+    // Et langt svar må gerne tage tid, så længe der kommer data. Stilstand i to minutter afbryder kaldet.
+    const idle = new AbortController(); let idleTimer;
+    const touch = () => { clearTimeout(idleTimer); idleTimer = setTimeout(() => idle.abort(), idleLimit); };
     try {
       if (req.method !== 'POST' || !['/v1/chat/completions', '/v1/messages'].includes(req.url)) throw new Error('Ukendt modelhandling.');
       const chunks = []; let size = 0;
@@ -30,7 +34,8 @@ async function startGateway(connection, model, key, route, onFailure = () => {})
       const headers = { 'content-type': 'application/json' };
       if (anthropic) { headers['anthropic-version'] = '2023-06-01'; if (key) headers['x-api-key'] = key; }
       else if (key) headers.authorization = `Bearer ${key}`;
-      const response = await fetch(`${base}${anthropic ? '/messages' : '/chat/completions'}`, { method: 'POST', headers, body: JSON.stringify(body), signal: AbortSignal.any([controller.signal, AbortSignal.timeout(180000)]), redirect: 'error' });
+      touch();
+      const response = await fetch(`${base}${anthropic ? '/messages' : '/chat/completions'}`, { method: 'POST', headers, body: JSON.stringify(body), signal: AbortSignal.any([controller.signal, idle.signal, AbortSignal.timeout(totalLimit)]), redirect: 'error' });
       if (!response.ok) {
         await response.body?.cancel();
         const advice = { 401: 'API-nøglen blev afvist. Kontrollér eller udskift den under AI-forbindelser.', 403: 'Din konto har ikke adgang til modellen. Kontrollér adgangen hos udbyderen.', 402: 'Udbyderen afviste kaldet på grund af saldo eller kvote. Kontrollér kontoen; appen vælger ikke en betalt erstatning.', 404: 'Modellen eller adressen blev ikke fundet. Hent modellisten igen, og kontrollér forbindelsen.', 429: 'Udbyderens forbrugsgrænse er nået. Prøv igen, når kvoten er tilgængelig.' }[response.status] || 'Kontrollér forbindelsen og modelvalget, og prøv igen.';
@@ -39,7 +44,7 @@ async function startGateway(connection, model, key, route, onFailure = () => {})
         res.writeHead(response.status, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: { message, type: 'api_error' } }));
       }
       res.writeHead(200, { 'content-type': response.headers.get('content-type') || 'application/json', 'cache-control': 'no-store' });
-      for await (const chunk of response.body) { if (res.destroyed) break; res.write(chunk); }
+      for await (const chunk of response.body) { touch(); if (res.destroyed) break; res.write(chunk); }
       res.end();
     } catch {
       fail('Modelforbindelsen blev afbrudt. Din besked er bevaret. Kontrollér forbindelsen, og prøv igen.');
@@ -47,7 +52,7 @@ async function startGateway(connection, model, key, route, onFailure = () => {})
       if (res.headersSent) { res.destroy(); return; }
       if (!res.headersSent) res.writeHead(502, { 'content-type': 'application/json' });
       if (!res.destroyed) res.end(JSON.stringify({ error: { message: 'Modelforbindelsen blev afbrudt. Ingen reserveudbyder blev brugt.', type: 'api_error' } }));
-    } finally { active.delete(controller); }
+    } finally { clearTimeout(idleTimer); active.delete(controller); }
   });
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
   origin = `http://127.0.0.1:${server.address().port}`;

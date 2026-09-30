@@ -30,8 +30,8 @@ Udfyld først invitationen, når download og den aftalte model er afprøvet. Der
 ## Det testeren skal prøve
 
 1. Installer og åbn appen uden terminalkommandoer. Gå gennem introduktionen, og forbind den aftalte AI via adgangsnøgle eller AI på computeren. Prøv også Tilbage og Vælg senere. Noter, om hvert trin er forståeligt uden forklaring.
-2. Beskriv din idé med egne ord. Opret projektet i en mappe, du kan genfinde. Forklar med dine egne ord, hvad appen vil sende til modellen.
-3. Læs AI’ens forslag, og bed om en ændring af planen. Byg derefter første udkast. Gennemgå eventuelle godkendelser, før du accepterer dem.
+2. Beskriv din idé med egne ord, og opret projektet. Find bagefter projektmappen under Dokumenter › AI Harness. Forklar med dine egne ord, hvad appen vil sende til modellen, når resuméet **Før du sender** vises.
+3. Læs AI’ens forslag, og bed om en ændring af planen. Byg derefter første udkast. Når AI’en spørger, om den må ændre filer, så forklar forskellen på **Tillad for denne opgave** og **Kun denne fil**, før du vælger.
 4. Prøv appen i preview på computer- og mobilbredde. Bed AI’en rette én konkret ting, og kontroller resultatet.
 5. Gem en version via projektmenuen. Lav en ny ændring, gennemgå den tidligere version, og gendan den. Prøv derefter kopien fra før gendannelsen.
 6. Skriv en kladde, luk AI Harness, og åbn projektet igen. Find kladden, samtalen og filerne.
@@ -94,6 +94,12 @@ HARNESS_LIVE_SCENARIO=tasks HARNESS_LIVE_MODEL=google/gemma-4-31b-it:free npm ru
 Scenarierne `rooms`, `tasks` og `activities` kontrollerer plan, filændring, funktion, efterfølgende ændring og mobilbredde. De er afgrænsede HTML-prøver. Gennemgå også `plan.txt`, `samtale.txt` og skærmbillederne; automatisk godkendelse af sproglig kvalitet er ikke indbygget.
 
 Som standard afviser prøven alle kommandoer. `HARNESS_LIVE_ALLOW_INSPECTION=true` vælger i stedet et forløb, hvor testeren godkender et fast udvalg af `pwd` og `ls` i det syntetiske projekt. Prompten fortæller modellen om valget. Kommandokæder, installationer og andre kommandoer afvises stadig; filændringer er begrænset til `public/index.html`. Registrer valget sammen med resultatet, så prøver med forskellige tilladelser ikke blandes sammen.
+
+Begynderforløbet mod en rigtig model går gennem appens egen opsætning. Prøven åbner appen med den valgte udbyder og nøglevejledningen. Du indsætter selv nøglen i appvinduet og trykker Gem og kontrollér. Derefter kører prøven idé, plan, bygning, godkendelse og en rettelse. Den tager skærmbilleder og tæller tokens. Den gemmer planen, samtalen og de byggede filer. Prøven ser aldrig nøglen og sletter appens testdata med den krypterede nøgle bagefter. Mistrals gratis plan koster intet; andre udbydere kan koste penge:
+
+```sh
+HARNESS_LIVE_PROVIDER=mistral npm run test:live-app
+```
 
 Ollama eller en OpenAI-kompatibel server kan afprøves med samme scenarier. Vælg selv adresse og en installeret model med værktøjsstøtte. Kommandoen starter eller installerer ikke Ollama, modeller eller Tailscale:
 

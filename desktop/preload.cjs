@@ -3,7 +3,7 @@ const methods = {
   supportReport: 'support:report', supportSave: 'support:save', supportFeedback: 'support:feedback',
   restoreReview: 'git:restore-review', restoreVersion: 'git:restore',
   previewRuntime: 'preview:runtime', previewPrepare: 'preview:prepare', previewExecute: 'preview:execute', previewStop: 'preview:stop',
-  newConversation: 'workspace:new-conversation', recentProjects: 'project:recent', reopenProject: 'project:reopen', saveDraft: 'workspace:draft',
+  newConversation: 'workspace:new-conversation', projectLocation: 'project:location', chooseProjectLocation: 'project:choose-location', recentProjects: 'project:recent', reopenProject: 'project:reopen', saveDraft: 'workspace:draft',
   deploymentState: 'deployment:state', deploymentReview: 'deployment:review', deploymentSend: 'deployment:send', deploymentCheck: 'deployment:check', deploymentOpen: 'deployment:open',
   preferencesGet: 'preferences:get', preferencesSave: 'preferences:save', clearAssets: 'designs:clear',
   hostingState: 'hosting:state', hostingToken: 'hosting:token', hostingLogin: 'hosting:login', hostingPoll: 'hosting:poll', hostingCancel: 'hosting:cancel', hostingBrowser: 'hosting:browser', hostingDisconnect: 'hosting:disconnect', hostingCatalog: 'hosting:catalog', hostingCreate: 'hosting:create', hostingAttach: 'hosting:attach', hostingReview: 'hosting:review', hostingPush: 'hosting:push', hostingOpen: 'hosting:open',

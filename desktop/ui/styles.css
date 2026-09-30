@@ -118,6 +118,7 @@ form > section.panel { margin-bottom: 24px; }
 .model-choice { width: 100%; text-align: left; padding: 10px; margin: 6px 0; }
 .model-choice strong, .model-choice span { display: block; }
 .model-choice span { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.model-choice[aria-pressed="true"] { border-color: var(--accent); background: var(--tint); box-shadow: inset 0 0 0 1px var(--accent); }
 .workflow label { margin: 0; }
 .workflow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .workflow select { padding: 5px 8px; font-size: 12px; flex: 1; width: auto; }
@@ -128,7 +129,8 @@ form > section.panel { margin-bottom: 24px; }
 .composer textarea:focus-visible { outline: none; }
 .composer:has(textarea:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 .composer-toolbar { display: flex; align-items: center; gap: 6px; }
-#model-chip { margin-right: auto; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 450; font-size: 11px; color: var(--muted); }
+/* Model, udbyder og indsats skal altid kunne læses helt; teksten må bryde over to linjer i et smalt panel. */
+#model-chip { margin-right: auto; flex: 1 1 auto; min-width: 0; text-align: left; white-space: normal; line-height: 1.4; font-weight: 450; font-size: 11px; color: var(--muted); }
 #composer-mode { font-size: 10px; margin: 0; }
 .composer button { padding: 6px 13px; font-size: 12px; }
 #draft-status { font-size: 10px; margin: 0 20px 8px; color: var(--muted); min-height: 15px; }
@@ -371,3 +373,10 @@ body.setup-guided .app-content { margin-left: 0; }
 .skill-category .skill-count { display: inline; margin-left: 6px; color: var(--accent); font-weight: 600; }
 .skill-list { display: grid; gap: 8px; margin: 12px 0 2px 28px; }
 .skill-locked { background: var(--canvas); }
+.approval-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.approval-actions button { margin: 0; }
+.key-steps { margin: 8px 0 12px; padding-left: 22px; }
+.key-steps li { margin: 6px 0; line-height: 1.6; }
+.key-steps .text-button { padding: 0 4px; }
+.composer-status { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 11px; color: var(--muted); margin: 0 20px 8px; min-height: 15px; }
+.composer-status #draft-status { margin: 0; }

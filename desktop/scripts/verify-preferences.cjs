@@ -7,6 +7,7 @@ const os = require('node:os');
  const root = await fs.mkdtemp(path.join(os.tmpdir(),'harness-preferences-ui-')); let app;
  async function launch() {
   app=await electron.launch({executablePath:require('electron'),args:[path.join(__dirname,'..'),'--user-data-dir='+path.join(root,'appdata')],env:{...process.env,ELECTRON_RUN_AS_NODE:undefined}});
+  await require('./ui-test-helpers.cjs').isolateDocuments(app,path.join(root,'Dokumenter'));
   const page=await app.firstWindow(); await require('./ui-test-helpers.cjs').skipIntroduction(page); await page.waitForFunction(()=>!document.querySelector('#create').disabled && !document.querySelector('#new').disabled && !document.querySelector('#startup-summary').textContent.includes('Indlæser'));
   await app.evaluate(({dialog},root)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[root]});},root);
   return page;

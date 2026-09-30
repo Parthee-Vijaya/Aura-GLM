@@ -27,7 +27,8 @@
     "test:recovery": "node scripts/verify-recovery.cjs",
     "test:tools": "node scripts/verify-tools.cjs",
     "test:skills-claude": "node scripts/verify-harness-claude.cjs",
-    "test:skills-opencode": "node scripts/verify-harness-opencode.cjs"
+    "test:skills-opencode": "node scripts/verify-harness-opencode.cjs",
+    "test:live-app": "node scripts/verify-live-app.cjs"
   },
   "engines": {
     "node": ">=22.12.0"

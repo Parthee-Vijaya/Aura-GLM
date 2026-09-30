@@ -22,7 +22,7 @@ app.setPath('userData', existingUserData);
 app.setPath('sessionData', existingSessionData);
 
 protocol.registerSchemesAsPrivileged([{ scheme: 'harness', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
-let window, preview, project, busy = false;
+let window, preview, project, busy = false, chosenParent = null;
 let assets = [];
 let github, publishing, deployments, restoration;
 let workbench, beforeChanges, externalPreview = null;
@@ -72,12 +72,24 @@ async function exclusive(action) {
   busy = true;
   try { return await action(); } finally { busy = false; }
 }
+// Nye projekter lægges i Dokumenter/AI Harness, medmindre brugeren selv har valgt en anden placering.
+const defaultProjectParent = () => path.join(app.getPath('documents'), 'AI Harness');
+function projectLocation() {
+  const parent = chosenParent || defaultProjectParent();
+  return { chosen: Boolean(chosenParent), label: chosenParent ? parent : 'Dokumenter › AI Harness', path: parent };
+}
+handle('project:location', () => projectLocation());
+handle('project:choose-location', () => exclusive(async () => {
+  const selection = await dialog.showOpenDialog(window, { title: 'Vælg, hvor dine projekter skal ligge', defaultPath: chosenParent || app.getPath('documents'), properties: ['openDirectory', 'createDirectory'] });
+  if (!selection.canceled) chosenParent = await fs.realpath(selection.filePaths[0]);
+  return projectLocation();
+}));
 handle('project:create', input => exclusive(async () => {
   if (workbench.running) throw new Error('Stop den aktive opgave først.');
   const startup = await new Preferences(workbench.store).available({ ...input.startup, tests: input.tests });
-  const selection = await dialog.showOpenDialog(window, { title: 'Vælg, hvor den nye projektmappe skal ligge', properties: ['openDirectory', 'createDirectory'] });
-  if (selection.canceled) return null;
-  const created = await createProject(selection.filePaths[0], input, assets, profileRoot);
+  const parent = chosenParent || defaultProjectParent();
+  if (!chosenParent) await fs.mkdir(parent, { recursive: true });
+  const created = await createProject(parent, input, assets, profileRoot);
   await workbench.store.saveProject(created.root, { startup: startup.values });
   if (input.remember === true) await new Preferences(workbench.store).save(startup.values);
   return activate(await openProject(created.root));
@@ -260,10 +272,17 @@ handle('deployment:open', async kind => {
   return shell.openExternal(url);
 });
 
-handle('connections:account', kind => {
-  const urls = { corti: 'https://console.corti.app/', mistral: 'https://console.mistral.ai/', anthropic: 'https://platform.claude.com/', openrouter: 'https://openrouter.ai/settings/keys', zen: 'https://opencode.ai/auth' };
-  if (!Object.hasOwn(urls, kind)) throw new Error('Denne forbindelse opsættes hos din organisation eller på din egen server.');
-  return shell.openExternal(urls[kind]);
+// Faste sider hos udbyderne til nøglevejledningen. Kontrolleret 29. september 2026. Andre adresser åbnes aldrig herfra.
+const accountPages = {
+  anthropic: { start: 'https://platform.claude.com/', billing: 'https://platform.claude.com/settings/billing', keys: 'https://platform.claude.com/settings/keys' },
+  mistral: { start: 'https://console.mistral.ai/', billing: 'https://admin.mistral.ai/organization/billing', privacy: 'https://admin.mistral.ai/plateforme/privacy', keys: 'https://console.mistral.ai/api-keys' },
+  corti: { start: 'https://console.corti.app/signup', console: 'https://console.corti.app/', keys: 'https://console.corti.app/corti-models' },
+  openrouter: { start: 'https://openrouter.ai/settings/keys' }, zen: { start: 'https://opencode.ai/auth' }
+};
+handle('connections:account', value => {
+  const kind = typeof value === 'string' ? value : value?.kind, page = typeof value === 'string' ? 'start' : value?.page || 'start';
+  if (!Object.hasOwn(accountPages, kind) || !Object.hasOwn(accountPages[kind], page)) throw new Error('Denne forbindelse opsættes hos din organisation eller på din egen server.');
+  return shell.openExternal(accountPages[kind][page]);
 });
 
 handle('setup:status', async () => {

@@ -5,15 +5,19 @@ const path = require('node:path');
 const os = require('node:os');
 const { randomBytes } = require('node:crypto');
 const run = promisify(execFile);
-const VERSION = '1.17.15';
+// Skal svare til runtime-lock.json, som ikke kommer med i den pakkede app. En unit-test holder de to ens.
+const VERSION = '1.18.33';
 
 async function findExecutable() {
-  const candidates = require('./runtime.cjs').get() ? [require('./runtime.cjs').get().opencode] : [process.env.HARNESS_OPENCODE_PATH, path.join(os.homedir(), '.opencode', 'bin', process.platform === 'win32' ? 'opencode.exe' : 'opencode'), 'opencode'].filter(Boolean);
+  const binary = process.platform === 'win32' ? 'opencode.exe' : 'opencode';
+  // Under udvikling bruges den version, `npm run runtime:prepare` har hentet og kontrolleret, før en eventuel egen installation.
+  const prepared = path.join(__dirname, '..', '.runtime', `${process.platform}-${process.arch}`, 'opencode', 'bin', binary);
+  const candidates = require('./runtime.cjs').get() ? [require('./runtime.cjs').get().opencode] : [process.env.HARNESS_OPENCODE_PATH, prepared, path.join(os.homedir(), '.opencode', 'bin', binary), 'opencode'].filter(Boolean);
   for (const file of candidates) {
     try { const result = await run(file, ['--version'], { timeout: 15000, windowsHide: true }); if (result.stdout.trim() === VERSION) return file; }
     catch { /* Prøv næste eksplicitte installationsplacering. */ }
   }
-  throw new Error(`OpenCode ${VERSION} blev ikke fundet. Installer denne version, eller angiv HARNESS_OPENCODE_PATH ved start. Din eksisterende installation ændres ikke.`);
+  throw new Error(`OpenCode ${VERSION} blev ikke fundet. Kør npm run runtime:prepare, eller angiv HARNESS_OPENCODE_PATH ved start. Din eksisterende installation ændres ikke.`);
 }
 function permissions(root, references, mode = 'free') {
   const read = { '*': 'allow', '*.env': 'deny', '*.env.*': 'deny', '*.key': 'deny', '*.pem': 'deny', '**/.git/**': 'deny', '**/secrets/**': 'deny', '**/references/**': 'deny' };

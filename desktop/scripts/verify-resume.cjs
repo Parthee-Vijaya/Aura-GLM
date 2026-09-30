@@ -72,12 +72,13 @@ const http = require('node:http');
     await draft('Kladde til det andet projekt');
     await page.locator('#recent-projects button').filter({ hasText: path.basename(project) }).click();
     await page.waitForFunction(() => document.querySelector('#prompt').value === 'Husk plads til fem aktiviteter.');
-    await page.fill('#prompt', ''); await page.click('#build-plan'); await page.waitForSelector('#data-dialog[open]');
-    assert.match(await page.locator('#data-details').textContent(), /fælleshuset/);
-    await page.click('#accept-send');
-    await page.locator('#approvals button').filter({ hasText: 'Tillad én gang' }).waitFor({ timeout: 60000 });
+    // Vilkårene er accepteret for projektet før genstarten. Bygningen sender planen uden at vise resuméet igen.
+    await page.fill('#prompt', ''); await page.click('#build-plan');
+    await page.locator('#approvals button').filter({ hasText: 'Kun denne fil' }).waitFor({ timeout: 60000 });
+    assert.equal(await page.locator('#data-dialog').evaluate(el => el.open), false);
+    assert.ok(requests.some(r => JSON.stringify(r.messages).includes('fælleshuset')));
     assert.equal(await fs.readFile(path.join(project, 'public/index.html'), 'utf8'), '<h1>Før bygning</h1>');
-    await page.locator('#approvals button').filter({ hasText: 'Tillad én gang' }).click();
+    await page.locator('#approvals button').filter({ hasText: 'Kun denne fil' }).click();
     await page.frameLocator('#preview').locator('h1').filter({ hasText: 'Fælleshuset er klar' }).waitFor({ timeout: 30000 });
     await page.locator('#run-status').filter({ hasText: 'Klar' }).waitFor({ timeout: 30000 });
     await page.click('#resume-notice > summary'); await page.check('#include-history'); await require('./ui-test-helpers.cjs').selectMode(page, 'plan'); await draft('Vurder næste skridt.'); await page.click('#send');
@@ -99,8 +100,9 @@ const http = require('node:http');
     await require('./ui-test-helpers.cjs').menuClick(page, '#skills-button'); await page.screenshot({ animations: 'disabled', path: path.join(root, 'skills.png') }); await page.click('[data-close="skills-dialog"]');
     await page.click('#deploy-button'); await page.screenshot({ animations: 'disabled', path: path.join(root, 'deling.png') });
     await page.click('[data-close="deployment-dialog"]');
+    // Uden tidligere samtale er det de samme vilkår, som allerede er accepteret i projektet.
     await draft('afbrudt-test: bevar denne besked ved lukning'); await page.click('#send');
-    await page.waitForSelector('#data-dialog[open]'); await page.click('#accept-send');
+    await page.locator('#stop:not([hidden])').waitFor(); assert.equal(await page.locator('#data-dialog').evaluate(el => el.open), false);
     await page.locator('#messages .assistant').filter({hasText:'Delvist svar før lukning.'}).waitFor({timeout:60000});
     await app.close(); app = null; await launch();
     const requestCount = requests.length;
@@ -111,7 +113,7 @@ const http = require('node:http');
     assert.equal(await page.isVisible('#plan-card'), false); assert.equal(requests.length,requestCount);
     assert.equal(await page.isVisible('#stop'), false);
 
-    console.log(JSON.stringify({ status: 'bestået', root, checks: ['rigtig genstart med plan, kladde og samtale', 'genåbning uden netværkskald', 'kladders adskillelse mellem projekter', 'ny datagennemgang og filgodkendelse efter genstart', 'rigtig filændring og preview', 'aktivt tilvalg af tidligere samtale', 'ny samtale med arkiv og bevarede filer', '980 × 720, tastaturfokus og dialoger', 'lukning under streaming bevarer delvist svar uden genstart'] }));
+    console.log(JSON.stringify({ status: 'bestået', root, checks: ['rigtig genstart med plan, kladde og samtale', 'genåbning uden netværkskald', 'kladders adskillelse mellem projekter', 'accepterede vilkår huskes efter genstart; filgodkendelse efter genstart', 'nyt resumé, når tidligere samtale medsendes', 'rigtig filændring og preview', 'aktivt tilvalg af tidligere samtale', 'ny samtale med arkiv og bevarede filer', '980 × 720, tastaturfokus og dialoger', 'lukning under streaming bevarer delvist svar uden genstart'] }));
   } catch (error) { if (page) { await page.screenshot({ animations: 'disabled', path: path.join(root, 'fejl.png'), timeout: 3000 }).catch(() => {}); console.error('Testmateriale: ' + root); } throw error; }
   finally { await app?.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

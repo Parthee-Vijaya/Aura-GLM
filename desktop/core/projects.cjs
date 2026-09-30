@@ -17,12 +17,23 @@ function validate(input) {
   return { name: input.name.trim(), purpose: input.purpose.trim(), color: input.color, links: input.links, tests: input.tests };
 }
 
+// Danske bogstaver skrives om, så mappenavnet kan læses og bruges af udviklingsværktøjer.
+const danishLetters = { æ: 'ae', ø: 'oe', å: 'aa', Æ: 'Ae', Ø: 'Oe', Å: 'Aa' };
+function folderSlug(name) {
+  return name.replace(/[æøåÆØÅ]/g, letter => danishLetters[letter]).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60).replace(/-$/, '') || 'projekt';
+}
+
 async function createProject(parent, input, assets = [], profileRoot) {
   const values = validate(input);
-  const slug = values.name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'projekt';
-  const folderName = `projekt-${slug}`;
-  const root = path.join(await fs.realpath(parent), folderName);
-  await fs.mkdir(root); // Eksisterende mapper må aldrig genbruges eller overskrives.
+  const base = path.join(await fs.realpath(parent), `projekt-${folderSlug(values.name)}`);
+  let root;
+  // Eksisterende mapper må aldrig genbruges eller overskrives. Et projekt med samme navn får et nummer.
+  for (let number = 1; ; number++) {
+    root = number === 1 ? base : `${base}-${number}`;
+    try { await fs.mkdir(root); break; }
+    catch (error) { if (error.code !== 'EEXIST' || number >= 99) throw error; }
+  }
   try {
     await fs.mkdir(path.join(root, 'public', 'assets'), { recursive: true });
     await fs.mkdir(path.join(root, 'references'));
@@ -77,4 +88,4 @@ async function openProject(folder) {
   } catch { /* Projektåbning kræver ikke en startside. */ }
   return base;
 }
-module.exports = { createProject, openProject, validate };
+module.exports = { createProject, openProject, validate, folderSlug };

@@ -37,3 +37,6 @@ test('pakket runtime afviser forkert platform og manglende værktøjer',async t=
  const runtime=require('../core/runtime.cjs');await fs.writeFile(manifest,JSON.stringify({target:'ukendt'}));assert.throws(()=>runtime.configure(root),/passer ikke/);
  await fs.writeFile(manifest,JSON.stringify({target:`${process.platform}-${process.arch}`}));assert.throws(()=>runtime.configure(root),/mangler git/);
 });
+test('motorens forventede version er den låste OpenCode-version', () => {
+  assert.equal(require('../core/engine.cjs').VERSION, require('../runtime-lock.json').opencode);
+});

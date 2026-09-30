@@ -12,6 +12,36 @@ Kontrolleret 28. september 2026. Dette er status for den aktuelle arbejdsmappe, 
 - En tidligere plan nulstilles efter gendannelse. Markøren kontrolleres ved genåbning, også når samtalefilen ikke kunne opdateres ved første forsøg.
 - Fejlrapporten er gennemgået og gemt gennem filvælgeren. Den bruger faste statusfelter og udelader projektindhold, filstier, serveradresser, kontonavne og nøgler. Hjælpeskærmens unødvendige kontakt til nøgleringen er fjernet. Nøglelagring står som ikke kontrolleret; en fejlrapport må ikke udløse et nøgleopslag.
 
+## Første resultat uden spørgsmål · 29. september 2026
+
+Afprøvet på Mac med OpenCode 1.18.33:
+
+- **Enhedstestet:** 109 automatiske tests består, når testfilerne køres én ad gangen. De nye tests dækker:
+  - mappenavne med æ, ø og å, og nummerering ved samme navn
+  - tokengrænser for hver model
+  - at gatewayen lader en langsom strøm køre færdig og stopper ved stilstand
+  - at godkendelse for en hel opgave kun gælder filer i projektmappen og ophører, når opgaven slutter
+  - vilkår og priser for hver udbyder og for hver af Zens modeller
+  - at appen aldrig anbefaler en model, og udbyderens standardindsats
+  - forbrugstælleren: hvert modelkald tælles én gang, ræsonnement afregnes som output, forbruget gemmes med samtalen og nulstilles ved ny samtale
+  - at motorens forventede version svarer til låsefilen
+- **Afprøvet i Electron med en kontrolleret modelserver:** Alle elleve prøver består med OpenCode 1.18.33: introduktion, opsætning, desktop, standardvalg, chat, genoptagelse, gendannelse, agent, værktøjer, frameworks og udgivelse.
+  - Chatprøven viser `public/index.html` i godkendelsen og bruger Tillad for denne opgave. Resuméet før afsendelse vises ikke igen ved bygning.
+  - Genoptagelsen viser, at accepterede vilkår huskes efter genstart, og at resuméet vises igen, når den tidligere samtale medsendes.
+- **Begyndergennemgang:** Hele forløbet fra velkomst til genstart er gennemgået i appen med en kontrolleret model i Anthropics format og et skærmbillede af hver skærm.
+  - Kaldet til modellen har nu `max_tokens=32000`. Før var det 4.096.
+  - Efter fem kald viste linjen under skrivefeltet "Claude Opus 5.5 · Anthropic · indsats mellem" og "Denne samtale: 6.000 tokens ind · 1.500 ud · ca. 0,05 USD".
+- **Skills i eget kodeværktøj:** Prøverne består med OpenCode 1.18.33 fra `.runtime` og med Claude Code 2.1.150 (`HARNESS_CLAUDE_PATH=~/.local/bin/claude`). Den ældre Claude Code 2.0.56, der ligger først på PATH på denne Mac, kender ikke et af prøvens flag. Prøven fejler derfor med den.
+
+Ikke afprøvet:
+
+- **En rigtig model gennem appen:**
+  - Brugeren valgte ikke at betale for en prøve.
+  - Zens gratis modeller afviser appen, fordi den melder sig som `harness`.
+  - Prøven med Mistrals gratis plan (`npm run test:live-app`) ventede 30 minutter uden nøgle og blev derefter stoppet efter aftale.
+- En pakket app med OpenCode 1.18.33, Windows, Intel-Mac og en person uden teknisk baggrund.
+- `verify-hosting` fejler også på den committede version, fordi den leder efter en foldeboks, der ikke findes længere. `verify-generated-preview` er en manuel prøve, der kræver en projektmappe.
+
 ## Få valg og udvælgelse af skills · 29. september 2026
 
 - **Unit-testet:** 100 automatiske tests består, når testfilerne køres én ad gangen. Nye tests dækker anbefalede modeller pr. udbyder, fremhævede værktøjer, kategorier, installation af et udvalg af skills, fravalg ved næste installation, ingen skills og henvisninger mellem skills.

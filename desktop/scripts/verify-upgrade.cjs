@@ -14,7 +14,7 @@ const http = require('node:http');
   const key='SYNTHETISK_TESTNOEGLE_KUN_LOKALT';
   const server=http.createServer((req,res)=>{requests++;assert.equal(req.headers.authorization,'Bearer '+key);res.setHeader('content-type','application/json');res.end(JSON.stringify({data:[{id:'opdateringsproeve'}]}));});
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
-  async function launch(){app=await electron.launch({executablePath:path.join(installed,'Contents/MacOS/AI Harness'),args:['--user-data-dir='+data],env:{...process.env,PATH:'/usr/bin:/bin:/usr/sbin:/sbin',ELECTRON_RUN_AS_NODE:undefined}});page=await app.firstWindow();page.setDefaultTimeout(30000);await page.waitForFunction(()=>!document.querySelector('#create').disabled);if(await page.locator('#welcome-dialog').count()&&await page.locator('#welcome-dialog').evaluate(el=>el.open))await page.click('#welcome-skip');}
+  async function launch(){app=await electron.launch({executablePath:path.join(installed,'Contents/MacOS/AI Harness'),args:['--user-data-dir='+data],env:{...process.env,PATH:'/usr/bin:/bin:/usr/sbin:/sbin',ELECTRON_RUN_AS_NODE:undefined}});await require('./ui-test-helpers.cjs').isolateDocuments(app,path.join(root,'Dokumenter'));page=await app.firstWindow();page.setDefaultTimeout(30000);await page.waitForFunction(()=>!document.querySelector('#create').disabled);if(await page.locator('#welcome-dialog').count()&&await page.locator('#welcome-dialog').evaluate(el=>el.open))await page.click('#welcome-skip');}
   try{
     await fs.cp(oldBundle,installed,{recursive:true,verbatimSymlinks:true});await launch();
     const oldVersion=await app.evaluate(({app})=>app.getVersion());

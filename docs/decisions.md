@@ -172,3 +172,60 @@ Denne milepæl omfatter nye lokale projekter med navn, idé, brandfarve, referen
 OpenCode er den første udskiftelige agentadapter. Modelnøgler beskyttes i appens datamappe og sendes ikke ind i projektets konfiguration. Et projekt kan åbnes uden manifest og uden filændringer. Modelvalg, skill-tilpasninger og navngivne designpakker gemmes uden for repositoryet. Designpakker indeholder farve, links og kopier af materialer; brugeren vælger stadig særskilt, hvilke referencer modellen må læse.
 
 Modelplacering, arbejdsområde og hosting skal forblive separate moduler. Kun lokalt arbejdsområde er implementeret. Kommunal styring, cloud-login og remote eksekvering kræver en afklaret host og rettighedsmodel; de fremstilles ikke som aktive funktioner. Ingen bestemt hostingudbyder er obligatorisk. Skills er synlige instruktioner, ikke en erstatning for adgangskontrol. Godkendte kommandoer kører med brugerens lokale rettigheder.
+
+## Første resultat uden spørgsmål · 29. september 2026
+
+En begyndergennemgang af den rigtige app bestod af 30 skærmbilleder med en ren profil, Claude-kortet og en kontrolleret model. Den fandt syv knaster:
+- en generel nøglehjælp
+- en tvungen modeldialog før første besked
+- et langt datavindue, der blev vist både ved plan og ved bygning
+- en godkendelse pr. fil med en fuld systemsti
+- projektnavne som "En oversigt over tre fiktive mødelokaler, hvor"
+- mappenavne, hvor æ og ø forsvandt
+- en grænse på 4.096 svartokens for alle modeller
+
+Brugeren besluttede, at testerne selv skaffer en nøgle hos Anthropic, og at filændringer godkendes én gang pr. opgave.
+
+- **Godkendelse pr. opgave:**
+  - "Tillad for denne opgave" gælder kun filændringer, som OpenCode sender med en fuld sti inden for projektmappen.
+  - `.git`, `.env*`, `*.key` og `*.pem` godkendes aldrig automatisk. Kommandoer, web og filer uden for projektet spørger hver gang.
+  - Tilladelsen nulstilles, når opgaven slutter eller stoppes.
+  - Afgørelsen træffes i `Workbench`, ikke i brugerfladen. Grunden er, at OpenCode regner stier relativt til Git-roden eller til computerens rod, når projektet ikke har Git.
+- **Accepterede vilkår huskes pr. projekt:**
+  - Højst ti sæt vilkår huskes. Nøglen dækker forbindelse, adresse, model, rute, modtager, behandlingssted, opbevaring, træning, pris, sikkerhed, referencer og medsendt samtale.
+  - Arbejdsmåde og skills indgår ikke. Derfor vises resuméet ikke igen ved skift fra plan til bygning.
+  - Afsendelsen kræver fortsat fingeraftrykket for den aktuelle forberedelse.
+- **Forvalgt model:** For Claude, Mistral og Corti vælges den anbefalede model, når projektet åbnes. Det erstatter det tidligere princip om et aktivt modelvalg. Modellen står i skrivefeltet og i resuméet før første afsendelse. Andre forbindelser kræver fortsat et valg.
+- **Tokengrænser:**
+  - Kendte modeller får dokumenterede grænser, og tal fra modelkataloget har forrang. Claude får 32.000 svartokens, som er OpenCodes loft.
+  - Konteksten sættes til 200.000 tokens, selv om Claude 5 kan rumme en million. Det holder prisen pr. kald nede.
+  - Ukendte modeller beholder 32.768 og 4.096.
+  - Gatewayen afbryder nu efter to minutters stilstand i stedet for tre minutter i alt, med et samlet loft på 20 minutter. Et langt, men levende svar når dermed igennem.
+- **Vilkår og priser med kilde:** Kontrolleret 29. september 2026.
+  - **Anthropic** behandler data globalt uden EU-mulighed. Data slettes inden for 30 dage og bruges ikke til træning som standard. Sonnet 5.5 koster 2/10 USD pr. million tokens.
+  - **Mistral** hoster data i EU, men `api.mistral.ai` lover ikke, hvor behandlingen sker. Gratisplanen må træne på data.
+  - **Corti** kører EU-projekter på sin egen klynge. Data gemmes ikke og bruges ikke til træning.
+  - Mistral udfasede Devstral 31. juli 2026. Mistral Medium anbefales nu; Codestral anbefales ikke til agentarbejde.
+- **Projektplacering:** Projekter lægges i `Dokumenter/AI Harness`. Et projekt med samme navn får et nummer, og æ, ø og å skrives om i mappenavnet. Tests sætter deres egen dokumentmappe med `app.setPath('documents', …)`.
+
+Åbne spørgsmål:
+- **Automatisk tilstand:** Claude Codes auto mode er lukket kode og virker kun med Claude-modeller i Claude Code og Agent SDK. OpenCodes `--auto` godkender alt. Forslaget er en særskilt milepæl med to dele:
+  - en sandkasse til kommandoer med Anthropics open source `sandbox-runtime`, først på Mac
+  - en bedømmer, der bruger brugerens egen AI og kun spørger ved tvivl
+
+  Windows kræver en særskilt afklaring, fordi sandkasserne der kræver administratorrettigheder.
+- **Mistrals EU-endpoint:** `api.eu.mistral.ai` garanterer behandling i EU mod 10 % højere pris. Det skal afprøves med en nøgle, før det bliver standard.
+- **OpenCode 1.18.33 og Zens gratis modeller:** Brugeren ville ikke bruge penge på at afprøve med en rigtig model og bad om OpenCodes gratis modeller.
+  - Zen afviste 1.17.15 med beskeden "OpenCode 1.18.0 or newer is required to use the free tier". Motoren er derfor opgraderet til 1.18.33, og låsefilen er opdateret for alle fire platforme.
+  - Med 1.18.33 virker de gratis modeller fra OpenCodes egen kommandolinje. Fra appen afviser Zen dem stadig: "OpenCode's free tier can only be used from within OpenCode".
+  - Årsagen er, at motoren melder sig som klienten `harness` gennem `OPENCODE_CLIENT`. OpenCodes standard er `cli`, og Zen giver kun gratis adgang til OpenCodes egne klienter.
+  - Appen udgiver sig ikke for at være OpenCode for at komme uden om begrænsningen. En Zen-forbindelse kræver derfor en nøgle, og hjælpeteksten siger det. Vilkårene for hver af Zens modeller står i resuméet.
+  - Rigtige modelprøver bruger i stedet Mistrals gratis plan. Brugeren valgte det 29. september 2026.
+  - Under udvikling finder appen den motor, `npm run runtime:prepare` har hentet til `.runtime`, før en eventuel egen installation i `~/.opencode`.
+- **Ingen anbefaling af udbydere eller modeller:** Brugeren besluttede 29. september 2026, at appen ikke må anbefale noget. Valget skal bygge på brugerens egne vurderinger.
+  - Claude, Mistral og Corti står fortsat øverst i den rækkefølge med faktuelle oplysninger om udbyder og land. Resten ligger bag "Vælg en anden".
+  - Standardmodellen er udbyderens eget dokumenterede udgangspunkt: Claude Opus 5.5 hos Anthropic ("If you're unsure which model to use, start with Claude Opus 5.5"), Mistral Medium hos Mistral og S1 hos Corti. Det står som udbyderens, ikke som vores.
+  - Under skrivefeltet står altid model, udbyder og indsats. Indsatsen er udbyderens standard, fordi OpenCode 1.18.33 kun sender `thinking: adaptive` og ingen indsats. Samme sted står samtalens tokens ind og ud med en anslået pris.
+  - Tokens tælles pr. modelkald ud fra OpenCodes `step-finish`, fordi beskeden kun beholder det sidste kalds tal. Ræsonnement afregnes som output. Forbruget gemmes med samtalen og nulstilles ved ny samtale.
+  - Om pris siger vi, at man betaler pr. token, og at prisen varierer meget med opgavens kompleksitet.
+

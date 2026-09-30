@@ -75,6 +75,7 @@ class WorkspaceHistory {
       while (data.messages.length > 200 || size > 200000) { size -= data.messages.shift().text.length; data.trimmed = true; }
       data.plan = run.plan; data.planConversation = run.planConversation;
       data.status = run.status; data.mode = run.mode;
+      if (run.usage && typeof run.usage === 'object') data.usage = run.usage;
       if (run.clearDraft) data.draft = '';
     });
   }

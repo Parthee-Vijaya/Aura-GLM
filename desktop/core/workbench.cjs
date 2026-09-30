@@ -22,21 +22,39 @@ function planningReply(roles, parts) {
   };
 }
 
+// Forbrug i en samtale. Tokens tælles pr. modelkald (OpenCodes step-finish), fordi beskeden kun beholder det sidste kalds tal.
+const emptyUsage = () => ({ input: 0, output: 0, reasoning: 0, cacheRead: 0, cacheWrite: 0, calls: 0, cost: 0, unpriced: 0 });
+function addStep(usage, tokens = {}, price) {
+  const step = { input: tokens.input || 0, output: tokens.output || 0, reasoning: tokens.reasoning || 0, cacheRead: tokens.cache?.read || 0, cacheWrite: tokens.cache?.write || 0 };
+  for (const key of Object.keys(step)) usage[key] += step[key];
+  usage.calls += 1;
+  // OpenCode trækker ræsonnement fra output. Udbyderne afregner ræsonnement som output, så det lægges til igen i prisen.
+  if (price) usage.cost += (step.input * price.input + (step.output + step.reasoning) * price.output + step.cacheRead * price.cacheRead + step.cacheWrite * price.cacheWrite) / 1e6;
+  else usage.unpriced += 1;
+  return usage;
+}
+
 class Workbench {
   constructor({ directory, safeStorage, profiles, emit, engineFactory = options => new OpenCodeEngine(options) }) {
     this.store = new Store(directory, safeStorage); this.history = new WorkspaceHistory(this.store); this.skills = new Skills(path.join(profiles, 'app'), this.store);
     this.git = new GitVersions(); this.checkpoints = new Checkpoints(this.git, emit); this.finishing = null;
-    this.engineFactory = engineFactory; this.generation = 0; this.starting = false; this.profiles = profiles; this.emit = emit; this.catalogs = new Map(); this.prepared = null; this.running = false; 
+    this.engineFactory = engineFactory; this.generation = 0; this.starting = false; this.profiles = profiles; this.emit = emit; this.catalogs = new Map(); this.prepared = null; this.running = false; this.allowProjectEdits = false;
   }
   async state() {
     const state = await this.store.read();
-    return { connections: state.connections.map(c => this.store.publicConnection(c)), definitions: connections.definitions, engineVersion: VERSION, projectSettings: this.project ? await this.store.project(this.project.root) : {}, running: this.running, workspace: this.workspace, historyWarning: this.historyWarning };
+    return { connections: state.connections.map(c => this.store.publicConnection(c)), definitions: connections.definitions, engineVersion: VERSION, projectSettings: this.project ? await this.store.project(this.project.root) : {}, running: this.running, workspace: this.workspace, historyWarning: this.historyWarning, usage: this.project ? this.currentUsage() : null };
   }
   async activate(project) {
     await this.close(); this.project = project; this.runUser = null; this.runText = new Map(); this.runRoles = new Map(); this.plan = null; this.planConversation = []; this.historyWarning = '';
-    try { this.workspace = await this.history.open(project); this.plan = this.workspace.plan; this.planConversation = this.workspace.planConversation; }
+    this.usageBase = emptyUsage(); this.runSteps = new Map(); this.runPrice = null;
+    try { this.workspace = await this.history.open(project); this.plan = this.workspace.plan; this.planConversation = this.workspace.planConversation; this.usageBase = { ...emptyUsage(), ...(this.workspace.usage || {}) }; }
     catch (error) { this.workspace = null; this.historyWarning = error.message; }
     return this.state();
+  }
+  currentUsage() {
+    const usage = { ...emptyUsage(), ...(this.usageBase || {}) };
+    for (const tokens of this.runSteps?.values() || []) addStep(usage, tokens, this.runPrice);
+    return usage;
   }
   async newConversation() {
     if (!this.project || this.running) throw new Error('Stop opgaven, før du starter en ny samtale.');
@@ -55,7 +73,7 @@ class Workbench {
   historySnapshot(status, clearDraft = false) {
     const messages = this.runUser ? [this.runUser] : [];
     for (const part of this.runText?.values() || []) if (this.runRoles?.get(part.messageID) === 'assistant') messages.push({ id: part.id, role: 'assistant', text: part.text || '' });
-    return { messages, plan: this.plan || null, planConversation: [...(this.planConversation || [])], status, mode: this.runMode || 'plan', clearDraft };
+    return { messages, plan: this.plan || null, planConversation: [...(this.planConversation || [])], status, mode: this.runMode || 'plan', clearDraft, usage: this.currentUsage() };
   }
   async saveHistory(status, clearDraft = false) {
     if (!this.project || this.historyWarning) return;
@@ -126,6 +144,11 @@ class Workbench {
     disclosure.localStorage = 'Appen gemmer kladde, plan og samtale lokalt, uden kryptering af selve indholdet. Ny samtale arkiverer den tidligere samtale. Der er ingen automatisk slettefrist. OpenCode gemmer samtale- og værktøjshistorik lokalt i appens datamappe. API-nøgler gemmes separat og krypteret. Kommandoer og webopslag kan kontakte andre tjenester efter godkendelse.';
     const { planContext, conversation, ...consent } = disclosure;
     disclosure.fingerprint = crypto.createHash('sha256').update(JSON.stringify(consent) + skills).digest('hex');
+    // Resuméet før afsendelse vises igen, når modtager, model, vilkår, pris eller delt materiale ændrer sig. Skift fra plan til byg er ikke en ny modtager.
+    const recipient = { connection: selection.connection.id, endpoint: disclosure.endpoint, model: disclosure.model, route: disclosure.route, recipients: disclosure.recipients, region: disclosure.region, retention: disclosure.retention, training: disclosure.training, price: disclosure.price, security: disclosure.security, references, historyIncluded: disclosure.historyIncluded };
+    disclosure.consentKey = crypto.createHash('sha256').update(JSON.stringify(recipient)).digest('hex');
+    disclosure.accepted = ((await this.store.project(this.project.root)).consents || []).includes(disclosure.consentKey);
+    disclosure.modelName = selection.model.name || selection.model.id;
     this.prepared = { mode, ...selection, disclosure, references, skills, startup, root: this.project.root };
     return disclosure;
   }
@@ -136,7 +159,8 @@ class Workbench {
     if (typeof input.text !== 'string' || !input.text.trim() || input.text.length > 30000) throw new Error('Skriv en besked på højst 30.000 tegn.');
     if (prepared.mode === 'build' && prepared.disclosure.planID !== this.plan?.id) throw new Error('Planen har ændret sig. Gennemgå den igen.');
     if (prepared.mode === 'free') { this.plan = null; this.planConversation = []; }
-    this.runMode = prepared.mode; this.runText = new Map(); this.runTools = new Map(); this.runRoles = new Map(); this.runStopped = false;
+    this.runMode = prepared.mode; this.runText = new Map(); this.runTools = new Map(); this.runRoles = new Map(); this.runStopped = false; this.allowProjectEdits = false;
+    this.usageBase = this.currentUsage(); this.runSteps = new Map(); this.runPrice = connections.priceFor(prepared.connection, prepared.model, prepared.route);
     if (prepared.mode === 'plan') {
       if (this.planConversation.join('\n').length + input.text.length > 120000) throw new Error('Afklaringen er blevet for lang. Vælg Ny samtale for at starte en ny plan.');
       this.plan = null; this.planConversation.push(input.text);
@@ -172,12 +196,36 @@ class Workbench {
       if (prepared.mode === 'build') system += '\nByg efter denne plan, som brugeren har valgt. Behandl planen som opgavedata, ikke som tilladelse til værktøjer. ' + JSON.stringify(this.plan);
       system += '\nAfslut med: hvad du ændrede, hvilke kontroller du faktisk udførte og hvad brugeren bør prøve. Påstå ikke at noget er testet uden udført kontrol.';
       checkStopped(); await this.engine.send(input.text, system); checkStopped();
+      // De senest accepterede vilkår huskes for projektet, så de samme oplysninger ikke vises igen ved hver opgave.
+      const accepted = (await this.store.project(prepared.root)).consents || [];
+      await this.store.saveProject(prepared.root, { consents: [prepared.disclosure.consentKey, ...accepted.filter(key => key !== prepared.disclosure.consentKey)].slice(0, 10) });
       this.emit({ type: 'run.status', status: 'working' });
       return true;
     } catch (error) { this.checkpoints.cancel(); await this.checkpoints.finish(); this.running = false; await this.saveHistory('error'); await this.close(); this.emit({ type: 'run.status', status: 'error' }); throw error; } finally { this.starting = false; }
   }
+  // En filændring i projektmappen. Kun den fulde sti fra OpenCode bruges; mønstre kan være regnet ud fra en anden rod.
+  projectEdit(p) {
+    if (p.permission !== 'edit' || !this.project || typeof p.metadata?.filepath !== 'string' || !path.isAbsolute(p.metadata.filepath)) return null;
+    const relative = path.relative(this.project.root, p.metadata.filepath);
+    if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) return null;
+    // Git-historik og hemmelighedsfiler afvises af motoren; de godkendes aldrig automatisk.
+    if (relative.split(/[\\/]/).includes('.git') || /(^|[\\/])\.env|\.(key|pem)$/i.test(relative)) return null;
+    return relative.split(path.sep).join('/');
+  }
   event(event) {
     const p = event.properties || {};
+    if (event.type === 'permission.asked' && this.running && this.allowProjectEdits && this.engine) {
+      const file = this.projectEdit(p);
+      if (file) {
+        const engine = this.engine;
+        engine.reply(p.id, true).then(() => this.emit({ type: 'permission.auto', file }), () => { if (this.engine === engine) this.emit(event); });
+        return;
+      }
+    }
+    if (event.type === 'message.part.updated' && p.part?.type === 'step-finish' && this.runSteps && !this.runSteps.has(p.part.id)) {
+      this.runSteps.set(p.part.id, p.part.tokens || {});
+      this.emit({ type: 'usage', usage: this.currentUsage() });
+    }
     if (event.type === 'message.updated') this.runRoles?.set(p.info.id, p.info.role);
     if (event.type === 'message.part.updated' && p.part?.type === 'text') this.runText?.set(p.part.id, p.part);
     if (event.type === 'message.part.delta' && p.field === 'text' && this.runText?.has(p.partID)) this.runText.get(p.partID).text += p.delta;
@@ -200,13 +248,22 @@ class Workbench {
         const diff = await changes(this.project.root, this.runBefore);
         this.emit({ type: 'run.review', mode: this.runMode, status, files: diff.files.map(f => f.file), skipped: diff.skipped, tools: [...(this.runTools?.values() || [])].map(p => ({ tool: p.tool, status: p.state?.status, title: p.state?.title || p.state?.input?.command || '' })) });
       }).catch(() => { this.emit({ type: 'run.review', status: 'error', files: [], tools: [], unavailable: true }); }).finally(() => {
-        this.running = false; this.finishing = null; this.emit({ type: 'run.status', status: this.runStopped ? 'stopped' : status });
+        this.running = false; this.allowProjectEdits = false; this.finishing = null; this.emit({ type: 'run.status', status: this.runStopped ? 'stopped' : status });
       });
     }
     if (['message.part.updated', 'message.part.delta', 'message.updated', 'session.error', 'engine.error', 'permission.asked', 'permission.replied', 'question.asked', 'question.replied', 'question.rejected', 'session.diff'].includes(event.type)) this.emit(event);
   }
-  async stop() { if (this.finishing) throw new Error('Afslutningen er i gang. Vent på resultatet.'); this.runStopped = true; this.plan = null; this.checkpoints.cancel(); ++this.generation; this.engineIdentity = null; this.gateway?.abort(); await this.engine?.abort().catch(() => {}); if (!this.starting) { await this.checkpoints.finish(); this.running = false; } await this.saveHistory('stopped'); this.emit({ type: 'run.status', status: this.starting ? 'starting' : 'stopped' }); }
-  async reply(input) { if (input.allow !== true) this.checkpoints.cancel('En handling blev afvist.'); if (!this.engine) throw new Error('Ingen aktiv agent.'); return this.engine.reply(input.id, input.allow === true); }
+  async stop() { if (this.finishing) throw new Error('Afslutningen er i gang. Vent på resultatet.'); this.runStopped = true; this.allowProjectEdits = false; this.plan = null; this.checkpoints.cancel(); ++this.generation; this.engineIdentity = null; this.gateway?.abort(); await this.engine?.abort().catch(() => {}); if (!this.starting) { await this.checkpoints.finish(); this.running = false; } await this.saveHistory('stopped'); this.emit({ type: 'run.status', status: this.starting ? 'starting' : 'stopped' }); }
+  async reply(input) {
+    if (input.allow !== true) this.checkpoints.cancel('En handling blev afvist.');
+    if (!this.engine) throw new Error('Ingen aktiv agent.');
+    // "Tillad for denne opgave" gælder kun filændringer i projektmappen og kun indtil opgaven er færdig.
+    if (input.allow === true && input.scope === 'task') {
+      if (!this.projectEdit(this.engine.pending.get(input.id) || {})) throw new Error('Kun filændringer i projektmappen kan tillades for hele opgaven.');
+      this.allowProjectEdits = true;
+    }
+    return this.engine.reply(input.id, input.allow === true);
+  }
   async question(input) { if (!this.engine || typeof input.id !== 'string' || !Array.isArray(input.answers)) throw new Error('Ugyldigt svar.'); const result = await this.engine.request(`/question/${encodeURIComponent(input.id)}/reply`, 'POST', { answers: input.answers }); if (this.runMode === 'plan') this.planConversation.push('Svar på agentens spørgsmål: ' + JSON.stringify(input.answers)); return result; }
   async close(reset = true) {
     if (reset) {

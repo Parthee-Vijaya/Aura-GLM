@@ -14,6 +14,7 @@ const root = path.join(__dirname, '..', '..');
   let app;
   async function launch() {
     app = await electron.launch({executablePath, args:[path.join(root, 'desktop'), '--user-data-dir='+path.join(testRoot,'electron-data')], env:{...process.env, ELECTRON_RUN_AS_NODE: undefined}});
+    await require('./ui-test-helpers.cjs').isolateDocuments(app, path.join(testRoot, 'Dokumenter'));
     const page = await app.firstWindow(); await require('./ui-test-helpers.cjs').skipIntroduction(page);
     await page.waitForSelector('#onboarding'); await page.waitForFunction(() => !document.querySelector('#new').disabled); await require('./ui-test-helpers.cjs').menuClick(page, '#setup-button'); await page.click('#setup-local'); await page.waitForSelector('#create-form');
     const identity = await app.evaluate(({app, Menu}) => ({ name: app.getName(), userData: app.getPath('userData'), labels: Menu.getApplicationMenu().items.map(item => item.label) }));
@@ -43,10 +44,12 @@ const root = path.join(__dirname, '..', '..');
     await page.waitForFunction(() => document.querySelectorAll('#assets li').length === 2);
     assert.equal(await page.inputValue('#links'), 'https://example.com/design');
     await page.fill('#name','Fælleshaven'); await page.fill('#purpose','Find og del aktiviteter med dine naboer.');
-    await choose([],true); await page.click('#create');
+    // Standardplaceringen står fast, når brugeren annullerer valget af en anden mappe.
+    await choose([],true); await page.click('#choose-location');
     await page.waitForFunction(()=>!document.querySelector('#create').disabled);
+    assert.match(await page.locator('#project-location').textContent(), /Dokumenter › AI Harness/);
     assert.equal(await page.locator('#onboarding').isVisible(),true);
-    await choose([testRoot]); await page.click('#create');
+    await require('./ui-test-helpers.cjs').chooseLocation(app, page, testRoot); await page.click('#create');
     await page.waitForSelector('#workspace:not([hidden])');
     assert.equal(await page.inputValue('#work-mode'), 'plan');
     assert.match(await page.inputValue('#prompt'), /Find og del aktiviteter/);
@@ -106,8 +109,10 @@ const root = path.join(__dirname, '..', '..');
     page=await launch(); await choose([projectDir]); await page.click('#open');
     await page.frameLocator('#preview').locator('h1').filter({hasText:'En levende fælleshave'}).waitFor();
     await app.close(); page=await launch();
-    await page.fill('#name','Fælleshaven');await page.fill('#purpose','Må ikke overskrive');await choose([testRoot]);await page.click('#create');
-    await page.locator('#message.error').waitFor();assert.match(await fs.readFile(publicIndex,'utf8'),/En levende fælleshave/);
+    // Samme navn samme sted giver en ny, nummereret mappe. Det eksisterende projekt røres ikke.
+    await page.fill('#name','Fælleshaven');await page.fill('#purpose','Må ikke overskrive');await require('./ui-test-helpers.cjs').chooseLocation(app, page, testRoot);await page.click('#create');
+    await page.waitForSelector('#workspace:not([hidden])');assert.match(await fs.readFile(publicIndex,'utf8'),/En levende fælleshave/);
+    assert.match(await fs.readFile(path.join(testRoot,'projekt-faelleshaven-2','README.md'),'utf8'),/Må ikke overskrive/);
     await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setSize(980,720));
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth <= window.innerWidth),true);
     assert.deepEqual(errors,[]);

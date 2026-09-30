@@ -14,20 +14,22 @@ AI Harness skal kunne bruges af en person uden teknisk baggrund, som klikker sig
 - **Knappen siger, hvad der sker.** Skriv "Installer resten" frem for et afkrydsningsfelt og en generel knap.
 - **Én næste handling.** Når noget er færdigt, vises det vigtigste næste skridt; andre handlinger er sekundære.
 
-Eksempler i appen: AI-adgang har to store valg. Udbyder har tre kort og "En anden udbyder". Model har en anbefaling, to alternativer og "Alle modeller". Kodeværktøj har fire kort og "Et andet værktøj".
+Eksempler i appen: AI-adgang har to store valg. Udbyder har tre ligestillede kort, Claude, Mistral og Corti, med faktuelle oplysninger og "En anden udbyder"; appen anbefaler aldrig en udbyder eller model. Modellen er udbyderens eget udgangspunkt, valgt på forhånd; modelknappen viser det, to alternativer og "Alle modeller". En filgodkendelse har tre knapper, hvor Tillad for denne opgave er den primære. Kodeværktøj har fire kort og "Et andet værktøj".
 
 Tæl de synlige valg, før en skærm kaldes færdig, og gennemfør forløbet i appen.
 
 ## Det, man møder
 
 - Første skærm spørger, om man vil bygge i appen eller bruge Harness i sit eget kodeværktøj.
-- Den guidede opstart viser ét spørgsmål ad gangen med stor overskrift og to eller tre store valg. Først vælger man adgangsnøgle eller AI på computeren; en gemt forbindelse bliver et tredje valg. Adgangsnøgle fører til tre udbyderkort, Claude, Mistral og Corti, og "Bruger du en anden udbyder? Vælg en anden". Nøglefeltet vises først, når en udbyder er valgt. Sidepanelet er skjult under introduktionen.
-- "Hvad vil du bygge?" viser idé, projektnavn og Opret og fortsæt. Standardvalg, AI og hosting, design og avancerede valg ligger under Flere valg.
+- Den guidede opstart viser ét spørgsmål ad gangen med stor overskrift og to eller tre store valg. Først vælger man adgangsnøgle eller AI på computeren; en gemt forbindelse bliver et tredje valg. Adgangsnøgle fører til tre udbyderkort, Claude, Mistral og Corti, og "Bruger du en anden udbyder? Vælg en anden". Nøglefeltet vises først, når en udbyder er valgt. "Har du ikke en nøgle? Sådan får du en" viser konto, betaling, månedlig grænse og nøgle som nummererede trin med en knap til hver side hos udbyderen. Sidepanelet er skjult under introduktionen.
+- "Hvad vil du bygge?" viser idé, projektnavn og Opret og fortsæt. Projektet gemmes i Dokumenter › AI Harness uden mappedialog; "Vælg en anden placering" er et link. Standardvalg, AI og hosting, design og avancerede valg ligger under Flere valg.
 - Harness i dit kodeværktøj viser fire kort og "Et andet værktøj" med søgning. Et klik fører videre til mappevalget og derefter til et resumé i almindeligt dansk; de præcise filændringer ligger under Se de præcise ændringer.
 - Næste trin viser kun det valgte forløb. Nøglehjælp og tekniske oplysninger er foldet sammen. GitHub og lokale værktøjer ligger under Avanceret opsætning. Tilbage og Vælg senere er altid tilgængelige.
 - Sidepanelet indeholder projekter, Nyt projekt, Åbn projekt og Indstillinger.
 - Arbejdsområdet består af samtale og preview med en flytbar skillelinje.
-- Skrivefeltet er den vigtigste handling. Modelknappen åbner AI, referencer og avancerede valg. Den viser højst tre modeller: for kendte udbydere en anbefaling og to alternativer med en kort forklaring, ellers et udvalg uden anbefaling. Alle modeller ligger under Avanceret, og pris vises, når en model er valgt, og før afsendelse.
+- Skrivefeltet er den vigtigste handling. Under det står den aktive model, udbyder og indsats og samtalens tokens ind og ud med en anslået pris. Modelknappen åbner Din AI. Den viser højst tre modeller: for kendte udbydere udbyderens eget udgangspunkt og to alternativer med faktuelle forklaringer, ellers et udvalg. Et klik på et modelkort vælger og lukker. Alle modeller og forbindelser ligger under Avanceret. Referencer vises kun, når projektet har referencefiler.
+- Før første afsendelse viser "Før du sender" fire linjer: AI, hvor, træning og pris. Resten ligger under "Se alle oplysninger". Resuméet vises igen, når modtager, model, pris, vilkår eller delt materiale ændrer sig, ikke ved skift fra plan til bygning.
+- Første filændring i en opgave spørger, om AI'en må ændre filer i projektet. Filen vises med sin sti i projektet. "Tillad for denne opgave" gælder kun projektmappen og kun til opgaven slutter; kommandoer, web og filer udenfor spørger hver gang.
 - Planlægning fører til et konkret forslag. Brugeren vælger at bygge; efter bygning kan man fortsætte med rettelser.
 - Projektmenuen indeholder versionsgemning, sikkerhedskopi og ny samtale. Del åbner udgivelse til test.
 - Preview viser skærmstørrelse og genindlæsning. Server, skalering og egne mål ligger i en menu. Hvis en framework-app mangler sin server, vises én handling i det tomme preview: Start forhåndsvisning. Installation og start gennemgås i en dialog; procesloggen er foldet sammen.

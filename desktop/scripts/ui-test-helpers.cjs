@@ -30,4 +30,12 @@ async function previewOptions(page) {
 }
 // Projektskærmens valgfrie sektioner ligger bag Flere valg.
 async function projectOptions(page) { if (!await page.locator('#project-options').evaluate(el => el.open)) await page.click('#project-options > summary'); }
-module.exports = { skipIntroduction, menuClick, taskOptions, closeTaskOptions, selectMode, previewOptions, projectOptions };
+// Nye projekter lægges som standard i Dokumenter/AI Harness. Testene bruger deres egen midlertidige mappe.
+async function isolateDocuments(app, folder) { await app.evaluate(({ app }, folder) => app.setPath('documents', folder), folder); }
+// Vælg en anden placering til nye projekter gennem appens link, med en udfyldt mappedialog.
+async function chooseLocation(app, page, folder) {
+  await app.evaluate(({ dialog }, folder) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [folder] }); }, folder);
+  await page.click('#choose-location');
+  await page.waitForFunction(folder => document.querySelector('#project-location').title === folder, await require('node:fs/promises').realpath(folder));
+}
+module.exports = { skipIntroduction, menuClick, taskOptions, closeTaskOptions, selectMode, previewOptions, projectOptions, isolateDocuments, chooseLocation };
