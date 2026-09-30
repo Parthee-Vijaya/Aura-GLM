@@ -40,10 +40,11 @@ const { run } = require('../core/git.cjs');
   await run(project,['config','--local','user.name','Testbruger']); await run(project,['config','--local','user.email','test@example.invalid']);
   const hooks=path.join(root,'hooks'); await fs.mkdir(hooks); await run(project,['config','--local','core.hooksPath',hooks]); await run(project,['config','--local','commit.gpgsign','false']);
   await page.click('[data-close="git-dialog"]'); await require('./ui-test-helpers.cjs').menuClick(page, '#git-button');
-  await page.locator('#git-files input').waitFor();
-  assert.equal(await page.isChecked('#git-auto'),false);
-  await page.locator('#git-files input').check(); await page.fill('#git-message','Opret testprojekt'); await page.click('#git-save');
-  await page.locator('#git-feedback').filter({hasText:'er gemt lokalt'}).waitFor();
+  // Gem version med ét klik: opsummeringen er i almindeligt dansk, og filerne vælges kun under Avanceret.
+  await page.locator('#git-summary').filter({hasText:'1 ændring er ikke gemt endnu.'}).waitFor();
+  assert.equal(await page.isChecked('#git-auto'),false); assert.equal(await page.locator('#git-files input').isVisible(),false);
+  await page.fill('#git-note','Opret testprojekt'); await page.click('#git-save-all');
+  await page.locator('#git-feedback').filter({hasText:'er gemt lokalt'}).waitFor(); await page.locator('#git-summary').filter({hasText:'Alt er gemt.'}).waitFor();
   assert.equal((await run(project,['rev-list','--count','HEAD'])).toString().trim(),'1');
   if (!process.env.HARNESS_TEST_PACKAGE) { await page.check('#git-auto'); await page.locator('#git-feedback').filter({hasText:'slået til'}).waitFor(); }
   await page.click('[data-close="git-dialog"]');
@@ -132,9 +133,7 @@ const { run } = require('../core/git.cjs');
   if (process.env.HARNESS_TEST_PACKAGE) {
     assert.equal((await run(project,['rev-list','--count','HEAD'])).toString().trim(),'1');
     await page.locator('#run-review button').filter({hasText:'Gem version'}).click();
-    await page.locator('#git-files input:not(:disabled)').first().waitFor();
-    for(const input of await page.locator('#git-files input:not(:disabled)').all()) await input.check();
-    await page.fill('#git-message','Gem agentens prøveændring');await page.click('#git-save');
+    await page.locator('#git-quick').waitFor(); await page.fill('#git-note','Gem agentens prøveændring'); await page.click('#git-save-all');
     await page.locator('#git-feedback').filter({hasText:'er gemt lokalt'}).waitFor();
     await page.click('[data-close="git-dialog"]');
   }
@@ -142,7 +141,10 @@ const { run } = require('../core/git.cjs');
   assert.match(await page.locator('#run-review').textContent(),/Ingen kommandoer kørt/);
   assert.match((await run(project,['show','HEAD:public/index.html'])).toString(),/Bygget fra desktopchatten/);
   assert.equal((await run(project,['status','--porcelain'])).toString(),'');
-  await page.locator('#run-review button').filter({hasText:'Gem version'}).click(); await page.waitForFunction(()=>document.querySelectorAll('#git-history li').length===2 && !document.querySelector('#git-auto').disabled); assert.equal(await page.isChecked('#git-auto'),!process.env.HARNESS_TEST_PACKAGE);
+  // Med automatiske versioner tilbyder kortet at fortryde opgaven; ellers at gemme den.
+  if (process.env.HARNESS_TEST_PACKAGE) await page.locator('#run-review button').filter({hasText:'Gem version'}).click();
+  else { await page.locator('#run-review button').filter({hasText:'Fortryd opgaven'}).waitFor(); assert.match((await run(project,['log','-1','--format=%s'])).toString().trim(),/^AI-opgave: Byg første udkast efter den plan, jeg har gennemgået\. Afslut med konkrete ting …$/); await require('./ui-test-helpers.cjs').menuClick(page, '#git-button'); }
+  await page.waitForFunction(()=>document.querySelectorAll('#git-history li').length===2 && !document.querySelector('#git-auto').disabled); assert.equal(await page.isChecked('#git-auto'),!process.env.HARNESS_TEST_PACKAGE);
   assert.equal(await page.locator('#git-dialog .dialog-notice').count(),0);
   await page.screenshot({path:path.join(root,'versioner.png'),fullPage:true}); await page.click('[data-close="git-dialog"]');
   await page.click('#changes-button');assert.match(await page.locator('#changes-list').textContent(),/public[/\\]index.html/);

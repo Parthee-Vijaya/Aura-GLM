@@ -31,7 +31,9 @@ Tæl de synlige valg, før en skærm kaldes færdig, og gennemfør forløbet i a
 - Før første afsendelse viser "Før du sender" fire linjer: AI, hvor, træning og pris. Resten ligger under "Se alle oplysninger". Resuméet vises igen, når modtager, model, pris, vilkår eller delt materiale ændrer sig, ikke ved skift fra plan til bygning.
 - Første filændring i en opgave spørger, om AI'en må ændre filer i projektet. Filen vises med sin sti i projektet. "Tillad for denne opgave" gælder kun projektmappen og kun til opgaven slutter; kommandoer, web og filer udenfor spørger hver gang.
 - Planlægning fører til et konkret forslag. Brugeren vælger at bygge; efter bygning kan man fortsætte med rettelser.
-- Projektmenuen indeholder versionsgemning, sikkerhedskopi og ny samtale. Del åbner udgivelse til test.
+- Nye projekter har versioner fra start. Efter hver AI-opgave gemmes en version, og resultatkortet tilbyder Fortryd opgaven. Versioner viser "Alt er gemt" eller antallet af ugemte ændringer, én knap til Gem version og en historik med tidspunkter og Gå tilbage hertil. Filvalg, branch og identitet ligger under Avanceret og Se detaljer.
+- Appen åbner det projekt, der sidst var åbent. Et projekt, der er lukket med Nyt projekt, åbnes ikke igen.
+- Projektmenuen indeholder versioner, sikkerhedskopi og ny samtale. Del åbner udgivelse til test.
 - Preview viser skærmstørrelse og genindlæsning. Server, skalering og egne mål ligger i en menu. Hvis en framework-app mangler sin server, vises én handling i det tomme preview: Start forhåndsvisning. Installation og start gennemgås i en dialog; procesloggen er foldet sammen.
 
 ## Hvad der vises hvornår

@@ -103,9 +103,17 @@ Afprøvet i Electron på macOS med et rigtigt projekt: træk, tastatur, faste og
 
 ## Lokale Git-versioner
 
-Projektmenuens **Gem version** viser status, aktiv branch, Git-identitet og de seneste versioner. I en mappe uden Git kan brugeren aktivt oprette lokal historik. Vælg derefter filer, gennemgå indholdet før/efter og skriv en versionsbeskrivelse. Kildekodeversionen kræver Git; installationspakken medleverer Git. Ved manglende navn/e-mail viser appen en formular og gemmer kun manglende oplysninger i projektets lokale Git-konfiguration efter brugerens aktive valg. En eksisterende identitet overskrives ikke. Projektet er et almindeligt Git-repository, som kan overtages uden AI Harness.
+Nye projekter fra appen har versioner fra start. Ved oprettelsen laver appen en lokal Git-historik med branchen `main` og gemmer startfilerne som første version, "Projekt oprettet". Har computeren ingen Git-identitet, bruges den anonyme identitet `AI Harness-bruger <bruger@ai-harness.invalid>`. Adressen kan aldrig modtage post, og en eksisterende identitet overskrives ikke. Eksisterende mapper og repositories røres ikke ved åbning. Brugeren kan selv slå versioner til, og mangler navn eller e-mail, viser appen en formular.
 
-Automatiske checkpoints er slået fra som standard og vælges pr. projekt. Gem først en version manuelt. Efter en afsluttet AI-opgave gemmer appen kun et checkpoint, når udgangspunktet var rent, historikken er uændret, og alle ændringer kan knyttes til agentens afsluttede `write`-/`edit`-værktøjer. Fejl, stop, afvisninger, shellkommandoer, patchværktøjer, hooks, filtre og uklare ændringer medfører, at automatisk gemning springes over med en forklaring. Filerne bevares. Et checkpoint er ikke en bekræftelse på, at koden virker.
+Projektmenuens **Versioner** siger i almindeligt dansk, om alt er gemt, eller hvor mange ændringer der ikke er gemt. **Gem version** gemmer med ét klik alle ændrede filer, som versionsgemningen accepterer. Beskrivelsen er valgfri. Filer med mulige nøgler og andre beskyttede filer nævnes og bliver ugemte. Historikken viser tidspunkt og beskrivelse, og **Gå tilbage hertil** sætter filerne tilbage til en tidligere version efter en gennemgang. Aktivt filvalg ligger under **Vælg selv filer · avanceret**; branch og identitet ligger under **Se detaljer**. Kildekodeversionen kræver Git; installationspakken medleverer Git. Projektet er et almindeligt Git-repository, som kan overtages uden AI Harness.
+
+Nye projekter gemmer en version efter hver AI-opgave. For åbnede mapper vælges det i Versioner.
+- **Hvad der gemmes:** De filer, der ændrede sig under opgaven, målt på indhold i forhold til opgavens start. Det gælder uanset, om AI'en skrev filen, brugte en kommando eller et patchværktøj.
+- **Hvad der ikke kommer med:** Brugerens egne ugemte ændringer fra før opgaven. En afbrudt eller mislykket opgave gemmes som "Afbrudt AI-opgave", så den kan fortrydes.
+- **Hvad der aldrig gemmes automatisk:** hemmeligheder, beskyttede stier og store eller ukendte binære filer.
+- **Hvornår der springes over:** ved hooks, filtre, igangværende Git-handlinger, staged ændringer, ændret historik under opgaven og manglende første version.
+
+Resultatkortet tilbyder **Fortryd opgaven**, som sætter filerne tilbage til versionen før opgaven. Med automatiske versioner gemmes både fortrydelse og **Gå tilbage hertil** som en ny version, fx "Fortrudt: …" eller "Gendannet til: …". Historikken ændres aldrig bagud, og man kan altid gå frem igen. En version bekræfter ikke, at koden virker.
 
 Eksisterende staged ændringer, konflikter, igangværende Git-operationer og detached HEAD blokerer appens versionsgemning. Mapper inde i et overordnet repository skal åbnes fra repositoryets rod. Manuel gemning respekterer Git-hooks og signering; disse kan køre lokale programmer. Hvis et commit afvises, kan de valgte filer forblive staged til gennemgang i brugerens Git-værktøj.
 
@@ -136,7 +144,7 @@ Et bekræftet push betyder, at versionen blev set på serveren ved kontrollen. S
 ## Moduler og data
 
 - `core/github.cjs`, `core/publishing.cjs`: GitHub-login, repositoryvalg, historikgennemgang og separat push.
-- `core/git.cjs`, `core/checkpoints.cjs`: lokal Git-gennemgang, eksplicit filvalg og valgfrie checkpoints efter agentopgaver.
+- `core/git.cjs`, `core/checkpoints.cjs`: lokal Git-gennemgang, Git fra start i nye projekter, Gem version med ét klik, aktivt filvalg og automatiske versioner efter AI-opgaver.
 - `core/projects.cjs`: lokale mapper og kompatibilitet med `harness.json`, version 1.
 - `core/designs.cjs`: genbrug af designmateriale uden modelkald. Kopier i appdata er almindelige lokale filer, ikke krypteret dokumentlagring.
 - `core/workbench.cjs`: forbindelsesvalg, datagennemgang og sessioner; agentmotoren kan udskiftes via `engineFactory`.

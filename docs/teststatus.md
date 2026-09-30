@@ -12,6 +12,34 @@ Kontrolleret 28. september 2026. Dette er status for den aktuelle arbejdsmappe, 
 - En tidligere plan nulstilles efter gendannelse. Markøren kontrolleres ved genåbning, også når samtalefilen ikke kunne opdateres ved første forsøg.
 - Fejlrapporten er gennemgået og gemt gennem filvælgeren. Den bruger faste statusfelter og udelader projektindhold, filstier, serveradresser, kontonavne og nøgler. Hjælpeskærmens unødvendige kontakt til nøgleringen er fjernet. Nøglelagring står som ikke kontrolleret; en fejlrapport må ikke udløse et nøgleopslag.
 
+## Gem, fortryd og kom tilbage · 30. september 2026
+
+Afprøvet på Mac med OpenCode 1.18.33:
+
+- **Enhedstestet:** 111 automatiske tests består, når testfilerne køres én ad gangen. De nye tests dækker:
+  - Git fra start: branchen `main`, anonym identitet og første version. Hemmeligheder og private referencer kommer ikke med, og eksisterende repositories røres ikke.
+  - automatiske versioner: de indeholder præcis opgavens filer, og brugerens ugemte filer bliver ugemte
+  - et stop gemmes som "Afbrudt AI-opgave"; en opgave uden ændringer giver ingen version
+  - en fil med en mulig nøgle kommer aldrig med; hooks og en ændret historik stopper automatisk gemning
+  - Gem version med ét klik og tidspunkter i historikken
+- **Afprøvet i Electron med en kontrolleret modelserver:** `npm run test:versions` gennemfører hele forløbet med rigtig OpenCode, Git og projektfiler:
+  1. oprettelse med første version og anonym identitet
+  2. en AI-opgave, der gemmes automatisk
+  3. Fortryd opgaven, som sætter filen tilbage og gemmer "Fortrudt: …"
+  4. Versioner med "Alt er gemt" og "i dag"-tidspunkter
+  5. Gå tilbage hertil, der gemmer "Gendannet til: …"
+  6. en ændring, brugeren selv laver, og som gemmes med Gem version
+  7. genstart, hvor projektet, samtalen og forbruget kommer igen
+
+  Desktop-prøven viser, at et projekt lukket med Nyt projekt ikke åbnes igen. De øvrige elleve Electron-prøver og skill-prøverne består også. Begyndergennemgangen gav 25 skærmbilleder uden sidefejl.
+
+Ikke afprøvet:
+
+- En rigtig model gennem appen. Prøven med Mistrals gratis plan (`npm run test:live-app`) venter på en nøgle.
+- En pakket app med ændringerne, Windows og en person uden teknisk baggrund.
+- Git-signering, der er slået til globalt. Så kan den første version mislykkes. Projektet oprettes stadig, og appen viser en besked.
+- `verify-framework-preview` fejler af og til ved Vites genindlæsning og består ved næste kørsel. En særskilt opgave er foreslået.
+
 ## Første resultat uden spørgsmål · 29. september 2026
 
 Afprøvet på Mac med OpenCode 1.18.33:

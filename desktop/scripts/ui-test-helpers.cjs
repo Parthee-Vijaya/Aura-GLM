@@ -3,6 +3,11 @@ async function skipIntroduction(page) {
   await page.waitForFunction(() => !document.querySelector('#create').disabled && !document.querySelector('#new').disabled);
   if (await page.locator('#welcome-dialog').evaluate(el => el.open)) await page.click('#welcome-skip');
 }
+// Appen åbner det seneste projekt igen ved start. Prøver, der skal bruge startsiden, går til Nyt projekt først.
+async function toOnboarding(page) {
+  await page.waitForFunction(() => !document.querySelector('#new').disabled);
+  if (await page.locator('#workspace').isVisible()) { await page.click('#new'); await page.waitForSelector('#onboarding:not([hidden])'); }
+}
 async function menuClick(page, selector) {
   const toggles = {
     '#support-button': '#settings-toggle', '#setup-button': '#settings-toggle', '#connections-button': '#settings-toggle', '#skills-button': '#settings-toggle',
@@ -38,4 +43,4 @@ async function chooseLocation(app, page, folder) {
   await page.click('#choose-location');
   await page.waitForFunction(folder => document.querySelector('#project-location').title === folder, await require('node:fs/promises').realpath(folder));
 }
-module.exports = { skipIntroduction, menuClick, taskOptions, closeTaskOptions, selectMode, previewOptions, projectOptions, isolateDocuments, chooseLocation };
+module.exports = { skipIntroduction, toOnboarding, menuClick, taskOptions, closeTaskOptions, selectMode, previewOptions, projectOptions, isolateDocuments, chooseLocation };

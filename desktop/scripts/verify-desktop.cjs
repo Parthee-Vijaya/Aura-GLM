@@ -12,10 +12,14 @@ const root = path.join(__dirname, '..', '..');
   await fs.writeFile(logo, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==', 'base64'));
   const executablePath = require('electron');
   let app;
-  async function launch() {
+  async function launch({ expectProject } = {}) {
     app = await electron.launch({executablePath, args:[path.join(root, 'desktop'), '--user-data-dir='+path.join(testRoot,'electron-data')], env:{...process.env, ELECTRON_RUN_AS_NODE: undefined}});
     await require('./ui-test-helpers.cjs').isolateDocuments(app, path.join(testRoot, 'Dokumenter'));
     const page = await app.firstWindow(); await require('./ui-test-helpers.cjs').skipIntroduction(page);
+    // Det projekt, der sidst var åbent, åbnes igen ved start. Et projekt lukket med Nyt projekt gør ikke.
+    if (expectProject) { await page.waitForSelector('#workspace:not([hidden])'); assert.equal(await page.locator('#project-name').textContent(), expectProject); await page.frameLocator('#preview').locator('h1').waitFor(); }
+    else { await page.waitForFunction(() => !document.querySelector('#new').disabled); await page.waitForTimeout(500); assert.equal(await page.locator('#workspace').isVisible(), false); }
+    await require('./ui-test-helpers.cjs').toOnboarding(page);
     await page.waitForSelector('#onboarding'); await page.waitForFunction(() => !document.querySelector('#new').disabled); await require('./ui-test-helpers.cjs').menuClick(page, '#setup-button'); await page.click('#setup-local'); await page.waitForSelector('#create-form');
     const identity = await app.evaluate(({app, Menu}) => ({ name: app.getName(), userData: app.getPath('userData'), labels: Menu.getApplicationMenu().items.map(item => item.label) }));
     assert.equal(identity.name, 'AI Harness');
@@ -108,7 +112,7 @@ const root = path.join(__dirname, '..', '..');
     await app.close();
     page=await launch(); await choose([projectDir]); await page.click('#open');
     await page.frameLocator('#preview').locator('h1').filter({hasText:'En levende fælleshave'}).waitFor();
-    await app.close(); page=await launch();
+    await app.close(); page=await launch({ expectProject: 'Fælleshaven' });
     // Samme navn samme sted giver en ny, nummereret mappe. Det eksisterende projekt røres ikke.
     await page.fill('#name','Fælleshaven');await page.fill('#purpose','Må ikke overskrive');await require('./ui-test-helpers.cjs').chooseLocation(app, page, testRoot);await page.click('#create');
     await page.waitForSelector('#workspace:not([hidden])');assert.match(await fs.readFile(publicIndex,'utf8'),/En levende fælleshave/);

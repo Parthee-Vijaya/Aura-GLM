@@ -173,7 +173,7 @@ class Workbench {
     this.running = true; this.emit({ type: 'run.status', status: 'starting' });
     try {
       this.runBefore = await capture(this.project.root); checkStopped();
-      await this.checkpoints.begin(this.project.root, (await this.store.project(this.project.root)).autoCheckpoint === true && prepared.mode !== 'plan'); checkStopped();
+      await this.checkpoints.begin(this.project.root, (await this.store.project(this.project.root)).autoCheckpoint === true && prepared.mode !== 'plan', input.text); checkStopped();
       if (this.engineIdentity !== prepared.disclosure.fingerprint || !this.engine?.active) {
         await this.close(false); checkStopped();
         const key = this.store.decrypt(prepared.connection);
@@ -255,7 +255,6 @@ class Workbench {
   }
   async stop() { if (this.finishing) throw new Error('Afslutningen er i gang. Vent på resultatet.'); this.runStopped = true; this.allowProjectEdits = false; this.plan = null; this.checkpoints.cancel(); ++this.generation; this.engineIdentity = null; this.gateway?.abort(); await this.engine?.abort().catch(() => {}); if (!this.starting) { await this.checkpoints.finish(); this.running = false; } await this.saveHistory('stopped'); this.emit({ type: 'run.status', status: this.starting ? 'starting' : 'stopped' }); }
   async reply(input) {
-    if (input.allow !== true) this.checkpoints.cancel('En handling blev afvist.');
     if (!this.engine) throw new Error('Ingen aktiv agent.');
     // "Tillad for denne opgave" gælder kun filændringer i projektmappen og kun indtil opgaven er færdig.
     if (input.allow === true && input.scope === 'task') {

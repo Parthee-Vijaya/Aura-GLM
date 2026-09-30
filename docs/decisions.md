@@ -229,3 +229,25 @@ Brugeren besluttede, at testerne selv skaffer en nøgle hos Anthropic, og at fil
   - Tokens tælles pr. modelkald ud fra OpenCodes `step-finish`, fordi beskeden kun beholder det sidste kalds tal. Ræsonnement afregnes som output. Forbruget gemmes med samtalen og nulstilles ved ny samtale.
   - Om pris siger vi, at man betaler pr. token, og at prisen varierer meget med opgavens kompleksitet.
 
+
+## Gem, fortryd og kom tilbage · 30. september 2026
+
+Brugeren besluttede, at der gemmes en version efter hver AI-opgave, så en opgave altid kan fortrydes.
+
+- **Git fra start:**
+  - Nye projekter får en lokal Git-historik med branchen `main` og en første version, "Projekt oprettet".
+  - Har computeren ingen Git-identitet, bruges den anonyme `AI Harness-bruger <bruger@ai-harness.invalid>`. Adressen kan aldrig modtage post, og en eksisterende identitet overskrives ikke.
+  - Åbnede mapper røres ikke.
+- **Automatiske versioner efter hver opgave:** De erstatter de tidligere strenge checkpoints, som sprang over efter kommandoer, patchværktøjer, fejl, stop og afvisninger og derfor sjældent gav noget at fortryde.
+  - En version indeholder nu de filer, der ændrede sig under opgaven, målt på indhold i forhold til opgavens start. Brugerens egne ugemte ændringer fra før opgaven kommer ikke med.
+  - Et stop eller en fejl gemmes som "Afbrudt AI-opgave".
+  - Aldrig automatisk: hemmeligheder, beskyttede stier og store eller ukendte binære filer. Heller ikke i repositories med hooks eller filtre, under igangværende Git-handlinger, med staged ændringer eller hvis historikken er ændret under opgaven.
+  - Andre programmers samtidige ændringer kan komme med. Det står i hjælpeteksten.
+- **Fortryd og Gå tilbage hertil:**
+  - Begge bruger den eksisterende gendannelse med kopi før gendannelse.
+  - Med automatiske versioner gemmes resultatet som en ny version ("Fortrudt: …" eller "Gendannet til: …"). Historikken er dermed lineær, og man kan altid gå frem igen.
+  - Kopien før sidste gendannelse vises kun efter en afbrudt gendannelse eller uden automatiske versioner.
+- **Versioner i almindeligt dansk:** Dialogen viser "Alt er gemt" eller antallet af ugemte ændringer, Gem version med ét klik og en historik med tidspunkter. Filvalg, branch og identitet ligger under Avanceret og Se detaljer.
+- **Kom tilbage:** Appen åbner det projekt, der sidst var åbent, med samtale, kladde og forbrug. Et projekt, brugeren har lukket med Nyt projekt, åbnes ikke igen.
+
+Retning, brugeren foreslog 30. september 2026, ikke besluttet: De "smarte" funktioner kan blive moduler, som brugeren selv slår til og fra, hver koblet til sin skill. Det gælder versioner og fortryd, deling og hosting, GitHub-samarbejde og designpakker. Nogle vælger hele pakken, andre kun versioner. Versioner er allerede en afgrænset funktion med sin egen kontakt. Et fælles funktionspanel foreslås som en særskilt milepæl. Hostingmuligheder er undersøgt i [hosting.md](hosting.md).

@@ -41,7 +41,7 @@ const { skipIntroduction, menuClick, taskOptions, selectMode } = require('./ui-t
   try {
     await launch();await menuClick(page,'#git-button');
     await page.getByRole('button',{name:'Godkendt udgangspunkt ·',exact:false}).click(); await page.waitForSelector('#restore-dialog[open]');
-    await page.locator('#restore-files').filter({hasText:'Ugemt forsøg'}).waitFor();
+    await page.click('#restore-dialog details > summary'); await page.locator('#restore-files').filter({hasText:'Ugemt forsøg'}).waitFor();
     await page.click('[data-close="restore-dialog"]'); assert.match(await fs.readFile(pageFile,'utf8'),/Ugemt/);
     await page.getByRole('button',{name:'Godkendt udgangspunkt ·',exact:false}).click();await page.click('#restore-confirm');
     await page.locator('#git-feedback').filter({hasText:'1 fil er gendannet'}).waitFor();await page.click('[data-close="git-dialog"]');

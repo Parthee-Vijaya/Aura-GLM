@@ -90,9 +90,15 @@ handle('project:create', input => exclusive(async () => {
   const parent = chosenParent || defaultProjectParent();
   if (!chosenParent) await fs.mkdir(parent, { recursive: true });
   const created = await createProject(parent, input, assets, profileRoot);
-  await workbench.store.saveProject(created.root, { startup: startup.values });
+  // Nye projekter gemmer en version efter hver AI-opgave, så de altid kan fortrydes.
+  await workbench.store.saveProject(created.root, { startup: startup.values, autoCheckpoint: true });
+  let versionWarning = '';
+  try { await workbench.git.startProject(created.root); }
+  catch (error) { versionWarning = `Versioner kunne ikke slås til: ${error.message} Projektet er oprettet, og du kan gemme versioner senere.`; }
   if (input.remember === true) await new Preferences(workbench.store).save(startup.values);
-  return activate(await openProject(created.root));
+  const opened = await openProject(created.root);
+  if (versionWarning) opened.warnings.push(versionWarning);
+  return activate(opened);
 }));
 handle('project:open', () => exclusive(async () => {
   const selection = await dialog.showOpenDialog(window, { title: 'Åbn en mappe som arbejdsområde', properties: ['openDirectory'] });
@@ -220,14 +226,25 @@ handle('git:status', async () => {
   return { ...await workbench.git.status(root), restoration: await restoration.status(root), autoCheckpoint: (await workbench.store.project(root)).autoCheckpoint === true };
 });
 handle('git:restore-review', input => exclusive(() => restoration.review(requireIdleProject(), input)));
-handle('git:restore', token => exclusive(async () => {
+handle('git:restore', input => exclusive(async () => {
   const root = requireIdleProject();
+  const { token, label } = typeof input === 'string' ? { token: input, label: '' } : input || {};
+  if (typeof label !== 'string' || label.length > 300 || /[\r\n\0]/.test(label)) throw new Error('Ugyldig beskrivelse af gendannelsen.');
   await devServer.stop(); await workbench.close();
-  let restored, error;
+  let restored, error, saved = null;
   try { restored = await restoration.apply(root, token); } catch (failure) { error = failure.message; }
+  // Med automatiske versioner gemmes gendannelsen som en ny version. Historikken bevares, og næste opgave kan gemmes for sig.
+  if (restored && (await workbench.store.project(root)).autoCheckpoint === true) {
+    try {
+      const review = await workbench.git.review(root);
+      const files = review.files.filter(f => !f.blocked && restored.paths.includes(f.file)).map(f => f.file);
+      if (files.length) saved = await workbench.git.commit(root, { token: review.token, files, message: label.trim() || 'Gendannet version' });
+    } catch (failure) { error = `Filerne er gendannet, men den nye version blev ikke gemt: ${failure.message}`; }
+  }
   // activate kontrollerer journalen, også efter genstart eller en delvis gendannelse.
-  return { restored, error, project: await activate(await openProject(root)) };
+  return { restored, error, saved, project: await activate(await openProject(root)) };
 }));
+handle('git:save', note => exclusive(() => workbench.git.saveAll(requireIdleProject(), note || '')));
 handle('git:identity', value => exclusive(() => workbench.git.setIdentity(requireIdleProject(), value)));
 handle('git:init', () => exclusive(() => workbench.git.initialize(requireIdleProject())));
 handle('git:review', () => exclusive(() => workbench.git.review(requireIdleProject())));

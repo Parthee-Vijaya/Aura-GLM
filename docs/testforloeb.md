@@ -33,8 +33,8 @@ Udfyld først invitationen, når download og den aftalte model er afprøvet. Der
 2. Beskriv din idé med egne ord, og opret projektet. Find bagefter projektmappen under Dokumenter › AI Harness. Forklar med dine egne ord, hvad appen vil sende til modellen, når resuméet **Før du sender** vises.
 3. Læs AI’ens forslag, og bed om en ændring af planen. Byg derefter første udkast. Når AI’en spørger, om den må ændre filer, så forklar forskellen på **Tillad for denne opgave** og **Kun denne fil**, før du vælger.
 4. Prøv appen i preview på computer- og mobilbredde. Bed AI’en rette én konkret ting, og kontroller resultatet.
-5. Gem en version via projektmenuen. Lav en ny ændring, gennemgå den tidligere version, og gendan den. Prøv derefter kopien fra før gendannelsen.
-6. Skriv en kladde, luk AI Harness, og åbn projektet igen. Find kladden, samtalen og filerne.
+5. Efter en AI-opgave: brug Fortryd opgaven på resultatkortet, og kontroller forhåndsvisningen. Åbn Versioner i projektmenuen, og gå tilbage til AI'ens version med Gå tilbage hertil. Lav en lille ændring selv, og gem den med Gem version. Forklar med dine egne ord, hvad en version er.
+6. Skriv en kladde, og luk AI Harness. Åbn appen igen: projektet skal åbne af sig selv. Find kladden, samtalen, filerne og forbruget under skrivefeltet.
 7. Stop en AI-opgave. Beskriv, hvad du tror er gemt, og hvordan du vil fortsætte. Find Hjælp og feedback, og se fejlrapporten før eventuel deling.
 8. Installer den næste testversion oven på den første, og åbn samme projekt. Kontroller filer, kladde, gemt designpakke og forbindelsesvalg. En nøgle kan kræve ny indtastning; nulstil aldrig systemets nøglering.
 9. Vælg **Harness i dit kodeværktøj** i sidepanelet. Læs under **Det følger med**, hvad to af skillsene gør, og forklar dem med dine egne ord. Installer Harness i en kopi af et projekt til det kodeværktøj, du bruger. Gennemgå ændringerne, åbn projektet i værktøjet, og spørg efter kontrolordet. Fjern derefter installationen igen, og kontroller, at dine egne filer er uændrede.

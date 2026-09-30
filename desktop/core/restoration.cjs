@@ -122,7 +122,7 @@ class Restoration {
         journal.state = 'failed'; await atomic(this.journal(root), JSON.stringify(journal)).catch(() => {});
         throw new Error('Gendannelsen blev afbrudt. Nogle filer kan være ændret. Vælg Kopien før sidste gendannelse i Versioner for at gennemgå og genskabe dem.');
       }
-      return { files: review.files.length, at: journal.at };
+      return { files: review.files.length, paths: review.files.map(f => f.file), at: journal.at };
     } finally { this.git.busy = false; }
   }
 }

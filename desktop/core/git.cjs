@@ -56,6 +56,8 @@ async function content(root, file) {
   return { hash, text, mode: stat.mode & 0o111 ? '100755' : '100644' };
 }
 
+// Versioner i nye projekter står under dette navn, indtil brugeren selv vælger et. Adressen kan aldrig modtage post (.invalid).
+const ANONYMOUS = { name: 'AI Harness-bruger', email: 'bruger@ai-harness.invalid' };
 class GitVersions {
   constructor() { this.reviews = new Map(); this.busy = false; }
   async repository(root) {
@@ -81,7 +83,7 @@ class GitVersions {
   }
   async status(root) {
     const repo = await this.repository(root);
-    const history = repo.head ? (await run(root, ['log', '-12', '--format=%h%x00%s%x00%H'])).toString().split('\n').filter(Boolean).map(line => { const [id, message, commit] = line.split('\0'); return { id, message, commit }; }) : [];
+    const history = repo.head ? (await run(root, ['log', '-12', '--format=%h%x00%s%x00%H%x00%cI'])).toString().split('\n').filter(Boolean).map(line => { const [id, message, commit, at] = line.split('\0'); return { id, message, commit, at }; }) : [];
     return { initialized: repo.initialized, block: repo.block, wrongRoot: Boolean(repo.wrongRoot), branch: repo.branch || '', head: repo.head || '', identity: repo.identity, changes: repo.files?.length || 0, history };
   }
   async initialize(root) {
@@ -89,6 +91,30 @@ class GitVersions {
     if (repo.initialized) throw new Error('Mappen ligger allerede i et Git-repository.');
     await run(repo.root, ['init']);
     return this.status(repo.root);
+  }
+  // Nye projekter fra appen får Git fra start: en lokal historik, en anonym identitet, hvis computeren ikke har en,
+  // og en første version af startfilerne. Eksisterende mapper og repositories røres aldrig her.
+  async startProject(root, message = 'Projekt oprettet') {
+    let repo = await this.repository(root);
+    if (repo.initialized) return { started: false };
+    await run(repo.root, ['init', '-b', 'main']);
+    repo = await this.repository(repo.root);
+    if (!repo.identity.name) await run(repo.root, ['config', '--local', 'user.name', ANONYMOUS.name]);
+    if (!repo.identity.email) await run(repo.root, ['config', '--local', 'user.email', ANONYMOUS.email]);
+    const review = await this.review(repo.root);
+    const files = review.files.filter(file => !file.blocked).map(file => file.file);
+    if (files.length) await this.commit(repo.root, { token: review.token, files, message });
+    return { started: true, files: files.length };
+  }
+  // Gem version med ét klik: alle ændrede filer, som versionsgemningen accepterer. Afviste filer nævnes og bliver ugemte.
+  async saveAll(root, note = '') {
+    if (typeof note !== 'string' || note.length > 300 || /[\r\n\0]/.test(note)) throw new Error('Skriv en beskrivelse på én linje og højst 300 tegn.');
+    const review = await this.review(root);
+    const files = review.files.filter(file => !file.blocked).map(file => file.file);
+    const kept = review.files.filter(file => file.blocked).map(file => file.file);
+    if (!files.length) return { saved: 0, kept };
+    const result = await this.commit(root, { token: review.token, files, message: note.trim() || 'Gemt version' });
+    return { saved: files.length, kept, head: result.head };
   }
   async setIdentity(root, input) {
     const repo = await this.repository(root);
@@ -150,4 +176,4 @@ class GitVersions {
     } finally { this.busy = false; }
   }
 }
-module.exports = { GitVersions, run, secretContent, protectedPath, content };
+module.exports = { GitVersions, run, secretContent, protectedPath, content, ANONYMOUS };

@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const os = require('node:os');
+const { run } = require('../core/git.cjs');
 (async () => {
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'harness-introduction-'));let app;const errors=[];
  try {
@@ -75,7 +76,11 @@ const os = require('node:os');
   await page.frameLocator('#preview').locator('h1').waitFor();assert.equal(await page.frameLocator('#preview').locator('h1').textContent(),'Mit bibliotek');
   assert.equal(await app.evaluate(()=>global.introRequests),0);
   assert.equal(await page.evaluate(()=>localStorage.getItem('harness.ideaDraft.v1')),null);
-  await assert.rejects(fs.stat(path.join(root,'projekt-mit-bibliotek','.git')),{code:'ENOENT'});
+  // Nye projekter får Git fra start med en første version og automatiske versioner efter hver AI-opgave.
+  const created=path.join(root,'projekt-mit-bibliotek');
+  assert.equal((await run(created,['log','--format=%s'])).toString().trim(),'Projekt oprettet');
+  assert.equal((await run(created,['status','--porcelain'])).toString(),'');
+  assert.equal((await page.evaluate(()=>window.harness.connectionState())).value.projectSettings.autoCheckpoint,true);
   assert.equal((await page.evaluate(()=>window.harness.providerAccount('https://example.invalid'))).ok,false);
   assert.deepEqual(errors,[]);
   await page.screenshot({path:path.join(root,'arbejdsomraade.png')});

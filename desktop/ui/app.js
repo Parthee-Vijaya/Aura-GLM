@@ -1,6 +1,6 @@
 const $ = selector => document.querySelector(selector);
 let current = null, revision = null, polling = false, state = null, modelRequest = 0, acceptedFingerprint = null, pendingSend = null, running = false;
-let activityGroup = null;
+let activityGroup = null, lastCheckpoint = null;
 let skillList = [], roles = new Map(), parts = new Map(), partTypes = new Map();
 function message(text, error = false) { const dialog = [...document.querySelectorAll('dialog[open]')].at(-1); if (dialog) { let notice = dialog.querySelector('.dialog-notice'); if (!notice) { notice = document.createElement('p'); notice.className = 'dialog-notice'; notice.setAttribute('role', 'status'); dialog.append(notice); } notice.textContent = text; }  $('#message').textContent = text; $('#message').classList.toggle('error', error); $('#message').hidden = false; }
 async function call(method, value) { const result = await window.harness[method](value); if (!result.ok) throw new Error(result.error); return result.value; }
@@ -182,6 +182,7 @@ async function displayProject(project) {
   ++modelRequest; recovery = ''; $('#connection-warning').hidden = true; document.body.classList.remove('setup-guided'); setupActive = false; $('#setup').hidden = true; setupControls();
   activePlan = null; modelCatalog = []; $('#model-shortlist').replaceChildren(); $('#plan-card').hidden = true; $('#run-review').hidden = true; $('#work-mode').value = 'plan'; updateWorkMode();
   current = project; revision = null; acceptedFingerprint = null; roles.clear(); parts.clear(); partTypes.clear();
+  try { localStorage.setItem(lastProjectKey, project.root); } catch {}
   $('#project-intro').hidden = false; $('#idea-options').open = false; for (const el of document.querySelectorAll('#idea-options select')) el.value = ''; $('#agent-activity').hidden = true; $('#messages').replaceChildren(); activityGroup = null; $('#approvals').replaceChildren(); $('#prompt').value = '';
   $('#new').removeAttribute('aria-current'); $('#view-title').textContent = 'Arbejdsområde'; $('#active-project').textContent = project.name; $('#active-project').classList.add('active');
   $('#onboarding').hidden = true; $('#workspace').hidden = false; $('#skills-button').disabled = false;
@@ -348,7 +349,7 @@ async function sendNow(data, text) {
   $('#model-options').open = false; $('#task-dialog').close(); activityGroup = null; $('#connection-warning').hidden = true; $('#data-dialog').close(); setRunning(true, 'Starter agent …');
   if ($('#work-mode').value === 'free') { activePlan = null; $('#plan-card').hidden = true; }
   $('#run-review').hidden = true; if ($('#work-mode').value === 'build') $('#plan-card').hidden = true; if ($('#work-mode').value === 'plan') { activePlan = null; $('#plan-card').hidden = true; }
-  lastSentText = text; appendMessage(text, 'user'); $('#prompt').value = ''; await saveChatDraft();
+  lastSentText = text; lastCheckpoint = null; appendMessage(text, 'user'); $('#prompt').value = ''; await saveChatDraft();
   try { await call('send', { text, fingerprint: data.fingerprint }); acceptedFingerprint = data.fingerprint; }
   catch (error) { $('#prompt').value = text; await saveChatDraft(); setRunning(false, 'Fejl'); appendMessage(error.message, 'error'); connectionFailed(error.message); throw error; }
 }
@@ -383,7 +384,8 @@ window.harness.onEvent(event => {
   if (event.type === 'history.error') { $('#draft-status').textContent = event.message; message(event.message, true); }
   if (event.type === 'plan.ready') { activePlan = event.plan; $('#plan-card details').open = false; $('#plan-text').textContent = event.plan.text; $('#plan-card').hidden = false; requestAnimationFrame(() => $('#plan-card').scrollIntoView({ block: 'nearest' })); }
   if (event.type === 'run.review') renderRunReview(event);
-  if (event.type === 'git.checkpoint') { appendMessage(event.message, 'system'); return; }
+  // Versionen efter opgaven vises på resultatkortet. Kun en oversprunget version nævnes i samtalen.
+  if (event.type === 'git.checkpoint') { lastCheckpoint = event; if (event.status === 'skipped') appendMessage(event.message, 'system'); return; }
   if (event.type === 'preview.ready') { showPreview(event.url); window.previewServer?.refresh(); return; }
   if (event.type === 'session.new') { roles.clear(); parts.clear(); partTypes.clear(); partElement('session-' + Date.now(), 'tool').textContent = 'Ny modelsession. Valgt plan og afklaring følger med; øvrig gemt samtale kræver tilvalg.'; }
   if (event.type === 'run.status') {
@@ -439,7 +441,7 @@ window.harness.onEvent(event => {
 $('#color').addEventListener('input', event => { $('#color-value').value = event.target.value; });
 for (const kind of ['logo', 'reference']) $(`#${kind}`).onclick = () => action(async () => showAssets(await call('chooseAssets', kind)));
 $('#open').onclick = () => action(async () => { await saveChatDraft(); await displayProject(await call('openProject')); });
-$('#new').onclick = () => action(async () => { await saveChatDraft(); document.body.classList.remove('setup-guided'); setupActive = false; $('#setup').hidden = true; ++modelRequest; recovery = ''; $('#connection-warning').hidden = true; await call('newProject'); current = null; revision = null; acceptedFingerprint = null; showPreview(null); $('#workspace').hidden = true; $('#onboarding').hidden = false; $('#skills-button').disabled = true; $('#new').setAttribute('aria-current', 'page'); $('#view-title').textContent = 'Projektopstart'; $('#active-project').textContent = 'Intet projekt åbent'; $('#active-project').classList.remove('active'); $('#create-form').reset(); $('#color-value').value = $('#color').value; showAssets([]); await loadStartup(); nameTouched = false; saveIdeaDraft(); $('#purpose').focus(); });
+$('#new').onclick = () => action(async () => { await saveChatDraft(); try { localStorage.removeItem(lastProjectKey); } catch {} document.body.classList.remove('setup-guided'); setupActive = false; $('#setup').hidden = true; ++modelRequest; recovery = ''; $('#connection-warning').hidden = true; await call('newProject'); current = null; revision = null; acceptedFingerprint = null; showPreview(null); $('#workspace').hidden = true; $('#onboarding').hidden = false; $('#skills-button').disabled = true; $('#new').setAttribute('aria-current', 'page'); $('#view-title').textContent = 'Projektopstart'; $('#active-project').textContent = 'Intet projekt åbent'; $('#active-project').classList.remove('active'); $('#create-form').reset(); $('#color-value').value = $('#color').value; showAssets([]); await loadStartup(); nameTouched = false; saveIdeaDraft(); $('#purpose').focus(); });
 $('#create-form').onsubmit = event => { event.preventDefault(); action(async () => { $('#create').disabled = true; try { const created = await call('createProject', { name: $('#name').value, purpose: $('#purpose').value, color: $('#color').value, links: $('#links').value.split('\n').map(line => line.trim()).filter(Boolean), tests: $('#tests').value, startup: startupValues(), remember: $('#remember-startup').checked }); if (created) { await displayProject(created); clearIdeaDraft(); $('#start-idea').click(); } } finally { $('#create').disabled = false; } }); };
 $('#connections-button').onclick = () => action(async () => { if (setupActive && setupStep === 'provider') setupPage('tools'); moveConnectionForm(false); state = await call('connectionState'); renderConnections(); updateProvider(); $('#connections-dialog').showModal(); });
 $('#provider-kind').onchange = updateProvider;
@@ -481,37 +483,61 @@ $('#refresh').onclick = () => { if (current?.previewURL) $('#preview').src = cur
 for (const button of document.querySelectorAll('[data-close]')) button.onclick = () => document.getElementById(button.dataset.close).close();
 $('#connections-dialog').addEventListener('close', () => { $('#api-key').value = ''; });
 setInterval(async () => { if (!current || polling) return; polling = true; const project = current; try { const next = await call('revision'); if (current !== project || !next) return; if (revision && next !== revision) $('#preview').src = current.previewURL; revision = next; $('#preview-status').textContent = 'Lokal forhåndsvisning'; } catch { $('#preview-status').textContent = 'Kan ikke læse siden – kontrollér projektfilerne'; } finally { polling = false; } }, 1500);
-action(async () => { $('#create').disabled = true; try { state = await call('connectionState'); renderConnections(); updateProvider(); await loadDesigns(); await loadStartup(); renderLocation(await call('projectLocation')); restoreIdeaDraft(); await refreshRecent(); setupControls(); for (const id of ['#welcome-build', '#welcome-example', '#welcome-open']) $(id).disabled = false; if ($('#welcome-dialog').open) $('#welcome-title').focus(); else $('#purpose').focus(); } finally { $('#create').disabled = false; } });
+action(async () => { $('#create').disabled = true; try { state = await call('connectionState'); renderConnections(); updateProvider(); await loadDesigns(); await loadStartup(); renderLocation(await call('projectLocation')); restoreIdeaDraft(); await refreshRecent(); setupControls(); for (const id of ['#welcome-build', '#welcome-example', '#welcome-open']) $(id).disabled = false; if ($('#welcome-dialog').open) $('#welcome-title').focus(); else { $('#purpose').focus(); await reopenLast(); } } finally { $('#create').disabled = false; } });
+// Kom tilbage: det senest åbnede projekt åbnes igen ved start, så man fortsætter, hvor man slap.
+// Et projekt, brugeren selv har lukket med Nyt projekt, åbnes ikke igen.
+const lastProjectKey = 'harness.lastProject.v1';
+async function reopenLast() {
+  let root = ''; try { root = localStorage.getItem(lastProjectKey) || ''; } catch {}
+  const last = root && (await call('recentProjects')).find(item => item.root === root);
+  if (!last) return;
+  try { await displayProject(await call('reopenProject', last.id)); }
+  catch { message(`Det seneste projekt, ${last.name}, kunne ikke åbnes. Det er måske flyttet eller slettet. Brug Åbn projekt for at finde det.`, true); }
+}
 
 async function loadDesigns() { const designs = await call('listDesigns'); $('#design-select').replaceChildren(option('', 'Vælg en tidligere gemt pakke'), ...designs.map(d => option(d.id, `${d.name} · ${d.files} filer`))); }
 $('#save-design').onclick = () => action(async () => { await call('saveDesign', { name: $('#design-name').value, color: $('#color').value, links: $('#links').value.split('\n').map(s => s.trim()).filter(Boolean) }); await loadDesigns(); message('Designpakken er gemt lokalt og kan vælges i andre projekter.'); });
 $('#design-select').onchange = () => action(async () => { updateStartupSummary(); if (!$('#design-select').value) { await clearStartupDesign(); return; } const design = await call('applyDesign', $('#design-select').value); $('#color').value = design.color; $('#color-value').value = design.color; $('#links').value = design.links.join('\n'); showAssets(design.assets); updateStartupSummary(); });
 
 
-let gitReview = null, restoreReview = null;
-async function reviewRestoration(input) {
-  restoreReview = null; $('#restore-confirm').disabled = true; $('#restore-files').replaceChildren(); $('#restore-feedback').textContent = ''; $('#restore-summary').textContent = 'Henter filerne fra versionen …';
+let gitReview = null, restoreReview = null, restoreLabel = '';
+// Versioners navne forkortes ved et ordskifte, så historikken kan læses. Samme regel som for AI-opgaver.
+function shortLabel(text) { const value = String(text).replace(/\s+/g, ' ').trim(); return value.length <= 80 ? value : value.slice(0, 80).replace(/[\s,.;:]+\S*$/, '') + ' …'; }
+// Tidspunkt for en version i almindeligt dansk: "i dag 14.32", "i går 09.10" eller "3. okt. 14.32".
+function versionTime(at) {
+  const date = new Date(at); if (Number.isNaN(date.getTime())) return '';
+  const time = date.toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' }), day = new Date(); day.setHours(0, 0, 0, 0);
+  const start = new Date(date); start.setHours(0, 0, 0, 0); const days = Math.round((day - start) / 86400000);
+  return days === 0 ? `i dag ${time}` : days === 1 ? `i går ${time}` : `${date.toLocaleDateString('da-DK', { day: 'numeric', month: 'short' })} ${time}`;
+}
+// Gendannelse med én gennemgang. Fortryd og "Gå tilbage hertil" bruger samme vej; beskrivelsen bliver den nye versions navn.
+async function reviewRestoration(input, options = {}) {
+  restoreReview = null; restoreLabel = options.label || ''; $('#restore-confirm').disabled = true; $('#restore-files').replaceChildren(); $('#restore-feedback').textContent = ''; $('#restore-summary').textContent = 'Henter filerne fra versionen …';
+  $('#restore-title').textContent = options.title || 'Gå tilbage til en tidligere version'; $('#restore-confirm').textContent = options.confirm || 'Gå tilbage til denne version';
   $('#restore-dialog').showModal();
   restoreReview = await call('restoreReview', input);
-  $('#restore-title').textContent = restoreReview.undo ? 'Kopien før sidste gendannelse' : 'Gennemgå gendannelse';
-  $('#restore-summary').textContent = `${restoreReview.files.length} filer berøres. ${restoreReview.untracked} filer uden for historikken bevares.`;
+  if (restoreReview.undo) { $('#restore-title').textContent = 'Fortryd sidste gendannelse'; $('#restore-confirm').textContent = 'Fortryd gendannelsen'; restoreLabel = 'Fortrudt gendannelse'; }
+  const count = restoreReview.files.length;
+  $('#restore-summary').textContent = `${count} ${count === 1 ? 'fil sættes' : 'filer sættes'} tilbage.${restoreReview.untracked ? ` ${restoreReview.untracked} ${restoreReview.untracked === 1 ? 'fil' : 'filer'} uden for versionerne bevares.` : ''}`;
   for (const file of restoreReview.files) {
     const row = node('details'); row.append(node('summary', `${file.action}: ${file.file}`));
     if (file.binary) row.append(node('p', 'Binær fil. Kontrollér billedet eller skrifttypen efter gendannelse.'));
-    else row.append(node('h4', 'Nu'), node('pre', file.before ?? '(findes ikke)'), node('h4', 'Efter gendannelse'), node('pre', file.after ?? '(slettes)'));
+    else row.append(node('h4', 'Nu'), node('pre', file.before ?? '(findes ikke)'), node('h4', 'Efter'), node('pre', file.after ?? '(slettes)'));
     $('#restore-files').append(row);
   }
-  $('#restore-confirm').disabled = !restoreReview.files.length;
-  if (!restoreReview.files.length) $('#restore-feedback').textContent = 'Filerne svarer allerede til den valgte version.';
+  $('#restore-confirm').disabled = !count;
+  if (!count) $('#restore-feedback').textContent = 'Filerne svarer allerede til den valgte version.';
 }
 $('#restore-undo').onclick = () => action(() => reviewRestoration({ undo: true }));
 $('#restore-confirm').onclick = () => action(async () => {
   if (!restoreReview) return;
   const token = restoreReview.token; restoreReview = null; $('#restore-confirm').disabled = true;
-  const result = await call('restoreVersion', token);
+  const result = await call('restoreVersion', { token, label: restoreLabel });
   await displayProject(result.project); await loadGit();
   $('#restore-dialog').close();
-  $('#git-feedback').textContent = result.error || `${result.restored.files} ${result.restored.files === 1 ? 'fil er' : 'filer er'} gendannet. Gennemse forhåndsvisningen. Ændringerne er endnu ikke gemt som en ny version.`;
+  const count = result.restored?.files || 0, files = `${count} ${count === 1 ? 'fil er' : 'filer er'} gendannet`;
+  const text = result.error || (result.saved ? `${files} og gemt som en ny version. Du kan gå frem igen under Versioner.` : `${files}. Gennemse forhåndsvisningen. Ændringerne er endnu ikke gemt som en ny version.`);
+  $('#git-feedback').textContent = text; message(text, Boolean(result.error));
 });
 async function loadGitReview() {
   gitReview = null; $('#git-save').disabled = true; $('#git-files').replaceChildren();
@@ -519,7 +545,8 @@ async function loadGitReview() {
   for (const file of gitReview.files) {
     const row = node('section'); const label = node('label', undefined, 'check-label'); const input = node('input');
     input.type = 'checkbox'; input.value = file.file; input.disabled = Boolean(file.blocked);
-    label.append(input, document.createTextNode(`${file.status} · ${file.file}`)); row.append(label);
+    const change = file.status === '??' ? 'Ny' : /D/.test(file.status) ? 'Slettet' : 'Ændret';
+    label.append(input, document.createTextNode(`${change} · ${file.file}`)); row.append(label);
     if (file.blocked) row.append(node('p', file.blocked, 'hint'));
     else if (file.binary) row.append(node('p', 'Binær billed- eller skrifttypefil. Indholdet vises ikke her; kontrollér filen før tilvalg.', 'hint'));
     else { const details = node('details'); details.append(node('summary', 'Se indhold før og efter'), node('h4', 'Før'), node('pre', file.before ?? '(ny fil)'), node('h4', 'Efter'), node('pre', file.text ?? '(slettet fil)')); row.append(details); }
@@ -529,34 +556,56 @@ async function loadGitReview() {
 }
 async function loadGit() {
   $('#git-dialog .dialog-notice')?.remove();
-  $('#git-refresh').disabled = true; $('#git-identity').hidden = true;
+  $('#git-refresh').disabled = true; $('#git-identity').hidden = true; $('#git-quick').hidden = true; $('#git-summary').textContent = 'Henter versioner …';
   $('#git-auto').disabled = true; $('#git-history').replaceChildren(); $('#restore-undo').hidden = true;
   try {
   gitReview = null; $('#git-form').hidden = true; $('#git-init').hidden = true; $('#git-settings').hidden = true;
   const result = await call('gitStatus');
-  $('#git-summary').textContent = result.block || `Branch: ${result.branch} · ${result.changes} ændrede filer · ${result.identity.name} <${result.identity.email}>`;
+  const identityMissing = result.initialized && !result.wrongRoot && !(result.identity?.name && result.identity?.email);
+  const changes = result.changes === 1 ? '1 ændring er ikke gemt endnu.' : `${result.changes} ændringer er ikke gemt endnu.`;
+  $('#git-summary').textContent = !result.initialized ? 'Versioner er ikke slået til for denne mappe.' : identityMissing ? 'Skriv, hvem der står bag versionerne, før den første gemmes.' : result.block || (result.changes ? changes : 'Alt er gemt.');
+  $('#git-details').textContent = result.initialized ? `Branch: ${result.branch || 'ingen'} · ${result.identity?.name || 'uden navn'} <${result.identity?.email || 'uden e-mail'}>` : 'Mappen har ingen Git-historik.';
   $('#git-init').hidden = result.initialized;
-  $('#git-identity').hidden = !result.initialized || result.wrongRoot || Boolean(result.identity?.name && result.identity?.email);
+  $('#git-identity').hidden = !identityMissing;
   $('#git-name').value = result.identity?.name || ''; $('#git-email').value = result.identity?.email || '';
   $('#git-name').readOnly = Boolean(result.identity?.name); $('#git-email').readOnly = Boolean(result.identity?.email);
   $('#git-settings').hidden = !result.initialized || result.wrongRoot;
   $('#git-auto').checked = result.autoCheckpoint;
-  if (result.initialized && !result.block) { $('#git-form').hidden = false; await loadGitReview(); }
-  $('#git-history').replaceChildren(...result.history.map(item => { const row = node('li'); const button = node('button', `${item.message} · ${item.id}`); button.disabled = Boolean(result.block); button.title = 'Gennemgå denne version før gendannelse'; button.onclick = () => action(() => reviewRestoration({ commit: item.commit })); row.append(button); return row; }));
-  $('#restore-undo').hidden = !result.restoration; $('#restore-undo').disabled = Boolean(result.block);
-  if (result.restoration && ['failed', 'prepared', 'applying'].includes(result.restoration.state)) $('#git-feedback').textContent = 'Sidste gendannelse blev afbrudt. Gennemgå kopien for at genskabe filerne fra før gendannelsen.';
+  const canSave = result.initialized && !result.block;
+  $('#git-quick').hidden = !canSave || !result.changes;
+  if (canSave) { $('#git-form').hidden = false; if ($('#git-advanced').open) await loadGitReview(); }
+  $('#git-history').replaceChildren(...result.history.map((item, index) => {
+    const row = node('li'); row.append(node('span', `${versionTime(item.at)} · ${item.message}`, 'version-label'));
+    const button = node('button', index === 0 && !result.changes ? 'Nuværende' : 'Gå tilbage hertil', 'text-button');
+    button.disabled = Boolean(result.block) || (index === 0 && !result.changes);
+    button.setAttribute('aria-label', `Gå tilbage til: ${item.message} · ${item.id}`); button.title = 'Gennemgå versionen, før filerne sættes tilbage';
+    button.onclick = () => action(() => reviewRestoration({ commit: item.commit }, { label: `Gendannet til: ${shortLabel(item.message)}` }));
+    row.append(button); return row;
+  }));
+  // Når gendannelser gemmes som versioner, klares fortrydelse med "Gå tilbage hertil". Kopien vises kun efter en afbrudt gendannelse eller uden automatiske versioner.
+  const interrupted = ['failed', 'prepared', 'applying'].includes(result.restoration?.state);
+  $('#restore-undo').hidden = !result.restoration || (result.autoCheckpoint && !interrupted); $('#restore-undo').disabled = Boolean(result.block);
+  if (result.restoration && ['failed', 'prepared', 'applying'].includes(result.restoration.state)) $('#git-feedback').textContent = 'Sidste gendannelse blev afbrudt. Vælg Fortryd sidste gendannelse for at genskabe filerne fra før gendannelsen.';
   if (!result.history.length) $('#git-history').append(node('li', 'Ingen gemte versioner endnu.'));
   } finally { $('#git-auto').disabled = false; $('#git-refresh').disabled = false; }
 }
 $('#git-button').onclick = () => action(async () => { $('#git-feedback').textContent = ''; $('#git-dialog').showModal(); await loadGit(); });
 $('#git-init').onclick = () => action(async () => { $('#git-init').disabled = true; try { await call('gitInit'); await loadGit(); } finally { $('#git-init').disabled = false; } });
 $('#git-refresh').onclick = () => action(loadGit);
-$('#git-auto').onchange = () => action(async () => { const selected = $('#git-auto').checked; try { await call('gitAutomatic', selected); $('#git-feedback').textContent = selected ? 'Automatiske lokale checkpoints er slået til for dette projekt.' : 'Automatiske checkpoints er slået fra.'; } catch (error) { $('#git-auto').checked = !selected; throw error; } });
+$('#git-advanced').addEventListener('toggle', () => { if ($('#git-advanced').open && !$('#git-form').hidden) action(loadGitReview); });
+$('#git-auto').onchange = () => action(async () => { const selected = $('#git-auto').checked; try { await call('gitAutomatic', selected); $('#git-feedback').textContent = selected ? 'Automatiske versioner er slået til: der gemmes en version efter hver AI-opgave.' : 'Automatiske versioner er slået fra.'; } catch (error) { $('#git-auto').checked = !selected; throw error; } });
+$('#git-quick').onsubmit = event => { event.preventDefault(); action(async () => {
+  $('#git-save-all').disabled = true;
+  try {
+    const result = await call('gitSave', $('#git-note').value); $('#git-note').value = '';
+    $('#git-feedback').textContent = result.saved ? `Versionen er gemt lokalt på denne computer.${result.kept.length ? ` Disse filer blev ikke gemt, fordi de kan indeholde hemmeligheder eller er for store: ${result.kept.join(', ')}.` : ''}` : 'Der var ingen ændringer at gemme.';
+  } finally { $('#git-save-all').disabled = false; await loadGit(); }
+}); };
 $('#git-form').onsubmit = event => { event.preventDefault(); action(async () => {
   if (!gitReview) return;
   const input = { token: gitReview.token, message: $('#git-message').value, files: [...document.querySelectorAll('#git-files input:checked')].map(el => el.value) };
   gitReview = null; $('#git-save').disabled = true; $('#git-auto').disabled = true;
-  try { const result = await call('gitCommit', input); $('#git-feedback').textContent = `Version ${result.head.slice(0, 8)} er gemt lokalt. Intet er pushet.`; $('#git-message').value = ''; }
+  try { await call('gitCommit', input); $('#git-feedback').textContent = 'Versionen er gemt lokalt på denne computer.'; $('#git-message').value = ''; }
   finally { await loadGit(); }
 }); };
 
@@ -1035,7 +1084,15 @@ function renderRunReview(result) {
   if (result.tools.some(t => t.status === 'error')) box.append(node('p', 'Mindst ét værktøj fejlede eller blev afvist. Se samtalen, før du fortsætter.'));
   checks.append(node('p', 'Gennemfør den vigtigste opgave, og prøv også en smal skærmstørrelse. AI’ens beskrivelse er ikke et testbevis.', 'hint'));
   if (result.skipped) box.append(node('p', 'Nogle filer er udeladt af oversigten på grund af filtype eller størrelse.'));
-  if (result.files.length) {
+  if (result.files.length && lastCheckpoint?.status === 'saved') {
+    // Opgaven er gemt som en version. Fortryd sætter filerne tilbage til versionen før opgaven og gemmer det som en ny version.
+    const checkpoint = lastCheckpoint, task = shortLabel(lastSentText);
+    box.append(node('p', checkpoint.message, 'hint'));
+    if (checkpoint.kept?.length) box.append(node('p', `Disse filer blev ikke gemt, fordi de kan indeholde hemmeligheder eller er for store: ${checkpoint.kept.join(', ')}.`, 'hint'));
+    const undo = node('button', 'Fortryd opgaven'); undo.onclick = () => action(() => reviewRestoration({ commit: checkpoint.previous }, { title: 'Fortryd opgaven', confirm: 'Fortryd opgaven', label: `Fortrudt: ${task}` }));
+    const inspect = node('button', 'Se ændringerne'); inspect.onclick = () => $('#changes-button').click();
+    box.append(undo, inspect);
+  } else if (result.files.length) {
     const inspect = node('button', 'Gennemgå ændringer'); inspect.onclick = () => $('#changes-button').click();
     const save = node('button', 'Gem version'); save.onclick = () => $('#git-button').click(); box.append(inspect, save);
   }
