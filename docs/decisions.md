@@ -34,7 +34,7 @@ Tekniske valg i implementeringen:
 - **Skillmapper:** så få mapper som muligt, så alle valgte værktøjer kan se skillsene; `.agents/skills` dækker de fleste. Ved lige dækning vælges værktøjets egen foretrukne mappe.
 - **Sikker installation:** afgrænsede afsnit mellem faste markører i eksisterende filer, aldrig overskrivning, `.harness/installation.json` med version og kontrolsummer, konflikter ved ændrede filer, gennemgang med engangsnøgle og fjernelse af kun uændrede filer. Installationen gælder ét projekt ad gangen.
 - **Udgåede værktøjer:** Continue og Roo Code får ingen pakker, fordi de ikke længere udvikles.
-- **Appens egen agent:** bruger fortsat sine egne instruktioner, nu i `profiles/app`. Overgangen til det fælles bibliotek med indlæsning efter behov er en særskilt beslutning, fordi den ændrer den afprøvede agentadfærd.
+- **Appens egen agent:** bruger fortsat sine egne instruktioner, nu i `profiles/app`. Overgangen til det fælles bibliotek med indlæsning efter behov er en særskilt beslutning, fordi den ændrer den afprøvede agentadfærd. *Afløst 30. september 2026: appens AI bruger nu det fælles bibliotek. Se [Funktioner og ét fælles skillbibliotek](#funktioner-og-ét-fælles-skillbibliotek--30-september-2026).*
 
 ## Historiske møde- og produktnotater
 
@@ -250,4 +250,48 @@ Brugeren besluttede, at der gemmes en version efter hver AI-opgave, så en opgav
 - **Versioner i almindeligt dansk:** Dialogen viser "Alt er gemt" eller antallet af ugemte ændringer, Gem version med ét klik og en historik med tidspunkter. Filvalg, branch og identitet ligger under Avanceret og Se detaljer.
 - **Kom tilbage:** Appen åbner det projekt, der sidst var åbent, med samtale, kladde og forbrug. Et projekt, brugeren har lukket med Nyt projekt, åbnes ikke igen.
 
-Retning, brugeren foreslog 30. september 2026, ikke besluttet: De "smarte" funktioner kan blive moduler, som brugeren selv slår til og fra, hver koblet til sin skill. Det gælder versioner og fortryd, deling og hosting, GitHub-samarbejde og designpakker. Nogle vælger hele pakken, andre kun versioner. Versioner er allerede en afgrænset funktion med sin egen kontakt. Et fælles funktionspanel foreslås som en særskilt milepæl. Hostingmuligheder er undersøgt i [hosting.md](hosting.md).
+Brugeren foreslog samme dag, at de "smarte" funktioner blev moduler, som man selv slår til og fra. Det er besluttet og bygget i afsnittet nedenfor. Hostingmuligheder er undersøgt i [hosting.md](hosting.md).
+
+## Funktioner og ét fælles skillbibliotek · 30. september 2026
+
+Brugeren besluttede tre ting:
+- Appen spørger ved første start, hvad den skal hjælpe med.
+- Valget er standarden for alle projekter, men et projekt kan have undtagelser.
+- Appens egen AI bruger det samme skillbibliotek som installationerne i brugerens kodeværktøj.
+
+- **Seks funktioner.** De er beskrevet i `profiles/catalog.json` under `features`. Hver skill hører til præcis én funktion, og biblioteket afviser andet:
+  - **Versioner og fortryd:** Git fra start, en version efter hver AI-opgave og Fortryd. Skill: `harness-git-og-samarbejde`.
+  - **Planlægning før bygning:** Afklar og planlæg er arbejdsmåden, når man starter. Slået fra arbejder AI’en direkte. Skills: idé og afgrænsning, eksisterende projekt, arkitektur og teknologi.
+  - **Design og tilgængelighed:** designpakker, logo og designlinks. Skill: design og tilgængelighed.
+  - **Sikkerhed og data:** kun skills, nemlig nøgler og afhængigheder, data og leverandører samt sikkerhedsgennemgang.
+  - **Kodekvalitet og afprøvning:** kun skills, nemlig kodestil samt afprøvning og fejlretning.
+  - **Deling og udgivelse:** Del og Sikkerhedskopi. Skills: udgivelse og gendannelse, overdragelse og drift.
+
+  Deling bygger på versionerne, fordi Del og Sikkerhedskopi udgiver fra en gemt version. Slås den ene til, følger den anden med, og omvendt.
+- **Altid slået til:** Disse kan ikke slås fra:
+  - grundreglerne;
+  - overblikket før afsendelse;
+  - godkendelse af kommandoer, websider og filer uden for projektet;
+  - krypterede API-nøgler;
+  - model, tokens og pris under skrivefeltet.
+- **Første start:** Efter AI-trinnet spørger appen: "Hvad skal AI Harness hjælpe med?". Der er to valg: Hele pakken (anbefalet) og Vælg selv. Vælg selv starter med alt slået fra, og knappen siger, hvor mange funktioner man fortsætter med. Vælg senere beholder standarden, som er alle funktioner. Brugere, der har været igennem introduktionen før, bliver ikke spurgt.
+- **Indstillinger › Funktioner:**
+  - Én kontakt pr. funktion. Man vælger mellem Alle projekter og Kun det åbne projekt.
+  - En undtagelse gemmes kun, hvis den afviger fra standarden, og kan fjernes med Brug standarden.
+  - Ændringer gælder fra næste besked, fordi en ny modelsession starter med de nye skills og regler.
+  - Afsnittet Avanceret har editoren for instruktioner i projektet. Den har ikke længere en kontakt pr. skill, fordi funktionerne bestemmer det.
+- **Et fravalg skjuler og stopper, men sletter intet:**
+  - Uden versioner får nye projekter ingen Git og ingen automatiske versioner, og knapperne til versioner skjules.
+  - Uden deling skjules Del, Sikkerhedskopi og hostingønsket.
+  - Uden design skjules designvalgene på startsiden, og designlinks og materiale følger ikke med nye projekter.
+  - Eksisterende filer og historik røres ikke. Brugerens gemte standardvalg bevares.
+- **Appens AI og skills:**
+  - Motoren lægger de aktive skills i sin egen konfigurationsmappe, og OpenCode henter dem efter behov med skill-værktøjet.
+  - Kun de aktive skills kan hentes. OpenCodes indbyggede skill er skjult, og projektets egne skill-mapper og AGENTS.md indlæses ikke.
+  - Grundreglerne og appens egne regler står i systemprompten. De appspecifikke linjer fra `profiles/app` er flyttet ind i appens regler, og mappen er fjernet.
+  - Appens regler følger funktionerne, fx at brugeren har slået versioner fra.
+- **Rettet sikkerhedsfejl i læsetilladelserne:** OpenCode sammenligner fil- og læsetilladelser med stien i forhold til projektets Git-rod, eller til computerens rod uden Git.
+  - Siden alle nye projekter fik Git, ramte `**/references/**` ikke længere `references/…`. AI’en kunne derfor læse alle private referencefiler, også dem brugeren ikke havde valgt. Det samme gjaldt `.git/` og `secrets/`.
+  - Omvendt kunne udvalgte referencer ikke læses i projekter uden Git.
+  - Reglerne skrives nu i begge former. Det er afprøvet mod den rigtige OpenCode med og uden Git.
+

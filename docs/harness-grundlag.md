@@ -124,13 +124,13 @@ Status 29. september 2026:
 - **Installationen** viser ændringerne før skrivning, overskriver aldrig, tilføjer afgrænsede afsnit mellem faste markører, registrerer version og kontrolsummer i `.harness/installation.json`, springer ændrede filer over ved opdatering og fjerner kun uændrede filer. Den bruges af appens førstevalg "Brug Harness i mit kodeværktøj", af `scripts/harness.cjs` og af byggescriptet til webguidens ZIP-pakker.
 - **Webguiden** har pakker til alle værktøjerne, en vejledning, som brugerens egen kodeagent kan følge, og en FAQ om skillsene.
 - **Udvælgelse:** skillsene er delt i fire kategorier. I appen kan kategorier og enkelte skills slås til og fra; grundreglerne er altid med, og udvalget huskes i installationen.
+- **Appens egen AI** bruger biblioteket fra 30. september 2026. Skills hentes efter behov, og appens seks funktioner afgør, hvilke skills der er med. Hver skill hører til præcis én funktion.
 
 Det mangler stadig:
 
 - En måling af, om skillsene forbedrer arbejdet for målgruppen, og om modellerne vælger den rigtige skill. Se afsnittet nedenfor.
 - Afprøvning i de 21 værktøjer, der kun følger dokumentationen, og i Codex med en rigtig session.
 - Installation for alle brugerens projekter på én gang, organisationsprofiler med kommunens egne krav og en måde at distribuere biblioteket uden adgang til repositoryet.
-- At appens indbyggede agent bruger det fælles bibliotek med indlæsning efter behov. Den bruger i dag sine egne instruktioner i `profiles/app`.
 - Registrering af data, beslutninger og godkendelse før udgivelse som funktion i appen. Skillen om data og leverandører giver indtil videre en dataoversigt i en Markdown-fil.
 
 Repositoryet er privat. En agent, der skal hente derfra, skal bruge brugerens eksisterende godkendte adgang. Ingen vejledning må bede om at indsætte tokens i prompts eller downloadadresser. Der er endnu ikke en publiceret GitHub Pages-side.

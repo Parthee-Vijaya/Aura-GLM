@@ -84,6 +84,6 @@ const toolNames = request => (request.tools || []).map(tool => tool.function?.na
     assert.ok(events.some(event => event.type === 'tool_use' && event.part?.tool === 'skill'), 'OpenCode registrerer skill-kaldet');
     assert.match(events.filter(event => event.type === 'text').map(event => event.part?.text).join(''), /FÆLLES-GRUNDLAG-02/);
     assert.equal(await fs.readFile(path.join(project, 'README.md'), 'utf8'), '# Mødelokaler\n\nEn opdigtet app til at finde mødelokaler.\n', 'projektets egne filer er uændrede');
-    console.log(JSON.stringify({ status: 'bestået', opencode: version, root, forespoergsler: fake.requests.length, checks: ['installation med scripts/harness.cjs', 'grundregler og kontrolord fra AGENTS.md sendes til modellen', 'alle Harness-skills står i skill-værktøjets beskrivelse', 'skillens indhold sendes, når modellen kalder den', 'ingen ekstern model eller nøgle'] }, null, 2));
+    console.log(JSON.stringify({ status: 'bestået', opencode: version, root, forespoergsler: fake.requests.length, checks: ['installation med scripts/harness.cjs', 'grundregler og kontrolord fra AGENTS.md sendes til modellen', 'alle Harness-skills vises for modellen', 'skillens indhold sendes, når modellen kalder den', 'ingen ekstern model eller nøgle'] }, null, 2));
   } finally { fake.instance.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

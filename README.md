@@ -62,7 +62,7 @@ Harness skal støtte kommunens arbejde med sikkerhed og GDPR. Instruktioner er d
 
 Grundregler beskriver det fælles ansvar. Skills beskriver bestemte arbejdsopgaver. Projektprofiler skal samle valg om teknologi, design og arbejdsgang. Kommuner og leverandører skal kunne bidrage med indhold og integrationer uden at være bundet til én model, Git-tjeneste eller hostingudbyder.
 
-Grundregler og skills ligger i [profiles](profiles/) som læsbare filer, og [kataloget](profiles/catalog.json) beskriver hvert værktøjs filplaceringer. Lokale tilpasninger bevares ved opdatering. Organisationsprofiler med kommunens egne krav og standardvalg er endnu ikke bygget, og appens egen agent bruger fortsat sine egne instruktioner i `profiles/app`.
+Grundregler og skills ligger i [profiles](profiles/) som læsbare filer, og [kataloget](profiles/catalog.json) beskriver hvert værktøjs filplaceringer. Lokale tilpasninger bevares ved opdatering. Appens egen AI bruger det samme bibliotek og henter skills efter behov. Brugeren vælger funktionerne under Indstillinger › Funktioner. Organisationsprofiler med kommunens egne krav og standardvalg er endnu ikke bygget.
 
 Koden, brugeren bygger, ligger i almindelige projektfiler. Med versionsstyring og den nødvendige dokumentation kan en udvikler overtage arbejdet uden AI Harness.
 

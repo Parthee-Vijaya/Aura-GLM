@@ -67,7 +67,9 @@ async function until(check, description) { for (let i=0;i<300;i++) { if (await c
   assert.ok(requests.some(r=>JSON.stringify(r).includes(planID)), 'Den godkendte plan følger med til bygning');
   assert.ok(requests.some(r => r.messages.some(m => typeof m.content === 'string' && m.content.includes(projectGuidance) && m.content.includes(planID))), 'Byggesessionen skal modtage både projektvejledningen og den godkendte plan');
   assert.ok(events.some(e=>e.type==='message.part.updated'));
-  assert.ok(requests.some(r=>JSON.stringify(r).includes('git-og-versioner')));
+  // Grundreglerne og appens regler står i systemprompten; skillsene fra biblioteket kan hentes efter behov.
+  assert.ok(requests.some(r=>JSON.stringify(r).includes('FÆLLES-GRUNDLAG-02') && JSON.stringify(r).includes('APPENS REGLER')), 'grundregler og appens regler når modellen');
+  assert.ok(requests.some(r=>JSON.stringify(r).includes('<name>harness-git-og-samarbejde</name>')), 'bibliotekets skills vises for modellen');
   preview=await startPreview(project);assert.match(await(await fetch(preview.url)).text(),/Bygget gennem agenten/);
   await bench.close();permission='reject';await fs.writeFile(path.join(project,'public/index.html'),'<h1>Bevar</h1>');
   const declined=await bench.prepare(selection);await bench.send({text:'Prøv igen.',fingerprint:declined.fingerprint});await until(()=>!bench.running,'afvist handling');assert.equal(bench.plan,null,'Direkte arbejde ugyldiggør tidligere plan');

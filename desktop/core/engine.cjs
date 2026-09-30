@@ -19,11 +19,45 @@ async function findExecutable() {
   }
   throw new Error(`OpenCode ${VERSION} blev ikke fundet. Kør npm run runtime:prepare, eller angiv HARNESS_OPENCODE_PATH ved start. Din eksisterende installation ændres ikke.`);
 }
-function permissions(root, references, mode = 'free') {
-  const read = { '*': 'allow', '*.env': 'deny', '*.env.*': 'deny', '*.key': 'deny', '*.pem': 'deny', '**/.git/**': 'deny', '**/secrets/**': 'deny', '**/references/**': 'deny' };
-  for (const file of references) read[path.join(root, file)] = 'allow';
-  if (mode === 'plan') return { '*': 'deny', read, glob: 'allow', list: 'allow', grep: 'ask', webfetch: 'ask', external_directory: 'ask', question: 'allow' };
-  return { '*': 'ask', read, glob: 'allow', grep: 'ask', list: 'allow', edit: { '*': 'ask', '*.env*': 'deny', '*.key': 'deny', '*.pem': 'deny', '**/.git/**': 'deny' }, bash: 'ask', external_directory: 'ask', webfetch: 'ask', websearch: 'deny', task: 'deny', skill: 'deny', lsp: 'deny', question: 'allow', todowrite: 'allow', todoread: 'allow' };
+const SKILL_NAME = /^harness-[a-z0-9]+(-[a-z0-9]+)*$/;
+const SKILL_FILE = /^(SKILL\.md|references\/[a-z0-9-]+\.md)$/;
+// OpenCode sammenligner fil- og læsetilladelser med stien i forhold til projektets Git-rod, eller til computerens rod uden Git.
+// En mappe spærres derfor både som "mappe/…" og "…/mappe/…"; en fuld sti ville aldrig blive ramt. Sidste regel, der passer, gælder.
+const everywhere = dir => [`${dir}/*`, `*/${dir}/*`];
+// Aktive skills ligger i motorens egen konfigurationsmappe uden for projektet. Mappens navn er projektets nøgle, så mønsteret kun rammer den.
+const skillPattern = directory => `*/${path.basename(directory)}/config/skills/*`;
+function permissions(root, references, mode = 'free', skills = null) {
+  const read = { '*': 'allow', '*.env': 'deny', '*.env.*': 'deny', '*.key': 'deny', '*.pem': 'deny' };
+  for (const dir of ['.git', 'secrets', 'references']) for (const pattern of everywhere(dir)) read[pattern] = 'deny';
+  // Udvalgte referencer har et unikt filnavn fra appen, så mønsteret kun rammer den valgte fil.
+  for (const file of references) for (const pattern of [file, `*/${file}`]) read[pattern] = 'allow';
+  const external = { '*': 'ask' };
+  let skill = 'deny';
+  if (skills?.names.length) {
+    const pattern = skillPattern(skills.directory);
+    read[pattern] = 'allow'; external[pattern] = 'allow';
+    // Kun de skills, brugerens funktioner har slået til, kan hentes. OpenCodes egne skills er skjult.
+    skill = { '*': 'deny', ...Object.fromEntries(skills.names.map(name => [name, 'allow'])) };
+  }
+  if (mode === 'plan') return { '*': 'deny', read, glob: 'allow', list: 'allow', grep: 'ask', webfetch: 'ask', external_directory: external, skill, question: 'allow' };
+  const edit = { '*': 'ask', '*.env*': 'deny', '*.key': 'deny', '*.pem': 'deny' };
+  for (const pattern of everywhere('.git')) edit[pattern] = 'deny';
+  if (skills?.names.length) edit[skillPattern(skills.directory)] = 'deny';
+  return { '*': 'ask', read, glob: 'allow', grep: 'ask', list: 'allow', edit, bash: 'ask', external_directory: external, webfetch: 'ask', websearch: 'deny', task: 'deny', skill, lsp: 'deny', question: 'allow', todowrite: 'allow', todoread: 'allow' };
+}
+// Motorens skillmappe skrives forfra ved hver start, så en fravalgt skill eller en gammel tilpasning ikke bliver liggende.
+async function writeSkills(directory, skills) {
+  const root = path.join(directory, 'config', 'skills');
+  await fs.rm(root, { recursive: true, force: true });
+  for (const skill of skills) {
+    if (!SKILL_NAME.test(skill.name) || !skill.files.some(file => file.path === 'SKILL.md')) throw new Error(`Skillen ${skill.name} er ugyldig.`);
+    for (const file of skill.files) {
+      if (!SKILL_FILE.test(file.path) || typeof file.content !== 'string') throw new Error(`Skillen ${skill.name} indeholder en ugyldig fil.`);
+      const target = path.join(root, skill.name, file.path);
+      await fs.mkdir(path.dirname(target), { recursive: true, mode: 0o700 });
+      await fs.writeFile(target, file.content, { mode: 0o600 });
+    }
+  }
 }
 function engineConfig(provider, model, permission) {
   return { $schema: 'https://opencode.ai/config.json', model: `harness/${model.id}`, small_model: `harness/${model.id}`, enabled_providers: ['harness'], provider: { harness: provider }, permission, agent: { plan: { permission } }, share: 'disabled', autoupdate: false, snapshot: false, plugin: [], mcp: {}, lsp: false, formatter: false };
@@ -37,7 +71,7 @@ function isolatedEnv(directory, config, password) {
   return require('./runtime.cjs').gitEnvironment(env);
 }
 class OpenCodeEngine {
-  constructor({ root, directory, provider, model, references = [], mode = 'free', onEvent = () => {} }) { Object.assign(this, { root, directory, provider, model, references, mode, onEvent }); this.pending = new Map(); this.active = false; }
+  constructor({ root, directory, provider, model, references = [], mode = 'free', skills = [], onEvent = () => {} }) { Object.assign(this, { root, directory, provider, model, references, mode, skills, onEvent }); this.pending = new Map(); this.active = false; }
   async request(url, method = 'GET', body, signal) {
     const response = await fetch(`${this.url}${url}`, { method, headers: { authorization: this.auth, 'content-type': 'application/json', 'x-opencode-directory': encodeURIComponent(this.root) }, body: body === undefined ? undefined : JSON.stringify(body), signal: signal || AbortSignal.timeout(15000), redirect: 'error' });
     if (!response.ok) throw new Error(`Agentmotoren afviste handlingen (HTTP ${response.status}).`);
@@ -47,9 +81,10 @@ class OpenCodeEngine {
   async start() {
     const executable = await findExecutable();
     await fs.mkdir(this.directory, { recursive: true, mode: 0o700 });
+    await writeSkills(this.directory, this.skills);
     const password = randomBytes(32).toString('hex');
     this.auth = `Basic ${Buffer.from(`harness:${password}`).toString('base64')}`;
-    const permission = permissions(this.root, this.references, this.mode);
+    const permission = permissions(this.root, this.references, this.mode, { directory: this.directory, names: this.skills.map(skill => skill.name) });
     this.config = engineConfig(this.provider, this.model, permission);
     if (/\{(?:env|file):/.test(JSON.stringify(this.config))) throw new Error('Konfigurationen indeholder en ikke tilladt variabelhenvisning.');
     this.child = spawn(executable, ['serve', '--hostname', '127.0.0.1', '--port', '0'], { cwd: this.root, env: isolatedEnv(this.directory, this.config, password), windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -110,4 +145,4 @@ class OpenCodeEngine {
   async diff() { return this.request(`/session/${this.session.id}/diff`); }
   async close() { this.active = false; this.eventsAbort?.abort(); this.pending.clear(); if (this.child && this.child.exitCode === null) { this.child.kill(); await new Promise(resolve => { const timer = setTimeout(() => { this.child.kill('SIGKILL'); resolve(); }, 3000); this.child.once('exit', () => { clearTimeout(timer); resolve(); }); }); } }
 }
-module.exports = { OpenCodeEngine, findExecutable, isolatedEnv, permissions, engineConfig, VERSION };
+module.exports = { OpenCodeEngine, findExecutable, isolatedEnv, permissions, engineConfig, writeSkills, VERSION };

@@ -67,7 +67,17 @@ const { run } = require('../core/git.cjs');
   await page.click('#setup-back');await page.click('#setup-find-local');await page.click('#local-discovery-use');
   await page.waitForFunction(()=>!document.querySelector('#local-discovery-use').disabled);
   assert.equal((await page.evaluate(()=>window.harness.connectionState())).value.connections.length,1);
-  await page.click('#setup-back');await page.click('#setup-back');assert.equal(await page.locator('#welcome-dialog').evaluate(el=>el.open),true);await page.click('#welcome-build');await page.click('#setup-local');assert.equal(await page.inputValue('#name'),'Mit bibliotek');
+  await page.click('#setup-back');await page.click('#setup-back');assert.equal(await page.locator('#welcome-dialog').evaluate(el=>el.open),true);await page.click('#welcome-build');await page.click('#setup-local');
+  // Første start: ét spørgsmål om funktioner med to valg. Hele pakken står først og er markeret som anbefalet.
+  await page.locator('#setup-title').filter({hasText:'Hvad skal AI Harness hjælpe med?'}).waitFor();
+  assert.equal(await page.locator('#setup-feature-choice button:visible').count(),2);
+  assert.equal(await page.locator('#setup-feature-choice button').first().locator('.recommended').textContent(),'Anbefalet');
+  assert.equal(await page.locator('#setup-eyebrow').textContent(),'FUNKTIONER');
+  assert.ok(await page.locator('#setup-local').evaluate(el=>el.getBoundingClientRect().bottom<=innerHeight));
+  await page.screenshot({path:path.join(root,'funktioner-foerste-start.png'),animations:'disabled'});
+  await page.click('#features-all');await page.waitForSelector('#create-form');
+  assert.equal((await page.evaluate(()=>window.harness.featuresGet())).value.chosen,'alle');
+  assert.equal(await page.inputValue('#name'),'Mit bibliotek');
   await app.evaluate(({dialog})=>{dialog.showOpenDialog=async()=>({canceled:true,filePaths:[]});});
   await page.click('#choose-location');await page.waitForFunction(()=>!document.querySelector('#create').disabled);assert.equal(await page.inputValue('#name'),'Mit bibliotek');
   assert.match(await page.locator('#project-location').textContent(),/Dokumenter › AI Harness/);

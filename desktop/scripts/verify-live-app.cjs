@@ -39,7 +39,7 @@ async function main() {
     note(`KLAR: Følg vejledningen i appvinduet, indsæt nøglen fra ${provider}, og tryk Gem og kontrollér. Scriptet venter i op til 30 minutter. Resultater: ${out}`);
     await win.waitForFunction(() => !document.querySelector('#setup-continue').hidden && !document.querySelector('#setup-continue').disabled, null, { timeout: 30 * 60000, polling: 1000 });
     note(`Forbindelse: ${(await win.locator('#setup-ai').innerText()).trim()}`);
-    await win.click('#setup-continue'); await win.waitForSelector('#create-form');
+    await win.click('#setup-continue'); await win.click('#features-all'); await win.waitForSelector('#create-form');
     await win.fill('#purpose', idea); note(`Navneforslag: ${await win.inputValue('#name')}`);
     await win.click('#create'); await win.waitForSelector('#workspace:not([hidden])', { timeout: 60000 });
     const project = (await fs.readdir(path.join(documents, 'AI Harness'))).map(name => path.join(documents, 'AI Harness', name))[0];

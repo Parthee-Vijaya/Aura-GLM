@@ -19,14 +19,30 @@ test('nøglelager afviser manglende kryptering; offentlige forbindelser udelader
  assert.equal((await store.project('/projekt-a')).selection, 'a');
  assert.equal((await store.project('/projekt-b')).selection, 'b');
 });
-test('skills kan ændres og gendannes uden at ændre andre projekter eller grundfiler', async t => {
- const store = new Store(await temp(t)); const skills = new Skills(path.join(profiles,'app'), store);
- const original = (await skills.list('/a')).find(s => s.id === 'git-og-versioner');
- await skills.save('/a', { id: original.id, content: original.content+'\nEkstra prøvekrav.', enabled:false });
- assert.ok(!(await skills.context('/a')).includes('Ekstra prøvekrav.'));
- assert.equal((await skills.list('/b')).find(s => s.id === original.id).content, original.content);
- await skills.save('/a', { id:original.id, content:original.content, enabled:true, reset:true });
- assert.equal((await skills.list('/a')).find(s => s.id === original.id).customized,false);
+test('instruktioner kan tilpasses og gendannes pr. projekt uden at ændre biblioteket', async t => {
+ const bench = new Workbench({ directory: await temp(t), profiles, emit: () => {}, safeStorage: {} });
+ const original = (await bench.skills.list('/a')).find(s => s.id === 'harness-git-og-samarbejde');
+ assert.equal(original.title, 'Git og samarbejde'); assert.equal(original.enabled, true);
+ await bench.skills.save('/a', { id: original.id, content: original.content + '\nEkstra prøvekrav.' });
+ assert.ok((await bench.skills.context('/a')).skills.find(s => s.name === original.id).files[0].content.includes('Ekstra prøvekrav.'));
+ assert.equal((await bench.skills.list('/b')).find(s => s.id === original.id).content, original.content, 'andre projekter bruger den fælles version');
+ await assert.rejects(bench.skills.save('/a', { id: original.id, content: 'Uden YAML-felt' }), /YAML-felt/);
+ await assert.rejects(bench.skills.save('/a', { id: original.id, content: original.content.replace('name: harness-git-og-samarbejde', 'name: noget-andet') }), /samme som mappens navn/);
+ await assert.rejects(bench.skills.save('/a', { id: 'git-og-versioner', content: 'x' }), /ugyldige/, 'appens gamle skills findes ikke længere');
+ await bench.skills.save('/a', { id: original.id, content: original.content, reset: true });
+ assert.equal((await bench.skills.list('/a')).find(s => s.id === original.id).customized, false);
+ // Grundreglerne gælder altid. En tilpasning fra en tidligere version med YAML-felt vises uden feltet.
+ await bench.store.saveProject('/a', { skills: { 'faelles-grundregler': { content: '---\nname: faelles-grundregler\ndescription: Gammel.\n---\n\nEgne regler.', enabled: false } } });
+ const rules = (await bench.skills.list('/a'))[0];
+ assert.equal(rules.content, 'Egne regler.'); assert.equal(rules.enabled, true);
+ assert.equal((await bench.skills.context('/a')).rules, 'Egne regler.');
+ // En slået fra funktion fjerner dens skills fra det, AI’en kan hente.
+ await bench.features.save('/a', { scope: 'projekt', values: { versioner: false } });
+ const context = await bench.skills.context('/a');
+ assert.ok(!context.skills.some(s => ['harness-git-og-samarbejde', 'harness-udgivelse-og-gendannelse'].includes(s.name)));
+ assert.equal(context.skills.length, 9); assert.equal(context.features.deling, false);
+ assert.equal((await bench.skills.context('/b')).skills.length, 12);
+ assert.ok(context.skills.find(s => s.name === 'harness-design-og-tilgaengelighed').files.some(f => f.path === 'references/tilgaengelighed.md'), 'referencer følger med skillen');
 });
 test('gendannelsens markør fjerner gamle planer, også når historikskrivning fejler',async t=>{
  const bench=new Workbench({directory:await temp(t),profiles,emit:()=>{},safeStorage:{}});const project={root:bench.store.root,name:'Prøve'};await bench.activate(project);
@@ -40,7 +56,7 @@ test('stop under motoropstart sender aldrig prompten', async t => {
  let entered, release, calls=0; const reached = new Promise(r=>entered=r); const blocked = new Promise(r=>release=r);
  const bench = new Workbench({ directory:await temp(t), profiles, emit:()=>{}, safeStorage:{}, engineFactory:()=>({ active:false, start:async()=>{entered();await blocked;}, send:async()=>calls++, abort:async()=>{}, close:async()=>{} }) });
  bench.project = {root:bench.store.root};
- bench.prepared = { root:bench.project.root, disclosure:{fingerprint:'test'}, connection:{kind:'compatible',name:'Prøve',baseURL:'http://127.0.0.1:1/v1'}, model:{id:'test'}, references:[], skills:'' };
+ bench.prepared = { root:bench.project.root, disclosure:{fingerprint:'test'}, connection:{kind:'compatible',name:'Prøve',baseURL:'http://127.0.0.1:1/v1'}, model:{id:'test'}, references:[], context:{ rules:'', skills:[], titles:[], features:{ versioner:true } } };
  const pending = bench.send({text:'Må ikke sendes',fingerprint:'test'});
  const rejection = assert.rejects(pending, /stoppet/);
  await reached; await bench.stop(); release(); await rejection;
@@ -74,9 +90,9 @@ test('planlægning lukker skrive-, shell- og ukendte værktøjer, men bevarer l�
  assert.equal(policy['*'], 'deny');
  for (const tool of ['write', 'edit', 'bash', 'task', 'skill', 'apply_patch']) assert.equal(policy[tool] || policy['*'], 'deny');
  assert.equal(policy.read['*.env'], 'deny');
- assert.equal(policy.read['**/references/**'], 'deny');
+ assert.equal(policy.read['references/*'], 'deny');
  assert.equal(policy.webfetch, 'ask');
- assert.equal(policy.external_directory, 'ask');
+ assert.deepEqual(policy.external_directory, { '*': 'ask' });
 });
 
 test('svar på planlægningsspørgsmål følger med i afklaringen, og afvist stop ændrer ikke status', async t => {

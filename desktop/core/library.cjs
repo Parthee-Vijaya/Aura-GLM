@@ -22,18 +22,24 @@ function parseFrontmatter(text, where) {
   return { fields, body: text.slice(match[0].length) };
 }
 
+// Kontrollerer selve SKILL.md. Bruges af biblioteket og af appen, når en skill tilpasses i et projekt.
+function validateSkillText(name, content, where = `Skill ${name}`) {
+  const { fields, body } = parseFrontmatter(content, where);
+  if (fields.name !== name) throw new Error(`${where}: name i SKILL.md skal være det samme som mappens navn.`);
+  if (!fields.description || fields.description.length > 1024) throw new Error(`${where}: description skal findes og højst have 1.024 tegn.`);
+  // Beskrivelsen står uden anførselstegn, så den skal være gyldig YAML i alle værktøjers parsere.
+  if (/: | #|[<>]|^[-?:,[\]{}#&*!|'"%@`]/.test(fields.description)) throw new Error(`${where}: description må ikke indeholde ": ", " #", < eller > og må ikke begynde med et YAML-tegn.`);
+  if (body.split('\n').length > MAX_SKILL_LINES) throw new Error(`${where}: SKILL.md er for lang. Flyt detaljer til references/.`);
+  return { fields, body };
+}
+
 function validateSkill(entry, files) {
   const where = `Skill ${entry.name}`;
   if (!NAME.test(entry.name) || entry.name.length > 64) throw new Error(`${where}: Navnet skal bestå af små bogstaver, tal og bindestreger og højst have 64 tegn.`);
   if (!entry.name.startsWith('harness-')) throw new Error(`${where}: Navnet skal begynde med harness-, så det ikke forveksles med projektets egne skills.`);
   const skill = files.find(file => file.path === 'SKILL.md');
   if (!skill) throw new Error(`${where}: SKILL.md mangler.`);
-  const { fields, body } = parseFrontmatter(skill.content, where);
-  if (fields.name !== entry.name) throw new Error(`${where}: name i SKILL.md skal være det samme som mappens navn.`);
-  if (!fields.description || fields.description.length > 1024) throw new Error(`${where}: description skal findes og højst have 1.024 tegn.`);
-  // Beskrivelsen står uden anførselstegn, så den skal være gyldig YAML i alle værktøjers parsere.
-  if (/: | #|[<>]|^[-?:,[\]{}#&*!|'"%@`]/.test(fields.description)) throw new Error(`${where}: description må ikke indeholde ": ", " #", < eller > og må ikke begynde med et YAML-tegn.`);
-  if (body.split('\n').length > MAX_SKILL_LINES) throw new Error(`${where}: SKILL.md er for lang. Flyt detaljer til references/.`);
+  const { fields, body } = validateSkillText(entry.name, skill.content, where);
   for (const file of files) {
     if (!SKILL_FILE.test(file.path)) throw new Error(`${where}: ${file.path} er ikke tilladt. Biblioteket indeholder kun Markdown og ingen scripts.`);
     if (file.path !== 'SKILL.md' && !body.includes(file.path)) throw new Error(`${where}: ${file.path} bruges ikke fra SKILL.md.`);
@@ -123,7 +129,21 @@ async function loadLibrary(profileRoot) {
   });
   if (new Set(catalog.categories.map(category => category.id)).size !== catalog.categories.length || placed.length !== names.size || placed.some(name => !names.has(name)) || new Set(placed).size !== placed.length) throw new Error('Hver skill skal stå i præcis én kategori.');
   if (!Array.isArray(catalog.questions) || catalog.questions.some(item => typeof item.q !== 'string' || !item.q || typeof item.a !== 'string' || !item.a)) throw new Error('Spørgsmål og svar i kataloget skal have tekst.');
-  return { version: catalog.version, checkedAt: catalog.checkedAt, controlWord: catalog.controlWord, skillDirs: catalog.skillDirs, neutralSkillDir: catalog.neutralSkillDir, rules, gitignore, questions: catalog.questions, featuredTools: catalog.featuredTools, categories: catalog.categories, skills, tools: catalog.tools };
+  validateFeatures(catalog.features, names);
+  return { version: catalog.version, checkedAt: catalog.checkedAt, controlWord: catalog.controlWord, skillDirs: catalog.skillDirs, neutralSkillDir: catalog.neutralSkillDir, rules, gitignore, questions: catalog.questions, featuredTools: catalog.featuredTools, categories: catalog.categories, features: catalog.features, skills, tools: catalog.tools };
 }
 
-module.exports = { loadLibrary, parseFrontmatter, safeRelative };
+// Funktionerne i appen. Hver skill hører til præcis én funktion, så et fravalg altid fjerner hele skillen.
+function validateFeatures(features, names) {
+  if (!Array.isArray(features) || !features.length) throw new Error('Kataloget skal beskrive appens funktioner.');
+  const ids = new Set(features.map(feature => feature.id));
+  if (ids.size !== features.length) throw new Error('En funktion står flere gange i kataloget.');
+  for (const feature of features) {
+    if (!NAME.test(feature.id || '') || typeof feature.title !== 'string' || !feature.title || typeof feature.summary !== 'string' || !feature.summary || !Array.isArray(feature.skills) || !feature.skills.length) throw new Error(`Funktionen ${feature.id || '(uden id)'} mangler id, titel, beskrivelse eller skills.`);
+    if (feature.requires !== undefined && (!Array.isArray(feature.requires) || feature.requires.some(id => id === feature.id || !ids.has(id)))) throw new Error(`Funktionen ${feature.id} bygger på en ukendt funktion.`);
+  }
+  const placed = features.flatMap(feature => feature.skills);
+  if (placed.length !== names.size || placed.some(name => !names.has(name)) || new Set(placed).size !== placed.length) throw new Error('Hver skill skal høre til præcis én funktion.');
+}
+
+module.exports = { loadLibrary, parseFrontmatter, validateSkillText, safeRelative };

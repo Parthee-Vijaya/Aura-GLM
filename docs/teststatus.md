@@ -12,6 +12,49 @@ Kontrolleret 28. september 2026. Dette er status for den aktuelle arbejdsmappe, 
 - En tidligere plan nulstilles efter gendannelse. Markøren kontrolleres ved genåbning, også når samtalefilen ikke kunne opdateres ved første forsøg.
 - Fejlrapporten er gennemgået og gemt gennem filvælgeren. Den bruger faste statusfelter og udelader projektindhold, filstier, serveradresser, kontonavne og nøgler. Hjælpeskærmens unødvendige kontakt til nøgleringen er fjernet. Nøglelagring står som ikke kontrolleret; en fejlrapport må ikke udløse et nøgleopslag.
 
+## Funktioner og fælles skills · 30. september 2026
+
+Afprøvet på Mac med OpenCode 1.18.33:
+
+- **Enhedstestet:** 117 automatiske tests består, når testfilerne køres én ad gangen. De nye tests dækker:
+  - Kataloget: hver skill hører til præcis én funktion, og Deling bygger på Versioner.
+  - Standard for alle projekter: uden et valg er alt slået til, og valget ved første start huskes.
+  - Undtagelser pr. projekt: de gemmes kun, når de afviger fra standarden, og kan fjernes igen.
+  - Afhængigheder: Deling og Versioner følges ad begge veje.
+  - Instruktioner i projektet: de kan tilpasses og gendannes, og en ugyldig SKILL.md afvises. Grundreglerne gælder altid.
+  - Skills under en slået fra funktion kommer ikke med.
+  - Læse- og skrivereglerne virker med stier i forhold til Git-roden og uden Git. En privat reference afvises, en valgt læses, `.git`, `.env` og `secrets` afvises, og skillmappen kan læses, men ikke ændres.
+  - Motorens skillmappe skrives forfra og tager kun gyldige skills.
+  - Appens regler følger funktionerne.
+- **Afprøvet mod den rigtige motor:** `npm run test:app-skills` kører appens egne tilladelser og skills i OpenCode 1.18.33 med en kontrolleret modelserver. Det er gjort i et projekt med Git, et uden Git og under planlægning, og det viser:
+  - Modellen ser præcis de aktive skills og kan hente dem.
+  - Skillens referencefil kan læses uden spørgsmål.
+  - En ikke valgt privat reference, `.env` og `.git/config` afvises.
+  - En valgt reference kan læses.
+  - OpenCodes egen skill er skjult, og en skill under en slået fra funktion findes ikke i motoren.
+  - Projektets egen AGENTS.md indlæses ikke.
+
+  Med de gamle regler kunne AI’en læse alle private referencer i et projekt med Git. Det viste en prøve af de samme regelformer mod samme motor.
+- **Afprøvet i Electron med en kontrolleret modelserver:** `npm run test:features` gennemfører forløbet med rigtig OpenCode, Git og projektfiler:
+  1. første start med Vælg selv, hvor Deling og Versioner følges ad
+  2. en startside uden design og hostingønske
+  3. et projekt med Git fra start, uden Del og Sikkerhedskopi og med direkte arbejde
+  4. en opgave, hvor modellen kun ser Git-skillen og får appens regler for de valgte funktioner
+  5. en undtagelse for projektet og en ændring for alle projekter; Planlægning skifter arbejdsmåden med det samme
+  6. næste opgave i en ny modelsession med de nye skills
+  7. et projekt uden versioner, som hverken får Git eller versionsknapper
+  8. genstart, hvor valget er husket og spørgsmålet ikke stilles igen
+
+  Introduktionsprøven viser spørgsmålet ved første start med to valg, hvor Hele pakken er anbefalet. De øvrige tolv Electron-prøver og skill-prøverne i eget kodeværktøj består også: OpenCode 1.18.33 og 1.17.15 samt Claude Code 2.1.150. `verify-framework-preview` bestod ved anden kørsel. Begyndergennemgangen gav 27 skærmbilleder uden sidefejl.
+
+Målt: Med alle funktioner slået til er systemprompten vokset fra ca. 23.400 til 29.900 tegn pr. modelkald. Det skyldes listen over de 12 skills, som modellen skal kende for at kunne hente dem. Med færre funktioner bliver den kortere. En skills fulde tekst sendes kun, når den hentes.
+
+Ikke afprøvet:
+
+- En rigtig model, der selv vælger og henter en skill. Prøverne bruger en kontrolleret modelserver, der beder om skills i en fast rækkefølge.
+- Windows, hvor OpenCode muligvis skriver stier med omvendt skråstreg. Tilladelsesmønstrene er kun afprøvet på Mac.
+- En pakket app med ændringerne og en person uden teknisk baggrund.
+
 ## Gem, fortryd og kom tilbage · 30. september 2026
 
 Afprøvet på Mac med OpenCode 1.18.33:

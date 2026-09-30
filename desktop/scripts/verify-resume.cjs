@@ -98,7 +98,7 @@ const http = require('node:http');
     await page.locator('#prompt').focus(); assert.equal(await page.evaluate(() => document.activeElement.id), 'prompt');
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await page.screenshot({ animations: 'disabled', path: path.join(root, 'lille-vindue.png') });
-    await require('./ui-test-helpers.cjs').menuClick(page, '#skills-button'); await page.screenshot({ animations: 'disabled', path: path.join(root, 'skills.png') }); await page.click('[data-close="skills-dialog"]');
+    await require('./ui-test-helpers.cjs').menuClick(page, '#skills-button'); await page.screenshot({ animations: 'disabled', path: path.join(root, 'skills.png') }); await page.click('[data-close="skills-dialog"]'); await page.click('[data-close="features-dialog"]');
     await page.click('#deploy-button'); await page.screenshot({ animations: 'disabled', path: path.join(root, 'deling.png') });
     await page.click('[data-close="deployment-dialog"]');
     // Uden tidligere samtale er det de samme vilkår, som allerede er accepteret i projektet.

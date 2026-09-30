@@ -70,6 +70,65 @@
       ]
     }
   ],
+  "features": [
+    {
+      "id": "versioner",
+      "title": "Versioner og fortryd",
+      "summary": "Gemmer en version efter hver AI-opgave, så du kan fortryde den og gå tilbage til en tidligere version.",
+      "skills": [
+        "harness-git-og-samarbejde"
+      ]
+    },
+    {
+      "id": "planlaegning",
+      "title": "Planlægning før bygning",
+      "summary": "AI’en afklarer idéen og foreslår en plan, som du godkender, før den bygger.",
+      "skills": [
+        "harness-ide-og-afgraensning",
+        "harness-eksisterende-projekt",
+        "harness-arkitektur-og-teknologi"
+      ]
+    },
+    {
+      "id": "design",
+      "title": "Design og tilgængelighed",
+      "summary": "Designpakker, logo og links til din designguide, og hjælp til en side, som alle kan bruge.",
+      "skills": [
+        "harness-design-og-tilgaengelighed"
+      ]
+    },
+    {
+      "id": "sikkerhed",
+      "title": "Sikkerhed og data",
+      "summary": "Hjælp med nøgler, pakker, persondata, leverandører og en sikkerhedsgennemgang.",
+      "skills": [
+        "harness-noegler-og-afhaengigheder",
+        "harness-data-og-leverandoerer",
+        "harness-sikkerhedsgennemgang"
+      ]
+    },
+    {
+      "id": "kvalitet",
+      "title": "Kodekvalitet og afprøvning",
+      "summary": "Læsbar kode, afprøvning og fejlretning.",
+      "skills": [
+        "harness-kodestil",
+        "harness-afproevning-og-fejlretning"
+      ]
+    },
+    {
+      "id": "deling",
+      "title": "Deling og udgivelse",
+      "summary": "Del en testversion på nettet, og tag en sikkerhedskopi på GitHub. Bygger på versionerne.",
+      "requires": [
+        "versioner"
+      ],
+      "skills": [
+        "harness-udgivelse-og-gendannelse",
+        "harness-overdragelse-og-drift"
+      ]
+    }
+  ],
   "questions": [
     {
       "q": "Hvad er en skill?",

@@ -10,10 +10,16 @@ async function toOnboarding(page) {
 }
 async function menuClick(page, selector) {
   const toggles = {
-    '#support-button': '#settings-toggle', '#setup-button': '#settings-toggle', '#connections-button': '#settings-toggle', '#skills-button': '#settings-toggle',
+    '#support-button': '#settings-toggle', '#setup-button': '#settings-toggle', '#connections-button': '#settings-toggle', '#features-button': '#settings-toggle',
     '#git-button': '#project-menu-toggle', '#publish-button': '#project-menu-toggle', '#new-conversation': '#project-menu-toggle',
     '#attach-preview': '#preview-options'
   };
+  // Instruktionerne i et projekt ligger under Indstillinger › Funktioner › Avanceret.
+  if (selector === '#skills-button') {
+    if (!await page.locator('#features-dialog').evaluate(el => el.open)) await menuClick(page, '#features-button');
+    if (!await page.locator('#features-advanced').evaluate(el => el.open)) await page.click('#features-advanced > summary');
+    await page.click(selector); return;
+  }
   if (!await page.locator(selector).isVisible()) await page.click(toggles[selector]);
   await page.click(selector);
   if (selector === '#attach-preview' && !await page.locator('#server-manual').evaluate(el => el.open)) await page.click('#server-manual > summary');

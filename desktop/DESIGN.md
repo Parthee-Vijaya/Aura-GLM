@@ -14,7 +14,7 @@ AI Harness skal kunne bruges af en person uden teknisk baggrund, som klikker sig
 - **Knappen siger, hvad der sker.** Skriv "Installer resten" frem for et afkrydsningsfelt og en generel knap.
 - **Én næste handling.** Når noget er færdigt, vises det vigtigste næste skridt; andre handlinger er sekundære.
 
-Eksempler i appen: AI-adgang har to store valg. Udbyder har tre ligestillede kort, Claude, Mistral og Corti, med faktuelle oplysninger og "En anden udbyder"; appen anbefaler aldrig en udbyder eller model. Modellen er udbyderens eget udgangspunkt, valgt på forhånd; modelknappen viser det, to alternativer og "Alle modeller". En filgodkendelse har tre knapper, hvor Tillad for denne opgave er den primære. Kodeværktøj har fire kort og "Et andet værktøj".
+Eksempler i appen: AI-adgang har to store valg. Udbyder har tre ligestillede kort, Claude, Mistral og Corti, med faktuelle oplysninger og "En anden udbyder"; appen anbefaler aldrig en udbyder eller model. Modellen er udbyderens eget udgangspunkt, valgt på forhånd; modelknappen viser det, to alternativer og "Alle modeller". En filgodkendelse har tre knapper, hvor Tillad for denne opgave er den primære. Funktioner ved første start har to kort, Hele pakken (anbefalet) og Vælg selv. Kodeværktøj har fire kort og "Et andet værktøj".
 
 Tæl de synlige valg, før en skærm kaldes færdig, og gennemfør forløbet i appen.
 
@@ -22,6 +22,14 @@ Tæl de synlige valg, før en skærm kaldes færdig, og gennemfør forløbet i a
 
 - Første skærm spørger, om man vil bygge i appen eller bruge Harness i sit eget kodeværktøj.
 - Den guidede opstart viser ét spørgsmål ad gangen med stor overskrift og to eller tre store valg. Først vælger man adgangsnøgle eller AI på computeren; en gemt forbindelse bliver et tredje valg. Adgangsnøgle fører til tre udbyderkort, Claude, Mistral og Corti, og "Bruger du en anden udbyder? Vælg en anden". Nøglefeltet vises først, når en udbyder er valgt. "Har du ikke en nøgle? Sådan får du en" viser konto, betaling, månedlig grænse og nøgle som nummererede trin med en knap til hver side hos udbyderen. Sidepanelet er skjult under introduktionen.
+- Efter AI-trinnet spørger den guidede opstart én gang: "Hvad skal AI Harness hjælpe med?".
+  - Der er to store valg. Hele pakken står først og er markeret Anbefalet; det andet er Vælg selv.
+  - Vælg selv viser de seks funktioner som kontakter, der starter slået fra. Knappen siger, hvad der sker, fx "Fortsæt med 2 funktioner".
+  - Én linje nævner det, der altid er slået til.
+- Indstillinger › Funktioner viser én kontakt pr. funktion med én linje forklaring.
+  - Skills og "Altid slået til" er foldet sammen.
+  - Med et projekt åbent vælger man Alle projekter eller Kun projektet. En undtagelse står under funktionen med Brug standarden.
+  - En slået fra funktion skjuler sine knapper, fx Del, Sikkerhedskopi, Gem version eller designvalgene. Den sletter intet.
 - "Hvad vil du bygge?" viser idé, projektnavn og Opret og fortsæt. Projektet gemmes i Dokumenter › AI Harness uden mappedialog; "Vælg en anden placering" er et link. Standardvalg, AI og hosting, design og avancerede valg ligger under Flere valg.
 - Harness i dit kodeværktøj viser fire kort og "Et andet værktøj" med søgning. Et klik fører videre til mappevalget og derefter til et resumé i almindeligt dansk; de præcise filændringer ligger under Se de præcise ændringer.
 - Næste trin viser kun det valgte forløb. Nøglehjælp og tekniske oplysninger er foldet sammen. GitHub og lokale værktøjer ligger under Avanceret opsætning. Tilbage og Vælg senere er altid tilgængelige.

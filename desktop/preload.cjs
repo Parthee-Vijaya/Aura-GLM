@@ -13,7 +13,7 @@ const methods = {
   createProject: 'project:create', openProject: 'project:open', newProject: 'project:new', chooseAssets: 'assets:choose', removeAsset: 'assets:remove', revision: 'preview:revision', attachPreview: 'preview:attach',
   connectionState: 'connections:state', saveConnection: 'connections:save', removeConnection: 'connections:remove', models: 'connections:models', routes: 'connections:routes',
   toolsCatalog: 'tools:catalog', toolsFolder: 'tools:folder', toolsReview: 'tools:review', toolsInstall: 'tools:install', toolsRemoval: 'tools:removal', toolsRemove: 'tools:remove', toolsReveal: 'tools:reveal',
-  prepare: 'agent:prepare', send: 'agent:send', stop: 'agent:stop', reply: 'agent:reply', question: 'agent:question', changes: 'agent:changes', skills: 'skills:list', saveSkill: 'skills:save'
+  prepare: 'agent:prepare', send: 'agent:send', stop: 'agent:stop', reply: 'agent:reply', question: 'agent:question', changes: 'agent:changes', skills: 'skills:list', saveSkill: 'skills:save', featuresGet: 'features:get', featuresSave: 'features:save'
 };
 const api = Object.fromEntries(Object.entries(methods).map(([name, channel]) => [name, value => ipcRenderer.invoke(channel, value)]));
 api.onEvent = callback => { const listener = (_event, value) => callback(value); ipcRenderer.on('harness:event', listener); return () => ipcRenderer.removeListener('harness:event', listener); };

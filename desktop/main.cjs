@@ -89,12 +89,18 @@ handle('project:create', input => exclusive(async () => {
   const startup = await new Preferences(workbench.store).available({ ...input.startup, tests: input.tests });
   const parent = chosenParent || defaultProjectParent();
   if (!chosenParent) await fs.mkdir(parent, { recursive: true });
-  const created = await createProject(parent, input, assets, profileRoot);
-  // Nye projekter gemmer en version efter hver AI-opgave, så de altid kan fortrydes.
-  await workbench.store.saveProject(created.root, { startup: startup.values, autoCheckpoint: true });
+  // Uden funktionen Design og tilgængelighed bruges hverken designpakke, logo eller inspiration fra startsiden.
+  const features = (await workbench.features.get()).effective;
+  const created = await createProject(parent, features.design ? input : { ...input, links: [] }, features.design ? assets : [], profileRoot);
+  // Med Versioner og fortryd får nye projekter Git fra start og en version efter hver AI-opgave, så de altid kan fortrydes.
+  // Et hostingønske eller en designpakke under en slået fra funktion følger ikke med projektet. Brugerens gemte standarder bevares.
+  const projectStartup = { ...startup.values, ...(features.deling ? {} : { hosting: '' }), ...(features.design ? {} : { designID: '' }) };
+  await workbench.store.saveProject(created.root, { startup: projectStartup, ...(features.versioner ? { autoCheckpoint: true } : {}) });
   let versionWarning = '';
-  try { await workbench.git.startProject(created.root); }
-  catch (error) { versionWarning = `Versioner kunne ikke slås til: ${error.message} Projektet er oprettet, og du kan gemme versioner senere.`; }
+  if (features.versioner) {
+    try { await workbench.git.startProject(created.root); }
+    catch (error) { versionWarning = `Versioner kunne ikke slås til: ${error.message} Projektet er oprettet, og du kan gemme versioner senere.`; }
+  }
   if (input.remember === true) await new Preferences(workbench.store).save(startup.values);
   const opened = await openProject(created.root);
   if (versionWarning) opened.warnings.push(versionWarning);
@@ -330,6 +336,14 @@ handle('skills:list', () => { if (!project) throw new Error('Åbn et projekt fø
 handle('skills:save', value => exclusive(async () => {
   if (!project || workbench.running) throw new Error('Åbn et projekt, og stop en eventuel opgave før skill-ændringer.');
   await workbench.close(); return workbench.skills.save(project.root, value);
+}));
+// Funktioner: standarden for alle projekter og undtagelser for det åbne projekt. Ændringer gælder fra næste opgave.
+handle('features:get', () => workbench.features.get(project?.root));
+handle('features:save', value => exclusive(async () => {
+  if (workbench.running || workbench.finishing) throw new Error('Stop opgaven, før du ændrer funktioner.');
+  const result = await workbench.features.save(project?.root, value);
+  workbench.prepared = null;
+  return result;
 }));
 handle('preview:attach', value => exclusive(async () => {
   if (!project) throw new Error('Åbn et projekt først.');

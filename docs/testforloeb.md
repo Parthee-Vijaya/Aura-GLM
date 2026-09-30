@@ -29,15 +29,16 @@ Udfyld først invitationen, når download og den aftalte model er afprøvet. Der
 
 ## Det testeren skal prøve
 
-1. Installer og åbn appen uden terminalkommandoer. Gå gennem introduktionen, og forbind den aftalte AI via adgangsnøgle eller AI på computeren. Prøv også Tilbage og Vælg senere. Noter, om hvert trin er forståeligt uden forklaring.
+1. Installer og åbn appen uden terminalkommandoer. Gå gennem introduktionen, og forbind den aftalte AI via adgangsnøgle eller AI på computeren. Prøv også Tilbage og Vælg senere. Når appen spørger "Hvad skal AI Harness hjælpe med?", så forklar med dine egne ord forskellen på Hele pakken og Vælg selv, før du vælger. Noter, om hvert trin er forståeligt uden forklaring.
 2. Beskriv din idé med egne ord, og opret projektet. Find bagefter projektmappen under Dokumenter › AI Harness. Forklar med dine egne ord, hvad appen vil sende til modellen, når resuméet **Før du sender** vises.
 3. Læs AI’ens forslag, og bed om en ændring af planen. Byg derefter første udkast. Når AI’en spørger, om den må ændre filer, så forklar forskellen på **Tillad for denne opgave** og **Kun denne fil**, før du vælger.
 4. Prøv appen i preview på computer- og mobilbredde. Bed AI’en rette én konkret ting, og kontroller resultatet.
 5. Efter en AI-opgave: brug Fortryd opgaven på resultatkortet, og kontroller forhåndsvisningen. Åbn Versioner i projektmenuen, og gå tilbage til AI'ens version med Gå tilbage hertil. Lav en lille ændring selv, og gem den med Gem version. Forklar med dine egne ord, hvad en version er.
 6. Skriv en kladde, og luk AI Harness. Åbn appen igen: projektet skal åbne af sig selv. Find kladden, samtalen, filerne og forbruget under skrivefeltet.
-7. Stop en AI-opgave. Beskriv, hvad du tror er gemt, og hvordan du vil fortsætte. Find Hjælp og feedback, og se fejlrapporten før eventuel deling.
-8. Installer den næste testversion oven på den første, og åbn samme projekt. Kontroller filer, kladde, gemt designpakke og forbindelsesvalg. En nøgle kan kræve ny indtastning; nulstil aldrig systemets nøglering.
-9. Vælg **Harness i dit kodeværktøj** i sidepanelet. Læs under **Det følger med**, hvad to af skillsene gør, og forklar dem med dine egne ord. Installer Harness i en kopi af et projekt til det kodeværktøj, du bruger. Gennemgå ændringerne, åbn projektet i værktøjet, og spørg efter kontrolordet. Fjern derefter installationen igen, og kontroller, at dine egne filer er uændrede.
+7. Åbn Indstillinger › Funktioner. Slå én funktion fra kun for dette projekt, og find ud af, hvad der er forsvundet i appen. Slå den til igen med Brug standarden. Forklar, hvad "Altid slået til" betyder for dig.
+8. Stop en AI-opgave. Beskriv, hvad du tror er gemt, og hvordan du vil fortsætte. Find Hjælp og feedback, og se fejlrapporten før eventuel deling.
+9. Installer den næste testversion oven på den første, og åbn samme projekt. Kontroller filer, kladde, gemt designpakke og forbindelsesvalg. En nøgle kan kræve ny indtastning; nulstil aldrig systemets nøglering.
+10. Vælg **Harness i dit kodeværktøj** i sidepanelet. Læs under **Det følger med**, hvad to af skillsene gør, og forklar dem med dine egne ord. Installer Harness i en kopi af et projekt til det kodeværktøj, du bruger. Gennemgå ændringerne, åbn projektet i værktøjet, og spørg efter kontrolordet. Fjern derefter installationen igen, og kontroller, at dine egne filer er uændrede.
 
 Test af React/Vite eller Astro omfatter også gennemgang af installation, start, mobilvisning, stop og genstart af preview. Apps med native platformskrav skal vurderes særskilt; denne test beviser ikke iOS-, Android- eller appbutiksunderstøttelse.
 
@@ -78,10 +79,14 @@ Læs byggevejledningen i [desktop/README.md](../desktop/README.md), før der pak
 ```sh
 npm test
 npm run test:introduction
+npm run test:features
+npm run test:app-skills
 npm run test:resume
 npm run test:recovery
 npm run test:frameworks
 ```
+
+`test:features` gennemgår Funktioner i Electron: første start med Vælg selv, undtagelser pr. projekt, et projekt uden versioner og genstart. `test:app-skills` kører appens tilladelser og skills i den rigtige OpenCode med og uden Git. Den viser, at kun aktive skills kan hentes, og at ikke valgte private referencer, `.env` og `.git` afvises.
 
 `test:recovery` bruger rigtig Electron, OpenCode, HTTP, Git og projektfiler. Modelserveren leverer kontrollerede svar og fejl. Den kontrollerer gendannelse, fortrydelse efter genstart, forkert nøgle, kvote, afbrudt strøm, Stop, ny opgave og en lokal fejlrapport. Git-commits oprettes kun i nye syntetiske testrepositories.
 

@@ -29,7 +29,9 @@
     "test:skills-claude": "node scripts/verify-harness-claude.cjs",
     "test:skills-opencode": "node scripts/verify-harness-opencode.cjs",
     "test:live-app": "node scripts/verify-live-app.cjs",
-    "test:versions": "node scripts/verify-versions.cjs"
+    "test:versions": "node scripts/verify-versions.cjs",
+    "test:app-skills": "node scripts/verify-app-skills.cjs",
+    "test:features": "node scripts/verify-features.cjs"
   },
   "engines": {
     "node": ">=22.12.0"

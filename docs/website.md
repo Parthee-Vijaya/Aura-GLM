@@ -22,9 +22,8 @@ python3 -m http.server 4173 --bind 127.0.0.1 --directory site/dist
 
 - `profiles/grundregler.md`: fælles danske grundregler med version og kontrolord.
 - `profiles/skills/<navn>/SKILL.md`: de 12 skills til agenten. Kun Markdown, ingen scripts, og kun felterne `name` og `description`.
-- `profiles/catalog.json`: skillsenes beskrivelser til mennesker, spørgsmål og svar, kilder og værktøjernes filplaceringer.
+- `profiles/catalog.json`: skillsenes beskrivelser til mennesker, spørgsmål og svar, kilder, værktøjernes filplaceringer og appens funktioner, hvor hver skill hører til præcis én funktion.
 - `profiles/gitignore.txt`: afsnittet til projektets `.gitignore`.
-- `profiles/app/`: appens egne instruktioner til sin indbyggede agent. De indgår ikke i pakkerne.
 - `desktop/core/library.cjs`, `adapters.cjs` og `installer.cjs`: indlæsning og validering af biblioteket, filplacering pr. værktøj og sikker installation. Appen, `scripts/harness.cjs` og byggescriptet bruger de samme moduler.
 - `scripts/build-packages.cjs`: genererer ZIP-pakker, `site/dist/catalog.json`, `skills.html`, `vaerktoejer.html`, de direkte downloads i `index.html` og `profiles/SKILLS.md`. Ret kilden i `profiles/`, og byg igen. Ret ikke de genererede filer.
 
