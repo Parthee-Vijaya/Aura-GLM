@@ -749,7 +749,10 @@ function featureRow(feature, checked, onChange, note, withSkills = true) {
   const label = node('label', undefined, 'feature-toggle');
   const title = node('strong', feature.title);
   const requires = feature.requires.map(id => state.features.list.find(item => item.id === id).title);
-  if (withSkills) title.append(info(feature.title, `${feature.skills.length === 1 ? 'Skill' : 'Skills'}, AI’en henter, når opgaven passer:\n${feature.skills.map(skill => `• ${skill.title}: ${skill.summary}`).join('\n')}${requires.length ? `\n\nBygger på ${requires.join(' og ')}, som slås til sammen med den.` : ''}`));
+  const integration = feature.skills[0]?.integration;
+  // En integration viser ejer, adgang og dataflow, så man kan vurdere den, før den slås til.
+  if (withSkills && integration) title.append(info(feature.title, [`System: ${integration.system}`, `Ejer: ${integration.owner}`, `Adgang: ${integration.access}`, `Data: ${integration.data}`, `Dataflow: ${integration.dataFlow}`, `Pris: ${integration.cost}`, integration.itRoute ? 'Kræver hjælp fra IT-afdelingen.' : '', integration.sensitive ? 'Omfatter følsomme personoplysninger.' : '', `Skillen vedligeholdes af ${integration.maintainer} og er kontrolleret ${integration.checkedAt}.`].filter(Boolean).join('\n')));
+  else if (withSkills) title.append(info(feature.title, `${feature.skills.length === 1 ? 'Skill' : 'Skills'}, AI’en henter, når opgaven passer:\n${feature.skills.map(skill => `• ${skill.title}: ${skill.summary}`).join('\n')}${requires.length ? `\n\nBygger på ${requires.join(' og ')}, som slås til sammen med den.` : ''}`));
   const text = node('span'); text.append(title, node('small', feature.summary));
   const input = node('input'); input.type = 'checkbox'; input.setAttribute('role', 'switch'); input.dataset.feature = feature.id; input.checked = checked; input.disabled = running;
   input.onchange = () => onChange(feature.id, input.checked);
@@ -769,8 +772,10 @@ $('#features-all').onclick = () => action(async () => {
   await leaveSetup(pendingAI);
 });
 $('#features-pick').onclick = () => {
-  pickedFeatures = Object.fromEntries(state.features.list.map(feature => [feature.id, false]));
-  $('#setup-features-list').replaceChildren(...state.features.list.map(feature => featureRow(feature, false, (id, value) => { pickedFeatures = coupleFeatures(pickedFeatures, id, value); updatePick(); }, null, false)));
+  // Ved første start vælges kun de almindelige funktioner. Integrationer slås til under Indstillinger › Funktioner.
+  const main = state.features.list.filter(feature => !feature.group);
+  pickedFeatures = Object.fromEntries(main.map(feature => [feature.id, false]));
+  $('#setup-features-list').replaceChildren(...main.map(feature => featureRow(feature, false, (id, value) => { pickedFeatures = coupleFeatures(pickedFeatures, id, value); updatePick(); }, null, false)));
   updatePick(); setupPage('features-pick');
 };
 $('#features-continue').onclick = () => action(async () => {
@@ -784,7 +789,7 @@ function renderFeatures(focus) {
   $('#features-scope').hidden = !current; $('#features-project-name').textContent = `Kun ${current?.name || 'dette projekt'}`; $('#features-project-name').title = current?.name || '';
   for (const radio of document.querySelectorAll('[name="features-scope"]')) radio.checked = radio.value === featureScope;
   const values = project ? features.effective : features.defaults;
-  $('#features-list').replaceChildren(...features.list.map(feature => {
+  const row = feature => {
     let note;
     if (current && features.exceptions[feature.id] !== undefined) {
       const missing = feature.requires.filter(id => !features.effective[id]).map(id => features.list.find(item => item.id === id).title);
@@ -793,7 +798,11 @@ function renderFeatures(focus) {
       if (project) { const reset = node('button', 'Brug standarden', 'text-button'); reset.type = 'button'; reset.onclick = () => action(() => saveFeatures(feature.id, null)); note.append(' ', reset); }
     }
     return featureRow(feature, values[feature.id] === true, (id, value) => action(() => saveFeatures(id, value)), note);
-  }));
+  };
+  // Integrationer står for sig: én kontakt pr. system, som man slår til, når projektet skal bruge det.
+  const integrations = features.list.filter(feature => feature.group === 'integrationer');
+  const heading = integrations.length ? [node('h3', 'Integrationer', 'features-group'), node('p', 'Slå de systemer til, dit projekt skal hente data fra.', 'hint')] : [];
+  $('#features-list').replaceChildren(...features.list.filter(feature => !feature.group).map(row), ...heading, ...integrations.map(row));
   $('#features-advanced').hidden = !current;
   if (focus) document.querySelector(`#features-list input[data-feature="${focus}"]`)?.focus();
 }
@@ -933,8 +942,10 @@ function renderAllTools(query) {
   }) : [node('p', 'Ingen værktøjer passer til søgningen.', 'hint')]));
 }
 function renderToolsCatalog() {
-  $('#tools-skill-count').textContent = toolsCatalog.skills.length;
-  $('#tools-included-summary').textContent = `Hvad følger med? Grundregler og ${toolsCatalog.skills.length} skills`;
+  // Integrationer følger ikke med, før man vælger dem, så tallet her er de skills, der installeres som standard.
+  const base = toolsCatalog.skills.filter(skill => !skill.integration).length, extra = toolsCatalog.skills.length - base;
+  $('#tools-skill-count').textContent = base;
+  $('#tools-included-summary').textContent = `Hvad følger med? Grundregler og ${base} skills${extra ? ` · ${extra} ${extra === 1 ? 'integration' : 'integrationer'} kan vælges til` : ''}`;
   $('#tools-skills').replaceChildren(...toolsCatalog.skills.map(skill => {
     const details = node('details', undefined, 'tools-skill');
     const summary = node('summary'); summary.append(node('strong', skill.title), node('span', ` · ${skill.summary}`));
@@ -965,8 +976,8 @@ $('#tools-folder').onclick = () => toolsAction(async () => {
   const folder = await call('toolsFolder');
   if (!folder) return;
   toolsFolder = folder;
-  // Et tidligere udvalg bevares; ellers følger alle skills med.
-  toolsSkills = new Set(folder.manifest?.skills || toolsCatalog.skills.map(skill => skill.name));
+  // Et tidligere udvalg bevares; ellers følger alle skills med undtagen integrationer, som man vælger til.
+  toolsSkills = new Set(folder.manifest?.skills || toolsCatalog.skills.filter(skill => !skill.integration).map(skill => skill.name));
   await reviewTools();
 });
 // Resumé i almindeligt dansk. De præcise filændringer ligger under "Se de præcise ændringer".
@@ -1028,6 +1039,11 @@ function renderOperations(target, operations) {
     return details;
   }));
 }
+// Integrationer vælges til for de systemer, man bruger. De tælles for sig og står aldrig som fravalgte skills.
+function skillChoice(chosen) {
+  const base = toolsCatalog.skills.filter(skill => !skill.integration);
+  return { base, left: base.filter(skill => !chosen.has(skill.name)), integrations: toolsCatalog.skills.filter(skill => skill.integration && chosen.has(skill.name)) };
+}
 async function reviewTools() {
   const installed = toolsFolder.manifest?.tools || [];
   const review = await call('toolsReview', { tools: [...new Set([...installed, toolsChoice])], skills: [...toolsSkills] });
@@ -1036,8 +1052,8 @@ async function reviewTools() {
   const nothing = review.operations.every(op => op.action === 'uaendret');
   const others = installed.filter(id => id !== toolsChoice).map(id => toolById(id)?.name || id);
   $('#tools-review-summary').textContent = nothing ? `AI Harness er allerede installeret til ${name} i ${review.folder}. Intet ændres.` : others.length && !installed.includes(toolsChoice) ? `AI Harness er allerede installeret til ${others.join(', ')} i ${review.folder}. ${name} tilføjes, når du installerer:` : `Det sker i ${review.folder}, når du installerer til ${name}:`;
-  const left = toolsCatalog.skills.filter(skill => !toolsSkills.has(skill.name));
-  $('#tools-skills-status').textContent = `Skills: ${toolsSkills.size} af ${toolsCatalog.skills.length} valgt${left.length ? ` · fravalgt: ${left.map(skill => skill.title).join(', ')}` : ''}`;
+  const { base, left, integrations } = skillChoice(toolsSkills);
+  $('#tools-skills-status').textContent = `Skills: ${base.length - left.length} af ${base.length} valgt${left.length ? ` · fravalgt: ${left.map(skill => skill.title).join(', ')}` : ''}${integrations.length ? ` · integrationer: ${integrations.map(skill => skill.title).join(', ')}` : ''}`;
   const lines = planLines(review);
   $('#tools-plan').replaceChildren(...lines.map(text => node('li', text))); $('#tools-plan').hidden = !lines.length;
   const notes = reviewNotes(review);
@@ -1073,18 +1089,19 @@ function renderSkillPicker() {
   updateSkillPicker();
 }
 function updateSkillPicker() {
-  let total = 0;
   for (const category of toolsCatalog.categories) {
     const inputs = [...document.querySelectorAll(`#tools-categories input[data-skill]`)].filter(input => category.skills.includes(input.dataset.skill));
-    const chosen = inputs.filter(input => input.checked).length; total += chosen;
+    const chosen = inputs.filter(input => input.checked).length;
     const toggle = document.querySelector(`#tools-categories input[data-category="${category.id}"]`);
     toggle.checked = chosen === inputs.length; toggle.indeterminate = chosen > 0 && chosen < inputs.length;
     toggle.closest('.skill-category').querySelector('.skill-count').textContent = `${chosen} af ${inputs.length}`;
   }
-  $('#tools-skill-total').textContent = `${total} af ${toolsCatalog.skills.length} skills valgt. Grundreglerne er altid med.`;
+  const { base, left, integrations } = skillChoice(new Set([...document.querySelectorAll('#tools-categories input[data-skill]:checked')].map(input => input.dataset.skill)));
+  $('#tools-skill-total').textContent = `${base.length - left.length} af ${base.length} skills valgt${integrations.length ? ` og ${integrations.length} ${integrations.length === 1 ? 'integration' : 'integrationer'}` : ''}. Grundreglerne er altid med.`;
 }
 $('#tools-customize').onclick = () => { renderSkillPicker(); toolsStep('skills'); };
-$('#tools-skills-all').onclick = () => { for (const input of document.querySelectorAll('#tools-categories input[data-skill]')) input.checked = true; updateSkillPicker(); };
+// Vælg alle skills gælder ikke integrationerne; dem vælger man enkeltvis.
+$('#tools-skills-all').onclick = () => { for (const input of document.querySelectorAll('#tools-categories input[data-skill]')) if (!toolsCatalog.skills.find(skill => skill.name === input.dataset.skill).integration) input.checked = true; updateSkillPicker(); };
 $('#tools-skills-back').onclick = () => toolsStep('review');
 $('#tools-skills-save').onclick = () => toolsAction(async () => {
   toolsSkills = new Set([...document.querySelectorAll('#tools-categories input[data-skill]')].filter(input => input.checked).map(input => input.dataset.skill));

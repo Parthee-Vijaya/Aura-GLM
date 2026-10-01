@@ -14,6 +14,7 @@ Brug:
   node scripts/harness.cjs remove --project ../mit-projekt [--yes]
 
 install viser først de præcise ændringer. Intet skrives uden --yes eller en bekræftelse.
+Et tidligere udvalg af skills og integrationer fra appen bevares. Ellers følger alle skills med undtagen integrationer.
 Eksisterende filer overskrives aldrig; Harness tilføjer et afgrænset afsnit eller springer filen over.`;
 
 const labels = { opret: 'opret', tilfoej: 'tilføj afsnit', opdater: 'opdatér', uaendret: 'uændret', konflikt: 'KONFLIKT', fjern: 'fjern', 'fjern-afsnit': 'fjern afsnit', bevar: 'bevar' };
@@ -59,8 +60,11 @@ async function main() {
   }
   if (args.command === 'install') {
     if (!args.tools) throw new Error(help);
-    const layout = layoutFor(library, args.tools.split(',').map(tool => tool.trim()).filter(Boolean));
-    const settings = { version: library.version, tools: layout.tools };
+    // Et tidligere udvalg bevares, også integrationer valgt i appen. Skills, der ikke længere findes, springes over.
+    const { manifest } = await installer.status(args.project);
+    const chosen = Array.isArray(manifest?.skills) ? manifest.skills.filter(name => library.skills.some(skill => skill.name === name)) : undefined;
+    const layout = layoutFor(library, args.tools.split(',').map(tool => tool.trim()).filter(Boolean), { skills: chosen });
+    const settings = { version: library.version, tools: layout.tools, skills: layout.skills };
     const plan = await installer.plan(args.project, layout.entries, settings);
     print(plan, layout.warnings);
     if (plan.conflicts.length && !args.skipConflicts) { process.exitCode = 2; return; }

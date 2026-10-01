@@ -6,6 +6,9 @@ const path = require('node:path');
 const NAME = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const SKILL_FILE = /^(SKILL\.md|references\/[a-z0-9-]+\.md)$/;
 const FAQ_FIELDS = ['hvad', 'hvornaar', 'resultat', 'ikke'];
+// En integration fortæller, hvem der ejer systemet, hvem der vedligeholder skillen, og hvad der sendes hvorhen.
+const INTEGRATION_TEXT = ['system', 'owner', 'maintainer', 'access', 'data', 'dataFlow', 'cost'];
+const FEATURE_GROUPS = ['integrationer'];
 const MAX_SKILL_LINES = 300;
 
 function parseFrontmatter(text, where) {
@@ -49,7 +52,19 @@ function validateSkill(entry, files) {
   for (const field of FAQ_FIELDS) if (typeof entry.faq?.[field] !== 'string' || !entry.faq[field].trim()) throw new Error(`${where}: FAQ-feltet ${field} mangler i kataloget.`);
   if (!Array.isArray(entry.sources)) throw new Error(`${where}: Kilder skal være en liste.`);
   for (const source of entry.sources) if (!/^https:\/\//.test(source.url || '') || !source.title) throw new Error(`${where}: Hver kilde skal have titel og https-adresse.`);
+  validateIntegration(entry, where);
   return { description: fields.description };
+}
+
+function validateIntegration(entry, where) {
+  const named = entry.name.startsWith('harness-integration-');
+  if (entry.integration === undefined) { if (named) throw new Error(`${where}: En integration skal beskrive system, ejer, adgang, data og dataflow i kataloget.`); return; }
+  const info = entry.integration;
+  if (!named) throw new Error(`${where}: En integration skal hedde harness-integration-…`);
+  for (const field of INTEGRATION_TEXT) if (typeof info?.[field] !== 'string' || !info[field].trim()) throw new Error(`${where}: Integrationsfeltet ${field} mangler.`);
+  for (const field of ['itRoute', 'sensitive']) if (typeof info[field] !== 'boolean') throw new Error(`${where}: Integrationsfeltet ${field} skal være sandt eller falsk.`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(info.checkedAt || '')) throw new Error(`${where}: En integration skal have en kontroldato.`);
+  if (!entry.sources.length) throw new Error(`${where}: En integration skal have mindst én kilde.`);
 }
 
 function validateTool(tool, skillDirs) {
@@ -142,6 +157,11 @@ function validateFeatures(features, names) {
     if (!NAME.test(feature.id || '') || typeof feature.title !== 'string' || !feature.title || typeof feature.summary !== 'string' || !feature.summary || !Array.isArray(feature.skills) || !feature.skills.length) throw new Error(`Funktionen ${feature.id || '(uden id)'} mangler id, titel, beskrivelse eller skills.`);
     if (feature.requires !== undefined && (!Array.isArray(feature.requires) || feature.requires.some(id => id === feature.id || !ids.has(id)))) throw new Error(`Funktionen ${feature.id} bygger på en ukendt funktion.`);
     if (feature.default !== undefined && typeof feature.default !== 'boolean') throw new Error(`Funktionen ${feature.id} har en ugyldig standard.`);
+    if (feature.group !== undefined && !FEATURE_GROUPS.includes(feature.group)) throw new Error(`Funktionen ${feature.id} står i en ukendt gruppe.`);
+    // En integration er sin egen funktion med én skill og er slået fra, til brugeren vælger den.
+    const integration = feature.skills.some(name => name.startsWith('harness-integration-'));
+    if ((feature.group === 'integrationer') !== integration) throw new Error(`Funktionen ${feature.id}: Integrationer skal stå i gruppen integrationer og kun der.`);
+    if (integration && (feature.skills.length !== 1 || feature.default !== false)) throw new Error(`Funktionen ${feature.id}: En integration har præcis én skill og er slået fra som standard.`);
   }
   const placed = features.flatMap(feature => feature.skills);
   if (placed.length !== names.size || placed.some(name => !names.has(name)) || new Set(placed).size !== placed.length) throw new Error('Hver skill skal høre til præcis én funktion.');

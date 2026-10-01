@@ -36,7 +36,8 @@ class Skills {
     const library = await this.library(), list = await this.list(projectRoot), features = (await this.features.get(projectRoot)).effective;
     const enabled = list.filter(skill => skill.id !== RULES && skill.enabled);
     const skills = enabled.map(skill => ({ name: skill.id, files: [{ path: 'SKILL.md', content: skill.content }, ...library.skills.find(item => item.name === skill.id).files.filter(file => file.path !== 'SKILL.md')] }));
-    return { rules: list.find(skill => skill.id === RULES).content, skills, titles: enabled.map(skill => skill.title), features };
+    const integrations = library.features.filter(feature => feature.group === 'integrationer' && features[feature.id]).map(feature => feature.title);
+    return { rules: list.find(skill => skill.id === RULES).content, skills, titles: enabled.map(skill => skill.title), features, integrations };
   }
 }
 module.exports = { Skills, RULES };

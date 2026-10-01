@@ -27,10 +27,10 @@ class Features {
     const defaults = state.features?.on || {};
     const saved = root ? state.projects[this.store.projectKey(root)]?.features || {} : {};
     const exceptions = Object.fromEntries(Object.entries(saved).filter(([id, value]) => definitions.some(feature => feature.id === id) && typeof value === 'boolean'));
-    const skill = name => { const item = library.skills.find(entry => entry.name === name); return { name, title: item.title, summary: item.summary }; };
+    const skill = name => { const item = library.skills.find(entry => entry.name === name); return { name, title: item.title, summary: item.summary, ...(item.integration ? { integration: item.integration } : {}) }; };
     return {
       chosen: CHOICES.includes(state.features?.chosen) ? state.features.chosen : '',
-      list: definitions.map(({ id, title, summary, requires = [], skills }) => ({ id, title, summary, requires, skills: skills.map(skill) })),
+      list: definitions.map(({ id, title, summary, requires = [], group = '', skills }) => ({ id, title, summary, requires, group, skills: skills.map(skill) })),
       defaults: resolve(definitions, defaults),
       exceptions,
       effective: resolve(definitions, defaults, exceptions)

@@ -55,6 +55,7 @@ a:focus-visible { outline: 3px solid #1557c0; outline-offset: 5px; }
 .faq { display: grid; grid-template-columns: minmax(130px, 180px) 1fr; gap: 6px 16px; margin: 14px 0; }
 .faq dt { font-weight: 650; }
 .faq dd { margin: 0; }
+.integration-facts { border-top: 1px solid #d9e0e6; padding-top: 12px; }
 .skill-entry details { margin: 10px 0; }
 .skill-entry pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .8rem; background: #f4f7fa; padding: 14px; border-radius: 8px; }
 .sources { font-size: .85rem; }

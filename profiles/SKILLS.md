@@ -2,7 +2,7 @@
 
 Genereret fra `profiles/catalog.json` af `scripts/build-packages.cjs`. Ret kataloget eller skillfilerne, ikke denne fil.
 
-AI Harness indeholder fælles grundregler og 12 skills i 4 kategorier. Grundreglerne gælder altid. En skill er en kort vejledning til kodeagenten om én arbejdsopgave, som bruges, når opgaven passer. I AI Harness-appen kan kategorier og enkelte skills slås til og fra.
+AI Harness indeholder fælles grundregler og 12 skills samt to integrationer. Grundreglerne gælder altid. En skill er en kort vejledning til kodeagenten om én arbejdsopgave, som bruges, når opgaven passer. En integration er en skill om ét bestemt system, fx et offentligt register. Integrationerne følger ikke med pakkerne til kodeværktøjerne; de vælges til for de systemer, man bruger. I AI Harness-appen kan kategorier, enkelte skills og integrationer slås til og fra.
 
 ## Grundregler · altid med
 
@@ -186,6 +186,58 @@ Kilder: [GitHub om udgivelsesmiljøer](https://docs.github.com/en/actions/refere
 
 **Hvad gør den ikke?** Den skriver aldrig adgangskoder, nøgler eller personoplysninger i dokumentationen.
 
+## Integrationer
+
+Hent data fra offentlige registre. Vælges til for de systemer, du bruger.
+
+### Adresser
+
+`harness-integration-adresser` · [SKILL.md](skills/harness-integration-adresser/SKILL.md)
+
+**Hvad gør den?** Hjælper agenten med at bruge Klimadatastyrelsens Adressevælger til adressesøgning og Datafordeleren til flere oplysninger. Den forklarer token, nøgler, koordinater og kreditering og skifter væk fra DAWA, som lukker 1. oktober 2026.
+
+**Hvornår bruges den?** Når en løsning skal søge efter, udfylde eller vise danske adresser, fx i en formular eller på et kort.
+
+**Hvad får du?** En adressesøgning, der virker fra browseren, korrekt kreditering og, når der er brug for mere, opslag fra en server med nøglen i .env.
+
+**Hvad gør den ikke?** Opretter ikke brugere eller nøgler for dig og henter ikke personoplysninger. Beskyttede data fra Datafordeleren kræver en særskilt aftale.
+
+- **System:** Danmarks Adresseregister (DAR) via Adressevælgeren og Datafordeleren
+- **Ejer:** Klimadatastyrelsen
+- **Adgang:** Adressevælgeren kræver ingen bruger. Datafordeleren kræver en gratis bruger og en API-nøgle.
+- **Data:** Offentlige adresser, husnumre, postnumre og koordinater. Ingen personoplysninger i sig selv.
+- **Dataflow:** Søgeteksten sendes fra den app, du bygger, til Klimadatastyrelsen. Kald til Datafordeleren går fra en server med nøglen.
+- **Pris:** Gratis
+- **IT-afdelingen:** Kræver ikke hjælp fra IT-afdelingen.
+
+Skillen vedligeholdes af AI Harness og er kontrolleret mod kilderne 2026-09-30.
+
+Kilder: [Adressevælger · fonetisk søgning (Klimadatastyrelsen)](https://confluence.kds.dk/pages/viewpage.action?pageId=244318431), [Adressevælger · opslag med ID (Klimadatastyrelsen)](https://confluence.kds.dk/pages/viewpage.action?pageId=246743156), [Adressevælger · brugerstyring og token (Klimadatastyrelsen)](https://confluence.kds.dk/pages/viewpage.action?pageId=236486723), [DAWA lukker (Dataforsyningen)](https://dataforsyningen.dk/data/4924), [Datafordeleren · adgangsmetoder (Klimadatastyrelsen)](https://confluence.kds.dk/pages/viewpage.action?pageId=187105503), [Datafordeleren · brugervilkår](https://datafordeler.dk/vejledning/brugervilkaar/)
+
+### CVR
+
+`harness-integration-cvr` · [SKILL.md](skills/harness-integration-cvr/SKILL.md)
+
+**Hvad gør den?** Hjælper agenten med at vælge mellem Datafordeleren og Erhvervsstyrelsens system-til-system-adgang, bygge med opdigtede virksomheder, indtil adgangen er på plads, og holde nøglerne på en server.
+
+**Hvornår bruges den?** Når en løsning skal slå virksomheder op eller vise oplysninger fra CVR.
+
+**Hvad får du?** En løsning, der henter CVR-data fra en server, markerer reklamebeskyttede enheder og aldrig viser CPR-numre.
+
+**Hvad gør den ikke?** Søger ikke om adgang for dig og læser aldrig cvr.dk automatisk, fordi det er forbudt. Oplysninger om personer og reelle ejere kræver særskilt ret.
+
+- **System:** Det Centrale Virksomhedsregister (CVR) via Datafordeleren eller Erhvervsstyrelsens system-til-system-adgang
+- **Ejer:** Erhvervsstyrelsen
+- **Adgang:** Kræver en bruger med API-nøgle hos Datafordeleren eller en ansøgning om system-til-system-adgang, som normalt tager tre uger. Oplysninger om personer kræver MitID Erhverv.
+- **Data:** Offentlige virksomhedsoplysninger. Enkeltmandsvirksomheder og ejere er personer, og nogle er reklamebeskyttede.
+- **Dataflow:** Forespørgsler går fra en server i den app, du bygger, til Datafordeleren eller Erhvervsstyrelsen med brugerens nøgle.
+- **Pris:** Gratis
+- **IT-afdelingen:** Kræver ikke hjælp fra IT-afdelingen.
+
+Skillen vedligeholdes af AI Harness og er kontrolleret mod kilderne 2026-09-30.
+
+Kilder: [System-til-system-adgang til CVR-data (Erhvervsstyrelsen)](https://datacvr.virk.dk/artikel/system-til-system-adgang-til-cvr-data), [CVR på Datafordeleren](https://datafordeler.dk/vejledning/brugeradgang/anmodning-om-adgang/det-centrale-virksomhedsregister-cvr/), [Reklamebeskyttelse (Erhvervsstyrelsen)](https://datacvr.virk.dk/artikel/reklamebeskyttelse), [CVR-loven, LBK nr. 246 af 5. februar 2026](https://www.retsinformation.dk/eli/lta/2026/246), [CVR-bekendtgørelsen](https://www.retsinformation.dk/eli/lta/2022/1243), [Logning af brugernes anvendelser af personoplysninger (Datatilsynet)](https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/katalog-over-foranstaltninger/logning-af-brugernes-anvendelser-af-personoplysninger)
+
 ## Spørgsmål og svar
 
 ### Hvad er en skill?
@@ -199,6 +251,10 @@ Nej. Mange værktøjer vælger selv en skill, når opgaven passer til beskrivels
 ### Hvad er forskellen på grundregler og skills?
 
 Grundreglerne gælder altid: nøgler, Git, afprøvning og ærlig rapportering. De står i fx AGENTS.md eller CLAUDE.md. Skills er de længere arbejdsgange, der kun bruges, når opgaven kræver dem.
+
+### Hvad er en integration?
+
+En integration er en skill om ét bestemt system, fx adresser eller CVR. Den forklarer, hvordan man får adgang, hvor nøgler skal ligge, hvilke data systemet giver, og hvilke regler der gælder. Integrationerne følger ikke med pakkerne. Du vælger dem til i AI Harness-appen for de systemer, dit projekt bruger.
 
 ### Kan jeg ændre en skill?
 

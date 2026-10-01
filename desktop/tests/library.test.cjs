@@ -26,7 +26,7 @@ async function fixture(t, change = {}) {
 
 test('det rigtige bibliotek er gyldigt, og hvert værktøj kan installeres og fjernes igen', async t => {
   const library = await loadLibrary(profiles);
-  assert.equal(library.skills.length, 12);
+  assert.equal(library.skills.length, 14);
   assert.ok(library.tools.length >= 20, `${library.tools.length} værktøjer`);
   assert.ok(library.rules.includes(library.controlWord));
   for (const item of library.tools.filter(entry => entry.rules)) {
@@ -93,12 +93,48 @@ test('afviser ugyldige skills, værktøjer og uoverensstemmelser', async t => {
   await rejects({ catalog: { features: [{ id: 'a', title: 'A', summary: 'A.', skills: [] }] } }, /mangler id, titel/);
   await rejects({ catalog: { features: [{ id: 'a', title: 'A', summary: 'A.', requires: ['ukendt'], skills: ['harness-a'] }] } }, /ukendt funktion/);
   await rejects({ catalog: { features: [{ id: 'a', title: 'A', summary: 'A.', default: 'nej', skills: ['harness-a'] }] } }, /ugyldig standard/);
+  await rejects({ catalog: { features: [{ id: 'a', title: 'A', summary: 'A.', group: 'ukendt', skills: ['harness-a'] }] } }, /ukendt gruppe/);
+  await rejects({ catalog: { features: [{ id: 'a', title: 'A', summary: 'A.', group: 'integrationer', default: false, skills: ['harness-a'] }] } }, /kun der/);
+});
+
+// En integration er sin egen funktion med kilder, ejer, adgang og dataflow. En mangel afvises.
+test('integrationer skal beskrive system, ejer, adgang og dataflow og stå for sig', async t => {
+  const integration = { system: 'Testregister', owner: 'Testejer', maintainer: 'AI Harness', access: 'Ingen bruger', data: 'Offentlige data', dataFlow: 'Fra browseren til testregistret', cost: 'Gratis', itRoute: false, sensitive: false, checkedAt: '2026-09-30' };
+  const entry = { ...skill, name: 'harness-integration-test', integration, sources: [{ title: 'Kilde', url: 'https://example.org' }] };
+  const file = '---\nname: harness-integration-test\ndescription: Henter testdata, når opgaven kræver det.\n---\n# Test\nIngen referencer.\n';
+  const base = { skills: [skill, entry], categories: [{ id: 'alt', title: 'Alt', summary: 'Alle skills.', skills: ['harness-a', 'harness-integration-test'] }], features: [{ id: 'alt', title: 'Alt', summary: 'Alt.', skills: ['harness-a'] }, { id: 'integration-test', group: 'integrationer', title: 'Test', summary: 'Testdata.', default: false, skills: ['harness-integration-test'] }] };
+  const valid = await fixture(t, { catalog: base, files: { 'skills/harness-integration-test/SKILL.md': file } });
+  const library = await loadLibrary(valid);
+  assert.equal(library.skills.find(item => item.name === 'harness-integration-test').integration.owner, 'Testejer');
+  assert.deepEqual(layoutFor(library, ['codex']).skills, ['harness-a'], 'integrationer er ikke valgt som standard');
+  const rejectsWith = async (change, pattern) => assert.rejects(loadLibrary(await fixture(t, { catalog: { ...base, ...change }, files: { 'skills/harness-integration-test/SKILL.md': file } })), pattern);
+  await rejectsWith({ skills: [skill, { ...entry, integration: { ...integration, dataFlow: '' } }] }, /dataFlow mangler/);
+  await rejectsWith({ skills: [skill, { ...entry, integration: { ...integration, itRoute: 'nej' } }] }, /sandt eller falsk/);
+  await rejectsWith({ skills: [skill, { ...entry, sources: [] }] }, /mindst én kilde/);
+  await rejectsWith({ skills: [skill, { ...entry, integration: undefined }] }, /skal beskrive system/);
+  await rejectsWith({ features: [base.features[0], { ...base.features[1], default: true }] }, /slået fra som standard/);
+  await rejectsWith({ features: [{ ...base.features[0], skills: ['harness-a', 'harness-integration-test'] }] }, /kun der/);
 });
 
 test('funktionerne i appen dækker hele biblioteket og bygger kun på kendte funktioner', async () => {
   const library = await loadLibrary(profiles);
-  assert.deepEqual(library.features.map(feature => feature.id), ['versioner', 'planlaegning', 'design', 'sikkerhed', 'kvalitet', 'deling']);
+  assert.deepEqual(library.features.filter(feature => !feature.group).map(feature => feature.id), ['versioner', 'planlaegning', 'design', 'sikkerhed', 'kvalitet', 'deling']);
+  assert.deepEqual(library.features.filter(feature => feature.group === 'integrationer').map(feature => feature.id), ['integration-adresser', 'integration-cvr']);
   assert.deepEqual(library.features.flatMap(feature => feature.skills).sort(), library.skills.map(skill => skill.name).sort());
   assert.deepEqual(library.features.find(feature => feature.id === 'deling').requires, ['versioner'], 'Del og sikkerhedskopi udgiver fra en gemt version');
-  assert.deepEqual(library.features.filter(feature => feature.default === false).map(feature => feature.id), ['deling'], 'Del er ikke med i den anbefalede pakke, så længe den kræver udviklerværktøjer');
+  assert.deepEqual(library.features.filter(feature => !feature.group && feature.default === false).map(feature => feature.id), ['deling'], 'Del er ikke med i den anbefalede pakke, så længe den kræver udviklerværktøjer');
+});
+
+// Integrationsskills holder nøgler på en server og nævner de regler, der gælder for systemet.
+test('integrationsskills holder nøgler på serveren og nævner systemets regler', async () => {
+  const library = await loadLibrary(profiles);
+  const text = name => library.skills.find(item => item.name === name).files.map(file => file.content).join('\n');
+  for (const skill of library.skills.filter(item => item.integration)) {
+    assert.match(text(skill.name), /\.env/, `${skill.name}: nøgler i .env`);
+    assert.match(text(skill.name), /server/, `${skill.name}: nøgler bruges fra en server`);
+    assert.ok(skill.integration.checkedAt <= new Date().toISOString().slice(0, 10), `${skill.name}: kontroldatoen ligger ikke i fremtiden`);
+  }
+  assert.match(text('harness-integration-adresser'), /Brug ikke DAWA/);
+  assert.match(text('harness-integration-adresser'), /EPSG:25832/);
+  for (const rule of [/§ 17/, /reklamebeskyttede/, /CPR-numre må aldrig/, /opdigtede virksomheder/]) assert.match(text('harness-integration-cvr'), rule);
 });

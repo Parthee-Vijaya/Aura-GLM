@@ -90,7 +90,8 @@ const helpers = require('./ui-test-helpers.cjs');
     await page.click('#features-continue'); await page.waitForSelector('#create-form');
     const chosen = await features();
     assert.equal(chosen.chosen, 'valgt');
-    assert.deepEqual(chosen.defaults, { versioner: true, planlaegning: false, design: false, sikkerhed: false, kvalitet: false, deling: false });
+    assert.deepEqual(chosen.defaults, { versioner: true, planlaegning: false, design: false, sikkerhed: false, kvalitet: false, deling: false, 'integration-adresser': false, 'integration-cvr': false });
+    assert.equal(await page.locator('#setup-features-list .feature-row').count(), 6, 'integrationer vælges ikke ved første start');
     // 2. Startsiden viser ikke design og hostingønske, når funktionerne er slået fra.
     await helpers.projectOptions(page);
     assert.equal(await page.isVisible('#design-options'), false); assert.equal(await page.isVisible('#startup-hosting-row'), false);
@@ -127,7 +128,10 @@ const helpers = require('./ui-test-helpers.cjs');
     assert.match((await log())[0], /^AI-opgave: /);
     // 4. Indstillinger › Funktioner: en undtagelse for projektet og en ændring for alle projekter.
     await helpers.menuClick(page, '#features-button'); await page.waitForSelector('#features-dialog[open]');
-    assert.equal(await page.isVisible('#features-scope'), true); assert.equal(await page.locator('#features-list .feature-row').count(), 6);
+    assert.equal(await page.isVisible('#features-scope'), true); assert.equal(await page.locator('#features-list .feature-row').count(), 8);
+    assert.equal(await page.textContent('#features-list .features-group'), 'Integrationer');
+    // Projektvalgets skjulte radioknapper fik før den generelle input-bredde og gav dialogen en vandret rullebjælke.
+    assert.deepEqual(await page.locator('#features-dialog').evaluate(el => el.scrollWidth <= el.clientWidth), true, 'dialogen har ingen vandret rullebjælke');
     // ⓘ i en dialog: forklaringen ligger i dialogen, viser funktionens skills og lukker igen ved et klik på samme ⓘ.
     const skillsInfo = page.locator('#features-list .feature-row[data-feature="planlaegning"] .info');
     await skillsInfo.click(); await page.locator('#features-dialog #info-pop').filter({ hasText: 'Idé og afgrænsning' }).waitFor();
@@ -145,6 +149,12 @@ const helpers = require('./ui-test-helpers.cjs');
     await page.locator('#features-list .feature-note').filter({ hasText: 'Kun i dette projekt: slået til.' }).waitFor();
     assert.deepEqual((await features()).exceptions, { deling: true });
     assert.equal(await page.isVisible('#deploy-button'), true, 'Del vises i projektet med undtagelsen');
+    // En integration slås til for projektet. Dens ⓘ viser ejer, adgang og dataflow.
+    await toggle('#features-list', 'integration-adresser').check();
+    await page.locator('#features-list .feature-row[data-feature="integration-adresser"] .feature-note').filter({ hasText: 'Kun i dette projekt: slået til.' }).waitFor();
+    const integrationInfo = page.locator('#features-list .feature-row[data-feature="integration-adresser"] .info');
+    await integrationInfo.click(); await page.locator('#features-dialog #info-pop').filter({ hasText: 'Ejer: Klimadatastyrelsen' }).waitFor(); await integrationInfo.click();
+    assert.deepEqual((await features()).exceptions, { deling: true, 'integration-adresser': true });
     await page.locator('#features-scope label').filter({ hasText: 'Alle projekter' }).click();
     assert.equal(await toggle('#features-list', 'deling').isChecked(), false, 'standarden for alle projekter er uændret');
     await toggle('#features-list', 'kvalitet').check();
@@ -154,8 +164,9 @@ const helpers = require('./ui-test-helpers.cjs');
     await page.click('[data-close="features-dialog"]');
     // 5. Næste opgave starter en ny modelsession med de nye skills og regler.
     const second = await sendTask('Gør overskriften tydeligere.', true);
-    assert.deepEqual(second.skills, ['harness-afproevning-og-fejlretning', 'harness-git-og-samarbejde', 'harness-kodestil', 'harness-overdragelse-og-drift', 'harness-udgivelse-og-gendannelse']);
+    assert.deepEqual(second.skills, ['harness-afproevning-og-fejlretning', 'harness-git-og-samarbejde', 'harness-integration-adresser', 'harness-kodestil', 'harness-overdragelse-og-drift', 'harness-udgivelse-og-gendannelse']);
     assert.ok(second.system.includes('Del-knap'));
+    assert.ok(second.system.includes('slået disse integrationer til: Adresser'));
     // 6. Uden Versioner og fortryd får et nyt projekt ingen Git, og resultatkortet tilbyder ikke versioner.
     await helpers.menuClick(page, '#features-button'); await page.locator('#features-scope label').filter({ hasText: 'Alle projekter' }).click();
     await toggle('#features-list', 'versioner').uncheck();
@@ -182,7 +193,7 @@ const helpers = require('./ui-test-helpers.cjs');
     const after = await features();
     assert.equal(after.chosen, 'valgt'); assert.equal(after.defaults.versioner, false); assert.equal(after.defaults.kvalitet, true);
     assert.deepEqual(errors, []);
-    console.log(JSON.stringify({ status: 'bestået', root, checks: ['første start med Vælg selv', 'deling og versioner følges ad', 'startsiden uden design og hosting', 'ⓘ åbner og lukker i og uden for en dialog', 'Git fra start med versioner', 'Del og sikkerhedskopi skjult uden deling', 'direkte arbejde uden planlægning', 'kun aktive skills i motoren', 'appens regler følger funktionerne', 'undtagelse for ét projekt', 'arbejdsmåden følger planlægning med det samme', 'ændring for alle projekter', 'ny modelsession med nye skills', 'projekt uden Git og uden versionsknapper', 'valget husket efter genstart'] }, null, 2));
+    console.log(JSON.stringify({ status: 'bestået', root, checks: ['første start med Vælg selv', 'deling og versioner følges ad', 'startsiden uden design og hosting', 'ⓘ åbner og lukker i og uden for en dialog', 'Git fra start med versioner', 'Del og sikkerhedskopi skjult uden deling', 'direkte arbejde uden planlægning', 'kun aktive skills i motoren', 'appens regler følger funktionerne', 'undtagelse for ét projekt', 'ingen vandret rullebjælke i dialogen', 'integration slået til for ét projekt', 'arbejdsmåden følger planlægning med det samme', 'ændring for alle projekter', 'ny modelsession med nye skills', 'projekt uden Git og uden versionsknapper', 'valget husket efter genstart'] }, null, 2));
   } catch (error) {
     if (page) await page.screenshot({ path: path.join(root, 'fejl.png'), animations: 'disabled' }).catch(() => {});
     console.error(JSON.stringify({ root, errors }));

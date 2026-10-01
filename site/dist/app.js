@@ -63,7 +63,7 @@ function selectTool(id) {
   byId('knowledge').hidden = installable;
   byId('content').classList.toggle('without-files', !installable);
   byId('pack-included').replaceChildren(...(installable
-    ? ['Fælles grundregler på dansk', `${catalog.skills.length} skills i ${selectedTool.dirs.join(' og ')}`, 'Afsnit til .gitignore', 'Vejledning til dig og til din kodeagent', 'Versions- og indholdsoversigt']
+    ? ['Fælles grundregler på dansk', `${baseSkills().length} skills i ${selectedTool.dirs.join(' og ')}`, 'Afsnit til .gitignore', 'Vejledning til dig og til din kodeagent', 'Versions- og indholdsoversigt']
     : ['Grundregler og en oversigt over arbejdsgangene', 'Til platformens felt til projektets viden']).map((text) => element('li', text)));
   byId('pack-warnings').replaceChildren(...(selectedTool.warnings || []).map((text) => element('li', text)));
   if (installable) {
@@ -108,10 +108,15 @@ function showAllTools() {
   byId('show-all-tools').hidden = true;
 }
 
+// Integrationer følger ikke med pakkerne; de vælges til i appen for de systemer, man bruger.
+function baseSkills() {
+  return catalog.skills.filter((skill) => !skill.integration);
+}
+
 function renderSkills() {
-  byId('skill-count').textContent = catalog.skills.length;
+  byId('skill-count').textContent = baseSkills().length;
   let index = 0;
-  byId('skill-list').replaceChildren(...catalog.categories.flatMap((category) => [element('p', `${category.title} · ${category.skills.length}`, 'skill-group'), ...category.skills.map((name) => {
+  byId('skill-list').replaceChildren(...catalog.skillCategories.flatMap((category) => [element('p', `${category.title} · ${category.skills.length}${category.skills.some((name) => catalog.skills.find((item) => item.name === name).integration) ? ' · vælges til i appen' : ''}`, 'skill-group'), ...category.skills.map((name) => {
     const skill = catalog.skills.find((item) => item.name === name);
     index += 1;
     const details = element('details');

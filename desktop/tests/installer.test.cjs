@@ -191,3 +191,35 @@ test('et udvalg af skills installeres, fravalgte fjernes ved næste installation
   assert.match(await read(root, 'AGENTS.md'), /# Grundregler/);
   assert.throws(() => layoutFor(library(), ['codex'], { skills: ['harness-ukendt'] }), /Ukendt skill/);
 });
+
+test('integrationer står som valgfrie og ikke som fravalgte, og kommandolinjen bevarer et udvalg fra appen', async t => {
+  const integration = { ...skill('harness-integration-x'), title: 'Register X', integration: { system: 'X', owner: 'Styrelsen', maintainer: 'AI Harness', access: 'Åben', data: 'Åbne data', dataFlow: 'Fra appen', cost: 'Gratis', itRoute: false, sensitive: false, checkedAt: '2026-09-30' } };
+  const lib = { ...library(), skills: [...library().skills, integration] };
+  const root = await project(t);
+  await (await install(root, lib, ['codex'])).apply();
+  assert.equal(await exists(root, '.agents/skills/harness-integration-x'), false, 'integrationer følger ikke med uden et valg');
+  let readme = await read(root, '.harness/LAES-MIG.md');
+  assert.match(readme, /2 af 2 skills til arbejdet fra idé til drift\./);
+  assert.match(readme, /Integrationer, der kan vælges til i AI Harness-appen: Register X\./);
+  assert.doesNotMatch(readme, /Fravalgt/);
+  await (await install(root, lib, ['codex'], undefined, ['harness-a', 'harness-integration-x'])).apply();
+  readme = await read(root, '.harness/LAES-MIG.md');
+  assert.match(readme, /1 af 2 skills til arbejdet fra idé til drift samt integrationen Register X\./);
+  assert.match(readme, /Fravalgt: harness-b\./);
+  assert.doesNotMatch(readme, /kan vælges til/);
+
+  // Kommandolinjen bruger det rigtige bibliotek og bevarer udvalget fra manifestet, også en valgt integration.
+  const cli = path.join(__dirname, '..', '..', 'scripts', 'harness.cjs');
+  const run = target => new Promise((resolve, reject) => require('node:child_process').execFile(process.execPath, [cli, 'install', '--tools', 'codex', '--project', target, '--yes'], (error, stdout, stderr) => error ? reject(new Error(stderr || error.message)) : resolve(stdout)));
+  const fresh = await project(t);
+  await run(fresh);
+  const real = await require('../core/library.cjs').loadLibrary(path.join(__dirname, '..', '..', 'profiles'));
+  const base = real.skills.filter(item => !item.integration).map(item => item.name);
+  assert.deepEqual(JSON.parse(await read(fresh, installer.MANIFEST)).skills, base, 'en ny installation får alle skills undtagen integrationer');
+  const chosen = await project(t);
+  await (await install(chosen, real, ['codex'], undefined, [base[0], 'harness-integration-adresser'])).apply();
+  await run(chosen);
+  assert.deepEqual(JSON.parse(await read(chosen, installer.MANIFEST)).skills, [base[0], 'harness-integration-adresser']);
+  assert.equal(await exists(chosen, '.agents/skills/harness-integration-adresser/SKILL.md'), true);
+  assert.equal(await exists(chosen, `.agents/skills/${base[1]}`), false);
+});

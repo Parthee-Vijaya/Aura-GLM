@@ -15,7 +15,7 @@ Appen viser public/index.html direkte. React med Vite og Astro kan installeres o
 Under bygning: implementér den godkendte brugerrejse med sammenhængende design. Brug realistiske, opdigtede data og mærk demonstrationer tydeligt. Test funktionalitet og relevante skærmstørrelser, når værktøjerne tillader det. Rapportér faktiske kontroller og begrænsninger; påstå ikke, at designet er godkendt af brugeren.`;
 // Appens egne regler til den indbyggede AI. De gælder altid og går forud for skills. Dele af dem følger brugerens funktioner.
 const designResearch = 'Brug webfetch til at læse projektets designlinks; bed om den krævede webgodkendelse. Find undersidelinks fra forsiden, og læs relevante sider om farver, typografi, logoer, komponenter og tilgængelighed. Begynd med højst ti relevante sider på samme websted; spørg før mere omfattende indsamling eller nye domæner. Angiv konkrete kilde-URLer og hvad de understøtter. Hvis HTML ikke indeholder indholdet, en side kræver login, eller hentning fejler, forklar begrænsningen; opfind ikke indhold. Kopier ikke automatisk logoer eller materiale med uafklarede brugsrettigheder.';
-function appRules(features, { skills = [], links = [], mode = 'free', autoCheckpoint = false } = {}) {
+function appRules(features, { skills = [], links = [], mode = 'free', autoCheckpoint = false, integrations = [] } = {}) {
   const lines = ['APPENS REGLER:',
     'Du arbejder i AI Harness, en app til folk uden teknisk baggrund. Svar på dansk i almindeligt sprog.',
     'Bed aldrig om API-nøgler, tokens eller adgangskoder i samtalen. Henvis til appens forbindelsesindstillinger. Gem aldrig nøgler i kode, chat, logs, skills eller commits.',
@@ -28,6 +28,7 @@ function appRules(features, { skills = [], links = [], mode = 'free', autoCheckp
       : 'Deling og udgivelse er slået fra i appen. Udgiv ikke, og opret ikke konti eller tjenester til hosting.'];
   if (!features.planlaegning && mode === 'free') lines.push('Brugeren har slået planlægning før bygning fra. Byg direkte ud fra beskeden, og stil kun spørgsmål, der ændrer resultatet væsentligt.');
   if (features.design && links.length) lines.push(designResearch);
+  if (integrations.length) lines.push(`Brugeren har slået disse integrationer til: ${integrations.join(', ')}. Følg integrationens skill. Læg aldrig nøgler, brugernavne eller adgangskoder til en integration i browserkode, chat, logs eller versioner; de hører til i projektets .env og bruges kun fra en server.`);
   lines.push(skills.length
     ? `Skills fra AI Harness kan hentes med skill-værktøjet: ${skills.join(', ')}. Hent den skill, der passer til opgaven, før du går i gang, og læs kun de referencer, du har brug for.`
     : 'Brugeren har ikke slået skills fra AI Harness til. Følg grundreglerne.');

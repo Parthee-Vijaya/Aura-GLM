@@ -401,10 +401,11 @@ input[type=checkbox][role=switch]:disabled { cursor: not-allowed; opacity: .5; }
 .feature-note { margin: 8px 0 0; font-size: 12px; color: var(--accent); }
 .feature-note .text-button { padding: 0 4px; font-size: 12px; }
 .features-scope { display: inline-flex; gap: 4px; padding: 3px; margin: 4px 0 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--canvas); }
-.features-scope label { display: flex; align-items: center; margin: 0; padding: 6px 12px; border-radius: 7px; font-size: 12px; font-weight: 550; cursor: pointer; }
+.features-scope label { position: relative; display: flex; align-items: center; margin: 0; padding: 6px 12px; border-radius: 7px; font-size: 12px; font-weight: 550; cursor: pointer; }
 #features-project-name { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .features-scope label:has(input:checked) { background: var(--surface); box-shadow: 0 1px 3px #14263b1f; color: var(--accent); }
-.features-scope input { position: absolute; width: 1px; height: 1px; margin: 0; padding: 0; opacity: 0; pointer-events: none; }
+/* [type=radio] giver samme vægt som den generelle input-regel, så bredden på 1 px vinder og radioknappen ikke gør dialogen bredere. */
+.features-scope input[type=radio] { position: absolute; top: 0; left: 0; width: 1px; height: 1px; margin: 0; padding: 0; border: 0; opacity: 0; pointer-events: none; }
 .features-scope label:has(input:focus-visible) { outline: 3px solid #0052cc; outline-offset: 2px; }
 .features-always, #features-advanced { margin-top: 14px; }
 @media (prefers-reduced-motion: reduce) { .feature-toggle input[role=switch], input[type=checkbox][role=switch]::before { transition: none; } }
@@ -427,3 +428,5 @@ input[type=checkbox][role=switch]:disabled { cursor: not-allowed; opacity: .5; }
 .remember-line { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
 @media (max-width: 560px) { .setting-row { grid-template-columns: 1fr; gap: 6px; } }
 h2 .info, h3 .info { vertical-align: middle; }
+.features-group { margin: 18px 0 0; font-size: 13px; }
+.features-group + .hint { margin: 2px 0 6px; }

@@ -318,6 +318,8 @@ Tilgangen, brugeren har valgt som næste milepæl:
 
 ### Integrationsskills fra leverandører og kommuner
 
+*Påbegyndt 30. september 2026; se afsnittet Integrationsskills nedenfor.*
+
 Leverandører, der vil gøre det let for kommuner at integrere, kan bidrage med skills som pull requests. Kommuner kan på samme måde bidrage med fx gratis hostingmuligheder eller nye standarder.
 - **Foreslåede standardskills:** Promte, Datafordeleren, CVR, websøgning, KMD Opus, eDoc/P360, KMD Nexus og SharePoint.
 - **Eksempelskills:** skal vise, hvordan man opretter en bruger, får en API-nøgle og får åbnet i en firewall.
@@ -365,3 +367,28 @@ Målt i Electron med en kontrolleret model på 32 skærme:
   - "Se alle oplysninger" fra 1.162 til 250 ord;
   - nøglehjælpen fra 217 til 100;
   - AI-forbindelser fra 107 til 9.
+
+## Integrationsskills · 30. september 2026
+
+Brugeren valgte tre ting:
+- De første eksempler er åbne registre.
+- Hver integration slås til for sig.
+- Skabelon og regler for bidrag bygges nu. Åbningen for bidrag fra leverandører og kommuner besluttes sammen med licensen.
+
+- **Integrationer er funktioner i gruppen "integrationer":**
+  - Hver har præcis én skill og er slået fra, til brugeren vælger den under Indstillinger › Funktioner, for alle projekter eller ét projekt.
+  - Ved første start vises kun de almindelige funktioner.
+  - I eget kodeværktøj er integrationer ikke forvalgt, heller ikke i webguidens pakker eller i `scripts/harness.cjs`.
+  - Integrationer tælles for sig. Tekster og tællere siger fx "12 af 12 skills og 1 integration", og en integration, der ikke er valgt, står som en, der kan vælges til, ikke som fravalgt.
+  - `scripts/harness.cjs` bevarer nu udvalget fra `.harness/installation.json` ved en ny installation, ligesom appen. Før installerede den altid alle skills og skrev intet udvalg i manifestet, så en opdatering fra kommandolinjen ville have fjernet en integration valgt i appen.
+- **Faste oplysninger:** Kataloget beskriver hver integration med system, ejer, vedligeholder, adgang, data, dataflow, pris, om IT-afdelingen skal hjælpe, om der er følsomme data, og kontroldato. Biblioteket afviser en integration uden disse oplysninger eller uden kilder.
+- **Regler:** Skabelonen og kravene ved gennemgang står i [integrationsskills.md](integrationsskills.md). Appens regler minder AI’en om, at nøgler til en integration kun må ligge i `.env` og bruges fra en server.
+- **Adresser:**
+  - DAWA lukker 1. oktober 2026. Skillen bruger derfor Klimadatastyrelsens Adressevælger til søgning fra browseren.
+  - Datafordeleren bruges med en API-nøgle fra en server.
+  - Koordinaterne er i EPSG:25832, og kreditering følger CC BY 4.0.
+- **CVR:**
+  - Al adgang kræver en bruger hos Datafordeleren eller en ansøgning om Erhvervsstyrelsens system-til-system-adgang.
+  - Skillen bygger først med opdigtede virksomheder.
+  - Den kræver markering af reklamebeskyttelse og forbyder CPR-numre og automatisk læsning af cvr.dk (CVR-bekendtgørelsen § 17).
+  - Det er uafklaret, om en bruger med MitID Privat får CVR-data fra Datafordeleren. Skillen beder brugeren kontrollere det.

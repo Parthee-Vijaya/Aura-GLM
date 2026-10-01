@@ -26,9 +26,10 @@ async function scenario(root, { git, mode }) {
   // Kun Design og tilgængelighed samt Kodekvalitet og afprøvning er slået til.
   const store = new Store(path.join(root, `data-${git}-${mode}`)), library = () => loadLibrary(profiles);
   const features = new Features(store, library), skills = new Skills(library, store, features);
-  await features.save(null, { scope: 'alle', values: { versioner: false, planlaegning: false, design: true, sikkerhed: false, kvalitet: true, deling: false } });
+  await features.save(null, { scope: 'alle', values: { versioner: false, planlaegning: false, design: true, sikkerhed: false, kvalitet: true, deling: false, 'integration-adresser': true } });
   const context = await skills.context(project);
-  assert.deepEqual(context.skills.map(skill => skill.name).sort(), ['harness-afproevning-og-fejlretning', 'harness-design-og-tilgaengelighed', 'harness-kodestil']);
+  assert.deepEqual(context.skills.map(skill => skill.name).sort(), ['harness-afproevning-og-fejlretning', 'harness-design-og-tilgaengelighed', 'harness-integration-adresser', 'harness-kodestil']);
+  assert.deepEqual(context.integrations, ['Adresser']);
   const skillReference = path.join(directory, 'config/skills/harness-design-og-tilgaengelighed/references/tilgaengelighed.md');
   const steps = [
     ['skill', { name: 'harness-design-og-tilgaengelighed' }],
@@ -38,7 +39,10 @@ async function scenario(root, { git, mode }) {
     ['skill', { name: 'customize-opencode' }],
     ['skill', { name: 'harness-sikkerhedsgennemgang' }],
     ['read', { filePath: path.join(project, '.env') }],
-    ...(git ? [['read', { filePath: path.join(project, '.git/config') }]] : [])
+    ...(git ? [['read', { filePath: path.join(project, '.git/config') }]] : []),
+    // En valgt integration hentes som andre skills, og dens reference kan læses.
+    ['skill', { name: 'harness-integration-adresser' }],
+    ['read', { filePath: path.join(directory, 'config/skills/harness-integration-adresser/references/adressevaelger.md') }]
   ];
   const requests = [];
   const server = http.createServer(async (req, res) => {
@@ -86,6 +90,9 @@ async function scenario(root, { git, mode }) {
     assert.match(results[5], /Skill "harness-sikkerhedsgennemgang" not found/, 'en skill under en slået fra funktion findes ikke');
     assert.ok(denied(results[6]), '.env afvises');
     if (git) assert.ok(denied(results[7]), 'Git-mappen afvises');
+    const integration = git ? 8 : 7;
+    assert.match(results[integration], /skill_content name="harness-integration-adresser"[\s\S]*adressevaelger\.dk/, 'en valgt integration kan hentes');
+    assert.match(results[integration + 1], /EPSG:25832/, 'integrationens reference kan læses');
     assert.deepEqual(asked, [], 'intet af det spørger brugeren');
     return { git, mode, skills: listed.length, checks: results.length };
   } finally { await engine.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
@@ -96,6 +103,6 @@ async function scenario(root, { git, mode }) {
   try {
     const results = [];
     for (const setup of [{ git: true, mode: 'free' }, { git: false, mode: 'free' }, { git: true, mode: 'plan' }]) results.push(await scenario(root, setup));
-    console.log(JSON.stringify({ status: 'bestået', results, checks: ['kun aktive skills vises for modellen', 'aktiv skill hentes', 'skillens reference læses uden spørgsmål', 'ikke valgt privat reference afvises', 'valgt reference læses', 'OpenCodes egen skill skjult', 'skill under slået fra funktion findes ikke i motoren', '.env og .git afvist', 'projektets AGENTS.md indlæses ikke', 'med og uden Git', 'også under planlægning'] }, null, 2));
+    console.log(JSON.stringify({ status: 'bestået', results, checks: ['kun aktive skills vises for modellen', 'aktiv skill hentes', 'skillens reference læses uden spørgsmål', 'ikke valgt privat reference afvises', 'valgt reference læses', 'OpenCodes egen skill skjult', 'skill under slået fra funktion findes ikke i motoren', '.env og .git afvist', 'valgt integration og dens reference hentes', 'projektets AGENTS.md indlæses ikke', 'med og uden Git', 'også under planlægning'] }, null, 2));
   } finally { await fs.rm(root, { recursive: true, force: true }); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

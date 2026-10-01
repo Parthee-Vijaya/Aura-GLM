@@ -46,9 +46,10 @@ function rulesBody(library, dirs, skills = library.skills) {
   ].join('\n');
 }
 
-// Udvalget af skills. Uden et udvalg følger alle med; ukendte navne afvises.
+// Udvalget af skills. Ukendte navne afvises.
 function selectSkills(library, names) {
-  if (names === undefined) return library.skills;
+  // Uden et udvalg følger alle skills med undtagen integrationer, som man vælger til for de systemer, man bruger.
+  if (names === undefined) return library.skills.filter(skill => !skill.integration);
   if (!Array.isArray(names) || names.some(name => typeof name !== 'string')) throw new Error('Vælg skills fra listen.');
   const unknown = names.filter(name => !library.skills.some(skill => skill.name === name));
   if (unknown.length) throw new Error(`Ukendt skill: ${unknown.join(', ')}`);
@@ -60,11 +61,15 @@ function importBody(file) {
 }
 
 function readme(library, selected, dirs, skills) {
-  const left = library.skills.filter(skill => !skills.includes(skill));
+  // Integrationer vælges til og er ikke fravalgt, når de mangler. De tælles derfor for sig.
+  const base = library.skills.filter(skill => !skill.integration);
+  const left = base.filter(skill => !skills.includes(skill));
+  const integrations = skills.filter(skill => skill.integration);
+  const offered = library.skills.filter(skill => skill.integration && !skills.includes(skill));
   return [
     '# AI Harness i dette projekt',
     '',
-    `Projektet bruger AI Harness ${library.version} til ${selected.map(tool => tool.name).join(', ')}. Harness giver kodeagenten fælles grundregler og ${skills.length} af ${library.skills.length} skills til arbejdet fra idé til drift.`,
+    `Projektet bruger AI Harness ${library.version} til ${selected.map(tool => tool.name).join(', ')}. Harness giver kodeagenten fælles grundregler og ${skills.length - integrations.length} af ${base.length} skills til arbejdet fra idé til drift${integrations.length ? ` samt ${integrations.length === 1 ? 'integrationen' : 'integrationerne'} ${integrations.map(skill => skill.title).join(', ')}` : ''}.`,
     '',
     `- Grundreglerne står i et afgrænset afsnit i ${[...new Set(selected.map(tool => tool.rules.import || tool.rules.file))].join(' og ')}.`,
     skills.length ? `- Skillsene ligger i ${dirs.map(dir => `\`${dir}/\``).join(' og ')}.` : '- Der er ikke valgt nogen skills.',
@@ -76,6 +81,7 @@ function readme(library, selected, dirs, skills) {
     '',
     ...(skills.length ? skills.map(skill => `- **${skill.title}** (\`${skill.name}\`): ${skill.summary}`) : ['Ingen skills er valgt.']),
     ...(left.length ? ['', `Fravalgt: ${left.map(skill => skill.title).join(', ')}. De kan vælges igen i AI Harness-appen.`] : []),
+    ...(offered.length ? ['', `Integrationer, der kan vælges til i AI Harness-appen: ${offered.map(skill => skill.title).join(', ')}.`] : []),
     '',
     'Instruktionerne er vejledning til kodeagenten. De er ikke adgangskontrol, en sikkerhedsgodkendelse eller en vurdering efter databeskyttelsesreglerne.'
   ].join('\n') + '\n';
@@ -119,7 +125,8 @@ function knowledgeFor(library) {
     '',
     'Platformen indlæser ikke Harness-skills som filer. Brug disse arbejdsgange, når opgaven passer:',
     '',
-    ...library.skills.map(skill => `- ${skill.title}: ${skill.summary}`)
+    // Integrationer kræver skillens fulde tekst og vælges til for sig, så de står ikke i den korte tekst.
+    ...library.skills.filter(skill => !skill.integration).map(skill => `- ${skill.title}: ${skill.summary}`)
   ].join('\n') + '\n';
 }
 

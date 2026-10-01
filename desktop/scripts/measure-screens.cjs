@@ -126,7 +126,9 @@ const server = http.createServer(async (req, res) => {
     await win.locator('#features-list input[data-feature="deling"]').check(); await win.locator('#features-feedback').filter({ hasText: 'Gemt' }).waitFor();
     await win.click('#features-advanced > summary'); await win.click('#skills-button'); await measure('instruktioner', '#skills-dialog', 'Instruktioner i projektet'); await win.click('[data-close="skills-dialog"]'); await win.click('[data-close="features-dialog"]');
     await win.click('#deploy-button'); await win.waitForSelector('#deployment-dialog[open]'); await measure('del', '#deployment-dialog', 'Del'); await win.click('[data-close="deployment-dialog"]');
-    await helpers.menuClick(win, '#publish-button'); await win.waitForSelector('#hosting-dialog[open]'); await measure('sikkerhedskopi', '#hosting-dialog', 'Sikkerhedskopi'); await win.click('[data-close="hosting-dialog"]');
+    await helpers.menuClick(win, '#publish-button'); await win.waitForSelector('#hosting-dialog[open]');
+    // GitHub-status indlæses efter, at dialogen åbner; vent på den, så målingen er den samme fra gang til gang.
+    await win.waitForFunction(() => document.querySelector('#hosting-status').textContent.trim()); await measure('sikkerhedskopi', '#hosting-dialog', 'Sikkerhedskopi'); await win.click('[data-close="hosting-dialog"]');
     await helpers.menuClick(win, '#connections-button'); await measure('forbindelser', '#connections-dialog', 'Administrer forbindelser'); await win.click('[data-close="connections-dialog"]');
     await helpers.menuClick(win, '#support-button'); await win.waitForSelector('#support-dialog[open]'); await measure('hjaelp', '#support-dialog', 'Hjælp og feedback'); await win.click('[data-close="support-dialog"]');
     await win.click('#tools-button'); await win.waitForSelector('#tools-dialog[open]'); await measure('kodevaerktoej', '#tools-dialog', 'Harness i dit kodeværktøj'); await win.click('#tools-dialog [data-close]');

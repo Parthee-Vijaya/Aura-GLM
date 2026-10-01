@@ -33,6 +33,11 @@ test('hver pakke indeholder præcis det, installationen ville skrive, med gyldig
     assert.ok(Object.keys(manifest.blocks).length >= 2, tool.id);
     assert.ok(![...files.keys()].some(name => /\.(sh|js|cjs|py|ps1|exe)$/.test(name)), `${tool.id} må ikke indeholde scripts`);
     const guide = files.get('LAES-MIG.md');
+    // Tallet i vejledningen er det antal skills, pakken faktisk indeholder. Integrationer vælges til i appen.
+    assert.ok(guide.includes(`grundregler og ${layout.skills.length} skills`), `${tool.id}: antal skills`);
+    assert.ok(!layout.skills.some(name => library.skills.find(item => item.name === name).integration), `${tool.id}: ingen integrationer i pakken`);
+    const optional = library.skills.filter(item => item.integration).map(item => item.title);
+    if (optional.length) assert.ok(guide.includes(`(${optional.slice(0, -1).join(', ')}${optional.length > 1 ? ' og ' : ''}${optional.at(-1)}) er ikke med i pakken. Dem vælger du til i appen.`), `${tool.id}: integrationerne nævnes som valgfri`);
     for (const required of ['overskriv den ikke', 'Mac', 'Windows', library.controlWord, 'ikke', 'Til kodeagenten', 'Lav ingen commit', ...tool.sources.map(source => source.url)]) assert.ok(guide.includes(required), `${tool.id}: ${required}`);
     const ignore = files.get('projekt/.gitignore');
     assert.match(ignore, /\n\.env\n/);
@@ -42,6 +47,18 @@ test('hver pakke indeholder præcis det, installationen ville skrive, med gyldig
   }
 });
 
+test('webguidens script bruger kun felter, som kataloget har, med den rigtige form', async () => {
+  // Kataloget havde to felter ved navn categories, og det sidste overskrev skillkategorierne, så webguiden fejlede.
+  const catalog = await publicCatalog();
+  const app = await fs.readFile(path.join(site, 'app.js'), 'utf8');
+  const keys = [...app.matchAll(/(?<!['"\w])catalog\.([a-zA-Z]+)/g)].map(match => match[1]);
+  assert.ok(keys.includes('skillCategories') && keys.includes('categories'), 'kontrollen finder felterne i app.js');
+  for (const key of keys) assert.ok(key in catalog, `app.js bruger catalog.${key}, som ikke findes`);
+  assert.ok(Array.isArray(catalog.skillCategories) && catalog.skillCategories.every(category => Array.isArray(category.skills)), 'skillkategorierne er en liste');
+  assert.deepEqual(Object.keys(catalog.categories), ['agent', 'editor', 'web'], 'værktøjskategorierne er et opslag');
+  assert.deepEqual(catalog.skillCategories.flatMap(category => category.skills).sort(), catalog.skills.map(skill => skill.name).sort());
+});
+
 test('webplatforme uden projektfiler får tekst inden for platformens grænse', async () => {
   const catalog = await publicCatalog();
   const manual = catalog.tools.filter(item => !item.installable);
@@ -49,6 +66,7 @@ test('webplatforme uden projektfiler får tekst inden for platformens grænse', 
   for (const tool of manual) {
     assert.ok(tool.knowledge.length <= 10000, `${tool.id}: ${tool.knowledge.length} tegn`);
     assert.match(tool.knowledge, /FÆLLES-GRUNDLAG-\d\d/);
+    for (const skill of catalog.skills.filter(item => item.integration)) assert.ok(!tool.knowledge.includes(`- ${skill.title}: `), `${tool.id}: ${skill.title} er valgfri og står ikke i den korte tekst`);
     assert.equal(tool.archive, undefined);
   }
 });
@@ -88,4 +106,9 @@ test('webguidens og FAQ-sidens lokale links findes i den samlede side, og alle s
     for (const answer of Object.values(skill.faq)) assert.ok(faq.includes(answer.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')), `${skill.name}: ${answer.slice(0, 30)}`);
   }
   for (const question of catalog.questions) assert.ok(faq.includes(question.q.replace(/"/g, '&quot;')), question.q);
+  // Integrationer viser ejer, adgang og dataflow, og siden siger, at de ikke følger med pakkerne.
+  const escapeHtml = text => text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  for (const skill of catalog.skills.filter(item => item.integration)) for (const field of ['owner', 'access', 'dataFlow', 'cost']) assert.ok(faq.includes(escapeHtml(skill.integration[field])), `${skill.name}: ${field}`);
+  assert.match(faq, /Integrationerne følger ikke med pakkerne/);
+  assert.ok(faq.includes(`indeholder fælles grundregler og ${catalog.skills.filter(item => !item.integration).length} skills samt `), 'tallet på siden er de skills, pakkerne indeholder');
 });

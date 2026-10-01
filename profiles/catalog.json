@@ -68,6 +68,15 @@
         "harness-udgivelse-og-gendannelse",
         "harness-overdragelse-og-drift"
       ]
+    },
+    {
+      "id": "integrationer",
+      "title": "Integrationer",
+      "summary": "Hent data fra offentlige registre. Vælges til for de systemer, du bruger.",
+      "skills": [
+        "harness-integration-adresser",
+        "harness-integration-cvr"
+      ]
     }
   ],
   "features": [
@@ -128,6 +137,26 @@
         "harness-udgivelse-og-gendannelse",
         "harness-overdragelse-og-drift"
       ]
+    },
+    {
+      "id": "integration-adresser",
+      "group": "integrationer",
+      "title": "Adresser",
+      "summary": "Søg og vis danske adresser fra Danmarks Adresseregister.",
+      "default": false,
+      "skills": [
+        "harness-integration-adresser"
+      ]
+    },
+    {
+      "id": "integration-cvr",
+      "group": "integrationer",
+      "title": "CVR",
+      "summary": "Virksomhedsoplysninger fra Det Centrale Virksomhedsregister.",
+      "default": false,
+      "skills": [
+        "harness-integration-cvr"
+      ]
     }
   ],
   "questions": [
@@ -142,6 +171,10 @@
     {
       "q": "Hvad er forskellen på grundregler og skills?",
       "a": "Grundreglerne gælder altid: nøgler, Git, afprøvning og ærlig rapportering. De står i fx AGENTS.md eller CLAUDE.md. Skills er de længere arbejdsgange, der kun bruges, når opgaven kræver dem."
+    },
+    {
+      "q": "Hvad er en integration?",
+      "a": "En integration er en skill om ét bestemt system, fx adresser eller CVR. Den forklarer, hvordan man får adgang, hvor nøgler skal ligge, hvilke data systemet giver, og hvilke regler der gælder. Integrationerne følger ikke med pakkerne. Du vælger dem til i AI Harness-appen for de systemer, dit projekt bruger."
     },
     {
       "q": "Kan jeg ændre en skill?",
@@ -449,6 +482,104 @@
         "ikke": "Den skriver aldrig adgangskoder, nøgler eller personoplysninger i dokumentationen."
       },
       "sources": []
+    },
+    {
+      "name": "harness-integration-adresser",
+      "title": "Adresser",
+      "summary": "Søger og viser danske adresser fra Danmarks Adresseregister via Adressevælgeren og Datafordeleren.",
+      "faq": {
+        "hvad": "Hjælper agenten med at bruge Klimadatastyrelsens Adressevælger til adressesøgning og Datafordeleren til flere oplysninger. Den forklarer token, nøgler, koordinater og kreditering og skifter væk fra DAWA, som lukker 1. oktober 2026.",
+        "hvornaar": "Når en løsning skal søge efter, udfylde eller vise danske adresser, fx i en formular eller på et kort.",
+        "resultat": "En adressesøgning, der virker fra browseren, korrekt kreditering og, når der er brug for mere, opslag fra en server med nøglen i .env.",
+        "ikke": "Opretter ikke brugere eller nøgler for dig og henter ikke personoplysninger. Beskyttede data fra Datafordeleren kræver en særskilt aftale."
+      },
+      "sources": [
+        {
+          "title": "Adressevælger · fonetisk søgning (Klimadatastyrelsen)",
+          "url": "https://confluence.kds.dk/pages/viewpage.action?pageId=244318431"
+        },
+        {
+          "title": "Adressevælger · opslag med ID (Klimadatastyrelsen)",
+          "url": "https://confluence.kds.dk/pages/viewpage.action?pageId=246743156"
+        },
+        {
+          "title": "Adressevælger · brugerstyring og token (Klimadatastyrelsen)",
+          "url": "https://confluence.kds.dk/pages/viewpage.action?pageId=236486723"
+        },
+        {
+          "title": "DAWA lukker (Dataforsyningen)",
+          "url": "https://dataforsyningen.dk/data/4924"
+        },
+        {
+          "title": "Datafordeleren · adgangsmetoder (Klimadatastyrelsen)",
+          "url": "https://confluence.kds.dk/pages/viewpage.action?pageId=187105503"
+        },
+        {
+          "title": "Datafordeleren · brugervilkår",
+          "url": "https://datafordeler.dk/vejledning/brugervilkaar/"
+        }
+      ],
+      "integration": {
+        "system": "Danmarks Adresseregister (DAR) via Adressevælgeren og Datafordeleren",
+        "owner": "Klimadatastyrelsen",
+        "maintainer": "AI Harness",
+        "access": "Adressevælgeren kræver ingen bruger. Datafordeleren kræver en gratis bruger og en API-nøgle.",
+        "data": "Offentlige adresser, husnumre, postnumre og koordinater. Ingen personoplysninger i sig selv.",
+        "dataFlow": "Søgeteksten sendes fra den app, du bygger, til Klimadatastyrelsen. Kald til Datafordeleren går fra en server med nøglen.",
+        "cost": "Gratis",
+        "itRoute": false,
+        "sensitive": false,
+        "checkedAt": "2026-09-30"
+      }
+    },
+    {
+      "name": "harness-integration-cvr",
+      "title": "CVR",
+      "summary": "Henter virksomhedsoplysninger fra Det Centrale Virksomhedsregister med respekt for reklamebeskyttelse og persondata.",
+      "faq": {
+        "hvad": "Hjælper agenten med at vælge mellem Datafordeleren og Erhvervsstyrelsens system-til-system-adgang, bygge med opdigtede virksomheder, indtil adgangen er på plads, og holde nøglerne på en server.",
+        "hvornaar": "Når en løsning skal slå virksomheder op eller vise oplysninger fra CVR.",
+        "resultat": "En løsning, der henter CVR-data fra en server, markerer reklamebeskyttede enheder og aldrig viser CPR-numre.",
+        "ikke": "Søger ikke om adgang for dig og læser aldrig cvr.dk automatisk, fordi det er forbudt. Oplysninger om personer og reelle ejere kræver særskilt ret."
+      },
+      "sources": [
+        {
+          "title": "System-til-system-adgang til CVR-data (Erhvervsstyrelsen)",
+          "url": "https://datacvr.virk.dk/artikel/system-til-system-adgang-til-cvr-data"
+        },
+        {
+          "title": "CVR på Datafordeleren",
+          "url": "https://datafordeler.dk/vejledning/brugeradgang/anmodning-om-adgang/det-centrale-virksomhedsregister-cvr/"
+        },
+        {
+          "title": "Reklamebeskyttelse (Erhvervsstyrelsen)",
+          "url": "https://datacvr.virk.dk/artikel/reklamebeskyttelse"
+        },
+        {
+          "title": "CVR-loven, LBK nr. 246 af 5. februar 2026",
+          "url": "https://www.retsinformation.dk/eli/lta/2026/246"
+        },
+        {
+          "title": "CVR-bekendtgørelsen",
+          "url": "https://www.retsinformation.dk/eli/lta/2022/1243"
+        },
+        {
+          "title": "Logning af brugernes anvendelser af personoplysninger (Datatilsynet)",
+          "url": "https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/katalog-over-foranstaltninger/logning-af-brugernes-anvendelser-af-personoplysninger"
+        }
+      ],
+      "integration": {
+        "system": "Det Centrale Virksomhedsregister (CVR) via Datafordeleren eller Erhvervsstyrelsens system-til-system-adgang",
+        "owner": "Erhvervsstyrelsen",
+        "maintainer": "AI Harness",
+        "access": "Kræver en bruger med API-nøgle hos Datafordeleren eller en ansøgning om system-til-system-adgang, som normalt tager tre uger. Oplysninger om personer kræver MitID Erhverv.",
+        "data": "Offentlige virksomhedsoplysninger. Enkeltmandsvirksomheder og ejere er personer, og nogle er reklamebeskyttede.",
+        "dataFlow": "Forespørgsler går fra en server i den app, du bygger, til Datafordeleren eller Erhvervsstyrelsen med brugerens nøgle.",
+        "cost": "Gratis",
+        "itRoute": false,
+        "sensitive": false,
+        "checkedAt": "2026-09-30"
+      }
     }
   ],
   "tools": [

@@ -13,9 +13,9 @@
   <main class="tool-index">
     <p class="eyebrow">DET FØLGER MED</p>
     <h1>Skills i AI Harness.</h1>
-    <p class="lead">AI Harness 0.2.0 indeholder fælles grundregler og 12 skills. Grundreglerne gælder altid. En skill er en kort vejledning til kodeagenten om én arbejdsopgave, som bruges, når opgaven passer.</p>
-    <p>Skillsene er delt i fire kategorier. Pakkerne til kodeværktøjerne indeholder dem alle. I AI Harness-appen kan du slå kategorier og enkelte skills til og fra, ligesom i en cookie-dialog; grundreglerne er altid med. Filerne er almindelige tekstfiler på dansk, som du kan læse og tilpasse.</p>
-    <nav class="tool-nav" aria-label="Skills"><a href="#planlaegning">Planlægning og design</a><a href="#kode">Kode og kvalitet</a><a href="#sikkerhed">Sikkerhed og data</a><a href="#drift">Udgivelse og drift</a></nav>
+    <p class="lead">AI Harness 0.2.0 indeholder fælles grundregler og 12 skills samt to integrationer. Grundreglerne gælder altid. En skill er en kort vejledning til kodeagenten om én arbejdsopgave, som bruges, når opgaven passer.</p>
+    <p>Skillsene er delt i fire kategorier. Pakkerne til kodeværktøjerne indeholder dem alle. En integration er en skill om ét bestemt system, fx et offentligt register. Integrationerne følger ikke med pakkerne; du vælger dem til for de systemer, dit projekt bruger. I AI Harness-appen kan du slå kategorier, enkelte skills og integrationer til og fra, ligesom i en cookie-dialog; grundreglerne er altid med. Filerne er almindelige tekstfiler på dansk, som du kan læse og tilpasse.</p>
+    <nav class="tool-nav" aria-label="Skills"><a href="#planlaegning">Planlægning og design</a><a href="#kode">Kode og kvalitet</a><a href="#sikkerhed">Sikkerhed og data</a><a href="#drift">Udgivelse og drift</a><a href="#integrationer">Integrationer</a></nav>
     <section id="skills" aria-label="Skills">
       <section class="note" id="grundregler" aria-labelledby="grundregler-title"><h2 id="grundregler-title">Grundregler · altid med</h2><p>Grundreglerne gælder i hele projektet og kan ikke fravælges: hemmeligheder holdes ude af kode og Git, brugeren styrer Git, ændringer afprøves, og agenten rapporterer ærligt, hvad der er kontrolleret.</p></section>
       <section class="note" id="planlaegning" aria-labelledby="planlaegning-title">
@@ -1094,6 +1094,281 @@ Brug de afsnit, der passer til appen. Skriv &quot;ikke relevant&quot; med en kor
         
       </article>
       </section>
+      <section class="note" id="integrationer" aria-labelledby="integrationer-title">
+        <h2 id="integrationer-title">Integrationer</h2>
+        <p>Hent data fra offentlige registre. Vælges til for de systemer, du bruger.</p>
+        <p>Integrationerne følger ikke med pakkerne til kodeværktøjerne. Vælg dem til i AI Harness-appen: under Indstillinger › Funktioner eller under Tilpas, når du bruger Harness i dit eget kodeværktøj.</p>
+      <article class="tool-entry skill-entry" id="harness-integration-adresser">
+        <p class="tool-type">13 · <code>harness-integration-adresser</code></p>
+        <h3>Adresser</h3>
+        <p>Søger og viser danske adresser fra Danmarks Adresseregister via Adressevælgeren og Datafordeleren.</p>
+        <dl class="faq">
+          <dt>Hvad gør den?</dt><dd>Hjælper agenten med at bruge Klimadatastyrelsens Adressevælger til adressesøgning og Datafordeleren til flere oplysninger. Den forklarer token, nøgler, koordinater og kreditering og skifter væk fra DAWA, som lukker 1. oktober 2026.</dd>
+          <dt>Hvornår bruges den?</dt><dd>Når en løsning skal søge efter, udfylde eller vise danske adresser, fx i en formular eller på et kort.</dd>
+          <dt>Hvad får du?</dt><dd>En adressesøgning, der virker fra browseren, korrekt kreditering og, når der er brug for mere, opslag fra en server med nøglen i .env.</dd>
+          <dt>Hvad gør den ikke?</dt><dd>Opretter ikke brugere eller nøgler for dig og henter ikke personoplysninger. Beskyttede data fra Datafordeleren kræver en særskilt aftale.</dd>
+        </dl>
+        <dl class="faq integration-facts">
+          <dt>System</dt><dd>Danmarks Adresseregister (DAR) via Adressevælgeren og Datafordeleren</dd>
+          <dt>Ejer</dt><dd>Klimadatastyrelsen</dd>
+          <dt>Adgang</dt><dd>Adressevælgeren kræver ingen bruger. Datafordeleren kræver en gratis bruger og en API-nøgle.</dd>
+          <dt>Data</dt><dd>Offentlige adresser, husnumre, postnumre og koordinater. Ingen personoplysninger i sig selv.</dd>
+          <dt>Dataflow</dt><dd>Søgeteksten sendes fra den app, du bygger, til Klimadatastyrelsen. Kald til Datafordeleren går fra en server med nøglen.</dd>
+          <dt>Pris</dt><dd>Gratis</dd>
+          <dt>IT-afdelingen</dt><dd>Kræver ikke hjælp fra IT-afdelingen.</dd>
+        </dl>
+        <p class="review-date">Skillen vedligeholdes af AI Harness og er kontrolleret mod kilderne 2026-09-30.</p>
+        <details><summary>Se instruktionen til agenten</summary><pre>---
+name: harness-integration-adresser
+description: Finder og viser danske adresser fra Danmarks Adresseregister via Klimadatastyrelsens Adressevælger og Datafordeleren. Forklarer token, nøgler, koordinater, kreditering og lukningen af DAWA. Brug den, når projektet skal søge efter, udfylde eller vise adresser.
+---
+
+# Adresser
+
+Danske adresser kommer fra Danmarks Adresseregister (DAR), som Klimadatastyrelsen ejer. Data er frie og gratis under CC BY 4.0.
+
+## Vælg tjeneste
+
+- **Søg og udfyld en adresse, fx i en formular:** Klimadatastyrelsens Adressevælger. Den kan kaldes direkte fra browseren uden bruger.
+- **Flere oplysninger om adressen, eller data fra BBR, Matriklen eller DAGI:** Datafordeleren med GraphQL. Den kræver en gratis API-nøgle, der kun må bruges fra en server.
+- **Brug ikke DAWA** (`api.dataforsyningen.dk`). Den lukker 1. oktober 2026. Finder du DAWA i projektet, så sig det til brugeren, og skift til Adressevælgeren eller Datafordeleren.
+
+## Adressevælgeren
+
+- Søg: `https://adressevaelger.dk/adresser/soeg?tekst=&lt;tekst&gt;&amp;token=adressevaelger123`. Brug `husnumre/soeg` i stedet, når kun bygningens indgang skal findes.
+- Tokenet er obligatorisk. I dag er det en vilkårlig tekst på mindst 10 tegn, og Klimadatastyrelsen anbefaler `adressevaelger123`. Det er ikke en hemmelighed. Der kommer brugerstyring ultimo 2026 eller primo 2027; se `references/adressevaelger.md` før en udgivelse.
+- Svaret er JSON med `status` og listen `fund`. Hvert fund har `type`, `id`, `titel` og `husnummerId`. `titel` er den adresse, brugeren skal se.
+- Søgningen er fonetisk. Tag postnummeret med, så resultatet bliver entydigt. Standard er 100 fund, højst 200 med `maksimum`.
+- Opslag med ID giver flere felter, fx postnummer, vejkode og koordinater: `https://adressevaelger.dk/adresser/&lt;id&gt;?token=adressevaelger123` eller `husnumre/&lt;id&gt;`.
+- Koordinaterne er i ETRS89 UTM zone 32 (EPSG:25832) i meter. Et webkort som Leaflet bruger WGS84, så omregn, fx med proj4.
+- Klimadatastyrelsen har en færdig søgekomponent; se `references/adressevaelger.md`.
+
+## Datafordeleren
+
+- Kræver en gratis bruger og en API-nøgle. Brugeren opretter selv begge dele; se `references/datafordeleren.md`.
+- Nøglen sendes som parameteren `apiKey`. Læg den i projektets `.env`, og kald kun Datafordeleren fra en server eller en serverless-funktion. Læg den aldrig i browserkode, chat eller versioner.
+- Adresser: GraphQL på `https://graphql.datafordeler.dk/DAR/v3`. Brug adressens eller husnummerets ID fra Adressevælgeren til opslag i andre registre.
+- De gamle REST-tjenester og webbrugere lukker 15. januar 2027. Brug kun GraphQL og API-nøgle.
+
+## Kreditering og data
+
+- Skriv &quot;Indeholder data fra Danmarks Adresseregister, Klimadatastyrelsen&quot; ved listen eller kortet, som CC BY 4.0 kræver.
+- En adresse alene er normalt ikke en personoplysning, men en adresse sammen med en person er. Gem kun det, løsningen har brug for.
+
+## Afprøvning
+
+Søg efter `Rådhuspladsen 1, 1550`. Svaret skal indeholde &quot;Rådhuspladsen 1, 1550 København V&quot;. Brug offentlige adresser som denne i afprøvningen, aldrig borgeres adresser.
+</pre><p class="tool-type"><code>references/adressevaelger.md</code></p><pre># Adressevælgeren
+
+Klimadatastyrelsens Adressevælger erstatter DAWA&#39;s autocomplete. Oplysningerne er kontrolleret 30. september 2026.
+
+## Søgning
+
+- `https://adressevaelger.dk/adresser/soeg?tekst=&lt;tekst&gt;&amp;token=adressevaelger123` finder adresser med etage og dør.
+- `https://adressevaelger.dk/husnumre/soeg?tekst=&lt;tekst&gt;&amp;token=adressevaelger123` finder husnumre, altså bygningens indgang.
+- `https://adressevaelger.dk/soeg?tekst=&lt;tekst&gt;&amp;maal=navngivenvejpostnummer&amp;token=adressevaelger123` finder veje uden adresser.
+
+Parametre:
+- **Søgetekst:** `tekst` er fritekst på 1–73 tegn. I stedet for `tekst` kan man bruge `vejnavn`; `husnummer`, `postnummer` og `etage` virker kun sammen med `vejnavn`.
+- **Afgrænsning:** `kommunekode` er en eller flere firecifrede koder adskilt af komma, og så søges kun i de kommuner. `medtagforeloebige=true` tager foreløbige adresser med.
+- **Antal fund:** `maksimum` er 100 som standard og højst 200.
+- **Token:** `token` er obligatorisk.
+
+Søgningen er fonetisk og ikke følsom for store og små bogstaver. Er søgningen ikke entydig, kan svaret indeholde fund af typen `navngivenvej`, `navngivenvejpostnummer` eller `husnummer` i stedet for `adresse`. Tag postnummeret med for at undgå det.
+
+Svar:
+
+```json
+{&quot;status&quot;:&quot;ok&quot;,&quot;beskrivelse&quot;:&quot;&quot;,&quot;fund&quot;:[{&quot;type&quot;:&quot;adresse&quot;,&quot;id&quot;:&quot;70865c44-d570-44e7-a6f5-6f7c90add725&quot;,&quot;titel&quot;:&quot;Rådhuspladsen 1, 1550 København V&quot;,&quot;husnummerId&quot;:&quot;0a3f507a-ec01-32b8-e044-0003ba298018&quot;}]}
+```
+
+## Opslag med ID
+
+- `https://adressevaelger.dk/husnumre/&lt;id&gt;?token=adressevaelger123` giver blandt andet:
+  - `husnummer.adgangsadressebetegnelse` og `husnummer.vejnavn`;
+  - `husnummer.postnummer.postnr` og `husnummer.postnummer.navn`;
+  - `husnummer.navngivenvejkommunedel.kommune` og `husnummer.navngivenvejkommunedel.vejkode`;
+  - `husnummer.adgangspunkt.koordinater.x` og `.y`.
+- `https://adressevaelger.dk/adresser/&lt;id&gt;?token=adressevaelger123` giver de samme oplysninger for en adresse med etage og dør.
+
+Koordinaterne er ETRS89 UTM zone 32 (`EPSG:25832`) i meter, fx x 724434,93 og y 6175755,61 for Rådhuspladsen 1. DAWA brugte WGS84, så en app, der flyttes fra DAWA, skal omregne til kortet.
+
+## Token og brugerstyring
+
+Tokenet skal i dag være mindst 10 vilkårlige tegn. Klimadatastyrelsen anbefaler, at alle bruger `adressevaelger123`, så overgangen til brugerstyring bliver nemmere. Brugerstyring forventes ultimo 2026 eller primo 2027. Så skal man oprette sig som bruger. Klimadatastyrelsen har en notifikationsservice, man kan tilmelde sig. Tjenesten sender `Access-Control-Allow-Origin: *` og kan kaldes fra en browser. Der er ikke planlagt en grænse for antal kald.
+
+## Søgekomponent
+
+Klimadatastyrelsen har en færdig søgekomponent til browseren: https://github.com/Klimadatastyrelsen/adressevaelger
+
+## Kilder
+
+- Fonetisk søgning, 26. juni 2026: https://confluence.kds.dk/pages/viewpage.action?pageId=244318431
+- Opslag med ID, 29. juni 2026: https://confluence.kds.dk/pages/viewpage.action?pageId=246743156
+- Brugerstyring og token, 4. maj 2026: https://confluence.kds.dk/pages/viewpage.action?pageId=236486723
+- DAWA lukker 1. oktober 2026 kl. 10, opdateret 2. september 2026: https://dataforsyningen.dk/data/4924
+</pre><p class="tool-type"><code>references/datafordeleren.md</code></p><pre># Datafordeleren
+
+Datafordeleren er Klimadatastyrelsens platform for grunddata. Oplysningerne er kontrolleret 30. september 2026.
+
+## Adgang
+
+1. Opret en bruger i Datafordeler Administration med e-mail, MitID Privat eller MitID Erhverv. Samtidig accepterer man brugervilkårene. En bruger med e-mail eller MitID Privat får kun ubeskyttede data. MitID Erhverv kræves til beskyttede data og til deling i en organisation.
+2. Opret et IT-system, og vælg en adgangsmetode:
+   - **API-nøgle:** gælder i 2 år og giver kun ubeskyttede data.
+   - **OAuth Shared Secret:** giver et token, der gælder i 60 minutter.
+   - **OAuth-certifikat:** OCES3.
+3. Beskyttede data kræver OAuth, en IP-adresse på en godkendt liste og godkendelse fra registret.
+
+Frie data, der ikke kræver ansøgning:
+- DAR, adresser;
+- BBR, bygninger;
+- MAT2, matrikler;
+- DAGI, administrative inddelinger;
+- EBR, ejendomsbeliggenhed;
+- VUR, vurderinger.
+
+Adgangsbegrænsede data er fx CPR, EJF og CVRPerson.
+
+## Kald
+
+- Adresser: `https://graphql.datafordeler.dk/DAR/v3?apiKey=&lt;nøgle&gt;` med GraphQL.
+- Andre registre følger samme mønster: `https://graphql.datafordeler.dk/&lt;register&gt;/&lt;version&gt;`.
+- En side har 100 rækker som standard og højst 1000.
+- Tjenesten sender CORS-headere ved preflight, men kun for `Content-Type`. Det er ikke afprøvet, om vellykkede svar kan læses fra en browser. Datafordeleren kalder API-nøglen en privat nøgle. Kald derfor Datafordeleren fra en server, og læg nøglen i `.env`.
+- De gamle REST-tjenester, webbrugere, tjenestebrugere og selfservice lukker 15. januar 2027. Brug kun GraphQL og API-nøgle eller OAuth.
+
+## Vilkår
+
+Frie grunddata må bruges under CC BY 4.0. Datafordeleren beder om denne kreditering:
+- DAR: Klimadatastyrelsen;
+- BBR: BBR;
+- matrikel og EBR: Geodatastyrelsen.
+
+Adgang kan blokeres, hvis vilkårene brydes. Den, der har hentet data ud af Datafordeleren, har selv ansvaret for brugen, også når data sammenstilles med andre data.
+
+## Kilder
+
+- Adgangsmetoder, 18. juni 2026: https://confluence.kds.dk/pages/viewpage.action?pageId=187105503
+- Brugertyper, 26. maj 2026: https://confluence.kds.dk/pages/viewpage.action?pageId=187105489
+- Frie og begrænsede data, 19. februar 2026: https://confluence.kds.dk/pages/viewpage.action?pageId=191398982
+- GraphQL og grænser, 18. september 2026: https://confluence.kds.dk/pages/viewpage.action?pageId=187105434
+- Lukning af de gamle tjenester 15. januar 2027: https://www.klimadatastyrelsen.dk/om-klimadatastyrelsen/nyheder/nyhedsarkiv/2026/jun/paralleldrift-paa-datafordeleren-ophoerer-den-15-januar-2027
+- Brugervilkår: https://datafordeler.dk/vejledning/brugervilkaar/
+- Adgang og ansvar, 2. januar 2026: https://confluence.kds.dk/display/DML/Datafordeler+adgang+og+ansvar
+</pre></details>
+        <p class="sources">Kilder: <a href="https://confluence.kds.dk/pages/viewpage.action?pageId=244318431">Adressevælger · fonetisk søgning (Klimadatastyrelsen) ↗</a> · <a href="https://confluence.kds.dk/pages/viewpage.action?pageId=246743156">Adressevælger · opslag med ID (Klimadatastyrelsen) ↗</a> · <a href="https://confluence.kds.dk/pages/viewpage.action?pageId=236486723">Adressevælger · brugerstyring og token (Klimadatastyrelsen) ↗</a> · <a href="https://dataforsyningen.dk/data/4924">DAWA lukker (Dataforsyningen) ↗</a> · <a href="https://confluence.kds.dk/pages/viewpage.action?pageId=187105503">Datafordeleren · adgangsmetoder (Klimadatastyrelsen) ↗</a> · <a href="https://datafordeler.dk/vejledning/brugervilkaar/">Datafordeleren · brugervilkår ↗</a></p>
+      </article>
+      <article class="tool-entry skill-entry" id="harness-integration-cvr">
+        <p class="tool-type">14 · <code>harness-integration-cvr</code></p>
+        <h3>CVR</h3>
+        <p>Henter virksomhedsoplysninger fra Det Centrale Virksomhedsregister med respekt for reklamebeskyttelse og persondata.</p>
+        <dl class="faq">
+          <dt>Hvad gør den?</dt><dd>Hjælper agenten med at vælge mellem Datafordeleren og Erhvervsstyrelsens system-til-system-adgang, bygge med opdigtede virksomheder, indtil adgangen er på plads, og holde nøglerne på en server.</dd>
+          <dt>Hvornår bruges den?</dt><dd>Når en løsning skal slå virksomheder op eller vise oplysninger fra CVR.</dd>
+          <dt>Hvad får du?</dt><dd>En løsning, der henter CVR-data fra en server, markerer reklamebeskyttede enheder og aldrig viser CPR-numre.</dd>
+          <dt>Hvad gør den ikke?</dt><dd>Søger ikke om adgang for dig og læser aldrig cvr.dk automatisk, fordi det er forbudt. Oplysninger om personer og reelle ejere kræver særskilt ret.</dd>
+        </dl>
+        <dl class="faq integration-facts">
+          <dt>System</dt><dd>Det Centrale Virksomhedsregister (CVR) via Datafordeleren eller Erhvervsstyrelsens system-til-system-adgang</dd>
+          <dt>Ejer</dt><dd>Erhvervsstyrelsen</dd>
+          <dt>Adgang</dt><dd>Kræver en bruger med API-nøgle hos Datafordeleren eller en ansøgning om system-til-system-adgang, som normalt tager tre uger. Oplysninger om personer kræver MitID Erhverv.</dd>
+          <dt>Data</dt><dd>Offentlige virksomhedsoplysninger. Enkeltmandsvirksomheder og ejere er personer, og nogle er reklamebeskyttede.</dd>
+          <dt>Dataflow</dt><dd>Forespørgsler går fra en server i den app, du bygger, til Datafordeleren eller Erhvervsstyrelsen med brugerens nøgle.</dd>
+          <dt>Pris</dt><dd>Gratis</dd>
+          <dt>IT-afdelingen</dt><dd>Kræver ikke hjælp fra IT-afdelingen.</dd>
+        </dl>
+        <p class="review-date">Skillen vedligeholdes af AI Harness og er kontrolleret mod kilderne 2026-09-30.</p>
+        <details><summary>Se instruktionen til agenten</summary><pre>---
+name: harness-integration-cvr
+description: Henter virksomhedsoplysninger fra Det Centrale Virksomhedsregister (CVR) via Datafordeleren eller Erhvervsstyrelsens system-til-system-adgang. Forklarer adgang, nøgler, reklamebeskyttelse og persondata om ejere. Brug den, når projektet skal slå virksomheder op eller vise data fra CVR.
+---
+
+# CVR
+
+Det Centrale Virksomhedsregister (CVR) ejes af Erhvervsstyrelsen og rummer oplysninger om danske virksomheder. Data er gratis, men al adgang fra et program kræver en bruger eller en ansøgning.
+
+## Før du bygger
+
+- Byg først med tre til fem opdigtede virksomheder i samme form som det rigtige svar, fx i `data/eksempel-virksomheder.json`. Vis tydeligt, at det er eksempeldata.
+- Spørg brugeren, om de har adgang. Har de ikke, så forklar de to veje nedenfor. Ansøgningen laver brugeren selv, og den kan tage tid.
+- Hent aldrig data ved automatisk at læse sider på cvr.dk eller datacvr.virk.dk. Det er forbudt efter CVR-bekendtgørelsen § 17.
+
+## Veje til data
+
+1. **Datafordeleren:** GraphQL CVR v2 og totaldownload. Kræver en bruger og en API-nøgle. Det er uafklaret, om en bruger med e-mail eller MitID Privat får adgang, eller om det kræver MitID Erhverv; kontrollér det ved oprettelsen. Oplysninger om personer (CVRPerson) kræver ansøgning, MitID Erhverv, OAuth og en IP-adresse på en godkendt liste. Data kommer med en vis forsinkelse.
+2. **Erhvervsstyrelsens system-til-system-adgang:** Elasticsearch med næsten realtidsdata og fuld historik. Gratis, men kræver ansøgning via en blanket. Behandlingen tager normalt tre uger. Adgangen bruger brugernavn og adgangskode.
+
+Detaljer og kilder står i `references/cvr.md`.
+
+## Nøgler
+
+Brugernavn, adgangskode og API-nøgle ligger i projektets `.env` og bruges kun fra en server eller en serverless-funktion. En statisk side kan ikke hente CVR-data direkte. Bed brugeren skrive nøglerne i `.env` selv.
+
+## Regler for brug
+
+- **Reklamebeskyttelse:** Virksomheder og personer kan være reklamebeskyttede. Deres data må ikke bruges til direkte markedsføring. Viser løsningen kontaktoplysninger om en beskyttet enhed, skal den markeres tydeligt. Overtrædelse straffes med bøde.
+- **Persondata:** Enkeltmandsvirksomheder og ejere er personer. Navne og visse adresser er offentlige, men CPR-numre må aldrig vises eller gemmes. Oplysninger om reelle ejere må kun bruges af dem, der har ret til dem. Gem kun det, løsningen har brug for.
+- **Logning:** Søger løsningen i personoplysninger, forventer Datatilsynet, at søgninger logges ud fra en risikovurdering.
+- **Kreditering:** Skriv &quot;Data fra Det Centrale Virksomhedsregister (CVR)&quot;.
+
+## Afprøvning
+
+Afprøv med de opdigtede virksomheder, indtil adgangen er på plads. Når der er adgang, så slå en offentlig myndighed op, fx brugerens egen kommune, og sammenlign navn og adresse med cvr.dk. Brug aldrig enkeltpersoners virksomheder som testdata.
+</pre><p class="tool-type"><code>references/cvr.md</code></p><pre># CVR i detaljer
+
+Oplysningerne er kontrolleret 30. september 2026. Erhvervsstyrelsen er dataansvarlig for CVR.
+
+## Datafordeleren
+
+- **Tjenester:** GraphQL CVR v2, CVR/custom v1 og totaldownload i JSON eller CSV. CVR/custom v1 giver CVRPersonBegraenset, altså persondata uden CPR.
+- **Adgang:** kun CVRPerson kræver ansøgning, og så også MitID Erhverv, OAuth og en IP-adresse på en godkendt liste.
+- **Uafklaret:** Datafordelerens oversigt fra februar 2026 kræver MitID Erhverv, ansøgning og en godkendt IP-adresse for al CVR. CVR-siderne fra maj 2026 siger, at kun CVRPerson er begrænset. Kontrollér ved oprettelsen, hvad brugeren får adgang til.
+- **Aktualitet:** Ifølge Erhvervsstyrelsen kommer data &quot;med en vis forsinkelse&quot;.
+- **Nøgle og opslag:** Brugeren opretter selv en API-nøgle som beskrevet i Datafordelerens vejledning. Nøglen bruges kun fra en server.
+
+## Erhvervsstyrelsens system-til-system-adgang
+
+- Elasticsearch 6.8 på `distribution.virk.dk/cvr-permanent`, med næsten realtidsdata og fuld historik.
+- Gratis og åben for både virksomheder og privatpersoner.
+- Adgang søges via en blanket, og behandlingen tager normalt tre uger.
+- Adgangen bruger brugernavn og adgangskode (HTTP Basic), som kun må bruges fra en server.
+- Vilkårene er &quot;Vilkår for brug af danske offentlige data&quot;: data er gratis, må bruges kommercielt og leveres uden garanti.
+- Erhvervsstyrelsens CVR-webservices er en anden vej og kræver OCES3-certifikat, MitID Erhverv og underskrevne dokumenter.
+
+## Regler
+
+- **Ingen automatisk læsning:** CVR-bekendtgørelsen § 17 forbyder at crawle cvr.dk eller bruge andre metoder til automatisk indeksering og opslag.
+- **Reklamebeskyttelse:**
+  - Private må ikke bruge grunddata om reklamebeskyttede enheder til direkte markedsføring.
+  - Den, der videregiver kontaktoplysninger om en beskyttet enhed, skal tydeligt markere beskyttelsen.
+  - Overtrædelse straffes med bøde efter CVR-loven §§ 19 og 22.
+- **Persondata:**
+  - CPR-numre må ikke videregives til private.
+  - Navne på fuldt ansvarlige deltagere, ejere og ledelse offentliggøres.
+  - Privatadresser offentliggøres, til der er gået fem år efter ophør, men ikke hvis personen har navne- og adressebeskyttelse i CPR.
+  - En virksomhedsadresse kan aldrig være hemmelig.
+- **Reelle ejere:** Oplysninger om reelle ejere må kun gives til dem, der har ret til dem. Uberettiget offentliggørelse straffes efter CVR-loven §§ 18, 18 a og 22.
+- **Myndigheder:** CVR-loven § 15 kræver, at nye offentlige it-systemer slår oplysninger op i CVR i stedet for at spørge virksomheden. Myndigheder, der videregiver CVR-data, skal overholde forbuddet mod CPR, reglerne om reelle ejere og markeringen af reklamebeskyttelse (§ 18, stk. 9).
+- **Logning:** Datatilsynet forventer, at læsning, søgning og udtræk af personoplysninger logges ud fra en risikovurdering, senest når løsningen tages i brug.
+
+## Kilder
+
+- System-til-system-adgang: https://datacvr.virk.dk/artikel/system-til-system-adgang-til-cvr-data
+- Priser og levering: https://datacvr.virk.dk/artikel/priser-og-levering
+- CVR på Datafordeleren, 13. maj 2026: https://datafordeler.dk/vejledning/brugeradgang/anmodning-om-adgang/det-centrale-virksomhedsregister-cvr/
+- Erhvervsstyrelsen om Datafordeleren: https://datacvr.virk.dk/artikel/datafordeleren
+- CVR-webservices: https://datacvr.virk.dk/artikel/cvr-webservices
+- CVR-loven, LBK nr. 246 af 5. februar 2026: https://www.retsinformation.dk/eli/lta/2026/246
+- CVR-bekendtgørelsen: https://www.retsinformation.dk/eli/lta/2022/1243
+- Reklamebeskyttelse: https://datacvr.virk.dk/artikel/reklamebeskyttelse
+- Adressebeskyttelse: https://datacvr.virk.dk/artikel/adressebeskyttelse
+- Vilkår for brug af danske offentlige data: https://assets.eu.ctfassets.net/i6cea2ilpb83/6m9zr6aCNR3Bou4FEluutV/fe0b60f32ab7b40e7bc0260265864280/vilkaar_for_brug_af_danske_offentlige_data_v4.pdf
+- Datatilsynet om logning, 20. oktober 2025: https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/katalog-over-foranstaltninger/logning-af-brugernes-anvendelser-af-personoplysninger
+</pre></details>
+        <p class="sources">Kilder: <a href="https://datacvr.virk.dk/artikel/system-til-system-adgang-til-cvr-data">System-til-system-adgang til CVR-data (Erhvervsstyrelsen) ↗</a> · <a href="https://datafordeler.dk/vejledning/brugeradgang/anmodning-om-adgang/det-centrale-virksomhedsregister-cvr/">CVR på Datafordeleren ↗</a> · <a href="https://datacvr.virk.dk/artikel/reklamebeskyttelse">Reklamebeskyttelse (Erhvervsstyrelsen) ↗</a> · <a href="https://www.retsinformation.dk/eli/lta/2026/246">CVR-loven, LBK nr. 246 af 5. februar 2026 ↗</a> · <a href="https://www.retsinformation.dk/eli/lta/2022/1243">CVR-bekendtgørelsen ↗</a> · <a href="https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/katalog-over-foranstaltninger/logning-af-brugernes-anvendelser-af-personoplysninger">Logning af brugernes anvendelser af personoplysninger (Datatilsynet) ↗</a></p>
+      </article>
+      </section>
     </section>
     <section class="note" aria-labelledby="spoergsmaal">
       <h2 id="spoergsmaal">Spørgsmål og svar</h2>
@@ -1101,6 +1376,7 @@ Brug de afsnit, der passer til appen. Skriv &quot;ikke relevant&quot; med en kor
         <details><summary>Hvad er en skill?</summary><p>En skill er en kort vejledning til kodeagenten om én bestemt arbejdsopgave, fx en sikkerhedsgennemgang eller en udgivelse. Den ligger som en almindelig tekstfil, SKILL.md, i projektet. Agenten læser først kun navn og beskrivelse og henter resten, når opgaven passer. Det holder instruktionerne korte i det daglige arbejde.</p></details>
         <details><summary>Bruges alle skills hver gang?</summary><p>Nej. Mange værktøjer vælger selv en skill, når opgaven passer til beskrivelsen, og du kan også bede om en bestemt skill. En tekstændring skal fx ikke udløse en sikkerhedsgennemgang. Hvordan skills startes, afhænger af værktøjet; se værktøjets vejledning i webguiden.</p></details>
         <details><summary>Hvad er forskellen på grundregler og skills?</summary><p>Grundreglerne gælder altid: nøgler, Git, afprøvning og ærlig rapportering. De står i fx AGENTS.md eller CLAUDE.md. Skills er de længere arbejdsgange, der kun bruges, når opgaven kræver dem.</p></details>
+        <details><summary>Hvad er en integration?</summary><p>En integration er en skill om ét bestemt system, fx adresser eller CVR. Den forklarer, hvordan man får adgang, hvor nøgler skal ligge, hvilke data systemet giver, og hvilke regler der gælder. Integrationerne følger ikke med pakkerne. Du vælger dem til i AI Harness-appen for de systemer, dit projekt bruger.</p></details>
         <details><summary>Kan jeg ændre en skill?</summary><p>Ja. Filerne er dine. Hvis du ændrer en installeret fil, springer en senere opdatering netop den fil over og fortæller dig det. Projektets egne regler skrives uden for AI Harness-afsnittet i AGENTS.md eller CLAUDE.md, så de aldrig overskrives.</p></details>
         <details><summary>Sender AI Harness mine data nogen steder hen?</summary><p>Nej. Installationen kopierer tekstfiler til dit projekt. Dit kodeværktøj og den model, du har valgt, læser filerne som en del af dit arbejde. Hvor de data behandles, afhænger af værktøjet og modellen.</p></details>
         <details><summary>Gør skillsene min app sikker eller lovlig?</summary><p>Nej. Skills er vejledning til agenten. De er ikke adgangskontrol, en sikkerhedsgodkendelse eller en vurdering efter databeskyttelsesreglerne. De hjælper med at stille de rigtige spørgsmål og inddrage de rigtige fagpersoner, men ansvaret for løsningen ligger fortsat hos organisationen.</p></details>

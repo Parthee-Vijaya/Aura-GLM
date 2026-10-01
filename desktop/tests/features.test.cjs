@@ -24,13 +24,15 @@ test('uden valg gælder den anbefalede pakke, og en funktion følger den, den by
 test('standarden gælder alle projekter; undtagelser gemmes kun, når de afviger', async t => {
   const store = new Store(await temp(t)), features = new Features(store, () => loadLibrary(profiles));
   const first = await features.get();
-  assert.equal(first.chosen, ''); assert.equal(first.list.length, 6);
-  assert.deepEqual(Object.keys(first.effective).filter(id => !first.effective[id]), ['deling'], 'uden et valg er alt undtagen deling slået til');
+  assert.equal(first.chosen, ''); assert.equal(first.list.filter(feature => !feature.group).length, 6);
+  assert.deepEqual(first.list.filter(feature => feature.group === 'integrationer').map(feature => feature.id), ['integration-adresser', 'integration-cvr']);
+  assert.equal(first.list.find(feature => feature.id === 'integration-cvr').skills[0].integration.owner, 'Erhvervsstyrelsen');
+  assert.deepEqual(Object.keys(first.effective).filter(id => !first.effective[id]), ['deling', 'integration-adresser', 'integration-cvr'], 'uden et valg er alt undtagen deling og integrationer slået til');
   assert.equal(first.list.find(feature => feature.id === 'kvalitet').skills[0].title, 'Kodestil og vedligeholdelse');
   // Vælg selv ved første start: kun versioner.
   const picked = await features.save(null, { scope: 'alle', chosen: 'valgt', values: { versioner: true, planlaegning: false, design: false, sikkerhed: false, kvalitet: false, deling: false } });
   assert.equal(picked.chosen, 'valgt');
-  assert.deepEqual(picked.defaults, { versioner: true, planlaegning: false, design: false, sikkerhed: false, kvalitet: false, deling: false });
+  assert.deepEqual(picked.defaults, { versioner: true, planlaegning: false, design: false, sikkerhed: false, kvalitet: false, deling: false, 'integration-adresser': false, 'integration-cvr': false });
   // Et projekt får design som undtagelse. Deling slår også versionerne til, som allerede er standard, så kun deling gemmes.
   const project = await features.save('/projekt', { scope: 'projekt', values: { design: true } });
   assert.deepEqual(project.exceptions, { design: true });
@@ -108,4 +110,6 @@ test('appens regler følger funktionerne', () => {
   assert.doesNotMatch(none, /designlinks/);
   assert.match(appRules(all, { autoCheckpoint: false }), /Brugeren gemmer versioner i appen/);
   for (const text of [full, none]) assert.match(text, /Bed aldrig om API-nøgler/);
+  assert.doesNotMatch(full, /integrationer til/);
+  assert.match(appRules(all, { integrations: ['Adresser', 'CVR'] }), /slået disse integrationer til: Adresser, CVR\. .*\.env/);
 });

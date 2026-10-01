@@ -30,10 +30,12 @@ Tæl de synlige valg, før en skærm kaldes færdig, og gennemfør forløbet i a
   - Skills og "Altid slået til" er foldet sammen.
   - Med et projekt åbent vælger man Alle projekter eller Kun projektet. En undtagelse står under funktionen med Brug standarden.
   - En slået fra funktion skjuler sine knapper, fx Del, Sikkerhedskopi, Gem version eller designvalgene. Den sletter intet.
+  - Under overskriften Integrationer står én kontakt pr. system, fx CVR. Integrationer er slået fra, til man vælger dem. Deres ⓘ viser system, ejer, adgang, data, dataflow, pris og kontroldato. Ved første start vises kun de almindelige funktioner.
 - "Hvad vil du bygge?" viser idé, projektnavn og Opret og fortsæt. Projektet gemmes i Dokumenter › AI Harness uden mappedialog; "Vælg en anden placering" er et link.
   - Flere valg er én flad liste med AI, udgivelse, tests og design, hver med ⓘ. Farve, logo og inspiration ligger ét lag længere nede.
   - De seneste valg huskes til næste projekt uden afkrydsning. "Glem dem" nulstiller dem.
 - Harness i dit kodeværktøj viser fire kort og "Et andet værktøj" med søgning. Et klik fører videre til mappevalget og derefter til et resumé i almindeligt dansk; de præcise filændringer ligger under Se de præcise ændringer.
+  - Under Tilpas er integrationerne en kategori for sig og ikke valgt på forhånd. De tælles for sig, fx "9 af 12 skills valgt og 1 integration", og står aldrig som fravalgte. Vælg alle skills vælger ikke integrationer.
 - Næste trin viser kun det valgte forløb. Nøglehjælp og tekniske oplysninger er foldet sammen. GitHub og lokale værktøjer ligger under Avanceret opsætning. Tilbage og Vælg senere er altid tilgængelige.
 - Sidepanelet indeholder projekter, Nyt projekt, Åbn projekt og Indstillinger. Indstillinger har AI-forbindelser, Funktioner og Hjælp og feedback.
 - AI-forbindelser er en liste med Rediger på hver forbindelse. Tilføj forbindelse går gennem den guidede opsætning med de tre udbyderkort. Rediger viser formularen med Test forbindelse og Fjern forbindelse.

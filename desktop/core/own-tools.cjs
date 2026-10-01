@@ -16,7 +16,7 @@ class OwnTools {
     const library = await this.library();
     return {
       version: library.version, checkedAt: library.checkedAt, controlWord: library.controlWord, questions: library.questions, featuredTools: library.featuredTools, categories: library.categories,
-      skills: library.skills.map(({ name, title, summary, faq, sources }) => ({ name, title, summary, faq, sources })),
+      skills: library.skills.map(({ name, title, summary, faq, sources, integration }) => ({ name, title, summary, faq, sources, integration: Boolean(integration) })),
       tools: library.tools.map(({ id, name, vendor, category, status, testedWith, summary, verification, caveat, sources, rules }) => ({ id, name, vendor, category, status, testedWith, summary, verification, caveat, sources, installable: Boolean(rules) })),
       knowledge: knowledgeFor(library)
     };

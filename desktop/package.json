@@ -32,7 +32,8 @@
     "test:versions": "node scripts/verify-versions.cjs",
     "test:app-skills": "node scripts/verify-app-skills.cjs",
     "test:features": "node scripts/verify-features.cjs",
-    "measure:screens": "node scripts/measure-screens.cjs"
+    "measure:screens": "node scripts/measure-screens.cjs",
+    "test:integrations": "node scripts/verify-integrations.cjs"
   },
   "engines": {
     "node": ">=22.12.0"

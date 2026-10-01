@@ -124,6 +124,7 @@ Status 29. september 2026:
 - **Installationen** viser ændringerne før skrivning, overskriver aldrig, tilføjer afgrænsede afsnit mellem faste markører, registrerer version og kontrolsummer i `.harness/installation.json`, springer ændrede filer over ved opdatering og fjerner kun uændrede filer. Den bruges af appens førstevalg "Brug Harness i mit kodeværktøj", af `scripts/harness.cjs` og af byggescriptet til webguidens ZIP-pakker.
 - **Webguiden** har pakker til alle værktøjerne, en vejledning, som brugerens egen kodeagent kan følge, og en FAQ om skillsene.
 - **Udvælgelse:** skillsene er delt i fire kategorier. I appen kan kategorier og enkelte skills slås til og fra; grundreglerne er altid med, og udvalget huskes i installationen.
+- **Integrationsskills** til bestemte systemer kom til 30. september 2026, først Adresser og CVR. De vælges til for sig, og kravene står i [integrationsskills.md](integrationsskills.md).
 - **Appens egen AI** bruger biblioteket fra 30. september 2026. Skills hentes efter behov, og appens seks funktioner afgør, hvilke skills der er med. Hver skill hører til præcis én funktion.
 
 Det mangler stadig:
