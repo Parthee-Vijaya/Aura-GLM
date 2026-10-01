@@ -392,3 +392,31 @@ Brugeren valgte tre ting:
   - Skillen bygger først med opdigtede virksomheder.
   - Den kræver markering af reklamebeskyttelse og forbyder CPR-numre og automatisk læsning af cvr.dk (CVR-bekendtgørelsen § 17).
   - Det er uafklaret, om en bruger med MitID Privat får CVR-data fra Datafordeleren. Skillen beder brugeren kontrollere det.
+
+## Foreslået retning: Jev vælger model og indsats · 1. oktober 2026
+
+*Ikke besluttet og ikke bygget. Brugeren vil overveje det efter testversionen og hosting.*
+
+OpenRouter har fået Jev Router (`typesafe/jev-router`). Den vælger model og indsats ved hver besked ud fra TypeSafes beslutningsmodel Jev. Brugeren foreslår to eksperimentelle kontakter, der er slået fra som standard:
+- **Jev vælger indsats:** brugerens valgte model bevares. Jev vurderer hver besked, og appen sætter indsatsen ud fra svaret. Jev 1.13 kan besvare typede spørgsmål, fx en sværhedsgrad på en skala.
+- **Jev vælger model:** modellen sættes til Jev Router, som vælger blandt OpenRouters modeller.
+
+Hvorfor det er interessant:
+- Begyndere slipper for at vælge model og indsats.
+- Prisen kan falde, når lette beskeder går til en billigere model eller lavere indsats. Det er ikke målt.
+
+Det skal være på plads, før kontakterne kan bygges:
+- **Data til amerikanske virksomheder:** beskedens tekst sendes til OpenRouter og TypeSafe. Appen giver ingen databehandleraftale. Mange kommunale brugere bør derfor ikke slå kontakterne til, og ⓘ og "Før du sender" skal sige det klart.
+- **Modtageren før afsendelse:** Med Jev vælger model kendes modeludbyderen først efter svaret. Det strider mod reglen om, at appen låser OpenRouter til én underleverandør uden automatisk skift. Kontakten skal enten kunne begrænses til bestemte udbydere, eller også skal "Før du sender" vise alle mulige modtagere.
+- **Ingen EU-behandling:** Ifølge OpenRouters nyhedsbrev fra september 2026 virker routermodeller ikke på `eu.openrouter.ai`.
+- **Statuslinjen:** den faktiske model, indsats og pris for hver besked skal kunne vises. Nyhedsbrevet lover en begrundelse i hvert svar, men modelsiden dokumenterer kun de almindelige felter. Det skal afprøves.
+- **Neutralitet:** Jev står som en mulighed under OpenRouter, ikke som en anbefaling. Teksten forklarer, at Jev vælger for brugeren.
+
+Første skridt, hvis retningen vælges: ét rigtigt kald gennem appens OpenRouter-forbindelse, der afklarer:
+- hvilke data der kommer retur;
+- om udbyderne kan begrænses;
+- om værktøjskald virker gennem hele forløbet.
+
+Samtidig undersøges OpenRouters vilkår for databehandleraftaler.
+
+Kilder: [Jev Router](https://openrouter.ai/typesafe/jev-router), [Jev on OpenRouter](https://openrouter.ai/docs/guides/community/jev), [Jev 1.13](https://openrouter.ai/models/typesafe/jev-1.13) og OpenRouters nyhedsbrev fra september 2026.
