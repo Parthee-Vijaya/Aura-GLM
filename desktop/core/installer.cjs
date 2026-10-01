@@ -8,18 +8,24 @@ const { safeRelative } = require('./library.cjs');
 const MANIFEST = '.harness/installation.json';
 const MAX_BYTES = 2 * 1024 * 1024;
 const sha = text => crypto.createHash('sha256').update(text).digest('hex');
-const markers = file => path.posix.basename(file) === '.gitignore'
-  ? { start: '# ai-harness:start', end: '# ai-harness:slut' }
-  : { start: '<!-- ai-harness:start -->', end: '<!-- ai-harness:slut -->' };
+// Markørerne hed ai-harness før navneskiftet til Aura Harness. De gamle genkendes ved opdatering og fjernelse og skiftes ud.
+const NAMES = ['aura-harness', 'ai-harness'];
+const markers = (file, name = NAMES[0]) => path.posix.basename(file) === '.gitignore'
+  ? { start: `# ${name}:start`, end: `# ${name}:slut` }
+  : { start: `<!-- ${name}:start -->`, end: `<!-- ${name}:slut -->` };
 
 function findBlock(text, file) {
-  const { start, end } = markers(file);
   const lines = text.split(/\r?\n/);
-  const starts = lines.flatMap((line, index) => line.trim() === start ? [index] : []);
-  const ends = lines.flatMap((line, index) => line.trim() === end ? [index] : []);
-  if (!starts.length && !ends.length) return null;
+  const found = NAMES.map(name => {
+    const { start, end } = markers(file, name);
+    return { name, starts: lines.flatMap((line, index) => line.trim() === start ? [index] : []), ends: lines.flatMap((line, index) => line.trim() === end ? [index] : []) };
+  }).filter(item => item.starts.length || item.ends.length);
+  if (!found.length) return null;
+  // Nye og gamle markører i samme fil er lige så uklart som gentagne markører.
+  if (found.length > 1) return { malformed: true };
+  const [{ name, starts, ends }] = found;
   if (starts.length !== 1 || ends.length !== 1 || ends[0] < starts[0]) return { malformed: true };
-  return { from: starts[0], to: ends[0], body: lines.slice(starts[0] + 1, ends[0]).join('\n') };
+  return { from: starts[0], to: ends[0], body: lines.slice(starts[0] + 1, ends[0]).join('\n'), legacy: name !== NAMES[0] };
 }
 
 function withBlock(text, file, body) {
@@ -54,7 +60,7 @@ async function inside(root, relative) {
     current = path.join(current, part);
     const stat = await fs.lstat(current).catch(error => { if (error.code === 'ENOENT') return null; throw error; });
     if (!stat) break;
-    if (stat.isSymbolicLink()) return { target: path.join(root, relative), problem: 'Stien går gennem et symbolsk link. Harness skriver ikke gennem links.' };
+    if (stat.isSymbolicLink()) return { target: path.join(root, relative), problem: 'Stien går gennem et symbolsk link. Aura Harness skriver ikke gennem links.' };
   }
   return { target: path.join(root, relative) };
 }
@@ -74,7 +80,7 @@ async function readManifest(root) {
   if (!current.exists) return null;
   if (current.problem) throw new Error(`${MANIFEST}: ${current.problem}`);
   let manifest;
-  try { manifest = JSON.parse(current.text); } catch { throw new Error(`${MANIFEST} kan ikke læses. Ret eller fjern filen manuelt, før Harness ændrer projektet.`); }
+  try { manifest = JSON.parse(current.text); } catch { throw new Error(`${MANIFEST} kan ikke læses. Ret eller fjern filen manuelt, før Aura Harness ændrer projektet.`); }
   if (manifest?.schemaVersion !== 1 || typeof manifest.files !== 'object' || typeof manifest.blocks !== 'object' || !Array.isArray(manifest.tools)) throw new Error(`${MANIFEST} har et ukendt format.`);
   for (const file of [...Object.keys(manifest.files), ...Object.keys(manifest.blocks)]) if (!safeRelative(file)) throw new Error(`${MANIFEST} indeholder en ugyldig sti.`);
   return manifest;
@@ -113,16 +119,17 @@ async function plan(directory, layout, { version, tools }) {
       op.after = sha(entry.content); op.content = entry.content;
       const found = current.exists ? findBlock(current.text, entry.path) : null;
       if (!current.exists) Object.assign(op, { action: 'opret', result: withBlock('', entry.path, entry.content) });
-      else if (found?.malformed) Object.assign(op, { action: 'konflikt', before: sha(current.text), reason: 'Filen har ufuldstændige eller gentagne AI Harness-markører.' });
+      else if (found?.malformed) Object.assign(op, { action: 'konflikt', before: sha(current.text), reason: 'Filen har ufuldstændige eller gentagne Aura Harness-markører.' });
       else if (!found) Object.assign(op, { action: 'tilfoej', before: sha(current.text), result: withBlock(current.text, entry.path, entry.content) });
-      else if (found.body === entry.content.replace(/\s+$/, '')) Object.assign(op, { action: 'uaendret', before: sha(current.text) });
-      else if (manifest?.blocks[entry.path]?.hash === sha(found.body)) Object.assign(op, { action: 'opdater', before: sha(current.text), result: withBlock(current.text, entry.path, entry.content) });
-      else Object.assign(op, { action: 'konflikt', before: sha(current.text), reason: 'Afsnittet mellem AI Harness-markørerne er ændret efter installationen.' });
+      else if (found.body === entry.content.replace(/\s+$/, '') && !found.legacy) Object.assign(op, { action: 'uaendret', before: sha(current.text) });
+      // Et uændret afsnit med de gamle markører opdateres, så markørerne skiftes ud.
+      else if (found.body === entry.content.replace(/\s+$/, '') || manifest?.blocks[entry.path]?.hash === sha(found.body)) Object.assign(op, { action: 'opdater', before: sha(current.text), result: withBlock(current.text, entry.path, entry.content) });
+      else Object.assign(op, { action: 'konflikt', before: sha(current.text), reason: 'Afsnittet mellem Aura Harness-markørerne er ændret efter installationen.' });
     }
     if (entry.group) op.group = entry.group;
     operations.push(op);
   }
-  // En skill installeres helt eller slet ikke, så Harness-filer aldrig blandes med en anden skill af samme navn.
+  // En skill installeres helt eller slet ikke, så Aura Harness-filer aldrig blandes med en anden skill af samme navn.
   const blocked = new Set(operations.filter(op => op.group && op.action === 'konflikt').map(op => op.group));
   for (const op of operations) if (blocked.has(op.group) && ['opret', 'opdater', 'uaendret'].includes(op.action)) Object.assign(op, { action: 'konflikt', reason: 'En anden fil i samme skill er i konflikt, så hele skillen springes over.' });
   for (const [file, hash] of Object.entries(manifest?.files || {})) if (!wanted.has(file)) operations.push(await removal(root, file, 'fil', hash));
@@ -193,7 +200,7 @@ async function apply(directory, layout, options, reviewed, { skipConflicts = fal
 async function planRemoval(directory) {
   const root = await projectRoot(directory);
   const manifest = await readManifest(root);
-  if (!manifest) throw new Error('Projektet har ingen AI Harness-installation.');
+  if (!manifest) throw new Error('Projektet har ingen Aura Harness-installation.');
   const operations = [];
   for (const [file, hash] of Object.entries(manifest.files)) operations.push(await removal(root, file, 'fil', hash));
   for (const [file, block] of Object.entries(manifest.blocks)) operations.push(await removal(root, file, 'blok', block.hash, block.created));

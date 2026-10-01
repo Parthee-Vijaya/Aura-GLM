@@ -21,7 +21,7 @@ process.on('SIGINT', close);
     if (address.address !== '127.0.0.1') throw new Error('Serveren skal lytte på loopback.');
     port = address.port; base = server.config.base;
   } else if (kind === 'astro') {
-    server = await framework.dev({ root, server: { host: '127.0.0.1', port: 0, open: false }, vite: { clearScreen: false, server: { strictPort: true, open: false } }, integrations: [{ name: 'ai-harness-preview', hooks: { 'astro:config:done': ({ config }) => { base = config.base; } } }] });
+    server = await framework.dev({ root, server: { host: '127.0.0.1', port: 0, open: false }, vite: { clearScreen: false, server: { strictPort: true, open: false } }, integrations: [{ name: 'aura-preview', hooks: { 'astro:config:done': ({ config }) => { base = config.base; } } }] });
     if (server.address.address !== '127.0.0.1') throw new Error('Serveren skal lytte på loopback.');
     port = server.address.port;
   } else throw new Error('Ukendt framework.');

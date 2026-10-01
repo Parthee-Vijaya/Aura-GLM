@@ -1,4 +1,4 @@
-# Inviteret test af AI Harness
+# Inviteret test af Aura
 
 Formålet er at se, om en person uden udviklererfaring selv kan bygge, ændre og genfinde en lille app. Brug kun opdigtede oplysninger. En test af brugerfladen er ikke en godkendelse til at behandle kommunale personoplysninger.
 
@@ -17,7 +17,7 @@ Udfyld først invitationen, når download og den aftalte model er afprøvet. Der
 
 ## Forslag til invitation
 
-> Du er inviteret til at prøve AI Harness. Appen hjælper dig med at bygge en lille applikation ved at beskrive, hvad du vil have.
+> Du er inviteret til at prøve Aura. Appen hjælper dig med at bygge en lille applikation ved at beskrive, hvad du vil have.
 >
 > Hent **[version og filnavn]** her: **[privat downloadlink]**. Den er afprøvet på **[system og arkitektur]**. **[Oplysning om signering/notarisation]**.
 >
@@ -29,16 +29,16 @@ Udfyld først invitationen, når download og den aftalte model er afprøvet. Der
 
 ## Det testeren skal prøve
 
-1. Installer og åbn appen uden terminalkommandoer. Gå gennem introduktionen, og forbind den aftalte AI via adgangsnøgle eller AI på computeren. Prøv også Tilbage og Vælg senere. Når appen spørger "Hvad skal AI Harness hjælpe med?", så forklar med dine egne ord forskellen på Hele pakken og Vælg selv, før du vælger. Noter, om hvert trin er forståeligt uden forklaring.
-2. Beskriv din idé med egne ord, og opret projektet. Mangler du en forklaring undervejs, så åbn en ⓘ, og sig, om den hjalp. Find bagefter projektmappen under Dokumenter › AI Harness. Forklar med dine egne ord, hvad appen vil sende til modellen, når resuméet **Før du sender** vises.
+1. Installer og åbn appen uden terminalkommandoer. Gå gennem introduktionen, og forbind den aftalte AI via adgangsnøgle eller AI på computeren. Prøv også Tilbage og Vælg senere. Når appen spørger "Hvad skal Aura hjælpe med?", så forklar med dine egne ord forskellen på Hele pakken og Vælg selv, før du vælger. Noter, om hvert trin er forståeligt uden forklaring.
+2. Beskriv din idé med egne ord, og opret projektet. Mangler du en forklaring undervejs, så åbn en ⓘ, og sig, om den hjalp. Find bagefter projektmappen under Dokumenter › Aura. Forklar med dine egne ord, hvad appen vil sende til modellen, når resuméet **Før du sender** vises.
 3. Læs AI’ens forslag, og bed om en ændring af planen. Byg derefter første udkast. Når AI’en spørger, om den må ændre filer, så forklar forskellen på **Tillad for denne opgave** og **Kun denne fil**, før du vælger.
 4. Prøv appen i preview på computer- og mobilbredde. Bed AI’en rette én konkret ting, og kontroller resultatet.
 5. Efter en AI-opgave: brug Fortryd opgaven på resultatkortet, og kontroller forhåndsvisningen. Åbn Versioner i projektmenuen, og gå tilbage til AI'ens version med Gå tilbage hertil. Lav en lille ændring selv, og gem den med Gem version. Forklar med dine egne ord, hvad en version er.
-6. Skriv en kladde, og luk AI Harness. Åbn appen igen: projektet skal åbne af sig selv. Find kladden, samtalen, filerne og forbruget under skrivefeltet.
+6. Skriv en kladde, og luk Aura. Åbn appen igen: projektet skal åbne af sig selv. Find kladden, samtalen, filerne og forbruget under skrivefeltet.
 7. Åbn Indstillinger › Funktioner. Slå én funktion fra kun for dette projekt, og find ud af, hvad der er forsvundet i appen. Slå den til igen med Brug standarden. Forklar, hvad "Altid slået til" betyder for dig.
 8. Stop en AI-opgave. Beskriv, hvad du tror er gemt, og hvordan du vil fortsætte. Find Hjælp og feedback, og se fejlrapporten før eventuel deling.
 9. Installer den næste testversion oven på den første, og åbn samme projekt. Kontroller filer, kladde, gemt designpakke og forbindelsesvalg. En nøgle kan kræve ny indtastning; nulstil aldrig systemets nøglering.
-10. Vælg **Harness i dit kodeværktøj** i sidepanelet. Læs under **Det følger med**, hvad to af skillsene gør, og forklar dem med dine egne ord. Installer Harness i en kopi af et projekt til det kodeværktøj, du bruger. Gennemgå ændringerne, åbn projektet i værktøjet, og spørg efter kontrolordet. Fjern derefter installationen igen, og kontroller, at dine egne filer er uændrede.
+10. Vælg **Aura Harness i dit kodeværktøj** i sidepanelet. Læs under **Det følger med**, hvad to af skillsene gør, og forklar dem med dine egne ord. Installer Aura Harness i en kopi af et projekt til det kodeværktøj, du bruger. Gennemgå ændringerne, åbn projektet i værktøjet, og spørg efter kontrolordet. Fjern derefter installationen igen, og kontroller, at dine egne filer er uændrede.
 
 Test af React/Vite eller Astro omfatter også gennemgang af installation, start, mobilvisning, stop og genstart af preview. Apps med native platformskrav skal vurderes særskilt; denne test beviser ikke iOS-, Android- eller appbutiksunderstøttelse.
 

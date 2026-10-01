@@ -1,4 +1,4 @@
-// Afprøver "Brug Harness i mit kodeværktøj" i Electron med et rigtigt Git-projekt og rigtige filer.
+// Afprøver "Brug Aura Harness i mit kodeværktøj" i Electron med et rigtigt Git-projekt og rigtige filer.
 const { _electron: electron } = require('playwright');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
@@ -16,7 +16,7 @@ const { execFileSync } = require('node:child_process');
     const git = args => execFileSync('git', args, { cwd: project, env: { ...process.env, GIT_AUTHOR_NAME: 'Test', GIT_AUTHOR_EMAIL: 'test@example.invalid', GIT_COMMITTER_NAME: 'Test', GIT_COMMITTER_EMAIL: 'test@example.invalid' } });
     git(['init', '-q']); git(['add', 'AGENTS.md', '.gitignore']); git(['commit', '-q', '-m', 'start']);
     const bundle = process.env.HARNESS_TEST_PACKAGE ? path.resolve(process.env.HARNESS_TEST_PACKAGE) : null;
-    app = await electron.launch({ executablePath: bundle ? (bundle.endsWith('.app') ? path.join(bundle, 'Contents/MacOS/AI Harness') : bundle) : require('electron'), args: [...(bundle ? [] : [path.join(__dirname, '..')]), '--user-data-dir=' + path.join(root, 'appdata')], env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined } });
+    app = await electron.launch({ executablePath: bundle ? (bundle.endsWith('.app') ? path.join(bundle, 'Contents/MacOS', path.basename(bundle, '.app')) : bundle) : require('electron'), args: [...(bundle ? [] : [path.join(__dirname, '..')]), '--user-data-dir=' + path.join(root, 'appdata')], env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined } });
     const page = await app.firstWindow(); page.on('pageerror', e => errors.push(e.message));
     await app.evaluate(({ dialog }, folder) => { global.modelRequests = 0; global.fetch = async () => { global.modelRequests++; throw Error('Ingen netværkskald i dette forløb'); }; dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [folder] }); }, project);
     await page.waitForFunction(() => !document.querySelector('#welcome-build').disabled);
@@ -98,19 +98,19 @@ const { execFileSync } = require('node:child_process');
 
     await page.click('#tools-install');
     await page.waitForSelector('#tools-step-done:not([hidden])');
-    assert.equal(await page.textContent('#tools-done-title'), 'Claude Code kan nu bruge AI Harness');
+    assert.equal(await page.textContent('#tools-done-title'), 'Claude Code kan nu bruge Aura Harness');
     assert.match(await page.textContent('#tools-prompt-intro'), /Åbn mit projekt æøå i Claude Code/);
     await page.screenshot({ path: path.join(root, '04-installeret.png'), animations: 'disabled', fullPage: true });
     const agents = await fs.readFile(path.join(project, 'AGENTS.md'), 'utf8');
     assert.ok(agents.startsWith(own.trimEnd()));
-    assert.match(agents, /<!-- ai-harness:start -->[\s\S]*FÆLLES-GRUNDLAG-02[\s\S]*<!-- ai-harness:slut -->/);
+    assert.match(agents, /<!-- aura-harness:start -->[\s\S]*FÆLLES-GRUNDLAG-02[\s\S]*<!-- aura-harness:slut -->/);
     assert.match(await fs.readFile(path.join(project, 'CLAUDE.md'), 'utf8'), /\n@AGENTS\.md\n/);
     assert.equal((await fs.readdir(path.join(project, '.claude/skills'))).filter(name => name.startsWith('harness-')).length, 10);
     assert.doesNotMatch(agents, /harness-git-og-samarbejde/);
     assert.match(agents, /harness-integration-adresser/);
     await fs.access(path.join(project, '.claude/skills/harness-integration-adresser/references/adressevaelger.md'));
     assert.equal(JSON.parse(await fs.readFile(path.join(project, '.harness/installation.json'), 'utf8')).skills.length, 10);
-    assert.match(await fs.readFile(path.join(project, '.harness/LAES-MIG.md'), 'utf8'), /9 af 12 skills til arbejdet fra idé til drift samt integrationen Adresser\.[\s\S]*Integrationer, der kan vælges til i AI Harness-appen: CVR\./);
+    assert.match(await fs.readFile(path.join(project, '.harness/LAES-MIG.md'), 'utf8'), /9 af 12 skills til arbejdet fra idé til drift samt integrationen Adresser\.[\s\S]*Integrationer, der kan vælges til i Aura-appen: CVR\./);
 
     // Et værktøj mere tilføjes til installationen i stedet for at erstatte den.
     await page.click('#tools-done');
@@ -149,7 +149,7 @@ const { execFileSync } = require('node:child_process');
     await page.waitForSelector('#tools-step-remove:not([hidden])');
     await page.click('#tools-remove');
     await page.waitForSelector('#tools-step-done:not([hidden])');
-    assert.equal(await page.textContent('#tools-done-title'), 'AI Harness er fjernet');
+    assert.equal(await page.textContent('#tools-done-title'), 'Aura Harness er fjernet');
     assert.equal(await fs.readFile(path.join(project, 'AGENTS.md'), 'utf8'), own);
     await assert.rejects(fs.access(path.join(project, 'CLAUDE.md')));
     await assert.rejects(fs.access(path.join(project, '.harness')));

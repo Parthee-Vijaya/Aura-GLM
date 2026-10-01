@@ -42,7 +42,7 @@ async function main() {
     await win.click('#setup-continue'); await win.click('#features-all'); await win.waitForSelector('#create-form');
     await win.fill('#purpose', idea); note(`Navneforslag: ${await win.inputValue('#name')}`);
     await win.click('#create'); await win.waitForSelector('#workspace:not([hidden])', { timeout: 60000 });
-    const project = (await fs.readdir(path.join(documents, 'AI Harness'))).map(name => path.join(documents, 'AI Harness', name))[0];
+    const project = (await fs.readdir(path.join(documents, 'Aura'))).map(name => path.join(documents, 'Aura', name))[0];
     await win.waitForFunction(() => document.querySelector('#model-select').value, null, { timeout: 30000 });
     if (wanted && await win.inputValue('#model-select') !== wanted) {
       await win.click('#model-chip'); if (!await win.locator('#model-catalog').evaluate(el => el.open)) await win.click('#model-catalog > summary');
@@ -74,7 +74,10 @@ async function main() {
       note(`${label}: status ${status} efter ${Math.round((Date.now() - start) / 1000)} s`);
     }
 
-    await win.click('#start-idea'); await win.click('#send');
+    // Et nyt projekt har allerede idéen i skrivefeltet; knappen vises kun, når feltet er tomt.
+    if (await win.isVisible('#start-idea')) await win.click('#start-idea');
+    if (!(await win.inputValue('#prompt')).includes(idea.trim().slice(0, 30))) throw new Error('Idéen står ikke i skrivefeltet.');
+    await win.click('#send');
     await runUntilDone('plan');
     const planVisible = await win.locator('#plan-card').isVisible();
     const plan = await win.locator('#plan-text').textContent().catch(() => '');

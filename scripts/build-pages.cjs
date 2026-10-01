@@ -10,7 +10,7 @@ function render(releases, metadata) {
   const access = metadata.private ? '<p><strong>Adgang for inviterede testere.</strong> Downloads kræver login på GitHub og adgang til det private repository.</p>' : '';
   if (!release) return access + '<p>Der er endnu ingen offentliggjort testversion. Downloadknapper vises, når installationsfilerne er udgivet.</p>';
   const prefix = `https://github.com/${repository}/releases/download/${encodeURIComponent(release.tag_name)}/`;
-  const files = release.assets.filter(a => a.state === 'uploaded' && /^AI-Harness-[a-zA-Z0-9.-]+-(mac|win)-(arm64|x64)\.(dmg|zip|exe)$/.test(a.name));
+  const files = release.assets.filter(a => a.state === 'uploaded' && /^(Aura|AI-Harness)-[a-zA-Z0-9.-]+-(mac|win)-(arm64|x64)\.(dmg|zip|exe)$/.test(a.name));
   const links = files.map(a => {
     const expected = prefix + encodeURIComponent(a.name);
     if (a.browser_download_url !== expected) throw new Error('Downloadadressen matcher ikke repository og version.');

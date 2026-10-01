@@ -5,8 +5,8 @@ const os = require('node:os');
 const assert = require('node:assert/strict');
 const { execFileSync } = require('node:child_process');
 (async () => {
- const bundle = path.resolve(process.argv[2] || 'release/mac-arm64/AI Harness.app');
- const mac = bundle.endsWith('.app'), executablePath = mac ? path.join(bundle,'Contents/MacOS/AI Harness') : bundle;
+ const bundle = path.resolve(process.argv[2] || 'release/mac-arm64/Aura.app');
+ const mac = bundle.endsWith('.app'), executablePath = mac ? path.join(bundle,'Contents/MacOS',path.basename(bundle,'.app')) : bundle;
  const resources = mac ? path.join(bundle,'Contents/Resources') : path.join(path.dirname(bundle),'resources');
  const runtime = require('../core/runtime.cjs').configure(resources);
  const root = await fs.mkdtemp(path.join(os.tmpdir(),'harness-package-'));

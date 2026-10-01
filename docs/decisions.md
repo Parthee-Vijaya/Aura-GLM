@@ -420,3 +420,28 @@ Første skridt, hvis retningen vælges: ét rigtigt kald gennem appens OpenRoute
 Samtidig undersøges OpenRouters vilkår for databehandleraftaler.
 
 Kilder: [Jev Router](https://openrouter.ai/typesafe/jev-router), [Jev on OpenRouter](https://openrouter.ai/docs/guides/community/jev), [Jev 1.13](https://openrouter.ai/models/typesafe/jev-1.13) og OpenRouters nyhedsbrev fra september 2026.
+
+## Navneskift til Aura · 1. oktober 2026
+
+Brugeren besluttede:
+- **Appen hedder Aura.** De fælles grundregler, skills og pakker til andre kodeværktøjer og hjemmesiden hedder **Aura Harness**. Senere repositories kan fx hedde `aura`, `aura-cli` og `aura-tools`.
+- **Flere AI-værktøjer bruger allerede navnet Aura og AURA Harness.** Brugeren accepterer det, fordi projektet er open source og rettet mod danske kommuner.
+- **Data på eksisterende installationer bevares.**
+- **Markørerne i brugernes filer** bliver `aura-harness:start/slut`. De gamle `ai-harness`-markører genkendes og skiftes ud.
+
+Sådan er det gjort:
+- **Datamappe og nøglering** (`desktop/core/app-identity.cjs`):
+  - En eksisterende installation beholder sin datamappe (`AI Harness`, under udvikling `ai-harness-desktop`) og sit navn i nøgleringen, så gemte nøgler kan læses.
+  - Nye installationer bruger Aura.
+  - Datamappen husker navnet i `harness/noeglering.json`.
+- **Projekter:** Nye projekter lægges i Dokumenter › Aura. Dokumenter › AI Harness bruges fortsat, hvis den findes.
+- **Filnavne:**
+  - Installationsfilerne hedder `Aura-<version>-<os>-<arkitektur>`, og pakkerne hedder `aura-harness-<værktøj>-<version>.zip`.
+  - Downloadsiderne viser også tidligere filer med navnet `AI-Harness-…`.
+  - Nye projekter uden Git-identitet får `Aura-bruger <bruger@aura.invalid>`.
+
+Bevidst uændret:
+- **Neutrale tekniske navne:** `appId` `org.ai-alliancen.harness`, mappen `.harness/` i projekter, skillnavnene `harness-*`, URL-skemaet `harness:` og `OPENCODE_CLIENT=harness`. At ændre dem ville bryde eksisterende installationer.
+- **GitHub-repoet `ai-alliancen-org/ai-harness` og links dertil:** De skifter, når repoet er omdøbt.
+- **Historiske afsnit og faktiske filnavne fra tidligere versioner,** fx beta.3.
+- **Vercel-testprojektet `progressify/ai-harness-test`.**

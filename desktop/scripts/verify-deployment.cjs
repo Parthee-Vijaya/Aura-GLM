@@ -7,7 +7,7 @@ const {run}=require('../core/git.cjs');
 (async()=>{
  const live=process.argv.includes('--live-vercel');
  const root=await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(),'harness-deployment-ui-'))),project=path.join(root,'projekt');let app;
- const content='<!doctype html><html lang="da"><meta charset="utf-8"><title>AI Harness · testudgivelse</title><h1>AI Harness testudgivelse</h1><p>Kun syntetisk testmateriale. Version '+path.basename(root)+'</p></html>';
+ const content='<!doctype html><html lang="da"><meta charset="utf-8"><title>Aura · testudgivelse</title><h1>Aura testudgivelse</h1><p>Kun syntetisk testmateriale. Version '+path.basename(root)+'</p></html>';
  await fs.mkdir(path.join(project,'public'),{recursive:true});await fs.writeFile(path.join(project,'public/index.html'),content);
  await run(project,['init']);await run(project,['add','.']);await run(project,['-c','core.hooksPath=/dev/null','-c','commit.gpgsign=false','-c','user.name=Testbruger','-c','user.email=test@example.invalid','commit','-m','Gem isoleret udgivelsestest']);
  try{

@@ -1,14 +1,14 @@
-# Hvad AI Harness bygger på
+# Hvad Aura Harness bygger på
 
-Gennemgang af kode og leverandørdokumentation, 28. september 2026. Denne gennemgang ændrer ingen agentmotor eller integration. De foreslåede alternativer er ikke afprøvet som en del af Harness.
+Gennemgang af kode og leverandørdokumentation, 28. september 2026. Denne gennemgang ændrer ingen agentmotor eller integration. De foreslåede alternativer er ikke afprøvet som en del af Aura Harness.
 
 ## Produkt og målgruppe
 
-Harness er et udviklingsværktøj og en fælles arbejdsmetode for udviklere, IT-medarbejdere og teknisk interesserede kolleger. Brugeren kan få hjælp til at skrive kode og styre arbejdet uden at kunne bygge hele løsningen alene. Model, integrationer, hosting og ansvar skal stadig forstås og afklares med organisationen.
+Aura Harness er et udviklingsværktøj og en fælles arbejdsmetode for udviklere, IT-medarbejdere og teknisk interesserede kolleger. Brugeren kan få hjælp til at skrive kode og styre arbejdet uden at kunne bygge hele løsningen alene. Model, integrationer, hosting og ansvar skal stadig forstås og afklares med organisationen.
 
 Det er en anden produktform end en samlet tjeneste, hvor leverandøren stiller udviklingsmiljø, hosting og administration til rådighed under fælles begrænsninger. Begge former kan være relevante. En simpel brugerflade eller mange blokerede funktioner dokumenterer ikke i sig selv sikkerhed. Vi har ikke foretaget en teknisk eller kontraktuel vurdering af Promte Kodning og fremsætter derfor ingen sikkerhedsgarantier på dets vegne.
 
-Harness har ingen afhængighed af et Promte-abonnement. De valgte model- og hostingtjenester har hver deres adgangskrav og vilkår. Open source er projektets mål; det nuværende repository har endnu ingen valgt og indlagt LICENSE-fil.
+Aura Harness har ingen afhængighed af et Promte-abonnement. De valgte model- og hostingtjenester har hver deres adgangskrav og vilkår. Open source er projektets mål; det nuværende repository har endnu ingen valgt og indlagt LICENSE-fil.
 
 ## Fra det oprindelige forslag til den aktuelle app
 
@@ -19,7 +19,7 @@ Den nuværende app består af:
 1. **Vores egen brugerflade i Electron.** HTML, CSS og JavaScript i [desktop/ui](../desktop/ui/), med lokale funktioner i [main.cjs](../desktop/main.cjs), [preload.cjs](../desktop/preload.cjs) og [core](../desktop/core/). Appen er beregnet til Mac og Windows.
 2. **OpenCode 1.18.33 som agentmotor.** Versionen står i [runtime-lock.json](../desktop/runtime-lock.json) og kontrolleres ved opstart. [engine.cjs](../desktop/core/engine.cjs) starter den originale motor som en adgangskodebeskyttet loopback-server og håndterer sessioner, løbende svar, stop, godkendelser og ændringsoversigt. Den bruger særskilte konfigurations- og datamapper og kontrollerer den effektive konfiguration. [OpenCodes serverinterface](https://opencode.ai/docs/server/) er integrationsgrundlaget; den aktuelle kode er bundet til den afprøvede version.
 3. **Brugerens model via vores forbindelseslag.** Alle modelkald går gennem appens gateway, så API-nøglen bliver i hovedprocessen. Motoren melder sig over for OpenCode som klienten `harness`. OpenCode styrer agentens arbejde. AI-modellen leverer svar og forslag til handlinger. Det er to forskellige valg. En model kan køre lokalt eller hos en valgt udbyder; en lokal app indebærer derfor ikke, at alt projektmateriale bliver på computeren.
-4. **Harness' arbejdsforløb og indhold.** Opstart, designreferencer, dataoplysninger, preview, Git og testudgivelse ligger omkring agenten. Appens AI bruger det fælles skillbibliotek i `profiles/skills`, det samme som installationen i brugerens eget kodeværktøj gennem [own-tools.cjs](../desktop/core/own-tools.cjs).
+4. **Aura Harness' arbejdsforløb og indhold.** Opstart, designreferencer, dataoplysninger, preview, Git og testudgivelse ligger omkring agenten. Appens AI bruger det fælles skillbibliotek i `profiles/skills`, det samme som installationen i brugerens eget kodeværktøj gennem [own-tools.cjs](../desktop/core/own-tools.cjs).
    - [features.cjs](../desktop/core/features.cjs) afgør, hvilke funktioner der er slået til: standarden for alle projekter og undtagelser pr. projekt.
    - [skills.cjs](../desktop/core/skills.cjs) finder de tilhørende skills og en eventuel tilpasning i projektet.
    - Motoren lægger skillsene i sin egen konfigurationsmappe, og OpenCodes skill-værktøj henter dem efter behov.
@@ -44,7 +44,7 @@ Pi er relevant på to måder. Det kan bruge vores fælles indhold gennem [Agent 
 
 Det gør Pi til en kandidat for en anden motor bag samme brugerflade. [workbench.cjs](../desktop/core/workbench.cjs) har allerede et sted, hvor motoren oprettes gennem `engineFactory`, men kun OpenCode-adapteren er implementeret. Pi er derfor ikke noget, brugeren kan vælge nu.
 
-Pi dokumenterer selv, at det arbejder med procesbrugerens rettigheder og ikke kræver godkendelse før hvert værktøjskald. Projektets tillidsindstillinger er heller ikke en sandbox. En Pi-adapter skal opfylde Harness' krav til kontrol af handlinger, konfiguration og data; de kan ikke antages at følge med SDK'et. [Pi om sikkerhed](https://pi.dev/docs/latest/security).
+Pi dokumenterer selv, at det arbejder med procesbrugerens rettigheder og ikke kræver godkendelse før hvert værktøjskald. Projektets tillidsindstillinger er heller ikke en sandbox. En Pi-adapter skal opfylde Aura Harness' krav til kontrol af handlinger, konfiguration og data; de kan ikke antages at følge med SDK'et. [Pi om sikkerhed](https://pi.dev/docs/latest/security).
 
 **Forslag til en sammenlignende afprøvning:** Brug den samme model, projektkopi og opgave i OpenCode og Pi. Undersøg:
 

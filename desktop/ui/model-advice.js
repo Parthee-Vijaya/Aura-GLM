@@ -1,4 +1,4 @@
-// Modelkort pr. udbyder. AI Harness anbefaler ikke udbydere eller modeller. Første kort er udbyderens eget udgangspunkt,
+// Modelkort pr. udbyder. Aura anbefaler ikke udbydere eller modeller. Første kort er udbyderens eget udgangspunkt,
 // som udbyderen selv angiver det i sin dokumentation; det bruges som standard og kan skiftes med ét klik.
 // Teksterne er faktuelle. Kontrolleret hos udbyderne 29. september 2026. Bruges af brugerfladen og af unit-testene.
 (function (root) {
@@ -13,7 +13,7 @@
     zen: [[/^claude-opus/i, 'Claude gennem OpenCode Zen'], [/^claude-sonnet/i, 'Claude gennem OpenCode Zen']]
   };
   // Standardindsats for Anthropics nuværende modeller, når appen ikke selv vælger en. OpenCode sender ingen indsats, så API'ets standard gælder.
-  const efforts = [[/^claude-fable-5/, 'høj'], [/^claude-opus-5-5/, 'mellem'], [/^claude-sonnet-5-5/, 'høj']];
+  const efforts = [[/^claude-fable-5/, 'høj'], [/^claude-opus-5-5/, 'middel'], [/^claude-sonnet-5-5/, 'høj']];
   function effort(kind, id) { if (!['anthropic', 'zen', 'openrouter'].includes(kind)) return null; const bare = String(id).replace(/^anthropic\//, ''); return efforts.find(([pattern]) => pattern.test(bare))?.[1] || null; }
   // Versionsnumre sammenlignes tal for tal; datoer med seks eller flere cifre tæller ikke med.
   const versionKey = id => (id.match(/\d+/g) || []).filter(part => part.length < 6).map(Number);

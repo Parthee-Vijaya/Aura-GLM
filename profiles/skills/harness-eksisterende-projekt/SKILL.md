@@ -1,11 +1,11 @@
 ---
 name: harness-eksisterende-projekt
-description: Undersøger et eksisterende eller ældre projekt, før der foreslås ændringer eller nye konventioner. Laver en læsende gennemgang af instruktioner, teknologi, start- og testkommandoer, Git-status, CI og hosting og foreslår derefter kun de Harness-dele, der passer. Brug den, når et projekt åbnes første gang, overtages fra andre eller skal have AI Harness tilføjet.
+description: Undersøger et eksisterende eller ældre projekt, før der foreslås ændringer eller nye konventioner. Laver en læsende gennemgang af instruktioner, teknologi, start- og testkommandoer, Git-status, CI og hosting og foreslår derefter kun de Aura Harness-dele, der passer. Brug den, når et projekt åbnes første gang, overtages fra andre eller skal have Aura Harness tilføjet.
 ---
 
 # Eksisterende projekt
 
-Et eksisterende projekt har valg, som andre har truffet af en grund. Forstå dem, før du foreslår noget nyt, og lad projektets egne konventioner gå forud for Harness' standardvalg.
+Et eksisterende projekt har valg, som andre har truffet af en grund. Forstå dem, før du foreslår noget nyt, og lad projektets egne konventioner gå forud for Aura Harness' standardvalg.
 
 ## 1. Læs, før du kører noget
 
@@ -33,7 +33,7 @@ Skriv til brugeren:
 
 ## 3. Foreslå, før du ændrer
 
-- Foreslå de relevante Harness-dele og vis de præcise filændringer. Lad brugeren vælge.
+- Foreslå de relevante Aura Harness-dele og vis de præcise filændringer. Lad brugeren vælge.
 - Tilføj ikke en ny formatter, pakkehåndtering, Git-model, branchestrategi, testramme eller hostingtjeneste som en skjult følge af opgaven.
 - Bevar projektets eksisterende instruktioner. Nye regler placeres, så de ikke overskriver dem, og konflikter nævnes, før den berørte handling.
 

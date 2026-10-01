@@ -1,8 +1,8 @@
-# Skills i AI Harness 0.2.0
+# Skills i Aura Harness 0.2.0
 
 Genereret fra `profiles/catalog.json` af `scripts/build-packages.cjs`. Ret kataloget eller skillfilerne, ikke denne fil.
 
-AI Harness indeholder fælles grundregler og 12 skills samt to integrationer. Grundreglerne gælder altid. En skill er en kort vejledning til kodeagenten om én arbejdsopgave, som bruges, når opgaven passer. En integration er en skill om ét bestemt system, fx et offentligt register. Integrationerne følger ikke med pakkerne til kodeværktøjerne; de vælges til for de systemer, man bruger. I AI Harness-appen kan kategorier, enkelte skills og integrationer slås til og fra.
+Aura Harness indeholder fælles grundregler og 12 skills samt to integrationer. Grundreglerne gælder altid. En skill er en kort vejledning til kodeagenten om én arbejdsopgave, som bruges, når opgaven passer. En integration er en skill om ét bestemt system, fx et offentligt register. Integrationerne følger ikke med pakkerne til kodeværktøjerne; de vælges til for de systemer, man bruger. I Aura-appen kan kategorier, enkelte skills og integrationer slås til og fra.
 
 ## Grundregler · altid med
 
@@ -30,7 +30,7 @@ Afklar idéen, forstå et eksisterende projekt, og vælg teknologi og design.
 
 **Hvad gør den?** Agenten gennemgår projektet uden at køre kommandoer: instruktioner, teknologi, låsefiler, start- og testkommandoer, Git-status, CI og hosting. Derefter får du en kort oversigt og forslag, der passer til projektet.
 
-**Hvornår bruges den?** Når du åbner et projekt første gang, overtager det fra andre eller vil tilføje AI Harness til et projekt, der allerede findes.
+**Hvornår bruges den?** Når du åbner et projekt første gang, overtager det fra andre eller vil tilføje Aura Harness til et projekt, der allerede findes.
 
 **Hvad får du?** Et overblik over projektet med kendte risici og usikkerheder samt forslag med præcise filændringer, som du selv vælger imellem.
 
@@ -210,7 +210,7 @@ Hent data fra offentlige registre. Vælges til for de systemer, du bruger.
 - **Pris:** Gratis
 - **IT-afdelingen:** Kræver ikke hjælp fra IT-afdelingen.
 
-Skillen vedligeholdes af AI Harness og er kontrolleret mod kilderne 2026-09-30.
+Skillen vedligeholdes af Aura Harness og er kontrolleret mod kilderne 2026-09-30.
 
 Kilder: [Adressevælger · fonetisk søgning (Klimadatastyrelsen)](https://confluence.kds.dk/pages/viewpage.action?pageId=244318431), [Adressevælger · opslag med ID (Klimadatastyrelsen)](https://confluence.kds.dk/pages/viewpage.action?pageId=246743156), [Adressevælger · brugerstyring og token (Klimadatastyrelsen)](https://confluence.kds.dk/pages/viewpage.action?pageId=236486723), [DAWA lukker (Dataforsyningen)](https://dataforsyningen.dk/data/4924), [Datafordeleren · adgangsmetoder (Klimadatastyrelsen)](https://confluence.kds.dk/pages/viewpage.action?pageId=187105503), [Datafordeleren · brugervilkår](https://datafordeler.dk/vejledning/brugervilkaar/)
 
@@ -234,7 +234,7 @@ Kilder: [Adressevælger · fonetisk søgning (Klimadatastyrelsen)](https://confl
 - **Pris:** Gratis
 - **IT-afdelingen:** Kræver ikke hjælp fra IT-afdelingen.
 
-Skillen vedligeholdes af AI Harness og er kontrolleret mod kilderne 2026-09-30.
+Skillen vedligeholdes af Aura Harness og er kontrolleret mod kilderne 2026-09-30.
 
 Kilder: [System-til-system-adgang til CVR-data (Erhvervsstyrelsen)](https://datacvr.virk.dk/artikel/system-til-system-adgang-til-cvr-data), [CVR på Datafordeleren](https://datafordeler.dk/vejledning/brugeradgang/anmodning-om-adgang/det-centrale-virksomhedsregister-cvr/), [Reklamebeskyttelse (Erhvervsstyrelsen)](https://datacvr.virk.dk/artikel/reklamebeskyttelse), [CVR-loven, LBK nr. 246 af 5. februar 2026](https://www.retsinformation.dk/eli/lta/2026/246), [CVR-bekendtgørelsen](https://www.retsinformation.dk/eli/lta/2022/1243), [Logning af brugernes anvendelser af personoplysninger (Datatilsynet)](https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/katalog-over-foranstaltninger/logning-af-brugernes-anvendelser-af-personoplysninger)
 
@@ -254,13 +254,13 @@ Grundreglerne gælder altid: nøgler, Git, afprøvning og ærlig rapportering. D
 
 ### Hvad er en integration?
 
-En integration er en skill om ét bestemt system, fx adresser eller CVR. Den forklarer, hvordan man får adgang, hvor nøgler skal ligge, hvilke data systemet giver, og hvilke regler der gælder. Integrationerne følger ikke med pakkerne. Du vælger dem til i AI Harness-appen for de systemer, dit projekt bruger.
+En integration er en skill om ét bestemt system, fx adresser eller CVR. Den forklarer, hvordan man får adgang, hvor nøgler skal ligge, hvilke data systemet giver, og hvilke regler der gælder. Integrationerne følger ikke med pakkerne. Du vælger dem til i Aura-appen for de systemer, dit projekt bruger.
 
 ### Kan jeg ændre en skill?
 
-Ja. Filerne er dine. Hvis du ændrer en installeret fil, springer en senere opdatering netop den fil over og fortæller dig det. Projektets egne regler skrives uden for AI Harness-afsnittet i AGENTS.md eller CLAUDE.md, så de aldrig overskrives.
+Ja. Filerne er dine. Hvis du ændrer en installeret fil, springer en senere opdatering netop den fil over og fortæller dig det. Projektets egne regler skrives uden for Aura Harness-afsnittet i AGENTS.md eller CLAUDE.md, så de aldrig overskrives.
 
-### Sender AI Harness mine data nogen steder hen?
+### Sender Aura Harness mine data nogen steder hen?
 
 Nej. Installationen kopierer tekstfiler til dit projekt. Dit kodeværktøj og den model, du har valgt, læser filerne som en del af dit arbejde. Hvor de data behandles, afhænger af værktøjet og modellen.
 
@@ -270,15 +270,15 @@ Nej. Skills er vejledning til agenten. De er ikke adgangskontrol, en sikkerhedsg
 
 ### Bliver koden bedre af det?
 
-Det har vi endnu ikke målt for vores målgruppe. Undersøgelser fra 2026 viser, at generelle instruktionsfiler sjældent gør kodeagenter mere korrekte og koster ekstra tokens, mens fokuserede skills kan hjælpe ved bestemte opgaver. Derfor er grundreglerne korte, og skills indlæses kun, når opgaven passer. Vi vil sammenligne de samme opgaver med og uden Harness på flere modeller.
+Det har vi endnu ikke målt for vores målgruppe. Undersøgelser fra 2026 viser, at generelle instruktionsfiler sjældent gør kodeagenter mere korrekte og koster ekstra tokens, mens fokuserede skills kan hjælpe ved bestemte opgaver. Derfor er grundreglerne korte, og skills indlæses kun, når opgaven passer. Vi vil sammenligne de samme opgaver med og uden Aura Harness på flere modeller.
 
 ### Kan en skill gøre skade?
 
-En skill fra en ukendt kilde skal behandles som software, fordi den kan få agenten til at køre kommandoer. AI Harness' skills indeholder kun tekst, ingen scripts, og giver ingen værktøjstilladelser. Du kan læse dem alle på denne side, før du installerer dem.
+En skill fra en ukendt kilde skal behandles som software, fordi den kan få agenten til at køre kommandoer. Aura Harness' skills indeholder kun tekst, ingen scripts, og giver ingen værktøjstilladelser. Du kan læse dem alle på denne side, før du installerer dem.
 
-### Hvordan opdaterer eller fjerner jeg AI Harness?
+### Hvordan opdaterer eller fjerner jeg Aura Harness?
 
-Installér en ny version på samme måde. Harness opdaterer kun filer, der er uændrede siden installationen, og viser konflikter for resten. Fjernelse sletter kun uændrede filer og afsnit. Oplysningerne står i .harness/installation.json, som også skal med i Git.
+Installér en ny version på samme måde. Aura Harness opdaterer kun filer, der er uændrede siden installationen, og viser konflikter for resten. Fjernelse sletter kun uændrede filer og afsnit. Oplysningerne står i .harness/installation.json, som også skal med i Git.
 
 ### Hvilke kodeværktøjer virker det med?
 

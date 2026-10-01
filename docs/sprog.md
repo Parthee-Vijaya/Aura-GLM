@@ -1,4 +1,4 @@
-# Sprog i AI Harness
+# Sprog i Aura Harness
 
 Skriv på dansk til den person, der skal bruge teksten. Forklar, hvad personen kan gøre, hvad det kræver, og hvad der sker bagefter. Brug oplysninger om produktet frem for rosende beskrivelser af det.
 

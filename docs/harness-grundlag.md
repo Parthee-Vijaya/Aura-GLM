@@ -1,12 +1,12 @@
-# Fagligt grundlag for AI Harness
+# Fagligt grundlag for Aura Harness
 
 Research og produktforslag, 28. september 2026. Formålet og de to brugsveje er projektets aftalte retning. Anbefalingerne nedenfor er forslag til det fælles indhold, ikke en vedtaget kommunal politik eller en beskrivelse af færdige funktioner.
 
 ## Det fælles produkt
 
-AI Harness skal hjælpe kommuner med at udvikle applikationer med AI fra idé til drift. Den primære målgruppe er udviklere, IT-medarbejdere og teknisk interesserede kolleger, som vil have støtte til afgrænsning, teknologi, data, sikkerhed, afprøvning og vedligeholdelse. Man behøver ikke kunne skrive hele løsningen selv, men skal kunne tage stilling til integrationer og drift med hjælp fra relevante fagpersoner. Den enkle brugerflade skal understøtte den forståelse.
+Aura Harness skal hjælpe kommuner med at udvikle applikationer med AI fra idé til drift. Den primære målgruppe er udviklere, IT-medarbejdere og teknisk interesserede kolleger, som vil have støtte til afgrænsning, teknologi, data, sikkerhed, afprøvning og vedligeholdelse. Man behøver ikke kunne skrive hele løsningen selv, men skal kunne tage stilling til integrationer og drift med hjælp fra relevante fagpersoner. Den enkle brugerflade skal understøtte den forståelse.
 
-Der er to ligeværdige brugsveje. Brugeren kan lære arbejdsgangen og installere instruktionerne i sit eget kodeværktøj eller bruge den samlede AI Harness-app. Webguiden skal kunne stå alene. Appen må ikke være nødvendig for at hente, forstå eller vedligeholde det fælles indhold.
+Der er to ligeværdige brugsveje. Brugeren kan lære arbejdsgangen og installere instruktionerne i sit eget kodeværktøj eller bruge den samlede Aura-app. Webguiden skal kunne stå alene. Appen må ikke være nødvendig for at hente, forstå eller vedligeholde det fælles indhold.
 
 Vejledningen til mennesket skal forklare valgene. Instruktionerne til agenten skal beskrive handlingerne. Begge skal bygge på samme faglige beslutninger, men behøver ikke indeholde den samme tekst.
 
@@ -27,7 +27,7 @@ Sikker udvikling gælder hele forløbet, ikke kun en scanning før udgivelse. NI
 3. **Projektprofiler:** Valg om teknologi, navngivning, design, teststrategi, Git og hosting. Begrundede standardvalg med plads til organisationens egne krav.
 4. **Tekniske kontroller:** Adgangsbegrænsninger, isolation, automatiske tests, beskyttelse af grene og godkendelser ved udgivelse. Disse skal håndhæves af værktøjer og driftsmiljø, ikke af Markdown alene.
 
-En kommunal profil skal kunne skelne mellem anbefalinger og krav. Et ufravigeligt krav må ikke alene ligge i en fil, som agenten eller brugeren frit kan ændre. Konflikter skal vises og afklares for den berørte handling, ikke løses ved at love, at Harness altid har højeste prioritet.
+En kommunal profil skal kunne skelne mellem anbefalinger og krav. Et ufravigeligt krav må ikke alene ligge i en fil, som agenten eller brugeren frit kan ændre. Konflikter skal vises og afklares for den berørte handling, ikke løses ved at love, at Aura Harness altid har højeste prioritet.
 
 ## Forslag til praksis
 
@@ -35,7 +35,7 @@ En kommunal profil skal kunne skelne mellem anbefalinger og krav. Et ufravigelig
 
 Afklar hvem der skal bruge løsningen, de vigtigste handlinger og de nødvendige data. Stil kun spørgsmål, der ændrer et væsentligt valg. Gem en kort, læsbar beskrivelse af det aftalte og konkrete eksempler på, hvad der skal fungere.
 
-Undersøg et eksisterende projekt, før der foreslås nye konventioner. Find dets startvejledning, låsefiler, test, instruktioner, integrationer og aktuelle ændringer. Manglende dokumentation skal markeres som usikkerhed. Harness må ikke automatisk udskifte teknologi eller opstille en ny Git-model.
+Undersøg et eksisterende projekt, før der foreslås nye konventioner. Find dets startvejledning, låsefiler, test, instruktioner, integrationer og aktuelle ændringer. Manglende dokumentation skal markeres som usikkerhed. Aura Harness må ikke automatisk udskifte teknologi eller opstille en ny Git-model.
 
 ### Vælg teknologi efter opgaven
 
@@ -43,7 +43,7 @@ Vores foreslåede udgangspunkt er at bevare en egnet eksisterende løsning og or
 
 - En enkel side uden fælles data kan begynde med HTML, CSS og begrænset JavaScript.
 - Indholdstunge websites kan vurderes med Astro som kandidat. Det stemmer med Astros eget fokus på indhold. [Astros anvendelsesområde](https://docs.astro.build/en/concepts/why-astro/).
-- Interaktive webapps kan bruge React og TypeScript. Vite er en kandidat til en afgrænset klientapp i Harness, hvor lokal forhåndsvisning er understøttet. Det er vores produktvalg, ikke Reacts generelle anbefaling til alle nye apps. React anbefaler at overveje et framework; routing, serverfunktioner og datahentning skal derfor vælges bevidst. [React om nye apps](https://react.dev/learn/creating-a-react-app).
+- Interaktive webapps kan bruge React og TypeScript. Vite er en kandidat til en afgrænset klientapp i Aura Harness, hvor lokal forhåndsvisning er understøttet. Det er vores produktvalg, ikke Reacts generelle anbefaling til alle nye apps. React anbefaler at overveje et framework; routing, serverfunktioner og datahentning skal derfor vælges bevidst. [React om nye apps](https://react.dev/learn/creating-a-react-app).
 - Brug TypeScripts `strict`-kontroller ved nye TypeScript-projekter. De hjælper ved kompilering, men erstatter ikke validering af modtaget data. [TypeScript strict](https://www.typescriptlang.org/tsconfig/strict).
 
 Backend vælges særskilt. Først afklares fælles data, login, adgang, integrationer og baggrundsjob. Derefter vurderes administrerede tjenester, serverless eller egen backend ud fra krav, drift, pris og kommunens aftaler. Vercel er en hostingmulighed; Firebase er en samling tjenester. Ingen af navnene er i sig selv en komplet arkitekturbeslutning. En demo, der kun gemmer i hukommelsen, skal beskrives som sådan.
@@ -78,7 +78,7 @@ Som produktkrav foreslår vi en læsbar oversigt over de relevante dataforløb: 
 
 Datatilsynets cloudvejledning kræver overblik over hele leverandørkæden. En regionsangivelse er derfor ikke tilstrækkelig dokumentation for den samlede databehandling. Vurderingen må omfatte de faktiske aftaler og adgange, herunder eventuelle tredjelandsoverførsler. [Datatilsynets cloudvejledning](https://www.datatilsynet.dk/regler-og-vejledning/cloud).
 
-Databeskyttelse skal indgå i design og standardindstillinger. Det understøtter vores forslag om mindst mulige datamængder og rettigheder samt syntetiske data under tidlig afprøvning. En konsekvensanalyse er påkrævet ved sandsynlig høj risiko; Harness må hjælpe med at opdage behovet, men må ikke selv erklære en kommunal behandling lovlig. [Databeskyttelse gennem design](https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/databeskyttelse-gennem-design-og-standardindstillinger), [konsekvensanalyse](https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/konsekvensanalyse).
+Databeskyttelse skal indgå i design og standardindstillinger. Det understøtter vores forslag om mindst mulige datamængder og rettigheder samt syntetiske data under tidlig afprøvning. En konsekvensanalyse er påkrævet ved sandsynlig høj risiko; Aura Harness må hjælpe med at opdage behovet, men må ikke selv erklære en kommunal behandling lovlig. [Databeskyttelse gennem design](https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/databeskyttelse-gennem-design-og-standardindstillinger), [konsekvensanalyse](https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/konsekvensanalyse).
 
 Før drift bør projektet have en ansvarlig for vedligeholdelse, afklarede adgangsrettigheder, udgifter og databehandling samt kontroller af backup, gendannelse og fejlrapportering. Sikkerhed skal også omfatte serverbaseret adgangskontrol, validering af input og adskillelse mellem brugeres eller organisationers data. Konkrete fund skal følges til en dokumenteret løsning eller en begrundet beslutning inden for organisationens mandat. Forslaget til en sådan [registrering og udgivelsesgennemgang](projektkontrol.md) er beskrevet særskilt.
 
@@ -103,9 +103,9 @@ Ikke alle skills skal køre på hver opgave. En tekstændring skal eksempelvis i
 
 ## Sådan skal brugeren få indholdet
 
-Ved første åbning viser appen to store valg: **Byg i AI Harness-appen** og **Brug Harness i mit kodeværktøj**. Valget hører til appens første skærm; operativsystemets installer håndterer fortsat installationen. Begge veje kan åbnes igen fra sidepanelet.
+Ved første åbning viser appen to store valg: **Byg i Aura-appen** og **Brug Aura Harness i mit kodeværktøj**. Valget hører til appens første skærm; operativsystemets installer håndterer fortsat installationen. Begge veje kan åbnes igen fra sidepanelet.
 
-Sporet til eget værktøj skal spørge om værktøj og projektmappe, vise et anbefalet udvalg og derefter vise de konkrete filændringer. Det skal ikke kræve en modelnøgle til Harness. Avancerede valg, herunder installation for alle brugerens projekter, åbnes særskilt. Webguiden skal tilbyde samme indhold, manuel ZIP-installation og en vejledning, som den eksisterende agent kan følge fra repositoryet.
+Sporet til eget værktøj skal spørge om værktøj og projektmappe, vise et anbefalet udvalg og derefter vise de konkrete filændringer. Det skal ikke kræve en modelnøgle til Aura Harness. Avancerede valg, herunder installation for alle brugerens projekter, åbnes særskilt. Webguiden skal tilbyde samme indhold, manuel ZIP-installation og en vejledning, som den eksisterende agent kan følge fra repositoryet.
 
 Der skal være særskilte adaptere til indlæsning og kontrol:
 
@@ -121,7 +121,7 @@ Status 29. september 2026:
 
 - **Skillbiblioteket** med de 12 fagområder ovenfor ligger i `profiles/skills` som skills efter Agent Skills-formatet. Navnene begynder med `harness-` og bruger kun ASCII. Frontmatter har kun `name` og `description`, så filerne kan valideres og bruges i alle værktøjer. Detaljer og skabeloner ligger i `references/`, herunder danske offentlige krav om webtilgængelighed, databeskyttelse, login med MitID, journalisering, AI-forordningen og NIS2. [FAQ om skillsene](../profiles/SKILLS.md).
 - **Adaptere til 23 kodeværktøjer og en tekst til Lovable** er beskrevet som data i `profiles/catalog.json`. `AGENTS.md` er fælles regelfil; Claude Code og Gemini CLI får en `CLAUDE.md` eller `GEMINI.md`, der importerer den. Skills lægges i `.agents/skills`, som de fleste værktøjer læser, og i værktøjets egen mappe, når det er nødvendigt, fx `.claude/skills` til Claude Code og `.kiro/skills` til Kiro. [Værktøjsoversigten](../site/dist/vaerktoejer.html) viser placering, kontrol og forbehold pr. værktøj.
-- **Installationen** viser ændringerne før skrivning, overskriver aldrig, tilføjer afgrænsede afsnit mellem faste markører, registrerer version og kontrolsummer i `.harness/installation.json`, springer ændrede filer over ved opdatering og fjerner kun uændrede filer. Den bruges af appens førstevalg "Brug Harness i mit kodeværktøj", af `scripts/harness.cjs` og af byggescriptet til webguidens ZIP-pakker.
+- **Installationen** viser ændringerne før skrivning, overskriver aldrig, tilføjer afgrænsede afsnit mellem faste markører, registrerer version og kontrolsummer i `.harness/installation.json`, springer ændrede filer over ved opdatering og fjerner kun uændrede filer. Den bruges af appens førstevalg "Brug Aura Harness i mit kodeværktøj", af `scripts/harness.cjs` og af byggescriptet til webguidens ZIP-pakker.
 - **Webguiden** har pakker til alle værktøjerne, en vejledning, som brugerens egen kodeagent kan følge, og en FAQ om skillsene.
 - **Udvælgelse:** skillsene er delt i fire kategorier. I appen kan kategorier og enkelte skills slås til og fra; grundreglerne er altid med, og udvalget huskes i installationen.
 - **Integrationsskills** til bestemte systemer kom til 30. september 2026, først Adresser og CVR. De vælges til for sig, og kravene står i [integrationsskills.md](integrationsskills.md).
@@ -140,7 +140,7 @@ Repositoryet er privat. En agent, der skal hente derfra, skal bruge brugerens ek
 
 Hver faglig anbefaling bør have en begrundelse, kilder og kontroldato, ansvarlig vedligeholder, status samt en beskrivelse af, hvornår en lokal tilpasning er relevant. Konkrete produktoplysninger og vilkår skal kontrolleres igen ved relevante opdateringer. Ingen leverandør skal få en generel kvalitets- eller datagodkendelse alene ved at levere en adapter.
 
-Vi foreslår at sammenligne samme opgaver uden Harness, med grundreglerne og med de relevante skills. Fasthold og registrér værktøjsversion, model, opgave og tilladelser, og gentag prøverne. Brug syntetiske projekter med både nye og eksisterende opsætninger. Kontroller faktisk kode, filændringer, tilladelser og brugerrejser, også når modellen hævder, at arbejdet er færdigt. En korrekt gengivelse af et kontrolord viser højst, at instruktionen er tilgængelig.
+Vi foreslår at sammenligne samme opgaver uden Aura Harness, med grundreglerne og med de relevante skills. Fasthold og registrér værktøjsversion, model, opgave og tilladelser, og gentag prøverne. Brug syntetiske projekter med både nye og eksisterende opsætninger. Kontroller faktisk kode, filændringer, tilladelser og brugerrejser, også når modellen hævder, at arbejdet er færdigt. En korrekt gengivelse af et kontrolord viser højst, at instruktionen er tilgængelig.
 
 Prøverne skal blandt andet vise, at agenten reagerer på en syntetisk nøgle, respekterer afvist handling, bevarer andre ændringer og ikke gennemfører en udgivelse med manglende nødvendige beslutninger. De skal også vise, at en irrelevant skill ikke udløser ekstra arbejde. En person uden udviklererfaring skal kunne forklare næste skridt og genkende, hvornår en fagperson skal inddrages.
 

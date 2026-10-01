@@ -29,7 +29,7 @@ const { skipIntroduction, menuClick, taskOptions, selectMode } = require('./ui-t
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   const launch=async()=>{
     const bundle=process.env.HARNESS_TEST_PACKAGE ? path.resolve(process.env.HARNESS_TEST_PACKAGE) : null;
-    app=await electron.launch({executablePath:bundle?(bundle.endsWith('.app')?path.join(bundle,'Contents/MacOS/AI Harness'):bundle):require('electron'),args:[...(bundle?[]:[path.join(__dirname,'..')]),'--user-data-dir='+path.join(root,'appdata')],env:{...process.env,ELECTRON_RUN_AS_NODE:undefined}});
+    app=await electron.launch({executablePath:bundle?(bundle.endsWith('.app')?path.join(bundle,'Contents/MacOS',path.basename(bundle,'.app')):bundle):require('electron'),args:[...(bundle?[]:[path.join(__dirname,'..')]),'--user-data-dir='+path.join(root,'appdata')],env:{...process.env,ELECTRON_RUN_AS_NODE:undefined}});
     page=await app.firstWindow();await skipIntroduction(page);
     await app.evaluate(({dialog},project)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[project]});},project);await page.click('#open');await page.waitForSelector('#workspace:not([hidden])');
   };

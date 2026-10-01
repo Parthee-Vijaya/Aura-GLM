@@ -3,18 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Kodeværktøjer · AI Harness</title>
-  <meta name="description" content="Brug AI Harness' grundregler og skills i 24 kodeværktøjer og webplatforme, fx Claude Code, Codex, Cursor, GitHub Copilot og Gemini CLI.">
+  <title>Kodeværktøjer · Aura Harness</title>
+  <meta name="description" content="Brug Aura Harness' grundregler og skills i 24 kodeværktøjer og webplatforme, fx Claude Code, Codex, Cursor, GitHub Copilot og Gemini CLI.">
   <link rel="stylesheet" href="overview.css">
 </head>
 <body>
   <a class="skip" href="#oversigt">Gå til værktøjerne</a>
-  <header><a href="./">AI Harness</a><a href="pakker.html">Webguide og pakker →</a></header>
+  <header><a href="./">Aura Harness</a><a href="pakker.html">Webguide og pakker →</a></header>
   <main class="tool-index">
     <p class="eyebrow">BRUG DIT EGET VÆRKTØJ</p>
-    <h1>Harness i dit<br>eget kodeværktøj.</h1>
-    <p class="lead">AI Harness' grundregler og 12 <a href="skills.html">skills</a> kan bruges i 24 kodeværktøjer og webplatforme. Her kan du se, hvor filerne lægges, hvordan du kontrollerer, at de er indlæst, og hvad du skal være opmærksom på.</p>
-    <p><strong>Afprøvet med AI Harness</strong> betyder, at vi har set værktøjet indlæse grundregler og skills og sende dem til modellen. <strong>Efter værktøjets dokumentation</strong> betyder, at filplaceringen følger værktøjets officielle dokumentation, men endnu ikke er afprøvet af os. <strong>Tekst til platformens egne felter</strong> betyder, at platformen ikke læser filer fra en pakke.</p>
+    <h1>Aura Harness i dit<br>eget kodeværktøj.</h1>
+    <p class="lead">Aura Harness' grundregler og 12 <a href="skills.html">skills</a> kan bruges i 24 kodeværktøjer og webplatforme. Her kan du se, hvor filerne lægges, hvordan du kontrollerer, at de er indlæst, og hvad du skal være opmærksom på.</p>
+    <p><strong>Afprøvet med Aura Harness</strong> betyder, at vi har set værktøjet indlæse grundregler og skills og sende dem til modellen. <strong>Efter værktøjets dokumentation</strong> betyder, at filplaceringen følger værktøjets officielle dokumentation, men endnu ikke er afprøvet af os. <strong>Tekst til platformens egne felter</strong> betyder, at platformen ikke læser filer fra en pakke.</p>
     <p class="review-date">Filplaceringerne er kontrolleret mod værktøjernes dokumentation 2026-09-29.</p>
     <nav class="tool-nav" aria-label="Typer af kodeværktøjer"><a href="#agent">Kodeagenter</a><a href="#editor">Editorer og udviklingsmiljøer</a><a href="#web">Webplatforme</a></nav>
     <div id="oversigt">
@@ -23,11 +23,11 @@
         <div class="tool-list">
           <article class="tool-entry" id="claude-code">
             <h3>Claude Code</h3>
-            <p class="tool-type">Anthropic · Afprøvet med AI Harness</p>
+            <p class="tool-type">Anthropic · Afprøvet med Aura Harness</p>
             <p>Anthropics kodeagent i terminalen, i editoren og i Claude-appen.</p>
             <p><strong>Grundregler:</strong> <code>CLAUDE.md</code>, som importerer <code>AGENTS.md</code></p>
             <p><strong>Skills:</strong> <code>.claude/skills</code></p>
-            <p><strong>Kontrollér:</strong> Start en ny session i projektets rodmappe. Skriv /context eller /memory for at se de indlæste instruktionsfiler, og /skills for at se Harness-skillsene. Du kan starte en skill direkte, fx /harness-sikkerhedsgennemgang.</p>
+            <p><strong>Kontrollér:</strong> Start en ny session i projektets rodmappe. Skriv /context eller /memory for at se de indlæste instruktionsfiler, og /skills for at se Aura Harness-skillsene. Du kan starte en skill direkte, fx /harness-sikkerhedsgennemgang.</p>
             <p><strong>Afprøvet:</strong> Claude Code 2.1.150 den 29. september 2026 med en kontrolleret modelserver: CLAUDE.md importerede AGENTS.md, alle 12 skills blev vist for modellen, og en skill blev indlæst ved brug.</p>
             <p class="caveat">CLAUDE.md importerer AGENTS.md med @AGENTS.md, som Anthropic selv anbefaler. Uden CLAUDE.md læser nyere versioner af Claude Code AGENTS.md direkte, men en eksisterende CLAUDE.md slår det fra. Personlige skills med samme navn i ~/.claude/skills går forud for projektets.</p>
             <p><a href="https://code.claude.com/docs/en/memory">Claude Code om CLAUDE.md og AGENTS.md ↗</a> · <a href="https://code.claude.com/docs/en/skills">Claude Code om skills ↗</a></p>
@@ -39,7 +39,7 @@
             <p>OpenAIs kodeagent i terminalen, i editoren og i Codex-appen.</p>
             <p><strong>Grundregler:</strong> Et afsnit i <code>AGENTS.md</code></p>
             <p><strong>Skills:</strong> <code>.agents/skills</code></p>
-            <p><strong>Kontrollér:</strong> Start Codex i projektets rodmappe, og markér projektet som betroet. Skriv /skills for at se Harness-skillsene, og bed agenten opsummere de aktive projektinstruktioner. Du kan starte en skill direkte med $harness-sikkerhedsgennemgang.</p>
+            <p><strong>Kontrollér:</strong> Start Codex i projektets rodmappe, og markér projektet som betroet. Skriv /skills for at se Aura Harness-skillsene, og bed agenten opsummere de aktive projektinstruktioner. Du kan starte en skill direkte med $harness-sikkerhedsgennemgang.</p>
             
             <p class="caveat">Codex springer projektets AGENTS.md over i projekter, der ikke er betroede. AGENTS.override.md i samme mappe går forud for AGENTS.md, og Codex læser højst 32 KiB projektinstruktioner i alt. Ændringer kræver en ny session.</p>
             <p><a href="https://learn.chatgpt.com/docs/agent-configuration/agents-md">Codex om AGENTS.md ↗</a> · <a href="https://learn.chatgpt.com/docs/build-skills">Codex om skills ↗</a></p>
@@ -47,11 +47,11 @@
           </article>
           <article class="tool-entry" id="opencode">
             <h3>OpenCode</h3>
-            <p class="tool-type">SST · Afprøvet med AI Harness</p>
-            <p>Kodeagent med åben kildekode til terminalen, editoren og desktop. Bruges også som motor i AI Harness-appen.</p>
+            <p class="tool-type">SST · Afprøvet med Aura Harness</p>
+            <p>Kodeagent med åben kildekode til terminalen, editoren og desktop. Bruges også som motor i Aura-appen.</p>
             <p><strong>Grundregler:</strong> Et afsnit i <code>AGENTS.md</code></p>
             <p><strong>Skills:</strong> <code>.opencode/skills</code></p>
-            <p><strong>Kontrollér:</strong> Start OpenCode i projektets rodmappe. Tryk / for at se Harness-skillsene som kommandoer, eller kør opencode debug skill for en liste. Bed agenten opsummere de aktive regler.</p>
+            <p><strong>Kontrollér:</strong> Start OpenCode i projektets rodmappe. Tryk / for at se Aura Harness-skillsene som kommandoer, eller kør opencode debug skill for en liste. Bed agenten opsummere de aktive regler.</p>
             <p><strong>Afprøvet:</strong> OpenCode 1.17.15 den 29. september 2026 med en kontrolleret modelserver: AGENTS.md og alle 12 skills blev sendt til modellen, og en skill blev indlæst ved brug.</p>
             <p class="caveat">Findes AGENTS.md, ignorerer OpenCode projektets CLAUDE.md. OpenCode læser skills fra .opencode/skills, .claude/skills og .agents/skills; ligger den samme skill flere steder, bruges én af dem. Globale regler og skills fra din egen opsætning indlæses også.</p>
             <p><a href="https://opencode.ai/docs/rules/">OpenCode om regler ↗</a> · <a href="https://opencode.ai/docs/skills/">OpenCode om skills ↗</a> · <a href="https://github.com/anomalyco/opencode">OpenCode på GitHub ↗</a></p>
@@ -63,7 +63,7 @@
             <p>Googles kodeagent til terminalen.</p>
             <p><strong>Grundregler:</strong> <code>GEMINI.md</code>, som importerer <code>AGENTS.md</code></p>
             <p><strong>Skills:</strong> <code>.agents/skills</code></p>
-            <p><strong>Kontrollér:</strong> Start gemini i projektets rodmappe, og markér mappen som betroet. Kør /memory show for at se de indlæste instruktioner og /skills list for at se Harness-skillsene.</p>
+            <p><strong>Kontrollér:</strong> Start gemini i projektets rodmappe, og markér mappen som betroet. Kør /memory show for at se de indlæste instruktioner og /skills list for at se Aura Harness-skillsene.</p>
             
             <p class="caveat">Gemini CLI læser GEMINI.md, som importerer AGENTS.md. Skills findes kun i den mappe, Gemini startes fra, og Gemini beder om samtykke, før en skill aktiveres.</p>
             <p><a href="https://geminicli.com/docs/cli/gemini-md/">Gemini CLI om GEMINI.md ↗</a> · <a href="https://geminicli.com/docs/cli/skills/">Gemini CLI om skills ↗</a></p>
@@ -75,7 +75,7 @@
             <p>Mistrals kodeagent til terminalen og VS Code fra en europæisk leverandør.</p>
             <p><strong>Grundregler:</strong> Et afsnit i <code>AGENTS.md</code></p>
             <p><strong>Skills:</strong> <code>.agents/skills</code></p>
-            <p><strong>Kontrollér:</strong> Start vibe i projektets rodmappe, og marker mappen som betroet. Tryk / for at se Harness-skillsene. /reload indlæser instruktioner og skills igen.</p>
+            <p><strong>Kontrollér:</strong> Start vibe i projektets rodmappe, og marker mappen som betroet. Tryk / for at se Aura Harness-skillsene. /reload indlæser instruktioner og skills igen.</p>
             
             <p class="caveat">Vibe læser kun projektets AGENTS.md og skills i betroede mapper, og skills findes kun i den mappe, Vibe startes fra. Telemetri er slået til som standard og slås fra med enable_telemetry = false.</p>
             <p><a href="https://docs.mistral.ai/vibe/code/cli/skills">Mistral Vibe om skills ↗</a> · <a href="https://docs.mistral.ai/vibe/code/cli/agents">Mistral Vibe om AGENTS.md ↗</a> · <a href="https://github.com/mistralai/mistral-vibe">Mistral Vibe på GitHub ↗</a></p>
@@ -125,7 +125,7 @@
             <p><strong>Skills:</strong> <code>.agents/skills</code></p>
             <p><strong>Kontrollér:</strong> Start en samtale i projektet, og bed agenten opsummere projektets regler og nævne sine skills.</p>
             
-            <p class="caveat">Filplaceringen følger OpenHands&#39; dokumentation og er ikke afprøvet med Harness.</p>
+            <p class="caveat">Filplaceringen følger OpenHands&#39; dokumentation og er ikke afprøvet med Aura Harness.</p>
             <p><a href="https://docs.openhands.dev/overview/skills">OpenHands om skills ↗</a></p>
             <p><a href="pakker.html?vaerktoej=openhands">Hent pakken til OpenHands →</a></p>
           </article>
@@ -137,7 +137,7 @@
             <p><strong>Skills:</strong> <code>.agents/skills</code></p>
             <p><strong>Kontrollér:</strong> Start droid i projektets rodmappe, og bed agenten opsummere projektets regler og nævne sine skills.</p>
             
-            <p class="caveat">Filplaceringen følger Factorys dokumentation og er ikke afprøvet med Harness.</p>
+            <p class="caveat">Filplaceringen følger Factorys dokumentation og er ikke afprøvet med Aura Harness.</p>
             <p><a href="https://docs.factory.ai/cli/configuration/agents-md">Factory om AGENTS.md ↗</a> · <a href="https://docs.factory.ai/cli/configuration/skills">Factory om skills ↗</a></p>
             <p><a href="pakker.html?vaerktoej=factory-droid">Hent pakken til Factory Droid →</a></p>
           </article>
@@ -149,7 +149,7 @@
             <p><strong>Skills:</strong> Indlæses ikke af værktøjet selv. Grundreglerne henviser til filerne i <code>.agents/skills</code>.</p>
             <p><strong>Kontrollér:</strong> Start med aider --read AGENTS.md, eller tilføj read: AGENTS.md i .aider.conf.yml. Ved start skriver Aider, at AGENTS.md er tilføjet. Læs en skill ind med /read .agents/skills/&lt;navn&gt;/SKILL.md, når opgaven passer.</p>
             
-            <p class="caveat">Aider indlæser hverken AGENTS.md eller skills af sig selv. Harness ændrer ikke .aider.conf.yml.</p>
+            <p class="caveat">Aider indlæser hverken AGENTS.md eller skills af sig selv. Aura Harness ændrer ikke .aider.conf.yml.</p>
             <p><a href="https://aider.chat/docs/usage/conventions.html">Aider om konventioner ↗</a> · <a href="https://aider.chat/docs/config/aider_conf.html">Aider om .aider.conf.yml ↗</a></p>
             <p><a href="pakker.html?vaerktoej=aider">Hent pakken til Aider →</a></p>
           </article>
@@ -188,7 +188,7 @@
             <p>Editor med indbygget kodeagent og en CLI.</p>
             <p><strong>Grundregler:</strong> Et afsnit i <code>AGENTS.md</code></p>
             <p><strong>Skills:</strong> <code>.agents/skills</code></p>
-            <p><strong>Kontrollér:</strong> Åbn Customize, og se under Rules og Skills. Skriv / i chatten for at se Harness-skillsene, og start fx /harness-sikkerhedsgennemgang.</p>
+            <p><strong>Kontrollér:</strong> Åbn Customize, og se under Rules og Skills. Skriv / i chatten for at se Aura Harness-skillsene, og start fx /harness-sikkerhedsgennemgang.</p>
             
             <p class="caveat">Cursor læser både AGENTS.md og CLAUDE.md. Har projektet begge, bruger Cursor begge. Nye skills opdages ved opstart, så genstart Cursor efter installationen.</p>
             <p><a href="https://cursor.com/docs/rules">Cursor om regler ↗</a> · <a href="https://cursor.com/docs/skills">Cursor om skills ↗</a></p>
@@ -238,7 +238,7 @@
             <p><strong>Skills:</strong> <code>.agents/skills</code></p>
             <p><strong>Kontrollér:</strong> Kør kilo debug skill for en liste over skills, og /reload efter ændringer. Et brugt skill-kald vises i samtalen.</p>
             
-            <p class="caveat">Kilo Code indlæser altid AGENTS.md. I VS Code læses .claude-mapper kun med en særskilt indstilling, derfor bruger Harness .agents/skills.</p>
+            <p class="caveat">Kilo Code indlæser altid AGENTS.md. I VS Code læses .claude-mapper kun med en særskilt indstilling, derfor bruger Aura Harness .agents/skills.</p>
             <p><a href="https://kilo.ai/docs/customize/agents-md">Kilo Code om AGENTS.md ↗</a> · <a href="https://kilo.ai/docs/customize/skills">Kilo Code om skills ↗</a></p>
             <p><a href="pakker.html?vaerktoej=kilo-code">Hent pakken til Kilo Code →</a></p>
           </article>
@@ -262,7 +262,7 @@
             <p><strong>Skills:</strong> <code>.agents/skills</code></p>
             <p><strong>Kontrollér:</strong> Åbn projektet, og bed agenten opsummere projektets regler og nævne sine skills.</p>
             
-            <p class="caveat">Filplaceringen følger Googles dokumentation og er ikke afprøvet med Harness.</p>
+            <p class="caveat">Filplaceringen følger Googles dokumentation og er ikke afprøvet med Aura Harness.</p>
             <p><a href="https://antigravity.google/docs/rules/">Antigravity om regler ↗</a> · <a href="https://antigravity.google/docs/skills/">Antigravity om skills ↗</a></p>
             <p><a href="pakker.html?vaerktoej=antigravity">Hent pakken til Google Antigravity →</a></p>
           </article>
@@ -303,7 +303,7 @@
             <p><strong>Skills:</strong> <code>.agents/skills</code></p>
             <p><strong>Kontrollér:</strong> Læg filerne i Replit-projektet, fx gennem Git eller upload. Bed Agent nævne projektets instruktioner og skills.</p>
             
-            <p class="caveat">Replit Agent kan selv ændre replit.md. Ændres AI Harness-afsnittet, springer en senere opdatering det over.</p>
+            <p class="caveat">Replit Agent kan selv ændre replit.md. Ændres Aura Harness-afsnittet, springer en senere opdatering det over.</p>
             <p><a href="https://docs.replit.com/features/project-setup/replit-dot-md">Replit om replit.md ↗</a> · <a href="https://docs.replit.com/features/agent/skills">Replit om skills ↗</a></p>
             <p><a href="pakker.html?vaerktoej=replit">Hent pakken til Replit Agent →</a></p>
           </article>

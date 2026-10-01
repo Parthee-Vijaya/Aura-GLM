@@ -1,4 +1,4 @@
-# AI Harness: holder hemmeligheder og lokale filer ude af Git. Allerede sporede filer påvirkes ikke.
+# Aura Harness: holder hemmeligheder og lokale filer ude af Git. Allerede sporede filer påvirkes ikke.
 .env
 .env.*
 !.env.example

@@ -1,4 +1,4 @@
-// Afprøver en AI Harness-installation i den rigtige Claude Code med en kontrolleret lokal server i Anthropics format.
+// Afprøver en Aura Harness-installation i den rigtige Claude Code med en kontrolleret lokal server i Anthropics format.
 // Prøven viser, hvad Claude Code faktisk sender til modellen: CLAUDE.md med den importerede AGENTS.md,
 // listen over skills og indholdet af en skill, når modellen beder om den. Ingen konto, nøgle eller rigtig model bruges.
 const assert = require('node:assert/strict');
@@ -92,7 +92,7 @@ const toolNames = request => (request.tools || []).map(tool => tool.name);
     const first = main[0];
     const context = flat(first.system) + flat(first.messages);
     assert.match(context, /FÆLLES-GRUNDLAG-02/, 'grundreglerne fra den importerede AGENTS.md når modellen');
-    assert.match(context, /Skills fra AI Harness/, 'oversigten over skills fra AGENTS.md når modellen');
+    assert.match(context, /Skills fra Aura Harness/, 'oversigten over skills fra AGENTS.md når modellen');
     const listing = context + flat(first.tools);
     for (const name of ['harness-ide-og-afgraensning', 'harness-sikkerhedsgennemgang', 'harness-udgivelse-og-gendannelse', 'harness-overdragelse-og-drift']) assert.ok(listing.includes(name), `${name} vises for modellen`);
     const followUp = flat(main[main.length - 1].messages);

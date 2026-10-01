@@ -57,7 +57,7 @@ async function content(root, file) {
 }
 
 // Versioner i nye projekter står under dette navn, indtil brugeren selv vælger et. Adressen kan aldrig modtage post (.invalid).
-const ANONYMOUS = { name: 'AI Harness-bruger', email: 'bruger@ai-harness.invalid' };
+const ANONYMOUS = { name: 'Aura-bruger', email: 'bruger@aura.invalid' };
 class GitVersions {
   constructor() { this.reviews = new Map(); this.busy = false; }
   async repository(root) {

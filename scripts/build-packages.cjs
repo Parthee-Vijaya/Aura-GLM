@@ -12,7 +12,7 @@ const { zip } = require('./zip.cjs');
 const root = path.resolve(__dirname, '..');
 const sha = text => crypto.createHash('sha256').update(text).digest('hex');
 const escape = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const statusText = { afproevet: 'Afprøvet med AI Harness', dokumenteret: 'Efter værktøjets dokumentation', manuel: 'Tekst til platformens egne felter' };
+const statusText = { afproevet: 'Afprøvet med Aura Harness', dokumenteret: 'Efter værktøjets dokumentation', manuel: 'Tekst til platformens egne felter' };
 const categoryText = { agent: 'Kodeagenter', editor: 'Editorer og udviklingsmiljøer', web: 'Webplatforme' };
 // Integrationer følger ikke med pakkerne; de vælges til for de systemer, man bruger. Tallene i teksterne regnes derfor ud her.
 const baseSkills = library => library.skills.filter(skill => !skill.integration);
@@ -24,14 +24,14 @@ const integrationFacts = info => [['System', info.system], ['Ejer', info.owner],
 const integrationNote = info => `Skillen vedligeholdes af ${info.maintainer} og er kontrolleret mod kilderne ${info.checkedAt}.`;
 
 function agentPrompt(library) {
-  return `Jeg har pakket AI Harness ${library.version} ud i mappen <STI TIL DEN UDPAKKEDE MAPPE>. Læs LAES-MIG.md i den mappe, og installer filerne fra undermappen projekt i dette projekt efter afsnittet "Til kodeagenten". Overskriv ingen eksisterende filer. Vis mig alle ændringer, før du skriver, og lav ingen commit.`;
+  return `Jeg har pakket Aura Harness ${library.version} ud i mappen <STI TIL DEN UDPAKKEDE MAPPE>. Læs LAES-MIG.md i den mappe, og installer filerne fra undermappen projekt i dette projekt efter afsnittet "Til kodeagenten". Overskriv ingen eksisterende filer. Vis mig alle ændringer, før du skriver, og lav ingen commit.`;
 }
 
 function guide(library, tool, layout, files) {
   const blocks = layout.entries.filter(entry => entry.kind === 'blok').map(entry => entry.path);
-  return `# AI Harness ${library.version} til ${tool.name}
+  return `# Aura Harness ${library.version} til ${tool.name}
 
-Pakken giver ${tool.name} AI Harness' fælles grundregler og ${layout.skills.length} skills til arbejdet fra idé til drift. Filerne er på dansk og kan læses og tilpasses. Pakken indeholder ingen model, nøgle eller abonnement, og intet installeres eller køres automatisk.
+Pakken giver ${tool.name} Aura Harness' fælles grundregler og ${layout.skills.length} skills til arbejdet fra idé til drift. Filerne er på dansk og kan læses og tilpasses. Pakken indeholder ingen model, nøgle eller abonnement, og intet installeres eller køres automatisk.
 
 Status: ${statusText[tool.status]}.${tool.testedWith ? ` ${tool.testedWith}` : ''} ${tool.caveat}
 
@@ -45,9 +45,9 @@ Skillsene er beskrevet i ${layout.dirs.map(dir => `\`${dir}/\``).join(' og ')}. 
 
 ## Tre måder at installere
 
-### 1. Med AI Harness-appen
+### 1. Med Aura-appen
 
-Vælg "Brug Harness i mit kodeværktøj", vælg ${tool.name} og din projektmappe. Appen viser de præcise ændringer, før noget skrives, og kan fjerne installationen igen.
+Vælg "Brug Aura Harness i mit kodeværktøj", vælg ${tool.name} og din projektmappe. Appen viser de præcise ændringer, før noget skrives, og kan fjerne installationen igen.
 
 ### 2. Bed din egen kodeagent om det
 
@@ -60,10 +60,10 @@ Vælg "Brug Harness i mit kodeværktøj", vælg ${tool.name} og din projektmappe
 1. Pak ZIP-filen ud i en separat mappe, ikke oven i dit projekt.
 2. Mapper, der begynder med punktum, er skjulte. På Mac vises de med Cmd+Shift+punktum i Finder. På Windows slås skjulte elementer til under Vis i Stifinder.
 3. Kopiér de skjulte mapper fra \`projekt\` til dit projekts øverste mappe. Findes en skill med samme navn allerede, så stop og sammenlign.
-4. ${blocks.map(file => `\`${file}\``).join(', ')}: Hvis filen ikke findes i dit projekt, så kopiér den. Hvis den findes, så overskriv den ikke. Kopiér i stedet afsnittet fra markøren \`ai-harness:start\` til \`ai-harness:slut\`, og indsæt det nederst i din egen fil.
-5. Kopiér \`.harness/installation.json\` med. Den gør det muligt senere at opdatere eller fjerne AI Harness uden at røre dine egne ændringer.
+4. ${blocks.map(file => `\`${file}\``).join(', ')}: Hvis filen ikke findes i dit projekt, så kopiér den. Hvis den findes, så overskriv den ikke. Kopiér i stedet afsnittet fra markøren \`aura-harness:start\` til \`aura-harness:slut\`, og indsæt det nederst i din egen fil. Har filen allerede et afsnit mellem de tidligere markører \`ai-harness:start\` og \`ai-harness:slut\`, så erstat det.
+5. Kopiér \`.harness/installation.json\` med. Den gør det muligt senere at opdatere eller fjerne Aura Harness uden at røre dine egne ændringer.
 
-Vil du kun bruge nogle af skillsene, så brug AI Harness-appen. Den lader dig slå kategorier og enkelte skills til og fra og husker valget ved opdatering.${integrationSkills(library).length ? ` Integrationerne til bestemte systemer (${listText(integrationSkills(library).map(skill => skill.title))}) er ikke med i pakken. Dem vælger du til i appen.` : ''}
+Vil du kun bruge nogle af skillsene, så brug Aura-appen. Den lader dig slå kategorier og enkelte skills til og fra og husker valget ved opdatering.${integrationSkills(library).length ? ` Integrationerne til bestemte systemer (${listText(integrationSkills(library).map(skill => skill.title))}) er ikke med i pakken. Dem vælger du til i appen.` : ''}
 
 ## Kontrollér, at det virker
 
@@ -71,7 +71,7 @@ ${tool.verification}
 
 Start en ny samtale, og skriv:
 
-> Hvilke projektinstruktioner og skills fra AI Harness har du adgang til? Hvad er kontrolordet i AI Harness-profilen? Ændr ingen filer.
+> Hvilke projektinstruktioner og skills fra Aura Harness har du adgang til? Hvad er kontrolordet i Aura Harness-profilen? Ændr ingen filer.
 
 Forvent kontrolordet ${library.controlWord} og en liste med skills, der begynder med harness-. Et korrekt svar viser, at filerne kan læses. Det viser ikke, at agenten følger dem i praksis.
 
@@ -86,7 +86,7 @@ Følg disse regler, når du installerer pakken for brugeren:
 1. Vis brugeren listen over filer, du vil oprette eller ændre, og vent på et ja.
 2. Kopiér hver fil fra \`projekt/\` til samme relative sti i projektet. Opret manglende mapper.
 3. Findes filen allerede med præcis samme indhold, så gør intet.
-4. For ${blocks.map(file => `\`${file}\``).join(', ')}: Findes filen, så overskriv den ikke. Tilføj afsnittet mellem \`ai-harness:start\` og \`ai-harness:slut\` nederst med en tom linje foran. Findes afsnittet allerede, så spørg brugeren, før du erstatter det.
+4. For ${blocks.map(file => `\`${file}\``).join(', ')}: Findes filen, så overskriv den ikke. Tilføj afsnittet mellem \`aura-harness:start\` og \`aura-harness:slut\` nederst med en tom linje foran. Findes afsnittet allerede, også med de tidligere markører \`ai-harness:start\` og \`ai-harness:slut\`, så spørg brugeren, før du erstatter det.
 5. Findes en anden fil på en af stierne, eller en skillmappe med samme navn, så stop og spørg brugeren.
 6. Rør ingen andre filer. Kør ingen scripts. Lav ingen commit, push eller branch.
 7. Vis til sidst \`git status\` eller en liste over ændrede filer.
@@ -125,11 +125,11 @@ function publicFile(library, file, contents) {
 }
 
 function skillsMarkdown(library) {
-  return `# Skills i AI Harness ${library.version}
+  return `# Skills i Aura Harness ${library.version}
 
 Genereret fra \`profiles/catalog.json\` af \`scripts/build-packages.cjs\`. Ret kataloget eller skillfilerne, ikke denne fil.
 
-AI Harness indeholder fælles grundregler og ${baseSkills(library).length} skills${integrationSkills(library).length ? ` samt ${integrationCount(integrationSkills(library).length)}` : ''}. Grundreglerne gælder altid. En skill er en kort vejledning til kodeagenten om én arbejdsopgave, som bruges, når opgaven passer.${integrationSkills(library).length ? ' En integration er en skill om ét bestemt system, fx et offentligt register. Integrationerne følger ikke med pakkerne til kodeværktøjerne; de vælges til for de systemer, man bruger.' : ''} I AI Harness-appen kan kategorier, enkelte skills og integrationer slås til og fra.
+Aura Harness indeholder fælles grundregler og ${baseSkills(library).length} skills${integrationSkills(library).length ? ` samt ${integrationCount(integrationSkills(library).length)}` : ''}. Grundreglerne gælder altid. En skill er en kort vejledning til kodeagenten om én arbejdsopgave, som bruges, når opgaven passer.${integrationSkills(library).length ? ' En integration er en skill om ét bestemt system, fx et offentligt register. Integrationerne følger ikke med pakkerne til kodeværktøjerne; de vælges til for de systemer, man bruger.' : ''} I Aura-appen kan kategorier, enkelte skills og integrationer slås til og fra.
 
 ## Grundregler · altid med
 
@@ -182,7 +182,7 @@ function skillsPage(library) {
       <section class="note" id="${category.id}" aria-labelledby="${category.id}-title">
         <h2 id="${category.id}-title">${escape(category.title)}</h2>
         <p>${escape(category.summary)}</p>${category.skills.some(name => library.skills[number(name)].integration) ? `
-        <p>Integrationerne følger ikke med pakkerne til kodeværktøjerne. Vælg dem til i AI Harness-appen: under Indstillinger › Funktioner eller under Tilpas, når du bruger Harness i dit eget kodeværktøj.</p>` : ''}${category.skills.map(name => entry(library.skills[number(name)], number(name))).join('')}
+        <p>Integrationerne følger ikke med pakkerne til kodeværktøjerne. Vælg dem til i Aura-appen: under Indstillinger › Funktioner eller under Tilpas, når du bruger Aura Harness i dit eget kodeværktøj.</p>` : ''}${category.skills.map(name => entry(library.skills[number(name)], number(name))).join('')}
       </section>`).join('');
   const questions = library.questions.map(item => `<details><summary>${escape(item.q)}</summary><p>${escape(item.a)}</p></details>`).join('\n        ');
   return `<!doctype html>
@@ -190,18 +190,18 @@ function skillsPage(library) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Skills i AI Harness</title>
-  <meta name="description" content="Se hvilke skills der følger med AI Harness: hvad hver skill gør, hvornår den bruges, og hvad den ikke gør.">
+  <title>Skills i Aura Harness</title>
+  <meta name="description" content="Se hvilke skills der følger med Aura Harness: hvad hver skill gør, hvornår den bruges, og hvad den ikke gør.">
   <link rel="stylesheet" href="overview.css">
 </head>
 <body>
   <a class="skip" href="#skills">Gå til skillsene</a>
-  <header><a href="./">AI Harness</a><a href="pakker.html">Webguide og pakker →</a></header>
+  <header><a href="./">Aura Harness</a><a href="pakker.html">Webguide og pakker →</a></header>
   <main class="tool-index">
     <p class="eyebrow">DET FØLGER MED</p>
-    <h1>Skills i AI Harness.</h1>
-    <p class="lead">AI Harness ${library.version} indeholder fælles grundregler og ${baseSkills(library).length} skills${integrationSkills(library).length ? ` samt ${integrationCount(integrationSkills(library).length)}` : ''}. Grundreglerne gælder altid. En skill er en kort vejledning til kodeagenten om én arbejdsopgave, som bruges, når opgaven passer.</p>
-    <p>Skillsene er delt i ${numberWord(library.categories.filter(category => category.skills.every(name => !library.skills[number(name)].integration)).length)} kategorier. Pakkerne til kodeværktøjerne indeholder dem alle.${integrationSkills(library).length ? ' En integration er en skill om ét bestemt system, fx et offentligt register. Integrationerne følger ikke med pakkerne; du vælger dem til for de systemer, dit projekt bruger.' : ''} I AI Harness-appen kan du slå kategorier, enkelte skills og integrationer til og fra, ligesom i en cookie-dialog; grundreglerne er altid med. Filerne er almindelige tekstfiler på dansk, som du kan læse og tilpasse.</p>
+    <h1>Skills i Aura Harness.</h1>
+    <p class="lead">Aura Harness ${library.version} indeholder fælles grundregler og ${baseSkills(library).length} skills${integrationSkills(library).length ? ` samt ${integrationCount(integrationSkills(library).length)}` : ''}. Grundreglerne gælder altid. En skill er en kort vejledning til kodeagenten om én arbejdsopgave, som bruges, når opgaven passer.</p>
+    <p>Skillsene er delt i ${numberWord(library.categories.filter(category => category.skills.every(name => !library.skills[number(name)].integration)).length)} kategorier. Pakkerne til kodeværktøjerne indeholder dem alle.${integrationSkills(library).length ? ' En integration er en skill om ét bestemt system, fx et offentligt register. Integrationerne følger ikke med pakkerne; du vælger dem til for de systemer, dit projekt bruger.' : ''} I Aura-appen kan du slå kategorier, enkelte skills og integrationer til og fra, ligesom i en cookie-dialog; grundreglerne er altid med. Filerne er almindelige tekstfiler på dansk, som du kan læse og tilpasse.</p>
     <nav class="tool-nav" aria-label="Skills">${nav}</nav>
     <section id="skills" aria-label="Skills">${entries}
     </section>
@@ -252,17 +252,17 @@ function toolsPage(library, publicTools) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Kodeværktøjer · AI Harness</title>
-  <meta name="description" content="Brug AI Harness' grundregler og skills i ${library.tools.length} kodeværktøjer og webplatforme, fx Claude Code, Codex, Cursor, GitHub Copilot og Gemini CLI.">
+  <title>Kodeværktøjer · Aura Harness</title>
+  <meta name="description" content="Brug Aura Harness' grundregler og skills i ${library.tools.length} kodeværktøjer og webplatforme, fx Claude Code, Codex, Cursor, GitHub Copilot og Gemini CLI.">
   <link rel="stylesheet" href="overview.css">
 </head>
 <body>
   <a class="skip" href="#oversigt">Gå til værktøjerne</a>
-  <header><a href="./">AI Harness</a><a href="pakker.html">Webguide og pakker →</a></header>
+  <header><a href="./">Aura Harness</a><a href="pakker.html">Webguide og pakker →</a></header>
   <main class="tool-index">
     <p class="eyebrow">BRUG DIT EGET VÆRKTØJ</p>
-    <h1>Harness i dit<br>eget kodeværktøj.</h1>
-    <p class="lead">AI Harness' grundregler og ${baseSkills(library).length} <a href="skills.html">skills</a> kan bruges i ${library.tools.length} kodeværktøjer og webplatforme. Her kan du se, hvor filerne lægges, hvordan du kontrollerer, at de er indlæst, og hvad du skal være opmærksom på.</p>
+    <h1>Aura Harness i dit<br>eget kodeværktøj.</h1>
+    <p class="lead">Aura Harness' grundregler og ${baseSkills(library).length} <a href="skills.html">skills</a> kan bruges i ${library.tools.length} kodeværktøjer og webplatforme. Her kan du se, hvor filerne lægges, hvordan du kontrollerer, at de er indlæst, og hvad du skal være opmærksom på.</p>
     <p><strong>${escape(statusText.afproevet)}</strong> betyder, at vi har set værktøjet indlæse grundregler og skills og sende dem til modellen. <strong>${escape(statusText.dokumenteret)}</strong> betyder, at filplaceringen følger værktøjets officielle dokumentation, men endnu ikke er afprøvet af os. <strong>${escape(statusText.manuel)}</strong> betyder, at platformen ikke læser filer fra en pakke.</p>
     <p class="review-date">Filplaceringerne er kontrolleret mod værktøjernes dokumentation ${library.checkedAt}.</p>
     <nav class="tool-nav" aria-label="Typer af kodeværktøjer">${Object.entries(categoryText).map(([category, label]) => `<a href="#${category}">${escape(label)}</a>`).join('')}</nav>
@@ -299,7 +299,7 @@ async function build({ profiles = path.join(root, 'profiles'), output = path.joi
     const base = { id: tool.id, name: tool.name, vendor: tool.vendor, category: tool.category, status: tool.status, testedWith: tool.testedWith, summary: tool.summary, verification: tool.verification, caveat: tool.caveat, sources: tool.sources };
     if (!tool.rules) { publicTools.push({ ...base, installable: false, knowledge: knowledgeFor(library) }); continue; }
     const { layout, files } = packageFiles(library, tool);
-    const archive = `downloads/ai-harness-${tool.id}-${library.version}.zip`;
+    const archive = `downloads/aura-harness-${tool.id}-${library.version}.zip`;
     const readme = guide(library, tool, layout, files);
     await fs.writeFile(path.join(output, archive), zip([{ name: 'LAES-MIG.md', data: readme }, ...files.map(file => ({ name: `projekt/${file.path}`, data: file.content }))], library.checkedAt));
     publicTools.push({ ...base, installable: true, archive, dirs: layout.dirs, warnings: layout.warnings, files: files.map(file => publicFile(library, file, contents)) });

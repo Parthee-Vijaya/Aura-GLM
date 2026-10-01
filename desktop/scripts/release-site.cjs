@@ -5,7 +5,7 @@ const root = path.join(__dirname,'..');
 const escape = text => String(text).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function generate(directory = path.join(root,'release')) {
  await fs.mkdir(directory,{recursive:true});
- const names = (await fs.readdir(directory)).filter(n=>/^AI-Harness-[a-zA-Z0-9.-]+\.(dmg|zip|exe)$/.test(n)).sort();
+ const names = (await fs.readdir(directory)).filter(n=>/^(Aura|AI-Harness)-[a-zA-Z0-9.-]+\.(dmg|zip|exe)$/.test(n)).sort();
  const files=[];
  for(const name of names){ const data=await fs.readFile(path.join(directory,name));const sha256=createHash('sha256').update(data).digest('hex'); let notarized=false; try { const receipt=JSON.parse(await fs.readFile(path.join(directory,name+'.notarized.json'),'utf8')); notarized=receipt.status==='Accepted' && receipt.sha256===sha256; } catch {} files.push({name,bytes:data.length,sha256,notarized}); }
  let html=await fs.readFile(path.join(root,'../site/dist/desktop.html'),'utf8');

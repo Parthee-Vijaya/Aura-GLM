@@ -13,17 +13,17 @@ jobs:
             target: darwin-arm64
             command: package:mac
             arch: arm64
-            app: release/mac-arm64/AI Harness.app
+            app: release/mac-arm64/Aura.app
           - os: macos-15-intel
             target: darwin-x64
             command: package:mac
             arch: x64
-            app: release/mac/AI Harness.app
+            app: release/mac/Aura.app
           - os: windows-latest
             target: win32-x64
             command: package:windows
             arch: x64
-            app: release/win-unpacked/AI Harness.exe
+            app: release/win-unpacked/Aura.exe
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -45,7 +45,7 @@ jobs:
         run: npm run test:package -- "${{ matrix.app }}"
       - name: Afprøv den pakkede app på Windows
         if: runner.os == 'Windows'
-        run: npm run test:package -- "release/win-unpacked/AI Harness.exe"
+        run: npm run test:package -- "release/win-unpacked/Aura.exe"
       - name: Afprøv gendannelse og forbindelsesfejl i pakken
         run: npm run test:recovery
         env:
@@ -53,7 +53,7 @@ jobs:
       - run: npm run release:site
       - uses: actions/upload-artifact@v4
         with:
-          name: ai-harness-${{ matrix.target }}
+          name: aura-${{ matrix.target }}
           path: |
             desktop/release/*.dmg
             desktop/release/*.zip

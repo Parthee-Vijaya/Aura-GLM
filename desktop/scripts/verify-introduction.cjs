@@ -8,7 +8,7 @@ const { run } = require('../core/git.cjs');
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'harness-introduction-'));let app;const errors=[];
  try {
   const bundle=process.env.HARNESS_TEST_PACKAGE ? path.resolve(process.env.HARNESS_TEST_PACKAGE) : null;
-  app=await electron.launch({executablePath:bundle?(bundle.endsWith('.app')?path.join(bundle,'Contents/MacOS/AI Harness'):bundle):require('electron'),args:[...(bundle?[]:[path.join(__dirname,'..')]),'--user-data-dir='+path.join(root,'appdata')],env:{...process.env,ELECTRON_RUN_AS_NODE:undefined}});
+  app=await electron.launch({executablePath:bundle?(bundle.endsWith('.app')?path.join(bundle,'Contents/MacOS',path.basename(bundle,'.app')):bundle):require('electron'),args:[...(bundle?[]:[path.join(__dirname,'..')]),'--user-data-dir='+path.join(root,'appdata')],env:{...process.env,ELECTRON_RUN_AS_NODE:undefined}});
   await require('./ui-test-helpers.cjs').isolateDocuments(app,path.join(root,'Dokumenter'));
   const page=await app.firstWindow();page.on('pageerror',e=>errors.push(e.message));
   await page.waitForFunction(()=>!document.querySelector('#welcome-build').disabled);
@@ -69,7 +69,7 @@ const { run } = require('../core/git.cjs');
   assert.equal((await page.evaluate(()=>window.harness.connectionState())).value.connections.length,1);
   await page.click('#setup-back');await page.click('#setup-back');assert.equal(await page.locator('#welcome-dialog').evaluate(el=>el.open),true);await page.click('#welcome-build');await page.click('#setup-local');
   // Første start: ét spørgsmål om funktioner med to valg. Hele pakken står først og er markeret som anbefalet.
-  await page.locator('#setup-title').filter({hasText:'Hvad skal AI Harness hjælpe med?'}).waitFor();
+  await page.locator('#setup-title').filter({hasText:'Hvad skal Aura hjælpe med?'}).waitFor();
   assert.equal(await page.locator('#setup-feature-choice button:visible').count(),2);
   assert.equal(await page.locator('#setup-feature-choice button').first().locator('.recommended').textContent(),'Anbefalet');
   assert.equal(await page.locator('#setup-eyebrow').textContent(),'FUNKTIONER');
@@ -80,7 +80,7 @@ const { run } = require('../core/git.cjs');
   assert.equal(await page.inputValue('#name'),'Mit bibliotek');
   await app.evaluate(({dialog})=>{dialog.showOpenDialog=async()=>({canceled:true,filePaths:[]});});
   await page.click('#choose-location');await page.waitForFunction(()=>!document.querySelector('#create').disabled);assert.equal(await page.inputValue('#name'),'Mit bibliotek');
-  assert.match(await page.locator('#project-location').textContent(),/Dokumenter › AI Harness/);
+  assert.match(await page.locator('#project-location').textContent(),/Dokumenter › Aura/);
   await require('./ui-test-helpers.cjs').chooseLocation(app,page,root);
   await page.click('#create');await page.waitForSelector('#workspace:not([hidden])');
   await page.frameLocator('#preview').locator('h1').waitFor();assert.equal(await page.frameLocator('#preview').locator('h1').textContent(),'Mit bibliotek');

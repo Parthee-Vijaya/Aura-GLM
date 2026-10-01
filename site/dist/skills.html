@@ -3,18 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Skills i AI Harness</title>
-  <meta name="description" content="Se hvilke skills der følger med AI Harness: hvad hver skill gør, hvornår den bruges, og hvad den ikke gør.">
+  <title>Skills i Aura Harness</title>
+  <meta name="description" content="Se hvilke skills der følger med Aura Harness: hvad hver skill gør, hvornår den bruges, og hvad den ikke gør.">
   <link rel="stylesheet" href="overview.css">
 </head>
 <body>
   <a class="skip" href="#skills">Gå til skillsene</a>
-  <header><a href="./">AI Harness</a><a href="pakker.html">Webguide og pakker →</a></header>
+  <header><a href="./">Aura Harness</a><a href="pakker.html">Webguide og pakker →</a></header>
   <main class="tool-index">
     <p class="eyebrow">DET FØLGER MED</p>
-    <h1>Skills i AI Harness.</h1>
-    <p class="lead">AI Harness 0.2.0 indeholder fælles grundregler og 12 skills samt to integrationer. Grundreglerne gælder altid. En skill er en kort vejledning til kodeagenten om én arbejdsopgave, som bruges, når opgaven passer.</p>
-    <p>Skillsene er delt i fire kategorier. Pakkerne til kodeværktøjerne indeholder dem alle. En integration er en skill om ét bestemt system, fx et offentligt register. Integrationerne følger ikke med pakkerne; du vælger dem til for de systemer, dit projekt bruger. I AI Harness-appen kan du slå kategorier, enkelte skills og integrationer til og fra, ligesom i en cookie-dialog; grundreglerne er altid med. Filerne er almindelige tekstfiler på dansk, som du kan læse og tilpasse.</p>
+    <h1>Skills i Aura Harness.</h1>
+    <p class="lead">Aura Harness 0.2.0 indeholder fælles grundregler og 12 skills samt to integrationer. Grundreglerne gælder altid. En skill er en kort vejledning til kodeagenten om én arbejdsopgave, som bruges, når opgaven passer.</p>
+    <p>Skillsene er delt i fire kategorier. Pakkerne til kodeværktøjerne indeholder dem alle. En integration er en skill om ét bestemt system, fx et offentligt register. Integrationerne følger ikke med pakkerne; du vælger dem til for de systemer, dit projekt bruger. I Aura-appen kan du slå kategorier, enkelte skills og integrationer til og fra, ligesom i en cookie-dialog; grundreglerne er altid med. Filerne er almindelige tekstfiler på dansk, som du kan læse og tilpasse.</p>
     <nav class="tool-nav" aria-label="Skills"><a href="#planlaegning">Planlægning og design</a><a href="#kode">Kode og kvalitet</a><a href="#sikkerhed">Sikkerhed og data</a><a href="#drift">Udgivelse og drift</a><a href="#integrationer">Integrationer</a></nav>
     <section id="skills" aria-label="Skills">
       <section class="note" id="grundregler" aria-labelledby="grundregler-title"><h2 id="grundregler-title">Grundregler · altid med</h2><p>Grundreglerne gælder i hele projektet og kan ikke fravælges: hemmeligheder holdes ude af kode og Git, brugeren styrer Git, ændringer afprøves, og agenten rapporterer ærligt, hvad der er kontrolleret.</p></section>
@@ -102,18 +102,18 @@ Målet er en kort, aftalt beskrivelse af opgaven, som brugeren kan genkende, og 
         <p>Læser et eksisterende projekt, før der foreslås ændringer, og bevarer dets konventioner.</p>
         <dl class="faq">
           <dt>Hvad gør den?</dt><dd>Agenten gennemgår projektet uden at køre kommandoer: instruktioner, teknologi, låsefiler, start- og testkommandoer, Git-status, CI og hosting. Derefter får du en kort oversigt og forslag, der passer til projektet.</dd>
-          <dt>Hvornår bruges den?</dt><dd>Når du åbner et projekt første gang, overtager det fra andre eller vil tilføje AI Harness til et projekt, der allerede findes.</dd>
+          <dt>Hvornår bruges den?</dt><dd>Når du åbner et projekt første gang, overtager det fra andre eller vil tilføje Aura Harness til et projekt, der allerede findes.</dd>
           <dt>Hvad får du?</dt><dd>Et overblik over projektet med kendte risici og usikkerheder samt forslag med præcise filændringer, som du selv vælger imellem.</dd>
           <dt>Hvad gør den ikke?</dt><dd>Den skifter ikke teknologi, pakkehåndtering eller Git-model, og den rydder ikke op med reset, rebase eller force-push.</dd>
         </dl>
         <details><summary>Se instruktionen til agenten</summary><pre>---
 name: harness-eksisterende-projekt
-description: Undersøger et eksisterende eller ældre projekt, før der foreslås ændringer eller nye konventioner. Laver en læsende gennemgang af instruktioner, teknologi, start- og testkommandoer, Git-status, CI og hosting og foreslår derefter kun de Harness-dele, der passer. Brug den, når et projekt åbnes første gang, overtages fra andre eller skal have AI Harness tilføjet.
+description: Undersøger et eksisterende eller ældre projekt, før der foreslås ændringer eller nye konventioner. Laver en læsende gennemgang af instruktioner, teknologi, start- og testkommandoer, Git-status, CI og hosting og foreslår derefter kun de Aura Harness-dele, der passer. Brug den, når et projekt åbnes første gang, overtages fra andre eller skal have Aura Harness tilføjet.
 ---
 
 # Eksisterende projekt
 
-Et eksisterende projekt har valg, som andre har truffet af en grund. Forstå dem, før du foreslår noget nyt, og lad projektets egne konventioner gå forud for Harness&#39; standardvalg.
+Et eksisterende projekt har valg, som andre har truffet af en grund. Forstå dem, før du foreslår noget nyt, og lad projektets egne konventioner gå forud for Aura Harness&#39; standardvalg.
 
 ## 1. Læs, før du kører noget
 
@@ -141,7 +141,7 @@ Skriv til brugeren:
 
 ## 3. Foreslå, før du ændrer
 
-- Foreslå de relevante Harness-dele og vis de præcise filændringer. Lad brugeren vælge.
+- Foreslå de relevante Aura Harness-dele og vis de præcise filændringer. Lad brugeren vælge.
 - Tilføj ikke en ny formatter, pakkehåndtering, Git-model, branchestrategi, testramme eller hostingtjeneste som en skjult følge af opgaven.
 - Bevar projektets eksisterende instruktioner. Nye regler placeres, så de ikke overskriver dem, og konflikter nævnes, før den berørte handling.
 
@@ -1097,7 +1097,7 @@ Brug de afsnit, der passer til appen. Skriv &quot;ikke relevant&quot; med en kor
       <section class="note" id="integrationer" aria-labelledby="integrationer-title">
         <h2 id="integrationer-title">Integrationer</h2>
         <p>Hent data fra offentlige registre. Vælges til for de systemer, du bruger.</p>
-        <p>Integrationerne følger ikke med pakkerne til kodeværktøjerne. Vælg dem til i AI Harness-appen: under Indstillinger › Funktioner eller under Tilpas, når du bruger Harness i dit eget kodeværktøj.</p>
+        <p>Integrationerne følger ikke med pakkerne til kodeværktøjerne. Vælg dem til i Aura-appen: under Indstillinger › Funktioner eller under Tilpas, når du bruger Aura Harness i dit eget kodeværktøj.</p>
       <article class="tool-entry skill-entry" id="harness-integration-adresser">
         <p class="tool-type">13 · <code>harness-integration-adresser</code></p>
         <h3>Adresser</h3>
@@ -1117,7 +1117,7 @@ Brug de afsnit, der passer til appen. Skriv &quot;ikke relevant&quot; med en kor
           <dt>Pris</dt><dd>Gratis</dd>
           <dt>IT-afdelingen</dt><dd>Kræver ikke hjælp fra IT-afdelingen.</dd>
         </dl>
-        <p class="review-date">Skillen vedligeholdes af AI Harness og er kontrolleret mod kilderne 2026-09-30.</p>
+        <p class="review-date">Skillen vedligeholdes af Aura Harness og er kontrolleret mod kilderne 2026-09-30.</p>
         <details><summary>Se instruktionen til agenten</summary><pre>---
 name: harness-integration-adresser
 description: Finder og viser danske adresser fra Danmarks Adresseregister via Klimadatastyrelsens Adressevælger og Datafordeleren. Forklarer token, nøgler, koordinater, kreditering og lukningen af DAWA. Brug den, når projektet skal søge efter, udfylde eller vise adresser.
@@ -1278,7 +1278,7 @@ Adgang kan blokeres, hvis vilkårene brydes. Den, der har hentet data ud af Data
           <dt>Pris</dt><dd>Gratis</dd>
           <dt>IT-afdelingen</dt><dd>Kræver ikke hjælp fra IT-afdelingen.</dd>
         </dl>
-        <p class="review-date">Skillen vedligeholdes af AI Harness og er kontrolleret mod kilderne 2026-09-30.</p>
+        <p class="review-date">Skillen vedligeholdes af Aura Harness og er kontrolleret mod kilderne 2026-09-30.</p>
         <details><summary>Se instruktionen til agenten</summary><pre>---
 name: harness-integration-cvr
 description: Henter virksomhedsoplysninger fra Det Centrale Virksomhedsregister (CVR) via Datafordeleren eller Erhvervsstyrelsens system-til-system-adgang. Forklarer adgang, nøgler, reklamebeskyttelse og persondata om ejere. Brug den, når projektet skal slå virksomheder op eller vise data fra CVR.
@@ -1376,13 +1376,13 @@ Oplysningerne er kontrolleret 30. september 2026. Erhvervsstyrelsen er dataansva
         <details><summary>Hvad er en skill?</summary><p>En skill er en kort vejledning til kodeagenten om én bestemt arbejdsopgave, fx en sikkerhedsgennemgang eller en udgivelse. Den ligger som en almindelig tekstfil, SKILL.md, i projektet. Agenten læser først kun navn og beskrivelse og henter resten, når opgaven passer. Det holder instruktionerne korte i det daglige arbejde.</p></details>
         <details><summary>Bruges alle skills hver gang?</summary><p>Nej. Mange værktøjer vælger selv en skill, når opgaven passer til beskrivelsen, og du kan også bede om en bestemt skill. En tekstændring skal fx ikke udløse en sikkerhedsgennemgang. Hvordan skills startes, afhænger af værktøjet; se værktøjets vejledning i webguiden.</p></details>
         <details><summary>Hvad er forskellen på grundregler og skills?</summary><p>Grundreglerne gælder altid: nøgler, Git, afprøvning og ærlig rapportering. De står i fx AGENTS.md eller CLAUDE.md. Skills er de længere arbejdsgange, der kun bruges, når opgaven kræver dem.</p></details>
-        <details><summary>Hvad er en integration?</summary><p>En integration er en skill om ét bestemt system, fx adresser eller CVR. Den forklarer, hvordan man får adgang, hvor nøgler skal ligge, hvilke data systemet giver, og hvilke regler der gælder. Integrationerne følger ikke med pakkerne. Du vælger dem til i AI Harness-appen for de systemer, dit projekt bruger.</p></details>
-        <details><summary>Kan jeg ændre en skill?</summary><p>Ja. Filerne er dine. Hvis du ændrer en installeret fil, springer en senere opdatering netop den fil over og fortæller dig det. Projektets egne regler skrives uden for AI Harness-afsnittet i AGENTS.md eller CLAUDE.md, så de aldrig overskrives.</p></details>
-        <details><summary>Sender AI Harness mine data nogen steder hen?</summary><p>Nej. Installationen kopierer tekstfiler til dit projekt. Dit kodeværktøj og den model, du har valgt, læser filerne som en del af dit arbejde. Hvor de data behandles, afhænger af værktøjet og modellen.</p></details>
+        <details><summary>Hvad er en integration?</summary><p>En integration er en skill om ét bestemt system, fx adresser eller CVR. Den forklarer, hvordan man får adgang, hvor nøgler skal ligge, hvilke data systemet giver, og hvilke regler der gælder. Integrationerne følger ikke med pakkerne. Du vælger dem til i Aura-appen for de systemer, dit projekt bruger.</p></details>
+        <details><summary>Kan jeg ændre en skill?</summary><p>Ja. Filerne er dine. Hvis du ændrer en installeret fil, springer en senere opdatering netop den fil over og fortæller dig det. Projektets egne regler skrives uden for Aura Harness-afsnittet i AGENTS.md eller CLAUDE.md, så de aldrig overskrives.</p></details>
+        <details><summary>Sender Aura Harness mine data nogen steder hen?</summary><p>Nej. Installationen kopierer tekstfiler til dit projekt. Dit kodeværktøj og den model, du har valgt, læser filerne som en del af dit arbejde. Hvor de data behandles, afhænger af værktøjet og modellen.</p></details>
         <details><summary>Gør skillsene min app sikker eller lovlig?</summary><p>Nej. Skills er vejledning til agenten. De er ikke adgangskontrol, en sikkerhedsgodkendelse eller en vurdering efter databeskyttelsesreglerne. De hjælper med at stille de rigtige spørgsmål og inddrage de rigtige fagpersoner, men ansvaret for løsningen ligger fortsat hos organisationen.</p></details>
-        <details><summary>Bliver koden bedre af det?</summary><p>Det har vi endnu ikke målt for vores målgruppe. Undersøgelser fra 2026 viser, at generelle instruktionsfiler sjældent gør kodeagenter mere korrekte og koster ekstra tokens, mens fokuserede skills kan hjælpe ved bestemte opgaver. Derfor er grundreglerne korte, og skills indlæses kun, når opgaven passer. Vi vil sammenligne de samme opgaver med og uden Harness på flere modeller.</p></details>
-        <details><summary>Kan en skill gøre skade?</summary><p>En skill fra en ukendt kilde skal behandles som software, fordi den kan få agenten til at køre kommandoer. AI Harness&#39; skills indeholder kun tekst, ingen scripts, og giver ingen værktøjstilladelser. Du kan læse dem alle på denne side, før du installerer dem.</p></details>
-        <details><summary>Hvordan opdaterer eller fjerner jeg AI Harness?</summary><p>Installér en ny version på samme måde. Harness opdaterer kun filer, der er uændrede siden installationen, og viser konflikter for resten. Fjernelse sletter kun uændrede filer og afsnit. Oplysningerne står i .harness/installation.json, som også skal med i Git.</p></details>
+        <details><summary>Bliver koden bedre af det?</summary><p>Det har vi endnu ikke målt for vores målgruppe. Undersøgelser fra 2026 viser, at generelle instruktionsfiler sjældent gør kodeagenter mere korrekte og koster ekstra tokens, mens fokuserede skills kan hjælpe ved bestemte opgaver. Derfor er grundreglerne korte, og skills indlæses kun, når opgaven passer. Vi vil sammenligne de samme opgaver med og uden Aura Harness på flere modeller.</p></details>
+        <details><summary>Kan en skill gøre skade?</summary><p>En skill fra en ukendt kilde skal behandles som software, fordi den kan få agenten til at køre kommandoer. Aura Harness&#39; skills indeholder kun tekst, ingen scripts, og giver ingen værktøjstilladelser. Du kan læse dem alle på denne side, før du installerer dem.</p></details>
+        <details><summary>Hvordan opdaterer eller fjerner jeg Aura Harness?</summary><p>Installér en ny version på samme måde. Aura Harness opdaterer kun filer, der er uændrede siden installationen, og viser konflikter for resten. Fjernelse sletter kun uændrede filer og afsnit. Oplysningerne står i .harness/installation.json, som også skal med i Git.</p></details>
         <details><summary>Hvilke kodeværktøjer virker det med?</summary><p>Webguiden viser hvert værktøj med status. &quot;Afprøvet&quot; betyder, at vi har set værktøjet indlæse grundregler og skills og sende dem til modellen. &quot;Efter dokumentation&quot; betyder, at filplaceringen følger værktøjets officielle dokumentation, men endnu ikke er afprøvet af os. Ingen af delene viser, hvor godt en bestemt model følger instruktionerne.</p></details>
       </div>
     </section>

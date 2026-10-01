@@ -3,19 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>AI Harness · Fra idé til en app i drift</title>
+  <title>Aura Harness · Fra idé til en app i drift</title>
   <meta name="description" content="Byg med AI og forstå din løsning. Et udviklingsværktøj og fælles vejledninger til IT-folk og teknisk interesserede medarbejdere i kommunerne.">
   <link rel="stylesheet" href="overview.css">
 </head>
 <body>
   <a class="skip" href="#valg">Gå til valg af værktøj</a>
-  <header><a href="./">AI Harness</a><a href="https://github.com/ai-alliancen-org/ai-harness">Projektet på GitHub ↗</a></header>
+  <header><a href="./">Aura Harness</a><a href="https://github.com/ai-alliancen-org/ai-harness">Projektet på GitHub ↗</a></header>
   <main>
     <p class="eyebrow">FÆLLES PRAKSIS FOR UDVIKLING MED AI</p>
     <h1>Fra idé til<br>en app i drift.</h1>
-    <p class="lead">Til IT-folk og teknisk interesserede medarbejdere, der vil bygge med AI og forstå deres løsning. AI Harness samler vejledninger og værktøjer til kode, afprøvning og drift med kommunernes behov som udgangspunkt.</p>
+    <p class="lead">Til IT-folk og teknisk interesserede medarbejdere, der vil bygge med AI og forstå deres løsning. Aura Harness samler vejledninger og værktøjer til kode, afprøvning og drift med kommunernes behov som udgangspunkt.</p>
 
-    <section id="valg" class="choices" aria-label="To måder at bruge AI Harness">
+    <section id="valg" class="choices" aria-label="To måder at bruge Aura Harness">
       <article>
         <p class="eyebrow">VEJLEDNINGER OG INSTRUKTIONER</p>
         <h2>Brug dit eget<br>kodeværktøj</h2>
@@ -24,17 +24,17 @@
       </article>
       <article>
         <p class="eyebrow">SAMLET I EN DESKTOPAPP</p>
-        <h2>Byg i<br>AI Harness-appen</h2>
+        <h2>Byg i<br>Aura-appen</h2>
         <p>Beskriv din idé, byg med din egen AI, og se resultatet ved siden af samtalen. Appen samler kodeændringer, forhåndsvisning og versionsgemning.</p>
         <a class="choice-link" href="#desktop">Se appen og testadgang →</a>
       </article>
     </section>
 
-    <p class="explore"><a href="vaerktoejer.html">Se, hvordan Harness bruges i hvert kodeværktøj →</a> <a href="skills.html">Læs om de 12 skills →</a></p>
+    <p class="explore"><a href="vaerktoejer.html">Se, hvordan Aura Harness bruges i hvert kodeværktøj →</a> <a href="skills.html">Læs om de 12 skills →</a></p>
 
     <section class="note" aria-labelledby="maalgruppe-title">
-      <h2 id="maalgruppe-title">Hvem er Harness til?</h2>
-      <p>Du behøver ikke kunne kode hele løsningen selv. Harness skal hjælpe dig med arbejdet og forklare de valg, du møder. Du vælger model og hosting inden for din organisations rammer og får projektfiler, andre udviklere kan arbejde videre med.</p>
+      <h2 id="maalgruppe-title">Hvem er Aura Harness til?</h2>
+      <p>Du behøver ikke kunne kode hele løsningen selv. Aura Harness skal hjælpe dig med arbejdet og forklare de valg, du møder. Du vælger model og hosting inden for din organisations rammer og får projektfiler, andre udviklere kan arbejde videre med.</p>
       <p>Det kræver, at du vil sætte dig ind i de tilsluttede tjenester, gennemgå ændringer og afklare ansvar for data og drift. Vejledningerne og appen kan bruges uden et Promte-abonnement. De tjenester, du vælger, har deres egne vilkår og eventuelle udgifter.</p>
     </section>
 
@@ -53,7 +53,7 @@
     <section class="note" aria-labelledby="data-title">
       <h2 id="data-title">Hvor ender data, og hvem har adgang?</h2>
       <p>Det spørgsmål skal følge projektet fra den første AI-samtale til den færdige tjeneste. Vi vil gøre det lettere at forstå, hvem der modtager kode og data, hvor de behandles, og hvordan de kan flyttes eller slettes. Det omfatter også logs, support og sikkerhedskopier.</p>
-      <p>Harness skal hjælpe med at forebygge sikkerhedsfejl og brud på persondatasikkerheden. Instruktionerne kan ikke alene sikre GDPR eller erstatte kommunens vurdering og tekniske adgangskontrol.</p>
+      <p>Aura Harness skal hjælpe med at forebygge sikkerhedsfejl og brud på persondatasikkerheden. Instruktionerne kan ikke alene sikre GDPR eller erstatte kommunens vurdering og tekniske adgangskontrol.</p>
       <a href="https://github.com/ai-alliancen-org/ai-harness/blob/main/docs/harness-grundlag.md#data-og-drift">Læs vores forslag om data og drift ↗</a>
     </section>
 
@@ -65,7 +65,7 @@
 
     <section id="desktop" class="downloads" aria-labelledby="download-title">
       <p class="eyebrow">APPEN ER EN TESTVERSION</p>
-      <h2 id="download-title">Prøv AI Harness på din computer</h2>
+      <h2 id="download-title">Prøv Aura på din computer</h2>
       <p>Projektfilerne ligger lokalt. Du forbinder selv en AI hos en udbyder eller på din egen modelserver. Installationspakken indeholder OpenCode, Git og Node/npm.</p>
       <!-- artifacts --><p>Der er endnu ingen udgivet installationspakke på denne side. Testadgang er foreløbig for inviterede med adgang til det private repository.</p><!-- /artifacts -->
       <p><a href="desktop.html">Installation og hjælp →</a></p>
@@ -73,8 +73,8 @@
 
     <section class="note" aria-labelledby="grundlag-title">
       <h2 id="grundlag-title">Hvordan appen er bygget</h2>
-      <p>AI Harness er vores egen Electron-app til Mac og Windows. OpenCode kører lokalt som kodeagent under brugerfladen. Vi bruger en fast version med vores egen konfiguration og har ikke lavet en fork af OpenCode.</p>
-      <p>Harness samler opstart, instruktioner, modelforbindelser, godkendelser, forhåndsvisning og Git. Modellen vælges separat. Når du bruger vores instruktionspakker i et andet kodeværktøj, arbejder du med det værktøjs egen agent.</p>
+      <p>Aura er vores egen Electron-app til Mac og Windows. OpenCode kører lokalt som kodeagent under brugerfladen. Vi bruger en fast version med vores egen konfiguration og har ikke lavet en fork af OpenCode.</p>
+      <p>Aura samler opstart, instruktioner, modelforbindelser, godkendelser, forhåndsvisning og Git. Modellen vælges separat. Når du bruger vores instruktionspakker i et andet kodeværktøj, arbejder du med det værktøjs egen agent.</p>
       <p>Fælles organisationslogin og en isoleret afvikling af hele agenten er endnu ikke bygget. Pi er en mulig alternativ motor, som vi har undersøgt i dokumentationen; appen bruger fortsat OpenCode.</p>
       <a href="https://github.com/ai-alliancen-org/ai-harness/blob/main/docs/teknisk-grundlag.md">Læs om arkitekturen og Pi ↗</a>
     </section>
@@ -92,6 +92,6 @@
       <a href="https://github.com/ai-alliancen-org/ai-harness/blob/main/CONTRIBUTING.md">Bidrag til projektet ↗</a>
     </section>
   </main>
-  <footer><span>AI Alliancen · AI Harness</span><a href="pakker.html">Webguide og grundregler</a></footer>
+  <footer><span>AI Alliancen · Aura Harness</span><a href="pakker.html">Webguide og grundregler</a></footer>
 </body>
 </html>

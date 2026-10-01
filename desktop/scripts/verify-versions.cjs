@@ -44,11 +44,11 @@ const helpers = require('./ui-test-helpers.cjs');
     await helpers.toOnboarding(page);
     await page.fill('#purpose', 'Jeg vil lave en oversigt over tre fiktive mødelokaler.'); await page.click('#create');
     await page.waitForSelector('#workspace:not([hidden])');
-    project = path.join(documents, 'AI Harness', (await fs.readdir(path.join(documents, 'AI Harness')))[0]);
+    project = path.join(documents, 'Aura', (await fs.readdir(path.join(documents, 'Aura')))[0]);
     // 1. Git fra start: første version, anonym identitet og automatiske versioner.
     assert.deepEqual(await log(), ['Projekt oprettet']); assert.equal(await clean(), true);
-    assert.equal((await run(project, ['config', 'user.name'])).toString().trim(), 'AI Harness-bruger');
-    assert.equal((await run(project, ['config', 'user.email'])).toString().trim(), 'bruger@ai-harness.invalid');
+    assert.equal((await run(project, ['config', 'user.name'])).toString().trim(), 'Aura-bruger');
+    assert.equal((await run(project, ['config', 'user.email'])).toString().trim(), 'bruger@aura.invalid');
     const starter = await fs.readFile(path.join(project, 'public/index.html'), 'utf8');
     const connection = await helpers.addConnection(page, { name: 'Kontrolleret model', baseURL: `http://127.0.0.1:${server.address().port}/v1` });
     await helpers.taskOptions(page); await page.selectOption('#connection-select', connection.id);

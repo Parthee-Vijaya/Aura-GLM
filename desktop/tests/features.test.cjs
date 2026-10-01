@@ -106,7 +106,7 @@ test('appens regler følger funktionerne', () => {
   assert.match(full, /gemmer selv en version efter hver AI-opgave/); assert.match(full, /Del-knap/); assert.match(full, /designlinks/); assert.match(full, /skill-værktøjet: harness-kodestil/);
   assert.doesNotMatch(full, /planlægning før bygning fra/);
   const none = appRules({ ...all, versioner: false, deling: false, planlaegning: false, design: false }, { links: ['https://design.example'], mode: 'free' });
-  assert.match(none, /slået versioner fra/); assert.match(none, /Deling og udgivelse er slået fra/); assert.match(none, /Byg direkte/); assert.match(none, /ikke slået skills fra AI Harness til/);
+  assert.match(none, /slået versioner fra/); assert.match(none, /Deling og udgivelse er slået fra/); assert.match(none, /Byg direkte/); assert.match(none, /ikke slået skills fra Aura Harness til/);
   assert.doesNotMatch(none, /designlinks/);
   assert.match(appRules(all, { autoCheckpoint: false }), /Brugeren gemmer versioner i appen/);
   for (const text of [full, none]) assert.match(text, /Bed aldrig om API-nøgler/);

@@ -1,4 +1,4 @@
-// Afprøver en AI Harness-installation i den rigtige OpenCode-motor med en kontrolleret lokal modelserver.
+// Afprøver en Aura Harness-installation i den rigtige OpenCode-motor med en kontrolleret lokal modelserver.
 // Prøven viser, hvad OpenCode faktisk sender til modellen: grundreglerne fra AGENTS.md, listen over skills og
 // indholdet af en skill, når modellen beder om den. Ingen ekstern model eller nøgle bruges.
 const assert = require('node:assert/strict');
@@ -72,7 +72,7 @@ const toolNames = request => (request.tools || []).map(tool => tool.function?.na
     assert.ok(main.length >= 2, `OpenCode sendte ${fake.requests.length} forespørgsler, heraf ${main.length} med skill-værktøjet. Exitkode ${result.code}.\n${result.err.slice(-1200)}`);
     const first = main[0];
     assert.match(text(first), /FÆLLES-GRUNDLAG-02/, 'grundreglerne fra AGENTS.md når modellen');
-    assert.match(text(first), /Skills fra AI Harness/, 'oversigten over skills fra AGENTS.md når modellen');
+    assert.match(text(first), /Skills fra Aura Harness/, 'oversigten over skills fra AGENTS.md når modellen');
     const skillTool = (first.tools || []).find(tool => (tool.function?.name || tool.name) === 'skill');
     const described = JSON.stringify(skillTool);
     const names = ['harness-ide-og-afgraensning', 'harness-sikkerhedsgennemgang', 'harness-udgivelse-og-gendannelse', 'harness-overdragelse-og-drift'];

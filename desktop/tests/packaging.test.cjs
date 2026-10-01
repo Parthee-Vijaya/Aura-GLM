@@ -16,7 +16,7 @@ test('runtime-download afviser forkert kontrolsum og bruger verificeret cache',a
  await fs.writeFile(file,data);await download(entry,file);assert.equal(calls,1);
 });
 test('downloadside viser kun eksisterende pakker og notarisation med matchende filhash',async t=>{
- const root=await temp(t),name='AI-Harness-0.2.0-beta.1-mac-arm64.dmg';await fs.writeFile(path.join(root,name),'testpakke');await fs.writeFile(path.join(root,'privat.env'),'ikke en download');
+ const root=await temp(t),name='Aura-0.2.0-beta.4-mac-arm64.dmg';await fs.writeFile(path.join(root,name),'testpakke');await fs.writeFile(path.join(root,'privat.env'),'ikke en download');
  await fs.writeFile(path.join(root,name+'.notarized.json'),JSON.stringify({status:'Accepted',sha256:'forkert'}));
  let files=await generate(root);assert.equal(files.length,1);assert.equal(files[0].notarized,false);
  await fs.writeFile(path.join(root,name+'.notarized.json'),JSON.stringify({status:'Accepted',sha256:files[0].sha256}));

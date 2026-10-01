@@ -99,7 +99,7 @@ test('afviser ugyldige skills, værktøjer og uoverensstemmelser', async t => {
 
 // En integration er sin egen funktion med kilder, ejer, adgang og dataflow. En mangel afvises.
 test('integrationer skal beskrive system, ejer, adgang og dataflow og stå for sig', async t => {
-  const integration = { system: 'Testregister', owner: 'Testejer', maintainer: 'AI Harness', access: 'Ingen bruger', data: 'Offentlige data', dataFlow: 'Fra browseren til testregistret', cost: 'Gratis', itRoute: false, sensitive: false, checkedAt: '2026-09-30' };
+  const integration = { system: 'Testregister', owner: 'Testejer', maintainer: 'Aura Harness', access: 'Ingen bruger', data: 'Offentlige data', dataFlow: 'Fra browseren til testregistret', cost: 'Gratis', itRoute: false, sensitive: false, checkedAt: '2026-09-30' };
   const entry = { ...skill, name: 'harness-integration-test', integration, sources: [{ title: 'Kilde', url: 'https://example.org' }] };
   const file = '---\nname: harness-integration-test\ndescription: Henter testdata, når opgaven kræver det.\n---\n# Test\nIngen referencer.\n';
   const base = { skills: [skill, entry], categories: [{ id: 'alt', title: 'Alt', summary: 'Alle skills.', skills: ['harness-a', 'harness-integration-test'] }], features: [{ id: 'alt', title: 'Alt', summary: 'Alt.', skills: ['harness-a'] }, { id: 'integration-test', group: 'integrationer', title: 'Test', summary: 'Testdata.', default: false, skills: ['harness-integration-test'] }] };

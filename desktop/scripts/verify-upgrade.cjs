@@ -8,13 +8,15 @@ const http = require('node:http');
   const oldBundle=path.resolve(process.argv[2]||''), newBundle=path.resolve(process.argv[3]||'');
   if(process.platform!=='darwin'||!oldBundle.endsWith('.app')||!newBundle.endsWith('.app')||oldBundle===newBundle)throw new Error('Angiv to forskellige Mac-apps: tidligere version og ny version.');
   await fs.access(oldBundle);await fs.access(newBundle);
-  const root=await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(),'harness-upgrade-'))), installed=path.join(root,'Programmer','AI Harness.app'), data=path.join(root,'appdata');
-  await fs.mkdir(path.dirname(installed));
+  // Hver app lægges under sit eget navn i Programmer, ligesom når brugeren trækker den nye version derind. Fra AI Harness til Aura skifter navnet.
+  const root=await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(),'harness-upgrade-'))), programs=path.join(root,'Programmer'), data=path.join(root,'appdata');
+  let installed=path.join(programs,path.basename(oldBundle));
+  await fs.mkdir(programs);
   let app,page,requests=0;
   const key='SYNTHETISK_TESTNOEGLE_KUN_LOKALT';
   const server=http.createServer((req,res)=>{requests++;assert.equal(req.headers.authorization,'Bearer '+key);res.setHeader('content-type','application/json');res.end(JSON.stringify({data:[{id:'opdateringsproeve'}]}));});
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
-  async function launch(){app=await electron.launch({executablePath:path.join(installed,'Contents/MacOS/AI Harness'),args:['--user-data-dir='+data],env:{...process.env,PATH:'/usr/bin:/bin:/usr/sbin:/sbin',ELECTRON_RUN_AS_NODE:undefined}});await require('./ui-test-helpers.cjs').isolateDocuments(app,path.join(root,'Dokumenter'));page=await app.firstWindow();page.setDefaultTimeout(30000);await page.waitForFunction(()=>!document.querySelector('#create').disabled);if(await page.locator('#welcome-dialog').count()&&await page.locator('#welcome-dialog').evaluate(el=>el.open))await page.click('#welcome-skip');}
+  async function launch(){app=await electron.launch({executablePath:path.join(installed,'Contents/MacOS',path.basename(installed,'.app')),args:['--user-data-dir='+data],env:{...process.env,PATH:'/usr/bin:/bin:/usr/sbin:/sbin',ELECTRON_RUN_AS_NODE:undefined}});await require('./ui-test-helpers.cjs').isolateDocuments(app,path.join(root,'Dokumenter'));page=await app.firstWindow();page.setDefaultTimeout(30000);await page.waitForFunction(()=>!document.querySelector('#create').disabled);if(await page.locator('#welcome-dialog').count()&&await page.locator('#welcome-dialog').evaluate(el=>el.open))await page.click('#welcome-skip');}
   try{
     await fs.cp(oldBundle,installed,{recursive:true,verbatimSymlinks:true});await launch();
     const oldVersion=await app.evaluate(({app})=>app.getVersion());
@@ -34,7 +36,7 @@ const http = require('node:http');
     }
     console.log('Projekt, forbindelse og design er gemt. Udskifter testappen.');
     await app.close();app=null;
-    await fs.rm(installed,{recursive:true});await fs.cp(newBundle,installed,{recursive:true,verbatimSymlinks:true});await launch();
+    await fs.rm(installed,{recursive:true});installed=path.join(programs,path.basename(newBundle));await fs.cp(newBundle,installed,{recursive:true,verbatimSymlinks:true});await launch();
     const newVersion=await app.evaluate(({app})=>app.getVersion());assert.notEqual(newVersion,oldVersion);
     console.log('Ny version startet: '+newVersion);
     assert.equal(requests,1,'Opdatering må ikke selv sende til den gemte forbindelse');

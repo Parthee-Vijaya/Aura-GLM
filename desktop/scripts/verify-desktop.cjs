@@ -22,9 +22,9 @@ const root = path.join(__dirname, '..', '..');
     await require('./ui-test-helpers.cjs').toOnboarding(page);
     await page.waitForSelector('#onboarding'); await page.waitForFunction(() => !document.querySelector('#new').disabled); await require('./ui-test-helpers.cjs').openSetup(page); await page.click('#setup-local'); await page.waitForSelector('#create-form');
     const identity = await app.evaluate(({app, Menu}) => ({ name: app.getName(), userData: app.getPath('userData'), labels: Menu.getApplicationMenu().items.map(item => item.label) }));
-    assert.equal(identity.name, 'AI Harness');
+    assert.equal(identity.name, 'Aura');
     assert.equal(await fs.realpath(identity.userData), await fs.realpath(path.join(testRoot, 'electron-data')));
-    assert.deepEqual(identity.labels, ['AI Harness', 'Rediger', 'Vis', 'Vindue']);
+    assert.deepEqual(identity.labels, ['Aura', 'Rediger', 'Vis', 'Vindue']);
     return page;
   }
   async function choose(paths, canceled=false) {
@@ -51,7 +51,7 @@ const root = path.join(__dirname, '..', '..');
     // Standardplaceringen står fast, når brugeren annullerer valget af en anden mappe.
     await choose([],true); await page.click('#choose-location');
     await page.waitForFunction(()=>!document.querySelector('#create').disabled);
-    assert.match(await page.locator('#project-location').textContent(), /Dokumenter › AI Harness/);
+    assert.match(await page.locator('#project-location').textContent(), /Dokumenter › Aura/);
     assert.equal(await page.locator('#onboarding').isVisible(),true);
     await require('./ui-test-helpers.cjs').chooseLocation(app, page, testRoot); await page.click('#create');
     await page.waitForSelector('#workspace:not([hidden])');

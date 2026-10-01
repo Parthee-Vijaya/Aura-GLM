@@ -18,7 +18,7 @@ test('appen anbefaler aldrig selv en model', () => {
 });
 test('indsats vises kun, hvor udbyderen har en dokumenteret standard', () => {
   const { effort } = require('../ui/model-advice.js');
-  assert.equal(effort('anthropic', 'claude-opus-5-5'), 'mellem');
+  assert.equal(effort('anthropic', 'claude-opus-5-5'), 'middel');
   assert.equal(effort('anthropic', 'claude-sonnet-5-5'), 'høj');
   assert.equal(effort('anthropic', 'claude-haiku-4-5-20251001'), null);
   assert.equal(effort('mistral', 'mistral-medium-latest'), null);

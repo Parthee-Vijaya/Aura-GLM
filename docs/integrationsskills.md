@@ -29,4 +29,4 @@ Integrationer ligger i det fælles bibliotek sammen med de øvrige skills. I ege
 
 ## Bidrag
 
-Indtil videre skrives integrationer af AI Harness. Beslutningen om at åbne for bidrag som pull requests fra leverandører og kommuner tages sammen med repositoryets licens. Se [beslutningerne](decisions.md).
+Indtil videre skrives integrationer af Aura Harness. Beslutningen om at åbne for bidrag som pull requests fra leverandører og kommuner tages sammen med repositoryets licens. Se [beslutningerne](decisions.md).

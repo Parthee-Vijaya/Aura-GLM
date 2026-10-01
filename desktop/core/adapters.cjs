@@ -29,7 +29,7 @@ function chooseSkillDirs(library, selected) {
 
 function rulesBody(library, dirs, skills = library.skills) {
   const intro = [
-    `Dette afsnit vedligeholdes af AI Harness, version ${library.version}. Skriv projektets egne regler uden for afsnittet; ændringer herinde bliver ikke overskrevet, men stopper automatiske opdateringer.`,
+    `Dette afsnit vedligeholdes af Aura Harness, version ${library.version}. Skriv projektets egne regler uden for afsnittet; ændringer herinde bliver ikke overskrevet, men stopper automatiske opdateringer.`,
     '',
     library.rules.trim()
   ];
@@ -38,7 +38,7 @@ function rulesBody(library, dirs, skills = library.skills) {
   return [
     ...intro,
     '',
-    '## Skills fra AI Harness',
+    '## Skills fra Aura Harness',
     '',
     `Skillsene ligger i ${where}. Mange kodeværktøjer finder dem selv. Hvis dit værktøj ikke gør, så læs \`<mappe>/<navn>/SKILL.md\`, før du løser en opgave, der passer til beskrivelsen.`,
     '',
@@ -57,7 +57,7 @@ function selectSkills(library, names) {
 }
 
 function importBody(file) {
-  return `AI Harness' fælles grundregler og oversigten over skills står i ${file}:\n\n@${file}`;
+  return `Aura Harness' fælles grundregler og oversigten over skills står i ${file}:\n\n@${file}`;
 }
 
 function readme(library, selected, dirs, skills) {
@@ -67,21 +67,21 @@ function readme(library, selected, dirs, skills) {
   const integrations = skills.filter(skill => skill.integration);
   const offered = library.skills.filter(skill => skill.integration && !skills.includes(skill));
   return [
-    '# AI Harness i dette projekt',
+    '# Aura Harness i dette projekt',
     '',
-    `Projektet bruger AI Harness ${library.version} til ${selected.map(tool => tool.name).join(', ')}. Harness giver kodeagenten fælles grundregler og ${skills.length - integrations.length} af ${base.length} skills til arbejdet fra idé til drift${integrations.length ? ` samt ${integrations.length === 1 ? 'integrationen' : 'integrationerne'} ${integrations.map(skill => skill.title).join(', ')}` : ''}.`,
+    `Projektet bruger Aura Harness ${library.version} til ${selected.map(tool => tool.name).join(', ')}. Aura Harness giver kodeagenten fælles grundregler og ${skills.length - integrations.length} af ${base.length} skills til arbejdet fra idé til drift${integrations.length ? ` samt ${integrations.length === 1 ? 'integrationen' : 'integrationerne'} ${integrations.map(skill => skill.title).join(', ')}` : ''}.`,
     '',
     `- Grundreglerne står i et afgrænset afsnit i ${[...new Set(selected.map(tool => tool.rules.import || tool.rules.file))].join(' og ')}.`,
     skills.length ? `- Skillsene ligger i ${dirs.map(dir => `\`${dir}/\``).join(' og ')}.` : '- Der er ikke valgt nogen skills.',
     '- `installation.json` registrerer version og kontrolsummer, så en opdatering eller fjernelse kun rører uændrede filer.',
     '',
-    'Skriv projektets egne regler uden for AI Harness-afsnittet. Hvis du ændrer en installeret skill, bevarer Harness din ændring og springer filen over ved opdatering.',
+    'Skriv projektets egne regler uden for Aura Harness-afsnittet. Hvis du ændrer en installeret skill, bevarer Aura Harness din ændring og springer filen over ved opdatering.',
     '',
     '## Skills',
     '',
     ...(skills.length ? skills.map(skill => `- **${skill.title}** (\`${skill.name}\`): ${skill.summary}`) : ['Ingen skills er valgt.']),
-    ...(left.length ? ['', `Fravalgt: ${left.map(skill => skill.title).join(', ')}. De kan vælges igen i AI Harness-appen.`] : []),
-    ...(offered.length ? ['', `Integrationer, der kan vælges til i AI Harness-appen: ${offered.map(skill => skill.title).join(', ')}.`] : []),
+    ...(left.length ? ['', `Fravalgt: ${left.map(skill => skill.title).join(', ')}. De kan vælges igen i Aura-appen.`] : []),
+    ...(offered.length ? ['', `Integrationer, der kan vælges til i Aura-appen: ${offered.map(skill => skill.title).join(', ')}.`] : []),
     '',
     'Instruktionerne er vejledning til kodeagenten. De er ikke adgangskontrol, en sikkerhedsgodkendelse eller en vurdering efter databeskyttelsesreglerne.'
   ].join('\n') + '\n';
@@ -117,13 +117,13 @@ function layoutFor(library, ids, { skills: names } = {}) {
 // Tekst til webplatforme, hvor reglerne indsættes i platformens egne felter.
 function knowledgeFor(library) {
   return [
-    `AI Harness ${library.version} · fælles grundregler`,
+    `Aura Harness ${library.version} · fælles grundregler`,
     '',
     library.rules.trim(),
     '',
-    '## Arbejdsgange fra AI Harness',
+    '## Arbejdsgange fra Aura Harness',
     '',
-    'Platformen indlæser ikke Harness-skills som filer. Brug disse arbejdsgange, når opgaven passer:',
+    'Platformen indlæser ikke Aura Harness-skills som filer. Brug disse arbejdsgange, når opgaven passer:',
     '',
     // Integrationer kræver skillens fulde tekst og vælges til for sig, så de står ikke i den korte tekst.
     ...library.skills.filter(skill => !skill.integration).map(skill => `- ${skill.title}: ${skill.summary}`)

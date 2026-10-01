@@ -14,12 +14,13 @@ const { Designs } = require('./core/designs.cjs');
 const { capture, changes } = require('./core/changes.cjs');
 const { OwnTools } = require('./core/own-tools.cjs');
 
-// Bevar eksisterende forbindelser, designpakker og rendererindstillinger ved navneskift.
-const existingUserData = app.getPath('userData');
-const existingSessionData = app.getPath('sessionData');
-app.setName('AI Harness');
-app.setPath('userData', existingUserData);
-app.setPath('sessionData', existingSessionData);
+// Appen hedder Aura. Datamappen og navnet i nøgleringen bevares fra før navneskiftet; se core/app-identity.cjs.
+const { appIdentity, rememberKeychain, projectParent, DISPLAY_NAME } = require('./core/app-identity.cjs');
+const identity = appIdentity({ appData: app.getPath('appData'), packaged: app.isPackaged, customUserData: app.commandLine.hasSwitch('user-data-dir'), userData: app.getPath('userData'), sessionData: app.getPath('sessionData') });
+rememberKeychain(identity);
+app.setName(identity.keychainName);
+app.setPath('userData', identity.userData);
+app.setPath('sessionData', identity.sessionData);
 
 protocol.registerSchemesAsPrivileged([{ scheme: 'harness', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 let window, preview, project, busy = false, chosenParent = null;
@@ -72,11 +73,11 @@ async function exclusive(action) {
   busy = true;
   try { return await action(); } finally { busy = false; }
 }
-// Nye projekter lægges i Dokumenter/AI Harness, medmindre brugeren selv har valgt en anden placering.
-const defaultProjectParent = () => path.join(app.getPath('documents'), 'AI Harness');
+// Nye projekter lægges i Dokumenter/Aura, medmindre brugeren selv har valgt en anden placering.
+const defaultProjectParent = () => projectParent(app.getPath('documents'));
 function projectLocation() {
   const parent = chosenParent || defaultProjectParent();
-  return { chosen: Boolean(chosenParent), label: chosenParent ? parent : 'Dokumenter › AI Harness', path: parent };
+  return { chosen: Boolean(chosenParent), label: chosenParent ? parent : `Dokumenter › ${path.basename(parent)}`, path: parent };
 }
 handle('project:location', () => projectLocation());
 handle('project:choose-location', () => exclusive(async () => {
@@ -197,7 +198,7 @@ handle('designs:clear', () => exclusive(() => { assets = []; return []; }));
 handle('designs:list', () => new Designs(workbench.store).list());
 handle('designs:save', input => exclusive(() => new Designs(workbench.store).save(input, assets)));
 handle('designs:apply', id => exclusive(async () => { const design = await new Designs(workbench.store).get(id); assets = design.assets; return { color: design.color, links: design.links, assets: assets.map(({ id, kind, name }) => ({ id, kind, name })) }; }));
-// Harness i brugerens eget kodeværktøj. Mappen vælges her i hovedprocessen; brugerfladen sender ingen stier.
+// Aura Harness i brugerens eget kodeværktøj. Mappen vælges her i hovedprocessen; brugerfladen sender ingen stier.
 const tools = () => ownTools ??= new OwnTools({ profiles: profileRoot, git: workbench.git });
 handle('tools:catalog', () => tools().catalog());
 handle('tools:folder', () => exclusive(async () => {
@@ -223,7 +224,7 @@ function requireIdleProject() {
 handle('support:report', () => supportReport());
 handle('support:save', async () => {
   const report = supportReport();
-  const chosen = await dialog.showSaveDialog(window, { title: 'Gem fejlrapport', defaultPath: 'AI-Harness-fejlrapport.json', filters: [{ name: 'Fejlrapport', extensions: ['json'] }] });
+  const chosen = await dialog.showSaveDialog(window, { title: 'Gem fejlrapport', defaultPath: 'Aura-fejlrapport.json', filters: [{ name: 'Fejlrapport', extensions: ['json'] }] });
   if (chosen.canceled || !chosen.filePath) return false;
   await fs.writeFile(chosen.filePath, JSON.stringify(report, null, 2), { mode: 0o600 }); return true;
 });
@@ -370,16 +371,16 @@ handle('preview:execute', token => exclusive(async () => {
 handle('preview:stop', () => devServer.stop().then(() => devServer.snapshot()));
 
 app.whenReady().then(() => {
-  app.setAboutPanelOptions({ applicationName: 'AI Harness', applicationVersion: app.getVersion() });
+  app.setAboutPanelOptions({ applicationName: DISPLAY_NAME, applicationVersion: app.getVersion() });
   Menu.setApplicationMenu(Menu.buildFromTemplate([
-    { label: 'AI Harness', submenu: [
-      { label: 'Om AI Harness', role: 'about' },
+    { label: DISPLAY_NAME, submenu: [
+      { label: `Om ${DISPLAY_NAME}`, role: 'about' },
       ...(process.platform === 'darwin' ? [
         { type: 'separator' }, { label: 'Tjenester', role: 'services' },
-        { type: 'separator' }, { label: 'Skjul AI Harness', role: 'hide' },
+        { type: 'separator' }, { label: `Skjul ${DISPLAY_NAME}`, role: 'hide' },
         { label: 'Skjul andre', role: 'hideOthers' }, { label: 'Vis alle', role: 'unhide' }
       ] : []),
-      { type: 'separator' }, { label: 'Afslut AI Harness', role: 'quit' }
+      { type: 'separator' }, { label: `Afslut ${DISPLAY_NAME}`, role: 'quit' }
     ] },
     { label: 'Rediger', submenu: [
       { label: 'Fortryd', role: 'undo' }, { label: 'Gentag', role: 'redo' },
@@ -438,7 +439,7 @@ app.whenReady().then(() => {
     callback({ responseHeaders: headers });
   });
   function createWindow() {
-    window = new BrowserWindow({ width: 1440, height: 940, minWidth: 980, minHeight: 720, backgroundColor: '#F8FAFC', title: 'AI Harness', webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, webviewTag: false } });
+    window = new BrowserWindow({ width: 1440, height: 940, minWidth: 980, minHeight: 720, backgroundColor: '#F8FAFC', title: DISPLAY_NAME, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, webviewTag: false } });
     window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     window.webContents.on('will-navigate', event => event.preventDefault());
     window.webContents.on('will-attach-webview', event => event.preventDefault());

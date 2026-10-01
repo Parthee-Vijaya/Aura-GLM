@@ -11,7 +11,7 @@ class GitHub {
   }
   async request(url, { token, method = 'GET', body, missing = false } = {}) {
     let response;
-    try { response = await this.fetcher(url, { method, redirect: 'error', signal: AbortSignal.timeout(20000), headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'User-Agent': 'AI-Harness', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) }); }
+    try { response = await this.fetcher(url, { method, redirect: 'error', signal: AbortSignal.timeout(20000), headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'User-Agent': 'Aura', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) }); }
     catch { throw new Error(method === 'GET' ? 'GitHub kunne ikke kontaktes. Kontrollér netværket, og prøv igen.' : 'GitHub-handlingens resultat er ukendt. Kontrollér GitHub før et nyt forsøg; handlingen kan være gennemført.'); }
     if (response.status === 404 && missing) return null;
     if (!response.ok) throw new Error(response.status === 401 ? 'GitHub-adgangen er udløbet eller afvist. Forbind kontoen igen.' : response.status === 403 ? 'GitHub afviste handlingen. Kontrollér rettigheder, organisationsgodkendelse, SSO og kvote.' : response.status === 422 ? 'GitHub afviste oplysningerne. Navnet kan være optaget, eller organisationens regler kan blokere oprettelsen.' : `GitHub-handlingen mislykkedes (HTTP ${response.status}). Kontrollér resultatet på GitHub før et nyt forsøg.`);

@@ -26,7 +26,7 @@ async function unreachable(url) { for (let i = 0; i < 40; i++) { try { await fet
   const errors = [];
   async function launch() {
     const bundle = process.env.HARNESS_TEST_PACKAGE;
-    const executablePath = bundle ? path.join(bundle, 'Contents/MacOS/AI Harness') : require('electron');
+    const executablePath = bundle ? path.join(bundle, 'Contents/MacOS', path.basename(bundle, '.app')) : require('electron');
     app = await electron.launch({ executablePath, args: [...(bundle ? [] : [path.join(__dirname, '..')]), '--user-data-dir=' + path.join(root, 'appdata')], env: { ...process.env, ...(bundle ? { PATH: '/usr/bin:/bin:/usr/sbin:/sbin' } : {}), ELECTRON_RUN_AS_NODE: undefined, OPENROUTER_API_KEY: 'SYNTHETIC_MUST_NOT_REACH_PROJECT' } });
     page = await app.firstWindow(); await skipIntroduction(page); page.on('pageerror', error => errors.push(error.message));
   }

@@ -40,7 +40,7 @@ npm test
 
 ## Downloadside og GitHub Pages
 
-`site/dist/overview.html` er forsiden med projektets formål og de to brugsveje: eget kodeværktøj og AI Harness-appen. `desktop.html` er installationsvejledningen, og `index.html` er kilden til instruktionssiden `pakker.html`. Det faglige grundlag og de foreslåede kontroller ligger i [harness-grundlag.md](harness-grundlag.md) og [projektkontrol.md](projektkontrol.md); de er ikke en erklæring om implementerede funktioner.
+`site/dist/overview.html` er forsiden med projektets formål og de to brugsveje: eget kodeværktøj og Aura-appen. `desktop.html` er installationsvejledningen, og `index.html` er kilden til instruktionssiden `pakker.html`. Det faglige grundlag og de foreslåede kontroller ligger i [harness-grundlag.md](harness-grundlag.md) og [projektkontrol.md](projektkontrol.md); de er ikke en erklæring om implementerede funktioner.
 
 `vaerktoejer.html` og `skills.html` genereres fra kataloget. Værktøjsoversigten viser for hvert værktøj, hvor filerne lægges, hvordan indlæsningen kontrolleres, og om placeringen er afprøvet eller følger dokumentationen. `skills.html` er FAQ'en om de skills, der følger med. [Teknisk grundlag](teknisk-grundlag.md) dokumenterer den faktiske OpenCode-arkitektur, Pi som kandidat og mulighederne for en senere webudgave. Brug den samlede Pages-bygning nedenfor, når navigationen mellem forside, værktøjsoversigt og pakker skal afprøves.
 

@@ -1,4 +1,4 @@
-# AI Harness · fælles grundregler
+# Aura Harness · fælles grundregler
 
 Profil: grundregler · Version: 0.2.0 · Sprog: dansk
 
@@ -9,7 +9,7 @@ Disse instruktioner guider arbejdet i dette projekt. De erstatter ikke værktøj
 - Svar på dansk og forklar tekniske valg i almindeligt sprog. Bevar tekniske navne og kommandoer.
 - Læs projektets eksisterende dokumentation og kode før ændringer. Beskriv væsentlige antagelser, og spørg, hvis et forkert valg vil ændre opgavens retning.
 - Udfør den aftalte opgave grundigt. Tilføj ikke nye tjenester, betalte ressourcer eller funktioner uden aftale.
-- Brug den relevante skill fra AI Harness, når opgaven passer til dens beskrivelse. Projektets egne regler går forud for Harness' standardvalg.
+- Brug den relevante skill fra Aura Harness, når opgaven passer til dens beskrivelse. Projektets egne regler går forud for Aura Harness' standardvalg.
 
 ## 2. Beskyt hemmeligheder og data
 

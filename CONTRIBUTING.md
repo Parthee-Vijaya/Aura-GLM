@@ -1,4 +1,4 @@
-# Bidrag til AI Harness
+# Bidrag til Aura Harness
 
 Dansk er dokumentets primære sprog. En engelsk version følger nedenfor.
 
@@ -33,7 +33,7 @@ Projektets vedligeholdere, licens, bidragsvilkår, proces for verifikation af in
 
 ---
 
-# Contributing to AI Harness
+# Contributing to Aura Harness
 
 Danish is the primary language of this document. This section provides the English version.
 

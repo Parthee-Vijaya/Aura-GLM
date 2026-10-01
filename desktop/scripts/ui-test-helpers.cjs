@@ -41,7 +41,7 @@ async function previewOptions(page) {
 }
 // Projektskærmens valgfrie sektioner ligger bag Flere valg.
 async function projectOptions(page) { if (!await page.locator('#project-options').evaluate(el => el.open)) await page.click('#project-options > summary'); }
-// Nye projekter lægges som standard i Dokumenter/AI Harness. Testene bruger deres egen midlertidige mappe.
+// Nye projekter lægges som standard i Dokumenter/Aura. Testene bruger deres egen midlertidige mappe.
 async function isolateDocuments(app, folder) { await app.evaluate(({ app }, folder) => app.setPath('documents', folder), folder); }
 // Vælg en anden placering til nye projekter gennem appens link, med en udfyldt mappedialog.
 async function chooseLocation(app, page, folder) {

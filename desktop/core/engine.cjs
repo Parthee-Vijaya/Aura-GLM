@@ -104,7 +104,7 @@ class OpenCodeEngine {
       if (health.version !== VERSION) throw new Error('Agentmotorens version matcher ikke den afprøvede version.');
       const effective = await this.request('/config');
       if (effective.small_model !== this.config.small_model || !isDeepStrictEqual(effective.enabled_providers, ['harness']) || effective.provider?.harness?.npm !== this.provider.npm || effective.provider?.harness?.options?.baseURL !== this.provider.options.baseURL || effective.provider?.harness?.options?.apiKey !== this.provider.options.apiKey || effective.model !== this.config.model || effective.share !== 'disabled' || effective.snapshot !== false || !isDeepStrictEqual(effective.permission, permission) || !isDeepStrictEqual(effective.agent?.plan?.permission, permission) || Object.keys(effective.mcp || {}).length || (effective.plugin || []).length) throw new Error('Agentens effektive indstillinger afviger. En lokal eller administreret konfiguration kan være årsagen.');
-      this.session = await this.request('/session', 'POST', { title: 'AI Harness' });
+      this.session = await this.request('/session', 'POST', { title: 'Aura' });
       this.active = true;
       this.listen();
       return this.session.id;

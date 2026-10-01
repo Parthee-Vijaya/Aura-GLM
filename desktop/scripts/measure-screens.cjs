@@ -87,7 +87,7 @@ const server = http.createServer(async (req, res) => {
     await win.fill('#api-key', 'syntetisk-noegle-kun-til-maaling'); await click('#save-connection');
     await win.locator('#setup-ai').filter({ hasText: /virker|svarer/ }).waitFor(); await measure('forbindelse', '#setup', 'Opsætning: forbindelsen virker');
     await click('#setup-continue'); task = null;
-    await win.locator('#setup-title').filter({ hasText: 'Hvad skal AI Harness hjælpe med?' }).waitFor(); await measure('funktioner-start', '#setup', 'Første start: funktioner');
+    await win.locator('#setup-title').filter({ hasText: 'Hvad skal Aura hjælpe med?' }).waitFor(); await measure('funktioner-start', '#setup', 'Første start: funktioner');
     await win.click('#features-pick'); await measure('funktioner-vaelg', '#setup', 'Første start: vælg selv');
     await win.click('#setup-back'); await win.click('#features-all'); await win.waitForSelector('#create-form');
     // Projektopstart.
@@ -99,7 +99,7 @@ const server = http.createServer(async (req, res) => {
     begin('Fra idé til første udkast');
     await win.fill('#purpose', 'Jeg vil lave en oversigt over tre fiktive mødelokaler.');
     await click('#create'); await win.waitForSelector('#workspace:not([hidden])');
-    state.project = path.join(documents, 'AI Harness', (await fs.readdir(path.join(documents, 'AI Harness')))[0]);
+    state.project = path.join(documents, 'Aura', (await fs.readdir(path.join(documents, 'Aura')))[0]);
     await measure('arbejdsomraade', '#workspace', 'Arbejdsområde: tomt projekt');
     task = null; await win.click('#model-chip'); await measure('din-ai', '#task-dialog', 'Din AI'); await win.click('[data-close="task-dialog"]'); task = 'Fra idé til første udkast';
     await click('#send'); await win.waitForSelector('#data-dialog[open]'); await measure('foer-du-sender', '#data-dialog', 'Før du sender');
@@ -131,7 +131,7 @@ const server = http.createServer(async (req, res) => {
     await win.waitForFunction(() => document.querySelector('#hosting-status').textContent.trim()); await measure('sikkerhedskopi', '#hosting-dialog', 'Sikkerhedskopi'); await win.click('[data-close="hosting-dialog"]');
     await helpers.menuClick(win, '#connections-button'); await measure('forbindelser', '#connections-dialog', 'Administrer forbindelser'); await win.click('[data-close="connections-dialog"]');
     await helpers.menuClick(win, '#support-button'); await win.waitForSelector('#support-dialog[open]'); await measure('hjaelp', '#support-dialog', 'Hjælp og feedback'); await win.click('[data-close="support-dialog"]');
-    await win.click('#tools-button'); await win.waitForSelector('#tools-dialog[open]'); await measure('kodevaerktoej', '#tools-dialog', 'Harness i dit kodeværktøj'); await win.click('#tools-dialog [data-close]');
+    await win.click('#tools-button'); await win.waitForSelector('#tools-dialog[open]'); await measure('kodevaerktoej', '#tools-dialog', 'Aura Harness i dit kodeværktøj'); await win.click('#tools-dialog [data-close]');
     // Tabel: flest ord først, så de tungeste skærme står øverst.
     const rows = [...results].sort((a, b) => b.words - a.words);
     const table = ['| Skærm | Ord | Valg | ⓘ | Felter | Skærmbillede |', '|---|---:|---:|---:|---:|---|', ...rows.map(row => `| ${row.title} | ${row.words} | ${row.choices} | ${row.infos} | ${row.fields} | ${row.file} |`)].join('\n');

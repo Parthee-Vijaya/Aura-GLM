@@ -174,14 +174,14 @@
     },
     {
       "q": "Hvad er en integration?",
-      "a": "En integration er en skill om ét bestemt system, fx adresser eller CVR. Den forklarer, hvordan man får adgang, hvor nøgler skal ligge, hvilke data systemet giver, og hvilke regler der gælder. Integrationerne følger ikke med pakkerne. Du vælger dem til i AI Harness-appen for de systemer, dit projekt bruger."
+      "a": "En integration er en skill om ét bestemt system, fx adresser eller CVR. Den forklarer, hvordan man får adgang, hvor nøgler skal ligge, hvilke data systemet giver, og hvilke regler der gælder. Integrationerne følger ikke med pakkerne. Du vælger dem til i Aura-appen for de systemer, dit projekt bruger."
     },
     {
       "q": "Kan jeg ændre en skill?",
-      "a": "Ja. Filerne er dine. Hvis du ændrer en installeret fil, springer en senere opdatering netop den fil over og fortæller dig det. Projektets egne regler skrives uden for AI Harness-afsnittet i AGENTS.md eller CLAUDE.md, så de aldrig overskrives."
+      "a": "Ja. Filerne er dine. Hvis du ændrer en installeret fil, springer en senere opdatering netop den fil over og fortæller dig det. Projektets egne regler skrives uden for Aura Harness-afsnittet i AGENTS.md eller CLAUDE.md, så de aldrig overskrives."
     },
     {
-      "q": "Sender AI Harness mine data nogen steder hen?",
+      "q": "Sender Aura Harness mine data nogen steder hen?",
       "a": "Nej. Installationen kopierer tekstfiler til dit projekt. Dit kodeværktøj og den model, du har valgt, læser filerne som en del af dit arbejde. Hvor de data behandles, afhænger af værktøjet og modellen."
     },
     {
@@ -190,15 +190,15 @@
     },
     {
       "q": "Bliver koden bedre af det?",
-      "a": "Det har vi endnu ikke målt for vores målgruppe. Undersøgelser fra 2026 viser, at generelle instruktionsfiler sjældent gør kodeagenter mere korrekte og koster ekstra tokens, mens fokuserede skills kan hjælpe ved bestemte opgaver. Derfor er grundreglerne korte, og skills indlæses kun, når opgaven passer. Vi vil sammenligne de samme opgaver med og uden Harness på flere modeller."
+      "a": "Det har vi endnu ikke målt for vores målgruppe. Undersøgelser fra 2026 viser, at generelle instruktionsfiler sjældent gør kodeagenter mere korrekte og koster ekstra tokens, mens fokuserede skills kan hjælpe ved bestemte opgaver. Derfor er grundreglerne korte, og skills indlæses kun, når opgaven passer. Vi vil sammenligne de samme opgaver med og uden Aura Harness på flere modeller."
     },
     {
       "q": "Kan en skill gøre skade?",
-      "a": "En skill fra en ukendt kilde skal behandles som software, fordi den kan få agenten til at køre kommandoer. AI Harness' skills indeholder kun tekst, ingen scripts, og giver ingen værktøjstilladelser. Du kan læse dem alle på denne side, før du installerer dem."
+      "a": "En skill fra en ukendt kilde skal behandles som software, fordi den kan få agenten til at køre kommandoer. Aura Harness' skills indeholder kun tekst, ingen scripts, og giver ingen værktøjstilladelser. Du kan læse dem alle på denne side, før du installerer dem."
     },
     {
-      "q": "Hvordan opdaterer eller fjerner jeg AI Harness?",
-      "a": "Installér en ny version på samme måde. Harness opdaterer kun filer, der er uændrede siden installationen, og viser konflikter for resten. Fjernelse sletter kun uændrede filer og afsnit. Oplysningerne står i .harness/installation.json, som også skal med i Git."
+      "q": "Hvordan opdaterer eller fjerner jeg Aura Harness?",
+      "a": "Installér en ny version på samme måde. Aura Harness opdaterer kun filer, der er uændrede siden installationen, og viser konflikter for resten. Fjernelse sletter kun uændrede filer og afsnit. Oplysningerne står i .harness/installation.json, som også skal med i Git."
     },
     {
       "q": "Hvilke kodeværktøjer virker det med?",
@@ -224,7 +224,7 @@
       "summary": "Læser et eksisterende projekt, før der foreslås ændringer, og bevarer dets konventioner.",
       "faq": {
         "hvad": "Agenten gennemgår projektet uden at køre kommandoer: instruktioner, teknologi, låsefiler, start- og testkommandoer, Git-status, CI og hosting. Derefter får du en kort oversigt og forslag, der passer til projektet.",
-        "hvornaar": "Når du åbner et projekt første gang, overtager det fra andre eller vil tilføje AI Harness til et projekt, der allerede findes.",
+        "hvornaar": "Når du åbner et projekt første gang, overtager det fra andre eller vil tilføje Aura Harness til et projekt, der allerede findes.",
         "resultat": "Et overblik over projektet med kendte risici og usikkerheder samt forslag med præcise filændringer, som du selv vælger imellem.",
         "ikke": "Den skifter ikke teknologi, pakkehåndtering eller Git-model, og den rydder ikke op med reset, rebase eller force-push."
       },
@@ -522,7 +522,7 @@
       "integration": {
         "system": "Danmarks Adresseregister (DAR) via Adressevælgeren og Datafordeleren",
         "owner": "Klimadatastyrelsen",
-        "maintainer": "AI Harness",
+        "maintainer": "Aura Harness",
         "access": "Adressevælgeren kræver ingen bruger. Datafordeleren kræver en gratis bruger og en API-nøgle.",
         "data": "Offentlige adresser, husnumre, postnumre og koordinater. Ingen personoplysninger i sig selv.",
         "dataFlow": "Søgeteksten sendes fra den app, du bygger, til Klimadatastyrelsen. Kald til Datafordeleren går fra en server med nøglen.",
@@ -571,7 +571,7 @@
       "integration": {
         "system": "Det Centrale Virksomhedsregister (CVR) via Datafordeleren eller Erhvervsstyrelsens system-til-system-adgang",
         "owner": "Erhvervsstyrelsen",
-        "maintainer": "AI Harness",
+        "maintainer": "Aura Harness",
         "access": "Kræver en bruger med API-nøgle hos Datafordeleren eller en ansøgning om system-til-system-adgang, som normalt tager tre uger. Oplysninger om personer kræver MitID Erhverv.",
         "data": "Offentlige virksomhedsoplysninger. Enkeltmandsvirksomheder og ejere er personer, og nogle er reklamebeskyttede.",
         "dataFlow": "Forespørgsler går fra en server i den app, du bygger, til Datafordeleren eller Erhvervsstyrelsen med brugerens nøgle.",
@@ -600,7 +600,7 @@
           ".claude/skills"
         ]
       },
-      "verification": "Start en ny session i projektets rodmappe. Skriv /context eller /memory for at se de indlæste instruktionsfiler, og /skills for at se Harness-skillsene. Du kan starte en skill direkte, fx /harness-sikkerhedsgennemgang.",
+      "verification": "Start en ny session i projektets rodmappe. Skriv /context eller /memory for at se de indlæste instruktionsfiler, og /skills for at se Aura Harness-skillsene. Du kan starte en skill direkte, fx /harness-sikkerhedsgennemgang.",
       "caveat": "CLAUDE.md importerer AGENTS.md med @AGENTS.md, som Anthropic selv anbefaler. Uden CLAUDE.md læser nyere versioner af Claude Code AGENTS.md direkte, men en eksisterende CLAUDE.md slår det fra. Personlige skills med samme navn i ~/.claude/skills går forud for projektets.",
       "sources": [
         {
@@ -630,7 +630,7 @@
           ".agents/skills"
         ]
       },
-      "verification": "Start Codex i projektets rodmappe, og markér projektet som betroet. Skriv /skills for at se Harness-skillsene, og bed agenten opsummere de aktive projektinstruktioner. Du kan starte en skill direkte med $harness-sikkerhedsgennemgang.",
+      "verification": "Start Codex i projektets rodmappe, og markér projektet som betroet. Skriv /skills for at se Aura Harness-skillsene, og bed agenten opsummere de aktive projektinstruktioner. Du kan starte en skill direkte med $harness-sikkerhedsgennemgang.",
       "caveat": "Codex springer projektets AGENTS.md over i projekter, der ikke er betroede. AGENTS.override.md i samme mappe går forud for AGENTS.md, og Codex læser højst 32 KiB projektinstruktioner i alt. Ændringer kræver en ny session.",
       "sources": [
         {
@@ -649,7 +649,7 @@
       "vendor": "SST",
       "category": "agent",
       "status": "afproevet",
-      "summary": "Kodeagent med åben kildekode til terminalen, editoren og desktop. Bruges også som motor i AI Harness-appen.",
+      "summary": "Kodeagent med åben kildekode til terminalen, editoren og desktop. Bruges også som motor i Aura-appen.",
       "rules": {
         "file": "AGENTS.md",
         "mode": "blok"
@@ -662,7 +662,7 @@
         ],
         "duplicates": "Indholdet er det samme, så det er ligegyldigt, hvilken kopi OpenCode bruger."
       },
-      "verification": "Start OpenCode i projektets rodmappe. Tryk / for at se Harness-skillsene som kommandoer, eller kør opencode debug skill for en liste. Bed agenten opsummere de aktive regler.",
+      "verification": "Start OpenCode i projektets rodmappe. Tryk / for at se Aura Harness-skillsene som kommandoer, eller kør opencode debug skill for en liste. Bed agenten opsummere de aktive regler.",
       "caveat": "Findes AGENTS.md, ignorerer OpenCode projektets CLAUDE.md. OpenCode læser skills fra .opencode/skills, .claude/skills og .agents/skills; ligger den samme skill flere steder, bruges én af dem. Globale regler og skills fra din egen opsætning indlæses også.",
       "sources": [
         {
@@ -698,7 +698,7 @@
           ".gemini/skills"
         ]
       },
-      "verification": "Start gemini i projektets rodmappe, og markér mappen som betroet. Kør /memory show for at se de indlæste instruktioner og /skills list for at se Harness-skillsene.",
+      "verification": "Start gemini i projektets rodmappe, og markér mappen som betroet. Kør /memory show for at se de indlæste instruktioner og /skills list for at se Aura Harness-skillsene.",
       "caveat": "Gemini CLI læser GEMINI.md, som importerer AGENTS.md. Skills findes kun i den mappe, Gemini startes fra, og Gemini beder om samtykke, før en skill aktiveres.",
       "sources": [
         {
@@ -728,7 +728,7 @@
           ".vibe/skills"
         ]
       },
-      "verification": "Start vibe i projektets rodmappe, og marker mappen som betroet. Tryk / for at se Harness-skillsene. /reload indlæser instruktioner og skills igen.",
+      "verification": "Start vibe i projektets rodmappe, og marker mappen som betroet. Tryk / for at se Aura Harness-skillsene. /reload indlæser instruktioner og skills igen.",
       "caveat": "Vibe læser kun projektets AGENTS.md og skills i betroede mapper, og skills findes kun i den mappe, Vibe startes fra. Telemetri er slået til som standard og slås fra med enable_telemetry = false.",
       "sources": [
         {
@@ -855,7 +855,7 @@
         ]
       },
       "verification": "Start en samtale i projektet, og bed agenten opsummere projektets regler og nævne sine skills.",
-      "caveat": "Filplaceringen følger OpenHands' dokumentation og er ikke afprøvet med Harness.",
+      "caveat": "Filplaceringen følger OpenHands' dokumentation og er ikke afprøvet med Aura Harness.",
       "sources": [
         {
           "title": "OpenHands om skills",
@@ -881,7 +881,7 @@
         ]
       },
       "verification": "Start droid i projektets rodmappe, og bed agenten opsummere projektets regler og nævne sine skills.",
-      "caveat": "Filplaceringen følger Factorys dokumentation og er ikke afprøvet med Harness.",
+      "caveat": "Filplaceringen følger Factorys dokumentation og er ikke afprøvet med Aura Harness.",
       "sources": [
         {
           "title": "Factory om AGENTS.md",
@@ -906,7 +906,7 @@
       },
       "skills": null,
       "verification": "Start med aider --read AGENTS.md, eller tilføj read: AGENTS.md i .aider.conf.yml. Ved start skriver Aider, at AGENTS.md er tilføjet. Læs en skill ind med /read .agents/skills/<navn>/SKILL.md, når opgaven passer.",
-      "caveat": "Aider indlæser hverken AGENTS.md eller skills af sig selv. Harness ændrer ikke .aider.conf.yml.",
+      "caveat": "Aider indlæser hverken AGENTS.md eller skills af sig selv. Aura Harness ændrer ikke .aider.conf.yml.",
       "sources": [
         {
           "title": "Aider om konventioner",
@@ -1003,7 +1003,7 @@
         ],
         "duplicates": "Cursors håndtering af samme skill i flere mapper er ikke dokumenteret."
       },
-      "verification": "Åbn Customize, og se under Rules og Skills. Skriv / i chatten for at se Harness-skillsene, og start fx /harness-sikkerhedsgennemgang.",
+      "verification": "Åbn Customize, og se under Rules og Skills. Skriv / i chatten for at se Aura Harness-skillsene, og start fx /harness-sikkerhedsgennemgang.",
       "caveat": "Cursor læser både AGENTS.md og CLAUDE.md. Har projektet begge, bruger Cursor begge. Nye skills opdages ved opstart, så genstart Cursor efter installationen.",
       "sources": [
         {
@@ -1135,7 +1135,7 @@
         ]
       },
       "verification": "Kør kilo debug skill for en liste over skills, og /reload efter ændringer. Et brugt skill-kald vises i samtalen.",
-      "caveat": "Kilo Code indlæser altid AGENTS.md. I VS Code læses .claude-mapper kun med en særskilt indstilling, derfor bruger Harness .agents/skills.",
+      "caveat": "Kilo Code indlæser altid AGENTS.md. I VS Code læses .claude-mapper kun med en særskilt indstilling, derfor bruger Aura Harness .agents/skills.",
       "sources": [
         {
           "title": "Kilo Code om AGENTS.md",
@@ -1193,7 +1193,7 @@
         ]
       },
       "verification": "Åbn projektet, og bed agenten opsummere projektets regler og nævne sine skills.",
-      "caveat": "Filplaceringen følger Googles dokumentation og er ikke afprøvet med Harness.",
+      "caveat": "Filplaceringen følger Googles dokumentation og er ikke afprøvet med Aura Harness.",
       "sources": [
         {
           "title": "Antigravity om regler",
@@ -1281,7 +1281,7 @@
         ]
       },
       "verification": "Læg filerne i Replit-projektet, fx gennem Git eller upload. Bed Agent nævne projektets instruktioner og skills.",
-      "caveat": "Replit Agent kan selv ændre replit.md. Ændres AI Harness-afsnittet, springer en senere opdatering det over.",
+      "caveat": "Replit Agent kan selv ændre replit.md. Ændres Aura Harness-afsnittet, springer en senere opdatering det over.",
       "sources": [
         {
           "title": "Replit om replit.md",

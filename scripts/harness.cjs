@@ -5,7 +5,7 @@ const { loadLibrary } = require('../desktop/core/library.cjs');
 const { layoutFor } = require('../desktop/core/adapters.cjs');
 const installer = require('../desktop/core/installer.cjs');
 
-const help = `AI Harness i dit eget kodeværktøj
+const help = `Aura Harness i dit eget kodeværktøj
 
 Brug:
   node scripts/harness.cjs tools
@@ -15,7 +15,7 @@ Brug:
 
 install viser først de præcise ændringer. Intet skrives uden --yes eller en bekræftelse.
 Et tidligere udvalg af skills og integrationer fra appen bevares. Ellers følger alle skills med undtagen integrationer.
-Eksisterende filer overskrives aldrig; Harness tilføjer et afgrænset afsnit eller springer filen over.`;
+Eksisterende filer overskrives aldrig; Aura Harness tilføjer et afgrænset afsnit eller springer filen over.`;
 
 const labels = { opret: 'opret', tilfoej: 'tilføj afsnit', opdater: 'opdatér', uaendret: 'uændret', konflikt: 'KONFLIKT', fjern: 'fjern', 'fjern-afsnit': 'fjern afsnit', bevar: 'bevar' };
 
@@ -55,7 +55,7 @@ async function main() {
   if (!args.project) throw new Error(help);
   if (args.command === 'status') {
     const { root, manifest } = await installer.status(args.project);
-    console.log(manifest ? `${root}: AI Harness ${manifest.version} til ${manifest.tools.join(', ')}. Installeret ${manifest.installedAt || 'manuelt'} (${manifest.timeSource}).` : `${root}: ingen AI Harness-installation.`);
+    console.log(manifest ? `${root}: Aura Harness ${manifest.version} til ${manifest.tools.join(', ')}. Installeret ${manifest.installedAt || 'manuelt'} (${manifest.timeSource}).` : `${root}: ingen Aura Harness-installation.`);
     return;
   }
   if (args.command === 'install') {
@@ -70,15 +70,15 @@ async function main() {
     if (plan.conflicts.length && !args.skipConflicts) { process.exitCode = 2; return; }
     if (!(await confirm('\nInstaller disse ændringer?', args.yes))) return;
     const result = await installer.apply(args.project, layout.entries, settings, plan.token, { skipConflicts: args.skipConflicts });
-    console.log(`\nAI Harness ${result.manifest.version} er installeret. Gennemgå ændringerne i Git, før du gemmer en version.`);
+    console.log(`\nAura Harness ${result.manifest.version} er installeret. Gennemgå ændringerne i Git, før du gemmer en version.`);
     return;
   }
   if (args.command === 'remove') {
     const plan = await installer.planRemoval(args.project);
     print(plan);
-    if (!(await confirm('\nFjern AI Harness fra projektet?', args.yes))) return;
+    if (!(await confirm('\nFjern Aura Harness fra projektet?', args.yes))) return;
     const result = await installer.remove(args.project, plan.token);
-    console.log(`\nAI Harness er fjernet.${result.kept.length ? ` Disse ændrede filer er bevaret: ${result.kept.join(', ')}` : ''}`);
+    console.log(`\nAura Harness er fjernet.${result.kept.length ? ` Disse ændrede filer er bevaret: ${result.kept.join(', ')}` : ''}`);
     return;
   }
   throw new Error(help);

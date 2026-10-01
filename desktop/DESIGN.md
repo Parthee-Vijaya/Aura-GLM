@@ -1,10 +1,10 @@
 # Lys præcision
 
-Designretning for AI Harness. Arbejdsområdet skal give plads til samtalen og det, brugeren bygger. Det er en app til at arbejde i, ikke en præsentation af alle funktionerne.
+Designretning for Aura. Arbejdsområdet skal give plads til samtalen og det, brugeren bygger. Det er en app til at arbejde i, ikke en præsentation af alle funktionerne.
 
 ## Få valg
 
-AI Harness skal kunne bruges af en person uden teknisk baggrund, som klikker sig igennem opsætningen uden at gå i stå. Det gælder appen, webguiden og installationerne.
+Aura skal kunne bruges af en person uden teknisk baggrund, som klikker sig igennem opsætningen uden at gå i stå. Det gælder appen, webguiden og installationerne.
 
 - **Ét spørgsmål pr. skærm.** Overskriften er spørgsmålet, fx "Hvilket kodeværktøj bruger du?".
 - **Få, store valg.** Ét eller to hovedvalg, højst tre til fire synlige. Når vi anbefaler et valg, står det først og er markeret som anbefalet. Spørger vi om noget, brugeren allerede har, fx sit kodeværktøj, vises de mest udbredte først.
@@ -20,9 +20,9 @@ Tæl de synlige valg, før en skærm kaldes færdig, og gennemfør forløbet i a
 
 ## Det, man møder
 
-- Første skærm spørger, om man vil bygge i appen eller bruge Harness i sit eget kodeværktøj.
+- Første skærm spørger, om man vil bygge i appen eller bruge Aura Harness i sit eget kodeværktøj.
 - Den guidede opstart viser ét spørgsmål ad gangen med stor overskrift og to eller tre store valg. Først vælger man adgangsnøgle eller AI på computeren; en gemt forbindelse bliver et tredje valg. Adgangsnøgle fører til tre udbyderkort, Claude, Mistral og Corti, og "Bruger du en anden udbyder? Vælg en anden". Nøglefeltet vises først, når en udbyder er valgt. "Har du ikke en nøgle? Sådan får du en" viser konto, betaling, månedlig grænse og nøgle som nummererede trin med en knap til hver side hos udbyderen. Sidepanelet er skjult under introduktionen.
-- Efter AI-trinnet spørger den guidede opstart én gang: "Hvad skal AI Harness hjælpe med?".
+- Efter AI-trinnet spørger den guidede opstart én gang: "Hvad skal Aura hjælpe med?".
   - Der er to store valg. Hele pakken står først og er markeret Anbefalet; det andet er Vælg selv.
   - Vælg selv viser de seks funktioner som kontakter, der starter slået fra. Knappen siger, hvad der sker, fx "Fortsæt med 2 funktioner".
   - Én linje nævner det, der altid er slået til.
@@ -31,10 +31,10 @@ Tæl de synlige valg, før en skærm kaldes færdig, og gennemfør forløbet i a
   - Med et projekt åbent vælger man Alle projekter eller Kun projektet. En undtagelse står under funktionen med Brug standarden.
   - En slået fra funktion skjuler sine knapper, fx Del, Sikkerhedskopi, Gem version eller designvalgene. Den sletter intet.
   - Under overskriften Integrationer står én kontakt pr. system, fx CVR. Integrationer er slået fra, til man vælger dem. Deres ⓘ viser system, ejer, adgang, data, dataflow, pris og kontroldato. Ved første start vises kun de almindelige funktioner.
-- "Hvad vil du bygge?" viser idé, projektnavn og Opret og fortsæt. Projektet gemmes i Dokumenter › AI Harness uden mappedialog; "Vælg en anden placering" er et link.
+- "Hvad vil du bygge?" viser idé, projektnavn og Opret og fortsæt. Projektet gemmes i Dokumenter › Aura uden mappedialog; "Vælg en anden placering" er et link.
   - Flere valg er én flad liste med AI, udgivelse, tests og design, hver med ⓘ. Farve, logo og inspiration ligger ét lag længere nede.
   - De seneste valg huskes til næste projekt uden afkrydsning. "Glem dem" nulstiller dem.
-- Harness i dit kodeværktøj viser fire kort og "Et andet værktøj" med søgning. Et klik fører videre til mappevalget og derefter til et resumé i almindeligt dansk; de præcise filændringer ligger under Se de præcise ændringer.
+- Aura Harness i dit kodeværktøj viser fire kort og "Et andet værktøj" med søgning. Et klik fører videre til mappevalget og derefter til et resumé i almindeligt dansk; de præcise filændringer ligger under Se de præcise ændringer.
   - Under Tilpas er integrationerne en kategori for sig og ikke valgt på forhånd. De tælles for sig, fx "9 af 12 skills valgt og 1 integration", og står aldrig som fravalgte. Vælg alle skills vælger ikke integrationer.
 - Næste trin viser kun det valgte forløb. Nøglehjælp og tekniske oplysninger er foldet sammen. GitHub og lokale værktøjer ligger under Avanceret opsætning. Tilbage og Vælg senere er altid tilgængelige.
 - Sidepanelet indeholder projekter, Nyt projekt, Åbn projekt og Indstillinger. Indstillinger har AI-forbindelser, Funktioner og Hjælp og feedback.

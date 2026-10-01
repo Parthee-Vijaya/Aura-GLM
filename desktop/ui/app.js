@@ -81,7 +81,7 @@ function moveConnectionForm(guided) {
 function setupPage(step) {
   ++setupGeneration;
   setupStep = step;
-  const headings = { choice: ['Hvordan vil du forbinde din AI?', 'Vælg den adgang, du allerede har.'], provider: ['Hvem er din udbyder?', 'Har du ikke en nøgle, viser vi dig, hvordan du får en.'], local: ['AI på din computer', 'Vi leder efter modeller, du allerede har i Ollama.'], saved: ['Din AI-forbindelse', 'Kontrollér forbindelsen, før du fortsætter.'], tools: ['Avanceret opsætning', 'Forbindelser og lokale værktøjer.'], features: ['Hvad skal AI Harness hjælpe med?', 'Du kan altid ændre det under Indstillinger › Funktioner.'], 'features-pick': ['Hvad vil du slå til?', 'Vælg de funktioner, du vil bruge. Resten kan du slå til senere under Indstillinger › Funktioner.'] };
+  const headings = { choice: ['Hvordan vil du forbinde din AI?', 'Vælg den adgang, du allerede har.'], provider: ['Hvem er din udbyder?', 'Har du ikke en nøgle, viser vi dig, hvordan du får en.'], local: ['AI på din computer', 'Vi leder efter modeller, du allerede har i Ollama.'], saved: ['Din AI-forbindelse', 'Kontrollér forbindelsen, før du fortsætter.'], tools: ['Avanceret opsætning', 'Forbindelser og lokale værktøjer.'], features: ['Hvad skal Aura hjælpe med?', 'Du kan altid ændre det under Indstillinger › Funktioner.'], 'features-pick': ['Hvad vil du slå til?', 'Vælg de funktioner, du vil bruge. Resten kan du slå til senere under Indstillinger › Funktioner.'] };
   $('#setup-title').textContent = headings[step][0]; $('#setup-subtitle').textContent = headings[step][1];
   $('#setup-eyebrow').textContent = step.startsWith('features') ? 'FUNKTIONER' : 'DIN AI';
   for (const el of document.querySelectorAll('[data-setup-step]')) el.hidden = el.dataset.setupStep !== step;
@@ -351,7 +351,7 @@ function renderKeyGuide(kind) {
 }
 function updateProvider() {
   const definition = state?.definitions[$('#provider-kind').value]; if (!definition) return;
-  const help = { corti: 'Du skal bruge en API-nøgle fra et Corti-projekt i EU. Appen skifter aldrig automatisk til USA eller en anden model.', mistral: 'Du skal bruge en API-nøgle fra Mistral.', anthropic: 'Du skal bruge en API-nøgle fra Anthropic. Et Claude Pro- eller Max-abonnement kan ikke bruges her.', openrouter: 'Brug din OpenRouter-nøgle. Du vælger selv model og den udbyder, der modtager dine data. Gratis modeller er markeret i listen.', zen: 'Brug en nøgle fra OpenCode Zen. Zens gratis modeller virker ikke i AI Harness, fordi Zen kun giver gratis adgang fra OpenCodes egne programmer. Zens modeller kører i USA.', ollama: 'Forbind til en Ollama-server, som allerede kører. Kontrollér adressen nedenfor; appen installerer ikke modeller.', compatible: 'Brug adressen fra din organisation eller egen modelserver, fx DGX Spark. Appen ændrer ikke serveren eller Tailscale.' };
+  const help = { corti: 'Du skal bruge en API-nøgle fra et Corti-projekt i EU. Appen skifter aldrig automatisk til USA eller en anden model.', mistral: 'Du skal bruge en API-nøgle fra Mistral.', anthropic: 'Du skal bruge en API-nøgle fra Anthropic. Et Claude Pro- eller Max-abonnement kan ikke bruges her.', openrouter: 'Brug din OpenRouter-nøgle. Du vælger selv model og den udbyder, der modtager dine data. Gratis modeller er markeret i listen.', zen: 'Brug en nøgle fra OpenCode Zen. Zens gratis modeller virker ikke i Aura, fordi Zen kun giver gratis adgang fra OpenCodes egne programmer. Zens modeller kører i USA.', ollama: 'Forbind til en Ollama-server, som allerede kører. Kontrollér adressen nedenfor; appen installerer ikke modeller.', compatible: 'Brug adressen fra din organisation eller egen modelserver, fx DGX Spark. Appen ændrer ikke serveren eller Tailscale.' };
   $('#provider-info').dataset.info = help[$('#provider-kind').value]; renderKeyGuide($('#provider-kind').value);
   $('.key-guide').hidden = ['ollama', 'compatible'].includes($('#provider-kind').value);
   $('#base-url').value = definition.baseURL; $('#connection-advanced').open = ['ollama', 'compatible'].includes($('#provider-kind').value); $('#base-url').readOnly = !['ollama', 'compatible'].includes($('#provider-kind').value);
@@ -686,10 +686,10 @@ function updateModelSummary() {
   const connection = state?.connections.find(c => c.id === $('#connection-select').value);
   const provider = state?.definitions?.[connection?.kind]?.provider || connection?.name || '';
   const effort = model.value && window.ModelAdvice.effort(connection?.kind, model.value);
-  const label = model.value ? [model.selectedOptions[0].textContent, provider, effort && `indsats ${effort}`].filter(Boolean).join(' · ') : 'Vælg AI';
+  const label = model.value ? [model.selectedOptions[0].textContent, provider, effort && `${effort} indsats`].filter(Boolean).join(' · ') : 'Vælg AI';
   $('#model-summary').textContent = model.value ? model.selectedOptions[0].textContent : 'Vælg din AI';
   $('#model-chip').textContent = label;
-  $('#model-chip').title = effort ? `Indsats ${effort} er udbyderens standard for modellen. Klik for at skifte model.` : 'Klik for at skifte model eller forbindelse.';
+  $('#model-chip').title = effort ? `${effort[0].toUpperCase()}${effort.slice(1)} indsats er udbyderens standard for modellen. Klik for at skifte model.` : 'Klik for at skifte model eller forbindelse.';
   $('#connection-status').textContent = model.value ? (state?.connections.find(c => c.id === $('#connection-select').value)?.name || 'Valgt forbindelse') + ' · ' + model.value : 'Ingen model valgt';
 }
 // Forbruget i samtalen: tokens ind og ud og en anslået pris ud fra udbyderens prisliste. Det faktiske forbrug står hos udbyderen.
@@ -906,7 +906,7 @@ $('#welcome-back').onclick = () => showIntroduction('path');
 $('#path-tools').onclick = () => { completeIntroduction('tools'); closeIntroduction(); openTools(); };
 $('#tools-button').onclick = () => openTools();
 
-// Harness i brugerens eget kodeværktøj. Ét spørgsmål pr. trin; hovedprocessen vælger mappen og skriver filerne efter en gennemgang.
+// Aura Harness i brugerens eget kodeværktøj. Ét spørgsmål pr. trin; hovedprocessen vælger mappen og skriver filerne efter en gennemgang.
 let toolsCatalog = null, toolsFolder = null, toolsChoice = null, toolsReviewState = null, toolsSkills = null;
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 const operationText = { opret: 'Opret', tilfoej: 'Tilføj afsnit', opdater: 'Opdatér', uaendret: 'Uændret', konflikt: 'Ændret af dig · røres ikke', fjern: 'Fjern', 'fjern-afsnit': 'Fjern afsnit', bevar: 'Bevares' };
@@ -987,7 +987,7 @@ function planLines(review) {
   for (const op of active.filter(item => item.kind === 'blok' && item.path !== '.gitignore')) {
     const pointer = /@AGENTS\.md/.test(op.preview || '');
     const removing = op.action === 'fjern' || op.action === 'fjern-afsnit';
-    if (removing) lines.push(`AI Harness-afsnittet i ${op.path} fjernes.`);
+    if (removing) lines.push(`Aura Harness-afsnittet i ${op.path} fjernes.`);
     else if (pointer) lines.push(op.action === 'opret' ? `${op.path} oprettes med en henvisning til AGENTS.md.` : op.action === 'tilfoej' ? `${op.path} får en henvisning til AGENTS.md. Dine egne regler bevares.` : `Henvisningen i ${op.path} opdateres.`);
     else lines.push(op.action === 'opret' ? `Grundreglerne lægges i en ny ${op.path}.` : op.action === 'tilfoej' ? `Grundreglerne tilføjes nederst i ${op.path}. Dine egne regler bevares.` : `Grundreglerne i ${op.path} opdateres til version ${review.version}.`);
   }
@@ -1011,7 +1011,7 @@ function reviewNotes(review) {
   const notes = [];
   if (review.conflicts) notes.push(`${plural(review.conflicts, 'fil er', 'filer er')} ændret af dig og bliver ikke rørt.`);
   if (review.git.initialized === false) notes.push('Mappen bruger ikke Git, så ændringerne kan ikke fortrydes med en tidligere version.');
-  else if (review.git.changes) notes.push(`Der er ${plural(review.git.changes, 'ændring', 'ændringer')}, som ikke er gemt i Git. Gem gerne en version først, så Harness' ændringer kan ses for sig.`);
+  else if (review.git.changes) notes.push(`Der er ${plural(review.git.changes, 'ændring', 'ændringer')}, som ikke er gemt i Git. Gem gerne en version først, så Aura Harness' ændringer kan ses for sig.`);
   if (review.ignored === null) notes.push('Det kunne ikke kontrolleres, om projektets .gitignore udelader nogle af filerne.');
   else if (review.ignored.length) {
     const groups = new Map();
@@ -1051,7 +1051,7 @@ async function reviewTools() {
   const name = toolById(toolsChoice).name;
   const nothing = review.operations.every(op => op.action === 'uaendret');
   const others = installed.filter(id => id !== toolsChoice).map(id => toolById(id)?.name || id);
-  $('#tools-review-summary').textContent = nothing ? `AI Harness er allerede installeret til ${name} i ${review.folder}. Intet ændres.` : others.length && !installed.includes(toolsChoice) ? `AI Harness er allerede installeret til ${others.join(', ')} i ${review.folder}. ${name} tilføjes, når du installerer:` : `Det sker i ${review.folder}, når du installerer til ${name}:`;
+  $('#tools-review-summary').textContent = nothing ? `Aura Harness er allerede installeret til ${name} i ${review.folder}. Intet ændres.` : others.length && !installed.includes(toolsChoice) ? `Aura Harness er allerede installeret til ${others.join(', ')} i ${review.folder}. ${name} tilføjes, når du installerer:` : `Det sker i ${review.folder}, når du installerer til ${name}:`;
   const { base, left, integrations } = skillChoice(toolsSkills);
   $('#tools-skills-status').textContent = `Skills: ${base.length - left.length} af ${base.length} valgt${left.length ? ` · fravalgt: ${left.map(skill => skill.title).join(', ')}` : ''}${integrations.length ? ` · integrationer: ${integrations.map(skill => skill.title).join(', ')}` : ''}`;
   const lines = planLines(review);
@@ -1113,10 +1113,10 @@ $('#tools-install').onclick = () => toolsAction(async () => {
   const tool = toolById(toolsChoice);
   toolsFolder = { ...toolsFolder, manifest: { version: result.version, tools: result.tools } };
   $('#tools-prompt-intro').closest('.tools-prompt').hidden = false; $('#tools-verify').closest('details').hidden = false; $('#tools-removal').hidden = false; $('#tools-reveal').hidden = false;
-  $('#tools-done-title').textContent = `${tool.name} kan nu bruge AI Harness`;
+  $('#tools-done-title').textContent = `${tool.name} kan nu bruge Aura Harness`;
   $('#tools-done-summary').textContent = `Grundreglerne og ${plural(result.skills.length, 'skill', 'skills')} ligger i ${result.folder}.${result.skipped.length ? ` ${plural(result.skipped.length, 'fil, du har ændret, er', 'filer, du har ændret, er')} ikke rørt.` : ''} Gennemgå ændringerne i Git, før du gemmer en version.`;
   $('#tools-prompt-intro').textContent = `Åbn ${result.folder} i ${tool.name}, start en ny samtale, og skriv:`;
-  $('#tools-prompt-text').textContent = 'Hvilke projektinstruktioner og skills fra AI Harness har du adgang til? Hvad er kontrolordet i AI Harness-profilen? Ændr ingen filer.';
+  $('#tools-prompt-text').textContent = 'Hvilke projektinstruktioner og skills fra Aura Harness har du adgang til? Hvad er kontrolordet i Aura Harness-profilen? Ændr ingen filer.';
   $('#tools-prompt-text').dataset.expect = `Svaret bør nævne kontrolordet ${toolsCatalog.controlWord}.`;
   $('#tools-verify-summary').textContent = `Sådan kontrollerer du det i ${tool.name}`;
   $('#tools-verify').replaceChildren(...result.tools.map(id => { const item = toolById(id); const box = node('div'); box.append(node('strong', item.name), node('p', item.verification), node('p', item.caveat, 'hint')); return box; }), node('p', $('#tools-prompt-text').dataset.expect, 'hint'));
@@ -1130,8 +1130,8 @@ $('#tools-remove-back').onclick = () => toolsStep('done');
 $('#tools-remove').onclick = () => toolsAction(async () => {
   const result = await call('toolsRemove');
   toolsFolder = { ...toolsFolder, manifest: null };
-  $('#tools-done-title').textContent = 'AI Harness er fjernet';
-  $('#tools-done-summary').textContent = `AI Harness er fjernet fra ${result.folder}.${result.kept.length ? ` Disse filer, du har ændret, er bevaret: ${result.kept.join(', ')}.` : ''}`;
+  $('#tools-done-title').textContent = 'Aura Harness er fjernet';
+  $('#tools-done-summary').textContent = `Aura Harness er fjernet fra ${result.folder}.${result.kept.length ? ` Disse filer, du har ændret, er bevaret: ${result.kept.join(', ')}.` : ''}`;
   $('#tools-prompt-intro').closest('.tools-prompt').hidden = true; $('#tools-verify').closest('details').hidden = true; $('#tools-removal').hidden = true; $('#tools-reveal').hidden = true;
   toolsStep('done');
 });
@@ -1202,7 +1202,7 @@ function renderShortlist() {
   }
   // Modellen øverst er udbyderens eget udgangspunkt, ikke appens anbefaling. Det står synligt; resten ligger bag ⓘ.
   const hint = node('p', !picks.length ? 'Ingen forslag fra din forbindelse. Se alle modeller nedenfor.' : curated ? 'Den første er udbyderens eget udgangspunkt.' : 'Et udvalg fra din forbindelse.', 'hint');
-  if (picks.length) hint.append(info('modellerne', `${curated ? 'AI Harness anbefaler ingen model. ' : ''}Du ser pris og modtager, før noget sendes.`));
+  if (picks.length) hint.append(info('modellerne', `${curated ? 'Aura anbefaler ingen model. ' : ''}Du ser pris og modtager, før noget sendes.`));
   $('#model-shortlist').append(hint);
   markChosenModel();
 }
@@ -1332,7 +1332,7 @@ for (const id of ['settings-menu', 'project-menu', 'preview-menu']) {
 $('#support-button').onclick = () => action(async () => {
   $('#support-dialog').showModal(); $('#support-status').textContent = '';
   const report = await call('supportReport');
-  $('#support-version').textContent = `AI Harness ${report.app} · ${report.system === 'darwin' ? 'macOS' : report.system === 'win32' ? 'Windows' : report.system} · ${report.arkitektur}`;
+  $('#support-version').textContent = `Aura ${report.app} · ${report.system === 'darwin' ? 'macOS' : report.system === 'win32' ? 'Windows' : report.system} · ${report.arkitektur}`;
   $('#support-report').textContent = JSON.stringify(report, null, 2);
 });
 $('#support-save').onclick = () => action(async () => { $('#support-status').textContent = await call('supportSave') ? 'Rapporten er gemt på din computer. Du vælger selv, om du vil dele den.' : 'Rapporten blev ikke gemt.'; });
