@@ -212,3 +212,15 @@ test('forbruget tælles pr. modelkald og prissættes med ræsonnement som output
  assert.equal(bench.currentUsage().unpriced, 1);
  await bench.close();
 });
+
+test('en Corti-forbindelse beholder miljø og nøgle, når den redigeres uden ny nøgle', async t => {
+  const safeStorage = { isEncryptionAvailable: () => true, encryptString: text => Buffer.from(`krypteret:${text}`), decryptString: data => data.toString().slice('krypteret:'.length) };
+  const bench = new Workbench({ directory: await temp(t), profiles, emit: () => {}, safeStorage });
+  const key = Buffer.from('fr:password:testklient:testbruger:hemmelighed').toString('base64');
+  const first = (await bench.saveConnection({ kind: 'corti', name: 'Corti', apiKey: key })).connections[0];
+  assert.equal(first.baseURL, 'https://ai.fr.corti.app/v1');
+  const renamed = (await bench.saveConnection({ id: first.id, kind: 'corti', name: 'Corti i Frankrig' })).connections[0];
+  assert.equal(renamed.baseURL, 'https://ai.fr.corti.app/v1', 'miljøet fra nøglen bevares');
+  assert.equal(renamed.hasKey, true, 'nøglen bevares, fordi adressen er den samme');
+  assert.equal(bench.store.decrypt((await bench.store.read()).connections[0]), key);
+});

@@ -95,6 +95,8 @@ class Workbench {
     await this.store.update(state => {
       const previous = state.connections.find(c => c.id === connection.id);
       if (input.id && !previous) throw new Error('Forbindelsen findes ikke.');
+      // En Corti-nøgle hører til sit eget miljø. Uden ny nøgle beholder forbindelsen adressen fra den gemte nøgle.
+      if (connection.kind === 'corti' && !input.apiKey && !input.clearKey && previous?.kind === 'corti') connection.baseURL = previous.baseURL;
       connection.secret = input.apiKey ? this.store.encrypt(input.apiKey) : (input.clearKey || previous?.kind !== connection.kind || previous?.baseURL !== connection.baseURL ? undefined : previous?.secret);
       state.connections = [...state.connections.filter(c => c.id !== connection.id), connection];
     });
@@ -167,7 +169,7 @@ class Workbench {
     if (typeof input.text !== 'string' || !input.text.trim() || input.text.length > 30000) throw new Error('Skriv en besked på højst 30.000 tegn.');
     if (prepared.mode === 'build' && prepared.disclosure.planID !== this.plan?.id) throw new Error('Planen har ændret sig. Gennemgå den igen.');
     if (prepared.mode === 'free') { this.plan = null; this.planConversation = []; }
-    this.runMode = prepared.mode; this.runText = new Map(); this.runTools = new Map(); this.runRoles = new Map(); this.runStopped = false; this.allowProjectEdits = false;
+    this.runMode = prepared.mode; this.runText = new Map(); this.runTools = new Map(); this.runRoles = new Map(); this.runStopped = false; this.allowProjectEdits = false; this.runFinish = null;
     this.usageBase = this.currentUsage(); this.runSteps = new Map(); this.runPrice = connections.priceFor(prepared.connection, prepared.model, prepared.route);
     if (prepared.mode === 'plan') {
       if (this.planConversation.join('\n').length + input.text.length > 120000) throw new Error('Afklaringen er blevet for lang. Vælg Ny samtale for at starte en ny plan.');
@@ -234,6 +236,8 @@ class Workbench {
     }
     if (event.type === 'message.part.updated' && p.part?.type === 'step-finish' && this.runSteps && !this.runSteps.has(p.part.id)) {
       this.runSteps.set(p.part.id, p.part.tokens || {});
+      // Grunden til modellens sidste stop, fx "length", når svaret blev afskåret ved grænsen for svarlængde.
+      this.runFinish = p.part.reason || null;
       this.emit({ type: 'usage', usage: this.currentUsage() });
     }
     if (event.type === 'message.updated') this.runRoles?.set(p.info.id, p.info.role);
@@ -256,7 +260,7 @@ class Workbench {
         }
         await this.saveHistory(status);
         const diff = await changes(this.project.root, this.runBefore);
-        this.emit({ type: 'run.review', mode: this.runMode, status, files: diff.files.map(f => f.file), skipped: diff.skipped, tools: [...(this.runTools?.values() || [])].map(p => ({ tool: p.tool, status: p.state?.status, title: p.state?.title || p.state?.input?.command || '' })) });
+        this.emit({ type: 'run.review', mode: this.runMode, status, answered: Boolean(text.trim()), finish: this.runFinish || null, files: diff.files.map(f => f.file), skipped: diff.skipped, tools: [...(this.runTools?.values() || [])].map(p => ({ tool: p.tool, status: p.state?.status, title: p.state?.title || p.state?.input?.command || '' })) });
       }).catch(() => { this.emit({ type: 'run.review', status: 'error', files: [], tools: [], unavailable: true }); }).finally(() => {
         this.running = false; this.allowProjectEdits = false; this.finishing = null; this.emit({ type: 'run.status', status: this.runStopped ? 'stopped' : status });
       });

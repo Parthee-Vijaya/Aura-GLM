@@ -26,7 +26,7 @@ const { execFileSync } = require('node:child_process');
   await page.fill('#name','Installationsprøve'); await page.fill('#purpose','En syntetisk side fra installationspakken');
   await require('./ui-test-helpers.cjs').chooseLocation(app,page,root); await page.click('#create');
   await page.waitForSelector('#workspace:not([hidden])');
-  await page.frameLocator('#preview').locator('h1').filter({hasText:'Installationsprøve'}).waitFor();
+  await require('./ui-test-helpers.cjs').firstVersion(page,path.join(root,'projekt-installationsproeve'),'Installationsprøve');
   assert.equal(await app.evaluate(({app})=>app.isPackaged),true);
   // Nye projekter har versioner fra start: den medfølgende Git har gemt startfilerne som første version.
   const project=path.join(root,'projekt-installationsproeve');

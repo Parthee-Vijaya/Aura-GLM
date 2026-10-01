@@ -48,15 +48,17 @@ async function createProject(parent, input, assets = [], profileRoot) {
       await fs.copyFile(asset.path, path.join(root, relative), require('node:fs').constants.COPYFILE_EXCL);
       copied.push({ kind: asset.kind, name: asset.name || path.basename(asset.path), file: relative });
     }
-    const project = { schemaVersion: 1, ...values, template: 'statisk-web', assets: copied };
+    const logo = copied.find(asset => asset.kind === 'logo');
+    const starter = `<!doctype html>
+<html lang="da"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHTML(values.name)}</title><link rel="stylesheet" href="styles.css"></head>
+<body><main>${logo ? `<img class="logo" src="${logo.file.slice(7)}" alt="Projektets logo">` : ''}<p class="label">HER BEGYNDER DIN IDÉ</p><h1>${escapeHTML(values.name)}</h1><p class="intro">${escapeHTML(values.purpose)}</p><div class="card"><h2>Plads til det, du vil skabe.</h2><p>Dette er din lokale startside. Den er oprettet fra dine valg og er endnu ikke bygget af en AI.</p></div></main></body></html>`;
+    // Startsidens fingeraftryk. Så længe siden er uændret, viser appen en pladsholder i stedet for siden; se openProject.
+    const project = { schemaVersion: 1, ...values, template: 'statisk-web', assets: copied, starter: crypto.createHash('sha256').update(starter).digest('hex') };
     await fs.writeFile(path.join(root, 'harness.json'), JSON.stringify(project, null, 2) + '\n', { flag: 'wx' });
     const rules = await fs.readFile(path.join(profileRoot, 'grundregler.md'), 'utf8');
     for (const file of ['AGENTS.md', 'CLAUDE.md']) await fs.writeFile(path.join(root, file), rules, { flag: 'wx' });
     await fs.writeFile(path.join(root, '.gitignore'), (await fs.readFile(path.join(profileRoot, 'gitignore.txt'), 'utf8')) + '\n# Lokalt inspirationsmateriale\n/references/\n', { flag: 'wx' });
-    const logo = copied.find(asset => asset.kind === 'logo');
-    await fs.writeFile(path.join(root, 'public', 'index.html'), `<!doctype html>
-<html lang="da"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHTML(values.name)}</title><link rel="stylesheet" href="styles.css"></head>
-<body><main>${logo ? `<img class="logo" src="${logo.file.slice(7)}" alt="Projektets logo">` : ''}<p class="label">HER BEGYNDER DIN IDÉ</p><h1>${escapeHTML(values.name)}</h1><p class="intro">${escapeHTML(values.purpose)}</p><div class="card"><h2>Plads til det, du vil skabe.</h2><p>Dette er din lokale startside. Den er oprettet fra dine valg og er endnu ikke bygget af en AI.</p></div></main></body></html>`, { flag: 'wx' });
+    await fs.writeFile(path.join(root, 'public', 'index.html'), starter, { flag: 'wx' });
     await fs.writeFile(path.join(root, 'public', 'styles.css'), `:root{--brand:${values.color}}*{box-sizing:border-box}body{margin:0;background:#f8f7f3;color:#172c2b;font:17px/1.6 system-ui}main{max-width:900px;margin:auto;padding:70px 36px}.logo{max-width:180px;max-height:90px;object-fit:contain}.label{font-size:11px;font-weight:700;letter-spacing:.2em;color:var(--brand)}h1{font:clamp(38px,7vw,72px)/1.1 Georgia,serif;overflow-wrap:anywhere}.intro{max-width:600px;white-space:pre-wrap}.card{margin-top:45px;padding:30px;border:1px solid #d9dfd7;border-top:4px solid var(--brand);border-radius:16px;background:white}h2{font-size:22px}`, { flag: 'wx' });
     await fs.writeFile(path.join(root, 'README.md'), `# ${values.name}\n\n${values.purpose}\n\nÅbn projektmappen i Aura for lokal forhåndsvisning. Kun public/ vises.\n\nProjektvalg ligger i harness.json. Referencer ligger i references/ og er ikke offentlige. Logoer i public/assets/ er offentligt indhold ved udgivelse.\n\nTeststrategi: ${values.tests}. Der er endnu ikke oprettet tests. Versioner gemmes lokalt med Git i denne mappe; intet sendes nogen steder hen. AI-forbindelsen vælges separat i appen. Hosting er ikke tilsluttet.\n`, { flag: 'wx' });
     return { root, ...project };
@@ -78,6 +80,7 @@ async function openProject(folder) {
     if (project.schemaVersion !== 1) throw new Error('Ukendt projektformat.');
     if (!Array.isArray(project.assets) || project.assets.some(a => !a || !['logo', 'reference'].includes(a.kind) || typeof a.name !== 'string' || typeof a.file !== 'string')) throw new Error('Ugyldige materialer.');
     Object.assign(base, validate(project), { schemaVersion: 1, assets: project.assets, template: 'statisk-web' });
+    if (/^[a-f0-9]{64}$/.test(project.starter || '')) base.starter = project.starter;
   } catch (error) {
     if (error.code !== 'ENOENT') base.warnings.push('harness.json kunne ikke indlæses. Mappen er åbnet uden at ændre filen.');
   }
@@ -85,6 +88,8 @@ async function openProject(folder) {
     const dir = await fs.lstat(path.join(root, 'public'));
     const index = await fs.lstat(path.join(root, 'public/index.html'));
     if (dir.isDirectory() && index.isFile()) base.staticPreview = true;
+    // Den uændrede startside er ikke brugerens app endnu. Ruden viser en pladsholder, til AI'en har bygget første version.
+    if (base.staticPreview && base.starter && index.size < 100_000 && crypto.createHash('sha256').update(await fs.readFile(path.join(root, 'public/index.html'))).digest('hex') === base.starter) { base.staticPreview = false; base.waitingForFirstVersion = true; }
   } catch { /* Projektåbning kræver ikke en startside. */ }
   return base;
 }

@@ -68,7 +68,7 @@ Koden, brugeren bygger, ligger i almindelige projektfiler. Med versionsstyring o
 
 ## Projekt og bidrag
 
-Projektet tager udgangspunkt i kommunernes behov og kan også bruges i andre sammenhænge. Ambitionen er open source; licens og vedligeholdelsesansvar skal stadig aftales. Repositoryet er foreløbig privat, og GitHub Pages er ikke publiceret.
+Projektet tager udgangspunkt i kommunernes behov og kan også bruges i andre sammenhænge. Koden er open source under EUPL-1.2, som findes på alle EU-sprog, også dansk; se [LICENSE](LICENSE). Vedligeholdelsesansvaret skal stadig aftales.
 
 - [Bidrag med erfaringer, kode eller integrationer](CONTRIBUTING.md)
 - [Læs research og forslag til det fælles Aura Harness](docs/harness-grundlag.md)

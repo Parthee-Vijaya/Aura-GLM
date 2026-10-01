@@ -56,10 +56,23 @@ function endpoint(value) {
   if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) throw new Error('Serveradressen må ikke indeholde login, parametre eller fragmenter.');
   return url.href.replace(/\/$/, '');
 }
+// Cortis nøgler bærer deres miljø først, fx "fr:" i base64, og virker kun i deres eget miljø. Appen vælger derfor adressen
+// ud fra nøglen. Kun EU og Frankrig bruges; appen skifter aldrig til USA.
+const CORTI = { eu: 'https://ai.eu.corti.app/v1', fr: 'https://ai.fr.corti.app/v1' };
+const cortiFrance = {
+  region: 'Frankrig ifølge Corti: miljøet fr kører hos Scaleway i Paris, og adgang kræver aftale med Corti. Appen bruger kun Cortis adresser i EU og Frankrig og skifter aldrig til USA.',
+  regionShort: 'Frankrig, hos Scaleway i Paris ifølge Corti', source: 'https://docs.corti.ai/authentication/environments_tenants'
+};
+function cortiEndpoint(key) {
+  const environment = /^([a-z]{2}):/.exec(Buffer.from(String(key), 'base64').toString('utf8'))?.[1];
+  if (!environment) return CORTI.eu;
+  if (CORTI[environment]) return CORTI[environment];
+  throw new Error(environment === 'us' ? 'Nøglen hører til Cortis amerikanske miljø. Aura bruger kun Corti i EU og Frankrig.' : `Nøglen hører til Cortis miljø "${environment}", som Aura endnu ikke bruger. Brug en nøgle fra et projekt i EU eller Frankrig.`);
+}
 function normalize(input) {
   if (!input || !definitions[input.kind]) throw new Error('Vælg en understøttet forbindelsestype.');
   const def = definitions[input.kind];
-  const baseURL = endpoint(['compatible', 'ollama'].includes(input.kind) ? input.baseURL : def.baseURL);
+  const baseURL = endpoint(['compatible', 'ollama'].includes(input.kind) ? input.baseURL : input.kind === 'corti' && input.apiKey ? cortiEndpoint(input.apiKey) : def.baseURL);
   if (typeof input.name !== 'string' || !input.name.trim() || input.name.length > 100) throw new Error('Angiv et forbindelsesnavn på højst 100 tegn.');
   if (input.apiKey && (typeof input.apiKey !== 'string' || input.apiKey.length > 4096 || /[\r\n]/.test(input.apiKey))) throw new Error('API-nøglen er ugyldig.');
   return { id: input.id || randomUUID(), name: input.name.trim(), kind: input.kind, baseURL };
@@ -71,6 +84,8 @@ async function requestJSON(url, { key = '', kind, method = 'GET', body, signal }
   let response;
   try { response = await fetch(url, { method, headers, body: body && JSON.stringify(body), signal: signal || AbortSignal.timeout(15000), redirect: 'error' }); }
   catch { throw new Error('Serveren svarer ikke. Kontrollér adresse, port, netværk og eventuelt Tailscale.'); }
+  // En Corti-nøgle virker kun i sit eget miljø. Beskeden siger, hvilken adresse appen prøvede, så testeren ved, hvad der skal tjekkes.
+  if (!response.ok && kind === 'corti' && (response.status === 401 || response.status === 403)) throw new Error(`Corti afviste nøglen på ${url.startsWith(CORTI.fr) ? 'adressen i Frankrig' : 'adressen i EU'}. Brug en nøgle fra Corti Models i et projekt i EU eller Frankrig; en nøgle virker kun i sit eget miljø.`);
   if (!response.ok) throw new Error(response.status === 401 || response.status === 403 ? 'Serveren afviste adgangen. Kontrollér API-nøglen og tilladelserne.' : `Serveren svarede med HTTP ${response.status}. Ingen anden forbindelse blev valgt.`);
   const chunks = []; let size = 0;
   for await (const chunk of response.body) {
@@ -103,6 +118,7 @@ function disclosure(connection, model, route = null) {
   const def = definitions[connection.kind];
   const url = new URL(connection.baseURL);
   const loopback = ['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname);
+  const site = connection.kind === 'corti' && `${url.origin}/v1` === CORTI.fr ? cortiFrance : {};
   const price = route?.price || model.price;
   const free = price && Number(price.prompt) === 0 && Number(price.completion) === 0;
   const known = knownPrice(connection.kind, model.id);
@@ -110,15 +126,15 @@ function disclosure(connection, model, route = null) {
   const data = {
     connection: connection.name, model: model.id, endpoint: connection.baseURL,
     recipients: connection.kind === 'openrouter' ? `OpenRouter → ${route?.name || 'Ukendt modeludbyder'}` : `${def.name} · ${url.hostname}`,
-    region: def.region || (loopback ? 'Forbindelsen går til denne computer. Selve modellens behandlingssted er endnu ikke verificeret.' : 'Ukendt; serveradressen dokumenterer ikke behandlingsstedet.'),
+    region: site.region || def.region || (loopback ? 'Forbindelsen går til denne computer. Selve modellens behandlingssted er endnu ikke verificeret.' : 'Ukendt; serveradressen dokumenterer ikke behandlingsstedet.'),
     retention: def.retention || 'Ikke verificeret for denne forbindelse. Konto-, model- og servervilkår kan variere.',
     training: zen ? zen[2] : def.training, price: free ? '0 i oplyst pris for input/output. Kvoter, øvrige gebyrer og senere prisændringer kan gælde.' : price ? `Oplyst API-pris: ${JSON.stringify(price)}` : known ? `${usd(known.input)} USD pr. million tokens, du sender, og ${usd(known.output)} USD pr. million tokens i svar, ifølge ${def.provider}s prisliste (kontrolleret ${def.checkedAt}). Prisen kan ændre sig; se dit forbrug hos udbyderen.` : 'Ukendt pris eller egen drift. Ingen garanti om gratis brug.',
-    provider: def.provider || def.name, regionShort: def.regionShort || null, trainingShort: zen?.[1] || def.trainingShort || null, retentionShort: def.retentionShort || null,
+    provider: def.provider || def.name, regionShort: site.regionShort || def.regionShort || null, trainingShort: zen?.[1] || def.trainingShort || null, retentionShort: def.retentionShort || null,
     priceShort: free ? 'Gratis ifølge kataloget. Kvoter kan gælde.' : known && !price ? `${usd(known.input)} USD ind og ${usd(known.output)} USD ud pr. million tokens` : null,
     capabilities: model.capabilities?.tools === true ? 'Kataloget angiver værktøjskald; faktisk kodearbejde er ikke verificeret for denne model.' : model.capabilities?.tools === false ? 'Kataloget angiver ikke værktøjsunderstøttelse. Modellen kan være uegnet som kodeagent.' : 'Værktøjsunderstøttelse er ukendt. Modelkataloget er ikke et kompatibilitetsbevis.',
     material: 'Beskeder, samtalehistorik, fælles regler, projektkontekst og de filer/værktøjsresultater agenten læser. Referencefiler kræver særskilt tilvalg. Modelskift starter en ny session.',
     security: url.protocol === 'http:' && !loopback ? 'HTTP uden TLS. Tailscale-kryptering er kun gældende, hvis forbindelsen faktisk går gennem Tailscale; det er ikke verificeret her.' : 'Forbindelsesadressen er kontrolleret. Det er ikke en sikkerhedsgodkendelse af tjenesten.',
-    source: def.source || 'Ingen leverandørkilde registreret; oplysninger skal kontrolleres hos serverens ejer.', checkedAt: def.checkedAt || '2026-09-22', evidence: 'Leverandørdokumentation og modelkatalog; ikke uafhængig revision.', route: route?.id || null
+    source: site.source || def.source || 'Ingen leverandørkilde registreret; oplysninger skal kontrolleres hos serverens ejer.', checkedAt: def.checkedAt || '2026-09-22', evidence: 'Leverandørdokumentation og modelkatalog; ikke uafhængig revision.', route: route?.id || null
   };
   return { ...data, fingerprint: createHash('sha256').update(JSON.stringify(data)).digest('hex') };
 }
@@ -133,7 +149,10 @@ const knownLimits = [
   ['anthropic', /^claude-/, { context: 200000, output: 32000 }],
   ['zen', /^claude-/, { context: 200000, output: 32000 }],
   ['mistral', /^mistral-(large|medium)/, { context: 200000, output: 16384 }],
-  ['mistral', /codestral|devstral/, { context: 128000, output: 16384 }]
+  ['mistral', /codestral|devstral/, { context: 128000, output: 16384 }],
+  // Cortis katalog oplyser 262.144 tokens kontekst, men ingen grænse for svarlængden. Corti S1 tænker, før den svarer, og
+  // tankerne tæller med i svaret. Med appens forsigtige standard på 4.096 blev svaret skåret af, før en fil blev skrevet.
+  ['corti', /^corti-s1/, { context: 262144, output: 32000 }]
 ];
 function modelLimits(connection, model) {
   const known = knownLimits.find(([kind, pattern]) => kind === connection.kind && pattern.test(model.id))?.[2];

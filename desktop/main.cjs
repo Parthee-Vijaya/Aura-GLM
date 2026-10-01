@@ -228,7 +228,14 @@ handle('support:save', async () => {
   if (chosen.canceled || !chosen.filePath) return false;
   await fs.writeFile(chosen.filePath, JSON.stringify(report, null, 2), { mode: 0o600 }); return true;
 });
-handle('support:feedback', () => shell.openExternal('https://github.com/ai-alliancen-org/ai-harness/issues'));
+// Feedback går på e-mail til kontakten i package.json. Uden kontakt viser appen kun teksten om at skrive til den, der inviterede.
+handle('support:contact', () => require('./core/feedback.cjs').contact());
+handle('support:feedback', async () => {
+  const feedback = require('./core/feedback.cjs'), person = feedback.contact();
+  if (!person) return false;
+  await shell.openExternal(feedback.mail(person, { version: app.getVersion(), system: `${{ darwin: 'macOS', win32: 'Windows' }[process.platform] || process.platform} ${process.arch}` }));
+  return true;
+});
 handle('git:status', async () => {
   const root = requireIdleProject();
   return { ...await workbench.git.status(root), restoration: await restoration.status(root), autoCheckpoint: (await workbench.store.project(root)).autoCheckpoint === true };

@@ -93,3 +93,16 @@ test('Gem version med ét klik gemmer alle tilladte ændringer og nævner de afv
  assert.deepEqual(await git.saveAll(project,''),{saved:0,kept:['.env']});
  await assert.rejects(git.saveAll(project,'To\nlinjer'),/én linje/);
 });
+
+test('et globalt Git-filter som Git LFS stopper ikke automatiske versioner, men et filter, projektet bruger, gør', async t => {
+ const { root, project } = await fixture(t);
+ const { filterBlock } = require('../core/checkpoints.cjs');
+ // Som når Git LFS er installeret: filteret står i brugerens globale Git-opsætning.
+ await fs.writeFile(path.join(root, 'home', '.gitconfig'), '[filter "lfs"]\n\tclean = git-lfs clean -- %f\n\tsmudge = git-lfs smudge -- %f\n\tprocess = git-lfs filter-process\n\trequired = true\n');
+ assert.match((await run(project, ['config', '--get-regexp', '^filter\\.'])).toString(), /filter\.lfs/, 'filteret er synligt for Git i projektet');
+ await fs.writeFile(path.join(project, 'index.html'), '<h1>Hej</h1>');
+ assert.equal(await filterBlock({ root: project }), '', 'et filter, projektet ikke bruger, blokerer ikke');
+ await fs.writeFile(path.join(project, '.gitattributes'), '*.psd filter=lfs diff=lfs merge=lfs -text\n');
+ await fs.writeFile(path.join(project, 'logo.psd'), 'billede');
+ assert.match(await filterBlock({ root: project }), /Git-filtre, fx Git LFS/);
+});

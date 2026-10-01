@@ -29,7 +29,7 @@ At en integration er tilgængelig fra fællesskabet, er ikke det samme som, at p
 
 ## Beslutninger, der stadig mangler
 
-Projektets vedligeholdere, licens, bidragsvilkår, proces for verifikation af integrationer og private kanal til indrapportering af sikkerhedsproblemer er endnu ikke fastlagt. Repositoryet har endnu ingen valgt open source-licens. Disse forhold skal afklares, før eksterne kodebidrag påbegyndes.
+Projektet er licenseret under EUPL-1.2; se [LICENSE](LICENSE). Bidrag modtages under samme licens. Projektets vedligeholdere, bidragsvilkår, proces for verifikation af integrationer og private kanal til indrapportering af sikkerhedsproblemer er endnu ikke fastlagt. Disse forhold skal afklares, før eksterne kodebidrag påbegyndes.
 
 ---
 
@@ -64,4 +64,4 @@ Community availability, project verification, and approval by an individual muni
 
 ## Decisions still required
 
-The maintainers, project license, contribution terms, integration-verification process, and private security-reporting channel are not yet established. This repository does not yet have a selected open-source license. These matters must be resolved before external code contributions begin.
+The project is licensed under the EUPL-1.2; see [LICENSE](LICENSE). Contributions are accepted under the same licence. The maintainers, contribution terms, integration-verification process, and private security-reporting channel are not yet established. These matters must be resolved before external code contributions begin.

@@ -53,3 +53,24 @@ test('mappenavne bevarer danske ord i læsbar form', () => {
   assert.equal(folderSlug('---'), 'projekt');
   assert.ok(folderSlug('a'.repeat(200)).length <= 60);
 });
+
+test('en ny projekts startside vises ikke, før den er ændret, men eksisterende projekter vises som før', async t => {
+  const parent = await temporary(t);
+  const project = await createProject(parent, input, [], profiles);
+  // Fingeraftrykket i harness.json svarer til den startside, der blev skrevet.
+  const manifest = JSON.parse(await fs.readFile(path.join(project.root, 'harness.json'), 'utf8'));
+  assert.equal(manifest.starter, require('node:crypto').createHash('sha256').update(await fs.readFile(path.join(project.root, 'public/index.html'))).digest('hex'));
+  const waiting = await openProject(project.root);
+  assert.equal(waiting.staticPreview, false, 'den uændrede startside vises ikke');
+  assert.equal(waiting.waitingForFirstVersion, true);
+  // Når AI’en har bygget første version, vises siden.
+  await fs.writeFile(path.join(project.root, 'public/index.html'), '<!doctype html><title>App</title><h1>Første version</h1>');
+  const built = await openProject(project.root);
+  assert.equal(built.staticPreview, true);
+  assert.equal(built.waitingForFirstVersion, undefined);
+  // Et projekt fra før fingeraftrykket fandtes viser startsiden som før.
+  const older = await createProject(parent, { ...input, name: 'Ældre projekt' }, [], profiles);
+  const olderManifest = JSON.parse(await fs.readFile(path.join(older.root, 'harness.json'), 'utf8'));
+  delete olderManifest.starter; await fs.writeFile(path.join(older.root, 'harness.json'), JSON.stringify(olderManifest));
+  assert.equal((await openProject(older.root)).staticPreview, true);
+});

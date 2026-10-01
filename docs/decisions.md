@@ -445,3 +445,23 @@ Bevidst uændret:
 - **GitHub-repoet `ai-alliancen-org/ai-harness` og links dertil:** De skifter, når repoet er omdøbt.
 - **Historiske afsnit og faktiske filnavne fra tidligere versioner,** fx beta.3.
 - **Vercel-testprojektet `progressify/ai-harness-test`.**
+
+## Testversion uden blindgyder · 1. oktober 2026
+
+Brugeren besluttede:
+- **Testernes AI er Corti S1.** Hele forløbet afprøves med den, før invitationen sendes.
+- **Første runde kører på Mac.** Windows følger, når Windows-pakken er signeret. Uden signering viser SmartScreen en advarsel, og kommunale pc'er kan blokere den.
+- **Download:** Testerne henter appen fra en offentlig GitHub-udgivelse. Repoet bliver offentligt og beholder navnet `ai-alliancen-org/ai-harness`.
+- **Licens:** Repoet og bidrag er under EUPL-1.2.
+- **Feedback** går på e-mail til en navngiven kontakt, som står i `desktop/package.json` under `feedback`.
+
+Fundet og rettet under afprøvningen med Corti:
+- **Region:**
+  - Cortis nøgler bærer deres miljø, fx `fr:` i base64, og virker kun dér.
+  - Appen vælger nu `ai.fr.corti.app` eller `ai.eu.corti.app` ud fra nøglen og afviser nøgler fra USA.
+  - "Før du sender" viser behandlingsstedet med Cortis kilde. Miljøet fr ligger hos Scaleway i Paris.
+- **Svarlængde:**
+  - Cortis katalog oplyser ingen grænse for svarlængden, så appen gav Corti S1 4.096 tokens. Modellen tænker først og nåede derfor ikke at skrive filerne.
+  - Corti S1 har nu 262.144 tokens kontekst og 32.000 tokens svar.
+  - En opgave, der slutter uden svar og uden ændringer, siger det nu og tilbyder Prøv igen.
+- **Git-filtre:** Et globalt filter som Git LFS stoppede alle automatiske versioner. Nu stopper kun filtre, som projektet selv bruger via `.gitattributes`.

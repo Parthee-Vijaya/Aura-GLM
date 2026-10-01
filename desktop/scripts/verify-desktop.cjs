@@ -63,10 +63,12 @@ const root = path.join(__dirname, '..', '..');
     assert.equal(await page.locator('#messages').textContent(), '');
     await page.fill('#prompt', '');
     const preview = page.frameLocator('#preview');
-    await preview.locator('h1').waitFor(); assert.equal(await preview.locator('h1').textContent(),'Fælleshaven');
-    assert.equal(await preview.locator('.logo').evaluate(el=>el.complete && el.naturalWidth>0),true);
     const all = await fs.readdir(testRoot); const projectDir=path.join(testRoot,all.find(x=>x.startsWith('projekt-')));
     const publicIndex=path.join(projectDir,'public/index.html');
+    // Før første version viser ruden kun en pladsholder. Når siden er ændret, vises den rigtige side med logoet.
+    await page.screenshot({path:path.join(testRoot,'foer-foerste-version.png')});
+    await require('./ui-test-helpers.cjs').firstVersion(page,projectDir,'Fælleshaven');
+    assert.equal(await preview.locator('.logo').evaluate(el=>el.complete && el.naturalWidth>0),true);
     const initial=await fs.readFile(publicIndex,'utf8');
     await page.waitForTimeout(1800);
     await fs.writeFile(publicIndex,initial.replace('Fælleshaven</h1>','En levende fælleshave</h1>'));

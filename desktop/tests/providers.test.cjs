@@ -67,3 +67,28 @@ test('Zens vilkår vises for hver model', () => {
  assert.match(disclosure(zen, { id: 'big-pickle' }).trainingShort, /forbedre modellen/);
  assert.equal(disclosure(zen, { id: 'claude-sonnet-5-5' }).regionShort, 'USA');
 });
+
+test('Corti-forbindelsen bruger adressen fra nøglens miljø og aldrig USA', () => {
+  // Opdigtede nøgler i samme form som Cortis: miljøet står først, derefter resten, alt i base64.
+  const key = environment => Buffer.from(`${environment}:password:testklient:testbruger:hemmelighed`).toString('base64');
+  assert.equal(normalize({ kind: 'corti', name: 'Corti', apiKey: key('fr') }).baseURL, 'https://ai.fr.corti.app/v1');
+  assert.equal(normalize({ kind: 'corti', name: 'Corti', apiKey: key('eu') }).baseURL, 'https://ai.eu.corti.app/v1');
+  assert.equal(normalize({ kind: 'corti', name: 'Corti', apiKey: 'en-nøgle-i-et-andet-format' }).baseURL, 'https://ai.eu.corti.app/v1');
+  assert.equal(normalize({ kind: 'corti', name: 'Corti' }).baseURL, 'https://ai.eu.corti.app/v1');
+  assert.throws(() => normalize({ kind: 'corti', name: 'Corti', apiKey: key('us') }), /amerikanske miljø/);
+  assert.throws(() => normalize({ kind: 'corti', name: 'Corti', apiKey: key('dk') }), /endnu ikke bruger/);
+  // Behandlingsstedet i "Før du sender" følger adressen og har Cortis kilde.
+  const france = disclosure({ kind: 'corti', name: 'Corti', baseURL: 'https://ai.fr.corti.app/v1' }, { id: 'corti-s1' });
+  assert.match(france.regionShort, /Scaleway i Paris/);
+  assert.equal(france.source, 'https://docs.corti.ai/authentication/environments_tenants');
+  assert.match(france.recipients, /ai\.fr\.corti\.app/);
+  assert.doesNotMatch(disclosure({ kind: 'corti', name: 'Corti', baseURL: 'https://ai.eu.corti.app/v1' }, { id: 'corti-s1' }).regionShort, /Paris/);
+});
+
+test('når Corti afviser nøglen, siger beskeden hvilken adresse appen prøvede', async t => {
+  const { requestJSON } = require('../core/connections.cjs');
+  const server = require('node:http').createServer((req, res) => { res.statusCode = 401; res.end('{}'); });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve)); t.after(() => server.close());
+  await assert.rejects(requestJSON(`http://127.0.0.1:${server.address().port}/v1/models`, { key: 'afvist', kind: 'corti' }), /Corti afviste nøglen på adressen i EU\. Brug en nøgle fra Corti Models/);
+  await assert.rejects(requestJSON(`http://127.0.0.1:${server.address().port}/v1/models`, { key: 'afvist', kind: 'mistral' }), /Serveren afviste adgangen/);
+});

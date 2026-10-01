@@ -73,8 +73,18 @@ const { skipIntroduction, menuClick, taskOptions, selectMode } = require('./ui-t
     for(const privateText of [project,'127.0.0.1','PRIVATE','recovery-model','Prøv igen'])assert.equal(report.includes(privateText),false);
     assert.ok(JSON.parse(report).senesteFejl.length>0);
     const target=path.join(root,'rapport.json');await app.evaluate(({dialog},target)=>{dialog.showSaveDialog=async()=>({canceled:false,filePath:target});},target);await page.click('#support-save');await page.locator('#support-status').filter({hasText:'gemt'}).waitFor();assert.equal(JSON.parse(await fs.readFile(target)).format,1);
+    // Feedback følger kontakten i package.json: navn og adresse vises, og knappen åbner en e-mailkladde. Uden kontakt kun den generelle tekst.
+    const person=require('../core/feedback.cjs').contact();
+    if(person){
+      await app.evaluate(({shell})=>{global.openedFeedback=[];shell.openExternal=async url=>{global.openedFeedback.push(url);};});
+      assert.equal(await page.textContent('#support-contact'),`Send feedback til ${person.name}, ${person.email}.`);
+      await page.click('#support-feedback');
+      let opened=[];for(let i=0;i<50&&!opened.length;i++){opened=await app.evaluate(()=>global.openedFeedback);if(!opened.length)await new Promise(r=>setTimeout(r,100));}
+      assert.equal(opened.length,1,'knappen åbner én e-mailkladde');
+      const mail=new URL(opened[0]);assert.equal(mail.protocol,'mailto:');assert.equal(mail.pathname,person.email);assert.match(mail.searchParams.get('subject'),/^Feedback om Aura /);
+    }else{assert.equal(await page.textContent('#support-contact'),'Send feedback til den, der inviterede dig.');assert.equal(await page.isVisible('#support-feedback'),false);}
     await page.screenshot({path:path.join(root,'feedback.png'),animations:'disabled'});
-    console.log(JSON.stringify({status:'bestået',root,requests,checks:['gendan og fortryd gennem UI og genstart','HEAD og private filer bevaret','forkert nøgle og kvote med kladde bevaret','afbrudt HTTP-strøm bliver en fejl','ny plan efter hver fejl og stop','fejlrapport gennem filvælger uden projektindhold'],limitation:'Kontrolleret modelserver; ingen vurdering af en rigtig models svar'}));
+    console.log(JSON.stringify({status:'bestået',root,requests,checks:['gendan og fortryd gennem UI og genstart','HEAD og private filer bevaret','forkert nøgle og kvote med kladde bevaret','afbrudt HTTP-strøm bliver en fejl','ny plan efter hver fejl og stop','fejlrapport gennem filvælger uden projektindhold','feedback til kontakten i package.json'],limitation:'Kontrolleret modelserver; ingen vurdering af en rigtig models svar'}));
   }catch(error){console.error('Testmateriale: '+root);console.error(error.message);await page?.screenshot({path:path.join(root,'fejl.png'),animations:'disabled',timeout:3000}).catch(()=>{});throw error;}
   finally{await app?.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
 })().catch(error=>{console.error(error);process.exitCode=1;});

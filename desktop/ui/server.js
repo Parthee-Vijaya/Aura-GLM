@@ -27,8 +27,9 @@
       $('#preview-empty h2').textContent = labels[value.state] || 'Se din app';
       $('#preview-empty p').textContent = value.state === 'error' ? value.message : project.supported ? 'Start projektets lokale server for at se resultatet. Du gennemgår handlingen, før noget køres.' : project.reason;
     } else if (!framework) {
-      $('#preview-empty h2').textContent = 'Din app vises her';
-      $('#preview-empty p').textContent = 'Beskriv, hvad du vil bygge, i samtalen. Når projektet har en side, kan du følge resultatet her.';
+      // Før første version: kun et lille kodetegn og én linje. Startsiden vises ikke, så den ikke ligner en færdig app.
+      $('#preview-empty h2').textContent = '';
+      $('#preview-empty p').textContent = 'Din app kører her, så snart første version er klar.';
     }
     if (active() || value.state === 'error') $('#preview-status').textContent = labels[value.state];
   }

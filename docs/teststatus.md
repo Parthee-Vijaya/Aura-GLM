@@ -12,6 +12,37 @@ Kontrolleret 28. september 2026. Dette er status for den aktuelle arbejdsmappe, 
 - En tidligere plan nulstilles efter gendannelse. Markøren kontrolleres ved genåbning, også når samtalefilen ikke kunne opdateres ved første forsøg.
 - Fejlrapporten er gennemgået og gemt gennem filvælgeren. Den bruger faste statusfelter og udelader projektindhold, filstier, serveradresser, kontonavne og nøgler. Hjælpeskærmens unødvendige kontakt til nøgleringen er fjernet. Nøglelagring står som ikke kontrolleret; en fejlrapport må ikke udløse et nøgleopslag.
 
+## Corti S1 og blindgyder · 1. oktober 2026
+
+Afprøvet på Mac med OpenCode 1.18.33:
+
+- **Med en rigtig model:** Corti S1 er kørt gennem appen med `npm run test:live-app` og brugerens nøgle fra Cortis miljø fr. Nøglen blev indtastet af brugeren i appen.
+  - Forbindelse, plan og rettelse virker.
+  - Siden "Find et lokale med plads til dit møde" blev bygget med søgefelt og tre lokalekort på godt dansk. Den blev gemt automatisk som version.
+  - Hele samtalen kostede ca. 0,11 USD.
+  - Første kørsel stoppede uden filer, fordi svaret var begrænset til 4.096 tokens. Det er rettet.
+  - I sidste kørsel stoppede bygningen, efter at prøven afviste kommandoen `ls -la`. Appens regler beder nu AI'en bruge sine værktøjer til at se filer, og resultatkortet siger, når brugeren har afvist en handling. Begge dele er afprøvet med en kontrolleret model, ikke med Corti.
+- **Enhedstestet:** 137 automatiske tests består. De nye dækker:
+  - Corti-adressen ud fra nøglens miljø og afvisning af USA;
+  - beskeden, når Corti afviser en nøgle;
+  - at miljøet bevares ved redigering;
+  - globale Git-filtre;
+  - feedback på e-mail;
+  - opstartstjekket af AI-motoren;
+  - startsidens fingeraftryk.
+- **Afprøvet i Electron med en kontrolleret modelserver:**
+  - Alle 15 Electron- og motorprøver består, ligesom skill-prøverne i OpenCode og Claude Code.
+  - `test:recovery` afprøver feedback-teksten uden kontakt.
+  - `test:desktop` og `test:introduction` viser pladsholderen i preview-ruden og den rigtige side, når `index.html` er ændret.
+  - `test:features` fandt, at en ⓘ-knap var markeret som åben et øjeblik efter, at boblen var lukket. Det er rettet.
+- **Målt:** 1.980 synlige ord på 32 skærme.
+
+Ikke afprøvet:
+- **En pakket Aura.app (beta.4) og notarisering:** Apple-aftalen mangler.
+- **Feedback-knappen med en rigtig kontakt:** Kontakten i `package.json` er endnu tom.
+- **Corti med en nøgle fra EU-miljøet.**
+- **En tester uden teknisk baggrund og Windows.**
+
 ## Navneskift til Aura · 1. oktober 2026
 
 Afprøvet på Mac med OpenCode 1.18.33:

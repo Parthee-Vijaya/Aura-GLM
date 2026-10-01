@@ -13,8 +13,9 @@
     const state = await api('hostingState');
     $('#hosting-status').textContent = state.connected ? `Konto gemt: ${state.login}${state.expired ? ' · adgang udløbet' : ' · kontrollér adgang før publicering'}` : 'Ingen GitHub-konto forbundet.';
     $('#hosting-auth').hidden = state.connected && !state.expired;
-    $('#hosting-login').disabled = !state.browserLogin;
-    $('#hosting-login-help').textContent = state.browserLogin ? 'Du godkender adgangen hos GitHub. Appen modtager ikke din GitHub-adgangskode.' : 'Browserlogin afventer projektets GitHub Client ID. Et GitHub-token kan bruges nedenfor.';
+    // Uden et registreret GitHub-login i denne version vises knappen ikke; en deaktiveret knap er en blindgyde.
+    $('#hosting-login').disabled = !state.browserLogin; $('#hosting-login').hidden = !state.browserLogin;
+    $('#hosting-login-help').textContent = state.browserLogin ? 'Du godkender adgangen hos GitHub. Appen modtager ikke din GitHub-adgangskode.' : 'Login med GitHub i browseren er ikke slået til i denne version. Under Avanceret kan du forbinde med et GitHub-token.';
     $('#hosting-disconnect').disabled = !state.connected;
     $('#hosting-catalog').disabled = !state.connected;
     $('#hosting-project').hidden = !state.project || !state.connected;

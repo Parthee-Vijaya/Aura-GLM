@@ -8,15 +8,24 @@ const run = promisify(execFile);
 // Skal svare til runtime-lock.json, som ikke kommer med i den pakkede app. En unit-test holder de to ens.
 const VERSION = '1.18.33';
 
-async function findExecutable() {
+// Første opstart kan være langsom, fordi macOS eller et antivirusprogram kontrollerer motoren, før den må køre.
+const VERSION_CHECK_MS = 120000;
+let verified = null;
+async function findExecutable({ bundled = require('./runtime.cjs').get(), timeout = VERSION_CHECK_MS } = {}) {
   const binary = process.platform === 'win32' ? 'opencode.exe' : 'opencode';
   // Under udvikling bruges den version, `npm run runtime:prepare` har hentet og kontrolleret, før en eventuel egen installation.
   const prepared = path.join(__dirname, '..', '.runtime', `${process.platform}-${process.arch}`, 'opencode', 'bin', binary);
-  const candidates = require('./runtime.cjs').get() ? [require('./runtime.cjs').get().opencode] : [process.env.HARNESS_OPENCODE_PATH, prepared, path.join(os.homedir(), '.opencode', 'bin', binary), 'opencode'].filter(Boolean);
+  const candidates = bundled ? [bundled.opencode] : [process.env.HARNESS_OPENCODE_PATH, prepared, path.join(os.homedir(), '.opencode', 'bin', binary), 'opencode'].filter(Boolean);
+  let slow = false;
   for (const file of candidates) {
-    try { const result = await run(file, ['--version'], { timeout: 15000, windowsHide: true }); if (result.stdout.trim() === VERSION) return file; }
-    catch { /* Prøv næste eksplicitte installationsplacering. */ }
+    if (file === verified) return file;
+    try { const result = await run(file, ['--version'], { timeout, windowsHide: true }); if (result.stdout.trim() === VERSION) return (verified = file); }
+    catch (error) { if (error.killed) slow = true; /* Prøv næste eksplicitte installationsplacering. */ }
   }
+  // Den pakkede app har sin egen motor. Brugeren skal have en forklaring, de kan handle på, ikke en udviklerkommando.
+  if (bundled) throw new Error(slow
+    ? 'Aura kunne ikke starte sin AI-motor i tide. Computeren kan være travl, eller et antivirusprogram kan være ved at kontrollere programmet. Vent lidt, og prøv igen.'
+    : 'Aura kan ikke starte sin AI-motor. Installer appen igen fra det link, du fik.');
   throw new Error(`OpenCode ${VERSION} blev ikke fundet. Kør npm run runtime:prepare, eller angiv HARNESS_OPENCODE_PATH ved start. Din eksisterende installation ændres ikke.`);
 }
 const SKILL_NAME = /^harness-[a-z0-9]+(-[a-z0-9]+)*$/;

@@ -14,8 +14,15 @@ async function automaticBlock(repo) {
   if (repo.block) return repo.block;
   if (!repo.head) return 'Gem først projektets første version manuelt.';
   const hook = await hooksBlock(repo); if (hook) return hook;
-  try { if ((await run(repo.root, ['config', '--get-regexp', '^filter\\.'])).length) return 'Git-filtre kræver manuel versionsgemning.'; }
-  catch (error) { if (error.code !== 1) throw error; }
+  return filterBlock(repo);
+}
+// Kun filtre, som projektet selv tager i brug via .gitattributes, kan ændre indholdet, når en version gemmes. Et globalt
+// filter i brugerens Git-opsætning, fx fra Git LFS, betyder intet, før projektet bruger det, og må ikke stoppe versionerne.
+async function filterBlock(repo) {
+  const files = (await run(repo.root, ['ls-files', '-z', '--cached', '--others', '--exclude-standard'])).toString().split('\0').filter(Boolean);
+  if (!files.length) return '';
+  const answer = (await run(repo.root, ['check-attr', '-z', '--stdin', 'filter'], Buffer.from(files.join('\0') + '\0'))).toString().split('\0');
+  for (let i = 2; i < answer.length; i += 3) if (answer[i] && !['unspecified', 'unset'].includes(answer[i])) return 'Projektet bruger Git-filtre, fx Git LFS. Gem selv versionen med Gem version.';
   return '';
 }
 // Automatisk version efter hver AI-opgave. Opgavens filer findes ud fra indhold: de filer, der er ændret i forhold til
@@ -63,4 +70,4 @@ class Checkpoints {
     } catch (error) { this.emit({ type: 'git.checkpoint', status: 'skipped', message: `Versionen blev ikke gemt automatisk: ${error.message}` }); }
   }
 }
-module.exports = { Checkpoints, automaticBlock, hooksBlock };
+module.exports = { Checkpoints, automaticBlock, hooksBlock, filterBlock };

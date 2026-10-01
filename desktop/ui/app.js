@@ -28,10 +28,10 @@ function showInfo(button) {
   infoPop.focus();
 }
 // beforetoggle kommer med det samme, når et klik udenfor lukker boblen; toggle kommer først efter klikket.
-infoPop.addEventListener('beforetoggle', event => { if (event.newState === 'closed' && infoSource) infoClosed = { at: performance.now(), source: infoSource }; });
+// Knappens aria-expanded følger boblen med det samme; toggle kommer først senere, og så ville tilstanden halte bagefter.
+infoPop.addEventListener('beforetoggle', event => { if (event.newState === 'closed' && infoSource) { infoClosed = { at: performance.now(), source: infoSource }; infoSource.setAttribute('aria-expanded', 'false'); } });
 infoPop.addEventListener('toggle', event => {
   if (event.newState !== 'closed' || !infoSource || infoPop.matches(':popover-open')) return;
-  infoSource.setAttribute('aria-expanded', 'false');
   if (document.activeElement === document.body || infoPop.contains(document.activeElement)) infoSource.focus();
 });
 document.addEventListener('click', event => { const button = event.target.closest('button.info'); if (button) { event.preventDefault(); event.stopPropagation(); showInfo(button); } }, true);
@@ -54,7 +54,52 @@ async function saveChatDraft() {
   catch { if (current?.root === root) $('#draft-status').textContent = 'Kladden kunne ikke gemmes. Kopiér teksten, før du lukker.'; }
 }
 function option(value, label) { const el = node('option', label); el.value = value; return el; }
-function appendMessage(text, role = 'assistant') { $('#project-intro').hidden = true; $('#start-idea').hidden = true; const el = node('div', text, `chat-message ${role}`); $('#messages').append(el); $('#chat-content').scrollTop = $('#chat-content').scrollHeight; return el; }
+// AI'ens svar er markdown. Vi viser overskrifter, fed og kursiv tekst, kode, lister og skillelinjer, men bygger kun
+// elementer med textContent, så modellens tekst aldrig bliver til HTML. Links vises som tekst og kan ikke klikkes.
+function inlineMarkdown(target, text) {
+  const pattern = /(\*\*([^*]+)\*\*|`([^`]+)`|\*([^*\s][^*]*)\*|\[([^\]]+)\]\(([^)\s]+)\))/g;
+  let last = 0, match;
+  while ((match = pattern.exec(text))) {
+    if (match.index > last) target.append(text.slice(last, match.index));
+    if (match[2] !== undefined) target.append(node('strong', match[2]));
+    else if (match[3] !== undefined) target.append(node('code', match[3]));
+    else if (match[4] !== undefined) target.append(node('em', match[4]));
+    else target.append(`${match[5]} (${match[6]})`);
+    last = pattern.lastIndex;
+  }
+  if (last < text.length) target.append(text.slice(last));
+}
+function markdownInto(element, text) {
+  const blocks = [], lines = String(text || '').replace(/\r\n/g, '\n').split('\n');
+  let paragraph = null, list = null, code = null;
+  const close = () => { paragraph = null; list = null; };
+  for (const line of lines) {
+    if (code) { if (/^\s*```/.test(line)) code = null; else code.textContent += (code.textContent ? '\n' : '') + line; continue; }
+    if (/^\s*```/.test(line)) { close(); const pre = node('pre'); code = node('code'); pre.append(code); blocks.push(pre); continue; }
+    if (!line.trim()) { close(); continue; }
+    const heading = /^\s{0,3}#{1,6}\s+(.*)$/.exec(line);
+    if (heading) { close(); const h = node('h4'); inlineMarkdown(h, heading[1].replace(/\s+#+\s*$/, '')); blocks.push(h); continue; }
+    if (/^\s{0,3}([-*_])(\s*\1){2,}\s*$/.test(line)) { close(); blocks.push(node('hr')); continue; }
+    const item = /^\s*(?:[-*+]|(\d+)[.)])\s+(.*)$/.exec(line);
+    if (item) {
+      const tag = item[1] ? 'ol' : 'ul';
+      if (!list || list.tagName.toLowerCase() !== tag) { paragraph = null; list = node(tag); blocks.push(list); }
+      const li = node('li'); inlineMarkdown(li, item[2]); list.append(li); continue;
+    }
+    list = null;
+    if (!paragraph) { paragraph = node('p'); blocks.push(paragraph); } else paragraph.append(node('br'));
+    inlineMarkdown(paragraph, line);
+  }
+  element.classList.add('markdown'); element.replaceChildren(...blocks);
+}
+// Under streaming gemmes den rå tekst, og visningen opdateres højst én gang pr. skærmopdatering.
+const assistantText = new Map(), pendingMarkdown = new Set();
+function showAssistant(id, text) {
+  assistantText.set(id, text); partElement(id, 'assistant');
+  if (!pendingMarkdown.size) requestAnimationFrame(() => { for (const part of pendingMarkdown) markdownInto(partElement(part, 'assistant'), assistantText.get(part)); pendingMarkdown.clear(); });
+  pendingMarkdown.add(id);
+}
+function appendMessage(text, role = 'assistant') { $('#project-intro').hidden = true; $('#start-idea').hidden = true; const el = node('div', text, `chat-message ${role}`); if (role === 'assistant' && text) markdownInto(el, text); $('#messages').append(el); $('#chat-content').scrollTop = $('#chat-content').scrollHeight; return el; }
 let guidedSetup = false, setupStep = 'choice';
 let setupActive = false, setupGeneration = 0, verifiedConnection = '', recovery = '', lastSentText = '';
 let preferredConnection = '', autoConnect = false;
@@ -249,7 +294,7 @@ async function displayProject(project) {
     for (const item of history.messages) appendMessage(item.text, item.role);
     $('#prompt').value = history.draft || '';
     if (history.messages.length || history.draft) $('#work-mode').value = history.mode === 'build' && !history.plan ? defaultMode() : history.mode;
-    if (history.plan) { activePlan = history.plan; $('#plan-text').textContent = history.plan.text; $('#plan-card').hidden = history.mode !== 'plan'; }
+    if (history.plan) { activePlan = history.plan; markdownInto($('#plan-text'), history.plan.text); $('#plan-card').hidden = history.mode !== 'plan'; }
     $('#resume-notice summary').textContent = ['interrupted', 'working'].includes(history.status) ? 'Den forrige opgave blev afbrudt' : 'Tidligere samtale';
     $('#resume-text').textContent = history.status === 'interrupted' || history.status === 'working' ? 'Den forrige opgave blev afbrudt. Gennemgå filerne, før du fortsætter. Intet er genstartet.' : 'Din samtale er hentet fra denne computer. Vælg selv, om den skal medsendes til AI’en.';
     if (history.trimmed) $('#resume-text').textContent += ' Den ældste del af samtalen er udeladt af hensyn til størrelse.';
@@ -418,11 +463,16 @@ async function sendNow(data, text) {
   $('#model-options').open = false; $('#task-dialog').close(); activityGroup = null; $('#connection-warning').hidden = true; $('#data-dialog').close(); setRunning(true, 'Starter agent …');
   if ($('#work-mode').value === 'free') { activePlan = null; $('#plan-card').hidden = true; }
   $('#run-review').hidden = true; if ($('#work-mode').value === 'build') $('#plan-card').hidden = true; if ($('#work-mode').value === 'plan') { activePlan = null; $('#plan-card').hidden = true; }
-  lastSentText = text; lastCheckpoint = null; appendMessage(text, 'user'); $('#prompt').value = ''; await saveChatDraft();
+  lastSentText = text; lastCheckpoint = null; rejectedThisRun = false; appendMessage(text, 'user'); $('#prompt').value = ''; await saveChatDraft();
   try { await call('send', { text, fingerprint: data.fingerprint }); acceptedFingerprint = data.fingerprint; }
   catch (error) { $('#prompt').value = text; await saveChatDraft(); setRunning(false, 'Fejl'); appendMessage(error.message, 'error'); connectionFailed(error.message); throw error; }
 }
+// Under en opgave viser statusfeltet, hvor længe den har kørt, så en lang tænkepause ikke ligner, at appen er gået i stå.
+let runTimer = null, runStartedAt = 0;
+const elapsedText = ms => { const seconds = Math.floor(ms / 1000); return seconds < 60 ? `${seconds} s` : `${Math.floor(seconds / 60)} min ${seconds % 60} s`; };
 function setRunning(value, status) {
+  if (value && !running) runStartedAt = Date.now();
+  clearInterval(runTimer); runTimer = value ? setInterval(() => { $('#run-status').textContent = `${status} ${elapsedText(Date.now() - runStartedAt)}`; }, 1000) : null;
   running = value; $('#agent-activity').hidden = !value; if (value) $('#agent-activity').textContent = $('#work-mode').value === 'plan' ? 'AI’en udarbejder et forslag. Projektfilerne kan ikke ændres i denne arbejdsmåde.' : 'AI’en arbejder på din opgave. Du kan stoppe den herunder.'; $('#run-status').textContent = status; $('#send').disabled = value; $('#stop').hidden = !value;
   for (const selector of ['#model-chip', '#new-conversation', '#work-mode', '#build-plan', '#revise-plan', '#start-idea', '#model-load', '#model-search', '#connection-select', '#model-select', '#route-select', '#new', '#open', '#connections-button', '#skills-button', '#features-button', '#git-button', '#publish-button', '#setup-hosting', '#deploy-button', '#intro-button']) $(selector).disabled = value;
   for (const button of document.querySelectorAll('#model-shortlist button, #recent-projects button')) button.disabled = value;
@@ -437,6 +487,8 @@ function showSkill() {
 }
 const toolLabels = { read: 'Læs fil', edit: 'Rediger fil', write: 'Skriv fil', bash: 'Kør kommando', webfetch: 'Læs hjemmeside', websearch: 'Søg på nettet', glob: 'Find filer', grep: 'Søg i filer', external_directory: 'Adgang uden for projektet' };
 const toolStatuses = { pending: 'Venter', running: 'I gang', completed: 'Afsluttet', error: 'Mislykkedes' };
+// Skillfiler ligger i motorens interne mappe. Aktivitetslisten viser skillens navn i stedet for den lange sti.
+function toolTitle(title) { const match = /(?:^|\/)config\/skills\/(harness-[a-z0-9-]+)\/(.+)$/.exec(title); return match ? `Skill ${match[1]} › ${match[2]}` : title; }
 function partElement(id, role) {
   if (!parts.has(id)) {
     if (role === 'tool') {
@@ -452,7 +504,7 @@ window.harness.onEvent(event => {
   if (event.type === 'preview.runtime') return window.previewServer?.update(event);
   if (event.type === 'usage') return renderUsage(event.usage);
   if (event.type === 'history.error') { $('#draft-status').textContent = event.message; message(event.message, true); }
-  if (event.type === 'plan.ready') { activePlan = event.plan; $('#plan-card details').open = false; $('#plan-text').textContent = event.plan.text; $('#plan-card').hidden = false; requestAnimationFrame(() => $('#plan-card').scrollIntoView({ block: 'nearest' })); }
+  if (event.type === 'plan.ready') { activePlan = event.plan; $('#plan-card details').open = false; markdownInto($('#plan-text'), event.plan.text); $('#plan-card').hidden = false; requestAnimationFrame(() => $('#plan-card').scrollIntoView({ block: 'nearest' })); }
   if (event.type === 'run.review') renderRunReview(event);
   // Versionen efter opgaven vises på resultatkortet. Kun en oversprunget version nævnes i samtalen.
   if (event.type === 'git.checkpoint') { lastCheckpoint = event; if (event.status === 'skipped') appendMessage(event.message, 'system'); return; }
@@ -474,11 +526,14 @@ window.harness.onEvent(event => {
     const part = p.part;
     partTypes.set(part.id, part.type);
     if (roles.get(part.messageID) === 'user') return;
-    if (part.type === 'text') partElement(part.id, 'assistant').textContent = part.text;
+    if (part.type === 'text') showAssistant(part.id, part.text);
     if (part.type === 'tool' && running && ['pending', 'running'].includes(part.state?.status)) $('#agent-activity').textContent = `${toolLabels[part.tool] || 'Værktøjshandling'} · ${toolStatuses[part.state.status]}`;
-    if (part.type === 'tool') partElement(part.id, 'tool').textContent = `${toolLabels[part.tool] || part.tool} · ${toolStatuses[part.state?.status] || part.state?.status || ''}${part.state?.title ? '\n' + part.state.title : ''}`;
+    // Når et værktøj er færdigt, tænker modellen over næste skridt. Banneret må ikke blive stående på det afsluttede værktøj.
+    if (part.type === 'tool' && running && ['completed', 'error'].includes(part.state?.status)) $('#agent-activity').textContent = 'AI’en tænker over næste skridt …';
+    if (part.type === 'text' && running) $('#agent-activity').textContent = 'AI’en skriver …';
+    if (part.type === 'tool') partElement(part.id, 'tool').textContent = `${toolLabels[part.tool] || part.tool} · ${toolStatuses[part.state?.status] || part.state?.status || ''}${part.state?.title ? '\n' + toolTitle(part.state.title) : ''}`;
   }
-  if (event.type === 'message.part.delta' && p.field === 'text' && partTypes.get(p.partID) === 'text' && roles.get(p.messageID) !== 'user') partElement(p.partID, 'assistant').textContent += p.delta;
+  if (event.type === 'message.part.delta' && p.field === 'text' && partTypes.get(p.partID) === 'text' && roles.get(p.messageID) !== 'user') showAssistant(p.partID, (assistantText.get(p.partID) || '') + p.delta);
   if (event.type === 'permission.auto') { partElement('auto-' + Date.now() + Math.random(), 'tool').textContent = `Rediger fil · tilladt for denne opgave\n${event.file}`; return; }
   if (event.type === 'permission.asked') {
     $('#agent-activity').textContent = 'Venter på din godkendelse. Gennemgå handlingen i samtalen.';
@@ -494,7 +549,7 @@ window.harness.onEvent(event => {
     const row = node('div', undefined, 'approval-actions');
     for (const [label, allow, scope] of choices) {
       const button = node('button', label, scope ? 'primary' : undefined); button.type = 'button';
-      button.onclick = () => action(async () => { await call('reply', { id: p.id, allow, scope }); box.remove(); $('#agent-activity').textContent = !allow ? 'Handlingen er afvist. Afventer AI’en …' : scope ? 'Filændringer i projektet er tilladt, indtil opgaven er færdig.' : 'Godkendelsen er sendt. Afventer AI’en …'; });
+      button.onclick = () => action(async () => { await call('reply', { id: p.id, allow, scope }); if (!allow) rejectedThisRun = true; box.remove(); $('#agent-activity').textContent = !allow ? 'Handlingen er afvist. Afventer AI’en …' : scope ? 'Filændringer i projektet er tilladt, indtil opgaven er færdig.' : 'Godkendelsen er sendt. Afventer AI’en …'; });
       row.append(button);
     }
     box.append(row); $('#approvals').append(box); box.scrollIntoView({ block: 'nearest' });
@@ -1245,8 +1300,20 @@ function approvalExplanation(p, target) {
   const [title, effect] = explanations[p.permission] || ['Gennemgå denne handling', 'Læs de tekniske detaljer, før du tillader den.'];
   return { title, effect };
 }
+// Har brugeren afvist en handling, stopper motoren opgaven. Resultatkortet skal sige det i stedet for at give modellen skylden.
+let rejectedThisRun = false;
 function renderRunReview(result) {
   const box = $('#run-review'); box.replaceChildren();
+  // En opgave, der slutter uden svar og uden ændringer, må ikke ligne et resultat. Beskeden siger, hvad der skete, og giver en vej videre.
+  if (result.status === 'idle' && !result.files.length && result.answered === false) {
+    box.hidden = false; box.append(node('h3', 'AI’en stoppede uden et resultat'), node('p', result.finish === 'length'
+      ? 'Svaret blev for langt, så AI’en nåede ikke at skrive noget. Prøv igen. Virker det stadig ikke, så del opgaven op, eller vælg en anden model.'
+      : rejectedThisRun ? 'Du afviste en handling, så AI’en stoppede opgaven. Send den igen, eller skriv, hvad AI’en skal gøre i stedet.'
+      : 'AI’en stoppede uden at svare eller ændre filer. Prøv igen. Virker det stadig ikke, så vælg en anden model.'));
+    const retry = node('button', 'Prøv igen', 'primary'); retry.type = 'button';
+    retry.onclick = () => { if (running) return; $('#prompt').value = lastSentText; $('#send').click(); };
+    box.append(retry); requestAnimationFrame(() => box.scrollIntoView({ block: 'nearest' })); return;
+  }
   if (result.mode === 'plan' && result.status === 'idle' && !result.files.length) { box.hidden = true; return; }
   box.hidden = false; requestAnimationFrame(() => box.scrollIntoView({ block: 'nearest' }));
   box.append(node('h3', result.status === 'idle' ? 'Prøv resultatet i forhåndsvisningen' : 'Opgaven blev afbrudt eller fejlede'));
@@ -1334,6 +1401,10 @@ $('#support-button').onclick = () => action(async () => {
   const report = await call('supportReport');
   $('#support-version').textContent = `Aura ${report.app} · ${report.system === 'darwin' ? 'macOS' : report.system === 'win32' ? 'Windows' : report.system} · ${report.arkitektur}`;
   $('#support-report').textContent = JSON.stringify(report, null, 2);
+  // Adressen står synligt, så den kan kopieres, hvis computeren ikke har et e-mailprogram.
+  const person = await call('supportContact');
+  $('#support-contact').textContent = person ? `Send feedback til ${person.name}, ${person.email}.` : 'Send feedback til den, der inviterede dig.';
+  $('#support-feedback').hidden = !person; if (person) $('#support-feedback').textContent = `Skriv en e-mail til ${person.name}`;
 });
 $('#support-save').onclick = () => action(async () => { $('#support-status').textContent = await call('supportSave') ? 'Rapporten er gemt på din computer. Du vælger selv, om du vil dele den.' : 'Rapporten blev ikke gemt.'; });
 $('#support-feedback').onclick = () => action(() => call('supportFeedback'));

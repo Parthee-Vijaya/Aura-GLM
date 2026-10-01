@@ -83,13 +83,14 @@ const { run } = require('../core/git.cjs');
   assert.match(await page.locator('#project-location').textContent(),/Dokumenter › Aura/);
   await require('./ui-test-helpers.cjs').chooseLocation(app,page,root);
   await page.click('#create');await page.waitForSelector('#workspace:not([hidden])');
-  await page.frameLocator('#preview').locator('h1').waitFor();assert.equal(await page.frameLocator('#preview').locator('h1').textContent(),'Mit bibliotek');
   assert.equal(await app.evaluate(()=>global.introRequests),0);
   assert.equal(await page.evaluate(()=>localStorage.getItem('harness.ideaDraft.v1')),null);
   // Nye projekter får Git fra start med en første version og automatiske versioner efter hver AI-opgave.
   const created=path.join(root,'projekt-mit-bibliotek');
   assert.equal((await run(created,['log','--format=%s'])).toString().trim(),'Projekt oprettet');
   assert.equal((await run(created,['status','--porcelain'])).toString(),'');
+  // Preview-ruden viser kun en pladsholder, til første version findes; derefter vises siden.
+  await require('./ui-test-helpers.cjs').firstVersion(page,created,'Mit bibliotek');assert.equal(await page.frameLocator('#preview').locator('h1').textContent(),'Mit bibliotek');
   assert.equal((await page.evaluate(()=>window.harness.connectionState())).value.projectSettings.autoCheckpoint,true);
   assert.equal((await page.evaluate(()=>window.harness.providerAccount('https://example.invalid'))).ok,false);
   assert.deepEqual(errors,[]);

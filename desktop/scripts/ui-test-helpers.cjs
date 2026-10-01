@@ -74,4 +74,13 @@ async function addConnection(page, { kind = 'compatible', name, baseURL, apiKey 
   await page.waitForSelector('#setup', { state: 'hidden' });
   return (await page.evaluate(() => window.harness.connectionState())).value.connections.at(-1);
 }
-module.exports = { openSetup, addConnection, enableSharing, skipIntroduction, toOnboarding, menuClick, taskOptions, closeTaskOptions, selectMode, previewOptions, projectOptions, isolateDocuments, chooseLocation };
+// Før første version viser preview-ruden kun en pladsholder, ikke startsiden. Testen skriver selv en første version
+// (startsiden med en ændret etiket, så overskrift og logo bevares) og venter på, at den vises.
+async function firstVersion(page, projectDir, title) {
+  const fs = require('node:fs/promises'), index = require('node:path').join(projectDir, 'public', 'index.html');
+  await page.locator('#preview-empty').filter({ hasText: 'Din app kører her, så snart første version er klar.' }).waitFor();
+  if (await page.isVisible('#preview')) throw new Error('Startsiden vises før første version.');
+  await fs.writeFile(index, (await fs.readFile(index, 'utf8')).replace('HER BEGYNDER DIN IDÉ', 'FØRSTE VERSION'));
+  await page.frameLocator('#preview').locator('h1').filter({ hasText: title }).waitFor({ timeout: 15000 });
+}
+module.exports = { firstVersion, openSetup, addConnection, enableSharing, skipIntroduction, toOnboarding, menuClick, taskOptions, closeTaskOptions, selectMode, previewOptions, projectOptions, isolateDocuments, chooseLocation };

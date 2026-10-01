@@ -3,6 +3,8 @@
   "productName": "Aura",
   "version": "0.2.0-beta.3",
   "private": true,
+  "license": "EUPL-1.2",
+  "feedback": { "name": "", "email": "" },
   "description": "Byg applikationer med AI, lokale projektfiler og forhåndsvisning",
   "main": "main.cjs",
   "scripts": {
