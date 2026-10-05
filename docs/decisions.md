@@ -14,6 +14,12 @@ Afklaret i projektsamtalen 28. september 2026: Den primære målgruppe er udvikl
 
 Kildegennemgangen bekræfter det oprindelige forslag om en egen brugerflade og konfiguration omkring OpenCode uden en fork. Det samlede forslag om organisationsstyring, revisionsspor og isolation er ikke implementeret. Pi skal vurderes som mulig alternativ motor; der er ikke besluttet eller udført et skift. Se [teknisk grundlag](teknisk-grundlag.md).
 
+## Plan for Auras brugerflade · 5. oktober 2026
+
+Brugeren ønsker en plan på grundlag af UX-gennemgangen af *Aura – designforslag og komponentguide* fra 1. oktober 2026. [Planen for Auras brugerflade](ux-plan.md) samler forbedringerne i syv milepæle, med bevarelse af branding, systemskrift og store bokse. Første milepæl samler arbejdsfaner, kodeindsigt, ændringsgennemgang og faktisk aktivitet.
+
+Planen er skrevet; implementeringen afventer brugerens gennemgang. Den indfører ikke en fuld editor, interaktiv terminal, ny teknologistak eller nye hosting- og adgangssystemer. Efter hver milepæl gennemføres relevant verifikation, før brugeren gennemgår og selv håndterer Git.
+
 ## Få valg og udvælgelse af skills · 29. september 2026
 
 Besluttet i projektsamtalen: Hvert beslutningspunkt har ét eller to hovedvalg og højst tre til fire synlige muligheder med resten bag ét link, fx "Bruger du en anden udbyder? Vælg en anden". Opsætningen skal kunne gennemføres uden tvivlsspørgsmål af en person uden teknisk baggrund. Reglen står i `AGENTS.md` og `desktop/DESIGN.md`.
