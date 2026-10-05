@@ -2,6 +2,44 @@
 
 Kontrolleret 28. september 2026. Dette er status for den aktuelle arbejdsmappe, ikke en erklæring om, at alle installationsfiler eller modeller er klar. Der er ikke committet eller pushet under denne gennemgang.
 
+## Arbejdsflade med fire faner · 5. oktober 2026
+
+Første milepæl i [planen for brugerfladen](ux-plan.md). Afprøvet på Mac med OpenCode 1.18.33. Der er ikke committet eller pushet.
+
+- **Enhedstestet:** 153 automatiske tests består, når testfilerne køres én ad gangen (`node --test --test-concurrency=1 tests/*.test.cjs`). De 16 nye dækker:
+  - linje-diff: linjenumre, kontekst, sammenlægning, nye og slettede filer, CRLF og 200 tilfældige rettelser, der kan genskabes; en fuld omskrivning af 3.000 linjer går ikke i stå;
+  - filbeskyttelsen med konkrete input, der afvises: `.env`, `.env.example`, `config/produktion.env`, `references/`, `secrets/`, `.secrets/`, `node_modules/`, `.git/config`, `.npmrc`, `*.pem`, `credentials.json`, `../udenfor.txt`, `public/../.env`, `/etc/passwd`, `C:/Windows/win.ini`, omvendte skråstreger, tomme led, et symbolsk link til en fil og til en mappe uden for projektet, en binær fil, en fil over 1 MB og en fil med en mulig nøgle i indholdet;
+  - filhenvisninger: kun tekstfiler og linjer, der findes;
+  - tilskrivning: AI'ens fil, en fil ændret af både AI'en og brugeren, en kommando og brugerens egen fil, pr. opgave og for hele samtalen;
+  - aktivitet: rigtige værktøjsdele med stier i projektet, maskeret kommando-output, patchfiler og loggens grænse.
+- **Kørt mod rigtigt materiale i Electron:** `npm run test:workspace` bruger den rigtige OpenCode-motor, rigtige projektfiler i en ny midlertidig mappe og en kontrolleret lokal modelserver. Modellens svar er altså faste testdata, ikke en rigtig model. Prøven har 16 delprøver:
+  1. Forhåndsvisning er udgangspunktet.
+  2. Kode viser filerne som skrivebeskyttet tekst; et `<script>` i filen vises som tekst og køres ikke.
+  3. Hovedprocessen afviser `.env`, en privat reference, stier uden for projektet og et symbolsk link, både ved læsning og som filhenvisning.
+  4. Faneskift med mus og piletaster bevarer previewets formular og rulning og beskedkladden, og fokus er synligt.
+  5. Mens AI'en arbejder og venter på en godkendelse, bliver brugeren i Kode, og skrivefeltet beholder fokus.
+  6. Aktivitet viser de faktiske værktøjer, godkendelser med ventetid ("Venter på dig · i 2 s" og "Du tillod den · efter …"), kommandoens rigtige output og resultatet.
+  7. Ændringer viser resumé, sammenligningsgrundlag og linje-diff. En fil, prøven selv retter, mens AI'en venter, står som "En kommando eller dig", ikke som AI'ens.
+  8. Stier i AI'ens svar åbner den rigtige fil og linje.
+  9. En filhenvisning står i skrivefeltet og i Før du sender og når modellen som sti og linje.
+  10. Stop og en fejl fra modelserveren står i Aktivitet, og beskeden bevares.
+  11. En senere rettelse gør AI'ens fil til "AI'en og andre" i Hele samtalen.
+  12. Ved 980 × 720 er der ingen vandret rulning, og fanerne står på én linje. Ved 125 % og 150 % tekst bryder fanerne over to linjer, men står inden for vinduet, og Send er synlig. Ved 150 % er sidepanelet foldet sammen og kan foldes ud oven på indholdet og lukkes med Escape.
+  13. Sidepanelet kan foldes sammen og ud med bevarede navne, menuen står ved knappen, og valget huskes.
+  14. Reduceret bevægelse slår markeringens animation fra, og aktiviteten overlever en genindlæsning af brugerfladen.
+- **Kørsler:** I den samlede kørsel bestod de 14 øvrige Electron-prøver (desktop, chat, opsætning, introduktion, genoptagelse, gendannelse, versioner, funktioner, standardvalg, agent, hosting, udgivelse, værktøjer og frameworks). `test:workspace` fejlede én gang i den kørsel: Aktivitet var valgt, hvor prøven ventede Kode. Appen skifter kun fane ved et klik eller med tastaturet, og fejlen er ikke set igen i fire efterfølgende kørsler. Årsagen er ikke fundet; et klik i det synlige prøvevindue er en mulig forklaring. Efter de sidste tekstrettelser er `test:workspace`, `test:chat`, `test:versions` og `test:recovery` kørt igen og består. De øvrige ti er ikke kørt igen efter disse rettelser.
+- **Set i appen:** Skærmbilleder af alle fire faner ved 1440 × 940 og 980 × 720 og ved 125 % og 150 % tekst er gennemgået. Ved zoom tages billederne med Electrons egen `capturePage`; Playwrights skærmbillede skærer billedet til, når teksten er forstørret.
+- **Målt:** `npm run measure:screens` giver 2.425 synlige ord, 206 valg og 47 ⓘ på 34 skærme mod 1.980, 186 og 48 på 32 skærme før. Klik pr. opgave er uændret: 5, 5 og 2. Ingen sidefejl.
+  - Kode (104 ord, 10 valg) og Aktivitet (178 ord, 2 valg) er nye skærme bag deres faner.
+  - Ændringer gik fra 11 ord, fordi den gamle dialog var tom efter Fortryd, til 170 ord med resumé og linje-diff for opgaven.
+  - Arbejdsområdet fik 3 ord og 3 valg mere: fire faner i stedet for knappen Ændringer.
+  - Godkendelsen og resultatkortet har hver ét valg mere, fordi filen er et link.
+
+Ikke afprøvet:
+- En rigtig model gennem arbejdsfladen. Der er ikke foretaget rigtige modelkald i denne milepæl.
+- Skærmlæser (VoiceOver), Windows, en pakket app og en person uden teknisk baggrund.
+- Ændringer og Aktivitet efter en genstart af appen. De gemmes ikke på disken, så fanerne er tomme igen; det er en bevidst begrænsning.
+
 ## Afprøvet på Mac
 
 - 78 automatiske tests består. De omfatter rigtige midlertidige Git-repositories, HTTP-servere, filskrivning, afvisninger, hemmelighedsbeskyttelse og gendannelse. Modellerne i disse tests er kontrollerede testdata.

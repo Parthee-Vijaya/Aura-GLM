@@ -119,7 +119,11 @@ const server = http.createServer(async (req, res) => {
     await click('#restore-confirm'); await win.waitForSelector('#restore-dialog:not([open])', { state: 'attached' }); task = null;
     await helpers.menuClick(win, '#git-button'); await win.locator('#git-summary').filter({ hasText: 'Alt er gemt.' }).waitFor(); await measure('versioner', '#git-dialog', 'Versioner');
     await win.click('#git-advanced > summary'); await measure('versioner-avanceret', '#git-dialog', 'Versioner · Avanceret'); await win.click('[data-close="git-dialog"]');
-    await win.click('#changes-button'); await measure('aendringer', '#changes-dialog', 'Ændringer'); await win.click('[data-close="changes-dialog"]');
+    // Arbejdsfladens faner efter opgaven og fortrydelsen: Ændringer, Kode og Aktivitet.
+    await win.click('#tab-changes'); await win.locator('#changes-heading').filter({ hasText: 'ændret' }).waitFor(); await measure('aendringer', '#panel-changes', 'Ændringer');
+    await win.click('#tab-code'); await win.click('#code-files .code-file[data-path="public/index.html"]'); await win.locator('#code-title').filter({ hasText: 'public/index.html' }).waitFor(); await measure('kode', '#panel-code', 'Kode');
+    await win.click('#tab-activity'); await win.locator('#activity-list .activity-entry').first().waitFor(); await measure('aktivitet', '#panel-activity', 'Aktivitet');
+    await win.click('#tab-preview');
     await helpers.menuClick(win, '#attach-preview'); await measure('forhaandsvisning', '#preview-dialog', 'Forhåndsvisning og server'); await win.click('[data-close="preview-dialog"]');
     // Indstillinger.
     await helpers.menuClick(win, '#features-button'); await measure('funktioner', '#features-dialog', 'Funktioner');

@@ -36,7 +36,8 @@
     "test:app-skills": "node scripts/verify-app-skills.cjs",
     "test:features": "node scripts/verify-features.cjs",
     "measure:screens": "node scripts/measure-screens.cjs",
-    "test:integrations": "node scripts/verify-integrations.cjs"
+    "test:integrations": "node scripts/verify-integrations.cjs",
+    "test:workspace": "node scripts/verify-workspace.cjs"
   },
   "engines": {
     "node": ">=22.12.0"

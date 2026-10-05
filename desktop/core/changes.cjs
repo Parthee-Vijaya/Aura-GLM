@@ -14,7 +14,7 @@ async function capture(root) {
         if (size > 500000 || files.size >= 1000 || bytes + size > 10_000_000) { skipped++; continue; }
         const data = await fs.readFile(file);
         if (data.includes(0)) { skipped++; continue; }
-        files.set(path.relative(root, file), data.toString('utf8')); bytes += size;
+        files.set(path.relative(root, file).split(path.sep).join('/'), data.toString('utf8')); bytes += size;
       }
     }
   }

@@ -20,6 +20,12 @@ Brugeren ønsker en plan på grundlag af UX-gennemgangen af *Aura – designfors
 
 Planen er skrevet; implementeringen afventer brugerens gennemgang. Den indfører ikke en fuld editor, interaktiv terminal, ny teknologistak eller nye hosting- og adgangssystemer. Efter hver milepæl gennemføres relevant verifikation, før brugeren gennemgår og selv håndterer Git.
 
+Første milepæl, arbejdsfladen, er implementeret 5. oktober 2026. Valg i implementeringen, som kan ændres:
+- **Tilskrivning:** En fil står kun som AI'ens, når AI'ens eget filværktøj skrev præcis det indhold, der ligger nu. Ændringer under en opgave uden AI'ens filværktøjer står som "En kommando eller dig" eller "Ikke AI'en". Hellere for forsigtig end at give AI'en æren for brugerens rettelser.
+- **Sammenligningsgrundlag:** Pr. AI-opgave er det filerne ved opgavens start; for hele samtalen filerne, da den første opgave startede. Ændringer og aktivitet huskes i appens hukommelse, mens den er åben, og gemmes ikke på disken. Ældre ændringer findes under Versioner.
+- **Filhenvisninger til AI'en:** Kun stien og eventuelle linjer sendes, og AI'en læser selv filen med sine værktøjer. Henvisningen indgår i samtykket, så Før du sender vises igen, men den starter ikke en ny modelsession.
+- **Sidepanelet** foldes sammen af brugeren og automatisk, når vinduet er smallere end 760 CSS-pixels, fx med 150 % tekst ved 980 × 720.
+
 ## Få valg og udvælgelse af skills · 29. september 2026
 
 Besluttet i projektsamtalen: Hvert beslutningspunkt har ét eller to hovedvalg og højst tre til fire synlige muligheder med resten bag ét link, fx "Bruger du en anden udbyder? Vælg en anden". Opsætningen skal kunne gennemføres uden tvivlsspørgsmål af en person uden teknisk baggrund. Reglen står i `AGENTS.md` og `desktop/DESIGN.md`.

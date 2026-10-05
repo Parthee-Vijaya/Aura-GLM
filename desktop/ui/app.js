@@ -1,5 +1,7 @@
 const $ = selector => document.querySelector(selector);
 let current = null, revision = null, polling = false, state = null, modelRequest = 0, acceptedFingerprint = null, pendingSend = null, running = false;
+// Et accepteret resumé gælder samme modelsession og samme delte materiale, også filhenvisninger.
+const reviewKey = data => `${data.fingerprint}|${data.consentKey}`;
 let activityGroup = null, lastCheckpoint = null;
 let skillList = [], roles = new Map(), parts = new Map(), partTypes = new Map();
 function message(text, error = false) { const dialog = [...document.querySelectorAll('dialog[open]')].at(-1); if (dialog) { let notice = dialog.querySelector('.dialog-notice'); if (!notice) { notice = document.createElement('p'); notice.className = 'dialog-notice'; notice.setAttribute('role', 'status'); dialog.append(notice); } notice.textContent = text; }  $('#message').textContent = text; $('#message').classList.toggle('error', error); $('#message').hidden = false; }
@@ -91,6 +93,8 @@ function markdownInto(element, text) {
     inlineMarkdown(paragraph, line);
   }
   element.classList.add('markdown'); element.replaceChildren(...blocks);
+  // Stier til filer i projektet bliver til links, der åbner filen under Kode.
+  window.workspace?.linkify(element);
 }
 // Under streaming gemmes den rå tekst, og visningen opdateres højst én gang pr. skærmopdatering.
 const assistantText = new Map(), pendingMarkdown = new Set();
@@ -309,6 +313,7 @@ async function displayProject(project) {
   updateWorkMode(); $('#draft-status').textContent = history?.draft ? 'Kladde hentet fra denne computer' : '';
   updateStartIdea();
   await refreshRecent();
+  await window.workspace?.onProject();
   $('#project-name').tabIndex = -1; if (!setupActive) $('#project-name').focus();
 }
 // AI-forbindelser: en liste over gemte forbindelser med Rediger. Nye tilføjes gennem den guidede opsætning med udbyderkortene.
@@ -432,8 +437,8 @@ async function loadRoutes(saved = '') {
   for (const route of routes) $('#route-select').append(option(route.id, route.name));
   if (routes.some(route => route.id === saved)) $('#route-select').value = saved;
 }
-function selection() { return { includeHistory: $('#include-history').checked, mode: $('#work-mode').value, planID: activePlan?.id, connectionID: $('#connection-select').value, modelID: $('#model-select').value, routeID: $('#route-select').value, references: [...document.querySelectorAll('#reference-choices input:checked')].map(el => el.value) }; }
-const detailLabels = { mode: 'Arbejdsmåde', conversation: 'Tidligere samtale, der sendes', projectGuidance: 'Appens vejledning om projektvalg og design', planContext: 'Plan og afklaring, der sendes', projectChoices: 'Projektets opstartsvalg', connection: 'Forbindelse', model: 'Model', endpoint: 'Serveradresse', recipients: 'Modtagere', region: 'Behandlingssted', retention: 'Opbevaring', training: 'Brug til træning', price: 'Pris og gratisbegrænsninger', capabilities: 'Modelmuligheder', material: 'Hvad sendes?', references: 'Udvalgte private referencer', skills: 'Skills, AI’en kan hente', localStorage: 'Lokal historik og yderligere netværk', security: 'Forbindelsens sikkerhed', source: 'Kilde', checkedAt: 'Dokumentation kontrolleret', evidence: 'Grundlag' };
+function selection() { return { includeHistory: $('#include-history').checked, mode: $('#work-mode').value, planID: activePlan?.id, connectionID: $('#connection-select').value, modelID: $('#model-select').value, routeID: $('#route-select').value, references: [...document.querySelectorAll('#reference-choices input:checked')].map(el => el.value), fileRefs: window.workspace?.references() || [] }; }
+const detailLabels = { mode: 'Arbejdsmåde', conversation: 'Tidligere samtale, der sendes', projectGuidance: 'Appens vejledning om projektvalg og design', planContext: 'Plan og afklaring, der sendes', projectChoices: 'Projektets opstartsvalg', fileReferences: 'Filhenvisninger i beskeden', connection: 'Forbindelse', model: 'Model', endpoint: 'Serveradresse', recipients: 'Modtagere', region: 'Behandlingssted', retention: 'Opbevaring', training: 'Brug til træning', price: 'Pris og gratisbegrænsninger', capabilities: 'Modelmuligheder', material: 'Hvad sendes?', references: 'Udvalgte private referencer', skills: 'Skills, AI’en kan hente', localStorage: 'Lokal historik og yderligere netværk', security: 'Forbindelsens sikkerhed', source: 'Kilde', checkedAt: 'Dokumentation kontrolleret', evidence: 'Grundlag' };
 // Kort resumé i almindeligt dansk. Alle oplysninger ligger under "Se alle oplysninger".
 function showData(data, canSend) {
   $('#data-summary').replaceChildren();
@@ -444,6 +449,9 @@ function showData(data, canSend) {
   // Tidligere samtale nævnes kun i første lag, når den faktisk sendes med.
   $('#data-history-text').textContent = data.historyIncluded ? 'Tidligere samtale medsendes efter dit tilvalg. Se indholdet under alle oplysninger.' : '';
   $('#data-history-text').hidden = !data.historyIncluded;
+  // Filhenvisninger står i første lag, fordi de er nyt materiale, brugeren selv har valgt at dele.
+  $('#data-refs-text').textContent = data.fileReferences?.length ? `Filhenvisninger: ${data.fileReferences.join(', ')}. AI’en får stien og læser selv filen i projektet.` : '';
+  $('#data-refs-text').hidden = !data.fileReferences?.length;
   for (const [label, value] of Object.entries({ 'AI': data.modelName ? `${data.modelName} · ${data.provider || data.connection}` : `${data.model} · ${data.connection}`, 'Hvor': data.regionShort || data.region, 'Træning': data.trainingShort || data.training, 'Pris': data.priceShort || data.price })) {
     $('#data-summary').append(node('dt', label), node('dd', Array.isArray(value) ? value.join(', ') : value));
   }
@@ -451,6 +459,7 @@ function showData(data, canSend) {
   $('#data-details').replaceChildren();
   for (const [key, label] of Object.entries(detailLabels)) {
     const value = data[key];
+    if (key === 'fileReferences' && !value?.length) continue;
     const text = key === 'mode' ? ({ plan: 'Afklar og planlæg', build: 'Byg den valgte plan', free: 'Arbejd direkte' }[value]) : key === 'conversation' && !value ? 'Medsendes ikke. Den aktive samtale og en valgt plan indgår stadig.' : Array.isArray(value) ? value.join(', ') || 'Ingen' : value && typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value || 'Ingen');
     const dd = node('dd');
     if (text.length > 160) { const fold = node('details'); fold.append(node('summary', `Vis (${text.split(/\s+/).length} ord)`), node('pre', text)); dd.append(fold); }
@@ -463,8 +472,8 @@ async function sendNow(data, text) {
   $('#model-options').open = false; $('#task-dialog').close(); activityGroup = null; $('#connection-warning').hidden = true; $('#data-dialog').close(); setRunning(true, 'Starter agent …');
   if ($('#work-mode').value === 'free') { activePlan = null; $('#plan-card').hidden = true; }
   $('#run-review').hidden = true; if ($('#work-mode').value === 'build') $('#plan-card').hidden = true; if ($('#work-mode').value === 'plan') { activePlan = null; $('#plan-card').hidden = true; }
-  lastSentText = text; lastCheckpoint = null; rejectedThisRun = false; appendMessage(text, 'user'); $('#prompt').value = ''; await saveChatDraft();
-  try { await call('send', { text, fingerprint: data.fingerprint }); acceptedFingerprint = data.fingerprint; }
+  lastSentText = text; lastCheckpoint = null; rejectedThisRun = false; appendMessage(text + (data.fileReferenceText || ''), 'user'); $('#prompt').value = ''; await saveChatDraft();
+  try { await call('send', { text, fingerprint: data.fingerprint }); acceptedFingerprint = reviewKey(data); window.workspace?.clearReferences(); }
   catch (error) { $('#prompt').value = text; await saveChatDraft(); setRunning(false, 'Fejl'); appendMessage(error.message, 'error'); connectionFailed(error.message); throw error; }
 }
 // Under en opgave viser statusfeltet, hvor længe den har kørt, så en lang tænkepause ikke ligner, at appen er gået i stå.
@@ -487,16 +496,19 @@ function showSkill() {
 }
 const toolLabels = { read: 'Læs fil', edit: 'Rediger fil', write: 'Skriv fil', bash: 'Kør kommando', webfetch: 'Læs hjemmeside', websearch: 'Søg på nettet', glob: 'Find filer', grep: 'Søg i filer', external_directory: 'Adgang uden for projektet' };
 const toolStatuses = { pending: 'Venter', running: 'I gang', completed: 'Afsluttet', error: 'Mislykkedes' };
-// Skillfiler ligger i motorens interne mappe. Aktivitetslisten viser skillens navn i stedet for den lange sti.
-function toolTitle(title) { const match = /(?:^|\/)config\/skills\/(harness-[a-z0-9-]+)\/(.+)$/.exec(title); return match ? `Skill ${match[1]} › ${match[2]}` : title; }
-function partElement(id, role) {
-  if (!parts.has(id)) {
-    if (role === 'tool') {
-      if (!activityGroup) { activityGroup = node('details', undefined, 'activity-log'); activityGroup.append(node('summary', 'Vis aktivitet')); $('#messages').append(activityGroup); }
-      const item = node('div', '', 'chat-message tool'); activityGroup.append(item); parts.set(id, item);
-      activityGroup.querySelector('summary').textContent = `Vis aktivitet (${activityGroup.querySelectorAll('.tool').length})`;
-    } else parts.set(id, appendMessage('', role));
+// Værktøjerne står under Aktivitet. Samtalen viser én linje pr. opgave med antallet og en vej dertil.
+function noteTool(id) {
+  if (!activityGroup) {
+    activityGroup = node('p', undefined, 'activity-pointer'); activityGroup.tools = new Set();
+    const open = node('button', 'Se Aktivitet', 'text-button'); open.type = 'button'; open.onclick = () => window.workspace.show('activity');
+    activityGroup.append(node('span'), open); $('#messages').append(activityGroup);
   }
+  activityGroup.tools.add(id);
+  const count = activityGroup.tools.size;
+  activityGroup.firstChild.textContent = `AI’en har brugt ${count} ${count === 1 ? 'værktøj' : 'værktøjer'}.`;
+}
+function partElement(id, role) {
+  if (!parts.has(id)) parts.set(id, appendMessage('', role));
   return parts.get(id);
 }
 window.harness.onEvent(event => {
@@ -509,7 +521,7 @@ window.harness.onEvent(event => {
   // Versionen efter opgaven vises på resultatkortet. Kun en oversprunget version nævnes i samtalen.
   if (event.type === 'git.checkpoint') { lastCheckpoint = event; if (event.status === 'skipped') appendMessage(event.message, 'system'); return; }
   if (event.type === 'preview.ready') { showPreview(event.url); window.previewServer?.refresh(); return; }
-  if (event.type === 'session.new') { roles.clear(); parts.clear(); partTypes.clear(); partElement('session-' + Date.now(), 'tool').textContent = 'Ny modelsession. Valgt plan og afklaring følger med; øvrig gemt samtale kræver tilvalg.'; }
+  if (event.type === 'session.new') { roles.clear(); parts.clear(); partTypes.clear(); }
   if (event.type === 'run.status') {
     const active = ['starting', 'working'].includes(event.status);
     const statuses = { starting: 'Starter agent …', working: 'Arbejder …', idle: 'Klar', error: 'Fejl', stopped: 'Stoppet' };
@@ -531,17 +543,17 @@ window.harness.onEvent(event => {
     // Når et værktøj er færdigt, tænker modellen over næste skridt. Banneret må ikke blive stående på det afsluttede værktøj.
     if (part.type === 'tool' && running && ['completed', 'error'].includes(part.state?.status)) $('#agent-activity').textContent = 'AI’en tænker over næste skridt …';
     if (part.type === 'text' && running) $('#agent-activity').textContent = 'AI’en skriver …';
-    if (part.type === 'tool') partElement(part.id, 'tool').textContent = `${toolLabels[part.tool] || part.tool} · ${toolStatuses[part.state?.status] || part.state?.status || ''}${part.state?.title ? '\n' + toolTitle(part.state.title) : ''}`;
+    if (part.type === 'tool') noteTool(part.id);
   }
   if (event.type === 'message.part.delta' && p.field === 'text' && partTypes.get(p.partID) === 'text' && roles.get(p.messageID) !== 'user') showAssistant(p.partID, (assistantText.get(p.partID) || '') + p.delta);
-  if (event.type === 'permission.auto') { partElement('auto-' + Date.now() + Math.random(), 'tool').textContent = `Rediger fil · tilladt for denne opgave\n${event.file}`; return; }
+  if (event.type === 'permission.auto') return;
   if (event.type === 'permission.asked') {
     $('#agent-activity').textContent = 'Venter på din godkendelse. Gennemgå handlingen i samtalen.';
     const box = node('section', undefined, 'approval'); box.dataset.id = p.id;
     const target = approvalTarget(p);
     const explanation = approvalExplanation(p, target);
     box.append(node('strong', explanation.title), node('p', explanation.effect));
-    if (target.text) box.append(node('p', target.text, 'action-target'));
+    if (target.text) { const where = node('p', target.text, 'action-target'); box.append(where); window.workspace?.linkify(where); }
     if (p.metadata?.description) box.append(node('p', `AI’ens begrundelse: ${p.metadata.description}`, 'hint'));
     const details = node('details'); details.append(node('summary', 'Tekniske detaljer'), node('pre', JSON.stringify({ paths: p.patterns, details: p.metadata }, null, 2))); box.append(details);
     // Filændringer i projektet kan tillades for resten af opgaven. Alt andet spørger hver gang.
@@ -594,13 +606,12 @@ $('#connection-form').onsubmit = event => {
 };
 $('#connection-select').onchange = () => { autoConnect = true; action(() => loadModels()); }; $('#model-select').onchange = () => { updateModelSummary(); action(() => loadRoutes()); };
 $('#data-button').onclick = () => action(async () => showData(await call('prepare', selection()), false));
-$('#chat-form').onsubmit = event => { event.preventDefault(); action(async () => { const text = $('#prompt').value.trim(); if (!text || running) return; if (!$('#connection-select').value) { openTaskSettings(); showConnectionWarning('Forbind en AI for at sende beskeden. Din kladde er bevaret.'); return; } if (!$('#model-select').value || (!$('#route-row').hidden && !$('#route-select').value)) { openTaskSettings(); message('Vælg model og eventuel modeludbyder.', true); return; } $('#send').disabled = true; try { const data = await call('prepare', selection()); if (data.accepted || data.fingerprint === acceptedFingerprint) await sendNow(data, text); else { pendingSend = { data, text }; showData(data, true); } } catch (error) { connectionFailed(error.message); throw error; } finally { $('#send').disabled = running; } }); };
+$('#chat-form').onsubmit = event => { event.preventDefault(); action(async () => { const text = $('#prompt').value.trim(); if (!text || running) return; if (!$('#connection-select').value) { openTaskSettings(); showConnectionWarning('Forbind en AI for at sende beskeden. Din kladde er bevaret.'); return; } if (!$('#model-select').value || (!$('#route-row').hidden && !$('#route-select').value)) { openTaskSettings(); message('Vælg model og eventuel modeludbyder.', true); return; } $('#send').disabled = true; try { const data = await call('prepare', selection()); if (data.accepted || reviewKey(data) === acceptedFingerprint) await sendNow(data, text); else { pendingSend = { data, text }; showData(data, true); } } catch (error) { connectionFailed(error.message); throw error; } finally { $('#send').disabled = running; } }); };
 $('#accept-send').onclick = () => action(async () => { const pending = pendingSend; pendingSend = null; if (pending) await sendNow(pending.data, pending.text); });
 $('#stop').onclick = () => action(() => call('stop'));
 $('#skills-button').onclick = () => action(async () => { skillList = await call('skills'); $('#skill-select').replaceChildren(...skillList.map(s => option(s.id, s.enabled ? s.title : `${s.title} · slået fra`))); showSkill(); $('#skills-dialog').showModal(); });
 $('#skill-select').onchange = showSkill;
 for (const reset of [true, false]) $(reset ? '#skill-reset' : '#skill-save').onclick = () => action(async () => { const id = $('#skill-select').value; skillList = await call('saveSkill', { id, content: $('#skill-content').value, reset }); acceptedFingerprint = null; showSkill(); message(reset ? 'Den fælles version bruges igen i dette projekt. Det gælder fra din næste besked.' : 'Instruktionen er gemt for dette projekt. Den gælder fra din næste besked.'); });
-$('#changes-button').onclick = () => action(async () => { const result = await call('changes'); $('#changes-list').replaceChildren(); if (!result.files.length) $('#changes-list').append(node('p', 'Ingen tekstændringer registreret siden første besked.')); for (const file of result.files) { const detail = node('details'); detail.append(node('summary', file.file), node('h3', 'Før'), node('pre', file.before ?? '(ny fil)'), node('h3', 'Efter'), node('pre', file.after ?? '(slettet fil)')); $('#changes-list').append(detail); } if (result.skipped) $('#changes-list').append(node('p', `${result.skipped} filregistreringer blev udeladt af hensyn til størrelse eller filtype.`)); $('#changes-dialog').showModal(); });
 $('#attach-preview').onclick = () => window.previewServer.open();
 $('#preview-form').onsubmit = event => { event.preventDefault(); action(async () => { const url = await call('attachPreview', $('#preview-url').value); showPreview(url, true); $('#preview-dialog').close(); }); };
 $('#static-preview').onclick = () => action(async () => { showPreview(await call('attachPreview', '')); $('#preview-dialog').close(); });
@@ -1318,10 +1329,17 @@ function renderRunReview(result) {
   box.hidden = false; requestAnimationFrame(() => box.scrollIntoView({ block: 'nearest' }));
   box.append(node('h3', result.status === 'idle' ? 'Prøv resultatet i forhåndsvisningen' : 'Opgaven blev afbrudt eller fejlede'));
   if (result.unavailable) { box.append(node('p', 'Ændringsoversigten kunne ikke læses. Gennemgå filerne manuelt.')); return; }
-  box.append(node('p', result.files.length ? `${result.files.length} ${result.files.length === 1 ? 'fil er ændret' : 'filer er ændret'}.` : 'Ingen filændringer registreret.'));
+  box.append(node('p', result.files.length ? `${result.files.length} ${result.files.length === 1 ? 'fil er ændret' : 'filer er ændret'}:` : 'Ingen filændringer registreret.'));
+  // Hver fil åbner sin linje-diff under Ændringer. Brugeren vælger selv at skifte fane.
+  if (result.files.length && result.task) {
+    const list = node('ul', undefined, 'review-files');
+    for (const file of [...result.files].sort((a, b) => a.localeCompare(b, 'da')).slice(0, 6)) { const item = node('li'), link = node('button', file, 'file-ref'); link.type = 'button'; link.dataset.path = file; link.dataset.change = result.task; link.title = `Se ændringerne i ${file}`; item.append(link); list.append(item); }
+    if (result.files.length > 6) list.append(node('li', `og ${result.files.length - 6} flere`, 'hint'));
+    box.append(list);
+  }
   const checks = node('details'); checks.append(node('summary', 'Kontroller og handlinger')); box.append(checks);
   const commands = result.tools.filter(t => t.tool === 'bash');
-  checks.append(node('p', commands.length ? 'Kørte kommandoer (afsluttet er ikke det samme som bestået test):' : 'Ingen kommandoer kørt. Appen har ikke bekræftet funktionalitet eller tests.'));
+  checks.append(node('p', commands.length ? 'Kørte kommandoer (afsluttet er ikke det samme som bestået test). Output står under Aktivitet:' : 'Ingen kommandoer kørt. Appen har ikke bekræftet funktionalitet eller tests.'));
   for (const tool of commands) checks.append(node('p', `${tool.title || 'Kommando'} · ${toolStatuses[tool.status] || tool.status}`));
   if (result.tools.some(t => t.status === 'error')) box.append(node('p', 'Mindst ét værktøj fejlede eller blev afvist. Se samtalen, før du fortsætter.'));
   checks.append(node('p', 'Gennemfør den vigtigste opgave, og prøv også en smal skærmstørrelse. AI’ens beskrivelse er ikke et testbevis.', 'hint'));
@@ -1332,10 +1350,10 @@ function renderRunReview(result) {
     box.append(node('p', checkpoint.message, 'hint'));
     if (checkpoint.kept?.length) box.append(node('p', `Disse filer blev ikke gemt, fordi de kan indeholde hemmeligheder eller er for store: ${checkpoint.kept.join(', ')}.`, 'hint'));
     const undo = node('button', 'Fortryd opgaven'); undo.onclick = () => action(() => reviewRestoration({ commit: checkpoint.previous }, { title: 'Fortryd opgaven', confirm: 'Fortryd opgaven', label: `Fortrudt: ${task}` }));
-    const inspect = node('button', 'Se ændringerne'); inspect.onclick = () => $('#changes-button').click();
+    const inspect = node('button', 'Se ændringerne'); inspect.onclick = () => window.workspace.showChange(result.task);
     box.append(undo, inspect);
   } else if (result.files.length) {
-    const inspect = node('button', 'Gennemgå ændringer'); inspect.onclick = () => $('#changes-button').click();
+    const inspect = node('button', 'Gennemgå ændringer'); inspect.onclick = () => window.workspace.showChange(result.task);
     box.append(inspect);
     if (featureOn('versioner')) { const save = node('button', 'Gem version'); save.onclick = () => $('#git-button').click(); box.append(save); }
   }

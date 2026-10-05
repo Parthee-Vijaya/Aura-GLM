@@ -144,8 +144,10 @@ const { run } = require('../core/git.cjs');
   await page.waitForFunction(()=>document.querySelectorAll('#git-history li').length===2 && !document.querySelector('#git-auto').disabled); assert.equal(await page.isChecked('#git-auto'),!process.env.HARNESS_TEST_PACKAGE);
   assert.equal(await page.locator('#git-dialog .dialog-notice').count(),0);
   await page.screenshot({path:path.join(root,'versioner.png'),fullPage:true}); await page.click('[data-close="git-dialog"]');
-  await page.click('#changes-button');assert.match(await page.locator('#changes-list').textContent(),/public[/\\]index.html/);
-  await page.click('[data-close="changes-dialog"]');
+  // Ændringer er en fane ved siden af samtalen: resumé og linje-diff for opgavens fil.
+  await page.click('#tab-changes'); await page.locator('#changes-files .file-row[data-file="public/index.html"]').waitFor();
+  assert.match(await page.locator('#changes-diff-lines').innerText(),/Bygget fra desktopchatten/);
+  await page.click('#tab-preview');
   await require('./ui-test-helpers.cjs').menuClick(page, '#skills-button');await page.selectOption('#skill-select','harness-git-og-samarbejde');
   const original=await page.inputValue('#skill-content');await page.fill('#skill-content',original+'\nTesttilpasning.');await page.click('#skill-save');
   await page.locator('#skill-source').filter({hasText:'Lokal tilpasning'}).waitFor();

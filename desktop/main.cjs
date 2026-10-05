@@ -11,7 +11,7 @@ const { Deployments } = require('./core/deployments.cjs');
 const { Publishing } = require('./core/publishing.cjs');
 const { Preferences } = require('./core/preferences.cjs');
 const { Designs } = require('./core/designs.cjs');
-const { capture, changes } = require('./core/changes.cjs');
+const projectFiles = require('./core/project-files.cjs');
 const { OwnTools } = require('./core/own-tools.cjs');
 
 // Appen hedder Aura. Datamappen og navnet i nøgleringen bevares fra før navneskiftet; se core/app-identity.cjs.
@@ -26,7 +26,7 @@ protocol.registerSchemesAsPrivileged([{ scheme: 'harness', privileges: { standar
 let window, preview, project, busy = false, chosenParent = null;
 let assets = [];
 let github, publishing, deployments, restoration;
-let workbench, beforeChanges, externalPreview = null;
+let workbench, externalPreview = null;
 let ownTools;
 let devServer, detectedRuntime, forceStatic = false;
 let quitReady = false, shuttingDown = null;
@@ -51,7 +51,7 @@ async function activate(next) {
   catch { await workbench.invalidatePlan(crypto.randomUUID()); workbench.historyWarning = 'Gendannelseskopien kan ikke læses. Projektfilerne er åbne, men den gamle plan er nulstillet. Kopien er bevaret i appens lokale data.'; }
   await devServer.activate(next.root);
   if (preview) await preview.close();
-  project = next; preview = null; externalPreview = null; beforeChanges = null; assets = [];
+  project = next; preview = null; externalPreview = null; assets = [];
   forceStatic = false; detectedRuntime = await inspectRuntime(next.root).catch(error => ({ kind: 'unknown', supported: false, reason: error.message }));
   if (next.staticPreview && !['vite', 'astro'].includes(detectedRuntime.kind)) preview = await startPreview(next.root);
   return { ...project, previewURL: preview?.url || null, runtime: { ...devServer.snapshot(), project: detectedRuntime }, workbench: await workbench.state() };
@@ -132,7 +132,7 @@ handle('workspace:draft', input => {
 handle('project:new', () => exclusive(async () => {
   if (workbench.running) throw new Error('Stop den aktive opgave, før du skifter projekt.');
   await devServer.activate(null);
-  await workbench.close(); workbench.project = null; externalPreview = null; beforeChanges = null;
+  await workbench.close(); workbench.project = null; externalPreview = null;
   if (preview) await preview.close();
   preview = null; project = null; assets = [];
   return true;
@@ -256,14 +256,24 @@ handle('git:restore', input => exclusive(async () => {
       if (files.length) saved = await workbench.git.commit(root, { token: review.token, files, message: label.trim() || 'Gendannet version' });
     } catch (failure) { error = `Filerne er gendannet, men den nye version blev ikke gemt: ${failure.message}`; }
   }
+  if (restored) workbench.log({ kind: 'restore', title: 'Filerne er sat tilbage', detail: `${label.trim() || 'Gendannet version'} · ${restored.paths.length === 1 ? '1 fil' : `${restored.paths.length} filer`}${saved ? ' · gemt som ny version' : ''}`, status: 'completed' }, root);
+  if (error) workbench.log({ kind: 'error', title: 'Gendannelsen gik ikke helt igennem', detail: error, status: 'error' }, root);
   // activate kontrollerer journalen, også efter genstart eller en delvis gendannelse.
   return { restored, error, saved, project: await activate(await openProject(root)) };
 }));
-handle('git:save', note => exclusive(() => workbench.git.saveAll(requireIdleProject(), note || '')));
+handle('git:save', note => exclusive(async () => {
+  const root = requireIdleProject(), result = await workbench.git.saveAll(root, note || '');
+  if (result.saved) workbench.log({ kind: 'checkpoint', title: 'Du gemte en version', detail: note || 'Uden beskrivelse', status: 'completed' }, root);
+  return result;
+}));
 handle('git:identity', value => exclusive(() => workbench.git.setIdentity(requireIdleProject(), value)));
 handle('git:init', () => exclusive(() => workbench.git.initialize(requireIdleProject())));
 handle('git:review', () => exclusive(() => workbench.git.review(requireIdleProject())));
-handle('git:commit', input => exclusive(() => workbench.git.commit(requireIdleProject(), input)));
+handle('git:commit', input => exclusive(async () => {
+  const root = requireIdleProject(), result = await workbench.git.commit(root, input);
+  workbench.log({ kind: 'checkpoint', title: 'Du gemte en version med valgte filer', detail: String(input?.message || ''), status: 'completed' }, root);
+  return result;
+}));
 handle('git:automatic', value => exclusive(async () => {
   const root = requireIdleProject();
   if (typeof value !== 'boolean') throw new Error('Ugyldigt valg af automatisk checkpoint.');
@@ -334,13 +344,21 @@ handle('agent:prepare', value => exclusive(() => workbench.prepare(value)));
 handle('agent:send', value => exclusive(async () => {
   if (!project) throw new Error('Åbn et projekt først.');
   if (['installing', 'starting', 'stopping'].includes(devServer.state)) throw new Error('Vent på opstarten af forhåndsvisningen, eller stop den først.');
-  if (!beforeChanges) beforeChanges = await capture(project.root);
   return workbench.send(value);
 }));
 handle('agent:stop', () => workbench.stop());
 handle('agent:reply', value => workbench.reply(value));
 handle('agent:question', value => workbench.question(value));
-handle('agent:changes', () => project ? changes(project.root, beforeChanges) : { files: [], skipped: 0 });
+// Arbejdsfladens faner: Ændringer, Kode og Aktivitet. Alt er skrivebeskyttet; stier valideres her i hovedprocessen.
+handle('changes:overview', () => project ? workbench.changeOverview() : { running: false, tasks: [], session: null });
+handle('changes:file', value => { if (!project) throw new Error('Åbn et projekt først.'); return workbench.changeFile(value); });
+handle('code:list', async () => {
+  if (!project) throw new Error('Åbn et projekt først.');
+  const root = project.root, result = await projectFiles.listFiles(root), changed = workbench.changedFiles();
+  return { root, truncated: result.truncated, files: result.files.map(file => ({ ...file, changed: changed.get(file.path) || null })), deleted: [...changed].filter(([, kind]) => kind === 'slettet').map(([file]) => file) };
+});
+handle('code:read', file => { if (!project) throw new Error('Åbn et projekt først.'); return projectFiles.readFile(project.root, file); });
+handle('activity:list', () => project ? workbench.activityList() : []);
 handle('skills:list', () => { if (!project) throw new Error('Åbn et projekt først.'); return workbench.skills.list(project.root); });
 handle('skills:save', value => exclusive(async () => {
   if (!project || workbench.running) throw new Error('Åbn et projekt, og stop en eventuel opgave før skill-ændringer.');
@@ -411,6 +429,7 @@ app.whenReady().then(() => {
     runner: app.isPackaged ? path.join(process.resourcesPath, 'app.asar.unpacked/core/dev-server-runner.cjs') : undefined,
     emit: state => {
       if (state.state === 'error') recordFailure('forhaandsvisning', 'server');
+      previewActivity(state);
       if (state.root !== project?.root) return;
       if (state.state === 'running') {
         if (preview) { const old = preview; preview = null; void old.close(); }
@@ -419,12 +438,22 @@ app.whenReady().then(() => {
       if (window && !window.isDestroyed()) window.webContents.send('harness:event', { type: 'preview.runtime', ...state, project: detectedRuntime });
     }
   });
+  // Forhåndsvisningens server i Aktivitet: én række pr. tilstand med serverens egen besked. Loggen står i dialogen.
+  const previewTitles = { installing: 'Forhåndsvisning: installerer pakker', installed: 'Forhåndsvisning: pakkerne er installeret', starting: 'Forhåndsvisning: starter serveren', running: 'Forhåndsvisning: serveren kører', stopped: 'Forhåndsvisning: stoppet', error: 'Forhåndsvisning: fejl' };
+  const previewStates = new Map();
+  function previewActivity(state) {
+    if (!state.root || !previewTitles[state.state] || previewStates.get(state.root) === state.state) return;
+    // Et stop uden en kørende server, fx ved gendannelse af et statisk projekt, er ikke en hændelse.
+    if (state.state === 'stopped' && !['installing', 'installed', 'starting', 'running', 'error'].includes(previewStates.get(state.root))) return;
+    previewStates.set(state.root, state.state);
+    workbench.log({ kind: 'preview', title: previewTitles[state.state], detail: state.message || '', status: state.state === 'error' ? 'error' : ['installing', 'starting'].includes(state.state) ? 'running' : 'completed' }, state.root);
+  }
   deployments = new Deployments(workbench.store);
   github = new GitHub(workbench.store); publishing = new Publishing({ store: workbench.store, git: workbench.git, provider: github });
   protocol.handle('harness', async request => {
     const url = new URL(request.url);
     const name = url.pathname.slice(1);
-    if (url.host !== 'app' || !['index.html', 'app.js', 'model-advice.js', 'server.js', 'viewport.js', 'hosting.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name)) return new Response('Ikke fundet', { status: 404 });
+    if (url.host !== 'app' || !['index.html', 'app.js', 'workspace.js', 'model-advice.js', 'server.js', 'viewport.js', 'hosting.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name)) return new Response('Ikke fundet', { status: 404 });
     return new Response(await fs.readFile(path.join(__dirname, 'ui', name)), { headers: { 'Content-Type': name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : 'text/html; charset=utf-8' } });
   });
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));

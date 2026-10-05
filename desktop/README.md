@@ -63,11 +63,11 @@ AI-opsætningen viser to store valg: **Jeg har en adgangsnøgle** og **AI på mi
 
 **Gem og kontrollér** gemmer forbindelsen og henter modellisten. Ved en tom liste eller en fejl kan oplysningerne rettes og kontrollen gentages. **Fortsæt** bliver tilgængelig, når listen indeholder modeller. Et katalogsvar beviser ikke adgang til modelkald, kvote eller kodeværktøjer. For Claude, Mistral og Corti vælges udbyderens eget udgangspunkt på forhånd, når projektet åbnes, fx Claude Opus 5.5, som Anthropic selv angiver. Appen anbefaler ingen udbyder eller model. Under skrivefeltet står model, udbyder og indsats og samtalens tokens ind og ud med en anslået pris. For andre forbindelser vælger brugeren selv model. Den foretrukne forbindelse huskes lokalt, men bliver ukontrolleret efter genstart. Der skiftes aldrig automatisk til en anden model eller udbyder. **Indstillinger → AI-forbindelser og konto** åbner samme guide; GitHub og lokale værktøjer findes under **Avanceret opsætning**.
 
-Arbejdsområdet viser samtale og preview. Modelknappen i skrivefeltet åbner **Din AI** med højst tre modelkort; et klik vælger modellen og lukker dialogen. Referencer vises kun, når projektet har referencefiler. Før den første afsendelse viser **Før du sender** et kort resumé: hvem der modtager beskeden, hvor behandlingen sker, om data bruges til træning, og prisen. Alle oplysninger ligger under **Se alle oplysninger**. Accepterede vilkår huskes for projektet, så resuméet vises igen, når modtager, model, pris, vilkår eller delt materiale ændrer sig, fx når tidligere samtale medsendes, men ikke ved skift fra plan til bygning. Tilføjelse af en almindelig API-forbindelse viser udbyder og nøgle; navn og serveradresse ligger under **Avanceret**. Egen server og Ollama åbner adressefelterne. Der er endnu ingen automatisk organisationsopsætning eller Claude-abonnementsforbindelse.
+Arbejdsområdet viser samtalen og ved siden af den en arbejdsflade med fire faner; se [Arbejdsfladen](#arbejdsfladen). Modelknappen i skrivefeltet åbner **Din AI** med højst tre modelkort; et klik vælger modellen og lukker dialogen. Referencer vises kun, når projektet har referencefiler. Før den første afsendelse viser **Før du sender** et kort resumé: hvem der modtager beskeden, hvor behandlingen sker, om data bruges til træning, og prisen. Alle oplysninger ligger under **Se alle oplysninger**. Accepterede vilkår huskes for projektet, så resuméet vises igen, når modtager, model, pris, vilkår eller delt materiale ændrer sig, fx når tidligere samtale medsendes eller beskeden får nye filhenvisninger, men ikke ved skift fra plan til bygning. Tilføjelse af en almindelig API-forbindelse viser udbyder og nøgle; navn og serveradresse ligger under **Avanceret**. Egen server og Ollama åbner adressefelterne. Der er endnu ingen automatisk organisationsopsætning eller Claude-abonnementsforbindelse.
 
 Efter projektoprettelse står idéen som en redigerbar kladde i samtalen. Intet sendes automatisk. **Afklar og planlæg** er udgangspunktet og afviser filskrivning og kommandoer i agentmotoren. Brugeren vælger senere **Byg første udkast**. Efter en vellykket byggeopgave kan næste besked bruges til at ændre resultatet, stadig med godkendelse af handlinger. Første filændring i en opgave spørger **Må AI’en ændre filer i projektet?** med **Tillad for denne opgave**, **Kun denne fil** og **Afvis**. Tilladelsen for opgaven gælder kun filer i projektmappen og ophører, når opgaven slutter eller stoppes. Kommandoer, webadgang, filer uden for projektet, Git-historik og hemmelighedsfiler spørger eller afvises hver gang. En erfaren bruger kan vælge **Arbejd direkte** under AI-knappens avancerede valg.
 
-Tekniske aktiviteter er samlet under **Vis aktivitet**. Spørgsmål, fejl og godkendelser vises særskilt i samtalen. Projektmenuen **•••** indeholder versionsgemning, sikkerhedskopi og ny samtale. **Del** åbner udgivelse til test. Preview har skærmstørrelse, genindlæsning og en menu til skalering, egne mål og lokal server.
+Tekniske aktiviteter står under fanen **Aktivitet**; samtalen viser én linje pr. opgave med antallet af værktøjer og **Se Aktivitet**. Spørgsmål, fejl og godkendelser vises særskilt i samtalen. Projektmenuen **•••** indeholder versionsgemning, sikkerhedskopi og ny samtale. **Del** åbner udgivelse til test. Preview har skærmstørrelse, genindlæsning og en menu til skalering, egne mål og lokal server.
 
 Farver, afstande, typografi og principper for synlige valg er beskrevet i [designstandarden](DESIGN.md).
 
@@ -80,7 +80,7 @@ Fejl i modelkatalog eller modelkald vises i arbejdsområdet med **Gennemgå AI-f
 3. Åbn **Indstillinger → AI-forbindelser**. **Tilføj forbindelse** går gennem den guidede opsætning. **Rediger** viser en gemt forbindelse med **Test forbindelse**, som kontrollerer kataloget; det beviser ikke, at modellen kan bruge kodeværktøjer. Vælg derefter model i arbejdsområdet. OpenRouter kræver en konkret underleverandør og bruger ingen automatisk fallback.
 4. Gennemse **Indstillinger → Funktioner**. Funktionerne afgør, hvilke skills AI’en kan hente, for alle projekter eller kun det åbne. Under **Integrationer** slår du de systemer til, projektet skal hente data fra, fx Adresser og CVR. Under **Avanceret** kan instruktionerne redigeres og gendannes pr. projekt. API-nøgler hører til forbindelser, aldrig i skills. Skills er modelinstruktioner; tekniske tilladelser er adskilt.
 5. Skriv en opgave. Før første afsendelse og ved ændrede vilkår, model, skills eller referencer viser appen modtagere, pris, behandlingssted, opbevaring, træning og dokumentationsgrundlag. Ukendte oplysninger vises som ukendte. Referencefiler vælges særskilt; links kan besøges via godkendte webopslag, inklusive relevante undersider.
-6. Gennemgå filændringer, kommandoer og webopslag, når agenten beder om tilladelse. **Stop** afbryder opgaven. **Ændringer** viser tekstindhold før og efter; oversigten kan også indeholde samtidige manuelle ændringer.
+6. Gennemgå filændringer, kommandoer og webopslag, når agenten beder om tilladelse. **Stop** afbryder opgaven. Fanen **Ændringer** viser først et resumé og derefter en linje-diff og siger, hvilke filer AI'en selv skrev.
 7. En statisk `public/index.html` vises automatisk. React med Vite og Astro får i stedet **Start forhåndsvisning**, som fører til gennemgang af installation og serverstart. Under preview-menuens **Server og opstart** kan du også tilslutte en allerede startet loopback-server. Projektåbning kører ingen kommando. Manglende preview blokerer ikke chatten.
 
 ## Luk og fortsæt
@@ -93,13 +93,24 @@ Ved lukning under arbejde gemmes opgaven som afbrudt. Delvise svar vises, men ag
 
 Samtaleindholdet er ikke krypteret. Modelnøgler gemmes fortsat separat med `safeStorage`; de kopieres ikke fra forbindelsesindstillinger til historikken. Historikvisningen gemmer højst 200 beskeder og 200.000 tegn. Ved aktivt tilvalg medsendes op til 16 beskeder og 60.000 tegn. Ældre arkiver og OpenCodes rå log slettes ikke automatisk.
 
+## Arbejdsfladen
+
+Ved siden af samtalen står fire faner: **Forhåndsvisning**, **Ændringer**, **Kode** og **Aktivitet**. Forhåndsvisning er udgangspunktet, når et projekt åbnes. Fanerne ligger oven på hinanden og skjules kun visuelt, så previewets formularer og rulning, filvalget i Kode og rulningen i de andre faner bevares ved faneskift. Beskedkladden står uden for fanerne og påvirkes ikke. Kun brugeren skifter fane: når AI'en arbejder, får **Ændringer** et tal og **Aktivitet** en prik, men den åbne fane skifter ikke. Fanerne bruger piletasterne, Home og End.
+
+- **Ændringer:** Under **Vis** vælges en afsluttet AI-opgave i denne samtale eller **Hele samtalen**. Resuméet siger, hvad der sammenlignes med, fx filerne, da opgaven startede, og hvor mange linjer der er tilføjet og fjernet. Hver fil står med Ny, Ændret eller Slettet og med, hvem der ændrede den: **AI'en**, når AI'ens eget filværktøj skrev præcis det indhold, der ligger nu; **AI'en og andre**, når filen også er ændret af andre; **En kommando eller dig**, når filen ændrede sig under opgaven uden AI'ens filværktøjer, og AI'en kørte kommandoer; ellers **Ikke AI'en**. Under listen står filens linje-diff med linjenumre, + og −. En fil med en mulig nøgle viser kun antallet af linjer. Ændringerne huskes, så længe appen er åben; ældre ændringer findes under Versioner. Har AI'en lavet nye ændringer, mens fanen er åben, vises **Vis dem** i stedet for at skifte indholdet.
+- **Kode:** Projektets filer kan læses, men ikke ændres. Filer, der er ændret i samtalen, står først, og der er søgning. Nøgler og `.env`-filer, private referencer, Git-historik, installerede pakker, genererede mapper, symbolske links og filer med mulige nøgler i indholdet vises ikke; stien kontrolleres i hovedprocessen (`core/project-files.cjs`). Koden vises som tekst, aldrig som HTML. Billeder vises som billeder. Et klik på et linjenummer vælger linjen, Skift-klik et område. **Henvis i beskeden** tilføjer filens sti og eventuelle linjer til næste besked. AI'en får kun stien og læser selv filen; henvisningen står i skrivefeltet og i **Før du sender**, og beskyttede filer kan ikke henvises til.
+- **Filhenvisninger i samtalen:** En sti i AI'ens svar, fx `public/index.html` eller `src/app.js:12`, bliver et link, når filen findes i projektet og kan vises. Linket åbner filen under Kode ved linjen. Resultatkortet viser de ændrede filer som links til deres diff.
+- **Aktivitet:** Én række pr. faktisk hændelse: opgavens start med model, hvert værktøj med mål og status, godkendelser med ventetid og dit svar, spørgsmål, fejl, Stop, opgavens resultat, versioner og forhåndsvisningens server. En kommandos output kan foldes ud; kendte nøglemønstre er skjult. Afsluttet betyder ikke bestået. Loggen gemmes ikke på disken og forsvinder, når Aura lukkes.
+
+Sidepanelet kan foldes sammen til en smal række ikoner med knappen ved Aura-navnet. Valget huskes på computeren. I et smalt vindue eller med stor tekst (Vis › Zoom ind) er det foldet sammen og lægger sig oven på indholdet, når det foldes ud; Escape lukker det igen.
+
 ## Paneler og skærmstørrelser
 
 Træk skillelinjen mellem samtale og preview for at ændre panelbredden. Skillelinjen kan også fokuseres med Tab og flyttes med piletasterne (Shift giver større trin); Home/End vælger yderpunkterne, og dobbeltklik gendanner standardbredden.
 
 Preview tilbyder fleksibel størrelse, desktop 1920 × 1080, tablet/iPad 768 × 1024, mobil/iPhone 390 × 844 og egne mål fra 240 til 7680 CSS-pixels. Du kan rotere visningen, tilpasse den visuelt til panelet eller vise den ved 100 % med rulning. Nedskalering ændrer ikke sidens layoutbredde eller media queries. Valgene gemmes lokalt i appens brugerflade og ændrer ingen projektfiler. Størrelserne er repræsentative layouts, ikke emulering af Safari, touch eller en bestemt fysisk enhed.
 
-Afprøvet i Electron på macOS med et rigtigt projekt: træk, tastatur, faste og egne mål, rotation, iframe-layoutmål, skalering og vinduesstørrelse. Windows er ikke afprøvet.
+Afprøvet i Electron på macOS med et rigtigt projekt: træk, tastatur, faste og egne mål, rotation, iframe-layoutmål, skalering og vinduesstørrelse. Arbejdsfladen er desuden afprøvet ved 980 × 720 med 100 %, 125 % og 150 % tekst. Windows er ikke afprøvet.
 
 ## Lokale Git-versioner
 
@@ -154,7 +165,10 @@ Et bekræftet push betyder, at versionen blev set på serveren ved kontrollen. S
 - `core/store.cjs`: modelvalg, skills og indstillinger under Electrons `userData/harness`, uden for repositoryet. Modelnøgler krypteres med Electron `safeStorage`; appen afviser lagring, hvis kryptering ikke er tilgængelig. Lokalt samtale-/værktøjsindhold gemmes af OpenCode i samme appområde. Appens samtalevisning genåbner beskeder; OpenCodes rå værktøjslog og arkiverede samtaler har endnu ingen historikbrowser eller automatisk slettefrist.
 - `core/skills.cjs` og `../profiles/skills/`: synlige danske instruktioner om mål, Git, nøgler, test og designresearch; de fælles grundregler vises også som en redigerbar skill.
 - `core/preview.cjs`, `core/dev-server.cjs`, `core/dev-server-runner.cjs`: statisk visning samt godkendt npm-installation og styring af lokale frameworkservere.
-- `core/changes.cjs`: tekstbaseret ændringsoversigt med størrelsesgrænser.
+- `core/changes.cjs`: øjebliksbilleder af projektets tekstfiler med størrelsesgrænser.
+- `core/diff.cjs`, `core/change-review.cjs`: linje-diff, resumé og tilskrivning af ændringer pr. opgave og for hele samtalen.
+- `core/project-files.cjs`: skrivebeskyttet fillæsning og filhenvisninger med appens filbeskyttelse.
+- `core/activity.cjs`: aktivitetsloggen fra agentens hændelser, godkendelser og forhåndsvisningens server.
 - `main.cjs`, `preload.cjs`, `ui/`: validerede native handlinger, begrænset IPC-bro og brugerflade uden Node-adgang.
 
 ## Begrænsninger
@@ -198,6 +212,7 @@ npm run test:chat
 npm run test:resume
 npm run test:frameworks
 npm run test:hosting
+npm run test:workspace
 ```
 
 Git-, publicerings- og chattestene opretter rigtige commits med syntetiske filer og testidentitet i nye, isolerede midlertidige repositories. Publiceringstestene pusher kun mellem nye lokale testrepositories. GitHub-API’et simuleres i testen; ingen eksterne repositories oprettes. De committer eller pusher ikke dette projekt. Electron-testen bevarer den normale hjemmemappe, så macOS safeStorage kan bruge den eksisterende nøglering; testidentiteten sættes kun lokalt i testrepositoryet. Nøgleringen skal aldrig nulstilles som led i testen.

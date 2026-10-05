@@ -17,7 +17,8 @@
   function save() { try { localStorage.setItem(storageKey, JSON.stringify(settings)); } catch { /* Kun brugerfladevalg. */ } }
   function split(value = settings.chat) {
     if (!grid.clientWidth) return;
-    const max = Math.max(280, grid.clientWidth - 287);
+    // Arbejdsfladen beholder mindst 300 px, så fanerne og forhåndsvisningens værktøjer kan stå.
+    const max = Math.max(280, grid.clientWidth - 307);
     const actual = Math.round(Math.min(max, Math.max(280, value)));
     grid.style.setProperty('--chat-width', `${actual}px`);
     divider.setAttribute('aria-valuemin', '280'); divider.setAttribute('aria-valuemax', String(max));
