@@ -20,7 +20,7 @@
     }
     if (focus) tab(name).focus();
     if (name === 'plan') { $('#plan-badge').hidden = true; window.planning?.render(); }
-    if (name === 'changes') { badge('changes', 0); if (changes.stale || !changes.data) action(() => loadChanges()); }
+    if (name === 'changes') { badge('changes', 0); if (changes.mode === 'session' && (changes.stale || !changes.data)) action(() => loadChanges()); }
     if (name === 'code') { if (!code.files || code.stale) action(loadCodeList); action(checkCodeFile); }
     if (name === 'activity') { activity.unseen = false; updateActivityBadge(); if (activity.toBottom) { activity.toBottom = false; requestAnimationFrame(() => { $('#activity-scroll').scrollTop = $('#activity-scroll').scrollHeight; }); } }
   }
@@ -39,18 +39,49 @@
   }
 
   // ---------- Ændringer ----------
-  const changes = { data: null, source: '', file: '', stale: true, latest: '' };
+  // To visninger: Denne samtale (opgaver og dine rettelser, mens appen er åben) og Versioner (den gemte historik).
+  // En åben version bruger samme filoversigt og linje-diff som en opgave, med kilden version:<commit>.
+  const changes = { data: null, source: '', file: '', stale: true, latest: '', mode: 'session', sessionSource: '', versionView: null };
+  const versionSource = () => changes.source.startsWith('version:');
   const byText = { ai: 'AI’en', blandet: 'AI’en og andre', kommando: 'En kommando eller dig', dig: 'Dig', anden: 'Ikke AI’en' };
   // Forklaringen afhænger af visningen: en opgave udtaler sig kun om opgavens egen tid, hele samtalen også om tiden efter.
   const byHelp = {
     task: { ai: 'AI’ens filværktøj skrev filen under opgaven.', blandet: 'AI’en skrev filen under opgaven, men den blev også ændret af andre, før opgaven sluttede.', kommando: 'Ændret under opgaven, men ikke af AI’ens filværktøjer. Det kan være en kommando, AI’en kørte, eller dig.', anden: 'Ændret under opgaven, men ikke af AI’en. Det kan være dig eller et andet program.', dig: 'Du ændrede filen i Aura, fx med Ret i siden eller Fortryd.' },
     session: { ai: 'AI’ens filværktøj skrev filen, og ingen har ændret den siden.', blandet: 'AI’en skrev filen, men den er også ændret af andre, fx dig eller et andet program.', kommando: 'Ændret under en opgave, men ikke af AI’ens filværktøjer. Det kan være en kommando, AI’en kørte, eller dig.', anden: 'Ikke ændret af AI’en. Det kan være dig eller et andet program.', dig: 'Du ændrede filen i Aura, fx med Ret i siden eller Fortryd, og ingen har ændret den siden.' }
   };
-  const help = by => byHelp[changes.source === 'session' ? 'session' : 'task'][by];
+  byHelp.version = { ai: 'Gemt efter en AI-opgave. Filen kan være skrevet af AI’ens filværktøj eller af en kommando, den kørte.', dig: 'Gemt, gendannet eller fortrudt af dig.' };
+  const help = by => byHelp[versionSource() ? 'version' : changes.source === 'session' ? 'session' : 'task'][by];
   const changeText = { ny: 'Ny', ændret: 'Ændret', slettet: 'Slettet' };
-  function changeView() { return changes.source === 'session' ? changes.data?.session : changes.data?.tasks.find(task => task.id === changes.source); }
+  function changeView() { return versionSource() ? changes.versionView : changes.source === 'session' ? changes.data?.session : changes.data?.tasks.find(task => task.id === changes.source); }
+  // Visningerne: knapperne øverst, hvad der vises, og at valget af opgave kun hører til Denne samtale.
+  function applyMode() {
+    const versions = changes.mode === 'versions', detail = versions && versionSource();
+    $('#changes-view-session').setAttribute('aria-pressed', String(!versions)); $('#changes-view-versions').setAttribute('aria-pressed', String(versions));
+    $('#changes-source').hidden = versions;
+    $('#versions-view').hidden = !versions || detail; $('#version-detail').hidden = !detail;
+    if (versions) { $('#changes-notice').hidden = true; $('#changes-empty').hidden = true; if (!detail) { $('#changes-overview').hidden = true; $('#changes-diff').hidden = true; } }
+  }
+  function showVersions({ focus = false } = {}) {
+    if (changes.mode === 'session') changes.sessionSource = changes.source;
+    changes.mode = 'versions'; changes.source = ''; changes.file = ''; changes.versionView = null; applyMode();
+    if (focus) $('#versions-heading').focus();
+  }
+  // Én version fra historikken: filerne vises med samme oversigt og diff som en opgave.
+  function showVersion(version) {
+    const by = ['ai', 'stopped'].includes(version.kind) ? 'ai' : 'dig';
+    const files = version.files.map(file => ({ ...file, by }));
+    changes.mode = 'versions'; changes.source = `version:${version.commit}`; changes.file = '';
+    changes.versionView = { kind: 'version', version, files, totals: { files: files.length, added: files.reduce((n, f) => n + f.added, 0), removed: files.reduce((n, f) => n + f.removed, 0), mixed: 0, others: 0 }, hidden: files.filter(f => f.hidden).length };
+    applyMode(); return action(renderChanges);
+  }
+  async function showSession() {
+    changes.mode = 'session'; changes.source = changes.sessionSource; changes.versionView = null; changes.file = ''; applyMode();
+    await loadChanges();
+  }
+  $('#changes-view-session').onclick = () => { if (changes.mode !== 'session') action(showSession); };
+  $('#changes-view-versions').onclick = () => { if (changes.mode !== 'versions') { showVersions(); action(() => window.versions.load()); } };
   async function loadChanges({ source } = {}) {
-    const root = current?.root; if (!root) return;
+    const root = current?.root; if (!root || changes.mode !== 'session') return;
     const data = await call('changesOverview'); if (current?.root !== root) return;
     changes.data = data; changes.stale = false; $('#changes-notice').hidden = true;
     const options = [...data.tasks.map(task => option(task.id, `${task.status === 'idle' ? '' : 'Afbrudt · '}${versionTime(task.startedAt)} · ${shortLabel(task.label, 48)}${task.undone ? " · fortrudt" : ""}`)), ...(data.session ? [option('session', `Hele samtalen · siden ${versionTime(data.session.startedAt)}`)] : [])];
@@ -62,12 +93,15 @@
   }
   async function renderChanges() {
     const view = changeView();
-    $('#changes-empty').hidden = Boolean(view); $('#changes-overview').hidden = !view; $('#changes-diff').hidden = true;
-    $('#changes-versions').hidden = !featureOn('versioner');
+    $('#changes-empty').hidden = Boolean(view) || changes.mode === 'versions'; $('#changes-overview').hidden = !view; $('#changes-diff').hidden = true;
+    if (view?.kind === 'version') return renderVersionFiles(view);
     if (!view) { $('#changes-empty p').textContent = changes.data?.running ? 'AI’en arbejder. Ændringerne vises her, når opgaven er færdig.' : 'Når AI’en har lavet en opgave, ser du her, hvilke filer der er ændret, og præcis hvilke linjer.'; return; }
     const session = changes.source === 'session', { totals } = view;
     // Dine egne rettelser og fortrydelser i Aura står som dine, ikke som en opgave.
     const own = !session && ['direct', 'undo'].includes(view.kind);
+    // Før- og efterbillede af forhåndsvisningen, når Aura har taget dem for opgaven.
+    compare.hidden = true;
+    if (!session && view.images && window.versions) window.versions.fillCompare(compare, view.images);
     $('#changes-heading').textContent = !totals.files ? (session ? 'Ingen filer er ændret i denne samtale' : 'Opgaven ændrede ingen filer') : session ? `${plural(totals.files, 'fil', 'filer')} ændret i denne samtale` : own ? `${plural(totals.files, 'fil', 'filer')} ændret af dig` : `${plural(totals.files, 'fil', 'filer')} ændret under opgaven`;
     const lines = totals.files ? ` I alt ${plural(totals.added, 'linje', 'linjer')} tilføjet og ${totals.removed.toLocaleString('da-DK')} fjernet.` : '';
     $('#changes-basis').textContent = session
@@ -82,6 +116,24 @@
     const skipped = view.skipped || 0;
     $('#changes-skipped').textContent = view.unavailable ? 'Ændringerne kunne ikke læses for denne opgave. Gennemgå filerne under Kode.' : skipped ? `${plural(skipped, 'fil er', 'filer er')} udeladt, fordi de er binære, store eller beskyttede.` : '';
     $('#changes-skipped').hidden = !view.unavailable && !skipped;
+    renderFileRows(view);
+    const keep = view.files.some(file => file.file === changes.file) ? changes.file : view.files[0]?.file;
+    if (keep) await showDiff(keep); else changes.file = '';
+  }
+  // Filerne i en gemt version i forhold til versionen før.
+  async function renderVersionFiles(view) {
+    compare.hidden = true;
+    const { totals, version } = view;
+    $('#changes-heading').textContent = totals.files ? `${plural(totals.files, 'fil', 'filer')} ændret i versionen` : 'Versionen ændrede ingen filer';
+    $('#changes-basis').textContent = version.parent ? `Sammenlignet med versionen før.${totals.files ? ` I alt ${plural(totals.added, 'linje', 'linjer')} tilføjet og ${totals.removed.toLocaleString('da-DK')} fjernet.` : ''}` : 'Den første version: alle filer er nye.';
+    $('#changes-others').hidden = true;
+    $('#changes-skipped').textContent = view.hidden ? `Indholdet af ${plural(view.hidden, 'fil', 'filer')} vises ikke, fordi de er binære, store, beskyttede eller kan indeholde en nøgle.` : '';
+    $('#changes-skipped').hidden = !view.hidden;
+    renderFileRows(view);
+    const keep = view.files.find(file => file.file === changes.file && !file.hidden)?.file || view.files.find(file => !file.hidden)?.file;
+    if (keep) await showDiff(keep); else changes.file = '';
+  }
+  function renderFileRows(view) {
     $('#changes-files').replaceChildren(...view.files.map(file => {
       const item = node('li'), button = node('button', undefined, 'file-row'); button.type = 'button'; button.dataset.file = file.file;
       button.setAttribute('aria-pressed', String(file.file === changes.file));
@@ -92,9 +144,11 @@
       button.onclick = () => action(() => showDiff(file.file, { focus: true }));
       item.append(button); return item;
     }));
-    const keep = view.files.some(file => file.file === changes.file) ? changes.file : view.files[0]?.file;
-    if (keep) await showDiff(keep); else changes.file = '';
   }
+  // Billederne til en opgave står under resuméet; de skabes én gang og fyldes af history.js.
+  const compare = node('div', undefined, 'compare'); compare.hidden = true;
+  for (const text of ['Før', 'Efter']) { const figure = node('figure'), img = node('img'); img.alt = ''; figure.append(img, node('figcaption', text)); compare.append(figure); }
+  $('#changes-basis').after(compare);
   async function showDiff(file, { focus = false } = {}) {
     const root = current?.root, source = changes.source;
     const detail = await call('changesFile', { source, file });
@@ -129,12 +183,12 @@
     if (focus) $('#changes-diff-title').focus();
   }
   $('#changes-source').onchange = () => { changes.source = $('#changes-source').value; changes.file = ''; action(renderChanges); };
-  $('#changes-refresh').onclick = () => action(() => loadChanges());
+  $('#changes-refresh').onclick = () => action(() => changes.mode === 'versions' ? (versionSource() ? window.versions.open(changes.source.slice(8)) : window.versions.load()) : loadChanges());
   $('#changes-notice-show').onclick = () => action(() => loadChanges({ source: changes.latest }));
   $('#changes-open-code').onclick = () => openFile(changes.file);
-  $('#changes-versions').onclick = () => $('#git-button').click();
   // Brugeren åbner ændringerne fra resultatkortet eller en fil i samtalen.
   async function showChange(source, file) {
+    if (changes.mode !== 'session') { changes.mode = 'session'; changes.versionView = null; changes.source = changes.sessionSource; applyMode(); }
     show('changes');
     await loadChanges({ source });
     if (file && changeView()?.files.some(item => item.file === file)) await showDiff(file, { focus: true });
@@ -440,7 +494,8 @@
     }
     if (event.type === 'changes.updated' && event.root === current?.root) {
       changes.latest = event.task; code.stale = true;
-      if (active === 'changes' && changes.data) { changes.stale = true; $('#changes-notice').hidden = false; }
+      if (active === 'changes' && changes.data && changes.mode === 'session') { changes.stale = true; $('#changes-notice').hidden = false; }
+      else if (changes.mode === 'versions') { changes.stale = true; changes.sessionSource = event.task; }
       else { changes.stale = true; changes.source = event.task; changes.file = ''; }
       if (active === 'code') action(checkCodeFile);
     }
@@ -451,7 +506,7 @@
   // Et nyt projekt starter i Forhåndsvisning med tomme faner.
   async function onProject() {
     show('preview'); $('#plan-badge').hidden = true;
-    Object.assign(changes, { data: null, source: '', file: '', stale: true, latest: '' }); badge('changes', 0);
+    Object.assign(changes, { data: null, source: '', file: '', stale: true, latest: '', mode: 'session', sessionSource: '', versionView: null }); badge('changes', 0); applyMode(); window.versions?.reset();
     $('#changes-source').replaceChildren(option('', 'Ingen opgaver endnu')); $('#changes-source').disabled = true;
     $('#changes-overview').hidden = true; $('#changes-diff').hidden = true; $('#changes-empty').hidden = false; $('#changes-notice').hidden = true;
     Object.assign(code, { files: null, index: new Set(), names: new Map(), stale: true, path: '', text: null, from: null, to: null, anchor: null });
@@ -461,5 +516,5 @@
     // Fillisten først, så stier i den gemte aktivitet kan blive til links.
     await action(loadCodeList); await action(loadActivity);
   }
-  window.workspace = { show, onProject, openFile, showChange, linkify, linkifyAll, references: () => references.map(ref => ({ ...ref })), clearReferences: () => { references = []; target = null; renderReferences(); }, setTarget: value => { target = value ? { id: value.id, label: value.label } : null; renderReferences(); }, target: () => target && { ...target }, get active() { return active; } };
+  window.workspace = { show, onProject, showVersions, showVersion, openFile, showChange, linkify, linkifyAll, references: () => references.map(ref => ({ ...ref })), clearReferences: () => { references = []; target = null; renderReferences(); }, setTarget: value => { target = value ? { id: value.id, label: value.label } : null; renderReferences(); }, target: () => target && { ...target }, get active() { return active; } };
 })();

@@ -38,9 +38,13 @@
     stage.style.width = `${w * scale}px`; stage.style.height = `${h * scale}px`;
     stage.style.marginTop = fluid ? '0' : '12px';
     frame.style.width = `${w}px`; frame.style.height = `${h}px`; frame.style.transform = `scale(${scale})`;
+    size = { width: w, height: h };
     el('viewport-info').textContent = `${w} × ${h} · ${Math.round(scale * 100)} %`;
     el('viewport-info').title = 'CSS-pixels. Visningen efterligner skærmstørrelsen, ikke enhedens browser eller touchfunktioner.';
   }
+  // Den størrelse, siden vises i. Før/efter-billederne i historikken tages i samme størrelse.
+  let size = { width: 1280, height: 800 };
+  window.previewViewSize = () => settings.preset === 'fluid' ? { ...size } : { width: settings.width, height: settings.height };
   let pointer = null;
   divider.addEventListener('pointerdown', event => {
     if (event.button !== 0) return;

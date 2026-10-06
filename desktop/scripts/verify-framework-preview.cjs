@@ -76,7 +76,7 @@ async function unreachable(url) { for (let i = 0; i < 40; i++) { try { await fet
     await page.selectOption('#viewport-preset', 'phone');
     assert.equal(await frame.locator('body').evaluate(() => innerWidth), 390);
     assert.equal(await frame.locator('body').evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
-    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(980, 720));
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).setSize(980, 720));
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     assert.ok(await page.locator('#preview-options').evaluate(el => el.getBoundingClientRect().right <= el.closest('.preview').getBoundingClientRect().right));
     await page.screenshot({ path: path.join(root, 'react-mobil.png') });

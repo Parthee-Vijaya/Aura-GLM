@@ -51,7 +51,7 @@ const helpers = require('./ui-test-helpers.cjs');
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const checks = []; const passed = text => { checks.push(text); console.log('✓ ' + text); };
   const errors = []; let app, page;
-  const capture = async name => { const png = await app.evaluate(async ({ BrowserWindow }) => (await BrowserWindow.getAllWindows()[0].webContents.capturePage()).toPNG().toString('base64')); await fs.writeFile(path.join(root, name), Buffer.from(png, 'base64')); };
+  const capture = async name => { const png = await app.evaluate(async ({ BrowserWindow }) => (await BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).webContents.capturePage()).toPNG().toString('base64')); await fs.writeFile(path.join(root, name), Buffer.from(png, 'base64')); };
   const send = async text => {
     await page.fill('#prompt', text); await page.click('#send');
     await page.waitForFunction(() => document.querySelector('#data-dialog').open || !document.querySelector('#stop').hidden || /Fejl|Klar/.test(document.querySelector('#run-status').textContent));
@@ -173,7 +173,7 @@ const helpers = require('./ui-test-helpers.cjs');
     passed('Nøgle, kvote og afbrudt forbindelse får hver sin forklaring og handling på ét kort; Prøv igen sender beskeden igen');
 
     // 980 × 720: godkendelseskortet kan læses, og knapperne er synlige.
-    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(980, 720)); await page.waitForTimeout(400);
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).setSize(980, 720)); await page.waitForTimeout(400);
     await send('RET FIL igen'); const small = page.locator('#approvals .approval').first(); await small.waitFor({ timeout: 90000 });
     const fits = await small.evaluate(el => { const box = el.getBoundingClientRect(), chat = el.closest('.chat').getBoundingClientRect(); return box.left >= chat.left && box.right <= chat.right + 1 && document.documentElement.scrollWidth <= innerWidth; });
     assert.ok(fits); await small.locator('.approval-actions').scrollIntoViewIfNeeded(); await capture('godkendelse-980.png');

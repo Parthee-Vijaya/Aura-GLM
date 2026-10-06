@@ -36,7 +36,7 @@ const { run } = require('../core/git.cjs');
   assert.equal(await page.locator('#setup-choice button:visible').count(),2);
   assert.equal(await page.isVisible('.local-discovery'),false);
   await page.screenshot({path:path.join(root,'ai-valg.png'),animations:'disabled'});
-  await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setSize(980,720));
+  await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).setSize(980,720));
   assert.ok(await page.locator('#setup-local').evaluate(el=>el.getBoundingClientRect().bottom<=innerHeight));
   await page.screenshot({path:path.join(root,'ai-valg-lille.png'),animations:'disabled'});
   await page.locator('#setup-title').focus();await page.keyboard.press('Tab');

@@ -229,9 +229,7 @@ dialog p { font-size: 13px; }
 #changes-dialog { width: min(1000px, 92vw); }
 #changes-list details { margin: 18px 0; }
 #changes-list h3 { font-size: 12px; }
-#git-dialog { width: min(900px, 92vw); }
 #git-files > section { border-top: 1px solid var(--line); padding: 10px 0; }
-#git-history { font-size: 12px; line-height: 1.8; overflow-wrap: anywhere; padding-left: 22px; }
 #git-save { margin-top: 16px; }
 #hosting-dialog, #deployment-dialog { width: min(820px, 92vw); }
 #hosting-body, #deployment-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
@@ -722,3 +720,58 @@ body.picking #preview-stage { box-shadow: 0 0 0 2px var(--accent); }
 .review-target { margin: 2px 0 8px; font-size: 12px; color: #214f91; }
 .review-undone { margin: 8px 0; font-size: 12px; color: #1d6b43; }
 .review-actions .info { align-self: center; }
+
+/* Historik under Ændringer › Versioner. Versionerne er store rækker med et lille billede; én række er ét valg. */
+.segmented { display: inline-flex; padding: 2px; border-radius: 9px; background: #eef2f8; gap: 2px; }
+.segmented button { padding: 4px 10px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); font-size: 12px; font-weight: 550; }
+.segmented button[aria-pressed="true"] { background: #fff; color: var(--ink); box-shadow: 0 1px 2px #18223522; }
+.panel-bar #changes-source[hidden] { display: none; }
+#versions-view, #version-detail { margin-bottom: 18px; }
+#versions-view h2 { margin: 0 0 6px; font-size: 15px; }
+#versions-view h2:focus, #version-title:focus { outline: none; }
+#versions-view h2:focus-visible, #version-title:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+#git-summary { margin: 0 0 12px; font-size: 13px; }
+#git-quick { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; margin: 0 0 12px; }
+#git-quick label { flex-basis: 100%; margin: 0; font-size: 12px; }
+#git-quick input { flex: 1 1 180px; min-width: 0; }
+#git-quick .dialog-actions { margin: 0; }
+#git-settings { margin: 0 0 14px; }
+.version-list { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 6px; }
+.version-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px 10px; border-radius: 10px; text-align: left; font-weight: 450; }
+.version-row:hover:not(:disabled) { background: #f6f9ff; border-color: #c9dbf5; }
+.version-thumb { flex: 0 0 auto; width: 72px; height: 46px; border-radius: 6px; overflow: hidden; background: #eef3fa; border: 1px solid var(--line); display: grid; place-items: center; }
+.version-thumb img { width: 100%; height: 100%; object-fit: cover; object-position: top left; display: block; }
+.version-thumb.empty::after { content: "</>"; font: 600 12px ui-monospace, monospace; color: #9aa6b6; }
+.version-text { display: grid; gap: 2px; min-width: 0; }
+.version-text strong { font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+.version-text .hint { line-height: 1.4; }
+#version-detail .version-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-top: 6px; }
+#version-title { margin: 0; font-size: 16px; overflow-wrap: anywhere; }
+#version-back { padding-left: 0; }
+.version-rename { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; margin: 8px 0; }
+.version-rename label { flex-basis: 100%; margin: 0; font-size: 12px; }
+.version-rename input { flex: 1 1 200px; min-width: 0; }
+#version-meta { margin: 4px 0 10px; }
+.version-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 18px; }
+/* Før og efter side om side; i et smalt panel under hinanden. Billederne beholder sidens proportioner. */
+.compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 8px 0; }
+.compare.single { grid-template-columns: minmax(0, 1fr); max-width: 420px; }
+.compare figure { margin: 0; min-width: 0; }
+.compare img { display: block; width: 100%; height: auto; max-height: 260px; object-fit: contain; object-position: top left; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.compare figcaption { margin-top: 4px; font-size: 11px; color: var(--muted); }
+@container work (max-width: 430px) { .compare { grid-template-columns: minmax(0, 1fr); } }
+#version-images { margin: 0 0 6px; }
+/* Gennemgang før gendannelse og fortryd. */
+#restore-dialog { width: min(760px, 92vw); }
+.restore-outcomes { margin: 10px 0; padding-left: 20px; font-size: 13px; line-height: 1.7; overflow-wrap: anywhere; }
+.restore-outcomes code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
+.restore-conflicts { margin: 12px 0; padding: 12px 14px; border: 1px solid #f1d39a; border-radius: 10px; background: #fffaf0; }
+.restore-conflicts legend { padding: 0 4px; font-size: 13px; font-weight: 600; }
+.restore-conflicts .choice-row { display: flex; align-items: center; justify-content: flex-start; gap: 8px; margin: 6px 0; font-size: 13px; font-weight: 500; }
+.restore-conflicts .choice-row input { flex: 0 0 auto; width: 16px; height: 16px; margin: 0; padding: 0; accent-color: var(--accent); }
+.restore-conflicts .choice-row .hint { font-weight: 400; }
+.restore-conflicts pre, #restore-files pre { font: 11px/1.6 ui-monospace, monospace; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 200px; overflow: auto; padding: 10px; background: #f2f5f9; border-radius: 8px; margin: 4px 0 8px; }
+.conflict-file h4 { margin: 10px 0 4px; font: 600 12px ui-monospace, monospace; }
+.conflict-file h5 { margin: 6px 0 2px; font-size: 11px; color: var(--muted); }
+.restore-data { margin: 8px 0; padding-left: 20px; font-size: 12px; line-height: 1.7; color: var(--muted); }
+#restore-dialog .compare img { max-height: 220px; }

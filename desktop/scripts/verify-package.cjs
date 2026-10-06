@@ -48,12 +48,12 @@ const { execFileSync } = require('node:child_process');
   await page.locator('#git-summary').filter({hasText:'1 ændring er ikke gemt endnu.'}).waitFor();
   await page.fill('#git-note','Afprøv installationspakken');await page.click('#git-save-all');await page.locator('#git-feedback').filter({hasText:'er gemt lokalt'}).waitFor();
   assert.match(execFileSync(runtime.git,['-C',project,'log','-1','--format=%an <%ae>'],{env,encoding:'utf8'}),/Installationsprøve <test@example.invalid>/);
-  await page.click('[data-close="git-dialog"]');await page.screenshot({path:path.join(root,'installeret.png')});
+  await page.click('#tab-preview');await page.screenshot({path:path.join(root,'installeret.png')});
   assert.deepEqual(errors,[]);
   console.log(JSON.stringify({status:'bestået',root,checks:['pakket app','isoleret brugerdata','begrænset PATH','medfølgende OpenCode/Git/Node/npm','projektoprettelse med profiler','rigtigt preview','Git fra start med første version','Git-identitet og Gem version med ét klik kun i syntetisk testprojekt'],limitation:'Ikke en separat ren computer; ingen ekstern AI eller Windows-kørsel på Mac.'}));
  } catch(error) {
   await page?.screenshot({path:path.join(root,'fejl.png'),timeout:3000}).catch(()=>{});
-  const status=await page?.evaluate(()=>({git:document.querySelector('#git-summary')?.textContent,feedback:document.querySelector('#git-dialog .dialog-notice')?.textContent,identity:!document.querySelector('#git-identity')?.hidden,files:document.querySelectorAll('#git-files input').length})).catch(()=>null);
+  const status=await page?.evaluate(()=>({git:document.querySelector('#git-summary')?.textContent,feedback:document.querySelector('#git-feedback')?.textContent,identity:!document.querySelector('#git-identity')?.hidden,files:document.querySelectorAll('#git-files input').length})).catch(()=>null);
   console.error(JSON.stringify({root,status}));throw error;
  } finally {await app?.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

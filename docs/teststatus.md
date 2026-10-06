@@ -2,6 +2,50 @@
 
 Kontrolleret 28. september 2026. Dette er status for den aktuelle arbejdsmappe, ikke en erklæring om, at alle installationsfiler eller modeller er klar. Der er ikke committet eller pushet under denne gennemgang.
 
+## Visuel historik · 6. oktober 2026
+
+Femte milepæl i [planen for brugerfladen](ux-plan.md). Afprøvet på Mac med OpenCode 1.18.33. Git-versionerne i prøverne er oprettet i nye midlertidige projekter; der er ikke committet eller pushet i dette repository.
+
+- **Fundet i Electron og brugt:** Et skjult vindue med offscreen-gengivelse kan tage et billede af forhåndsvisningen uden at vise det og uafhængigt af, hvilken fane brugeren ser. Det tog under ét sekund pr. billede. Vinduet har sin egen session uden lagring, og sidens indholdspolitik med sandbox gælder også dér.
+- **Enhedstestet:** 182 automatiske tests består, når testfilerne køres én ad gangen. De 6 nye dækker:
+  - fletningen: kun ændringen fjernes, brugerens senere rettelser bevares byte for byte med linjeskift, og ændringer af samme linjer er konflikter;
+  - versionernes typer og navne og omdøbning, der ikke ændrer Git;
+  - Fortryd af en gemt version med en senere version og en ugemt rettelse, en konflikt med brugerens valg, og at den første version ikke kan fortrydes;
+  - Fortryd uden Git med kopi, valg ved en slettet fil og afvisning, når filen ændres mellem gennemgang og udførelse;
+  - at en versions binære filer ikke vises;
+  - billedernes par, binding til en version, før-billede fra samme visning og oprydning efter 80.
+- **Kørt mod rigtigt materiale i Electron:** `npm run test:history` bruger den rigtige OpenCode-motor, nye projekter med og uden Git og en kontrolleret modelserver med faste svar. Prøven har 9 delprøver:
+  1. Versionen efter en AI-opgave hedder det, brugeren bad om, har type og tid og et billede af forhåndsvisningen.
+  2. En version viser billede, filer og linje-diff; omdøbning gemmes i Aura, og Git-beskeden er uændret.
+  3. En opgave får billeder før og efter af samme side i samme størrelse, både i versionen og under Denne samtale.
+  4. Fortryd opgaven fjerner kun opgavens ændring og bevarer brugerens senere rettelse i samme fil. Rettelsen gemmes først som versionen "Dine ændringer før fortrydelsen".
+  5. Ved en konflikt viser gennemgangen begge linjer, dine linjer er valgt som standard, og brugerens valg bruges.
+  6. Gå tilbage hertil gemmer først en ugemt ændring som en version og bringer den ældre version tilbage som en ny version.
+  7. Billederne ligger i appens data, ikke i projektet; billedvinduets session gemmer intet på disken, og vinduet lukkes igen.
+  8. Versioner ved 980 × 720 og 150 % tekst uden vandret rulning; tastaturet åbner en version, og fokus føres tilbage.
+  9. Uden Git fortrydes en opgave fra Auras øjebliksbillede med brugerens rettelse bevaret, og fortrydelsen kan selv fortrydes.
+- **Fundet og rettet under afprøvningen:**
+  - En gendannelse fik samme navn som den version, den gik tilbage til. Den hedder nu "Tilbage til »…«".
+  - Fanen Ændringer kunne skifte tilbage fra Versioner, fordi den indlæste samtalens ændringer samtidig.
+  - Konfliktvalgene var fuld bredde på grund af appens regel for felter.
+  - Electron-prøverne valgte appens vindue som det første vindue. Mens Aura tager et billede, findes billedvinduet også, og en prøve hang i 12 minutter. Prøverne vælger nu appens vindue ud fra adressen.
+- **Kørsler:** Alle 19 Electron-prøver består. `test:chat` fejlede først, fordi fanen Ændringer nu husker visningen Versioner; prøven vælger Denne samtale. `test:versions`, `test:recovery`, `test:chat`, `test:hosting` og `test:package` er tilpasset, fordi dialogen Versioner er erstattet af visningen under Ændringer.
+- **Målt:** 2.995 synlige ord, 244 valg og 50 ⓘ på 41 skærme mod 2.776, 235 og 49 på 40 skærme efter milepæl 4. Klik pr. opgave er uændret, og der er ingen sidefejl.
+  - Gennemgangen før Fortryd opgaven gik fra 36 til 18 ord med samme 3 valg; hvad der ellers berøres, er foldet sammen.
+  - Versioner gik fra 50 til 71 ord og fra 6 til 5 valg: navne og typer er længere end de gamle tidspunkter, og hver version er ét valg.
+  - Ny skærm: én version med billeder, to veje tilbage og filerne (174 ord inklusive linje-diff'en, 9 valg).
+  - Ændringer har 2 valg mere for Denne samtale og Versioner.
+
+Ikke afprøvet:
+- En rigtig model og en person uden teknisk baggrund.
+- Billeder af en Vite- eller Astro-forhåndsvisning før og efter en opgave; koden er den samme, men det er kun kørt med statisk HTML.
+- Fletning af store filer med mange ændringer; algoritmen falder tilbage til at erstatte hele filen, når forskellen er meget stor.
+- Skærmlæser (VoiceOver), Windows og en pakket app.
+
+Kendte begrænsninger:
+- Efter en gendannelse stoppes en Vite- eller Astro-server, som før denne milepæl. Så tages intet billede efter, før serveren er startet igen.
+- Navne og billeder gemmes kun i Aura på denne computer. Flyttes projektet til en anden computer, har versionerne deres oprindelige navne og ingen billeder.
+
 ## Rettelser i forhåndsvisningen · 6. oktober 2026
 
 Fjerde milepæl i [planen for brugerfladen](ux-plan.md). Afprøvet på Mac med OpenCode 1.18.33, React 19.3.0, Vite 8.3.1 og Astro 7.3.5. Der er ikke committet eller pushet.

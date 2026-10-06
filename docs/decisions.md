@@ -58,6 +58,19 @@ Valg i implementeringen, som kan ændres:
 - **Beskrivelsen til AI'en** kommer fra Auras eget valg i hovedprocessen og står ordret under Før du sender. Den indgår i samtykket som en filhenvisning, men starter ikke en ny modelsession. Den statiske servers nøgle i adressen sendes ikke.
 - **Øjebliksbilleder:** en fil, Aura kun kunne læse før eller efter en opgave, fx fordi den blev for stor, tælles nu som udeladt og ikke som ny eller slettet. Det gør Ændringer mere præcis og forhindrer, at Fortryd sletter en fil, der fandtes før.
 
+Femte milepæl, visuel historik, er implementeret 6. oktober 2026. Brugeren valgte:
+- **Placering:** historikken står under Ændringer som visningen Versioner ved siden af Denne samtale. Dialogen Versioner er fjernet; projektmenuen åbner samme sted.
+- **Billeder:** Aura tager automatisk billeder af forhåndsvisningen før og efter hver AI-opgave og gendannelse og efter en version, du selv gemmer. De gemmes kun i appens data på denne computer.
+- **Fortryd beholder dine rettelser:** kun opgavens egne ændringer fjernes. Rører du og opgaven de samme linjer, afgør du det.
+- **Navne:** Aura navngiver versionerne, og du kan omdøbe dem i Aura uden at ændre Git.
+
+Valg i implementeringen, som kan ændres:
+- **Billederne** tages i et skjult vindue med sin egen session uden lagring, uden preload og Node og kun med adgang til forhåndsvisningens adresse. Størrelsen er forhåndsvisningens, og siden er den, brugeren ser. De ældste ryddes efter 80 billeder pr. projekt.
+- **Fletning** sker linje for linje i Aura (`core/merge.cjs`), ikke med Git, så den virker uden Git. Konflikter afgøres med ét valg for alle konflikter i én gennemgang; dine linjer er anbefalet.
+- **Ugemte ændringer** i de filer, en gendannelse eller fortrydelse ændrer, gemmes først som en version, når automatiske versioner er slået til. Ellers bevares de i kopien før gendannelsen.
+- **Fortryd uden Git** bruger samme gennemgang, kopi og journal som med Git, så også en fortrydelse uden versioner kan fortrydes.
+- **Gendannelser og fortrydelser** får navne, der nævner versionen, de handler om, fx "Tilbage til »…«", så de ikke forveksles med den.
+
 ## Få valg og udvælgelse af skills · 29. september 2026
 
 Besluttet i projektsamtalen: Hvert beslutningspunkt har ét eller to hovedvalg og højst tre til fire synlige muligheder med resten bag ét link, fx "Bruger du en anden udbyder? Vælg en anden". Opsætningen skal kunne gennemføres uden tvivlsspørgsmål af en person uden teknisk baggrund. Reglen står i `AGENTS.md` og `desktop/DESIGN.md`.

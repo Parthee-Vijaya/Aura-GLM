@@ -52,7 +52,7 @@ const helpers = require('./ui-test-helpers.cjs');
   const checks = [];
   const passed = text => { checks.push(text); console.log('✓ ' + text); };
   // Skærmbilleder tages med Electrons egen capturePage, så de også er rigtige, når teksten er gjort større.
-  const capture = async name => { const png = await app.evaluate(async ({ BrowserWindow }) => (await BrowserWindow.getAllWindows()[0].webContents.capturePage()).toPNG().toString('base64')); await fs.writeFile(path.join(root, name), Buffer.from(png, 'base64')); };
+  const capture = async name => { const png = await app.evaluate(async ({ BrowserWindow }) => (await BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).webContents.capturePage()).toPNG().toString('base64')); await fs.writeFile(path.join(root, name), Buffer.from(png, 'base64')); };
   let app, page;
   try {
     app = await electron.launch({ executablePath: require('electron'), args: [path.join(__dirname, '..'), '--user-data-dir=' + path.join(root, 'appdata')], env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined } });
@@ -228,7 +228,7 @@ const helpers = require('./ui-test-helpers.cjs');
       const surface = document.querySelector('#work-surface').getBoundingClientRect(), send = document.querySelector('#send').getBoundingClientRect(), prompt = document.querySelector('#prompt').getBoundingClientRect();
       return { width: innerWidth, height: innerHeight, overflowX: document.documentElement.scrollWidth > innerWidth || surface.right > innerWidth + 1 || surface.bottom > innerHeight + 1, rows: new Set(tabs.map(r => Math.round(r.top))).size, tabsInside: tabs.every(r => r.left >= surface.left - 1 && r.right <= surface.right + 1 && r.bottom <= surface.bottom), sendVisible: send.bottom <= innerHeight && send.right <= innerWidth && send.width > 0, promptHeight: Math.round(prompt.height), collapsed: document.body.classList.contains('sidebar-collapsed') };
     });
-    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(980, 720)); await page.waitForTimeout(600);
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).setSize(980, 720)); await page.waitForTimeout(600);
     await page.click('#tab-preview');
     let measured = await layout();
     assert.equal(measured.overflowX, false); assert.equal(measured.rows, 1); assert.ok(measured.tabsInside); assert.ok(measured.sendVisible); assert.ok(measured.promptHeight >= 50);
@@ -236,7 +236,7 @@ const helpers = require('./ui-test-helpers.cjs');
     for (const name of ['changes', 'code', 'activity']) { await page.click(`#tab-${name}`); await capture(`980x720-${name}.png`); }
     const results = { '980': measured };
     for (const zoom of [1.25, 1.5]) {
-      await app.evaluate(({ BrowserWindow }, zoom) => BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(zoom), zoom); await page.waitForTimeout(600);
+      await app.evaluate(({ BrowserWindow }, zoom) => BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).webContents.setZoomFactor(zoom), zoom); await page.waitForTimeout(600);
       measured = await layout(); results[zoom] = measured;
       assert.equal(measured.overflowX, false, `vandret rulning ved ${zoom}`); assert.ok(measured.tabsInside, `faner uden for ved ${zoom}`); assert.ok(measured.sendVisible, `Send skjult ved ${zoom}`);
       await capture(`980x720-zoom-${zoom * 100}.png`);
@@ -246,7 +246,7 @@ const helpers = require('./ui-test-helpers.cjs');
     await capture('980x720-zoom-150-sidepanel.png');
     await page.keyboard.press('Escape'); assert.equal(await page.evaluate(() => document.body.classList.contains('sidebar-overlay')), false);
     assert.equal(await page.evaluate(() => document.activeElement.id), 'sidebar-toggle');
-    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(1)); await page.waitForTimeout(400);
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).webContents.setZoomFactor(1)); await page.waitForTimeout(400);
     passed('980 × 720 uden vandret rulning med fanerne på én linje; ved 125 % og 150 % tekst er faner og Send synlige, og sidepanelet foldes sammen');
 
     // Sidepanelet kan foldes sammen af brugeren og huskes.

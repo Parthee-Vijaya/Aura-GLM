@@ -13,6 +13,8 @@ const { Preferences } = require('./core/preferences.cjs');
 const { Designs } = require('./core/designs.cjs');
 const projectFiles = require('./core/project-files.cjs');
 const previewEdit = require('./core/preview-edit.cjs');
+const { History, PreviewImages, kindOf } = require('./core/history.cjs');
+const { fileDetail } = require('./core/change-review.cjs');
 const { OwnTools } = require('./core/own-tools.cjs');
 
 // Appen hedder Aura. Datamappen og navnet i nøgleringen bevares fra før navneskiftet; se core/app-identity.cjs.
@@ -27,7 +29,7 @@ protocol.registerSchemesAsPrivileged([{ scheme: 'harness', privileges: { standar
 let window, preview, project, busy = false, chosenParent = null;
 let assets = [];
 let github, publishing, deployments, restoration;
-let workbench, externalPreview = null;
+let workbench, externalPreview = null, history, images;
 let ownTools;
 let devServer, detectedRuntime, forceStatic = false;
 let quitReady = false, shuttingDown = null;
@@ -160,6 +162,18 @@ handle('assets:remove', id => {
   assets = assets.filter(item => item.id !== id);
   return assets.map(({ id, kind, path: file }) => ({ id, kind, name: assets.find(a => a.id === id)?.name || path.basename(file) }));
 });
+// Den statiske forhåndsvisning starter, når projektet har sin første version. Kun én start ad gangen.
+let staticStart = null;
+function startStatic(root) {
+  if (preview) return Promise.resolve(true);
+  if (!staticStart) staticStart = (async () => {
+    const updated = await openProject(root);
+    if (project?.root !== root || !updated.staticPreview || preview || externalPreview) return Boolean(preview);
+    preview = await startPreview(root); window?.webContents.send('harness:event', { type: 'preview.ready', url: preview.url });
+    return true;
+  })().finally(() => { staticStart = null; });
+  return staticStart;
+}
 handle('preview:revision', async () => {
   if (!project || externalPreview) return null;
   const rootNow = project.root;
@@ -173,11 +187,7 @@ handle('preview:revision', async () => {
     if (preview) { const old = preview; preview = null; await old.close(); window?.webContents.send('harness:event', { type: 'preview.ready', url: null }); }
     return null;
   }
-  if (!preview) {
-    const updated = await openProject(project.root);
-    if (updated.staticPreview) { preview = await startPreview(project.root); window?.webContents.send('harness:event', { type: 'preview.ready', url: preview.url }); }
-    else return null;
-  }
+  if (!preview && !await startStatic(project.root)) return null;
   const root = path.join(project.root, 'public');
   if (!(await fs.lstat(root)).isDirectory()) throw new Error('Den offentlige mappe mangler.');
   const entries = [];
@@ -240,17 +250,67 @@ handle('support:feedback', async () => {
   return true;
 });
 handle('git:status', async () => {
-  const root = requireIdleProject();
-  return { ...await workbench.git.status(root), restoration: await restoration.status(root), autoCheckpoint: (await workbench.store.project(root)).autoCheckpoint === true };
+  const root = requireIdleProject(), status = await workbench.git.status(root);
+  status.history = await history.describe(root, status.history);
+  const { images: all } = await images.index(root);
+  for (const item of status.history) item.image = [...all].reverse().find(entry => entry.commit === item.commit && entry.role === 'after')?.id || null;
+  return { ...status, restoration: await restoration.status(root), autoCheckpoint: (await workbench.store.project(root)).autoCheckpoint === true };
 });
-handle('git:restore-review', input => exclusive(() => restoration.review(requireIdleProject(), input)));
+// Visuel historik: én version med filer og billeder, navne og billederne selv.
+handle('history:version', async commit => {
+  const root = requireIdleProject(), version = await history.version(root, commit);
+  return { ...version, images: await images.pairFor(root, { commit }) };
+});
+handle('history:rename', value => exclusive(async () => ({ name: await history.rename(requireIdleProject(), value?.commit, value?.name) })));
+handle('history:image', id => { if (!project) throw new Error('Åbn et projekt først.'); return images.read(project.root, id); });
+// Gennemgang før en gendannelse eller fortrydelse: filerne, hvad der sker med dem, dine ugemte ændringer og et billede
+// af forhåndsvisningen nu og af det, den går tilbage til. Billedet "nu" gemmes som før-billede, når handlingen udføres.
+let pendingRestore = null;
+const imageURL = data => data ? `data:image/jpeg;base64,${data.toString('base64')}` : null;
+handle('git:restore-review', input => exclusive(async () => {
+  const root = requireIdleProject();
+  let request = { ...(input?.commit ? { commit: input.commit } : {}), ...(input?.undo ? { undo: true } : {}), ...(input?.revert ? { revert: input.revert } : {}) };
+  if (input?.task) {
+    const task = workbench.session()?.tasks.find(item => item.id === input.task);
+    if (!task || !task.files.length) throw new Error('Opgaven findes ikke længere i denne samtale. Brug Versioner for at gå længere tilbage.');
+    request = { task: { files: task.files } };
+  }
+  const review = await restoration.review(root, request);
+  const auto = (await workbench.store.project(root)).autoCheckpoint === true;
+  let unsaved = [];
+  if (review.git) { const repo = await workbench.git.repository(root); const changed = new Set(repo.files.map(file => file.file)); unsaved = review.files.map(file => file.file).filter(file => changed.has(file)); }
+  Object.assign(review, { unsaved, saveFirst: auto && review.git && unsaved.length > 0, saveAfter: auto && review.git, framework: Boolean(externalPreview) });
+  const view = input?.view && Number.isFinite(input.view.width) ? { page: currentPage(), width: input.view.width, height: input.view.height } : null;
+  const now = view ? await captureView(view) : null;
+  let target = null;
+  if (request.commit) target = (await images.pairFor(root, { commit: request.commit }))?.after;
+  else if (request.revert) target = (await images.pairFor(root, { commit: request.revert }))?.before;
+  else if (input?.task) target = (await images.pairFor(root, { task: input.task }))?.before;
+  review.images = { now: imageURL(now), target: target ? await images.read(root, target.id).catch(() => null) : null, targetLabel: request.commit ? 'Versionen' : 'Før opgaven' };
+  pendingRestore = { token: review.token, root, view, now, request, kind: review.kind, task: input?.task || null, files: review.files.map(file => file.file), unsaved, signature: JSON.stringify(review.files) };
+  return review;
+}));
 handle('git:restore', input => exclusive(async () => {
   const root = requireIdleProject();
-  const { token, label } = typeof input === 'string' ? { token: input, label: '' } : input || {};
+  const { token, label = '', choices = {} } = typeof input === 'string' ? { token: input } : input || {};
   if (typeof label !== 'string' || label.length > 300 || /[\r\n\0]/.test(label)) throw new Error('Ugyldig beskrivelse af gendannelsen.');
+  if (!choices || typeof choices !== 'object' || Object.keys(choices).length > 200 || Object.values(choices).some(value => !['ours', 'theirs'].includes(value))) throw new Error('Ugyldigt valg i gendannelsen.');
+  const pending = pendingRestore?.token === token && pendingRestore.root === root ? pendingRestore : null; pendingRestore = null;
+  const auto = (await workbench.store.project(root)).autoCheckpoint === true;
+  let applyToken = token, savedFirst = null;
+  // Dine ugemte ændringer i de filer, der sættes tilbage, gemmes først som en version, så de kan hentes igen.
+  if (auto && pending?.unsaved.length) {
+    const review = await workbench.git.review(root);
+    const files = review.files.filter(file => !file.blocked && pending.unsaved.includes(file.file)).map(file => file.file);
+    if (files.length) savedFirst = await workbench.git.commit(root, { token: review.token, files, message: pending.kind === 'restore' ? 'Dine ændringer før gendannelsen' : 'Dine ændringer før fortrydelsen' });
+    const again = await restoration.review(root, pending.request);
+    if (JSON.stringify(again.files) !== pending.signature) throw new Error('Filerne har ændret sig. Gennemgå gendannelsen igen.');
+    applyToken = again.token;
+  }
+  await workbench.ensureBaseline().catch(() => {});
   await devServer.stop(); await workbench.close();
   let restored, error, saved = null;
-  try { restored = await restoration.apply(root, token); } catch (failure) { error = failure.message; }
+  try { restored = await restoration.apply(root, applyToken, choices); } catch (failure) { error = failure.message; }
   // Med automatiske versioner gemmes gendannelsen som en ny version. Historikken bevares, og næste opgave kan gemmes for sig.
   if (restored && (await workbench.store.project(root)).autoCheckpoint === true) {
     try {
@@ -262,11 +322,35 @@ handle('git:restore', input => exclusive(async () => {
   if (restored) workbench.log({ kind: 'restore', title: 'Filerne er sat tilbage', detail: `${label.trim() || 'Gendannet version'} · ${restored.paths.length === 1 ? '1 fil' : `${restored.paths.length} filer`}${saved ? ' · gemt som ny version' : ''}`, status: 'completed' }, root);
   if (error) workbench.log({ kind: 'error', title: 'Gendannelsen gik ikke helt igennem', detail: error, status: 'error' }, root);
   // activate kontrollerer journalen, også efter genstart eller en delvis gendannelse.
-  return { restored, error, saved, project: await activate(await openProject(root)) };
+  const reopened = await activate(await openProject(root));
+  // Ændringen står under Ændringer som din. Billedet efter tages i baggrunden af samme side i samme størrelse.
+  // En opgave i denne samtale, der er fortrudt, kan ikke fortrydes igen fra kortet.
+  if (restored?.files && pending?.task) { const done = workbench.session()?.tasks.find(item => item.id === pending.task); if (done) done.undone = true; }
+  if (restored?.files) {
+    const files = restored.changes.filter(change => change.before !== undefined && change.after !== undefined).map(change => ({ file: change.file, before: change.before, after: change.after }));
+    const task = workbench.recordEdit({ kind: 'undo', label: label.trim() || (pending?.kind === 'undo' ? 'Fortrudt gendannelse' : 'Gendannet version'), files, title: '', log: false });
+    if (pending?.view) void (async () => {
+      const pair = crypto.randomUUID();
+      if (pending.now) await images.add(root, pending.now, { role: 'before', pair, view: pending.view, task: task.id });
+      if (!externalPreview) await startStatic(root).catch(() => {});
+      const after = await captureView(pending.view);
+      if (after && project?.root === root) await images.add(root, after, { role: 'after', pair, view: pending.view, task: task.id, commit: saved?.head || null });
+      if (saved?.head) await images.bind(root, pair, saved.head);
+      sendEvent({ type: 'history.images', root, task: task.id, commit: saved?.head || null });
+    })().catch(() => {});
+  }
+  return { restored, error, saved, savedFirst, project: reopened };
 }));
-handle('git:save', note => exclusive(async () => {
+handle('git:save', value => exclusive(async () => {
+  const { note = '', view } = typeof value === 'string' || value === undefined ? { note: value || '' } : value;
   const root = requireIdleProject(), result = await workbench.git.saveAll(root, note || '');
   if (result.saved) workbench.log({ kind: 'checkpoint', title: 'Du gemte en version', detail: note || 'Uden beskrivelse', status: 'completed' }, root);
+  // Et billede af forhåndsvisningen hører til den nye version. Før-billedet er det seneste af samme side og størrelse.
+  if (result.head && view && Number.isFinite(view.width)) void (async () => {
+    const shot = { page: currentPage(), width: view.width, height: view.height }, data = await captureView(shot);
+    if (data && project?.root === root) await images.add(root, data, { role: 'after', view: shot, commit: result.head });
+    sendEvent({ type: 'history.images', root, commit: result.head });
+  })().catch(() => {});
   return result;
 }));
 handle('git:identity', value => exclusive(() => workbench.git.setIdentity(requireIdleProject(), value)));
@@ -358,8 +442,23 @@ handle('plan:wishes', value => exclusive(() => workbench.addWishes(value)));
 handle('plan:edit', value => exclusive(() => workbench.editPlan(value)));
 handle('plan:restore', value => exclusive(() => workbench.restorePlan(value)));
 // Arbejdsfladens faner: Ændringer, Kode og Aktivitet. Alt er skrivebeskyttet; stier valideres her i hovedprocessen.
-handle('changes:overview', () => project ? workbench.changeOverview() : { running: false, tasks: [], session: null });
-handle('changes:file', value => { if (!project) throw new Error('Åbn et projekt først.'); return workbench.changeFile(value); });
+// Ændringer: opgaverne i denne samtale med deres før/efter-billeder, når Aura har taget dem.
+handle('changes:overview', async () => {
+  if (!project) return { running: false, tasks: [], session: null };
+  const root = project.root, overview = await workbench.changeOverview();
+  for (const task of overview.tasks) task.images = await images.pairFor(root, { task: task.id }).catch(() => null);
+  return overview;
+});
+handle('changes:file', async value => {
+  if (!project) throw new Error('Åbn et projekt først.');
+  // En fil i en gemt version: før og efter læses fra Git. Ellers fra Auras øjebliksbilleder i denne samtale.
+  if (typeof value?.source === 'string' && value.source.startsWith('version:')) {
+    const root = requireIdleProject(), commit = value.source.slice(8), file = await history.file(root, commit, value.file);
+    const kind = kindOf((await require('./core/git.cjs').run(root, ['log', '-1', '--format=%s', commit])).toString().trim());
+    return file.hidden ? { file: value.file, change: 'ændret', by: ['ai', 'stopped'].includes(kind) ? 'ai' : 'dig', secret: true, added: 0, removed: 0, hunks: [] } : fileDetail(value.file, file.before, file.after, ['ai', 'stopped'].includes(kind) ? 'ai' : 'dig');
+  }
+  return workbench.changeFile(value);
+});
 handle('code:list', async () => {
   if (!project) throw new Error('Åbn et projekt først.');
   const root = project.root, result = await projectFiles.listFiles(root), changed = workbench.changedFiles();
@@ -409,6 +508,61 @@ handle('preview:check', input => {
   workbench.log({ kind: 'check', title: 'Kontrol af forhåndsvisningen', detail: `${shown[0].toUpperCase()}${shown.slice(1)} · ${errors.length ? `${errors.length} ${errors.length === 1 ? 'fejl' : 'fejl'} i siden: ${errors[0].message}` : 'ingen fejl i konsollen'}. Aura har ikke klikket eller afprøvet funktioner.`, status: !last || last.status >= 400 || errors.length ? 'error' : 'completed' });
   return result;
 });
+// Billeder af forhåndsvisningen til historikken. De tages i et skjult vindue med sin egen session uden lagring. Det
+// må kun hente fra forhåndsvisningens egen adresse og får hverken preload, Node, tilladelser eller downloads.
+let imageSessionReady = null, captureQueue = Promise.resolve();
+function previewAllowed(url) {
+  if (preview && url.startsWith(preview.url)) return true;
+  if (!externalPreview) return false;
+  try { const requested = new URL(url), target = new URL(externalPreview); return requested.host === target.host && [target.protocol, target.protocol === 'https:' ? 'wss:' : 'ws:'].includes(requested.protocol); } catch { return false; }
+}
+function previewHeaders(details) {
+  const headers = { ...details.responseHeaders };
+  if (externalPreview && details.url.startsWith(new URL(externalPreview).origin + '/')) {
+    const existing = Object.entries(headers).find(([key]) => key.toLowerCase() === 'content-security-policy');
+    if (existing) delete headers[existing[0]];
+    headers['Content-Security-Policy'] = [...(existing?.[1] || []), "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' ws: wss:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'"];
+  }
+  return headers;
+}
+function imageSession() {
+  if (imageSessionReady) return;
+  const ses = session.fromPartition('aura-billeder');
+  ses.setPermissionRequestHandler((_contents, _permission, callback) => callback(false)); ses.setPermissionCheckHandler(() => false);
+  ses.on('will-download', event => event.preventDefault());
+  ses.webRequest.onBeforeRequest((details, callback) => callback({ cancel: !previewAllowed(details.url) }));
+  ses.webRequest.onHeadersReceived((details, callback) => callback({ responseHeaders: previewHeaders(details) }));
+  imageSessionReady = true;
+}
+// Siden, brugeren ser i forhåndsvisningen, i forhold til dens egen adresse. Den statiske servers nøgle er ikke med.
+function currentPage() {
+  const base = preview?.url || externalPreview, frame = previewFrame();
+  if (!base || !frame) return '';
+  return frame.url.startsWith(base) ? frame.url.slice(base.length).split('#')[0].slice(0, 300) : '';
+}
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+function captureView(view) {
+  const base = preview?.url || externalPreview;
+  if (!base || !view || !Number.isFinite(view.width) || !Number.isFinite(view.height)) return Promise.resolve(null);
+  const width = Math.round(Math.min(1920, Math.max(320, view.width))), height = Math.round(Math.min(1600, Math.max(320, view.height)));
+  const page = typeof view.page === 'string' && !/^[a-z][a-z0-9+.-]*:|^\/\/|\.\./i.test(view.page) ? view.page.replace(/^\/+/, '') : '';
+  const shoot = async () => {
+    imageSession();
+    const shot = new BrowserWindow({ show: false, width, height, useContentSize: true, webPreferences: { partition: 'aura-billeder', offscreen: true, sandbox: true, contextIsolation: true, nodeIntegration: false, webviewTag: false, devTools: false, backgroundThrottling: false, spellcheck: false } });
+    shot.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    shot.webContents.on('will-navigate', event => event.preventDefault());
+    try {
+      await Promise.race([shot.loadURL(base + page), wait(10000).then(() => { throw new Error('Siden svarede ikke.'); })]);
+      await wait(700);
+      const image = await shot.webContents.capturePage();
+      if (image.isEmpty()) return null;
+      return (image.getSize().width > 1200 ? image.resize({ width: 1200, quality: 'good' }) : image).toJPEG(78);
+    } catch { return null; }
+    finally { if (!shot.isDestroyed()) shot.destroy(); }
+  };
+  const result = captureQueue.then(shoot, shoot); captureQueue = result.catch(() => {});
+  return result;
+}
 // Ændringstilstand i forhåndsvisningen. Brugeren slår den selv til; først da indsættes valgscriptet i previewets
 // ramme. Sandbox, indholdspolitik og netværksregler er de samme, og siden kan ikke kalde Aura. Hvert valg hentes som
 // data og renses her, før det vises eller bruges.
@@ -523,6 +677,17 @@ app.whenReady().then(() => {
   ]));
   workbench = new Workbench({ directory: path.join(app.getPath('userData'), 'harness'), safeStorage, profiles: profileRoot, emit: event => { if (['session.error','engine.error'].includes(event.type)) recordFailure('agent', 'model'); if (window && !window.isDestroyed()) window.webContents.send('harness:event', event); } });
   restoration = new (require('./core/restoration.cjs').Restoration)(workbench.git, workbench.store);
+  history = new History(workbench.store); images = new PreviewImages(workbench.store);
+  // Før- og efterbillede af en AI-opgave: samme side i samme størrelse. Efterbilledet bindes til versionen, når den gemmes.
+  workbench.imageHook = async (role, task, extra = {}) => {
+    const root = task.root;
+    if (!task.images || project?.root !== root) return;
+    if (role === 'before') task.images.view = { ...task.images.view, page: currentPage() };
+    else if (!externalPreview) await startStatic(root).catch(() => false);
+    const data = await captureView(task.images.view);
+    if (data && project?.root === root) await images.add(root, data, { role, pair: task.images.pair, view: task.images.view, task: task.id, commit: role === 'after' ? extra.commit || null : null });
+    if (role === 'after') { if (extra.commit) await images.bind(root, task.images.pair, extra.commit); sendEvent({ type: 'history.images', root, task: task.id, commit: extra.commit || null }); }
+  };
   devServer = new DevServer({
     runner: app.isPackaged ? path.join(process.resourcesPath, 'app.asar.unpacked/core/dev-server-runner.cjs') : undefined,
     emit: state => {
@@ -551,30 +716,17 @@ app.whenReady().then(() => {
   protocol.handle('harness', async request => {
     const url = new URL(request.url);
     const name = url.pathname.slice(1);
-    if (url.host !== 'app' || !['index.html', 'app.js', 'workspace.js', 'plan-view.js', 'planning.js', 'approval-view.js', 'approvals.js', 'preview-edit.js', 'model-advice.js', 'server.js', 'viewport.js', 'hosting.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name)) return new Response('Ikke fundet', { status: 404 });
+    if (url.host !== 'app' || !['index.html', 'app.js', 'workspace.js', 'plan-view.js', 'planning.js', 'approval-view.js', 'approvals.js', 'preview-edit.js', 'history.js', 'model-advice.js', 'server.js', 'viewport.js', 'hosting.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name)) return new Response('Ikke fundet', { status: 404 });
     return new Response(await fs.readFile(path.join(__dirname, 'ui', name)), { headers: { 'Content-Type': name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : 'text/html; charset=utf-8' } });
   });
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
   session.defaultSession.setPermissionCheckHandler(() => false);
   session.defaultSession.on('will-download', event => event.preventDefault());
-  session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
-    let devAllowed = false;
-    if (externalPreview) { const requested = new URL(details.url); const target = new URL(externalPreview); devAllowed = requested.host === target.host && [target.protocol, target.protocol === 'https:' ? 'wss:' : 'ws:'].includes(requested.protocol); }
-    const allowed = details.url.startsWith('harness://app/') || (preview && details.url.startsWith(preview.url)) || devAllowed;
-    callback({ cancel: !allowed });
-  });
+  session.defaultSession.webRequest.onBeforeRequest((details, callback) => callback({ cancel: !(details.url.startsWith('harness://app/') || previewAllowed(details.url)) }));
   session.defaultSession.webRequest.onCompleted(details => {
     if (details.resourceType === 'subFrame' && fromPreview(details.url)) remember(previewLog.documents, { at: Date.now(), status: details.statusCode, url: details.url });
   });
-  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-    const headers = { ...details.responseHeaders };
-    if (externalPreview && details.url.startsWith(new URL(externalPreview).origin + '/')) {
-      const existing = Object.entries(headers).find(([key]) => key.toLowerCase() === 'content-security-policy');
-      if (existing) delete headers[existing[0]];
-      headers['Content-Security-Policy'] = [...(existing?.[1] || []), "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' ws: wss:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'"];
-    }
-    callback({ responseHeaders: headers });
-  });
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => callback({ responseHeaders: previewHeaders(details) }));
   function createWindow() {
     window = new BrowserWindow({ width: 1440, height: 940, minWidth: 980, minHeight: 720, backgroundColor: '#F8FAFC', title: DISPLAY_NAME, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, webviewTag: false } });
     window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));

@@ -115,4 +115,4 @@ function lineStats(before, after) {
   return { added, removed, approximate };
 }
 
-module.exports = { lineDiff, lineStats, splitLines, myers };
+module.exports = { lineDiff, lineStats, splitLines, myers, editScript };

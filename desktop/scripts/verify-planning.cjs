@@ -232,10 +232,10 @@ const questions = [
     passed('Brief og plan genåbnes under Plan efter en genstart');
 
     // 980 × 720: fem faner på én linje, og spørgsmålskortet kan læses.
-    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(980, 720)); await page.waitForTimeout(600);
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).setSize(980, 720)); await page.waitForTimeout(600);
     const tabs = await page.evaluate(() => ({ rows: new Set([...document.querySelectorAll('.work-tab:not([hidden])')].map(el => Math.round(el.getBoundingClientRect().top))).size, overflow: document.documentElement.scrollWidth > innerWidth }));
     assert.equal(tabs.overflow, false); assert.equal(tabs.rows, 1, 'fem faner står på én linje ved 980 × 720');
-    const png = await app.evaluate(async ({ BrowserWindow }) => (await BrowserWindow.getAllWindows()[0].webContents.capturePage()).toPNG().toString('base64'));
+    const png = await app.evaluate(async ({ BrowserWindow }) => (await BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).webContents.capturePage()).toPNG().toString('base64'));
     await fs.writeFile(path.join(root, 'plan-980.png'), Buffer.from(png, 'base64'));
     passed('Ved 980 × 720 står de fem faner på én linje uden vandret rulning');
     assert.deepEqual(errors, []);

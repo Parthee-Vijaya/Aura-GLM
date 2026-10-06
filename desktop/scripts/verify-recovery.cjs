@@ -40,16 +40,17 @@ const { skipIntroduction, menuClick, taskOptions, selectMode } = require('./ui-t
   };
   try {
     await launch();await menuClick(page,'#git-button');
-    await page.getByRole('button',{name:'Godkendt udgangspunkt ·',exact:false}).click(); await page.waitForSelector('#restore-dialog[open]');
-    await page.click('#restore-dialog details > summary'); await page.locator('#restore-files').filter({hasText:'Ugemt forsøg'}).waitFor();
+    const restoreTo=async name=>{await page.locator('#git-history .version-row').filter({hasText:name}).click();await page.click('#version-restore');await page.waitForSelector('#restore-dialog[open]');await page.waitForFunction(()=>!document.querySelector('#restore-confirm').disabled);};
+    await restoreTo('Godkendt udgangspunkt');
+    await page.click('#restore-dialog > details > summary'); await page.locator('#restore-files').filter({hasText:'Ugemt forsøg'}).waitFor();
     await page.click('[data-close="restore-dialog"]'); assert.match(await fs.readFile(pageFile,'utf8'),/Ugemt/);
-    await page.getByRole('button',{name:'Godkendt udgangspunkt ·',exact:false}).click();await page.click('#restore-confirm');
-    await page.locator('#git-feedback').filter({hasText:'1 fil er gendannet'}).waitFor();await page.click('[data-close="git-dialog"]');
+    await page.click('#version-restore');await page.waitForFunction(()=>!document.querySelector('#restore-confirm').disabled);await page.click('#restore-confirm');
+    await page.locator('#message').filter({hasText:'1 fil er sat tilbage'}).waitFor();
     await page.frameLocator('#preview').getByRole('heading',{name:'Godkendt version'}).waitFor();
     assert.equal((await git.status(project)).head,second.head); assert.equal(await fs.readFile(path.join(project,'.env'),'utf8'),'PRIVATE=kun-lokalt');
     await page.screenshot({path:path.join(root,'gendannet.png'),animations:'disabled'});
-    await app.close();app=null;await launch();await menuClick(page,'#git-button');await page.click('#restore-undo');await page.click('#restore-confirm');
-    await page.locator('#git-feedback').filter({hasText:'er gendannet'}).waitFor();await page.click('[data-close="git-dialog"]');
+    await app.close();app=null;await launch();await menuClick(page,'#git-button');await page.click('#restore-undo');await page.waitForFunction(()=>!document.querySelector('#restore-confirm').disabled);await page.click('#restore-confirm');
+    await page.locator('#message').filter({hasText:'er sat tilbage'}).waitFor();
     await page.frameLocator('#preview').getByRole('heading',{name:'Ugemt forsøg'}).waitFor();
     assert.equal((await git.status(project)).head,second.head);assert.equal(await fs.readFile(path.join(project,'noter.txt'),'utf8'),'Bevar denne fil');
     await require('./ui-test-helpers.cjs').addConnection(page,{name:'Kontrolleret fejlprøve',baseURL:`http://127.0.0.1:${server.address().port}/v1`});
@@ -65,7 +66,7 @@ const { skipIntroduction, menuClick, taskOptions, selectMode } = require('./ui-t
     assert.equal(await page.inputValue('#prompt'),'Bevar denne besked efter stop');assert.equal(await page.isVisible('#plan-card'),false);
     mode='ok';await send('Prøv igen efter stop');await page.locator('#run-status').filter({hasText:'Klar'}).waitFor({timeout:60000});
     assert.equal(requests,8,'Ingen automatisk gentagelse af fejlede kald');
-    await page.waitForSelector('#plan-card:not([hidden])');await menuClick(page,'#git-button');await page.getByRole('button',{name:'Godkendt udgangspunkt ·',exact:false}).click();await page.click('#restore-confirm');await page.locator('#git-feedback').filter({hasText:'er gendannet'}).waitFor();await page.click('[data-close="git-dialog"]');
+    await page.waitForSelector('#plan-card:not([hidden])');await menuClick(page,'#git-button');await restoreTo('Godkendt udgangspunkt');await page.click('#restore-confirm');await page.locator('#message').filter({hasText:'er sat tilbage'}).waitFor();
     assert.equal(await page.isVisible('#plan-card'),false);assert.equal((await page.evaluate(()=>window.harness.connectionState())).value.workspace.plan,null);
     await app.evaluate(({safeStorage})=>{ safeStorage.isEncryptionAvailable=()=>{throw new Error('Hjælp må ikke kontakte nøgleringen');}; });
     await menuClick(page,'#support-button'); await page.getByText('Fejlrapport uden projektindhold',{exact:true}).click(); const report=await page.locator('#support-report').textContent();

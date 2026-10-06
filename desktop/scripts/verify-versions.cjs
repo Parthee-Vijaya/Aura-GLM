@@ -71,22 +71,22 @@ const helpers = require('./ui-test-helpers.cjs');
     // 4. Versioner i almindeligt dansk; "Gå tilbage hertil" bringer AI'ens version tilbage som en ny version.
     await helpers.menuClick(page, '#git-button'); await page.locator('#git-summary').filter({ hasText: 'Alt er gemt.' }).waitFor();
     assert.equal(await page.locator('#git-history li').count(), 3);
-    assert.match(await page.locator('#git-history li').first().textContent(), /^i dag \d{2}\.\d{2} · Fortrudt: Byg første udkast .{0,70} …Nuværende$/);
+    assert.match(await page.locator('#git-history li').first().textContent(), /^Fortrudt »Byg første udkast[^«]*«Fortrudt · i dag \d{2}\.\d{2} · nuværende$/);
     assert.equal(await page.locator('#restore-undo').isVisible(), false, 'fortrydelse klares med versionerne');
     await page.screenshot({ path: path.join(root, 'versioner.png'), animations: 'disabled' });
-    await page.getByRole('button', { name: 'Gå tilbage til: AI-opgave:', exact: false }).click();
+    await page.locator('#git-history .version-row').filter({ hasText: 'AI-opgave ·' }).click(); await page.click('#version-restore');
     await page.waitForFunction(() => !document.querySelector('#restore-confirm').disabled); await page.click('#restore-confirm');
-    await page.locator('#git-feedback').filter({ hasText: 'gemt som en ny version' }).waitFor();
+    await page.locator('#message').filter({ hasText: 'gemt som en ny version' }).waitFor();
     assert.equal(await fs.readFile(path.join(project, 'public/index.html'), 'utf8'), built);
-    assert.match((await log())[0], /^Gendannet til: AI-opgave: Byg første udkast/);
+    assert.match((await log())[0], /^Gendannet til: Byg første udkast/);
     // 5. Gem version med ét klik efter brugerens egen ændring.
     await fs.writeFile(path.join(project, 'public/noter.txt'), 'Mine egne noter');
-    await page.click('[data-close="git-dialog"]'); await helpers.menuClick(page, '#git-button');
+    await helpers.menuClick(page, '#git-button');
     await page.locator('#git-summary').filter({ hasText: '1 ændring er ikke gemt endnu.' }).waitFor();
     await page.fill('#git-note', 'Mine noter'); await page.click('#git-save-all');
     await page.locator('#git-summary').filter({ hasText: 'Alt er gemt.' }).waitFor();
     assert.equal((await log())[0], 'Mine noter'); assert.equal(await clean(), true);
-    await page.click('[data-close="git-dialog"]');
+    await page.click('#tab-preview');
     const usage = await page.locator('#usage-status').textContent();
     assert.match(usage, /^Denne samtale: [\d.]+ tokens ind · [\d.]+ ud · pris ukendt$/);
     // 6. Kom tilbage: projektet, samtalen og forbruget er der efter genstart.

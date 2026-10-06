@@ -275,7 +275,9 @@ class Workbench {
     disclosure.consentKey = crypto.createHash('sha256').update(JSON.stringify(recipient)).digest('hex');
     disclosure.accepted = ((await this.store.project(this.project.root)).consents || []).includes(disclosure.consentKey);
     disclosure.modelName = selection.model.name || selection.model.id;
-    this.prepared = { mode, ...selection, disclosure, references, fileRefs: checkedRefs, previewTarget: target, context, autoCheckpoint, startup, root: this.project.root };
+    // Forhåndsvisningens størrelse til før/efter-billederne. Kun tal; siden findes i hovedprocessen.
+    const view = input.view && Number.isFinite(input.view.width) && Number.isFinite(input.view.height) ? { width: Math.round(input.view.width), height: Math.round(input.view.height) } : null;
+    this.prepared = { mode, ...selection, disclosure, references, fileRefs: checkedRefs, previewTarget: target, view, context, autoCheckpoint, startup, root: this.project.root };
     return disclosure;
   }
   async send(input) {
@@ -284,6 +286,8 @@ class Workbench {
     if (!prepared || prepared.root !== this.project?.root || input.fingerprint !== prepared.disclosure.fingerprint) throw new Error('Gennemgå de aktuelle dataoplysninger før afsendelse.');
     if (typeof input.text !== 'string' || !input.text.trim() || input.text.length > 30000) throw new Error('Skriv en besked på højst 30.000 tegn.');
     if (prepared.mode === 'build' && prepared.disclosure.planID !== this.plan?.id) throw new Error('Planen har ændret sig. Gennemgå den igen.');
+    // Et efterbillede fra forrige opgave skal være taget, før en ny opgave kan ændre filerne.
+    await this.pendingImage;
     if (prepared.mode === 'free') { this.retirePlan('direkte'); this.planConversation = []; }
     // Beskeden, som den faktisk sendes: brugerens tekst og eventuelle henvisninger, der er vist i Før du sender.
     // Samtalen viser målet som én linje; den fulde beskrivelse af elementet står i Før du sender.
@@ -307,6 +311,11 @@ class Workbench {
     this.log({ id: `run-${this.task.id}`, kind: 'run', task: this.task.id, title: modeTitles[prepared.mode], target: shortText(input.text), detail: `${prepared.disclosure.modelName || prepared.model.id} · ${prepared.disclosure.provider || prepared.connection.name}${prepared.fileRefs?.length ? ` · ${prepared.fileRefs.length === 1 ? '1 filhenvisning' : `${prepared.fileRefs.length} filhenvisninger`}` : ''}${prepared.disclosure.previewReference ? ` · mål: ${prepared.disclosure.previewReference}` : ''}`, status: 'running', started: this.task.startedAt });
     try {
       this.runBefore = await capture(this.project.root); checkStopped();
+      // Billede af forhåndsvisningen før opgaven. Det må højst forsinke starten lidt; uden billede fortsætter opgaven.
+      if (prepared.view && prepared.mode !== 'plan' && this.imageHook) {
+        this.task.images = { pair: crypto.randomUUID(), view: { ...prepared.view } };
+        await Promise.race([this.imageHook('before', this.task).catch(() => null), new Promise(resolve => setTimeout(resolve, 6000))]); checkStopped();
+      }
       // Samtalens udgangspunkt er filerne, da den første opgave startede.
       if (!session.baseline) { session.baseline = this.runBefore; session.startedAt = this.task.startedAt; }
       // Automatiske versioner kræver både projektets valg og funktionen Versioner og fortryd.
@@ -430,6 +439,12 @@ class Workbench {
     for (const task of this.session()?.tasks || []) for (const entry of task.files) files.set(entry.file, entry.after === null ? 'slettet' : entry.before === null ? 'ny' : 'ændret');
     return files;
   }
+  // Efterbilledet tages i baggrunden, efter at resultatkortet er vist. Kun opgaver, der ændrede filer, får et.
+  afterImage(task) {
+    if (!task?.images || !this.imageHook || !task.files?.length) return;
+    const commit = task.checkpoint?.status === 'saved' ? task.checkpoint.head : null;
+    this.pendingImage = this.imageHook('after', task, { commit }).catch(() => {}).finally(() => { this.pendingImage = null; });
+  }
   // ---------- Rettelser i forhåndsvisningen og fortryd ----------
   // Et valgt element huskes, så beskeden til AI'en og tekstrettelsen bruger Auras eget valg og ikke data fra skærmen.
   rememberSelection(selection) {
@@ -445,11 +460,11 @@ class Workbench {
     return session;
   }
   // En ændring, brugeren selv har lavet i Aura, står under Ændringer og Aktivitet som brugerens.
-  recordEdit({ kind, label, files, title, target, detail, undoes }) {
+  recordEdit({ kind, label, files, title, target, detail, undoes, log = true }) {
     const session = this.session(), at = Date.now();
     const task = { id: crypto.randomUUID(), root: this.project.root, kind, label, mode: kind, status: 'idle', startedAt: at, endedAt: at, files, skipped: 0, unavailable: false, commands: 0, aiFiles: new Set(), aiHashes: new Map(), checkpoint: null, ...(undoes ? { undoes } : {}) };
     session.tasks.push(task); while (session.tasks.length > 20) session.tasks.shift();
-    this.log({ id: `edit-${task.id}`, kind: 'edit', task: task.id, title, target, detail, status: 'completed', at });
+    if (log) this.log({ id: `edit-${task.id}`, kind: 'edit', task: task.id, title, target, detail, status: 'completed', at });
     this.emit({ type: 'changes.updated', root: task.root, task: task.id });
     return task;
   }
@@ -555,6 +570,7 @@ class Workbench {
         const diff = await changes(this.project.root, this.runBefore);
         const task = await this.finishTask(status, diff);
         this.emit(this.runReview(status, diff, task, { answered: Boolean(text.trim()) }));
+        this.afterImage(task);
       }).catch(async () => { await this.finishTask(status, null).catch(() => {}); this.emit({ ...this.runReview('error', null, null), unavailable: true }); }).finally(() => {
         this.running = false; this.allowProjectEdits = false; this.finishing = null; this.emit({ type: 'run.status', status: this.runStopped ? 'stopped' : status });
       });
@@ -575,6 +591,7 @@ class Workbench {
       this.running = false;
       // Efter Stop viser resultatkortet, hvad AI'en nåede, og en vej videre.
       this.emit(this.runReview('stopped', diff, task));
+      this.afterImage(task);
     }
     await this.saveHistory('stopped'); this.emit({ type: 'run.status', status: this.starting ? 'starting' : 'stopped' });
   }

@@ -133,12 +133,16 @@ const server = http.createServer(async (req, res) => {
     await click('#run-review button >> text=Fortryd opgaven'); await win.waitForFunction(() => !document.querySelector('#restore-confirm').disabled);
     await measure('fortryd', '#restore-dialog', 'Fortryd opgaven');
     await click('#restore-confirm'); await win.waitForSelector('#restore-dialog:not([open])', { state: 'attached' }); task = null;
-    await helpers.menuClick(win, '#git-button'); await win.locator('#git-summary').filter({ hasText: 'Alt er gemt.' }).waitFor(); await measure('versioner', '#git-dialog', 'Versioner');
-    await win.click('#git-advanced > summary'); await measure('versioner-avanceret', '#git-dialog', 'Versioner · Avanceret'); await win.click('[data-close="git-dialog"]');
+    await helpers.menuClick(win, '#git-button'); await win.locator('#git-summary').filter({ hasText: 'Alt er gemt.' }).waitFor();
+    await win.locator('#git-history .version-row img[src^="data:image/jpeg"]').first().waitFor({ timeout: 30000 }); await measure('versioner', '#versions-view', 'Versioner');
+    await win.click('#git-advanced > summary'); await measure('versioner-avanceret', '#versions-view', 'Versioner · Avanceret'); await win.click('#git-advanced > summary');
+    // Én version med billeder før og efter, filerne og vejene tilbage.
+    await win.locator('#git-history .version-row').filter({ hasText: 'AI-opgave ·' }).click(); await win.locator('#version-compare img[src^="data:image/jpeg"]').first().waitFor({ timeout: 30000 });
+    await win.locator('#changes-diff-lines .diff-row').first().waitFor(); await measure('version', '#panel-changes', 'Version: før, efter og filer'); await win.click('#version-back');
     // Arbejdsfladens faner efter opgaven og fortrydelsen: Ændringer, Kode og Aktivitet.
     // Ændringer måles på AI'ens opgave, ikke på tekstrettelsen ovenfor, så målingen kan sammenlignes med tidligere.
-    await win.click('#tab-changes'); await win.locator('#changes-heading').filter({ hasText: 'ændret' }).waitFor();
-    await win.selectOption('#changes-source', await win.locator('#changes-source option').filter({ hasText: 'Byg første udkast' }).getAttribute('value'));
+    await win.click('#tab-changes'); await win.click('#changes-view-session'); await win.locator('#changes-heading').filter({ hasText: 'ændret' }).waitFor();
+    await win.selectOption('#changes-source', await win.locator('#changes-source option').filter({ hasText: /· Byg første udkast/ }).getAttribute('value'));
     await win.locator('#changes-heading').filter({ hasText: 'under opgaven' }).waitFor(); await measure('aendringer', '#panel-changes', 'Ændringer');
     await win.click('#tab-code'); await win.click('#code-files .code-file[data-path="public/index.html"]'); await win.locator('#code-title').filter({ hasText: 'public/index.html' }).waitFor(); await measure('kode', '#panel-code', 'Kode');
     await win.click('#tab-activity'); await win.locator('#activity-list .activity-entry').first().waitFor(); await measure('aktivitet', '#panel-activity', 'Aktivitet');

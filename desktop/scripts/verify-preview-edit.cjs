@@ -42,7 +42,7 @@ const helpers = require('./ui-test-helpers.cjs');
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const checks = []; const passed = text => { checks.push(text); console.log('✓ ' + text); };
   const errors = []; let app, page;
-  const capture = async name => { const png = await app.evaluate(async ({ BrowserWindow }) => (await BrowserWindow.getAllWindows()[0].webContents.capturePage()).toPNG().toString('base64')); await fs.writeFile(path.join(root, name), Buffer.from(png, 'base64')); };
+  const capture = async name => { const png = await app.evaluate(async ({ BrowserWindow }) => (await BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).webContents.capturePage()).toPNG().toString('base64')); await fs.writeFile(path.join(root, name), Buffer.from(png, 'base64')); };
   const frame = () => page.frameLocator('#preview');
   const previewFrame = () => page.frames().find(f => f !== page.mainFrame() && f.url().startsWith('http://127.0.0.1'));
   const pressed = () => page.locator('#preview-pick').getAttribute('aria-pressed');
@@ -198,12 +198,11 @@ const helpers = require('./ui-test-helpers.cjs');
 
     // Fortryd uden version: projektet har ingen Git, og Aura sætter filen tilbage fra sit øjebliksbillede.
     const undo = page.locator('#run-review button').filter({ hasText: 'Fortryd opgaven' }); await undo.waitFor();
-    assert.equal(await page.locator('#run-review .review-actions .info').count(), 1);
-    await undo.click();
-    await page.locator('#run-review .review-undone').filter({ hasText: 'Fortrudt: 1 fil er sat tilbage til, som den var før opgaven.' }).waitFor();
+    await undo.click(); await page.waitForSelector('#restore-dialog[open]'); await page.waitForFunction(() => !document.querySelector('#restore-confirm').disabled);
+    assert.match(await page.locator('#restore-outcomes').innerText(), /public\/index\.html · Sættes tilbage/);
+    await page.click('#restore-confirm'); await page.waitForSelector('#restore-dialog:not([open])', { state: 'attached' });
     assert.equal(await file(), page0);
-    await page.locator('#run-review button').filter({ hasText: 'Se fortrydelsen' }).click();
-    await page.locator('#changes-heading').filter({ hasText: '1 fil ændret af dig' }).waitFor();
+    await page.click('#tab-changes'); await page.locator('#changes-heading').filter({ hasText: '1 fil ændret af dig' }).waitFor();
     // En fil, der er ændret siden, fortrydes ikke: brugeren får grunden, og intet ændres.
     const before = await page.evaluate(() => window.harness.changesOverview()).then(r => r.value.tasks.find(task => task.kind === 'ai'));
     const refused = await page.evaluate(id => window.harness.changesUndo({ task: id }), before.id);
@@ -212,7 +211,7 @@ const helpers = require('./ui-test-helpers.cjs');
 
     // 980 × 720, større tekst og reduceret bevægelse.
     await page.click('#tab-preview');
-    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(980, 720)); await page.waitForTimeout(500);
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).setSize(980, 720)); await page.waitForTimeout(500);
     await page.click('#preview-pick'); await pick(frame().locator('h1'), 'Overskrift');
     const layout = async () => page.evaluate(() => {
       const panel = document.querySelector('#panel-preview').getBoundingClientRect(), box = document.querySelector('#pick-card').getBoundingClientRect(), toggle = document.querySelector('#preview-pick').getBoundingClientRect();
@@ -222,12 +221,12 @@ const helpers = require('./ui-test-helpers.cjs');
     assert.deepEqual(measured, { overflow: false, cardInside: true, toggleInside: true });
     await capture('980x720.png');
     for (const zoom of [1.25, 1.5]) {
-      await app.evaluate(({ BrowserWindow }, zoom) => BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(zoom), zoom); await page.waitForTimeout(600);
+      await app.evaluate(({ BrowserWindow }, zoom) => BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).webContents.setZoomFactor(zoom), zoom); await page.waitForTimeout(600);
       measured = await layout();
       assert.equal(measured.overflow, false, `vandret rulning ved ${zoom}`); assert.ok(measured.cardInside, `kortet uden for panelet ved ${zoom}`); assert.ok(measured.toggleInside, `knappen uden for ved ${zoom}`);
       await capture(`980x720-zoom-${zoom * 100}.png`);
     }
-    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(1));
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).webContents.setZoomFactor(1));
     // Mobilvisningen skaleres ned i panelet; et klik rammer stadig det element, man ser.
     await page.selectOption('#viewport-preset', 'phone'); await page.waitForTimeout(300);
     assert.ok(await page.locator('#preview').evaluate(el => /scale\(0\./.test(el.style.transform)), 'visningen er skaleret');
@@ -276,7 +275,7 @@ const helpers = require('./ui-test-helpers.cjs');
       await page.locator('#server-status').filter({ hasText: 'Forhåndsvisningen kører' }).waitFor({ timeout: 90000 });
       await page.click('[data-close="preview-dialog"]');
     }
-    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(1440, 940));
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).setSize(1440, 940));
     await page.emulateMedia({ reducedMotion: null });
     await startServer(react);
     await frame().locator('h1').filter({ hasText: 'Bibliotekets aktiviteter' }).waitFor({ timeout: 30000 });

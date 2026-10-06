@@ -439,7 +439,7 @@ async function loadRoutes(saved = '') {
   for (const route of routes) $('#route-select').append(option(route.id, route.name));
   if (routes.some(route => route.id === saved)) $('#route-select').value = saved;
 }
-function selection() { return { includeHistory: $('#include-history').checked, mode: $('#work-mode').value, planID: activePlan?.id, connectionID: $('#connection-select').value, modelID: $('#model-select').value, routeID: $('#route-select').value, references: [...document.querySelectorAll('#reference-choices input:checked')].map(el => el.value), fileRefs: window.workspace?.references() || [], previewTarget: window.workspace?.target()?.id || null }; }
+function selection() { return { includeHistory: $('#include-history').checked, mode: $('#work-mode').value, planID: activePlan?.id, connectionID: $('#connection-select').value, modelID: $('#model-select').value, routeID: $('#route-select').value, references: [...document.querySelectorAll('#reference-choices input:checked')].map(el => el.value), fileRefs: window.workspace?.references() || [], previewTarget: window.workspace?.target()?.id || null, view: window.previewViewSize?.() || null }; }
 const detailLabels = { mode: 'Arbejdsmåde', brief: 'Projektbrief, der sendes', previewReferenceText: 'Valgt element, der sendes', conversation: 'Tidligere samtale, der sendes', projectGuidance: 'Appens vejledning om projektvalg og design', planContext: 'Plan og afklaring, der sendes', projectChoices: 'Projektets opstartsvalg', fileReferences: 'Filhenvisninger i beskeden', connection: 'Forbindelse', model: 'Model', endpoint: 'Serveradresse', recipients: 'Modtagere', region: 'Behandlingssted', retention: 'Opbevaring', training: 'Brug til træning', price: 'Pris og gratisbegrænsninger', capabilities: 'Modelmuligheder', material: 'Hvad sendes?', references: 'Udvalgte private referencer', skills: 'Skills, AI’en kan hente', localStorage: 'Lokal historik og yderligere netværk', security: 'Forbindelsens sikkerhed', source: 'Kilde', checkedAt: 'Dokumentation kontrolleret', evidence: 'Grundlag' };
 // Kort resumé i almindeligt dansk. Alle oplysninger ligger under "Se alle oplysninger".
 function showData(data, canSend) {
@@ -645,7 +645,6 @@ $('#save-design').onclick = () => action(async () => { await call('saveDesign', 
 $('#design-select').onchange = () => action(async () => { updateStartupSummary(); if (!$('#design-select').value) { await clearStartupDesign(); return; } const design = await call('applyDesign', $('#design-select').value); $('#color').value = design.color; $('#color-value').value = design.color; $('#links').value = design.links.join('\n'); showAssets(design.assets); updateStartupSummary(); });
 
 
-let gitReview = null, restoreReview = null, restoreLabel = '';
 // Versioners navne forkortes ved et ordskifte, så historikken kan læses. Samme regel som for AI-opgaver.
 function shortLabel(text, max = 80) { const value = String(text).replace(/\s+/g, ' ').trim(); return value.length <= max ? value : value.slice(0, max).replace(/[\s,.;:]+\S*$/, '') + ' …'; }
 // Tidspunkt for en version i almindeligt dansk: "i dag 14.32", "i går 09.10" eller "3. okt. 14.32".
@@ -655,104 +654,7 @@ function versionTime(at) {
   const start = new Date(date); start.setHours(0, 0, 0, 0); const days = Math.round((day - start) / 86400000);
   return days === 0 ? `i dag ${time}` : days === 1 ? `i går ${time}` : `${date.toLocaleDateString('da-DK', { day: 'numeric', month: 'short' })} ${time}`;
 }
-// Gendannelse med én gennemgang. Fortryd og "Gå tilbage hertil" bruger samme vej; beskrivelsen bliver den nye versions navn.
-async function reviewRestoration(input, options = {}) {
-  restoreReview = null; restoreLabel = options.label || ''; $('#restore-confirm').disabled = true; $('#restore-files').replaceChildren(); $('#restore-feedback').textContent = ''; $('#restore-summary').textContent = 'Henter filerne fra versionen …';
-  $('#restore-title').textContent = options.title || 'Gå tilbage til en tidligere version'; $('#restore-confirm').textContent = options.confirm || 'Gå tilbage til denne version';
-  $('#restore-dialog').showModal();
-  restoreReview = await call('restoreReview', input);
-  if (restoreReview.undo) { $('#restore-title').textContent = 'Fortryd sidste gendannelse'; $('#restore-confirm').textContent = 'Fortryd gendannelsen'; restoreLabel = 'Fortrudt gendannelse'; }
-  const count = restoreReview.files.length;
-  $('#restore-summary').textContent = `${count} ${count === 1 ? 'fil sættes' : 'filer sættes'} tilbage.${restoreReview.untracked ? ` ${restoreReview.untracked} ${restoreReview.untracked === 1 ? 'fil' : 'filer'} uden for versionerne bevares.` : ''}`;
-  for (const file of restoreReview.files) {
-    const row = node('details'); row.append(node('summary', `${file.action}: ${file.file}`));
-    if (file.binary) row.append(node('p', 'Binær fil. Kontrollér billedet eller skrifttypen efter gendannelse.'));
-    else row.append(node('h4', 'Nu'), node('pre', file.before ?? '(findes ikke)'), node('h4', 'Efter'), node('pre', file.after ?? '(slettes)'));
-    $('#restore-files').append(row);
-  }
-  $('#restore-confirm').disabled = !count;
-  if (!count) $('#restore-feedback').textContent = 'Filerne svarer allerede til den valgte version.';
-}
-$('#restore-undo').onclick = () => action(() => reviewRestoration({ undo: true }));
-$('#restore-confirm').onclick = () => action(async () => {
-  if (!restoreReview) return;
-  const token = restoreReview.token; restoreReview = null; $('#restore-confirm').disabled = true;
-  const result = await call('restoreVersion', { token, label: restoreLabel });
-  await displayProject(result.project); await loadGit();
-  $('#restore-dialog').close();
-  const count = result.restored?.files || 0, files = `${count} ${count === 1 ? 'fil er' : 'filer er'} gendannet`;
-  const text = result.error || (result.saved ? `${files} og gemt som en ny version. Du kan gå frem igen under Versioner.` : `${files}. Gennemse forhåndsvisningen. Ændringerne er endnu ikke gemt som en ny version.`);
-  $('#git-feedback').textContent = text; message(text, Boolean(result.error));
-});
-async function loadGitReview() {
-  gitReview = null; $('#git-save').disabled = true; $('#git-files').replaceChildren();
-  gitReview = await call('gitReview');
-  for (const file of gitReview.files) {
-    const row = node('section'); const label = node('label', undefined, 'check-label'); const input = node('input');
-    input.type = 'checkbox'; input.value = file.file; input.disabled = Boolean(file.blocked);
-    const change = file.status === '??' ? 'Ny' : /D/.test(file.status) ? 'Slettet' : 'Ændret';
-    label.append(input, document.createTextNode(`${change} · ${file.file}`)); row.append(label);
-    if (file.blocked) row.append(node('p', file.blocked, 'hint'));
-    else if (file.binary) row.append(node('p', 'Binær billed- eller skrifttypefil. Indholdet vises ikke her; kontrollér filen før tilvalg.', 'hint'));
-    else { const details = node('details'); details.append(node('summary', 'Se indhold før og efter'), node('h4', 'Før'), node('pre', file.before ?? '(ny fil)'), node('h4', 'Efter'), node('pre', file.text ?? '(slettet fil)')); row.append(details); }
-    input.onchange = () => { $('#git-save').disabled = !$('#git-files input:checked'); }; $('#git-files').append(row);
-  }
-  if (!gitReview.files.length) $('#git-files').append(node('p', 'Ingen ændringer at gemme.'));
-}
-async function loadGit() {
-  $('#git-dialog .dialog-notice')?.remove();
-  $('#git-refresh').disabled = true; $('#git-identity').hidden = true; $('#git-quick').hidden = true; $('#git-summary').textContent = 'Henter versioner …';
-  $('#git-auto').disabled = true; $('#git-history').replaceChildren(); $('#restore-undo').hidden = true;
-  try {
-  gitReview = null; $('#git-form').hidden = true; $('#git-init').hidden = true; $('#git-settings').hidden = true;
-  const result = await call('gitStatus');
-  const identityMissing = result.initialized && !result.wrongRoot && !(result.identity?.name && result.identity?.email);
-  const changes = result.changes === 1 ? '1 ændring er ikke gemt endnu.' : `${result.changes} ændringer er ikke gemt endnu.`;
-  $('#git-summary').textContent = !result.initialized ? 'Versioner er ikke slået til for denne mappe.' : identityMissing ? 'Skriv, hvem der står bag versionerne, før den første gemmes.' : result.block || (result.changes ? changes : 'Alt er gemt.');
-  $('#git-details').textContent = result.initialized ? `Branch: ${result.branch || 'ingen'} · ${result.identity?.name || 'uden navn'} <${result.identity?.email || 'uden e-mail'}>` : 'Mappen har ingen Git-historik.';
-  $('#git-init').hidden = result.initialized;
-  $('#git-identity').hidden = !identityMissing;
-  $('#git-name').value = result.identity?.name || ''; $('#git-email').value = result.identity?.email || '';
-  $('#git-name').readOnly = Boolean(result.identity?.name); $('#git-email').readOnly = Boolean(result.identity?.email);
-  $('#git-settings').hidden = !result.initialized || result.wrongRoot;
-  $('#git-auto').checked = result.autoCheckpoint;
-  const canSave = result.initialized && !result.block;
-  $('#git-quick').hidden = !canSave || !result.changes;
-  if (canSave) { $('#git-form').hidden = false; if ($('#git-advanced').open) await loadGitReview(); }
-  $('#git-history').replaceChildren(...result.history.map((item, index) => {
-    const row = node('li'), label = node('span', `${versionTime(item.at)} · ${shortLabel(item.message, 48)}`, 'version-label'); label.title = item.message; row.append(label);
-    const button = node('button', index === 0 && !result.changes ? 'Nuværende' : 'Gå tilbage hertil', 'text-button');
-    button.disabled = Boolean(result.block) || (index === 0 && !result.changes);
-    button.setAttribute('aria-label', `Gå tilbage til: ${item.message} · ${item.id}`); button.title = 'Gennemgå versionen, før filerne sættes tilbage';
-    button.onclick = () => action(() => reviewRestoration({ commit: item.commit }, { label: `Gendannet til: ${shortLabel(item.message)}` }));
-    row.append(button); return row;
-  }));
-  // Når gendannelser gemmes som versioner, klares fortrydelse med "Gå tilbage hertil". Kopien vises kun efter en afbrudt gendannelse eller uden automatiske versioner.
-  const interrupted = ['failed', 'prepared', 'applying'].includes(result.restoration?.state);
-  $('#restore-undo').hidden = !result.restoration || (result.autoCheckpoint && !interrupted); $('#restore-undo').disabled = Boolean(result.block);
-  if (result.restoration && ['failed', 'prepared', 'applying'].includes(result.restoration.state)) $('#git-feedback').textContent = 'Sidste gendannelse blev afbrudt. Vælg Fortryd sidste gendannelse for at genskabe filerne fra før gendannelsen.';
-  if (!result.history.length) $('#git-history').append(node('li', 'Ingen gemte versioner endnu.'));
-  } finally { $('#git-auto').disabled = false; $('#git-refresh').disabled = false; }
-}
-$('#git-button').onclick = () => action(async () => { $('#git-feedback').textContent = ''; $('#git-dialog').showModal(); await loadGit(); });
-$('#git-init').onclick = () => action(async () => { $('#git-init').disabled = true; try { await call('gitInit'); await loadGit(); } finally { $('#git-init').disabled = false; } });
-$('#git-refresh').onclick = () => action(loadGit);
-$('#git-advanced').addEventListener('toggle', () => { if ($('#git-advanced').open && !$('#git-form').hidden) action(loadGitReview); });
-$('#git-auto').onchange = () => action(async () => { const selected = $('#git-auto').checked; try { await call('gitAutomatic', selected); $('#git-feedback').textContent = selected ? 'Automatiske versioner er slået til: der gemmes en version efter hver AI-opgave.' : 'Automatiske versioner er slået fra.'; } catch (error) { $('#git-auto').checked = !selected; throw error; } });
-$('#git-quick').onsubmit = event => { event.preventDefault(); action(async () => {
-  $('#git-save-all').disabled = true;
-  try {
-    const result = await call('gitSave', $('#git-note').value); $('#git-note').value = '';
-    $('#git-feedback').textContent = result.saved ? `Versionen er gemt lokalt på denne computer.${result.kept.length ? ` Disse filer blev ikke gemt, fordi de kan indeholde hemmeligheder eller er for store: ${result.kept.join(', ')}.` : ''}` : 'Der var ingen ændringer at gemme.';
-  } finally { $('#git-save-all').disabled = false; await loadGit(); }
-}); };
-$('#git-form').onsubmit = event => { event.preventDefault(); action(async () => {
-  if (!gitReview) return;
-  const input = { token: gitReview.token, message: $('#git-message').value, files: [...document.querySelectorAll('#git-files input:checked')].map(el => el.value) };
-  gitReview = null; $('#git-save').disabled = true; $('#git-auto').disabled = true;
-  try { await call('gitCommit', input); $('#git-feedback').textContent = 'Versionen er gemt lokalt på denne computer.'; $('#git-message').value = ''; }
-  finally { await loadGit(); }
-}); };
+// Versioner, gendannelse og fortryd ligger i history.js.
 
 // Enkel adgang uden at skjule datagodkendelse eller ændre model automatisk.
 // Under skrivefeltet står altid den aktive model, udbyderen og indsatsen, ligesom i Claude Code.
@@ -1319,24 +1221,13 @@ function reviewFiles(box, result) {
   box.append(list);
 }
 const filesText = (count, prefix) => count ? `${prefix} ${count} ${count === 1 ? 'fil' : 'filer'}:` : '';
-function undoButton(label, title) {
-  const checkpoint = lastCheckpoint, task = shortLabel(lastSentText);
-  return reviewButton(label, () => action(() => reviewRestoration({ commit: checkpoint.previous }, { title, confirm: title, label: `Fortrudt: ${task}` })));
+// Fortryd opgaven: kun opgavens egne ændringer fjernes, og det, du har rettet siden, bevares. Er opgaven gemt som
+// version, fortrydes versionen; ellers bruges Auras øjebliksbillede, så længe appen er åben. Begge veje gennemgås først.
+function undoAction(result, label, title) {
+  if (!result.files.length || !result.task) return null;
+  const checkpoint = lastCheckpoint?.status === 'saved' && lastCheckpoint.head ? lastCheckpoint : null, task = shortLabel(lastSentText);
+  return reviewButton(label, () => action(() => reviewRestoration(checkpoint ? { revert: checkpoint.head } : { task: result.task }, { title, confirm: title, label: `Fortrudt: ${task}` })));
 }
-// Fortryd uden version: Aura sætter tekstfilerne tilbage fra sit eget øjebliksbillede, hvis de stadig er, som opgaven
-// efterlod dem. Er en fil ændret siden, ændres intet, og beskeden siger hvorfor.
-function snapshotUndo(result, label) {
-  const button = reviewButton(label, () => action(async () => {
-    const undo = await call('changesUndo', { task: result.task }); window.previewEdit?.reloadStatic();
-    const done = node('p', `Fortrudt: ${undo.files.length === 1 ? '1 fil er sat tilbage til, som den' : `${undo.files.length} filer er sat tilbage til, som de`} var før opgaven.`, 'review-undone'); done.setAttribute('role', 'status');
-    const row = button.closest('.review-actions'); (row || button).before(done);
-    note.remove(); button.replaceWith(reviewButton('Se fortrydelsen', () => window.workspace.showChange(undo.task)));
-  }));
-  const note = info('fortryd', 'Aura sætter de tekstfiler tilbage, som opgaven ændrede, så længe appen er åben. Er en fil ændret siden, fortryder Aura ingenting. Store filer og filer, der ikke er tekst, røres ikke. Slå Versioner til for at kunne gå længere tilbage.');
-  const wrap = document.createDocumentFragment(); wrap.append(button, note); return wrap;
-}
-// Version, når opgaven er gemt som version; ellers Auras øjebliksbillede.
-const undoAction = (result, label, title) => lastCheckpoint?.status === 'saved' && result.files.length ? undoButton(label, title) : result.files.length && result.task ? snapshotUndo(result, label) : null;
 const targetLine = box => { if (lastTarget) box.append(node('p', `Mål: ${lastTarget}`, 'review-target')); };
 // Kontroller med faktiske resultater: forhåndsvisningen, som Aura selv genindlæser, og de kommandoer, AI'en kørte.
 function renderChecks(box, result) {
@@ -1442,7 +1333,7 @@ function renderRunReview(result) {
     // Opgaven er gemt som en version. Fortryd sætter filerne tilbage til versionen før opgaven og gemmer det som en ny version.
     box.append(node('p', lastCheckpoint.message, 'hint'));
     if (lastCheckpoint.kept?.length) box.append(node('p', `Disse filer blev ikke gemt, fordi de kan indeholde hemmeligheder eller er for store: ${lastCheckpoint.kept.join(', ')}.`, 'hint'));
-    actions.append(undoButton('Fortryd opgaven', 'Fortryd opgaven'), reviewButton('Se ændringerne', () => window.workspace.showChange(result.task)));
+    actions.append(...[undoAction(result, 'Fortryd opgaven', 'Fortryd opgaven')].filter(Boolean), reviewButton('Se ændringerne', () => window.workspace.showChange(result.task)));
   } else if (result.files.length) {
     const undo = undoAction(result, 'Fortryd opgaven', 'Fortryd opgaven'); if (undo) actions.append(undo);
     actions.append(reviewButton('Gennemgå ændringer', () => window.workspace.showChange(result.task)));
@@ -1451,7 +1342,6 @@ function renderRunReview(result) {
   if (actions.children.length) box.append(actions);
 }
 
-$('#git-identity').onsubmit = event => { event.preventDefault(); action(async () => { await call('gitIdentity', { name: $('#git-name').value, email: $('#git-email').value }); await loadGit(); }); };
 
 let localDiscoveryGeneration = 0, localDiscoveryResult = null;
 async function discoverLocal() {

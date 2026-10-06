@@ -91,7 +91,7 @@ const http = require('node:http');
     const storage = path.join(root, 'appdata', 'harness', 'workspaces');
     assert.ok((await fs.readdir(storage)).some(file => file.endsWith('-archives')));
     assert.match(await fs.readFile(path.join(project, 'public/index.html'), 'utf8'), /Fælleshuset er klar/);
-    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(980, 720));
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).setSize(980, 720));
     await page.locator('#prompt').focus(); assert.equal(await page.evaluate(() => document.activeElement.id), 'prompt');
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await page.screenshot({ animations: 'disabled', path: path.join(root, 'lille-vindue.png') });
