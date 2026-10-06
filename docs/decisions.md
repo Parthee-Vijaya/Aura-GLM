@@ -26,6 +26,17 @@ Første milepæl, arbejdsfladen, er implementeret 5. oktober 2026. Valg i implem
 - **Filhenvisninger til AI'en:** Kun stien og eventuelle linjer sendes, og AI'en læser selv filen med sine værktøjer. Henvisningen indgår i samtykket, så Før du sender vises igen, men den starter ikke en ny modelsession.
 - **Sidepanelet** foldes sammen af brugeren og automatisk, når vinduet er smallere end 760 CSS-pixels, fx med 150 % tekst ved 980 × 720.
 
+Anden milepæl, afklaring og plan, er implementeret 6. oktober 2026. Brugeren valgte:
+- **Placering:** brief og plan står i en femte fane, Plan. Spørgsmål og knappen Byg står i samtalen.
+- **Rettelser:** planen kan rettes direkte og af AI'en. Brugerens version bruges ved bygning, og AI'ens version kan hentes igen.
+- **Briefen** udfyldes kun fra idéen, ønskerne og svarene. AI'en skriver ikke i den.
+
+Valg i implementeringen, som kan ændres:
+- **Spørgeværktøjet:** OpenCode tilbyder kun værktøjet til sine egne klienter (`app`, `cli`, `desktop`). Aura melder sig som `harness` og slår det til med `OPENCODE_ENABLE_QUESTION_TOOL`. Før dette kunne AI'en ikke stille spørgsmål med svarmuligheder gennem Aura.
+- **Spring over** svarer, at AI'en skal vælge selv og skrive antagelsen i planen. Et afvist spørgsmål stopper opgaven i OpenCode, og brugeren ville så stå uden plan.
+- **Afbrudte planer:** Den tidligere beslutning gælder stadig: en plan fra en stoppet, fejlet eller afbrudt opgave må ikke bygges direkte. Den gemmes som seneste plan, kan læses under Plan og kan bruges som udgangspunkt for en ny planlægning.
+- **Briefen følger projektet** og bevares ved Ny samtale. Ønskerne fra Ønsker til løsningen kommer i briefen, når planlægning er slået til.
+
 ## Få valg og udvælgelse af skills · 29. september 2026
 
 Besluttet i projektsamtalen: Hvert beslutningspunkt har ét eller to hovedvalg og højst tre til fire synlige muligheder med resten bag ét link, fx "Bruger du en anden udbyder? Vælg en anden". Opsætningen skal kunne gennemføres uden tvivlsspørgsmål af en person uden teknisk baggrund. Reglen står i `AGENTS.md` og `desktop/DESIGN.md`.

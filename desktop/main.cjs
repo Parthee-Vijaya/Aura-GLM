@@ -349,6 +349,11 @@ handle('agent:send', value => exclusive(async () => {
 handle('agent:stop', () => workbench.stop());
 handle('agent:reply', value => workbench.reply(value));
 handle('agent:question', value => workbench.question(value));
+// Afklaring og plan: briefen er brugerens egne ord, og planen kan rettes af brugeren. Intet sendes, før næste besked.
+handle('plan:brief', value => exclusive(() => workbench.saveBrief(value)));
+handle('plan:wishes', value => exclusive(() => workbench.addWishes(value)));
+handle('plan:edit', value => exclusive(() => workbench.editPlan(value)));
+handle('plan:restore', value => exclusive(() => workbench.restorePlan(value)));
 // Arbejdsfladens faner: Ændringer, Kode og Aktivitet. Alt er skrivebeskyttet; stier valideres her i hovedprocessen.
 handle('changes:overview', () => project ? workbench.changeOverview() : { running: false, tasks: [], session: null });
 handle('changes:file', value => { if (!project) throw new Error('Åbn et projekt først.'); return workbench.changeFile(value); });
@@ -453,7 +458,7 @@ app.whenReady().then(() => {
   protocol.handle('harness', async request => {
     const url = new URL(request.url);
     const name = url.pathname.slice(1);
-    if (url.host !== 'app' || !['index.html', 'app.js', 'workspace.js', 'model-advice.js', 'server.js', 'viewport.js', 'hosting.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name)) return new Response('Ikke fundet', { status: 404 });
+    if (url.host !== 'app' || !['index.html', 'app.js', 'workspace.js', 'plan-view.js', 'planning.js', 'model-advice.js', 'server.js', 'viewport.js', 'hosting.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name)) return new Response('Ikke fundet', { status: 404 });
     return new Response(await fs.readFile(path.join(__dirname, 'ui', name)), { headers: { 'Content-Type': name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : 'text/html; charset=utf-8' } });
   });
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));

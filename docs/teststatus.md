@@ -2,6 +2,49 @@
 
 Kontrolleret 28. september 2026. Dette er status for den aktuelle arbejdsmappe, ikke en erklæring om, at alle installationsfiler eller modeller er klar. Der er ikke committet eller pushet under denne gennemgang.
 
+## Afklaring og plan · 6. oktober 2026
+
+Anden milepæl i [planen for brugerfladen](ux-plan.md). Afprøvet på Mac med OpenCode 1.18.33. Der er ikke committet eller pushet.
+
+- **Fejl fundet og rettet:** AI'en har aldrig kunnet stille spørgsmål med svarmuligheder gennem Aura.
+  - OpenCode tilbyder kun spørgeværktøjet til klienterne `app`, `cli` og `desktop` eller med `OPENCODE_ENABLE_QUESTION_TOOL`. Aura melder sig som `harness`.
+  - Den tidligere spørgsmålsformular var derfor kun afprøvet med en falsk motor.
+  - Prøvet mod den rigtige motor med en kontrolleret modelserver: uden flaget fik modellen glob, grep, read og webfetch under planlægning; med flaget også question.
+- **Enhedstestet:** 161 automatiske tests består, når testfilerne køres én ad gangen. De 8 nye dækker:
+  - briefen fra idé, ønsker og svar; ugyldige linjer; AI'ens markering "(anbefalet)" kommer ikke med;
+  - planens fire afsnit, også med fede eller almindelige overskrifter og en overskrift i en kodeblok;
+  - AI'ens anbefalede svar først;
+  - brugerens egen plan, Gendan AI'ens version og en plan, der er stoppet;
+  - en afbrudt byggeopgave, hvis plan genåbnes som seneste plan og ikke kan bygges;
+  - svar og Spring over gennem motorens API;
+  - at motoren får spørgeværktøjet.
+- **Kørt mod rigtigt materiale i Electron:** `npm run test:planning` bruger den rigtige OpenCode-motor, et nyt projekt med Git i en midlertidig mappe og en kontrolleret modelserver, der kalder question-værktøjet. Modellens svar er faste testdata. Prøven har 11 delprøver:
+  1. Idé og ønsker står i briefen; beskeden indeholder kun idéen.
+  2. Modellen får spørgeværktøjet og briefen; spørgsmålet tager ikke fokus fra skrivefeltet.
+  3. Tre spørgsmål vises ét ad gangen med AI'ens anbefaling først, flere valg, Tilbage, eget svar og tastatur.
+  4. Svarene når modellen og briefen. Planen står under Plan i fire afsnit; AI'en skifter ikke fane.
+  5. Brugeren retter briefen og planen; planen siger, at briefen er ændret bagefter.
+  6. Bygning bruger den rettede plan og brief; planen står som bygget og kan bygges igen.
+  7. Bed AI'en rette giver en ny plan fra AI'en.
+  8. Efter Stop kan den seneste plan læses, men ikke bygges, og bliver udgangspunkt for en ny plan.
+  9. Spring over lader AI'en vælge selv, og opgaven fortsætter til en plan.
+  10. Brief og plan genåbnes efter genstart.
+  11. Fem faner står på én linje ved 980 × 720.
+- **Fundet af prøven og rettet:** Spring over afviste først spørgsmålet. OpenCode stopper så opgaven, og brugeren fik "AI'en stoppede uden et resultat". Nu svarer Spring over, at AI'en skal vælge selv. Planen stod heller ikke som bygget, før brugerfladen fik besked fra hovedprocessen.
+- **Kørsler:**
+  - Alle 16 Electron-prøver bestod efter ændringerne i hovedprocessen og spørgsmålene. `test:workspace` fejlede først, fordi prøven ventede fire faner; prøven er rettet.
+  - Efter de sidste ændringer (neutrale eksempler på startsiden og en rolig animation i den tomme forhåndsvisning) er `test:workspace`, `test:planning`, `test:desktop`, `test:introduction` og `test:chat` kørt igen og består. De øvrige elleve er ikke kørt igen efter disse to ændringer.
+  - To kørsler af `test:planning` fejlede undervejs, efter at nogen havde klikket i det synlige prøvevindue: en titel var markeret, og vinduet havde en anden størrelse.
+- **Målt:** `npm run measure:screens` giver 2.582 synlige ord, 217 valg og 47 ⓘ på 36 skærme mod 2.425, 206 og 47 på 34 skærme i den committede milepæl 1, målt med samme script. Ingen sidefejl.
+  - Nye skærme: Spørgsmål fra AI'en (29 ord, 4 valg) og Plan (92 ord, 6 valg).
+  - Plankortet i samtalen gik fra 26 til 20 ord.
+  - Fra idé til første udkast tager 6 klik mod 5, fordi målingens model nu stiller et spørgsmål, som skal besvares.
+  - Aktivitet og Se alle oplysninger voksede med henholdsvis spørgsmålet og projektbriefen.
+
+Ikke afprøvet:
+- En rigtig model, der selv vælger at stille spørgsmål med question-værktøjet og skriver planen under de fire overskrifter. Instruktionerne er skrevet, men kun afprøvet med faste modelsvar.
+- Skærmlæser (VoiceOver), Windows, en pakket app og en person uden teknisk baggrund.
+
 ## Arbejdsflade med fire faner · 5. oktober 2026
 
 Første milepæl i [planen for brugerfladen](ux-plan.md). Afprøvet på Mac med OpenCode 1.18.33. Der er ikke committet eller pushet.

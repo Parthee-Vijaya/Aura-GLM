@@ -77,8 +77,11 @@ const { run } = require('../core/git.cjs');
   assert.equal(await page.inputValue('#prompt'),'Min eksisterende kladde');
   await page.screenshot({path:path.join(root,'projektvalg.png'),animations:'disabled'});
   await page.fill('#prompt',''); await page.click('#start-idea');
-  const firstIdea=await page.inputValue('#prompt');
-  assert.match(firstIdea,/React og TypeScript/); assert.match(firstIdea,/Tailwind CSS med shadcn/); assert.match(firstIdea,/Serverless-funktioner/);
+  // Ønskerne kommer i projektbriefen under Plan, som følger med beskeden; selve beskeden er idéen.
+  await page.locator('#message').filter({hasText:'Dine ønsker står i projektbriefen under Plan.'}).waitFor();
+  assert.doesNotMatch(await page.inputValue('#prompt'),/React og TypeScript/);
+  const brief=(await page.evaluate(()=>window.harness.connectionState())).value.brief.items.map(item=>`${item.label}: ${item.value}`).join('\n');
+  assert.match(brief,/Brugerflade: React og TypeScript/); assert.match(brief,/Designværktøjer: Tailwind CSS med shadcn/); assert.match(brief,/Backend: Serverless-funktioner/);
   assert.equal(await page.inputValue('#work-mode'),'plan');
   assert.equal(requests.length,0);
   await page.click('#send');
@@ -99,9 +102,9 @@ const { run } = require('../core/git.cjs');
   await page.waitForSelector('#plan-card:not([hidden])',{timeout:60000});
   await page.waitForFunction(()=>!document.querySelector('#build-plan').disabled);
   assert.equal(await page.isVisible('#plan-text'),false);
-  await page.locator('#plan-card summary').click();
+  await page.click('#plan-open');
   assert.match(await page.locator('#plan-text').textContent(),/Forslag:/);
-  await page.locator('#plan-card summary').click();
+  await page.click('#tab-preview');
   await app.evaluate(({BrowserWindow}) => {
     const win=BrowserWindow.getAllWindows()[0];
     for (const event of [

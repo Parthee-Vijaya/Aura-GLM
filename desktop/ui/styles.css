@@ -472,9 +472,10 @@ body.sidebar-overlay .sidebar { width: 216px; z-index: 30; box-shadow: 0 12px 40
 .work-tab:hover:not([aria-selected="true"]):not(:disabled) { background: #f2f6fc; border-color: transparent; color: var(--ink); }
 .work-tab[aria-selected="true"] { background: var(--tint); border-color: #c9dbf5; color: var(--accent); }
 /* I et smalt panel rykker fanerne tættere, så alle fire står på én linje ved 980 px. Bliver der for lidt plads, brydes de. */
-@container work (max-width: 430px) { .work-tabs { gap: 2px; padding: 6px 8px; } .work-tab { padding: 6px 8px; } .panel-bar { padding-left: 12px; padding-right: 8px; } .panel-scroll, .code-view { padding-left: 14px; padding-right: 14px; } }
-.tab-badge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; }
-.tab-badge.dot { min-width: 8px; width: 8px; height: 8px; padding: 0; background: var(--accent); }
+@container work (max-width: 430px) { .work-tabs { gap: 2px; padding: 6px 8px; } .work-tab { padding: 6px 6px; } .panel-bar { padding-left: 12px; padding-right: 8px; } .panel-scroll, .code-view { padding-left: 14px; padding-right: 14px; } }
+/* Mærket ligger oven på fanens hjørne, så fanerne ikke flytter sig, når det dukker op. */
+.tab-badge { position: absolute; top: -5px; right: -5px; display: inline-grid; place-items: center; min-width: 17px; height: 17px; padding: 0 4px; border: 2px solid #fff; border-radius: 999px; background: var(--accent); color: #fff; font-size: 9.5px; font-weight: 700; line-height: 1; box-sizing: border-box; }
+.tab-badge.dot { top: 2px; right: 0; min-width: 10px; width: 10px; height: 10px; padding: 0; background: var(--accent); }
 .tab-badge.dot.running { background: #24835b; animation: pulse 1.6s ease-in-out infinite; }
 .tab-badge.dot.waiting { background: #b7791f; }
 @keyframes pulse { 50% { opacity: .35; } }
@@ -591,3 +592,60 @@ body.sidebar-overlay .sidebar { width: 216px; z-index: 30; box-shadow: 0 12px 40
 .ref-chip button { border: 0; background: transparent; padding: 0 7px; font-size: 14px; line-height: 1.4; color: #214f91; border-radius: 999px; }
 #data-refs-text { padding: 10px 12px; border-radius: 8px; background: #f3f7fd; overflow-wrap: anywhere; }
 @media (prefers-reduced-motion: reduce) { .tab-badge.dot.running { animation: none; } }
+
+/* Plan: projektbrief øverst og planen nedenunder. Briefen er brugerens egne ord; planen kan rettes og genåbnes. */
+.section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; }
+.section-head h2 { margin: 0; font-size: 15px; }
+#plan-title:focus { outline: none; }
+.brief { margin-bottom: 26px; }
+.brief > .hint { margin-top: 4px; }
+.brief-list { display: grid; margin: 12px 0 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.brief-list dt { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; padding: 10px 14px 0; border-top: 1px solid var(--line); font-size: 12px; font-weight: 650; }
+.brief-list dt:first-child { border-top: 0; }
+.brief-source { font-size: 11px; font-weight: 450; color: var(--muted); }
+.brief-list dd { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin: 0; padding: 2px 6px 10px 14px; font-size: 13px; line-height: 1.6; }
+.brief-value { white-space: pre-wrap; overflow-wrap: anywhere; }
+.brief-list dd .text-button { flex-shrink: 0; padding: 2px 8px; }
+.brief-form { margin-top: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--canvas); }
+.brief-form label:first-child { margin-top: 0; }
+.brief-form-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; }
+#brief-feedback:empty { display: none; }
+.plan-section { padding-top: 18px; border-top: 1px solid var(--line); }
+#plan-notice { margin: 12px 0; }
+.plan-body { margin-top: 12px; font-size: 13px; line-height: 1.7; }
+.plan-body.is-retired { opacity: .75; }
+.plan-part { margin: 16px 0; }
+.plan-part h3 { margin: 0 0 4px; font-size: 13px; }
+.plan-teknik { padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--canvas); }
+.plan-teknik > summary { font-size: 13px; font-weight: 650; color: var(--ink); }
+.plan-proev ul, .plan-proev ol { list-style: none; padding-left: 0; }
+.plan-proev li { position: relative; padding-left: 24px; margin: 6px 0; }
+.plan-proev li::before { content: ""; position: absolute; left: 2px; top: 5px; width: 12px; height: 12px; border: 1.5px solid #8ea4c4; border-radius: 3px; }
+.plan-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.plan-editor textarea { font: 12px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace; min-height: 280px; }
+#plan-summary { margin: 0 0 4px; font-size: 13px; color: var(--ink); }
+
+/* AI'ens spørgsmål: ét ad gangen med store, klikbare svar. AI'ens anbefaling står først og er markeret som AI'ens. */
+.question-card { border-color: #c9dbf5; background: #f8fbff; }
+.question-step { margin: 0 0 4px; font-size: 11px; font-weight: 650; letter-spacing: .02em; color: var(--muted); }
+.question-title { margin: 0 0 12px; font-size: 16px; line-height: 1.45; letter-spacing: -.01em; }
+.question-title:focus { outline: none; }
+.answer-choices { display: grid; gap: 8px; }
+.approval .answer-choice { display: grid; gap: 4px; width: 100%; margin: 0; padding: 12px 14px; border-radius: 12px; text-align: left; background: #fff; font-weight: 450; }
+.answer-choice:hover:not(:disabled) { border-color: var(--accent); }
+.answer-choice[aria-pressed="true"] { border-color: var(--accent); background: var(--tint); box-shadow: inset 0 0 0 1px var(--accent); }
+.answer-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.answer-head strong { font-size: 13px; font-weight: 650; }
+.answer-choice .recommended { padding: 1px 8px; border-radius: 999px; background: var(--tint); color: var(--accent); font-size: 10px; font-weight: 650; }
+.answer-description { font-size: 12px; line-height: 1.5; color: var(--muted); }
+.answer-own { margin-top: 10px; }
+.answer-own label { margin-top: 0; }
+.approval .answer-own button, .question-card > .primary { margin-top: 10px; }
+.question-links { display: flex; flex-wrap: wrap; gap: 2px 8px; margin: 10px 0 0; }
+.question-links .text-button { margin: 0; padding: 4px 6px; }
+.answer-record { font-size: 12px; color: var(--muted); border-left: 2px solid #c9dbf5; padding-left: 10px; }
+
+/* Tom forhåndsvisning: et lille tegn og én linje. Mens AI'en arbejder, ånder tegnet langsomt. */
+#preview-empty .empty-code { display: inline-grid; place-items: center; width: 52px; height: 52px; margin: 0 auto 14px; border-radius: 14px; background: #fff; box-shadow: 0 2px 10px #1b3a6414; font-size: 18px; color: #8ea4c4; }
+#preview-empty.is-working .empty-code { color: var(--accent); animation: preview-breathe 2.4s ease-in-out infinite; }
+@keyframes preview-breathe { 0%, 100% { transform: scale(1); box-shadow: 0 2px 10px #1b3a6414; } 50% { transform: scale(1.06); box-shadow: 0 6px 22px #0052cc26; } }

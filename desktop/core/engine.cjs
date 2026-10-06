@@ -77,6 +77,8 @@ function isolatedEnv(directory, config, password) {
   for (const [key, sub] of Object.entries({ XDG_CONFIG_HOME: 'config', XDG_DATA_HOME: 'data', XDG_CACHE_HOME: 'cache', XDG_STATE_HOME: 'state' })) env[key] = path.join(directory, sub);
   Object.assign(env, { OPENCODE_CONFIG_CONTENT: JSON.stringify(config), OPENCODE_CONFIG_DIR: path.join(directory, 'config'), OPENCODE_SERVER_PASSWORD: password, OPENCODE_SERVER_USERNAME: 'harness', OPENCODE_CLIENT: 'harness' });
   for (const flag of ['DISABLE_PROJECT_CONFIG', 'DISABLE_DEFAULT_PLUGINS', 'DISABLE_EXTERNAL_SKILLS', 'DISABLE_CLAUDE_CODE', 'DISABLE_AUTOUPDATE', 'DISABLE_MODELS_FETCH', 'DISABLE_LSP_DOWNLOAD', 'DISABLE_SHARE', 'DISABLE_EMBEDDED_WEB_UI']) env[`OPENCODE_${flag}`] = 'true';
+  // OpenCode tilbyder kun spørgeværktøjet til sine egne klienter. Aura viser spørgsmålene selv, ét ad gangen med klikbare svar.
+  env.OPENCODE_ENABLE_QUESTION_TOOL = 'true';
   return require('./runtime.cjs').gitEnvironment(env);
 }
 class OpenCodeEngine {

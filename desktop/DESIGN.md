@@ -39,13 +39,13 @@ Tæl de synlige valg, før en skærm kaldes færdig, og gennemfør forløbet i a
 - Næste trin viser kun det valgte forløb. Nøglehjælp og tekniske oplysninger er foldet sammen. GitHub og lokale værktøjer ligger under Avanceret opsætning. Tilbage og Vælg senere er altid tilgængelige.
 - Sidepanelet indeholder projekter, Nyt projekt, Åbn projekt og Indstillinger. Indstillinger har AI-forbindelser, Funktioner og Hjælp og feedback.
 - AI-forbindelser er en liste med Rediger på hver forbindelse. Tilføj forbindelse går gennem den guidede opsætning med de tre udbyderkort. Rediger viser formularen med Test forbindelse og Fjern forbindelse.
-- Arbejdsområdet består af samtalen og en arbejdsflade med en flytbar skillelinje. Arbejdsfladen har fire faner: Forhåndsvisning, Ændringer, Kode og Aktivitet. Forhåndsvisning er udgangspunktet.
+- Arbejdsområdet består af samtalen og en arbejdsflade med en flytbar skillelinje. Arbejdsfladen har fem faner: Forhåndsvisning, Plan, Ændringer, Kode og Aktivitet. Forhåndsvisning er udgangspunktet.
   - Kun brugeren skifter fane. AI'ens hændelser giver Ændringer et tal og Aktivitet en prik, men flytter ikke brugeren. Nyt indhold i en åben fane vises først, når brugeren vælger det, fx med Vis dem.
   - Faneskift bevarer previewets formularer og rulning, filvalget, rulningen i de andre faner og beskedkladden.
   - Ændringer viser først et resumé med sammenligningsgrundlaget og derefter en linje-diff. Hver fil siger, om AI'en, AI'en og andre, en kommando eller brugeren ændrede den. Brugerens egne ændringer må aldrig stå som AI'ens.
   - Kode er skrivebeskyttet og viser kode som tekst. Beskyttede filer vises ikke. Filhenvisninger til AI'en står i skrivefeltet og i Før du sender.
   - Aktivitet viser kun faktiske hændelser med klokkeslæt og status i ord. Ingen simuleret terminal og ingen opdigtede testresultater.
-  - Sidepanelet kan foldes sammen til ikoner. Ved 980 × 720 står fanerne på én linje; med større tekst må de bryde, men aldrig forsvinde.
+  - Sidepanelet kan foldes sammen til ikoner. Ved 980 × 720 står fanerne på én linje; med større tekst må de bryde, men aldrig forsvinde. Et mærke på en fane ligger oven på hjørnet, så fanerne ikke flytter sig.
 - Skrivefeltet er den vigtigste handling. Under det står den aktive model, udbyder og indsats og samtalens tokens ind og ud med en anslået pris. Modelknappen åbner Din AI. Den viser højst tre modeller: for kendte udbydere udbyderens eget udgangspunkt og to alternativer med faktuelle forklaringer, ellers et udvalg. Et klik på et modelkort vælger og lukker. Alle modeller og forbindelser ligger under Avanceret. Referencer vises kun, når projektet har referencefiler.
 - Før første afsendelse viser "Før du sender" fire linjer: AI, hvor, træning og pris.
   - Under dem står én linje om pris og data med ⓘ. Tidligere samtale nævnes kun, når den sendes med.
@@ -53,6 +53,9 @@ Tæl de synlige valg, før en skærm kaldes færdig, og gennemfør forløbet i a
   - Resuméet vises igen, når modtager, model, pris, vilkår eller delt materiale ændrer sig, ikke ved skift fra plan til bygning.
 - Første filændring i en opgave spørger, om AI'en må ændre filer i projektet. Filen vises med sin sti i projektet. "Tillad for denne opgave" gælder kun projektmappen og kun til opgaven slutter; kommandoer, web og filer udenfor spørger hver gang.
 - Planlægning fører til et konkret forslag. Brugeren vælger at bygge; efter bygning kan man fortsætte med rettelser.
+  - AI'ens spørgsmål vises ét ad gangen som store svarkort, højst fire synlige. AI'ens anbefaling står først og er markeret som AI'ens, ikke Auras. Eget svar, Tilbage og Spring over er links.
+  - Projektbriefen indeholder kun brugerens egne ord: idé, ønsker og svar. Hver linje siger, hvor den kommer fra, og kan rettes.
+  - Planen står under Plan i fire afsnit med teknik foldet sammen. Samtalen viser et kort med planens første linje og én primær handling: Byg. Planen kan rettes direkte eller af AI'en og genåbnes. En plan, der ikke må bygges, kan stadig læses.
 - Nye projekter har versioner fra start. Efter hver AI-opgave gemmes en version, og resultatkortet tilbyder Fortryd opgaven. Versioner viser "Alt er gemt" eller antallet af ugemte ændringer, én knap til Gem version og en historik med tidspunkter og Gå tilbage hertil. Filvalg, branch og identitet ligger under Avanceret og Se detaljer.
 - Appen åbner det projekt, der sidst var åbent. Et projekt, der er lukket med Nyt projekt, åbnes ikke igen.
 - Projektmenuen indeholder versioner, sikkerhedskopi og ny samtale. Del åbner udgivelse til test. Del og Sikkerhedskopi vises kun, når Deling og udgivelse er slået til. Funktionen er ikke med i den anbefalede pakke, så længe Del kræver udviklerværktøjer.

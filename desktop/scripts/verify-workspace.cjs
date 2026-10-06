@@ -104,8 +104,9 @@ const helpers = require('./ui-test-helpers.cjs');
     assert.equal(await page.inputValue('#prompt'), 'BYG en side, hvor man finder et lokale');
     // Tastatur: piletaster, Home og End flytter mellem fanerne, og fokus er synligt.
     await page.focus('#tab-preview'); await page.keyboard.press('ArrowRight');
-    assert.equal(await selected(), 'changes'); assert.equal(await page.evaluate(() => document.activeElement.id), 'tab-changes');
-    assert.notEqual(await page.locator('#tab-changes').evaluate(el => getComputedStyle(el).outlineStyle), 'none');
+    assert.equal(await selected(), 'plan'); assert.equal(await page.evaluate(() => document.activeElement.id), 'tab-plan');
+    assert.notEqual(await page.locator('#tab-plan').evaluate(el => getComputedStyle(el).outlineStyle), 'none');
+    await page.keyboard.press('ArrowRight'); assert.equal(await selected(), 'changes');
     await page.keyboard.press('End'); assert.equal(await selected(), 'activity');
     await page.keyboard.press('ArrowRight'); assert.equal(await selected(), 'preview');
     await page.keyboard.press('ArrowLeft'); assert.equal(await selected(), 'activity');

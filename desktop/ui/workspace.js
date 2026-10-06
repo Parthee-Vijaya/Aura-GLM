@@ -2,7 +2,7 @@
 // Fanerne ligger oven på hinanden og skjules kun visuelt, så previewets formularer, rulning og andre fanes tilstand
 // bevares ved faneskift. Kun brugeren skifter fane; AI'ens hændelser markerer en fane, men skifter aldrig væk.
 (() => {
-  const tabs = ['preview', 'changes', 'code', 'activity'];
+  const tabs = ['preview', 'plan', 'changes', 'code', 'activity'];
   let active = 'preview';
   const tab = name => $(`#tab-${name}`), panel = name => $(`#panel-${name}`);
   const visuallyHidden = text => node('span', text, 'visually-hidden');
@@ -19,16 +19,18 @@
       panel(item).classList.toggle('is-active', selected); panel(item).inert = !selected;
     }
     if (focus) tab(name).focus();
+    if (name === 'plan') { $('#plan-badge').hidden = true; window.planning?.render(); }
     if (name === 'changes') { badge('changes', 0); if (changes.stale || !changes.data) action(() => loadChanges()); }
     if (name === 'code') { if (!code.files || code.stale) action(loadCodeList); action(checkCodeFile); }
     if (name === 'activity') { activity.unseen = false; updateActivityBadge(); if (activity.toBottom) { activity.toBottom = false; requestAnimationFrame(() => { $('#activity-scroll').scrollTop = $('#activity-scroll').scrollHeight; }); } }
   }
   for (const item of tabs) tab(item).addEventListener('click', () => show(item));
+  // Piletasterne springer over en skjult fane, fx Plan, når planlægning er slået fra.
   $('.work-tabs').addEventListener('keydown', event => {
-    const index = tabs.indexOf(active);
-    const next = { ArrowRight: index + 1, ArrowLeft: index - 1, Home: 0, End: tabs.length - 1 }[event.key];
+    const visible = tabs.filter(item => !tab(item).hidden), index = visible.indexOf(active);
+    const next = { ArrowRight: index + 1, ArrowLeft: index - 1, Home: 0, End: visible.length - 1 }[event.key];
     if (next === undefined) return;
-    event.preventDefault(); show(tabs[(next + tabs.length) % tabs.length], { focus: true });
+    event.preventDefault(); show(visible[(next + visible.length) % visible.length], { focus: true });
   });
   function badge(name, count, label) {
     const el = $(`#${name}-badge`);
@@ -326,7 +328,7 @@
   const stateText = { pending: 'Venter', running: 'I gang', completed: 'Afsluttet', error: 'Mislykkedes', waiting: 'Venter på dig', allowed: 'Du tillod den', 'allowed-task': 'Du tillod filændringer i projektet for resten af opgaven', auto: 'Tilladt, fordi du tillod filændringer for opgaven', rejected: 'Du afviste den', answered: 'Besvaret', expired: 'Ikke besvaret, fordi opgaven stoppede', stopped: 'Stoppet' };
   function entryState(entry) {
     // Rækker, hvor titlen allerede siger, hvad der skete, får kun en status, når noget er i gang eller fejlede.
-    if (['session', 'checkpoint', 'restore', 'preview', 'stop', 'result', 'error'].includes(entry.kind) && !['running', 'error'].includes(entry.status)) return '';
+    if (['session', 'checkpoint', 'restore', 'preview', 'stop', 'result', 'error', 'plan'].includes(entry.kind) && !['running', 'error'].includes(entry.status)) return '';
     if (['result', 'error'].includes(entry.kind)) return '';
     const parts = [stateText[entry.status] || entry.status || ''];
     if (['approval', 'question'].includes(entry.kind)) {
@@ -431,10 +433,11 @@
     }
     if (event.type === 'run.review' && event.files?.length && active !== 'changes') badge('changes', event.files.length, event.files.length === 1 ? 'ændret fil' : 'ændrede filer');
     if (event.type === 'run.review') action(async () => { await loadCodeList(); linkifyAll(); });
+    if (event.type === 'plan.ready' && active !== 'plan') { $('#plan-badge').hidden = false; $('#plan-badge').replaceChildren(visuallyHidden('ny plan')); }
   });
   // Et nyt projekt starter i Forhåndsvisning med tomme faner.
   async function onProject() {
-    show('preview');
+    show('preview'); $('#plan-badge').hidden = true;
     Object.assign(changes, { data: null, source: '', file: '', stale: true, latest: '' }); badge('changes', 0);
     $('#changes-source').replaceChildren(option('', 'Ingen opgaver endnu')); $('#changes-source').disabled = true;
     $('#changes-overview').hidden = true; $('#changes-diff').hidden = true; $('#changes-empty').hidden = false; $('#changes-notice').hidden = true;

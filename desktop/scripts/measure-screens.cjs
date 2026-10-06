@@ -32,8 +32,9 @@ const server = http.createServer(async (req, res) => {
   const body = JSON.parse(raw); state.requests++;
   const last = [...body.messages].reverse().find(message => message.role === 'user');
   if (!body.tools?.length) return stream(res, { text: 'Mødelokaler' });
+  // Planlægning: først ét spørgsmål med question-værktøjet, derefter planen.
+  if (JSON.stringify(body.system || '').includes('PLANLÆGNING:')) return stream(res, last && isToolResult(last) ? { text: plan } : { tool: 'question', input: { questions: [{ question: 'Hvem skal kunne bruge siden?', header: 'Brugere', options: [{ label: 'Alle medarbejdere (anbefalet)', description: 'Uden login, kun fiktive lokaler' }, { label: 'Kun mødeværter', description: 'Med login' }] }] } });
   if (last && isToolResult(last)) return stream(res, { text: 'Første udkast er bygget.' });
-  if (JSON.stringify(body.system || '').includes('PLANLÆGNING:')) return stream(res, { text: plan });
   state.builds++;
   stream(res, { tool: 'write', input: { filePath: path.join(state.project, 'public/index.html'), content: page(`Udkast ${state.builds}`) } });
 });
@@ -104,8 +105,12 @@ const server = http.createServer(async (req, res) => {
     task = null; await win.click('#model-chip'); await measure('din-ai', '#task-dialog', 'Din AI'); await win.click('[data-close="task-dialog"]'); task = 'Fra idé til første udkast';
     await click('#send'); await win.waitForSelector('#data-dialog[open]'); await measure('foer-du-sender', '#data-dialog', 'Før du sender');
     task = null; await win.locator('#data-dialog details > summary').first().click(); await measure('foer-du-sender-alt', '#data-dialog', 'Før du sender · Se alle oplysninger'); await win.locator('#data-dialog details > summary').first().click(); task = 'Fra idé til første udkast';
-    await click('#accept-send'); await win.waitForSelector('#plan-card:not([hidden])', { timeout: 120000 }); await win.waitForFunction(() => !document.querySelector('#build-plan').disabled);
+    await click('#accept-send');
+    const firstAnswer = win.locator('#approvals .question-card .answer-choice').first(); await firstAnswer.waitFor({ timeout: 120000 });
+    await measure('spoergsmaal', '#approvals', 'Spørgsmål fra AI’en'); await click('#approvals .question-card .answer-choice >> nth=0');
+    await win.waitForSelector('#plan-card:not([hidden])', { timeout: 120000 }); await win.waitForFunction(() => !document.querySelector('#build-plan').disabled);
     await measure('forslag', '#plan-card', 'Forslag: klar til at bygge?');
+    task = null; await win.click('#plan-open'); await measure('plan', '#panel-plan', 'Plan: brief og plan'); await win.click('#tab-preview'); task = 'Fra idé til første udkast';
     await click('#build-plan');
     const allow = win.locator('#approvals button').filter({ hasText: 'Tillad for denne opgave' }).first(); await allow.waitFor({ timeout: 120000 });
     await measure('godkendelse', '#approvals', 'Godkendelse af filændringer');
