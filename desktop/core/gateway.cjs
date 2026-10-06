@@ -7,7 +7,8 @@ async function startGateway(connection, model, key, route, onFailure = () => {},
   const token = randomBytes(32).toString('hex');
   const active = new Set();
   let failed = false, stopped = false;
-  function fail(message) { if (!failed && !stopped) { failed = true; onFailure(message); } }
+  // Fejlen får en type, så appen kan vise den rigtige vej videre, fx nøgle, kvote eller forbindelse.
+  function fail(message, kind, status) { if (!failed && !stopped) { failed = true; onFailure(message, { kind, status: status || null }); } }
   let origin;
   const server = http.createServer(async (req, res) => {
     if (req.headers.host !== new URL(origin).host || (req.headers.authorization !== `Bearer ${token}` && req.headers['x-api-key'] !== token)) { res.writeHead(401); return res.end(); }
@@ -40,14 +41,16 @@ async function startGateway(connection, model, key, route, onFailure = () => {},
         await response.body?.cancel();
         const advice = { 401: 'API-nøglen blev afvist. Kontrollér eller udskift den under AI-forbindelser.', 403: 'Din konto har ikke adgang til modellen. Kontrollér adgangen hos udbyderen.', 402: 'Udbyderen afviste kaldet på grund af saldo eller kvote. Kontrollér kontoen; appen vælger ikke en betalt erstatning.', 404: 'Modellen eller adressen blev ikke fundet. Hent modellisten igen, og kontrollér forbindelsen.', 429: 'Udbyderens forbrugsgrænse er nået. Prøv igen, når kvoten er tilgængelig.' }[response.status] || 'Kontrollér forbindelsen og modelvalget, og prøv igen.';
         const message = `Modelserveren afviste kaldet (HTTP ${response.status}). ${advice}`;
-        fail(message);
+        const kind = { 401: 'key', 403: 'access', 402: 'quota', 404: 'notfound', 429: 'limit' }[response.status] || (response.status >= 500 ? 'server' : 'rejected');
+        fail(message, kind, response.status);
         res.writeHead(response.status, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: { message, type: 'api_error' } }));
       }
       res.writeHead(200, { 'content-type': response.headers.get('content-type') || 'application/json', 'cache-control': 'no-store' });
       for await (const chunk of response.body) { touch(); if (res.destroyed) break; res.write(chunk); }
       res.end();
     } catch {
-      fail('Modelforbindelsen blev afbrudt. Din besked er bevaret. Kontrollér forbindelsen, og prøv igen.');
+      if (idle.signal.aborted) fail(`Modellen svarede ikke i ${idleLimit >= 60_000 ? `${Math.round(idleLimit / 60_000)} min` : `${Math.max(1, Math.round(idleLimit / 1000))} s`}, så forbindelsen blev afbrudt. Din besked er bevaret.`, 'idle');
+      else fail('Modelforbindelsen blev afbrudt. Din besked er bevaret. Kontrollér forbindelsen, og prøv igen.', 'network');
       // En afbrudt strøm må ikke ligne et færdigt modelsvar for agentmotoren.
       if (res.headersSent) { res.destroy(); return; }
       if (!res.headersSent) res.writeHead(502, { 'content-type': 'application/json' });

@@ -38,7 +38,8 @@
     "measure:screens": "node scripts/measure-screens.cjs",
     "test:integrations": "node scripts/verify-integrations.cjs",
     "test:workspace": "node scripts/verify-workspace.cjs",
-    "test:planning": "node scripts/verify-planning.cjs"
+    "test:planning": "node scripts/verify-planning.cjs",
+    "test:approvals": "node scripts/verify-approvals.cjs"
   },
   "engines": {
     "node": ">=22.12.0"

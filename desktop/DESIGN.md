@@ -52,6 +52,10 @@ Tæl de synlige valg, før en skærm kaldes færdig, og gennemfør forløbet i a
   - "Se alle oplysninger" er korte rækker, og lange tekster som appens vejledning og planen har hver sin fold.
   - Resuméet vises igen, når modtager, model, pris, vilkår eller delt materiale ændrer sig, ikke ved skift fra plan til bygning.
 - Første filændring i en opgave spørger, om AI'en må ændre filer i projektet. Filen vises med sin sti i projektet. "Tillad for denne opgave" gælder kun projektmappen og kun til opgaven slutter; kommandoer, web og filer udenfor spørger hver gang.
+  - Et godkendelseskort siger Hvad, Hvorfor og Hvis du tillader i tre korte rækker. Ændringen og de tekniske detaljer er foldet sammen. AI'ens begrundelse er markeret som AI'ens, og et gæt om en kommando siger, at det er et gæt.
+  - Afvis stopper opgaven. Afvis med en besked er et link under knapperne og lader AI'en fortsætte med brugerens besked.
+- Én status: overskriften over samtalen siger kort, hvor opgaven er, og linjen under siger, hvad der sker, eller hvad AI'en venter på. Efter Stop, afvisning og fejl står vejen videre på resultatkortet; der er ingen ekstra advarselsboks eller rød linje ved siden af.
+- Resultatkortets Kontroller viser kun faktiske resultater med tegn og tekst: forhåndsvisningens indlæsning og konsolfejl og kommandoernes afslutningskoder. Det, Aura ikke har kontrolleret, siges.
 - Planlægning fører til et konkret forslag. Brugeren vælger at bygge; efter bygning kan man fortsætte med rettelser.
   - AI'ens spørgsmål vises ét ad gangen som store svarkort, højst fire synlige. AI'ens anbefaling står først og er markeret som AI'ens, ikke Auras. Eget svar, Tilbage og Spring over er links.
   - Projektbriefen indeholder kun brugerens egne ord: idé, ønsker og svar. Hver linje siger, hvor den kommer fra, og kan rettes.

@@ -58,7 +58,7 @@ test('gatewayen lader en langsom strøm køre færdig, men stopper stilstand', a
  assert.match(text, /"del":4/); assert.match(text, /\[DONE\]/); assert.deepEqual(failures, []);
  stall = true;
  await assert.rejects((await send()).text());
- assert.match(failures[0], /afbrudt/);
+ assert.match(failures[0], /svarede ikke i 1 s, så forbindelsen blev afbrudt/);
 });
 test('Zens vilkår vises for hver model', () => {
  const zen = { kind: 'zen', name: 'Zen', baseURL: 'https://opencode.ai/zen/v1' };

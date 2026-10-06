@@ -71,7 +71,7 @@ Tekniske aktiviteter står under fanen **Aktivitet**; samtalen viser én linje p
 
 Farver, afstande, typografi og principper for synlige valg er beskrevet i [designstandarden](DESIGN.md).
 
-Fejl i modelkatalog eller modelkald vises i arbejdsområdet med **Gennemgå AI-forbindelse** og **Fortsæt uden AI**. Projekt, preview og beskedkladde bevares. Ingen automatisk gentagelse eller baggrundskontrol. GitHub er valgfri sikkerhedskopi og samarbejde; manglende adgang blokerer kun publiceringen. Manglende Git blokerer ikke oprettelse eller preview.
+Fejl i modelkataloget før afsendelse vises i arbejdsområdet med **Gennemgå AI-forbindelse** og **Fortsæt uden AI**. En fejl under en opgave står ét sted: på resultatkortet med en forklaring efter fejlens type og den handling, der kan hjælpe, fx **Gennemgå AI-forbindelse** ved en afvist nøgle, **Åbn kontoen hos udbyderen** ved opbrugt kvote og **Prøv igen** ved en afbrudt forbindelse. Udbyderens egen besked står under **Se detaljer**. Projekt, preview og beskedkladde bevares. Ingen automatisk gentagelse eller baggrundskontrol. GitHub er valgfri sikkerhedskopi og samarbejde; manglende adgang blokerer kun publiceringen. Manglende Git blokerer ikke oprettelse eller preview.
 
 ## Brugerrejse
 
@@ -171,6 +171,7 @@ Et bekræftet push betyder, at versionen blev set på serveren ved kontrollen. S
 - `core/diff.cjs`, `core/change-review.cjs`: linje-diff, resumé og tilskrivning af ændringer pr. opgave og for hele samtalen.
 - `core/project-files.cjs`: skrivebeskyttet fillæsning og filhenvisninger med appens filbeskyttelse.
 - `core/activity.cjs`: aktivitetsloggen fra agentens hændelser, godkendelser og forhåndsvisningens server.
+- `ui/approval-view.js`, `ui/approvals.js`: godkendelseskort, kommandogæt, fejltyper og kommandoresultater.
 - `core/brief.cjs`, `ui/plan-view.js`, `ui/planning.js`: projektbriefen, planens afsnit, rettelser af planen og AI'ens spørgsmål ét ad gangen.
 - `main.cjs`, `preload.cjs`, `ui/`: validerede native handlinger, begrænset IPC-bro og brugerflade uden Node-adgang.
 
@@ -217,6 +218,7 @@ npm run test:frameworks
 npm run test:hosting
 npm run test:workspace
 npm run test:planning
+npm run test:approvals
 ```
 
 Git-, publicerings- og chattestene opretter rigtige commits med syntetiske filer og testidentitet i nye, isolerede midlertidige repositories. Publiceringstestene pusher kun mellem nye lokale testrepositories. GitHub-API’et simuleres i testen; ingen eksterne repositories oprettes. De committer eller pusher ikke dette projekt. Electron-testen bevarer den normale hjemmemappe, så macOS safeStorage kan bruge den eksisterende nøglering; testidentiteten sættes kun lokalt i testrepositoryet. Nøgleringen skal aldrig nulstilles som led i testen.
@@ -356,9 +358,9 @@ AI’en bliver bedt om kun at stille nødvendige spørgsmål og foreslå en kort
 
 Plan og afklaringsbeskeder medsendes ved overgangen til en ny byggesession og vises under Data og vilkår. Almindelige opfølgende afklaringer kræver ikke gentaget samtykke, når model, regler, referencer og vilkår er uændrede. Plan og afklaringsbeskeder gemmes lokalt og genåbnes med projektet. En afbrudt opgave genstartes ikke, og dens plan kan ikke bruges til bygning. Skift af model eller forbindelse kan sende den viste afklaring til den nye modtager efter datagennemgang.
 
-Godkendelseskort forklarer på dansk, hvad en filændring, kommando, websidelæsning eller adgang uden for projektet indebærer. Målet vises altid; rå værktøjsdata ligger under Tekniske detaljer. Eventuel begrundelse fra agenten markeres som agentens egen. Forklaringerne er ikke en analyse af, om en konkret kommando er sikker.
+Godkendelseskort siger **Hvad** (filen med antal tilføjede og fjernede linjer, kommandoen med mappe, eller hjemmesidens domæne), **Hvorfor** (AI'ens egen begrundelse, markeret som AI'ens) og **Hvis du tillader** (konsekvensen). En filændring kan ses under **Se ændringen**, og rå værktøjsdata ligger under **Tekniske detaljer**. For kommandoer gætter Aura i almindeligt dansk, hvad de gør, fx "Installerer pakker fra internettet"; kortet siger, at det er et gæt ud fra teksten, ikke en kontrol, og en kommando har ingen fremhævet Tillad-knap. **Afvis** stopper opgaven, som OpenCode gør ved en afvisning. **Afvis med en besked** sender beskeden til AI'en som rettelse, og opgaven fortsætter. Mens AI'en venter, siger statuslinjen under samtalens overskrift "Venter på dig: …" med **Vis**, der fører til kortet. Ét sted viser status: overskriften siger kort Arbejder, Venter på dig, Klar, Stoppet eller Fejl, og linjen under siger, hvad der sker.
 
-Afslutningen viser ændrede tekstfiler registreret i den enkelte opgave og status for eventuelle shellværktøjer. En afsluttet kommando er ikke automatisk en bestået test. AI’en bliver desuden bedt om at beskrive ændringer, faktisk udførte kontroller og manuelle prøvetrin. Appen markerer eksplicit, når ingen kommandoer er kørt, og tilbyder ændringsgennemgang og den eksisterende **Gem version**-dialog. Oversigten kan omfatte samtidige manuelle ændringer og udelader store/private/binære filer efter de eksisterende grænser. Den samlede Ændringer-dialog dækker stadig fra første besked i arbejdsområdet.
+Afslutningen viser ændrede tekstfiler registreret i den enkelte opgave og **Kontroller** med faktiske resultater: Aura genindlæser forhåndsvisningen og siger, om siden blev vist, og om den skrev fejl i konsollen, med fejlene under **Se fejlene**; hver kommando står med sin afslutningskode og de sidste linjer af output. Aura klikker ikke i siden og afprøver ingen funktioner, så kontrollen er ikke et bevis for, at appen virker. Efter Stop siger kortet, hvad AI'en nåede, med **Fortryd det, den nåede**, når det er gemt som en version, og **Send igen**. Efter en afvisning siger kortet, hvad der blev afvist, med **Skriv, hvad AI'en skal gøre i stedet**. En afsluttet kommando er ikke automatisk en bestået test. AI’en bliver desuden bedt om at beskrive ændringer, faktisk udførte kontroller og manuelle prøvetrin. Appen markerer eksplicit, når ingen kommandoer er kørt, og tilbyder ændringsgennemgang og den eksisterende **Gem version**-dialog. Oversigten kan omfatte samtidige manuelle ændringer og udelader store/private/binære filer efter de eksisterende grænser. Den samlede Ændringer-dialog dækker stadig fra første besked i arbejdsområdet.
 
 **Verifikation:** 41 automatiske tests består. Den rigtige OpenCode-motor er kørt mod en kontrolleret lokal modelserver: et bevidst skriveforsøg under planlægning blev afvist uden filændring; en forældet plan blev afvist; den godkendte plan fulgte med til en rigtig filændring og preview. Electron-forløbet omfatter modelkort, opfølgende afklaring, eksplicit bygning, datagennemgang, godkendelse, ændringsoversigt og Git-version i et isoleret testrepository. Projekt-/preview- og forbindelsestestene består også på macOS. Ingen ny ekstern modelafprøvning, Windows-kørsel, brugertest med kommunale medarbejdere eller cloududgivelse er udført i denne milepæl.
 

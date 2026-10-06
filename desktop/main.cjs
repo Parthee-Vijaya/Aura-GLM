@@ -390,6 +390,22 @@ handle('preview:attach', value => exclusive(async () => {
   return externalPreview;
 }));
 handle('preview:runtime', () => devServer.status());
+// Kontrol af forhåndsvisningen efter en opgave: blev siden vist, og skrev den fejl i konsollen? Aura klikker ikke i siden.
+const previewLog = { documents: [], errors: [] };
+const previewOrigin = () => preview?.url || (externalPreview ? new URL(externalPreview).origin + '/' : null);
+function fromPreview(url) { const origin = previewOrigin(); return Boolean(origin && typeof url === 'string' && url.startsWith(origin)); }
+function remember(list, entry) { list.push(entry); while (list.length > 50) list.shift(); }
+handle('preview:check', input => {
+  if (!project) throw new Error('Åbn et projekt først.');
+  const since = Number(input?.since) || 0, origin = previewOrigin();
+  if (!origin) return { preview: false };
+  const documents = previewLog.documents.filter(item => item.at >= since), errors = previewLog.errors.filter(item => item.at >= since);
+  const last = documents.at(-1) || null;
+  const result = { preview: true, loaded: Boolean(last), status: last?.status || null, errors: errors.slice(0, 5).map(({ message, source, line }) => ({ message, source, line })), errorCount: errors.length };
+  const shown = !last ? 'siden svarede ikke' : last.status >= 400 ? `siden svarede med fejl ${last.status}` : 'siden blev vist';
+  workbench.log({ kind: 'check', title: 'Kontrol af forhåndsvisningen', detail: `${shown[0].toUpperCase()}${shown.slice(1)} · ${errors.length ? `${errors.length} ${errors.length === 1 ? 'fejl' : 'fejl'} i siden: ${errors[0].message}` : 'ingen fejl i konsollen'}. Aura har ikke klikket eller afprøvet funktioner.`, status: !last || last.status >= 400 || errors.length ? 'error' : 'completed' });
+  return result;
+});
 handle('preview:prepare', value => exclusive(async () => {
   requireIdleProject();
   return devServer.prepare(value?.action, value?.scripts === true);
@@ -458,7 +474,7 @@ app.whenReady().then(() => {
   protocol.handle('harness', async request => {
     const url = new URL(request.url);
     const name = url.pathname.slice(1);
-    if (url.host !== 'app' || !['index.html', 'app.js', 'workspace.js', 'plan-view.js', 'planning.js', 'model-advice.js', 'server.js', 'viewport.js', 'hosting.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name)) return new Response('Ikke fundet', { status: 404 });
+    if (url.host !== 'app' || !['index.html', 'app.js', 'workspace.js', 'plan-view.js', 'planning.js', 'approval-view.js', 'approvals.js', 'model-advice.js', 'server.js', 'viewport.js', 'hosting.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name)) return new Response('Ikke fundet', { status: 404 });
     return new Response(await fs.readFile(path.join(__dirname, 'ui', name)), { headers: { 'Content-Type': name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : 'text/html; charset=utf-8' } });
   });
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
@@ -469,6 +485,9 @@ app.whenReady().then(() => {
     if (externalPreview) { const requested = new URL(details.url); const target = new URL(externalPreview); devAllowed = requested.host === target.host && [target.protocol, target.protocol === 'https:' ? 'wss:' : 'ws:'].includes(requested.protocol); }
     const allowed = details.url.startsWith('harness://app/') || (preview && details.url.startsWith(preview.url)) || devAllowed;
     callback({ cancel: !allowed });
+  });
+  session.defaultSession.webRequest.onCompleted(details => {
+    if (details.resourceType === 'subFrame' && fromPreview(details.url)) remember(previewLog.documents, { at: Date.now(), status: details.statusCode, url: details.url });
   });
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     const headers = { ...details.responseHeaders };
@@ -482,6 +501,12 @@ app.whenReady().then(() => {
   function createWindow() {
     window = new BrowserWindow({ width: 1440, height: 940, minWidth: 980, minHeight: 720, backgroundColor: '#F8FAFC', title: DISPLAY_NAME, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, webviewTag: false } });
     window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    // Fejl, som forhåndsvisningens side selv skriver i konsollen. Kun previewets ramme; appens egne meddelelser tælles ikke.
+    window.webContents.on('console-message', event => {
+      if (event.level !== 'error' || !fromPreview(event.frame?.url)) return;
+      const clean = require('./core/dev-server.cjs').cleanOutput;
+      remember(previewLog.errors, { at: Date.now(), message: clean(String(event.message || '')).slice(0, 300), source: String(event.sourceId || '').replace(previewOrigin() || '', ''), line: event.lineNumber || null });
+    });
     window.webContents.on('will-navigate', event => event.preventDefault());
     window.webContents.on('will-attach-webview', event => event.preventDefault());
     const created = window;

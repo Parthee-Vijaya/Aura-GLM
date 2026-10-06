@@ -473,23 +473,41 @@ async function sendNow(data, text) {
   $('#model-options').open = false; $('#task-dialog').close(); activityGroup = null; $('#connection-warning').hidden = true; $('#data-dialog').close(); setRunning(true, 'Starter agent …');
   if ($('#work-mode').value === 'free') { activePlan = null; $('#plan-card').hidden = true; }
   $('#run-review').hidden = true; if ($('#work-mode').value === 'build') $('#plan-card').hidden = true; if ($('#work-mode').value === 'plan') { activePlan = null; $('#plan-card').hidden = true; }
-  lastSentText = text; lastCheckpoint = null; rejectedThisRun = false; appendMessage(text + (data.fileReferenceText || ''), 'user'); $('#prompt').value = ''; await saveChatDraft();
+  lastSentText = text; lastCheckpoint = null; rejectedThisRun = false; lastRejection = null; appendMessage(text + (data.fileReferenceText || ''), 'user'); $('#prompt').value = ''; await saveChatDraft();
   try { await call('send', { text, fingerprint: data.fingerprint }); acceptedFingerprint = reviewKey(data); window.workspace?.clearReferences(); }
-  catch (error) { $('#prompt').value = text; await saveChatDraft(); setRunning(false, 'Fejl'); appendMessage(error.message, 'error'); connectionFailed(error.message); throw error; }
+  catch (error) { $('#prompt').value = text; await saveChatDraft(); setRunning(false, 'Fejl'); renderRunReview({ status: 'error', files: [], tools: [], failure: { kind: 'start', message: error.message } }); }
 }
 // Under en opgave viser statusfeltet, hvor længe den har kørt, så en lang tænkepause ikke ligner, at appen er gået i stå.
 let runTimer = null, runStartedAt = 0;
 const elapsedText = ms => { const seconds = Math.floor(ms / 1000); return seconds < 60 ? `${seconds} s` : `${Math.floor(seconds / 60)} min ${seconds % 60} s`; };
+// Én status for opgaven. Overskriften i samtalen siger kort, hvor opgaven er; linjen under siger, hvad der sker, og
+// om AI'en venter på brugeren. Efter Stop og fejl står vejen videre på resultatkortet, ikke i flere bokse.
+let statusDetail = '', waitingFor = [], runLabel = '';
+function setStatusDetail(text) { statusDetail = text; renderStatus(); }
+function waitFor(id, title, element) { waitingFor = [...waitingFor.filter(item => item.id !== id), { id, title, element }]; renderStatus(); }
+function doneWaiting(id) { waitingFor = waitingFor.filter(item => item.id !== id); renderStatus(); }
+function renderStatus() {
+  const waiting = running && waitingFor.length > 0;
+  $('#agent-activity').hidden = !running; $('#agent-activity').classList.toggle('is-waiting', waiting);
+  $('#agent-activity-text').textContent = waiting ? `Venter på dig: ${waitingFor[0].title}${waitingFor.length > 1 ? ` Og ${waitingFor.length - 1} mere.` : ''}` : statusDetail;
+  $('#agent-activity-jump').hidden = !waiting;
+  if (running) $('#run-status').textContent = waiting ? 'Venter på dig' : `${runLabel} ${elapsedText(Date.now() - runStartedAt)}`;
+}
+$('#agent-activity-jump').onclick = () => { const item = waitingFor[0]; if (!item?.element?.isConnected) return; item.element.scrollIntoView({ block: 'nearest' }); item.element.querySelector('button, textarea, input')?.focus(); };
 function setRunning(value, status) {
   if (value && !running) runStartedAt = Date.now();
-  clearInterval(runTimer); runTimer = value ? setInterval(() => { $('#run-status').textContent = `${status} ${elapsedText(Date.now() - runStartedAt)}`; }, 1000) : null;
-  running = value; $('#agent-activity').hidden = !value;
+  if (!value) waitingFor = [];
+  clearInterval(runTimer); runTimer = value ? setInterval(renderStatus, 1000) : null;
+  running = value; runLabel = status;
   // Den tomme forhåndsvisning ånder roligt, mens AI'en arbejder. Animationen slås fra ved reduceret bevægelse.
-  $('#preview-empty').classList.toggle('is-working', value); if (value) $('#agent-activity').textContent = $('#work-mode').value === 'plan' ? 'AI’en udarbejder et forslag. Projektfilerne kan ikke ændres i denne arbejdsmåde.' : 'AI’en arbejder på din opgave. Du kan stoppe den herunder.'; $('#run-status').textContent = status; $('#send').disabled = value; $('#stop').hidden = !value;
+  $('#preview-empty').classList.toggle('is-working', value);
+  if (value) statusDetail = status.startsWith('Starter') ? 'Aura starter AI’en …' : $('#work-mode').value === 'plan' ? 'AI’en udarbejder et forslag. Projektfilerne kan ikke ændres i denne arbejdsmåde.' : 'AI’en arbejder på din opgave. Du kan stoppe den herunder.';
+  $('#run-status').textContent = status; $('#send').disabled = value; $('#stop').hidden = !value;
   for (const selector of ['#model-chip', '#new-conversation', '#work-mode', '#build-plan', '#revise-plan', '#start-idea', '#model-load', '#model-search', '#connection-select', '#model-select', '#route-select', '#new', '#open', '#connections-button', '#skills-button', '#features-button', '#git-button', '#publish-button', '#setup-hosting', '#deploy-button', '#intro-button']) $(selector).disabled = value;
   for (const button of document.querySelectorAll('#model-shortlist button, #recent-projects button')) button.disabled = value;
   $('#include-history').disabled = value;
   setupControls();
+  renderStatus();
   if (!value && recovery) { const reason = recovery; recovery = ''; showConnectionWarning(reason); }
 }
 function showSkill() {
@@ -542,37 +560,24 @@ window.harness.onEvent(event => {
     partTypes.set(part.id, part.type);
     if (roles.get(part.messageID) === 'user') return;
     if (part.type === 'text') showAssistant(part.id, part.text);
-    if (part.type === 'tool' && running && ['pending', 'running'].includes(part.state?.status)) $('#agent-activity').textContent = `${toolLabels[part.tool] || 'Værktøjshandling'} · ${toolStatuses[part.state.status]}`;
+    if (part.type === 'tool' && running && ['pending', 'running'].includes(part.state?.status)) setStatusDetail(`${toolLabels[part.tool] || 'Værktøjshandling'} · ${toolStatuses[part.state.status]}`);
     // Når et værktøj er færdigt, tænker modellen over næste skridt. Banneret må ikke blive stående på det afsluttede værktøj.
-    if (part.type === 'tool' && running && ['completed', 'error'].includes(part.state?.status)) $('#agent-activity').textContent = 'AI’en tænker over næste skridt …';
-    if (part.type === 'text' && running) $('#agent-activity').textContent = 'AI’en skriver …';
+    if (part.type === 'tool' && running && ['completed', 'error'].includes(part.state?.status)) setStatusDetail('AI’en tænker over næste skridt …');
+    if (part.type === 'text' && running) setStatusDetail('AI’en skriver …');
     if (part.type === 'tool') noteTool(part.id);
   }
   if (event.type === 'message.part.delta' && p.field === 'text' && partTypes.get(p.partID) === 'text' && roles.get(p.messageID) !== 'user') showAssistant(p.partID, (assistantText.get(p.partID) || '') + p.delta);
   if (event.type === 'permission.auto') return;
-  if (event.type === 'permission.asked') {
-    $('#agent-activity').textContent = 'Venter på din godkendelse. Gennemgå handlingen i samtalen.';
-    const box = node('section', undefined, 'approval'); box.dataset.id = p.id;
-    const target = approvalTarget(p);
-    const explanation = approvalExplanation(p, target);
-    box.append(node('strong', explanation.title), node('p', explanation.effect));
-    if (target.text) { const where = node('p', target.text, 'action-target'); box.append(where); window.workspace?.linkify(where); }
-    if (p.metadata?.description) box.append(node('p', `AI’ens begrundelse: ${p.metadata.description}`, 'hint'));
-    const details = node('details'); details.append(node('summary', 'Tekniske detaljer'), node('pre', JSON.stringify({ paths: p.patterns, details: p.metadata }, null, 2))); box.append(details);
-    // Filændringer i projektet kan tillades for resten af opgaven. Alt andet spørger hver gang.
-    const choices = target.projectFile ? [['Afvis', false], ['Kun denne fil', true], ['Tillad for denne opgave', true, 'task']] : [['Afvis', false], ['Tillad én gang', true]];
-    const row = node('div', undefined, 'approval-actions');
-    for (const [label, allow, scope] of choices) {
-      const button = node('button', label, scope ? 'primary' : undefined); button.type = 'button';
-      button.onclick = () => action(async () => { await call('reply', { id: p.id, allow, scope }); if (!allow) rejectedThisRun = true; box.remove(); $('#agent-activity').textContent = !allow ? 'Handlingen er afvist. Afventer AI’en …' : scope ? 'Filændringer i projektet er tilladt, indtil opgaven er færdig.' : 'Godkendelsen er sendt. Afventer AI’en …'; });
-      row.append(button);
-    }
-    box.append(row); $('#approvals').append(box); box.scrollIntoView({ block: 'nearest' });
-  }
-  if (event.type === 'permission.replied') for (const box of $('#approvals').children) if (box.dataset.id === p.requestID) box.remove();
+  // Godkendelser: se approvals.js. Fokus bliver, hvor brugeren er; statuslinjen siger, at AI'en venter.
+  if (event.type === 'permission.asked') window.approvals.show(p);
   // AI'ens spørgsmål vises ét ad gangen med klikbare svar; se planning.js. Fokus bliver, hvor brugeren er.
-  if (event.type === 'question.asked') { $('#agent-activity').textContent = 'AI’en har et spørgsmål til dig. Svar i samtalen.'; window.planning.showQuestion(p); }
-  if (['engine.error', 'session.error'].includes(event.type)) { if (!$('#prompt').value) $('#prompt').value = lastSentText; const reason = event.message || p.error?.data?.message || p.error?.message || 'Modelkaldet mislykkedes. Kontrollér forbindelsen og kvoten.'; appendMessage(reason, 'error'); connectionFailed(reason); }
+  if (event.type === 'question.asked') window.planning.showQuestion(p);
+  // En fejl under en opgave vises ét sted: på resultatkortet med en vej videre. Beskeden står klar i skrivefeltet.
+  if (['engine.error', 'session.error'].includes(event.type)) {
+    if (!$('#prompt').value) $('#prompt').value = lastSentText;
+    if (['key', 'access', 'rejected', 'notfound'].includes(event.failure?.kind)) { verifiedConnection = ''; ++setupGeneration; acceptedFingerprint = null; pendingSend = null; setupControls(); }
+    if (running) setStatusDetail('Der opstod en fejl. AI’en stopper.');
+  }
 });
 $('#color').addEventListener('input', event => { $('#color-value').value = event.target.value; });
 for (const kind of ['logo', 'reference']) $(`#${kind}`).onclick = () => action(async () => showAssets(await call('chooseAssets', kind)));
@@ -1294,71 +1299,131 @@ $('#build-plan').onclick = () => {
   $('#prompt').value = 'Byg første udkast efter den plan, jeg har gennemgået. Afslut med konkrete ting, jeg skal prøve i forhåndsvisningen.';
   $('#chat-form').requestSubmit();
 };
-// Målet vises som en sti i projektet, når det er muligt. OpenCode regner mønstre ud fra Git-roden eller fra computerens rod.
-function approvalTarget(p) {
-  const file = typeof p.metadata?.filepath === 'string' ? p.metadata.filepath : '';
-  const root = current?.root || '';
-  if (p.permission === 'edit' && file && root && (file.startsWith(root + '/') || file.startsWith(root + '\\'))) return { projectFile: true, text: file.slice(root.length + 1).replaceAll('\\', '/') };
-  if (p.permission === 'bash') return { text: p.metadata?.command || (p.patterns || []).join('\n') };
-  return { text: (p.patterns || []).join('\n') };
+// Resultatkortet: hvad der skete, hvad der er ændret, de faktiske kontroller og én vej videre.
+// En plain afvisning stopper opgaven i OpenCode; kortet siger det i stedet for at give modellen skylden.
+let rejectedThisRun = false, lastRejection = null;
+const reviewButton = (text, onClick, primary = false) => { const button = node('button', text, primary ? 'primary' : undefined); button.type = 'button'; button.onclick = onClick; return button; };
+const retrySend = () => { if (running) return; if (!$('#prompt').value.trim()) $('#prompt').value = lastSentText; $('#send').click(); };
+function reviewFiles(box, result) {
+  if (!result.files?.length) return;
+  if (!result.task) return;
+  // Hver fil åbner sin linje-diff under Ændringer. Brugeren vælger selv at skifte fane.
+  const list = node('ul', undefined, 'review-files');
+  for (const file of [...result.files].sort((a, b) => a.localeCompare(b, 'da')).slice(0, 6)) { const item = node('li'), link = node('button', file, 'file-ref'); link.type = 'button'; link.dataset.path = file; link.dataset.change = result.task; link.title = `Se ændringerne i ${file}`; item.append(link); list.append(item); }
+  if (result.files.length > 6) list.append(node('li', `og ${result.files.length - 6} flere`, 'hint'));
+  box.append(list);
 }
-function approvalExplanation(p, target) {
-  const explanations = {
-    edit: target.projectFile ? ['Må AI’en ændre filer i projektet?', 'Vælg Tillad for denne opgave, så spørger vi ikke igen om filer i projektmappen, før opgaven er færdig. Du kan se alle ændringer bagefter under Ændringer.'] : ['Må AI’en ændre en fil uden for projektet?', 'Filen ligger ikke i projektmappen. Tillad kun, hvis du ved, hvorfor den skal ændres.'],
-    bash: ['Må AI’en køre en kommando?', 'En kommando kan ændre eller slette filer, installere programmer og kontakte andre tjenester med dine rettigheder. Tillad kun, hvis du forstår, hvad den gør.'],
-    webfetch: ['Må AI’en åbne en hjemmeside?', 'Hjemmesiden får besked om besøget, og indholdet sendes videre til din AI.'],
-    external_directory: ['Må AI’en se en mappe uden for projektet?', 'Mappen kan indeholde materiale, du ikke vil dele med din AI.'],
-    grep: ['Må AI’en søge i projektets filer?', 'Det, AI’en finder, sendes videre til din AI.']
-  };
-  const [title, effect] = explanations[p.permission] || ['Gennemgå denne handling', 'Læs de tekniske detaljer, før du tillader den.'];
-  return { title, effect };
+const filesText = (count, prefix) => count ? `${prefix} ${count} ${count === 1 ? 'fil' : 'filer'}:` : '';
+function undoButton(label, title) {
+  const checkpoint = lastCheckpoint, task = shortLabel(lastSentText);
+  return reviewButton(label, () => action(() => reviewRestoration({ commit: checkpoint.previous }, { title, confirm: title, label: `Fortrudt: ${task}` })));
 }
-// Har brugeren afvist en handling, stopper motoren opgaven. Resultatkortet skal sige det i stedet for at give modellen skylden.
-let rejectedThisRun = false;
+// Kontroller med faktiske resultater: forhåndsvisningen, som Aura selv genindlæser, og de kommandoer, AI'en kørte.
+function renderChecks(box, result) {
+  const commands = result.tools.filter(tool => tool.tool === 'bash'), failed = result.tools.filter(tool => tool.status === 'error' && tool.tool !== 'bash');
+  if (!result.files.length && !commands.length && !failed.length) return;
+  const section = node('section', undefined, 'review-checks'); section.append(node('h4', 'Kontroller'));
+  const list = node('ul', undefined, 'check-list');
+  if (result.files.length && result.status !== 'error') { const item = node('li', 'Forhåndsvisning: Aura kontrollerer siden …', 'check-pending'); list.append(item); runPreviewCheck(item); }
+  for (const tool of commands) {
+    const outcome = window.ApprovalView.commandResult(tool), item = node('li', undefined, outcome.ok === false ? 'check-failed' : outcome.ok ? 'check-ok' : 'check-unknown');
+    item.append('Kommando ', node('code', tool.title || 'ukendt'), `: ${outcome.text}.`);
+    if (tool.output) { const fold = node('details'); fold.append(node('summary', 'Sidste linjer af output'), node('pre', tool.output)); item.append(fold); }
+    list.append(item);
+  }
+  if (!commands.length && result.status === 'idle') list.append(node('li', 'AI’en kørte ingen kommandoer, så ingen tests er kørt.', 'check-unknown'));
+  for (const tool of failed) list.append(node('li', `${toolLabels[tool.tool] || tool.tool} mislykkedes${tool.error ? `: ${tool.error}` : '.'}`, 'check-failed'));
+  section.append(list, node('p', 'Prøv selv det vigtigste i forhåndsvisningen, også på en smal skærm. AI’ens beskrivelse er ikke et testbevis.', 'hint'));
+  box.append(section);
+}
+async function runPreviewCheck(item) {
+  const root = current?.root, url = current?.previewURL;
+  const done = (text, kind) => { if (current?.root !== root) return; item.className = kind; item.textContent = text; };
+  if (!url) return done('Forhåndsvisning: kører ikke, så Aura har ikke kontrolleret siden. Start den under Forhåndsvisning.', 'check-unknown');
+  const since = Date.now();
+  try { revision = await call('revision') || revision; } catch {}
+  // Siden genindlæses én gang, og Aura venter lidt på fejl, der kommer efter indlæsningen. Aura klikker ikke i siden.
+  await new Promise(resolve => { const frame = $('#preview'); let timer; const finish = () => { clearTimeout(timer); frame.removeEventListener('load', finish); resolve(); }; frame.addEventListener('load', finish); timer = setTimeout(finish, 10000); frame.src = url; });
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  if (current?.root !== root) return;
+  let check; try { check = await call('previewCheck', { since }); } catch { return done('Forhåndsvisning: kunne ikke kontrolleres.', 'check-unknown'); }
+  if (!check.preview) return done('Forhåndsvisning: kører ikke, så Aura har ikke kontrolleret siden.', 'check-unknown');
+  if (!check.loaded) return done('Forhåndsvisning: siden svarede ikke inden for 10 sekunder.', 'check-failed');
+  if (check.status >= 400) return done(`Forhåndsvisning: siden svarede med fejl ${check.status}.`, 'check-failed');
+  if (!check.errorCount) return done('Forhåndsvisning: siden blev vist uden fejl i konsollen.', 'check-ok');
+  done(`Forhåndsvisning: siden blev vist, men skrev ${check.errorCount} ${check.errorCount === 1 ? 'fejl' : 'fejl'} i konsollen.`, 'check-failed');
+  const fold = node('details'); fold.append(node('summary', 'Se fejlene'), node('pre', check.errors.map(error => `${error.message}${error.source || error.line ? ` (${error.source || 'siden'}${error.line ? `:${error.line}` : ''})` : ''}`).join('\n')));
+  item.append(fold);
+}
 function renderRunReview(result) {
   const box = $('#run-review'); box.replaceChildren();
-  // En opgave, der slutter uden svar og uden ændringer, må ikke ligne et resultat. Beskeden siger, hvad der skete, og giver en vej videre.
-  if (result.status === 'idle' && !result.files.length && result.answered === false) {
-    box.hidden = false; box.append(node('h3', 'AI’en stoppede uden et resultat'), node('p', result.finish === 'length'
+  result = { files: [], tools: [], ...result };
+  const show = () => { box.hidden = false; requestAnimationFrame(() => box.scrollIntoView({ block: 'nearest' })); };
+  const saved = result.files.length && lastCheckpoint?.status === 'saved';
+  if (result.unavailable) { show(); box.append(node('h3', 'Ændringerne kunne ikke læses'), node('p', 'Gennemgå filerne under Kode, før du fortsætter.')); renderChecks(box, { ...result, files: [] }); return; }
+  if (result.status === 'error') {
+    // Fejl: typen afgør forklaringen og handlingen. Den rå besked står under Se detaljer.
+    const info = window.ApprovalView.failureText(result.failure?.kind); show();
+    box.append(node('h3', info.title), node('p', `${info.text} Din besked står klar i skrivefeltet.`));
+    if (result.files.length) { box.append(node('p', filesText(result.files.length, 'AI’en nåede at ændre'))); reviewFiles(box, result); }
+    const actions = node('div', undefined, 'review-actions');
+    const kind = state?.connections.find(c => c.id === $('#connection-select').value)?.kind;
+    const pages = { anthropic: 'billing', mistral: 'billing', corti: 'console', openrouter: 'start', zen: 'start' };
+    if (info.action === 'connection') actions.append(reviewButton('Gennemgå AI-forbindelse', () => showSetup(info.title), true));
+    if (info.action === 'account' && pages[kind]) actions.append(reviewButton('Åbn kontoen hos udbyderen', () => action(() => call('providerAccount', { kind, page: pages[kind] })), true));
+    else if (info.action === 'account') actions.append(reviewButton('Gennemgå AI-forbindelse', () => showSetup(info.title), true));
+    if (info.action === 'model') actions.append(reviewButton('Vælg en anden model', () => openTaskSettings(), true));
+    actions.append(reviewButton('Prøv igen', retrySend, info.action === 'retry'));
+    if (saved) actions.append(undoButton('Fortryd det, den nåede', 'Fortryd det, AI’en nåede'));
+    box.append(actions);
+    if (result.failure?.message) { const fold = node('details', undefined, 'review-details'); fold.append(node('summary', 'Se detaljer'), node('pre', result.failure.message)); box.append(fold); }
+    renderChecks(box, result); return;
+  }
+  if (result.status === 'stopped') {
+    show();
+    box.append(node('h3', 'Du stoppede opgaven'), node('p', result.files.length ? filesText(result.files.length, 'AI’en nåede at ændre') : 'AI’en nåede ikke at ændre noget. Din besked står klar i skrivefeltet, så du kan sende den igen.'));
+    reviewFiles(box, result);
+    if (saved) box.append(node('p', 'Det, den nåede, er gemt som en version, så du kan fortryde det.', 'hint'));
+    const actions = node('div', undefined, 'review-actions');
+    if (saved) actions.append(undoButton('Fortryd det, den nåede', 'Fortryd det, AI’en nåede'));
+    if (result.files.length) actions.append(reviewButton('Se ændringerne', () => window.workspace.showChange(result.task)));
+    actions.append(reviewButton('Send igen', retrySend, !saved));
+    box.append(actions); renderChecks(box, result); return;
+  }
+  if (rejectedThisRun) {
+    // Afvist uden besked: AI'en stoppede. Vejen videre er at sige, hvad den skal gøre i stedet.
+    show();
+    box.append(node('h3', 'Du afviste en handling, så AI’en stoppede'), node('p', lastRejection ? `Afvist: ${lastRejection.title.replace(/^Må AI’en /, '').replace(/\?$/, '')}${lastRejection.target ? ` · ${lastRejection.target.split('\n')[0].slice(0, 160)}` : ''}.` : 'En handling blev afvist.'));
+    if (result.files.length) { box.append(node('p', filesText(result.files.length, 'Før det nåede AI’en at ændre'))); reviewFiles(box, result); }
+    const actions = node('div', undefined, 'review-actions');
+    actions.append(reviewButton('Skriv, hvad AI’en skal gøre i stedet', () => { if (!$('#prompt').value.trim()) $('#prompt').value = 'Gør det på en anden måde: '; $('#prompt').focus(); }, true), reviewButton('Send beskeden igen', () => { $('#prompt').value = lastSentText; retrySend(); }));
+    if (saved) actions.append(undoButton('Fortryd det, den nåede', 'Fortryd det, AI’en nåede'));
+    box.append(actions); renderChecks(box, result); return;
+  }
+  // En opgave, der slutter uden svar og uden ændringer, må ikke ligne et resultat.
+  if (!result.files.length && result.answered === false) {
+    show(); box.append(node('h3', 'AI’en stoppede uden et resultat'), node('p', result.finish === 'length'
       ? 'Svaret blev for langt, så AI’en nåede ikke at skrive noget. Prøv igen. Virker det stadig ikke, så del opgaven op, eller vælg en anden model.'
-      : rejectedThisRun ? 'Du afviste en handling, så AI’en stoppede opgaven. Send den igen, eller skriv, hvad AI’en skal gøre i stedet.'
       : 'AI’en stoppede uden at svare eller ændre filer. Prøv igen. Virker det stadig ikke, så vælg en anden model.'));
-    const retry = node('button', 'Prøv igen', 'primary'); retry.type = 'button';
-    retry.onclick = () => { if (running) return; $('#prompt').value = lastSentText; $('#send').click(); };
-    box.append(retry); requestAnimationFrame(() => box.scrollIntoView({ block: 'nearest' })); return;
+    box.append(reviewButton('Prøv igen', () => { $('#prompt').value = lastSentText; retrySend(); }, true)); return;
   }
-  if (result.mode === 'plan' && result.status === 'idle' && !result.files.length) { box.hidden = true; return; }
-  box.hidden = false; requestAnimationFrame(() => box.scrollIntoView({ block: 'nearest' }));
-  box.append(node('h3', result.status === 'idle' ? 'Prøv resultatet i forhåndsvisningen' : 'Opgaven blev afbrudt eller fejlede'));
-  if (result.unavailable) { box.append(node('p', 'Ændringsoversigten kunne ikke læses. Gennemgå filerne manuelt.')); return; }
-  box.append(node('p', result.files.length ? `${result.files.length} ${result.files.length === 1 ? 'fil er ændret' : 'filer er ændret'}:` : 'Ingen filændringer registreret.'));
-  // Hver fil åbner sin linje-diff under Ændringer. Brugeren vælger selv at skifte fane.
-  if (result.files.length && result.task) {
-    const list = node('ul', undefined, 'review-files');
-    for (const file of [...result.files].sort((a, b) => a.localeCompare(b, 'da')).slice(0, 6)) { const item = node('li'), link = node('button', file, 'file-ref'); link.type = 'button'; link.dataset.path = file; link.dataset.change = result.task; link.title = `Se ændringerne i ${file}`; item.append(link); list.append(item); }
-    if (result.files.length > 6) list.append(node('li', `og ${result.files.length - 6} flere`, 'hint'));
-    box.append(list);
-  }
-  const checks = node('details'); checks.append(node('summary', 'Kontroller og handlinger')); box.append(checks);
-  const commands = result.tools.filter(t => t.tool === 'bash');
-  checks.append(node('p', commands.length ? 'Kørte kommandoer (afsluttet er ikke det samme som bestået test). Output står under Aktivitet:' : 'Ingen kommandoer kørt. Appen har ikke bekræftet funktionalitet eller tests.'));
-  for (const tool of commands) checks.append(node('p', `${tool.title || 'Kommando'} · ${toolStatuses[tool.status] || tool.status}`));
-  if (result.tools.some(t => t.status === 'error')) box.append(node('p', 'Mindst ét værktøj fejlede eller blev afvist. Se samtalen, før du fortsætter.'));
-  checks.append(node('p', 'Gennemfør den vigtigste opgave, og prøv også en smal skærmstørrelse. AI’ens beskrivelse er ikke et testbevis.', 'hint'));
-  if (result.skipped) box.append(node('p', 'Nogle filer er udeladt af oversigten på grund af filtype eller størrelse.'));
-  if (result.files.length && lastCheckpoint?.status === 'saved') {
+  if (result.mode === 'plan' && !result.files.length) { box.hidden = true; return; }
+  show();
+  box.append(node('h3', 'Prøv resultatet i forhåndsvisningen'), node('p', result.files.length ? `${result.files.length} ${result.files.length === 1 ? 'fil er ændret' : 'filer er ændret'}:` : 'Ingen filændringer registreret.'));
+  reviewFiles(box, result);
+  if (result.skipped) box.append(node('p', 'Nogle filer er udeladt af oversigten på grund af filtype eller størrelse.', 'hint'));
+  renderChecks(box, result);
+  const actions = node('div', undefined, 'review-actions');
+  if (saved) {
     // Opgaven er gemt som en version. Fortryd sætter filerne tilbage til versionen før opgaven og gemmer det som en ny version.
-    const checkpoint = lastCheckpoint, task = shortLabel(lastSentText);
-    box.append(node('p', checkpoint.message, 'hint'));
-    if (checkpoint.kept?.length) box.append(node('p', `Disse filer blev ikke gemt, fordi de kan indeholde hemmeligheder eller er for store: ${checkpoint.kept.join(', ')}.`, 'hint'));
-    const undo = node('button', 'Fortryd opgaven'); undo.onclick = () => action(() => reviewRestoration({ commit: checkpoint.previous }, { title: 'Fortryd opgaven', confirm: 'Fortryd opgaven', label: `Fortrudt: ${task}` }));
-    const inspect = node('button', 'Se ændringerne'); inspect.onclick = () => window.workspace.showChange(result.task);
-    box.append(undo, inspect);
+    box.append(node('p', lastCheckpoint.message, 'hint'));
+    if (lastCheckpoint.kept?.length) box.append(node('p', `Disse filer blev ikke gemt, fordi de kan indeholde hemmeligheder eller er for store: ${lastCheckpoint.kept.join(', ')}.`, 'hint'));
+    actions.append(undoButton('Fortryd opgaven', 'Fortryd opgaven'), reviewButton('Se ændringerne', () => window.workspace.showChange(result.task)));
   } else if (result.files.length) {
-    const inspect = node('button', 'Gennemgå ændringer'); inspect.onclick = () => window.workspace.showChange(result.task);
-    box.append(inspect);
-    if (featureOn('versioner')) { const save = node('button', 'Gem version'); save.onclick = () => $('#git-button').click(); box.append(save); }
+    actions.append(reviewButton('Gennemgå ændringer', () => window.workspace.showChange(result.task)));
+    if (featureOn('versioner')) actions.append(reviewButton('Gem version', () => $('#git-button').click()));
   }
+  if (actions.children.length) box.append(actions);
 }
 
 $('#git-identity').onsubmit = event => { event.preventDefault(); action(async () => { await call('gitIdentity', { name: $('#git-name').value, email: $('#git-email').value }); await loadGit(); }); };

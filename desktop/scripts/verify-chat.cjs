@@ -125,7 +125,7 @@ const { run } = require('../core/git.cjs');
   assert.equal(await page.locator('#data-dialog').evaluate(el=>el.open),false);
   assert.equal(await fs.readFile(path.join(project,'public/index.html'),'utf8'),'<h1>Før chatten</h1>');
   console.log('Forbindelse og datagennemgang bestået');
-  assert.match(await page.locator('#agent-activity').textContent(),/Venter på din godkendelse/);
+  assert.match(await page.locator('#agent-activity').textContent(),/Venter på dig: Må AI’en ændre filer i projektet\?/);
   assert.equal(await page.locator('#approvals .action-target').textContent(),'public/index.html');
   await page.locator('#approvals button').filter({hasText:'Tillad for denne opgave'}).click();
   await page.frameLocator('#preview').locator('h1').filter({hasText:'Bygget fra desktopchatten'}).waitFor({timeout:30000});
@@ -138,7 +138,8 @@ const { run } = require('../core/git.cjs');
     await page.click('[data-close="git-dialog"]');
   }
   assert.equal((await run(project,['rev-list','--count','HEAD'])).toString().trim(),'2');
-  assert.match(await page.locator('#run-review').textContent(),/Ingen kommandoer kørt/);
+  assert.match(await page.locator('#run-review').textContent(),/AI’en kørte ingen kommandoer, så ingen tests er kørt/);
+  await page.locator('#run-review .check-ok').filter({hasText:'Forhåndsvisning: siden blev vist uden fejl i konsollen.'}).waitFor({timeout:30000});
   assert.match((await run(project,['show','HEAD:public/index.html'])).toString(),/Bygget fra desktopchatten/);
   assert.equal((await run(project,['status','--porcelain'])).toString(),'');
   // Med automatiske versioner tilbyder kortet at fortryde opgaven; ellers at gemme den.
@@ -163,10 +164,12 @@ const { run } = require('../core/git.cjs');
   await require('./ui-test-helpers.cjs').menuClick(page, '#attach-preview'); await page.click('#static-preview');
   await page.frameLocator('#preview').locator('h1').filter({hasText:'Bygget fra desktopchatten'}).waitFor();
   rejectInference=true; await page.fill('#prompt','Denne besked skal bevares ved afvist modeladgang.'); await page.click('#send');
-  await page.waitForSelector('#connection-warning:not([hidden])',{timeout:60000});
-  assert.match(await page.locator('#connection-warning-text').textContent(),/gennemgås/);
+  // En fejl under opgaven står ét sted: på resultatkortet med Gennemgå AI-forbindelse.
+  await page.locator('#run-review h3').filter({hasText:'AI’en afviste din nøgle'}).waitFor({timeout:60000});
+  assert.equal(await page.locator('#run-review .review-actions button.primary').textContent(),'Gennemgå AI-forbindelse');
+  assert.equal(await page.isVisible('#connection-warning'),false);
   await page.waitForFunction(()=>!document.querySelector('#setup-local').disabled);
-  await page.click('#dismiss-connection'); assert.equal(await page.inputValue('#prompt'),'Denne besked skal bevares ved afvist modeladgang.');
+  assert.equal(await page.inputValue('#prompt'),'Denne besked skal bevares ved afvist modeladgang.');
   assert.equal((await run(project,['rev-list','--count','HEAD'])).toString().trim(),'2');
   const empty=path.join(root,'tom');await fs.mkdir(empty);
   await app.evaluate(({dialog},empty)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[empty]});},empty);

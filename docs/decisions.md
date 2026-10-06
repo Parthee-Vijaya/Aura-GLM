@@ -37,6 +37,15 @@ Valg i implementeringen, som kan ændres:
 - **Afbrudte planer:** Den tidligere beslutning gælder stadig: en plan fra en stoppet, fejlet eller afbrudt opgave må ikke bygges direkte. Den gemmes som seneste plan, kan læses under Plan og kan bruges som udgangspunkt for en ny planlægning.
 - **Briefen følger projektet** og bevares ved Ny samtale. Ønskerne fra Ønsker til løsningen kommer i briefen, når planlægning er slået til.
 
+Tredje milepæl, godkendelser og fejl, er implementeret 6. oktober 2026. Brugeren valgte:
+- **Kontrol af forhåndsvisningen:** efter en opgave genindlæser Aura siden og siger, om den blev vist, og om den skrev fejl i konsollen. Aura klikker ikke og tester ikke funktioner.
+- **Afvisning:** Afvis stopper opgaven som før; Afvis med en besked lader AI'en fortsætte med beskeden.
+
+Valg i implementeringen, som kan ændres:
+- **Fejltyper:** gatewayen giver hver fejl en type ud fra HTTP-status eller afbrydelse (nøgle, adgang, kvote, grænse, model, server, forbindelse, stilstand og motor). Typen afgør forklaring og handling. Aura forsøger stadig aldrig igen af sig selv.
+- **Én status:** fejl under en opgave vises kun på resultatkortet. Advarselsboksen over samtalen bruges kun, når modelkataloget ikke kan læses før afsendelse.
+- **Kontrollen** bruger Electrons konsolbeskeder og HTTP-status for previewets ramme i hovedprocessen. Previewets isolation og indholdspolitik er uændrede.
+
 ## Få valg og udvælgelse af skills · 29. september 2026
 
 Besluttet i projektsamtalen: Hvert beslutningspunkt har ét eller to hovedvalg og højst tre til fire synlige muligheder med resten bag ét link, fx "Bruger du en anden udbyder? Vælg en anden". Opsætningen skal kunne gennemføres uden tvivlsspørgsmål af en person uden teknisk baggrund. Reglen står i `AGENTS.md` og `desktop/DESIGN.md`.

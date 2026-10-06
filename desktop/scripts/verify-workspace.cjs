@@ -212,7 +212,7 @@ const helpers = require('./ui-test-helpers.cjs');
     await page.locator('.activity-entry.kind-error').first().waitFor({ timeout: 90000 });
     await page.locator('#run-status').filter({ hasText: /Fejl|Klar/ }).waitFor({ timeout: 90000 });
     assert.equal(await page.inputValue('#prompt'), 'Denne opgave fejler');
-    mode = 'normal'; await page.click('#dismiss-connection').catch(() => {});
+    mode = 'normal';
     passed('En fejl fra modelserveren står i Aktivitet, og beskeden er bevaret');
 
     // Hele samtalen: brugerens rettelse efter opgaven gør AI'ens fil blandet.

@@ -105,11 +105,11 @@
     const card = node('section', undefined, 'approval question-card'); card.dataset.id = p.id;
     const state = { index: 0, answers: [], more: false, own: false };
     const total = p.questions.length;
-    const finish = record => { card.remove(); if (record) { const line = node('p', record, 'chat-message answer-record'); $('#messages').append(line); } };
+    const finish = record => { card.remove(); doneWaiting(p.id); if (record) { const line = node('p', record, 'chat-message answer-record'); $('#messages').append(line); } };
     async function submit() {
       const answers = p.questions.map((_, index) => state.answers[index] || []);
       await call('question', { id: p.id, answers });
-      $('#agent-activity').textContent = 'Dit svar er sendt. Afventer AI’en …';
+      setStatusDetail('Dit svar er sendt. AI’en fortsætter …');
       finish(`Du svarede: ${p.questions.map((question, index) => `${question.header || question.question}: ${answers[index].map(label => label.replace(/\s*[([]\s*(anbefalet|anbefales|recommended)\s*[)\]]\s*$/i, '')).join(', ') || 'intet svar'}`).join(' · ')}`);
     }
     function answer(values) {
@@ -148,7 +148,7 @@
       const link = (text, onClick) => { const button = node('button', text, 'text-button'); button.type = 'button'; button.onclick = onClick; links.append(button); };
       if (question.custom !== false && !state.own) link('Skriv dit eget svar', () => { state.own = true; render(); });
       if (state.index > 0) link('Tilbage', () => { state.index--; state.more = false; state.own = false; render(); card.querySelector('.question-title').focus(); });
-      link(total > 1 ? 'Spring spørgsmålene over' : 'Spring over', () => action(async () => { await call('question', { id: p.id, skip: true }); $('#agent-activity').textContent = 'Du sprang over. AI’en vælger selv og skriver antagelserne i planen.'; finish('Du sprang AI’ens spørgsmål over. AI’en vælger selv.'); }));
+      link(total > 1 ? 'Spring spørgsmålene over' : 'Spring over', () => action(async () => { await call('question', { id: p.id, skip: true }); setStatusDetail('Du sprang over. AI’en vælger selv og skriver antagelserne i planen.'); finish('Du sprang AI’ens spørgsmål over. AI’en vælger selv.'); }));
       card.append(links);
     }
     render();
@@ -156,14 +156,15 @@
   }
   function showQuestion(p) {
     if (!Array.isArray(p.questions) || !p.questions.length) return;
-    $('#approvals').append(questionCard(p));
+    const card = questionCard(p); $('#approvals').append(card);
+    waitFor(p.id, p.questions.length > 1 ? `${p.questions.length} spørgsmål fra AI’en` : 'et spørgsmål fra AI’en', card);
   }
 
   window.harness.onEvent(event => {
     if (event.type === 'brief.updated' && event.root === current?.root) { brief = event.brief; if (!editing) renderBrief(); renderPlan(); }
     if (event.type === 'plan.retired' && event.root === current?.root) { lastPlan = event.lastPlan; renderPlan(); }
     if (event.type === 'plan.updated' && event.root === current?.root && activePlan?.id === event.plan.id) { activePlan = event.plan; renderPlan(); }
-    if (['question.replied', 'question.rejected'].includes(event.type)) $('#approvals').querySelector(`.question-card[data-id="${CSS.escape(event.properties?.requestID || event.properties?.id || '')}"]`)?.remove();
+    if (['question.replied', 'question.rejected'].includes(event.type)) { const id = event.properties?.requestID || event.properties?.id || ''; $('#approvals').querySelector(`.question-card[data-id="${CSS.escape(id)}"]`)?.remove(); doneWaiting(id); }
     if (event.type === 'run.status') renderPlan();
   });
   window.planning = {

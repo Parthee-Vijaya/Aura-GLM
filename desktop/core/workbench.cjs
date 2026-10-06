@@ -16,11 +16,18 @@ const { Checkpoints } = require('./checkpoints.cjs');
 const { Activity, toolEntry, toolFiles, approvalTarget, approvalTitles } = require('./activity.cjs');
 const { taskSummary, sessionSummary, fileDetail, sessionAttribution, hash } = require('./change-review.cjs');
 const projectFiles = require('./project-files.cjs');
+const { cleanOutput } = require('./dev-server.cjs');
 const brief = require('./brief.cjs');
 const SKIP_ANSWER = 'Brugeren springer over: vælg selv, og skriv antagelsen tydeligt i planen.';
 const modeTitles = { plan: 'Opgave: afklar og planlæg', build: 'Opgave: byg efter planen', free: 'Opgave: arbejd direkte' };
 const shortText = (text, max = 90) => { const value = String(text || '').replace(/\s+/g, ' ').trim(); return value.length <= max ? value : value.slice(0, max).replace(/[\s,.;:]+\S*$/, '') + ' …'; };
 
+// Fejl fra OpenCode selv, fx når modellen afviser kaldet. Statuskoden afgør typen, når den findes.
+function sessionFailure(error) {
+  const status = error?.data?.statusCode;
+  if (status) return { 401: 'key', 403: 'access', 402: 'quota', 404: 'notfound', 429: 'limit' }[status] || (status >= 500 ? 'server' : 'rejected');
+  return /auth/i.test(error?.name || '') ? 'key' : 'model';
+}
 function planningReply(roles, parts) {
   const assistantIDs = [...roles].filter(([, role]) => role === 'assistant').map(([id]) => id);
   const lastID = assistantIDs.at(-1);
@@ -274,7 +281,7 @@ class Workbench {
     if (prepared.mode === 'free') { this.retirePlan('direkte'); this.planConversation = []; }
     // Beskeden, som den faktisk sendes: brugerens tekst og eventuelle filhenvisninger, der er vist i Før du sender.
     const text = input.text + (prepared.disclosure.fileReferenceText || '');
-    this.runMode = prepared.mode; this.runText = new Map(); this.runTools = new Map(); this.runRoles = new Map(); this.runStopped = false; this.allowProjectEdits = false; this.runFinish = null;
+    this.runMode = prepared.mode; this.runText = new Map(); this.runTools = new Map(); this.runRoles = new Map(); this.runStopped = false; this.allowProjectEdits = false; this.runFinish = null; this.runFailure = null;
     this.usageBase = this.currentUsage(); this.runSteps = new Map(); this.runPrice = connections.priceFor(prepared.connection, prepared.model, prepared.route);
     if (prepared.mode === 'plan') {
       if (this.planConversation.join('\n').length + text.length > 120000) throw new Error('Afklaringen er blevet for lang. Vælg Ny samtale for at starte en ny plan.');
@@ -299,8 +306,8 @@ class Workbench {
       if (this.engineIdentity !== prepared.disclosure.fingerprint || !this.engine?.active) {
         await this.close(false); checkStopped();
         const key = this.store.decrypt(prepared.connection);
-        const gateway = await startGateway(prepared.connection, prepared.model, key, prepared.route, message => {
-          if (this.gateway === gateway && this.running && !this.runStopped) this.event({ type: 'engine.error', message });
+        const gateway = await startGateway(prepared.connection, prepared.model, key, prepared.route, (message, failure) => {
+          if (this.gateway === gateway && this.running && !this.runStopped) this.event({ type: 'engine.error', message, failure });
         });
         this.gateway = gateway;
         const provider = connections.engineProvider(prepared.connection, prepared.model, this.gateway.url, this.gateway.token);
@@ -333,6 +340,12 @@ class Workbench {
       await this.finishTask(this.runStopped ? 'stopped' : 'error', null);
       await this.saveHistory('error'); await this.close(); this.emit({ type: 'run.status', status: 'error' }); throw error;
     } finally { this.starting = false; }
+  }
+  // Resultatkortets oplysninger om opgaven: værktøjer med faktiske afslutningskoder, output og fejl, og fejlens type.
+  runReview(status, diff, task, extra = {}) {
+    const tail = text => typeof text === 'string' && text ? cleanOutput(text).trim().split('\n').slice(-3).join('\n').slice(-400) : '';
+    return { type: 'run.review', task: task?.id, mode: this.runMode, status, finish: this.runFinish || null, failure: this.runFailure || null, files: diff?.files.map(f => f.file) || [], skipped: diff?.skipped || 0, unavailable: !diff,
+      tools: [...(this.runTools?.values() || [])].map(p => ({ tool: p.tool, status: p.state?.status, title: p.state?.title || p.state?.input?.command || '', exit: Number.isInteger(p.state?.metadata?.exit) ? p.state.metadata.exit : null, output: p.tool === 'bash' ? tail(p.state?.output ?? p.state?.metadata?.output) : '', error: p.state?.status === 'error' ? cleanOutput(String(p.state?.error || '')).slice(0, 300) : '' })), ...extra };
   }
   // En afsluttet opgave gemmes med sine ændringer, så Ændringer kan vise dem og sige, hvem der lavede dem.
   async finishTask(status, diff) {
@@ -429,11 +442,17 @@ class Workbench {
         return;
       }
     }
+    // Godkendelsen får værktøjets egne oplysninger med, fx kommandoens mappe og AI'ens begrundelse.
+    if (event.type === 'permission.asked' && p.tool?.callID) {
+      const part = [...(this.runTools?.values() || [])].find(item => item.callID === p.tool.callID);
+      if (part) event = { ...event, properties: { ...p, toolInput: { tool: part.tool, command: part.state?.input?.command, description: part.state?.input?.description, workdir: part.state?.input?.workdir, url: part.state?.input?.url } } };
+    }
     if (event.type === 'permission.asked') this.log({ id: `approval-${p.id}`, kind: 'approval', permission: p.permission, title: approvalTitles[p.permission] || 'Godkendelse', target: approvalTarget(p, this.project?.root), status: 'waiting', started: Date.now(), task: this.task?.id });
     if (event.type === 'permission.replied') { const entry = this.session()?.activity.get(`approval-${p.requestID}`); if (entry?.status === 'waiting') this.log({ id: entry.id, status: p.reply === 'reject' ? 'rejected' : 'answered', ended: Date.now() }); }
     if (event.type === 'question.asked' && Array.isArray(p.questions)) this.questions?.set(p.id, p.questions);
     if (event.type === 'question.asked') this.log({ id: `question-${p.id}`, kind: 'question', title: 'Spørgsmål til dig', target: (p.questions || []).map(q => q.question).join('\n').slice(0, 2000), status: 'waiting', started: Date.now(), task: this.task?.id });
     if (['question.replied', 'question.rejected'].includes(event.type)) { const entry = this.session()?.activity.get(`question-${p.requestID || p.id}`); if (entry?.status === 'waiting') this.log({ id: entry.id, status: event.type === 'question.rejected' ? 'rejected' : 'answered', ended: Date.now() }); }
+    if (['session.error', 'engine.error'].includes(event.type) && this.running && !this.runFailure) this.runFailure = { kind: event.failure?.kind || sessionFailure(p.error), status: event.failure?.status || p.error?.data?.statusCode || null, message: String(event.message || p.error?.data?.message || p.error?.message || '').slice(0, 800) };
     if (['session.error', 'engine.error'].includes(event.type) && this.running) this.log({ kind: 'error', title: 'Fejl under opgaven', detail: String(event.message || p.error?.data?.message || p.error?.message || 'Modelkaldet mislykkedes.').slice(0, 800), status: 'error', task: this.task?.id });
     if (event.type === 'message.part.updated' && p.part?.type === 'step-finish' && this.runSteps && !this.runSteps.has(p.part.id)) {
       this.runSteps.set(p.part.id, p.part.tokens || {});
@@ -464,8 +483,8 @@ class Workbench {
         await this.saveHistory(status);
         const diff = await changes(this.project.root, this.runBefore);
         const task = await this.finishTask(status, diff);
-        this.emit({ type: 'run.review', task: task?.id, mode: this.runMode, status, answered: Boolean(text.trim()), finish: this.runFinish || null, files: diff.files.map(f => f.file), skipped: diff.skipped, tools: [...(this.runTools?.values() || [])].map(p => ({ tool: p.tool, status: p.state?.status, title: p.state?.title || p.state?.input?.command || '' })) });
-      }).catch(async () => { await this.finishTask(status, null).catch(() => {}); this.emit({ type: 'run.review', status: 'error', files: [], tools: [], unavailable: true }); }).finally(() => {
+        this.emit(this.runReview(status, diff, task, { answered: Boolean(text.trim()) }));
+      }).catch(async () => { await this.finishTask(status, null).catch(() => {}); this.emit({ ...this.runReview('error', null, null), unavailable: true }); }).finally(() => {
         this.running = false; this.allowProjectEdits = false; this.finishing = null; this.emit({ type: 'run.status', status: this.runStopped ? 'stopped' : status });
       });
     }
@@ -481,8 +500,10 @@ class Workbench {
     if (!this.starting) {
       await this.checkpoints.finish();
       const diff = this.runBefore && this.project ? await changes(this.project.root, this.runBefore).catch(() => null) : null;
-      await this.finishTask('stopped', diff);
+      const task = await this.finishTask('stopped', diff);
       this.running = false;
+      // Efter Stop viser resultatkortet, hvad AI'en nåede, og en vej videre.
+      this.emit(this.runReview('stopped', diff, task));
     }
     await this.saveHistory('stopped'); this.emit({ type: 'run.status', status: this.starting ? 'starting' : 'stopped' });
   }
@@ -493,8 +514,9 @@ class Workbench {
       if (!this.projectEdit(this.engine.pending.get(input.id) || {})) throw new Error('Kun filændringer i projektmappen kan tillades for hele opgaven.');
       this.allowProjectEdits = true;
     }
-    await this.engine.reply(input.id, input.allow === true);
-    this.log({ id: `approval-${input.id}`, status: input.allow !== true ? 'rejected' : input.scope === 'task' ? 'allowed-task' : 'allowed', ended: Date.now() });
+    const message = input.allow !== true && typeof input.message === 'string' ? input.message.trim().slice(0, 2000) : '';
+    await this.engine.reply(input.id, input.allow === true, message);
+    this.log({ id: `approval-${input.id}`, status: input.allow !== true ? (message ? 'corrected' : 'rejected') : input.scope === 'task' ? 'allowed-task' : 'allowed', ended: Date.now(), ...(message ? { detail: `Din besked: ${message}` } : {}) });
   }
   // Svar på AI'ens spørgsmål. Svarene sendes til motoren og kommer i briefen med spørgsmålets korte overskrift.
   // Spring over svarer på alle spørgsmål med, at AI'en selv vælger. Et afvist spørgsmål ville stoppe opgaven i OpenCode.

@@ -649,3 +649,42 @@ body.sidebar-overlay .sidebar { width: 216px; z-index: 30; box-shadow: 0 12px 40
 #preview-empty .empty-code { display: inline-grid; place-items: center; width: 52px; height: 52px; margin: 0 auto 14px; border-radius: 14px; background: #fff; box-shadow: 0 2px 10px #1b3a6414; font-size: 18px; color: #8ea4c4; }
 #preview-empty.is-working .empty-code { color: var(--accent); animation: preview-breathe 2.4s ease-in-out infinite; }
 @keyframes preview-breathe { 0%, 100% { transform: scale(1); box-shadow: 0 2px 10px #1b3a6414; } 50% { transform: scale(1.06); box-shadow: 0 6px 22px #0052cc26; } }
+
+/* Status: én linje under samtalens overskrift. Når AI'en venter på brugeren, er den markeret og har Vis. */
+.agent-activity { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; }
+.agent-activity.is-waiting { background: #fff7e7; color: #744c19; font-weight: 600; }
+.agent-activity .text-button { padding: 2px 6px; font-size: 11px; }
+
+/* Godkendelser: hvad, hvorfor og hvad det betyder. Tekniske detaljer og ændringen er foldet sammen. */
+.approval-kind { margin: 0 0 2px; font-size: 11px; font-weight: 650; letter-spacing: .02em; color: #8a5a12; }
+.approval-title { display: block; margin-bottom: 8px; font-size: 14px; }
+.approval-facts { display: grid; grid-template-columns: minmax(70px, auto) minmax(0, 1fr); gap: 6px 12px; margin: 0 0 10px; font-size: 12px; line-height: 1.6; }
+.approval-facts dt { color: var(--muted); font-weight: 600; }
+.approval-facts dd { margin: 0; overflow-wrap: anywhere; }
+.approval .approval-facts .file-ref { margin: 0; }
+.approval-facts code.action-target { font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; background: #fff; border: 1px solid #ecdcb9; border-radius: 6px; padding: 1px 6px; white-space: pre-wrap; }
+.approval-scope-text { color: var(--muted); }
+.approval-hints { margin: 6px 0 2px; padding-left: 18px; }
+.approval-fold { margin: 6px 0; }
+.approval-diff { max-height: 260px; overflow: auto; }
+.approval-scope { margin: 8px 0 0; }
+.approval-message-link { margin-top: 4px; padding-left: 0; }
+.approval-message { margin-top: 8px; }
+.approval-message label { margin-top: 0; }
+.approval .approval-message button { margin-top: 8px; }
+
+/* Resultatkortet: faktiske kontroller med tekst og tegn, ikke kun farve. */
+.review-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.journey-card .review-actions button { margin: 0; }
+.review-checks { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+.review-checks h4 { margin: 0 0 6px; font-size: 12px; }
+.check-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 12px; line-height: 1.55; }
+.check-list > li { position: relative; padding-left: 22px; overflow-wrap: anywhere; }
+.check-list > li::before { position: absolute; left: 0; top: 0; width: 16px; text-align: center; font-weight: 700; }
+.check-ok::before { content: "✓"; color: #1d6b43; }
+.check-failed::before { content: "!"; color: #a3282a; }
+.check-unknown::before { content: "–"; color: var(--muted); }
+.check-pending::before { content: "…"; color: var(--muted); }
+.check-list code { font: 11.5px ui-monospace, SFMono-Regular, Menlo, monospace; }
+.check-list pre, .review-details pre { margin: 4px 0 0; max-height: 160px; overflow: auto; padding: 8px 10px; border-radius: 8px; background: #f2f5f9; font: 11px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; }
+.review-details { margin-top: 10px; }

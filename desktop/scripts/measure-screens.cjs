@@ -116,6 +116,8 @@ const server = http.createServer(async (req, res) => {
     await measure('godkendelse', '#approvals', 'Godkendelse af filændringer');
     tasks[task]++; await allow.click();
     await win.locator('#run-review button').filter({ hasText: 'Fortryd opgaven' }).waitFor({ timeout: 120000 }); await win.locator('#run-status').filter({ hasText: 'Klar' }).waitFor();
+    // Resultatkortet måles, når Auras kontrol af forhåndsvisningen er færdig.
+    await win.locator('#run-review .check-list li').first().waitFor(); await win.waitForFunction(() => !document.querySelector('#run-review .check-pending'), null, { timeout: 30000 });
     await measure('resultat', '#run-review', 'Resultatkort'); task = null;
     // Fortryd og versioner.
     begin('Fortryd opgaven');

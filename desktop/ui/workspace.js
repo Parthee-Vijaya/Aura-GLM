@@ -325,10 +325,10 @@
 
   // ---------- Aktivitet ----------
   const activity = { entries: new Map(), unseen: false, toBottom: true, timer: null, running: false, waiting: 0 };
-  const stateText = { pending: 'Venter', running: 'I gang', completed: 'Afsluttet', error: 'Mislykkedes', waiting: 'Venter på dig', allowed: 'Du tillod den', 'allowed-task': 'Du tillod filændringer i projektet for resten af opgaven', auto: 'Tilladt, fordi du tillod filændringer for opgaven', rejected: 'Du afviste den', answered: 'Besvaret', expired: 'Ikke besvaret, fordi opgaven stoppede', stopped: 'Stoppet' };
+  const stateText = { pending: 'Venter', running: 'I gang', completed: 'Afsluttet', error: 'Mislykkedes', waiting: 'Venter på dig', allowed: 'Du tillod den', 'allowed-task': 'Du tillod filændringer i projektet for resten af opgaven', auto: 'Tilladt, fordi du tillod filændringer for opgaven', rejected: 'Du afviste den', corrected: 'Du afviste den med en besked, og AI’en fortsatte', answered: 'Besvaret', expired: 'Ikke besvaret, fordi opgaven stoppede', stopped: 'Stoppet' };
   function entryState(entry) {
     // Rækker, hvor titlen allerede siger, hvad der skete, får kun en status, når noget er i gang eller fejlede.
-    if (['session', 'checkpoint', 'restore', 'preview', 'stop', 'result', 'error', 'plan'].includes(entry.kind) && !['running', 'error'].includes(entry.status)) return '';
+    if (['session', 'checkpoint', 'restore', 'preview', 'stop', 'result', 'error', 'plan', 'check'].includes(entry.kind) && !['running', 'error'].includes(entry.status)) return '';
     if (['result', 'error'].includes(entry.kind)) return '';
     const parts = [stateText[entry.status] || entry.status || ''];
     if (['approval', 'question'].includes(entry.kind)) {

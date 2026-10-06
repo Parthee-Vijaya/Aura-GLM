@@ -2,6 +2,40 @@
 
 Kontrolleret 28. september 2026. Dette er status for den aktuelle arbejdsmappe, ikke en erklæring om, at alle installationsfiler eller modeller er klar. Der er ikke committet eller pushet under denne gennemgang.
 
+## Godkendelser og fejl · 6. oktober 2026
+
+Tredje milepæl i [planen for brugerfladen](ux-plan.md). Afprøvet på Mac med OpenCode 1.18.33. Der er ikke committet eller pushet.
+
+- **Fundet i OpenCode og brugt:** En afvisning med en besked giver AI'en beskeden som rettelse, og opgaven fortsætter. En afvisning uden besked stopper opgaven. En filgodkendelse har ændringen med som diff, og kommandoens afslutningskode ligger i `metadata.exit`. Electron opfanger konsolfejl og HTTP-status fra previewets ramme; det er afprøvet med en bevidst fejl i en side.
+- **Enhedstestet:** 166 automatiske tests består, når testfilerne køres én ad gangen. De 5 nye dækker:
+  - diff fra OpenCode med linjenumre;
+  - kommandogæt og afslutningskoder;
+  - fejltyper fra modelserveren for HTTP 401, 402, 403, 404, 429, 400 og 503;
+  - afvisning med og uden besked gennem motorens API;
+  - at Stop giver et resultatkort med filer og maskeret kommando-output;
+  - at godkendelsen får kommandoens mappe og begrundelse med, og at en fejl fra OpenCode får en type.
+  En eksisterende prøve fangede, at den nye besked om stilstand sagde "to minutter" uanset grænsen; den beregnes nu.
+- **Kørt mod rigtigt materiale i Electron:** `npm run test:approvals` bruger den rigtige OpenCode-motor, et nyt projekt med Git i en midlertidig mappe og en kontrolleret modelserver. Modellens svar er faste testdata; kommandoerne køres rigtigt. Prøven har 8 delprøver:
+  1. Filgodkendelsen viser fil, antal linjer, ændringen og omfanget, og statuslinjen siger "Venter på dig" med Vis.
+  2. Kommandokortet viser kommando, AI'ens begrundelse og et gæt, uden fremhævet Tillad.
+  3. Kontroller viser sidens konsolfejl fra forhåndsvisningen og kommandoens afslutningskode 1 med output.
+  4. Afvis med en besked: modellen fik beskeden, og opgaven fortsatte.
+  5. Afvis: opgaven stopper, og kortet siger, hvad der blev afvist.
+  6. Stop: kortet viser filen, AI'en nåede, og Fortryd det, den nåede, satte den tilbage.
+  7. Nøgle, kvote og afbrudt forbindelse får hver sin forklaring og handling på ét kort; der vises ingen rød linje eller advarselsboks ved siden af. Prøv igen virker.
+  8. Kortet holder sig inden for samtalen ved 980 × 720.
+- **Kørsler:** Alle 17 Electron-prøver bestod. `test:chat` fejlede først på den gamle tekst "Ingen kommandoer kørt"; prøven er rettet og kontrollerer nu også Auras kontrol af siden. Efter en sidste forkortelse af godkendelsens tekster er `test:approvals` og `test:chat` kørt igen og består.
+- **Målt:** 2.651 synlige ord, 218 valg og 48 ⓘ på 36 skærme mod 2.582, 217 og 47 efter milepæl 2. Klik pr. opgave er uændret, og der er ingen sidefejl.
+  - Godkendelse af filændringer gik fra 43 til 60 ord og fra 5 til 7 valg: Se ændringen og Afvis med en besked er nye.
+  - Resultatkortet gik fra 23 til 56 ord og fra 4 til 3 valg; Kontroller er ny.
+  - Aktivitet har én række mere for kontrollen.
+
+Ikke afprøvet:
+- En rigtig model, der fejler, eller som får en afvisning med besked.
+- Godkendelser for hjemmesider og mapper uden for projektet i Electron; de er kun dækket af den samme kode som filer og kommandoer.
+- Kontrollen af en framework-server (Vite eller Astro) efter en opgave.
+- Skærmlæser (VoiceOver), Windows, en pakket app og en person uden teknisk baggrund.
+
 ## Afklaring og plan · 6. oktober 2026
 
 Anden milepæl i [planen for brugerfladen](ux-plan.md). Afprøvet på Mac med OpenCode 1.18.33. Der er ikke committet eller pushet.

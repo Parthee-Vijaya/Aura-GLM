@@ -101,7 +101,7 @@ class OpenCodeEngine {
     this.child = spawn(executable, ['serve', '--hostname', '127.0.0.1', '--port', '0'], { cwd: this.root, env: isolatedEnv(this.directory, this.config, password), windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
     // Ingen rå proceslogs sendes til UI; de kan indeholde projektindhold.
     this.child.stderr.resume();
-    this.child.on('exit', () => { if (this.active) { this.active = false; this.onEvent({ type: 'engine.error', message: 'Agentmotoren stoppede. Start opgaven igen for at oprette en ny session.' }); } });
+    this.child.on('exit', () => { if (this.active) { this.active = false; this.onEvent({ type: 'engine.error', message: 'Agentmotoren stoppede. Start opgaven igen for at oprette en ny session.', failure: { kind: 'engine' } }); } });
     try {
       this.url = await new Promise((resolve, reject) => {
         const timer = setTimeout(() => reject(new Error('Agentmotoren kunne ikke starte. Kontrollér installationen.')), 30000);
@@ -143,7 +143,7 @@ class OpenCodeEngine {
         }
       }
     } catch {
-      if (!this.eventsAbort.signal.aborted && this.active) { this.onEvent({ type: 'engine.error', message: 'Forbindelsen til agentens hændelser blev afbrudt. Opgaven stoppes.' }); await this.abort().catch(() => {}); }
+      if (!this.eventsAbort.signal.aborted && this.active) { this.onEvent({ type: 'engine.error', message: 'Forbindelsen til agentens hændelser blev afbrudt. Opgaven stoppes.', failure: { kind: 'engine' } }); await this.abort().catch(() => {}); }
     }
   }
   async send(text, system) {
@@ -151,7 +151,8 @@ class OpenCodeEngine {
     return this.request(`/session/${this.session.id}/prompt_async`, 'POST', { model: { providerID: 'harness', modelID: this.model.id }, agent: this.mode === 'plan' ? 'plan' : 'build', system, parts: [{ type: 'text', text }] });
   }
   async abort() { if (this.session && this.url) await this.request(`/session/${this.session.id}/abort`, 'POST'); this.pending.clear(); }
-  async reply(id, allow) { if (!this.pending.has(id)) throw new Error('Godkendelsen findes ikke længere.'); await this.request(`/permission/${encodeURIComponent(id)}/reply`, 'POST', { reply: allow ? 'once' : 'reject' }); this.pending.delete(id); }
+  // En afvisning med en besked stopper ikke opgaven: AI'en får beskeden som rettelse og fortsætter.
+  async reply(id, allow, message) { if (!this.pending.has(id)) throw new Error('Godkendelsen findes ikke længere.'); await this.request(`/permission/${encodeURIComponent(id)}/reply`, 'POST', { reply: allow ? 'once' : 'reject', ...(!allow && message ? { message } : {}) }); this.pending.delete(id); }
   async messages() { return this.request(`/session/${this.session.id}/message`); }
   async diff() { return this.request(`/session/${this.session.id}/diff`); }
   async close() { this.active = false; this.eventsAbort?.abort(); this.pending.clear(); if (this.child && this.child.exitCode === null) { this.child.kill(); await new Promise(resolve => { const timer = setTimeout(() => { this.child.kill('SIGKILL'); resolve(); }, 3000); this.child.once('exit', () => { clearTimeout(timer); resolve(); }); }); } }
