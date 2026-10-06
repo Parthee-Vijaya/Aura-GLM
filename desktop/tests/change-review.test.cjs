@@ -16,7 +16,7 @@ test('en fil tilskrives kun AI’en, når AI’ens filværktøj skrev præcis de
   const ai = task(files, { aiFiles: new Set(['a.html', 'b.html']), aiHashes: new Map([['a.html', hash('A\n')], ['b.html', hash('B fra AI\n')]]) });
   const summary = taskSummary(ai);
   assert.deepEqual(summary.files.map(f => [f.file, f.by, f.change]), [['a.html', 'ai', 'ændret'], ['b.html', 'blandet', 'ændret'], ['c.html', 'anden', 'ny']]);
-  assert.deepEqual(summary.totals, { files: 3, added: 3, removed: 2, ai: 1, mixed: 1, others: 1 });
+  assert.deepEqual(summary.totals, { files: 3, added: 3, removed: 2, ai: 1, mixed: 1, others: 1, user: 0 });
   // Kørte AI’en kommandoer, kan en ukendt ændring komme fra dem eller fra brugeren.
   assert.equal(taskSummary({ ...ai, commands: 1 }).files.find(f => f.file === 'c.html').by, 'kommando');
 });

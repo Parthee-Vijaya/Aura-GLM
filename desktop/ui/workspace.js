@@ -40,11 +40,11 @@
 
   // ---------- Ændringer ----------
   const changes = { data: null, source: '', file: '', stale: true, latest: '' };
-  const byText = { ai: 'AI’en', blandet: 'AI’en og andre', kommando: 'En kommando eller dig', anden: 'Ikke AI’en' };
+  const byText = { ai: 'AI’en', blandet: 'AI’en og andre', kommando: 'En kommando eller dig', dig: 'Dig', anden: 'Ikke AI’en' };
   // Forklaringen afhænger af visningen: en opgave udtaler sig kun om opgavens egen tid, hele samtalen også om tiden efter.
   const byHelp = {
-    task: { ai: 'AI’ens filværktøj skrev filen under opgaven.', blandet: 'AI’en skrev filen under opgaven, men den blev også ændret af andre, før opgaven sluttede.', kommando: 'Ændret under opgaven, men ikke af AI’ens filværktøjer. Det kan være en kommando, AI’en kørte, eller dig.', anden: 'Ændret under opgaven, men ikke af AI’en. Det kan være dig eller et andet program.' },
-    session: { ai: 'AI’ens filværktøj skrev filen, og ingen har ændret den siden.', blandet: 'AI’en skrev filen, men den er også ændret af andre, fx dig eller et andet program.', kommando: 'Ændret under en opgave, men ikke af AI’ens filværktøjer. Det kan være en kommando, AI’en kørte, eller dig.', anden: 'Ikke ændret af AI’en. Det kan være dig eller et andet program.' }
+    task: { ai: 'AI’ens filværktøj skrev filen under opgaven.', blandet: 'AI’en skrev filen under opgaven, men den blev også ændret af andre, før opgaven sluttede.', kommando: 'Ændret under opgaven, men ikke af AI’ens filværktøjer. Det kan være en kommando, AI’en kørte, eller dig.', anden: 'Ændret under opgaven, men ikke af AI’en. Det kan være dig eller et andet program.', dig: 'Du ændrede filen i Aura, fx med Ret i siden eller Fortryd.' },
+    session: { ai: 'AI’ens filværktøj skrev filen, og ingen har ændret den siden.', blandet: 'AI’en skrev filen, men den er også ændret af andre, fx dig eller et andet program.', kommando: 'Ændret under en opgave, men ikke af AI’ens filværktøjer. Det kan være en kommando, AI’en kørte, eller dig.', anden: 'Ikke ændret af AI’en. Det kan være dig eller et andet program.', dig: 'Du ændrede filen i Aura, fx med Ret i siden eller Fortryd, og ingen har ændret den siden.' }
   };
   const help = by => byHelp[changes.source === 'session' ? 'session' : 'task'][by];
   const changeText = { ny: 'Ny', ændret: 'Ændret', slettet: 'Slettet' };
@@ -53,7 +53,7 @@
     const root = current?.root; if (!root) return;
     const data = await call('changesOverview'); if (current?.root !== root) return;
     changes.data = data; changes.stale = false; $('#changes-notice').hidden = true;
-    const options = [...data.tasks.map(task => option(task.id, `${task.status === 'idle' ? '' : 'Afbrudt · '}${versionTime(task.startedAt)} · ${shortLabel(task.label, 48)}`)), ...(data.session ? [option('session', `Hele samtalen · siden ${versionTime(data.session.startedAt)}`)] : [])];
+    const options = [...data.tasks.map(task => option(task.id, `${task.status === 'idle' ? '' : 'Afbrudt · '}${versionTime(task.startedAt)} · ${shortLabel(task.label, 48)}${task.undone ? " · fortrudt" : ""}`)), ...(data.session ? [option('session', `Hele samtalen · siden ${versionTime(data.session.startedAt)}`)] : [])];
     $('#changes-source').replaceChildren(...(options.length ? options : [option('', 'Ingen opgaver endnu')])); $('#changes-source').disabled = !options.length;
     const wanted = source || changes.source;
     changes.source = options.some(item => item.value === wanted) ? wanted : data.tasks[0]?.id || (data.session ? 'session' : '');
@@ -66,11 +66,14 @@
     $('#changes-versions').hidden = !featureOn('versioner');
     if (!view) { $('#changes-empty p').textContent = changes.data?.running ? 'AI’en arbejder. Ændringerne vises her, når opgaven er færdig.' : 'Når AI’en har lavet en opgave, ser du her, hvilke filer der er ændret, og præcis hvilke linjer.'; return; }
     const session = changes.source === 'session', { totals } = view;
-    $('#changes-heading').textContent = !totals.files ? (session ? 'Ingen filer er ændret i denne samtale' : 'Opgaven ændrede ingen filer') : session ? `${plural(totals.files, 'fil', 'filer')} ændret i denne samtale` : `${plural(totals.files, 'fil', 'filer')} ændret under opgaven`;
+    // Dine egne rettelser og fortrydelser i Aura står som dine, ikke som en opgave.
+    const own = !session && ['direct', 'undo'].includes(view.kind);
+    $('#changes-heading').textContent = !totals.files ? (session ? 'Ingen filer er ændret i denne samtale' : 'Opgaven ændrede ingen filer') : session ? `${plural(totals.files, 'fil', 'filer')} ændret i denne samtale` : own ? `${plural(totals.files, 'fil', 'filer')} ændret af dig` : `${plural(totals.files, 'fil', 'filer')} ændret under opgaven`;
     const lines = totals.files ? ` I alt ${plural(totals.added, 'linje', 'linjer')} tilføjet og ${totals.removed.toLocaleString('da-DK')} fjernet.` : '';
     $('#changes-basis').textContent = session
-      ? `Sammenlignet med filerne, da din første opgave i samtalen startede ${versionTime(view.startedAt)}. Alle ændringer er med, også dine egne.${lines}`
-      : `Sammenlignet med filerne, da opgaven »${shortLabel(view.label, 60)}« startede ${versionTime(view.startedAt)}.${view.status === 'idle' ? '' : view.status === 'stopped' ? ' Opgaven blev stoppet undervejs.' : ' Opgaven blev ikke færdig.'}${lines}`;
+      ? `Sammenlignet med filerne, da den første ændring i samtalen begyndte ${versionTime(view.startedAt)}. Alle ændringer er med, også dine egne.${lines}`
+      : own ? `${view.kind === 'undo' ? 'Du fortrød' : 'Du rettede i forhåndsvisningen'} ${versionTime(view.startedAt)}: ${shortLabel(view.label.replace(/^(Fortrudt|Tekstrettelse): /, ''), 90)}.${lines}`
+      : `Sammenlignet med filerne, da opgaven »${shortLabel(view.label, 60)}« startede ${versionTime(view.startedAt)}.${view.status === 'idle' ? '' : view.status === 'stopped' ? ' Opgaven blev stoppet undervejs.' : ' Opgaven blev ikke færdig.'}${view.undone ? ' Den er fortrudt siden.' : ''}${lines}`;
     const notes = [];
     if (totals.mixed) notes.push(`${plural(totals.mixed, 'fil er', 'filer er')} ændret af både AI’en og andre.`);
     if (totals.others) notes.push(session ? `${plural(totals.others, 'fil er', 'filer er')} ikke ændret af AI’en.` : `${plural(totals.others, 'fil blev', 'filer blev')} ændret under opgaven, men ikke af AI’ens filværktøjer.`);
@@ -258,16 +261,26 @@
   $('#code-reload').onclick = () => openFile(code.path, { line: code.from, to: code.to });
 
   // ---------- Filhenvisninger til AI'en ----------
-  let references = [];
+  // Målet fra forhåndsvisningen står først: ét element ad gangen, valgt med Ret i siden.
+  let references = [], target = null;
   const referenceLabel = ref => ref.from ? `${ref.path} · ${ref.from === ref.to ? `linje ${ref.from}` : `linje ${ref.from}–${ref.to}`}` : ref.path;
+  const promptHint = $('#prompt').placeholder;
   function renderReferences() {
-    $('#composer-refs').hidden = !references.length;
-    $('#composer-refs').replaceChildren(...references.map((ref, index) => {
+    $('#composer-refs').hidden = !references.length && !target;
+    const chips = references.map((ref, index) => {
       const chip = node('span', undefined, 'ref-chip'), remove = node('button', '×'); remove.type = 'button';
       remove.setAttribute('aria-label', `Fjern henvisningen til ${referenceLabel(ref)}`); remove.title = 'Fjern henvisningen';
       remove.onclick = () => { references.splice(index, 1); renderReferences(); $('#prompt').focus(); };
       chip.append(node('span', referenceLabel(ref)), remove); return chip;
-    }));
+    });
+    if (target) {
+      const chip = node('span', undefined, 'ref-chip target-chip'), remove = node('button', '×'); remove.type = 'button';
+      remove.setAttribute('aria-label', `Fjern målet ${target.label}`); remove.title = 'Fjern målet';
+      remove.onclick = () => { target = null; renderReferences(); $('#prompt').focus(); };
+      chip.append(node('span', `Mål: ${target.label}`), remove); chips.unshift(chip);
+    }
+    $('#composer-refs').replaceChildren(...chips);
+    $('#prompt').placeholder = target ? 'Hvad skal AI’en ændre her? Fx Gør teksten kortere.' : promptHint;
   }
   $('#code-reference').onclick = () => {
     if (!code.path || code.text === null) return;
@@ -328,7 +341,7 @@
   const stateText = { pending: 'Venter', running: 'I gang', completed: 'Afsluttet', error: 'Mislykkedes', waiting: 'Venter på dig', allowed: 'Du tillod den', 'allowed-task': 'Du tillod filændringer i projektet for resten af opgaven', auto: 'Tilladt, fordi du tillod filændringer for opgaven', rejected: 'Du afviste den', corrected: 'Du afviste den med en besked, og AI’en fortsatte', answered: 'Besvaret', expired: 'Ikke besvaret, fordi opgaven stoppede', stopped: 'Stoppet' };
   function entryState(entry) {
     // Rækker, hvor titlen allerede siger, hvad der skete, får kun en status, når noget er i gang eller fejlede.
-    if (['session', 'checkpoint', 'restore', 'preview', 'stop', 'result', 'error', 'plan', 'check'].includes(entry.kind) && !['running', 'error'].includes(entry.status)) return '';
+    if (['session', 'checkpoint', 'restore', 'preview', 'stop', 'result', 'error', 'plan', 'check', 'edit'].includes(entry.kind) && !['running', 'error'].includes(entry.status)) return '';
     if (['result', 'error'].includes(entry.kind)) return '';
     const parts = [stateText[entry.status] || entry.status || ''];
     if (['approval', 'question'].includes(entry.kind)) {
@@ -346,7 +359,7 @@
     if (entry.target && entry.kind === 'run') head.append(' ', node('span', `»${entry.target}«`, 'activity-quote'));
     else if (entry.target) {
       const target = node('span', undefined, 'activity-target');
-      const resolved = entry.kind === 'tool' || entry.kind === 'approval' ? resolve(entry.target) : null;
+      const resolved = ['tool', 'approval', 'edit'].includes(entry.kind) ? resolve(entry.target) : null;
       target.append(resolved ? referenceButton(resolved, document.createTextNode(entry.target)) : entry.target);
       head.append(' ', target);
     }
@@ -443,10 +456,10 @@
     $('#changes-overview').hidden = true; $('#changes-diff').hidden = true; $('#changes-empty').hidden = false; $('#changes-notice').hidden = true;
     Object.assign(code, { files: null, index: new Set(), names: new Map(), stale: true, path: '', text: null, from: null, to: null, anchor: null });
     $('#code-file').hidden = true; $('#code-error').hidden = true; $('#code-empty').hidden = false; $('#code-notice').hidden = true; $('#code-current').textContent = 'Vælg en fil'; $('#code-search').value = ''; $('#code-files').replaceChildren(); browser(true); updateReferenceButton();
-    references = []; renderReferences();
+    references = []; target = null; renderReferences();
     activity.running = running;
     // Fillisten først, så stier i den gemte aktivitet kan blive til links.
     await action(loadCodeList); await action(loadActivity);
   }
-  window.workspace = { show, onProject, openFile, showChange, linkify, linkifyAll, references: () => references.map(ref => ({ ...ref })), clearReferences: () => { references = []; renderReferences(); }, get active() { return active; } };
+  window.workspace = { show, onProject, openFile, showChange, linkify, linkifyAll, references: () => references.map(ref => ({ ...ref })), clearReferences: () => { references = []; target = null; renderReferences(); }, setTarget: value => { target = value ? { id: value.id, label: value.label } : null; renderReferences(); }, target: () => target && { ...target }, get active() { return active; } };
 })();

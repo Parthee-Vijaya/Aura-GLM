@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, protocol, session, safeStorage, Menu, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, protocol, session, safeStorage, Menu, shell, webFrameMain } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const crypto = require('node:crypto');
@@ -12,6 +12,7 @@ const { Publishing } = require('./core/publishing.cjs');
 const { Preferences } = require('./core/preferences.cjs');
 const { Designs } = require('./core/designs.cjs');
 const projectFiles = require('./core/project-files.cjs');
+const previewEdit = require('./core/preview-edit.cjs');
 const { OwnTools } = require('./core/own-tools.cjs');
 
 // Appen hedder Aura. Datamappen og navnet i nøgleringen bevares fra før navneskiftet; se core/app-identity.cjs.
@@ -46,6 +47,7 @@ if (app.isPackaged) require('./core/runtime.cjs').configure(process.resourcesPat
 
 async function activate(next) {
   if (workbench.running) throw new Error('Stop den aktive opgave, før du skifter projekt.');
+  await stopPicking('project');
   await workbench.activate(next);
   try { const restored = await restoration.previous(next.root); if (restored) await workbench.invalidatePlan(restored.id); }
   catch { await workbench.invalidatePlan(crypto.randomUUID()); workbench.historyWarning = 'Gendannelseskopien kan ikke læses. Projektfilerne er åbne, men den gamle plan er nulstillet. Kopien er bevaret i appens lokale data.'; }
@@ -131,6 +133,7 @@ handle('workspace:draft', input => {
 });
 handle('project:new', () => exclusive(async () => {
   if (workbench.running) throw new Error('Stop den aktive opgave, før du skifter projekt.');
+  await stopPicking('project');
   await devServer.activate(null);
   await workbench.close(); workbench.project = null; externalPreview = null;
   if (preview) await preview.close();
@@ -406,6 +409,80 @@ handle('preview:check', input => {
   workbench.log({ kind: 'check', title: 'Kontrol af forhåndsvisningen', detail: `${shown[0].toUpperCase()}${shown.slice(1)} · ${errors.length ? `${errors.length} ${errors.length === 1 ? 'fejl' : 'fejl'} i siden: ${errors[0].message}` : 'ingen fejl i konsollen'}. Aura har ikke klikket eller afprøvet funktioner.`, status: !last || last.status >= 400 || errors.length ? 'error' : 'completed' });
   return result;
 });
+// Ændringstilstand i forhåndsvisningen. Brugeren slår den selv til; først da indsættes valgscriptet i previewets
+// ramme. Sandbox, indholdspolitik og netværksregler er de samme, og siden kan ikke kalde Aura. Hvert valg hentes som
+// data og renses her, før det vises eller bruges.
+const picking = { active: false, key: '', generation: 0, selected: '' };
+const sendEvent = event => { if (window && !window.isDestroyed()) window.webContents.send('harness:event', event); };
+function previewFrame() {
+  const main = window?.webContents.mainFrame;
+  if (!main || !previewOrigin()) return null;
+  return main.frames.find(frame => { try { return !frame.detached && fromPreview(frame.url); } catch { return false; } }) || null;
+}
+async function injectPicker() {
+  const frame = previewFrame();
+  if (!frame) throw new Error('Forhåndsvisningen er ikke klar. Vent, til siden er vist, og prøv igen.');
+  const generation = ++picking.generation;
+  await frame.executeJavaScript(previewEdit.pickerSource({ key: picking.key, selected: picking.selected }));
+  void pickLoop(frame, generation);
+}
+async function pickLoop(frame, generation) {
+  const key = JSON.stringify(picking.key);
+  while (picking.active && generation === picking.generation) {
+    let value;
+    try { value = await frame.executeJavaScript(`window[${key}] ? window[${key}].next() : null`); } catch { return; }
+    if (!picking.active || generation !== picking.generation || !value || typeof value !== 'object') return;
+    if (value.type === 'exit') { await stopPicking('esc'); return; }
+    if (value.type === 'pick') await pickedElement(value.element, frame.url).catch(error => sendEvent({ type: 'preview.pick', state: 'error', message: error.message }));
+  }
+}
+async function stopPicking(reason) {
+  if (!picking.active) return;
+  picking.active = false; picking.generation++;
+  const frame = previewFrame(), key = JSON.stringify(picking.key);
+  try { await frame?.executeJavaScript(`window[${key}] && window[${key}].stop()`); } catch { /* Rammen er måske allerede væk. */ }
+  sendEvent({ type: 'preview.pick', state: 'off', reason });
+}
+// Et valgt element: hvor teksten står i koden, og om Aura kan rette den direkte.
+async function pickedElement(raw, frameURL) {
+  const root = project?.root, origin = previewOrigin();
+  if (!root || !origin) return;
+  const selection = previewEdit.sanitizeSelection(raw);
+  // Siden i forhold til forhåndsvisningens egen adresse, fx med Astros base-sti. Den statiske servers nøgle i stien sendes aldrig videre.
+  const base = preview?.url || externalPreview || origin, url = String(frameURL || '');
+  const relative = url.startsWith(base) ? url.slice(base.length) : url.startsWith(origin) ? url.slice(origin.length) : '';
+  selection.page = '/' + relative.split(/[?#]/)[0];
+  selection.pageFile = previewEdit.pageFileFor(relative, preview ? 'static' : detectedRuntime?.kind);
+  const found = selection.leaf && selection.raw && !selection.secret ? await previewEdit.findText(root, selection.raw, { tag: selection.tag, pageFile: selection.pageFile }) : { matches: [] };
+  if (project?.root !== root || !picking.active) return;
+  const choice = previewEdit.chooseSource(found.matches, { pageFile: selection.pageFile });
+  selection.source = choice.match ? { file: choice.match.file, line: choice.match.line } : null;
+  selection.places = choice.match ? [] : found.matches.slice(0, 5).map(match => `${match.file}:${match.line}`);
+  selection.sourceNote = choice.reason === 'many' ? `teksten står flere steder: ${selection.places.join(', ')}` : '';
+  selection.edit = previewEdit.editability(selection, choice);
+  selection.id = crypto.randomUUID();
+  picking.selected = selection.selector;
+  workbench.rememberSelection(selection);
+  sendEvent({ type: 'preview.selected', root, selection: { id: selection.id, name: selection.name, tag: selection.tag, text: selection.text, raw: selection.edit.possible ? selection.raw : '', label: selection.label, page: selection.page, source: selection.source, places: selection.places, edit: selection.edit, secret: selection.secret } });
+}
+handle('preview:pick', async value => {
+  if (!value?.on) { await stopPicking('user'); return { active: false }; }
+  if (!project) throw new Error('Åbn et projekt først.');
+  if (workbench.running || workbench.finishing) throw new Error('Vent, til AI’en er færdig, før du retter i siden.');
+  if (!previewOrigin()) throw new Error('Forhåndsvisningen kører ikke. Start den først.');
+  if (picking.active) await stopPicking('restart');
+  Object.assign(picking, { active: true, key: previewEdit.newKey(), selected: '' });
+  try { await injectPicker(); } catch (error) { picking.active = false; picking.generation++; throw error; }
+  return { active: true };
+});
+handle('preview:edit-text', value => { if (!project) throw new Error('Åbn et projekt først.'); return workbench.textEdit(value); });
+handle('changes:undo', value => exclusive(() => { if (!project) throw new Error('Åbn et projekt først.'); return workbench.undoTask(value); }));
+// Viser forhåndsvisningen teksten nu? Bruges efter en rettelse; svaret kommer fra siden og er kun en kontrol.
+handle('preview:contains', async value => {
+  const text = String(value?.text || '').replace(/\s+/g, ' ').trim().slice(0, 2000), frame = previewFrame();
+  if (!text || !frame) return false;
+  try { return (await frame.executeJavaScript(`String(document.body ? document.body.textContent : '').replace(/\\s+/g, ' ').includes(${JSON.stringify(text)})`)) === true; } catch { return false; }
+});
 handle('preview:prepare', value => exclusive(async () => {
   requireIdleProject();
   return devServer.prepare(value?.action, value?.scripts === true);
@@ -474,7 +551,7 @@ app.whenReady().then(() => {
   protocol.handle('harness', async request => {
     const url = new URL(request.url);
     const name = url.pathname.slice(1);
-    if (url.host !== 'app' || !['index.html', 'app.js', 'workspace.js', 'plan-view.js', 'planning.js', 'approval-view.js', 'approvals.js', 'model-advice.js', 'server.js', 'viewport.js', 'hosting.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name)) return new Response('Ikke fundet', { status: 404 });
+    if (url.host !== 'app' || !['index.html', 'app.js', 'workspace.js', 'plan-view.js', 'planning.js', 'approval-view.js', 'approvals.js', 'preview-edit.js', 'model-advice.js', 'server.js', 'viewport.js', 'hosting.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name)) return new Response('Ikke fundet', { status: 404 });
     return new Response(await fs.readFile(path.join(__dirname, 'ui', name)), { headers: { 'Content-Type': name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : 'text/html; charset=utf-8' } });
   });
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
@@ -506,6 +583,12 @@ app.whenReady().then(() => {
       if (event.level !== 'error' || !fromPreview(event.frame?.url)) return;
       const clean = require('./core/dev-server.cjs').cleanOutput;
       remember(previewLog.errors, { at: Date.now(), message: clean(String(event.message || '')).slice(0, 300), source: String(event.sourceId || '').replace(previewOrigin() || '', ''), line: event.lineNumber || null });
+    });
+    // Genindlæses forhåndsvisningen i ændringstilstand, indsættes valgscriptet igen i den nye side.
+    window.webContents.on('did-frame-finish-load', (_event, isMainFrame, processId, routingId) => {
+      if (isMainFrame || !picking.active) return;
+      let frame = null; try { frame = webFrameMain.fromId(processId, routingId); } catch { return; }
+      if (frame && fromPreview(frame.url)) injectPicker().catch(() => {});
     });
     window.webContents.on('will-navigate', event => event.preventDefault());
     window.webContents.on('will-attach-webview', event => event.preventDefault());

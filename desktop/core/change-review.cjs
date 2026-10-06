@@ -11,10 +11,11 @@ const change = (before, after) => before === null ? 'ny' : after === null ? 'sle
 const secret = (before, after) => Boolean((before && secretContent(before)) || (after && secretContent(after)));
 
 // ai: AI'ens filværktøj skrev filen. blandet: AI'en skrev den, men indholdet er ændret af andre bagefter.
-// kommando: ændret under en opgave, hvor AI'en kørte kommandoer. anden: ikke AI'en.
+// kommando: ændret under en opgave, hvor AI'en kørte kommandoer. dig: din rettelse eller fortrydelse i Aura. anden: ikke AI'en.
 function taskAttribution(task, file) {
   const entry = task.files.find(item => item.file === file);
   if (!entry) return null;
+  if (['direct', 'undo'].includes(task.kind)) return 'dig';
   if (task.aiFiles?.has(file)) {
     if (task.aiHashes?.has(file) && task.aiHashes.get(file) !== hash(value(entry.after))) return 'blandet';
     return 'ai';
@@ -26,7 +27,7 @@ function taskAttribution(task, file) {
 function sessionAttribution(file, baseline, current, tasks) {
   const touching = tasks.filter(task => task.files.some(item => item.file === file));
   if (!touching.length) return 'anden';
-  let expected = value(baseline), pure = true, ai = false, command = false;
+  let expected = value(baseline), pure = true, ai = false, command = false, user = true;
   for (const task of touching) {
     const entry = task.files.find(item => item.file === file);
     const by = taskAttribution(task, file);
@@ -34,24 +35,25 @@ function sessionAttribution(file, baseline, current, tasks) {
     if (by === 'ai' || by === 'blandet') ai = true;
     if (by !== 'ai') pure = false;
     if (by === 'kommando') command = true;
+    if (by !== 'dig' || value(entry.before) !== expected) user = false;
     expected = value(entry.after);
   }
-  if (expected !== value(current)) pure = false;
-  return pure ? 'ai' : ai ? 'blandet' : command ? 'kommando' : 'anden';
+  if (expected !== value(current)) { pure = false; user = false; }
+  return pure ? 'ai' : ai ? 'blandet' : command ? 'kommando' : user ? 'dig' : 'anden';
 }
 function fileSummary(file, before, after, by) {
   const stats = lineStats(before, after);
   return { file, change: change(before, after), added: stats.added, removed: stats.removed, by, secret: secret(before, after) };
 }
-const order = { ai: 0, blandet: 1, kommando: 2, anden: 3 };
+const order = { ai: 0, blandet: 1, kommando: 2, dig: 3, anden: 4 };
 const sorted = files => files.sort((a, b) => order[a.by] - order[b.by] || a.file.localeCompare(b.file, 'da'));
 function totals(files) {
-  return { files: files.length, added: files.reduce((n, f) => n + f.added, 0), removed: files.reduce((n, f) => n + f.removed, 0), ai: files.filter(f => f.by === 'ai').length, mixed: files.filter(f => f.by === 'blandet').length, others: files.filter(f => ['kommando', 'anden'].includes(f.by)).length };
+  return { files: files.length, added: files.reduce((n, f) => n + f.added, 0), removed: files.reduce((n, f) => n + f.removed, 0), ai: files.filter(f => f.by === 'ai').length, mixed: files.filter(f => f.by === 'blandet').length, others: files.filter(f => ['kommando', 'anden'].includes(f.by)).length, user: files.filter(f => f.by === 'dig').length };
 }
 
 function taskSummary(task) {
   const files = sorted((task.files || []).map(entry => fileSummary(entry.file, value(entry.before), value(entry.after), taskAttribution(task, entry.file))));
-  return { id: task.id, label: task.label, mode: task.mode, status: task.status, startedAt: task.startedAt, endedAt: task.endedAt, commands: task.commands || 0, skipped: task.skipped || 0, unavailable: Boolean(task.unavailable), checkpoint: task.checkpoint ? { status: task.checkpoint.status, message: task.checkpoint.message } : null, files, totals: totals(files) };
+  return { id: task.id, kind: task.kind || 'ai', undone: Boolean(task.undone), label: task.label, mode: task.mode, status: task.status, startedAt: task.startedAt, endedAt: task.endedAt, commands: task.commands || 0, skipped: task.skipped || 0, unavailable: Boolean(task.unavailable), checkpoint: task.checkpoint ? { status: task.checkpoint.status, message: task.checkpoint.message } : null, files, totals: totals(files) };
 }
 // baseline og current er øjebliksbilleder fra changes.capture: { files: Map(sti → tekst), skipped }.
 function sessionSummary(baseline, current, tasks) {
@@ -59,7 +61,7 @@ function sessionSummary(baseline, current, tasks) {
   const files = [];
   for (const file of names) {
     const before = value(baseline.files.get(file)), after = value(current.files.get(file));
-    if (before === after) continue;
+    if (before === after || baseline.skippedFiles?.has(file) || current.skippedFiles?.has(file)) continue;
     files.push(fileSummary(file, before, after, sessionAttribution(file, before, after, tasks)));
   }
   sorted(files);

@@ -39,7 +39,8 @@
     "test:integrations": "node scripts/verify-integrations.cjs",
     "test:workspace": "node scripts/verify-workspace.cjs",
     "test:planning": "node scripts/verify-planning.cjs",
-    "test:approvals": "node scripts/verify-approvals.cjs"
+    "test:approvals": "node scripts/verify-approvals.cjs",
+    "test:preview-edit": "node scripts/verify-preview-edit.cjs"
   },
   "engines": {
     "node": ">=22.12.0"

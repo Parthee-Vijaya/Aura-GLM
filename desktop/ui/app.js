@@ -105,7 +105,7 @@ function showAssistant(id, text) {
 }
 function appendMessage(text, role = 'assistant') { $('#project-intro').hidden = true; $('#start-idea').hidden = true; const el = node('div', text, `chat-message ${role}`); if (role === 'assistant' && text) markdownInto(el, text); $('#messages').append(el); $('#chat-content').scrollTop = $('#chat-content').scrollHeight; return el; }
 let guidedSetup = false, setupStep = 'choice';
-let setupActive = false, setupGeneration = 0, verifiedConnection = '', recovery = '', lastSentText = '';
+let setupActive = false, setupGeneration = 0, verifiedConnection = '', recovery = '', lastSentText = '', lastTarget = '', lastTargetRef = null;
 let preferredConnection = '', autoConnect = false;
 try { preferredConnection = localStorage.getItem('harness.preferredConnection') || ''; } catch {}
 function setupControls() {
@@ -256,11 +256,12 @@ function showAssets(assets) {
   }
 }
 function showPreview(url, external = false) {
-  if (current) current.previewURL = url;
+  if (current) { current.previewURL = url; current.previewExternal = Boolean(url && external); }
   $('#preview-stage').hidden = !url; $('#preview').hidden = !url; $('#preview-empty').hidden = Boolean(url);
   $('#preview').setAttribute('sandbox', external ? 'allow-scripts allow-same-origin' : 'allow-scripts');
   if (url) $('#preview').src = url; else $('#preview').removeAttribute('src');
   $('#preview-status').textContent = url ? (external ? 'Tilsluttet lokal server' : 'Lokal forhåndsvisning') : 'Ingen forhåndsvisning';
+  window.previewEdit?.onPreview();
 }
 async function displayProject(project) {
   if (!project) return;
@@ -438,8 +439,8 @@ async function loadRoutes(saved = '') {
   for (const route of routes) $('#route-select').append(option(route.id, route.name));
   if (routes.some(route => route.id === saved)) $('#route-select').value = saved;
 }
-function selection() { return { includeHistory: $('#include-history').checked, mode: $('#work-mode').value, planID: activePlan?.id, connectionID: $('#connection-select').value, modelID: $('#model-select').value, routeID: $('#route-select').value, references: [...document.querySelectorAll('#reference-choices input:checked')].map(el => el.value), fileRefs: window.workspace?.references() || [] }; }
-const detailLabels = { mode: 'Arbejdsmåde', brief: 'Projektbrief, der sendes', conversation: 'Tidligere samtale, der sendes', projectGuidance: 'Appens vejledning om projektvalg og design', planContext: 'Plan og afklaring, der sendes', projectChoices: 'Projektets opstartsvalg', fileReferences: 'Filhenvisninger i beskeden', connection: 'Forbindelse', model: 'Model', endpoint: 'Serveradresse', recipients: 'Modtagere', region: 'Behandlingssted', retention: 'Opbevaring', training: 'Brug til træning', price: 'Pris og gratisbegrænsninger', capabilities: 'Modelmuligheder', material: 'Hvad sendes?', references: 'Udvalgte private referencer', skills: 'Skills, AI’en kan hente', localStorage: 'Lokal historik og yderligere netværk', security: 'Forbindelsens sikkerhed', source: 'Kilde', checkedAt: 'Dokumentation kontrolleret', evidence: 'Grundlag' };
+function selection() { return { includeHistory: $('#include-history').checked, mode: $('#work-mode').value, planID: activePlan?.id, connectionID: $('#connection-select').value, modelID: $('#model-select').value, routeID: $('#route-select').value, references: [...document.querySelectorAll('#reference-choices input:checked')].map(el => el.value), fileRefs: window.workspace?.references() || [], previewTarget: window.workspace?.target()?.id || null }; }
+const detailLabels = { mode: 'Arbejdsmåde', brief: 'Projektbrief, der sendes', previewReferenceText: 'Valgt element, der sendes', conversation: 'Tidligere samtale, der sendes', projectGuidance: 'Appens vejledning om projektvalg og design', planContext: 'Plan og afklaring, der sendes', projectChoices: 'Projektets opstartsvalg', fileReferences: 'Filhenvisninger i beskeden', connection: 'Forbindelse', model: 'Model', endpoint: 'Serveradresse', recipients: 'Modtagere', region: 'Behandlingssted', retention: 'Opbevaring', training: 'Brug til træning', price: 'Pris og gratisbegrænsninger', capabilities: 'Modelmuligheder', material: 'Hvad sendes?', references: 'Udvalgte private referencer', skills: 'Skills, AI’en kan hente', localStorage: 'Lokal historik og yderligere netværk', security: 'Forbindelsens sikkerhed', source: 'Kilde', checkedAt: 'Dokumentation kontrolleret', evidence: 'Grundlag' };
 // Kort resumé i almindeligt dansk. Alle oplysninger ligger under "Se alle oplysninger".
 function showData(data, canSend) {
   $('#data-summary').replaceChildren();
@@ -451,8 +452,10 @@ function showData(data, canSend) {
   $('#data-history-text').textContent = data.historyIncluded ? 'Tidligere samtale medsendes efter dit tilvalg. Se indholdet under alle oplysninger.' : '';
   $('#data-history-text').hidden = !data.historyIncluded;
   // Filhenvisninger står i første lag, fordi de er nyt materiale, brugeren selv har valgt at dele.
-  $('#data-refs-text').textContent = data.fileReferences?.length ? `Filhenvisninger: ${data.fileReferences.join(', ')}. AI’en får stien og læser selv filen i projektet.` : '';
-  $('#data-refs-text').hidden = !data.fileReferences?.length;
+  // Et valgt element står også i første lag: AI'en får elementets tekst, placering og et uddrag af sidens HTML.
+  const shared = [data.fileReferences?.length ? `Filhenvisninger: ${data.fileReferences.join(', ')}. AI’en får stien og læser selv filen i projektet.` : '', data.previewReference ? `Valgt i forhåndsvisningen: ${data.previewReference}. AI’en får elementets tekst, placering og et uddrag af sidens HTML; se det under alle oplysninger.` : ''].filter(Boolean);
+  $('#data-refs-text').textContent = shared.join(' ');
+  $('#data-refs-text').hidden = !shared.length;
   for (const [label, value] of Object.entries({ 'AI': data.modelName ? `${data.modelName} · ${data.provider || data.connection}` : `${data.model} · ${data.connection}`, 'Hvor': data.regionShort || data.region, 'Træning': data.trainingShort || data.training, 'Pris': data.priceShort || data.price })) {
     $('#data-summary').append(node('dt', label), node('dd', Array.isArray(value) ? value.join(', ') : value));
   }
@@ -460,7 +463,7 @@ function showData(data, canSend) {
   $('#data-details').replaceChildren();
   for (const [key, label] of Object.entries(detailLabels)) {
     const value = data[key];
-    if (['fileReferences', 'brief'].includes(key) && !value?.length) continue;
+    if (['fileReferences', 'brief', 'previewReferenceText'].includes(key) && !value?.length) continue;
     const text = key === 'mode' ? ({ plan: 'Afklar og planlæg', build: 'Byg den valgte plan', free: 'Arbejd direkte' }[value]) : key === 'conversation' && !value ? 'Medsendes ikke. Den aktive samtale og en valgt plan indgår stadig.' : Array.isArray(value) ? value.join(', ') || 'Ingen' : value && typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value || 'Ingen');
     const dd = node('dd');
     if (text.length > 160) { const fold = node('details'); fold.append(node('summary', `Vis (${text.split(/\s+/).length} ord)`), node('pre', text)); dd.append(fold); }
@@ -473,7 +476,7 @@ async function sendNow(data, text) {
   $('#model-options').open = false; $('#task-dialog').close(); activityGroup = null; $('#connection-warning').hidden = true; $('#data-dialog').close(); setRunning(true, 'Starter agent …');
   if ($('#work-mode').value === 'free') { activePlan = null; $('#plan-card').hidden = true; }
   $('#run-review').hidden = true; if ($('#work-mode').value === 'build') $('#plan-card').hidden = true; if ($('#work-mode').value === 'plan') { activePlan = null; $('#plan-card').hidden = true; }
-  lastSentText = text; lastCheckpoint = null; rejectedThisRun = false; lastRejection = null; appendMessage(text + (data.fileReferenceText || ''), 'user'); $('#prompt').value = ''; await saveChatDraft();
+  lastSentText = text; lastTarget = data.previewReference || ''; lastTargetRef = window.workspace?.target() || null; lastCheckpoint = null; rejectedThisRun = false; lastRejection = null; appendMessage(text + (data.fileReferenceText || '') + (lastTarget ? `\n\nMål i forhåndsvisningen: ${lastTarget}` : ''), 'user'); $('#prompt').value = ''; await saveChatDraft();
   try { await call('send', { text, fingerprint: data.fingerprint }); acceptedFingerprint = reviewKey(data); window.workspace?.clearReferences(); }
   catch (error) { $('#prompt').value = text; await saveChatDraft(); setRunning(false, 'Fejl'); renderRunReview({ status: 'error', files: [], tools: [], failure: { kind: 'start', message: error.message } }); }
 }
@@ -507,7 +510,7 @@ function setRunning(value, status) {
   for (const button of document.querySelectorAll('#model-shortlist button, #recent-projects button')) button.disabled = value;
   $('#include-history').disabled = value;
   setupControls();
-  renderStatus();
+  renderStatus(); window.previewEdit?.available();
   if (!value && recovery) { const reason = recovery; recovery = ''; showConnectionWarning(reason); }
 }
 function showSkill() {
@@ -549,6 +552,8 @@ window.harness.onEvent(event => {
     setRunning(active, statuses[event.status] || event.status);
     if (['stopped', 'error'].includes(event.status)) {
       if (!$('#prompt').value) $('#prompt').value = lastSentText;
+      // Målet i forhåndsvisningen følger med beskeden tilbage, så Send igen retter det samme element.
+      if (lastTargetRef && !window.workspace?.target()) window.workspace?.setTarget(lastTargetRef);
       activePlan = null; $('#plan-card').hidden = true;
       if ($('#work-mode').value === 'build') { $('#work-mode').value = 'plan'; updateWorkMode(); }
     }
@@ -1318,6 +1323,21 @@ function undoButton(label, title) {
   const checkpoint = lastCheckpoint, task = shortLabel(lastSentText);
   return reviewButton(label, () => action(() => reviewRestoration({ commit: checkpoint.previous }, { title, confirm: title, label: `Fortrudt: ${task}` })));
 }
+// Fortryd uden version: Aura sætter tekstfilerne tilbage fra sit eget øjebliksbillede, hvis de stadig er, som opgaven
+// efterlod dem. Er en fil ændret siden, ændres intet, og beskeden siger hvorfor.
+function snapshotUndo(result, label) {
+  const button = reviewButton(label, () => action(async () => {
+    const undo = await call('changesUndo', { task: result.task }); window.previewEdit?.reloadStatic();
+    const done = node('p', `Fortrudt: ${undo.files.length === 1 ? '1 fil er sat tilbage til, som den' : `${undo.files.length} filer er sat tilbage til, som de`} var før opgaven.`, 'review-undone'); done.setAttribute('role', 'status');
+    const row = button.closest('.review-actions'); (row || button).before(done);
+    note.remove(); button.replaceWith(reviewButton('Se fortrydelsen', () => window.workspace.showChange(undo.task)));
+  }));
+  const note = info('fortryd', 'Aura sætter de tekstfiler tilbage, som opgaven ændrede, så længe appen er åben. Er en fil ændret siden, fortryder Aura ingenting. Store filer og filer, der ikke er tekst, røres ikke. Slå Versioner til for at kunne gå længere tilbage.');
+  const wrap = document.createDocumentFragment(); wrap.append(button, note); return wrap;
+}
+// Version, når opgaven er gemt som version; ellers Auras øjebliksbillede.
+const undoAction = (result, label, title) => lastCheckpoint?.status === 'saved' && result.files.length ? undoButton(label, title) : result.files.length && result.task ? snapshotUndo(result, label) : null;
+const targetLine = box => { if (lastTarget) box.append(node('p', `Mål: ${lastTarget}`, 'review-target')); };
 // Kontroller med faktiske resultater: forhåndsvisningen, som Aura selv genindlæser, og de kommandoer, AI'en kørte.
 function renderChecks(box, result) {
   const commands = result.tools.filter(tool => tool.tool === 'bash'), failed = result.tools.filter(tool => tool.status === 'error' && tool.tool !== 'bash');
@@ -1337,8 +1357,12 @@ function renderChecks(box, result) {
   box.append(section);
 }
 async function runPreviewCheck(item) {
-  const root = current?.root, url = current?.previewURL;
+  const root = current?.root;
   const done = (text, kind) => { if (current?.root !== root) return; item.className = kind; item.textContent = text; };
+  // Ved første udkast starter den statiske forhåndsvisning først, når filerne er læst. Aura spørger, før den siger, at den ikke kører.
+  if (!current?.previewURL) { try { revision = await call('revision') || revision; } catch {} }
+  if (current?.root !== root) return;
+  const url = current?.previewURL;
   if (!url) return done('Forhåndsvisning: kører ikke, så Aura har ikke kontrolleret siden. Start den under Forhåndsvisning.', 'check-unknown');
   const since = Date.now();
   try { revision = await call('revision') || revision; } catch {}
@@ -1374,18 +1398,18 @@ function renderRunReview(result) {
     else if (info.action === 'account') actions.append(reviewButton('Gennemgå AI-forbindelse', () => showSetup(info.title), true));
     if (info.action === 'model') actions.append(reviewButton('Vælg en anden model', () => openTaskSettings(), true));
     actions.append(reviewButton('Prøv igen', retrySend, info.action === 'retry'));
-    if (saved) actions.append(undoButton('Fortryd det, den nåede', 'Fortryd det, AI’en nåede'));
+    { const undo = undoAction(result, 'Fortryd det, den nåede', 'Fortryd det, AI’en nåede'); if (undo) actions.append(undo); }
     box.append(actions);
     if (result.failure?.message) { const fold = node('details', undefined, 'review-details'); fold.append(node('summary', 'Se detaljer'), node('pre', result.failure.message)); box.append(fold); }
     renderChecks(box, result); return;
   }
   if (result.status === 'stopped') {
     show();
-    box.append(node('h3', 'Du stoppede opgaven'), node('p', result.files.length ? filesText(result.files.length, 'AI’en nåede at ændre') : 'AI’en nåede ikke at ændre noget. Din besked står klar i skrivefeltet, så du kan sende den igen.'));
+    box.append(node('h3', 'Du stoppede opgaven')); targetLine(box); box.append(node('p', result.files.length ? filesText(result.files.length, 'AI’en nåede at ændre') : 'AI’en nåede ikke at ændre noget. Din besked står klar i skrivefeltet, så du kan sende den igen.'));
     reviewFiles(box, result);
     if (saved) box.append(node('p', 'Det, den nåede, er gemt som en version, så du kan fortryde det.', 'hint'));
     const actions = node('div', undefined, 'review-actions');
-    if (saved) actions.append(undoButton('Fortryd det, den nåede', 'Fortryd det, AI’en nåede'));
+    { const undo = undoAction(result, 'Fortryd det, den nåede', 'Fortryd det, AI’en nåede'); if (undo) actions.append(undo); }
     if (result.files.length) actions.append(reviewButton('Se ændringerne', () => window.workspace.showChange(result.task)));
     actions.append(reviewButton('Send igen', retrySend, !saved));
     box.append(actions); renderChecks(box, result); return;
@@ -1397,7 +1421,7 @@ function renderRunReview(result) {
     if (result.files.length) { box.append(node('p', filesText(result.files.length, 'Før det nåede AI’en at ændre'))); reviewFiles(box, result); }
     const actions = node('div', undefined, 'review-actions');
     actions.append(reviewButton('Skriv, hvad AI’en skal gøre i stedet', () => { if (!$('#prompt').value.trim()) $('#prompt').value = 'Gør det på en anden måde: '; $('#prompt').focus(); }, true), reviewButton('Send beskeden igen', () => { $('#prompt').value = lastSentText; retrySend(); }));
-    if (saved) actions.append(undoButton('Fortryd det, den nåede', 'Fortryd det, AI’en nåede'));
+    { const undo = undoAction(result, 'Fortryd det, den nåede', 'Fortryd det, AI’en nåede'); if (undo) actions.append(undo); }
     box.append(actions); renderChecks(box, result); return;
   }
   // En opgave, der slutter uden svar og uden ændringer, må ikke ligne et resultat.
@@ -1409,7 +1433,7 @@ function renderRunReview(result) {
   }
   if (result.mode === 'plan' && !result.files.length) { box.hidden = true; return; }
   show();
-  box.append(node('h3', 'Prøv resultatet i forhåndsvisningen'), node('p', result.files.length ? `${result.files.length} ${result.files.length === 1 ? 'fil er ændret' : 'filer er ændret'}:` : 'Ingen filændringer registreret.'));
+  box.append(node('h3', 'Prøv resultatet i forhåndsvisningen')); targetLine(box); box.append(node('p', result.files.length ? `${result.files.length} ${result.files.length === 1 ? 'fil er ændret' : 'filer er ændret'}:` : 'Ingen filændringer registreret.'));
   reviewFiles(box, result);
   if (result.skipped) box.append(node('p', 'Nogle filer er udeladt af oversigten på grund af filtype eller størrelse.', 'hint'));
   renderChecks(box, result);
@@ -1420,6 +1444,7 @@ function renderRunReview(result) {
     if (lastCheckpoint.kept?.length) box.append(node('p', `Disse filer blev ikke gemt, fordi de kan indeholde hemmeligheder eller er for store: ${lastCheckpoint.kept.join(', ')}.`, 'hint'));
     actions.append(undoButton('Fortryd opgaven', 'Fortryd opgaven'), reviewButton('Se ændringerne', () => window.workspace.showChange(result.task)));
   } else if (result.files.length) {
+    const undo = undoAction(result, 'Fortryd opgaven', 'Fortryd opgaven'); if (undo) actions.append(undo);
     actions.append(reviewButton('Gennemgå ændringer', () => window.workspace.showChange(result.task)));
     if (featureOn('versioner')) actions.append(reviewButton('Gem version', () => $('#git-button').click()));
   }

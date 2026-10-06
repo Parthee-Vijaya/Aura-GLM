@@ -63,6 +63,7 @@ Tæl de synlige valg, før en skærm kaldes færdig, og gennemfør forløbet i a
 - Nye projekter har versioner fra start. Efter hver AI-opgave gemmes en version, og resultatkortet tilbyder Fortryd opgaven. Versioner viser "Alt er gemt" eller antallet af ugemte ændringer, én knap til Gem version og en historik med tidspunkter og Gå tilbage hertil. Filvalg, branch og identitet ligger under Avanceret og Se detaljer.
 - Appen åbner det projekt, der sidst var åbent. Et projekt, der er lukket med Nyt projekt, åbnes ikke igen.
 - Projektmenuen indeholder versioner, sikkerhedskopi og ny samtale. Del åbner udgivelse til test. Del og Sikkerhedskopi vises kun, når Deling og udgivelse er slået til. Funktionen er ikke med i den anbefalede pakke, så længe Del kræver udviklerværktøjer.
+- Ret i siden er en frivillig til/fra-knap i forhåndsvisningens værktøjslinje. Kortet for et valgt element har højst to hovedvalg: Ret teksten og Bed AI'en ændre det. Kan Aura ikke rette selv, står grunden på kortet, og AI'en er det fremhævede valg. Tekst rettes i et felt i Aura, aldrig i selve siden, og Fortryd står ved resultatet. Et mål for AI'en står over skrivefeltet og i Før du sender, før det sendes.
 - Preview viser skærmstørrelse og genindlæsning. Server, skalering og egne mål ligger i en menu. Hvis en framework-app mangler sin server, vises én handling i det tomme preview: Start forhåndsvisning. Installation og start gennemgås i en dialog; procesloggen er foldet sammen.
 
 ## Rolige skærme

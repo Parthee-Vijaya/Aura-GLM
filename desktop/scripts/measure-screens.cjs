@@ -119,6 +119,15 @@ const server = http.createServer(async (req, res) => {
     // Resultatkortet måles, når Auras kontrol af forhåndsvisningen er færdig.
     await win.locator('#run-review .check-list li').first().waitFor(); await win.waitForFunction(() => !document.querySelector('#run-review .check-pending'), null, { timeout: 30000 });
     await measure('resultat', '#run-review', 'Resultatkort'); task = null;
+    // Ret i siden på AI'ens første udkast: vælg, valgt element, ny tekst og resultat. Rettelsen fortrydes bagefter.
+    begin('Ret en tekst i siden');
+    await click('#preview-pick'); await measure('ret-i-siden', '#panel-preview', 'Ret i siden: vælg i forhåndsvisningen');
+    tasks[task]++; await win.frameLocator('#preview').locator('h1').click(); await win.locator('#pick-card').waitFor(); await measure('valgt-element', '#pick-card', 'Ret i siden: valgt element');
+    await click('#pick-edit'); await measure('ret-tekst', '#pick-card', 'Ret i siden: ny tekst');
+    await win.fill('#pick-value', 'Mødelokaler'); await click('#pick-form button[type=submit]');
+    await win.locator('#pick-check.check-ok').waitFor({ timeout: 30000 }); await measure('rettet', '#pick-card', 'Ret i siden: rettet med Fortryd'); task = null;
+    await win.click('#pick-undo'); await win.locator('#pick-check.check-ok').filter({ hasText: 'oprindelige' }).waitFor({ timeout: 30000 });
+    await win.click('#pick-close'); await win.click('#preview-pick');
     // Fortryd og versioner.
     begin('Fortryd opgaven');
     await click('#run-review button >> text=Fortryd opgaven'); await win.waitForFunction(() => !document.querySelector('#restore-confirm').disabled);
@@ -127,7 +136,10 @@ const server = http.createServer(async (req, res) => {
     await helpers.menuClick(win, '#git-button'); await win.locator('#git-summary').filter({ hasText: 'Alt er gemt.' }).waitFor(); await measure('versioner', '#git-dialog', 'Versioner');
     await win.click('#git-advanced > summary'); await measure('versioner-avanceret', '#git-dialog', 'Versioner · Avanceret'); await win.click('[data-close="git-dialog"]');
     // Arbejdsfladens faner efter opgaven og fortrydelsen: Ændringer, Kode og Aktivitet.
-    await win.click('#tab-changes'); await win.locator('#changes-heading').filter({ hasText: 'ændret' }).waitFor(); await measure('aendringer', '#panel-changes', 'Ændringer');
+    // Ændringer måles på AI'ens opgave, ikke på tekstrettelsen ovenfor, så målingen kan sammenlignes med tidligere.
+    await win.click('#tab-changes'); await win.locator('#changes-heading').filter({ hasText: 'ændret' }).waitFor();
+    await win.selectOption('#changes-source', await win.locator('#changes-source option').filter({ hasText: 'Byg første udkast' }).getAttribute('value'));
+    await win.locator('#changes-heading').filter({ hasText: 'under opgaven' }).waitFor(); await measure('aendringer', '#panel-changes', 'Ændringer');
     await win.click('#tab-code'); await win.click('#code-files .code-file[data-path="public/index.html"]'); await win.locator('#code-title').filter({ hasText: 'public/index.html' }).waitFor(); await measure('kode', '#panel-code', 'Kode');
     await win.click('#tab-activity'); await win.locator('#activity-list .activity-entry').first().waitFor(); await measure('aktivitet', '#panel-activity', 'Aktivitet');
     await win.click('#tab-preview');

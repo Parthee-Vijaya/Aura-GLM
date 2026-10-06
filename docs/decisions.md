@@ -46,6 +46,18 @@ Valg i implementeringen, som kan ændres:
 - **Én status:** fejl under en opgave vises kun på resultatkortet. Advarselsboksen over samtalen bruges kun, når modelkataloget ikke kan læses før afsendelse.
 - **Kontrollen** bruger Electrons konsolbeskeder og HTTP-status for previewets ramme i hovedprocessen. Previewets isolation og indholdspolitik er uændrede.
 
+Fjerde milepæl, rettelser i forhåndsvisningen, er implementeret 6. oktober 2026. Brugeren valgte:
+- **Tekstrettelse i et felt i Aura,** ikke direkte i siden. Siden forbliver uændret, mens man skriver, og det virker ens for HTML, React og Astro.
+- **Gem straks med Fortryd.** Rettelsen står under Ændringer som brugerens egen.
+- **Fortryd virker altid:** med versionen, når opgaven er gemt som version, ellers fra Auras øjebliksbillede, så længe appen er åben. Det gælder alle AI-opgaver.
+
+Valg i implementeringen, som kan ændres:
+- **Valgscriptet** indsættes fra hovedprocessen i previewets ramme, kun mens brugeren har slået Ret i siden til, og fjernes igen. Sandbox, indholdspolitik og netværksregler er uændrede, og siden får ingen IPC eller preload. Det, siden sender tilbage, er upålidelige data og renses i hovedprocessen. Electron kan kun køre scriptet i sidens egen verden, så sidens eget script kan se markeringen.
+- **Direkte rettelse kun ved ét sikkert sted:** teksten skal stå ét sted i kildefilerne, på den viste side eller i det rette tag. Kommentarer, scripts, genererede mapper og beskyttede filer tæller ikke. Ellers siger kortet hvorfor, og AI'en er vejen videre. Aura gætter ikke.
+- **Tegn, der kræver kode,** fx `{` i JSX eller Astro, rettes ikke direkte. `&`, `<` og `>` skrives som HTML-tegnkoder i HTML-filer.
+- **Beskrivelsen til AI'en** kommer fra Auras eget valg i hovedprocessen og står ordret under Før du sender. Den indgår i samtykket som en filhenvisning, men starter ikke en ny modelsession. Den statiske servers nøgle i adressen sendes ikke.
+- **Øjebliksbilleder:** en fil, Aura kun kunne læse før eller efter en opgave, fx fordi den blev for stor, tælles nu som udeladt og ikke som ny eller slettet. Det gør Ændringer mere præcis og forhindrer, at Fortryd sletter en fil, der fandtes før.
+
 ## Få valg og udvælgelse af skills · 29. september 2026
 
 Besluttet i projektsamtalen: Hvert beslutningspunkt har ét eller to hovedvalg og højst tre til fire synlige muligheder med resten bag ét link, fx "Bruger du en anden udbyder? Vælg en anden". Opsætningen skal kunne gennemføres uden tvivlsspørgsmål af en person uden teknisk baggrund. Reglen står i `AGENTS.md` og `desktop/DESIGN.md`.

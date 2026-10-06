@@ -2,6 +2,56 @@
 
 Kontrolleret 28. september 2026. Dette er status for den aktuelle arbejdsmappe, ikke en erklæring om, at alle installationsfiler eller modeller er klar. Der er ikke committet eller pushet under denne gennemgang.
 
+## Rettelser i forhåndsvisningen · 6. oktober 2026
+
+Fjerde milepæl i [planen for brugerfladen](ux-plan.md). Afprøvet på Mac med OpenCode 1.18.33, React 19.3.0, Vite 8.3.1 og Astro 7.3.5. Der er ikke committet eller pushet.
+
+- **Fundet i Electron og brugt:** Hovedprocessen kan køre et script i forhåndsvisningens ramme, også når rammen er sandboxet og kører i sin egen proces, og scriptet kan levere brugerens valg tilbage som data. Scriptet kører i sidens egen verden; Electron tilbyder ingen isoleret verden for en underramme. Sandbox, indholdspolitik og netværksregler er ikke ændret, og siden får ingen preload eller IPC.
+- **Enhedstestet:** 176 automatiske tests består, når testfilerne køres én ad gangen. De 10 nye dækker:
+  - at sidens tekst findes i koden trods linjeskift, indrykning og HTML-tegnkoder;
+  - at kommentarer, scripts, installerede pakker, build-mapper, `.env`, `secrets` og filer med mulige nøgler ikke er med i søgningen;
+  - valget af kilde: én forekomst på den viste side, ellers i projektet, ellers i det rette tag, og ellers ingen;
+  - hvordan den nye tekst skrives i HTML, JSX, Astro og Markdown, og hvornår Aura overlader den til AI'en;
+  - rensning af data fra siden og en mulig nøgle i siden;
+  - tekstrettelse, der kun ændrer teksten, og Fortryd byte for byte, også når filen er ændret siden;
+  - Fortryd af en AI-opgave uden version: ny fil slettes, slettet fil kommer igen, beskyttede stier og stier uden for projektet afvises;
+  - at en fil, Aura kun kunne læse før eller efter en opgave, ikke står som ny eller slettet.
+  Køres alle testfiler samtidig, fejler 5 eksisterende tests med tidsgrænser for opstart af Node og motoren, mens computeren var travl (backup og macOS' programkontrol). De består alle, når de køres én ad gangen.
+- **Kørt mod rigtigt materiale i Electron:** `npm run test:preview-edit` bruger den rigtige OpenCode-motor, rigtige projektfiler i en midlertidig mappe uden Git og en kontrolleret modelserver med faste svar. React og Astro kører med rigtige pakker og deres egen udviklingsserver. Prøven har 13 delprøver:
+  1. Ret i siden er slået fra fra start, og intet er indsat i siden.
+  2. Slået til: sandbox og indholdspolitik er uændrede, siden har ingen adgang til Aura, og valgscriptets nøgle kan ikke tælles op.
+  3. Sidens knap og link reagerer ikke, mens man vælger. Kortet viser navn, tekst og linjen i koden.
+  4. Tekstrettelsen ændrer kun teksten i filen, ses i forhåndsvisningen (efter ca. 0,8 s), står under Ændringer som din og i Aktivitet, og Fortryd giver filen byte for byte tilbage.
+  5. Kontrollen siger det, når forhåndsvisningen ikke viser rettelsen; her skriver sidens eget script teksten tilbage.
+  6. Flere forekomster, et element med andre elementer og en mulig nøgle i siden rettes ikke direkte; kortet siger hvorfor.
+  7. Tastatur: Escape afslutter og fjerner scriptet, Enter slår til, pil ned og Enter vælger, og fokus flytter til kortet.
+  8. Efter genindlæsning kan man stadig vælge.
+  9. Målrettet AI-ændring: målet står over skrivefeltet, i Før du sender, i beskeden til modellen, i samtalen og på resultatkortet. Den mulige nøgle og den statiske servers nøgle i adressen sendes ikke.
+  10. Fortryd opgaven uden version sætter filen tilbage og kan ikke gentages.
+  11. 980 × 720 uden vandret rulning; kortet og knappen står i panelet ved 125 % og 150 % tekst; valg virker i den skalerede mobilvisning; reduceret bevægelse slår kortets animation fra.
+  12. React med Vite: JSX-teksten rettes i `src/App.tsx` og vises med HMR; Fortryd byte for byte; `Tilmeld {n}` rettes ikke direkte, og Reacts klik kører ikke, mens man vælger.
+  13. Astro: overskriften rettes i `src/pages/index.astro` med `&` som HTML-tegnkode; tekst med en variabel rettes ikke direkte.
+- **Fundet og rettet under afprøvningen:**
+  - Den statiske forhåndsvisning opdagede ikke en rettelse, der kom, før dens første kontrol af filerne var færdig. Kortets kontrol sagde det korrekt. Aura genindlæser nu selv siden efter en rettelse og en fortrydelse.
+  - Målingen viste, at resultatkortet efter første udkast kunne sige, at forhåndsvisningen ikke kørte, fordi den statiske server først starter, når den nye side er opdaget. Kontrollen spørger nu efter den nye forhåndsvisning først. Fejlen fandtes før milepælen; i milepæl 3's måling startede forhåndsvisningen tilfældigvis først.
+  - Astros udviklerværktøj lægger sine egne elementer i siden. Vælges det, står det som Element og kan kun ændres af AI'en.
+- **Kørsler:** Alle 18 Electron-prøver består, også de 17 fra tidligere milepæle. `test:frameworks` fejlede én gang, fordi et skærmbillede i Playwright ikke blev taget inden for 20 sekunder; den bestod ved næste kørsel. Valget i den nedskalerede mobilvisning fejlede først, fordi Playwright regner klik forkert i en skaleret ramme i en anden proces. Prøven klikker nu med musen på det sted, knappen ses, og det virker.
+- **Målt:** 2.776 synlige ord, 235 valg og 49 ⓘ på 40 skærme mod 2.651, 218 og 48 på 36 skærme efter milepæl 3. Ingen sidefejl.
+  - Fire nye skærme: Ret i siden (38 ord, 4 valg, 1 ⓘ), valgt element (15 ord, 4 valg inkl. luk og filnavnet), ny tekst (13 ord) og rettet med Fortryd (16 ord, 3 valg).
+  - Ret en tekst i siden tager 4 klik: Ret i siden, elementet, Ret teksten og Gem.
+  - Ændringer og Aktivitet har flere ord og valg, fordi målingens rettelse og fortrydelse står der.
+  - Arbejdsområdet og resultatkortet er uændrede. Ret i siden er skjult, indtil der er en side.
+
+Ikke afprøvet:
+- En rigtig model, der får et mål fra forhåndsvisningen.
+- Vue og Svelte; reglerne for filtyperne er kun enhedstestet.
+- Komponenter med egen shadow DOM og sider med meget store DOM-træer.
+- Skærmlæser (VoiceOver), Windows, en pakket app og en person uden teknisk baggrund.
+
+Kendte begrænsninger:
+- Fortryd for en tekstrettelse står på kortet, indtil man vælger et nyt element. Derefter er Versioner vejen tilbage, når projektet har dem.
+- Sidens eget script kan se markeringen og kalde valgscriptet, mens Ret i siden er slået til. Det, siden sender, renses og vises, før noget ændres eller sendes.
+
 ## Godkendelser og fejl · 6. oktober 2026
 
 Tredje milepæl i [planen for brugerfladen](ux-plan.md). Afprøvet på Mac med OpenCode 1.18.33. Der er ikke committet eller pushet.

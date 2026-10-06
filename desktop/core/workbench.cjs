@@ -18,6 +18,7 @@ const { taskSummary, sessionSummary, fileDetail, sessionAttribution, hash } = re
 const projectFiles = require('./project-files.cjs');
 const { cleanOutput } = require('./dev-server.cjs');
 const brief = require('./brief.cjs');
+const previewEdit = require('./preview-edit.cjs');
 const SKIP_ANSWER = 'Brugeren springer over: vælg selv, og skriv antagelsen tydeligt i planen.';
 const modeTitles = { plan: 'Opgave: afklar og planlæg', build: 'Opgave: byg efter planen', free: 'Opgave: arbejd direkte' };
 const shortText = (text, max = 90) => { const value = String(text || '').replace(/\s+/g, ' ').trim(); return value.length <= max ? value : value.slice(0, max).replace(/[\s,.;:]+\S*$/, '') + ' …'; };
@@ -89,7 +90,7 @@ class Workbench {
   async activate(project) {
     await this.close(); this.project = project; this.runUser = null; this.runText = new Map(); this.runRoles = new Map(); this.plan = null; this.planConversation = []; this.historyWarning = '';
     this.usageBase = emptyUsage(); this.runSteps = new Map(); this.runPrice = null;
-    this.questions = new Map(); this.lastPlan = null; this.brief = brief.initialBrief(project.purpose);
+    this.questions = new Map(); this.lastPlan = null; this.brief = brief.initialBrief(project.purpose); this.previewSelections = new Map();
     try {
       this.workspace = await this.history.open(project); this.plan = this.workspace.plan; this.planConversation = this.workspace.planConversation; this.usageBase = { ...emptyUsage(), ...(this.workspace.usage || {}) };
       this.lastPlan = this.workspace.lastPlan || null;
@@ -259,17 +260,22 @@ class Workbench {
     disclosure.brief = (context.features.planlaegning !== false || mode !== 'free') ? brief.briefText(this.brief) : '';
     disclosure.fileReferences = checkedRefs.map(projectFiles.referenceLabel);
     disclosure.fileReferenceText = checkedRefs.length ? `\n\nFilhenvisninger fra Aura (læs selv filerne i projektet):\n${disclosure.fileReferences.map(label => `- ${label}`).join('\n')}` : '';
+    // Et element valgt i forhåndsvisningen. Beskrivelsen kommer fra Auras eget valg, ikke fra skærmen, og står ordret under Før du sender.
+    const target = input.previewTarget ? this.previewSelections?.get(input.previewTarget) : null;
+    if (input.previewTarget && !target) throw new Error('Det valgte element er ikke længere aktuelt. Vælg det igen i forhåndsvisningen.');
+    disclosure.previewReference = target ? previewEdit.referenceLabel(target) : '';
+    disclosure.previewReferenceText = target ? `\n\n${previewEdit.referenceText(target)}` : '';
     disclosure.localStorage = 'Appen gemmer kladde, plan og samtale lokalt, uden kryptering af selve indholdet. Ny samtale arkiverer den tidligere samtale. Der er ingen automatisk slettefrist. OpenCode gemmer samtale- og værktøjshistorik lokalt i appens datamappe. API-nøgler gemmes separat og krypteret. Kommandoer og webopslag kan kontakte andre tjenester efter godkendelse.';
     // Filhenvisninger ændrer ikke AI'ens regler og starter derfor ikke en ny modelsession. De indgår i samtykket nedenfor.
-    const { planContext, conversation, fileReferences, fileReferenceText, brief: briefContext, ...consent } = disclosure;
+    const { planContext, conversation, fileReferences, fileReferenceText, previewReference, previewReferenceText, brief: briefContext, ...consent } = disclosure;
     // Grundregler, skills og funktioner indgår, så en ændring starter en ny modelsession med de nye instruktioner.
     disclosure.fingerprint = crypto.createHash('sha256').update(JSON.stringify(consent) + JSON.stringify({ rules: context.rules, skills: context.skills, features: context.features, autoCheckpoint })).digest('hex');
     // Resuméet før afsendelse vises igen, når modtager, model, vilkår, pris eller delt materiale ændrer sig. Skift fra plan til byg er ikke en ny modtager.
-    const recipient = { connection: selection.connection.id, endpoint: disclosure.endpoint, model: disclosure.model, route: disclosure.route, recipients: disclosure.recipients, region: disclosure.region, retention: disclosure.retention, training: disclosure.training, price: disclosure.price, security: disclosure.security, references, historyIncluded: disclosure.historyIncluded, ...(fileReferences.length ? { fileReferences } : {}) };
+    const recipient = { connection: selection.connection.id, endpoint: disclosure.endpoint, model: disclosure.model, route: disclosure.route, recipients: disclosure.recipients, region: disclosure.region, retention: disclosure.retention, training: disclosure.training, price: disclosure.price, security: disclosure.security, references, historyIncluded: disclosure.historyIncluded, ...(fileReferences.length ? { fileReferences } : {}), ...(previewReference ? { previewReference } : {}) };
     disclosure.consentKey = crypto.createHash('sha256').update(JSON.stringify(recipient)).digest('hex');
     disclosure.accepted = ((await this.store.project(this.project.root)).consents || []).includes(disclosure.consentKey);
     disclosure.modelName = selection.model.name || selection.model.id;
-    this.prepared = { mode, ...selection, disclosure, references, fileRefs: checkedRefs, context, autoCheckpoint, startup, root: this.project.root };
+    this.prepared = { mode, ...selection, disclosure, references, fileRefs: checkedRefs, previewTarget: target, context, autoCheckpoint, startup, root: this.project.root };
     return disclosure;
   }
   async send(input) {
@@ -279,15 +285,17 @@ class Workbench {
     if (typeof input.text !== 'string' || !input.text.trim() || input.text.length > 30000) throw new Error('Skriv en besked på højst 30.000 tegn.');
     if (prepared.mode === 'build' && prepared.disclosure.planID !== this.plan?.id) throw new Error('Planen har ændret sig. Gennemgå den igen.');
     if (prepared.mode === 'free') { this.retirePlan('direkte'); this.planConversation = []; }
-    // Beskeden, som den faktisk sendes: brugerens tekst og eventuelle filhenvisninger, der er vist i Før du sender.
-    const text = input.text + (prepared.disclosure.fileReferenceText || '');
+    // Beskeden, som den faktisk sendes: brugerens tekst og eventuelle henvisninger, der er vist i Før du sender.
+    // Samtalen viser målet som én linje; den fulde beskrivelse af elementet står i Før du sender.
+    const text = input.text + (prepared.disclosure.fileReferenceText || '') + (prepared.disclosure.previewReferenceText || '');
+    const shown = input.text + (prepared.disclosure.fileReferenceText || '') + (prepared.disclosure.previewReference ? `\n\nMål i forhåndsvisningen: ${prepared.disclosure.previewReference}` : '');
     this.runMode = prepared.mode; this.runText = new Map(); this.runTools = new Map(); this.runRoles = new Map(); this.runStopped = false; this.allowProjectEdits = false; this.runFinish = null; this.runFailure = null;
     this.usageBase = this.currentUsage(); this.runSteps = new Map(); this.runPrice = connections.priceFor(prepared.connection, prepared.model, prepared.route);
     if (prepared.mode === 'plan') {
       if (this.planConversation.join('\n').length + text.length > 120000) throw new Error('Afklaringen er blevet for lang. Vælg Ny samtale for at starte en ny plan.');
       this.retirePlan('ny'); this.planConversation.push(text);
     }
-    this.runUser = { id: crypto.randomUUID(), role: 'user', text };
+    this.runUser = { id: crypto.randomUUID(), role: 'user', text: shown };
     await this.saveHistory('working', true);
     const generation = ++this.generation;
     this.starting = true;
@@ -295,8 +303,8 @@ class Workbench {
     this.running = true; this.emit({ type: 'run.status', status: 'starting' });
     const session = this.session();
     this.lastCheckpoint = null; this.runBefore = null;
-    this.task = { id: crypto.randomUUID(), root: this.project.root, label: input.text, mode: prepared.mode, startedAt: Date.now(), aiFiles: new Set(), aiHashes: new Map(), reads: [], completed: new Set(), commandParts: new Set(), commands: 0 };
-    this.log({ id: `run-${this.task.id}`, kind: 'run', task: this.task.id, title: modeTitles[prepared.mode], target: shortText(input.text), detail: `${prepared.disclosure.modelName || prepared.model.id} · ${prepared.disclosure.provider || prepared.connection.name}${prepared.fileRefs?.length ? ` · ${prepared.fileRefs.length === 1 ? '1 filhenvisning' : `${prepared.fileRefs.length} filhenvisninger`}` : ''}`, status: 'running', started: this.task.startedAt });
+    this.task = { id: crypto.randomUUID(), root: this.project.root, label: input.text, target: prepared.disclosure.previewReference || '', mode: prepared.mode, startedAt: Date.now(), aiFiles: new Set(), aiHashes: new Map(), reads: [], completed: new Set(), commandParts: new Set(), commands: 0 };
+    this.log({ id: `run-${this.task.id}`, kind: 'run', task: this.task.id, title: modeTitles[prepared.mode], target: shortText(input.text), detail: `${prepared.disclosure.modelName || prepared.model.id} · ${prepared.disclosure.provider || prepared.connection.name}${prepared.fileRefs?.length ? ` · ${prepared.fileRefs.length === 1 ? '1 filhenvisning' : `${prepared.fileRefs.length} filhenvisninger`}` : ''}${prepared.disclosure.previewReference ? ` · mål: ${prepared.disclosure.previewReference}` : ''}`, status: 'running', started: this.task.startedAt });
     try {
       this.runBefore = await capture(this.project.root); checkStopped();
       // Samtalens udgangspunkt er filerne, da den første opgave startede.
@@ -421,6 +429,69 @@ class Workbench {
     const files = new Map();
     for (const task of this.session()?.tasks || []) for (const entry of task.files) files.set(entry.file, entry.after === null ? 'slettet' : entry.before === null ? 'ny' : 'ændret');
     return files;
+  }
+  // ---------- Rettelser i forhåndsvisningen og fortryd ----------
+  // Et valgt element huskes, så beskeden til AI'en og tekstrettelsen bruger Auras eget valg og ikke data fra skærmen.
+  rememberSelection(selection) {
+    if (!this.previewSelections) this.previewSelections = new Map();
+    this.previewSelections.set(selection.id, selection);
+    for (const key of this.previewSelections.keys()) if (this.previewSelections.size > 20) this.previewSelections.delete(key);
+    return selection;
+  }
+  // Samtalens udgangspunkt sættes før den første ændring, også når den første ændring er brugerens egen rettelse.
+  async ensureBaseline() {
+    const session = this.session();
+    if (!session.baseline) { session.baseline = await capture(this.project.root); session.startedAt = Date.now(); }
+    return session;
+  }
+  // En ændring, brugeren selv har lavet i Aura, står under Ændringer og Aktivitet som brugerens.
+  recordEdit({ kind, label, files, title, target, detail, undoes }) {
+    const session = this.session(), at = Date.now();
+    const task = { id: crypto.randomUUID(), root: this.project.root, kind, label, mode: kind, status: 'idle', startedAt: at, endedAt: at, files, skipped: 0, unavailable: false, commands: 0, aiFiles: new Set(), aiHashes: new Map(), checkpoint: null, ...(undoes ? { undoes } : {}) };
+    session.tasks.push(task); while (session.tasks.length > 20) session.tasks.shift();
+    this.log({ id: `edit-${task.id}`, kind: 'edit', task: task.id, title, target, detail, status: 'completed', at });
+    this.emit({ type: 'changes.updated', root: task.root, task: task.id });
+    return task;
+  }
+  async textEdit(input) {
+    if (this.running || this.finishing) throw new Error('Vent, til AI’en er færdig, før du retter i siden.');
+    const selection = this.previewSelections?.get(input?.id);
+    if (!selection) throw new Error('Vælg elementet igen i forhåndsvisningen.');
+    if (!selection.edit?.possible) throw new Error(selection.edit?.reason || 'Teksten kan ikke rettes direkte.');
+    await this.ensureBaseline();
+    const result = await previewEdit.applyTextEdit(this.project.root, selection, input.text);
+    // Kortet og en ny rettelse bruger den nye tekst. Placeringen findes igen ved næste rettelse.
+    this.rememberSelection({ ...selection, raw: result.newText, text: result.newText, source: { file: result.file, line: result.line } });
+    const task = this.recordEdit({ kind: 'direct', label: `Tekstrettelse: »${shortText(result.oldText, 40)}« → »${shortText(result.newText, 40)}«`, files: [{ file: result.file, before: result.before, after: result.after }], title: 'Du rettede en tekst i forhåndsvisningen', target: `${result.file}:${result.line}`, detail: `»${shortText(result.oldText, 80)}« → »${shortText(result.newText, 80)}«` });
+    return { task: task.id, file: result.file, line: result.line, text: result.newText };
+  }
+  // Fortryd ud fra Auras øjebliksbilleder: kun når hver fil stadig er, som opgaven efterlod den. Ellers ændres intet.
+  async undoTask(input) {
+    if (this.running || this.finishing) throw new Error('Vent, til AI’en er færdig, før du fortryder.');
+    const session = this.session(), task = session?.tasks.find(item => item.id === input?.task);
+    if (!task) throw new Error('Opgaven findes ikke længere i denne samtale. Brug Versioner for at gå længere tilbage.');
+    if (task.undone) throw new Error('Opgaven er allerede fortrudt.');
+    if (!task.files.length) throw new Error('Opgaven ændrede ingen filer, Aura kan sætte tilbage.');
+    const plan = [];
+    for (const entry of task.files) {
+      const relative = projectFiles.normalize(entry.file);
+      if (projectFiles.isProtected(relative)) throw new Error(`${relative} er beskyttet, så Aura sætter den ikke tilbage.`);
+      const target = path.join(this.project.root, ...relative.split('/'));
+      let now = null;
+      try { const stat = await fs.lstat(target); if (stat.isSymbolicLink() || !stat.isFile()) throw new Error(`${relative} er ikke længere en almindelig fil, så Aura fortryder ikke noget.`); now = (await fs.readFile(target)).toString('utf8'); }
+      catch (error) { if (error.code !== 'ENOENT') throw error; }
+      if (now !== (entry.after ?? null)) throw new Error(`${relative} er ændret, efter at ${task.kind === 'direct' ? 'du rettede den' : 'opgaven sluttede'}, så Aura fortryder ikke noget. Ret filen selv, eller brug Versioner.`);
+      plan.push({ entry, relative, target });
+    }
+    await this.ensureBaseline();
+    for (const { entry, target } of plan) {
+      if (entry.before === null) await fs.unlink(target);
+      else { await fs.mkdir(path.dirname(target), { recursive: true }); await fs.writeFile(target, entry.before); }
+    }
+    task.undone = true;
+    const what = task.kind === 'direct' ? 'tekstrettelsen' : task.kind === 'undo' ? 'fortrydelsen' : 'opgaven';
+    const undo = this.recordEdit({ kind: 'undo', label: `Fortrudt: ${shortText(task.label, 60)}`, files: plan.map(({ entry, relative }) => ({ file: relative, before: entry.after, after: entry.before })), title: `Du fortrød ${what}`, target: plan.map(item => item.relative).join(', ').slice(0, 300), detail: shortText(task.label, 120), undoes: task.id });
+    return { task: undo.id, files: plan.map(item => item.relative) };
   }
   // En filændring i projektmappen. Kun den fulde sti fra OpenCode bruges; mønstre kan være regnet ud fra en anden rod.
   projectEdit(p) {
