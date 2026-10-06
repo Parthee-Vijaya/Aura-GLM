@@ -59,14 +59,15 @@ test('rettet plan bygges, AI’ens version kan hentes igen, og en stoppet plan k
   const events = [];
   const bench = new Workbench({ directory: path.join(directory, 'data'), profiles, emit: event => events.push(event), safeStorage: {} });
   await bench.activate({ root, name: 'Haven', purpose: 'En side om fælleshaven' });
-  assert.deepEqual(bench.brief.items.map(i => i.value), ['En side om fælleshaven']);
-  bench.plan = { id: 'ai-1', text: '## Det bygger vi\nEn side.', context: 'afklaring', source: 'ai', at: 1 }; bench.planConversation = ['idé'];
+  assert.deepEqual(bench.brief.items.map(i => i.value), ['En side om fælleshaven']); const chat = bench.chat;
+  chat.plan = { id: 'ai-1', text: '## Det bygger vi\nEn side.', context: 'afklaring', source: 'ai', at: 1 }; chat.planConversation = ['idé'];
   await assert.rejects(bench.editPlan({ planID: 'forkert', text: 'x' }), /ændret i mellemtiden/);
   await assert.rejects(bench.editPlan({ planID: 'ai-1', text: '   ' }), /tom/);
   const edited = await bench.editPlan({ planID: 'ai-1', text: '## Det bygger vi\nEn side med kalender.' });
   assert.equal(edited.source, 'dig'); assert.equal(edited.previous.id, 'ai-1'); assert.notEqual(edited.id, 'ai-1');
-  assert.match(bench.planConversation.at(-1), /selv rettet planen/);
-  let saved = await new WorkspaceHistory(bench.store).read(root);
+  assert.match(chat.planConversation.at(-1), /selv rettet planen/);
+  const stored = new WorkspaceHistory(bench.store);
+  let saved = await stored.readChat(root, chat.id);
   assert.equal(saved.plan.text, '## Det bygger vi\nEn side med kalender.');
   // En ny rettelse bevarer AI'ens oprindelige version som den, der kan hentes igen.
   const again = await bench.editPlan({ planID: edited.id, text: 'Endnu en version' });
@@ -76,41 +77,44 @@ test('rettet plan bygges, AI’ens version kan hentes igen, og en stoppet plan k
   // Briefen gemmes og følger med til en ny samtale; planen gør ikke.
   await bench.saveBrief({ items: [...bench.brief.items, { label: 'Brugere', value: 'Naboer', source: 'dig' }] });
   assert.ok(events.some(e => e.type === 'brief.updated' && e.brief.items.length === 2));
-  bench.retirePlan('stoppet');
-  assert.equal(bench.plan, null); assert.equal(bench.lastPlan.reason, 'stoppet'); assert.equal(bench.lastPlan.text, restored.text);
+  chat.retirePlan('stoppet');
+  assert.equal(chat.plan, null); assert.equal(chat.lastPlan.reason, 'stoppet'); assert.equal(chat.lastPlan.text, restored.text);
   assert.ok(events.some(e => e.type === 'plan.retired' && e.lastPlan.reason === 'stoppet'));
   await assert.rejects(bench.editPlan({ planID: restored.id, text: 'x' }), /ingen plan/);
-  await bench.persistPlan();
+  chat.runUser = { id: 'u', role: 'user', text: 'En side om fælleshaven' }; await chat.saveHistory('stopped');
   await bench.newConversation();
-  saved = await new WorkspaceHistory(bench.store).read(root);
-  assert.equal(saved.brief.items[1].value, 'Naboer'); assert.equal(saved.plan, null); assert.equal(bench.lastPlan, null);
+  assert.notEqual(bench.chat.id, chat.id);
+  saved = await stored.readChat(root, bench.chat.id);
+  assert.equal((await stored.project(root)).brief.items[1].value, 'Naboer'); assert.equal(saved.plan, null); assert.equal(bench.chat.lastPlan, null);
+  assert.equal((await stored.readChat(root, chat.id)).lastPlan.reason, 'stoppet', 'den gamle samtale beholder sin seneste plan');
   assert.equal((await bench.state()).brief.items.length, 2);
   await bench.close();
 });
 
 test('en afbrudt byggeopgave genåbnes med planen som seneste plan, ikke som en plan, der kan bygges', async t => {
   const history = new WorkspaceHistory({ root: await temp(t), projectKey: () => 'projekt', saveProject: async () => {} });
-  await history.saveRun('/projekt', { messages: [], plan: { id: 'p', text: 'Planen' }, planConversation: [], status: 'working', mode: 'build' });
-  const reopened = await history.open({ root: '/projekt', name: 'Projekt' });
+  const { active } = await history.open({ root: '/projekt', name: 'Projekt' });
+  await history.saveRun('/projekt', active, { messages: [], plan: { id: 'p', text: 'Planen' }, planConversation: [], status: 'working', mode: 'build' });
+  const reopened = await history.openChat('/projekt', active);
   assert.equal(reopened.plan, null); assert.equal(reopened.lastPlan.text, 'Planen'); assert.equal(reopened.lastPlan.reason, 'afbrudt');
 });
 
 test('svar på AI’ens spørgsmål sendes som etiketter og kommer i briefen; spring over lader AI’en vælge', async t => {
   const directory = await temp(t), root = path.join(directory, 'projekt'); await fs.mkdir(root);
   const bench = new Workbench({ directory: path.join(directory, 'data'), profiles, emit: () => {}, safeStorage: {} });
-  await bench.activate({ root, name: 'Haven', purpose: 'Haven' });
-  const calls = []; bench.engine = { request: async (url, method, body) => { calls.push([url, method, body]); return true; } }; bench.runMode = 'plan';
-  bench.event({ type: 'question.asked', properties: { id: 'q1', questions: [{ question: 'Hvem bruger siden?', header: 'Brugere', options: [{ label: 'Naboer (anbefalet)', description: '' }] }] } });
+  await bench.activate({ root, name: 'Haven', purpose: 'Haven' }); const chat = bench.chat;
+  const calls = []; chat.engine = { request: async (url, method, body) => { calls.push([url, method, body]); return true; } }; chat.runMode = 'plan';
+  chat.event({ type: 'question.asked', properties: { id: 'q1', questions: [{ question: 'Hvem bruger siden?', header: 'Brugere', options: [{ label: 'Naboer (anbefalet)', description: '' }] }] } });
   await assert.rejects(bench.question({ id: 'q1', answers: [[42]] }), /Ugyldigt svar/);
   await bench.question({ id: 'q1', answers: [['Naboer (anbefalet)']] });
   assert.deepEqual(calls[0], ['/question/q1/reply', 'POST', { answers: [['Naboer (anbefalet)']] }]);
   assert.equal(bench.brief.items.find(item => item.label === 'Brugere').value, 'Naboer');
-  bench.event({ type: 'question.asked', properties: { id: 'q2', questions: [{ question: 'Farve?', options: [] }, { question: 'Logo?', options: [] }] } });
+  chat.event({ type: 'question.asked', properties: { id: 'q2', questions: [{ question: 'Farve?', options: [] }, { question: 'Logo?', options: [] }] } });
   await bench.question({ id: 'q2', skip: true });
   assert.equal(calls[1][0], '/question/q2/reply');
   assert.deepEqual(calls[1][2].answers.map(answer => answer[0].startsWith('Brugeren springer over')), [true, true], 'spring over svarer, så opgaven fortsætter');
   assert.equal(bench.brief.items.some(item => ['Farve', 'Logo'].includes(item.label)), false, 'et spring over kommer ikke i briefen');
-  bench.engine = null; await bench.close();
+  chat.engine = null; await bench.close();
 });
 
 test('motoren får spørgeværktøjet; OpenCode tilbyder det ellers kun til sine egne klienter', () => {

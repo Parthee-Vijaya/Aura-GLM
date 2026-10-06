@@ -82,12 +82,22 @@ function isolatedEnv(directory, config, password) {
   return require('./runtime.cjs').gitEnvironment(env);
 }
 class OpenCodeEngine {
-  constructor({ root, directory, provider, model, references = [], mode = 'free', skills = [], onEvent = () => {} }) { Object.assign(this, { root, directory, provider, model, references, mode, skills, onEvent }); this.pending = new Map(); this.active = false; }
+  // resume: en tidligere OpenCode-session for samme samtale. Findes den ikke længere, oprettes en ny.
+  constructor({ root, directory, provider, model, references = [], mode = 'free', skills = [], resume = null, onEvent = () => {} }) { Object.assign(this, { root, directory, provider, model, references, mode, skills, resume, onEvent }); this.pending = new Map(); this.active = false; this.resumed = false; }
   async request(url, method = 'GET', body, signal) {
     const response = await fetch(`${this.url}${url}`, { method, headers: { authorization: this.auth, 'content-type': 'application/json', 'x-opencode-directory': encodeURIComponent(this.root) }, body: body === undefined ? undefined : JSON.stringify(body), signal: signal || AbortSignal.timeout(15000), redirect: 'error' });
     if (!response.ok) throw new Error(`Agentmotoren afviste handlingen (HTTP ${response.status}).`);
     if (response.status === 204) return null;
     return response.json();
+  }
+  // Fortsætter samtalens tidligere OpenCode-session, hvis motoren stadig kender den; ellers oprettes en ny.
+  async openSession() {
+    this.resumed = false;
+    if (typeof this.resume === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(this.resume)) {
+      try { const session = await this.request(`/session/${this.resume}`); if (session?.id === this.resume) { this.session = session; this.resumed = true; } } catch { /* Sessionen findes ikke længere. */ }
+    }
+    if (!this.resumed) this.session = await this.request('/session', 'POST', { title: 'Aura' });
+    return this.session;
   }
   async start() {
     const executable = await findExecutable();
@@ -115,7 +125,7 @@ class OpenCodeEngine {
       if (health.version !== VERSION) throw new Error('Agentmotorens version matcher ikke den afprøvede version.');
       const effective = await this.request('/config');
       if (effective.small_model !== this.config.small_model || !isDeepStrictEqual(effective.enabled_providers, ['harness']) || effective.provider?.harness?.npm !== this.provider.npm || effective.provider?.harness?.options?.baseURL !== this.provider.options.baseURL || effective.provider?.harness?.options?.apiKey !== this.provider.options.apiKey || effective.model !== this.config.model || effective.share !== 'disabled' || effective.snapshot !== false || !isDeepStrictEqual(effective.permission, permission) || !isDeepStrictEqual(effective.agent?.plan?.permission, permission) || Object.keys(effective.mcp || {}).length || (effective.plugin || []).length) throw new Error('Agentens effektive indstillinger afviger. En lokal eller administreret konfiguration kan være årsagen.');
-      this.session = await this.request('/session', 'POST', { title: 'Aura' });
+      await this.openSession();
       this.active = true;
       this.listen();
       return this.session.id;

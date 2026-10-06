@@ -93,6 +93,7 @@ const server = http.createServer(async (req, res) => {
     await win.click('#setup-back'); await win.click('#features-all'); await win.waitForSelector('#create-form');
     // Projektopstart.
     await measure('projektopstart', '#onboarding', 'Hvad vil du bygge?');
+    await win.click('#idea-examples-toggle'); await measure('ide-eksempler', '#onboarding', 'Hvad vil du bygge? · Eksempler på idéer'); await win.click('#idea-examples-toggle');
     await helpers.projectOptions(win); await measure('flere-valg', '#onboarding', 'Hvad vil du bygge? · Flere valg');
     await win.evaluate(() => { for (const details of document.querySelectorAll('#onboarding details')) details.open = true; }); await measure('flere-valg-alt', '#onboarding', 'Hvad vil du bygge? · alt foldet ud');
     await win.evaluate(() => { for (const details of document.querySelectorAll('#onboarding details')) details.open = false; });
@@ -158,6 +159,10 @@ const server = http.createServer(async (req, res) => {
     await win.waitForFunction(() => document.querySelector('#hosting-status').textContent.trim()); await measure('sikkerhedskopi', '#hosting-dialog', 'Sikkerhedskopi'); await win.click('[data-close="hosting-dialog"]');
     await helpers.menuClick(win, '#connections-button'); await measure('forbindelser', '#connections-dialog', 'Administrer forbindelser'); await win.click('[data-close="connections-dialog"]');
     await helpers.menuClick(win, '#support-button'); await win.waitForSelector('#support-dialog[open]'); await measure('hjaelp', '#support-dialog', 'Hjælp og feedback'); await win.click('[data-close="support-dialog"]');
+    // Samtaler i sidepanelet og kommandopaletten.
+    task = null; await win.click('#new-conversation'); await win.waitForFunction(() => document.querySelectorAll('#project-list .chat-row').length >= 2);
+    await measure('sidepanel', '#sidebar', 'Sidepanel: projekter og samtaler');
+    await win.keyboard.press(process.platform === 'darwin' ? 'Meta+K' : 'Control+K'); await win.waitForSelector('#palette[open]'); await measure('palet', '#palette', 'Kommandopalet'); await win.keyboard.press('Escape');
     await win.click('#tools-button'); await win.waitForSelector('#tools-dialog[open]'); await measure('kodevaerktoej', '#tools-dialog', 'Aura Harness i dit kodeværktøj'); await win.click('#tools-dialog [data-close]');
     // Tabel: flest ord først, så de tungeste skærme står øverst.
     const rows = [...results].sort((a, b) => b.words - a.words);

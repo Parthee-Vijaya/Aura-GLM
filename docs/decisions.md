@@ -71,6 +71,19 @@ Valg i implementeringen, som kan ændres:
 - **Fortryd uden Git** bruger samme gennemgang, kopi og journal som med Git, så også en fortrydelse uden versioner kan fortrydes.
 - **Gendannelser og fortrydelser** får navne, der nævner versionen, de handler om, fx "Tilbage til »…«", så de ikke forveksles med den.
 
+Sjette milepæl, navigation, deles i to. Første del (6A) er implementeret 6. oktober 2026. Brugeren valgte:
+- **Kommandopalet:** kun ⌘K og en omtale i Hjælp; ingen ny synlig knap.
+- **Starteksempler** er eksempler på idéer, der udfylder "Beskriv din idé". AI'en bygger dem, når projektet startes.
+- **Genoptagelse** som i Codex og Claude Code: de seneste projekter i sidepanelet med samtalerne under hvert projekt, flere samtaler i samme projekt og + til en ny samtale.
+- **Flere AI-opgaver på én gang** i samme projekt, men ikke på tværs af projekter. En kopi af projektet bruges kun, når en anden samtale allerede arbejder.
+
+Valg i implementeringen, som kan ændres:
+- **Én fil pr. samtale.** Projektfilen har briefen og oversigten; hver samtale har beskeder, kladde, plan, forbrug og OpenCodes sessions-id. Den tidligere samtale og arkiverede samtaler flyttes ved første åbning, og arkivet bevares.
+- **AI-sessionen fortsætter** pr. samtale, når forbindelse, model og regler er de samme som sidst; ellers startes en ny, og Aktivitet siger det.
+- **I 6A arbejder én samtale ad gangen** i projektmappen. De andre kan skrives i, og deres Send venter med en forklaring. Godkendelser, spørgsmål og resultater hører til den samtale, der stillede dem, også mens en anden er åben.
+- **Kopi frem for Git-worktrees i 6B:** samtidige opgaver får hver sin kopi, som Aura laver og rydder op. På macOS er kopien en APFS-klon (`cp -c`), som er hurtig og ikke fylder, før filerne ændres; andre steder en almindelig kopi. Et worktree ville starte fra sidste commit uden de ugemte ændringer, kræve Git og tilføje grene. Kopien flettes ind med samme gennemgang som Fortryd og gendannelse.
+- **Paletten** trykker på appens egne knapper, så valgte funktioner og låste handlinger gælder også dér. Genvejen fanges i hovedprocessen, så den også virker med fokus i forhåndsvisningen.
+
 ## Få valg og udvælgelse af skills · 29. september 2026
 
 Besluttet i projektsamtalen: Hvert beslutningspunkt har ét eller to hovedvalg og højst tre til fire synlige muligheder med resten bag ét link, fx "Bruger du en anden udbyder? Vælg en anden". Opsætningen skal kunne gennemføres uden tvivlsspørgsmål af en person uden teknisk baggrund. Reglen står i `AGENTS.md` og `desktop/DESIGN.md`.

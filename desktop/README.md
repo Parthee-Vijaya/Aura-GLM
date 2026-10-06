@@ -83,15 +83,27 @@ Fejl i modelkataloget før afsendelse vises i arbejdsområdet med **Gennemgå AI
 6. Gennemgå filændringer, kommandoer og webopslag, når agenten beder om tilladelse. **Stop** afbryder opgaven. Fanen **Ændringer** viser først et resumé og derefter en linje-diff og siger, hvilke filer AI'en selv skrev.
 7. En statisk `public/index.html` vises automatisk. React med Vite og Astro får i stedet **Start forhåndsvisning**, som fører til gennemgang af installation og serverstart. Under preview-menuens **Server og opstart** kan du også tilslutte en allerede startet loopback-server. Projektåbning kører ingen kommando. Manglende preview blokerer ikke chatten.
 
+## Projekter og samtaler
+
+Sidepanelet viser de seneste projekter med deres samtaler, nyeste først. Det åbne projekt er foldet ud; et klik på en samtale åbner den, og **+** ved projektet eller **Ny samtale** øverst starter en ny. En tom samtale genbruges, så der ikke opstår mange tomme. En samtale får navn efter første besked og kan omdøbes eller slettes under **•••**. Sletning flytter samtalefilen til papirkurven; projektfilerne og versionerne ændres ikke.
+
+En samtale kan arbejde, mens en anden er åben. Sidepanelet viser **arbejder**, **venter på dig** og **nyt resultat** under samtalens navn, og godkendelser og spørgsmål står i den samtale, der stillede dem. Kun én samtale ad gangen kan arbejde i projektmappen: De andre kan skrives i, men **Send** venter, og over skrivefeltet står, hvilken samtale der arbejder. Mens en samtale arbejder, kan et andet projekt ikke åbnes.
+
+Hver samtale fortsætter sin egen AI-session i OpenCode, også efter genstart, så længe forbindelse, model og regler er de samme som sidst. Ellers starter en ny session, og det står under Aktivitet.
+
+**Kommandopalet:** ⌘K (Ctrl+K på Windows og Linux) åbner en valgfri palet, hvor man kan søge efter en handling, en samtale eller et projekt. Den har ingen knap og nævnes under **Hjælp og feedback**. Paletten trykker på appens egne knapper, så en funktion, der er slået fra, eller en handling, der er låst, mens AI'en arbejder, heller ikke kan vælges dér. Piletasterne vælger, Enter udfører, og Escape lukker og giver fokus tilbage. Genvejen virker også med fokus i forhåndsvisningen.
+
 ## Luk og fortsæt
 
-De seneste projekter vises i sidepanelet. Kladden, samtalen og den afsluttede plan gemmes i appens datamappe, adskilt fra projektfilerne. En hurtig lokal kopi af kladden beskytter også tekst, der endnu ikke er skrevet gennem appens lagring. Der sendes ingen AI-opgave ved genåbning. Godkendelser og valg af private referencer nulstilles.
+Samtalerne gemmes i appens datamappe, adskilt fra projektfilerne: én fil pr. samtale med beskeder, kladde, plan, forbrug og AI-sessionens id, og én projektfil med briefen og listen over samtaler. En hurtig lokal kopi af kladden beskytter også tekst, der endnu ikke er skrevet gennem appens lagring. Der sendes ingen AI-opgave ved genåbning. Godkendelser og valg af private referencer nulstilles.
+
+Første gang et projekt fra før samtalerne åbnes, flyttes den gemte samtale og de arkiverede samtaler til hver sin samtalefil. Arkivfilerne bevares uændret.
 
 Under **Tidligere samtale** kan brugeren vælge at medtage gemte beskeder i en ny modelsession. Det præcise materiale står i datagennemgangen. En valgt plan indeholder stadig sin afklaring, og en igangværende modelsession beholder sin egen kontekst. Tilvalget er ikke en måde at slette data fra udbyderen på.
 
-Ved lukning under arbejde gemmes opgaven som afbrudt. Delvise svar vises, men agenten genstartes ikke, og brugeren opfordres til at gennemgå filerne. **Ny samtale** rydder visningen og arkiverer den tidligere samtale lokalt efter bekræftelse. Projektfilerne ændres ikke. En beskadiget historikfil bevares og kan også arkiveres ved denne handling.
+Ved lukning under arbejde gemmes opgaven som afbrudt. Delvise svar vises, men agenten genstartes ikke, og brugeren opfordres til at gennemgå filerne. Projektfilerne ændres ikke. Kan oversigten over projektets samtaler ikke læses, bevares filen; **+** lægger den til side i arkivet og finder samtalerne igen ud fra samtalefilerne. En samtalefil, der ikke kan læses, bevares og kan slettes fra sidepanelet.
 
-Samtaleindholdet er ikke krypteret. Modelnøgler gemmes fortsat separat med `safeStorage`; de kopieres ikke fra forbindelsesindstillinger til historikken. Historikvisningen gemmer højst 200 beskeder og 200.000 tegn. Ved aktivt tilvalg medsendes op til 16 beskeder og 60.000 tegn. Ældre arkiver og OpenCodes rå log slettes ikke automatisk.
+Samtaleindholdet er ikke krypteret. Modelnøgler gemmes fortsat separat med `safeStorage`; de kopieres ikke fra forbindelsesindstillinger til historikken. Hver samtale gemmer højst 200 beskeder og 200.000 tegn. Ved aktivt tilvalg medsendes op til 16 beskeder og 60.000 tegn. Ældre arkiver, slettede samtaler i papirkurven og OpenCodes rå log slettes ikke automatisk.
 
 ## Arbejdsfladen
 
@@ -285,7 +297,7 @@ I arbejdsområdet kan brugeren folde **Ønsker til løsningen** ud og vælge pla
 
 ## Valg, der kan huskes eller springes over
 
-Projektskærmen viser idé, projektnavn og **Opret og fortsæt**. **Flere valg** er en flad liste med AI-forbindelse, udgivelsesønske, tests og designpakke. Linket opsummerer de valg, der er truffet. De seneste valg huskes automatisk ved en faktisk projektoprettelse; en annulleret mappedialog gemmer intet. **Glem dem** fjerner de huskede valg uden at ændre skærmen eller eksisterende projekter.
+Projektskærmen viser idé, projektnavn og **Opret og fortsæt**. Er idéfeltet tomt, står linket **Mangler du en idé? Se tre eksempler** under det. De tre faste eksempler kan bygges som en lokal side uden server; et klik udfylder idé og projektnavn, og AI'en bygger først, når projektet startes. **Flere valg** er en flad liste med AI-forbindelse, udgivelsesønske, tests og designpakke. Linket opsummerer de valg, der er truffet. De seneste valg huskes automatisk ved en faktisk projektoprettelse; en annulleret mappedialog gemmer intet. **Glem dem** fjerner de huskede valg uden at ændre skærmen eller eksisterende projekter.
 
 Standarderne ligger i appdata. Nye projekter får deres egen kopi i projektindstillingerne uden for repositoryet. Et eksisterende projekts modelvalg har forrang. Manglende forbindelser og designpakker giver en forklaring og vælges ikke automatisk på ny. En husket AI-forbindelse kontakter ikke serveren; brug **Hent modeller** før modelvalg. Designpakken kopieres lokalt som hidtil; private referencer er stadig ikke valgt til modellen.
 

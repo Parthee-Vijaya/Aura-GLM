@@ -49,8 +49,8 @@ test('afvisning med en besked sendes til motoren og stopper ikke; Stop giver et 
   const root = path.join(directory, 'projekt'); await fs.mkdir(root); await fs.writeFile(path.join(root, 'a.txt'), 'før\n');
   const events = [], calls = [];
   const bench = new Workbench({ directory: path.join(directory, 'data'), profiles, emit: event => events.push(event), safeStorage: {} });
-  await bench.activate({ root, name: 'Prøve' });
-  bench.engine = { pending: new Map([['p1', { permission: 'bash' }], ['p2', { permission: 'bash' }]]), reply: async (...args) => calls.push(args), abort: async () => {}, close: async () => {} };
+  await bench.activate({ root, name: 'Prøve' }); const chat = bench.chat;
+  chat.engine = { pending: new Map([['p1', { permission: 'bash' }], ['p2', { permission: 'bash' }]]), reply: async (...args) => calls.push(args), abort: async () => {}, close: async () => {} };
   await bench.reply({ id: 'p1', allow: false, message: '  Brug ikke npm. Skriv det i ren JavaScript.  ' });
   await bench.reply({ id: 'p2', allow: false });
   assert.deepEqual(calls, [['p1', false, 'Brug ikke npm. Skriv det i ren JavaScript.'], ['p2', false, '']]);
@@ -58,29 +58,29 @@ test('afvisning med en besked sendes til motoren og stopper ikke; Stop giver et 
   assert.equal(bench.activityList().find(entry => entry.id === 'approval-p2').status, 'rejected');
   // En kørende opgave stoppes, efter at AI'en har skrevet en fil og kørt en kommando med fejl.
   const { capture } = require('../core/changes.cjs');
-  bench.running = true; bench.runMode = 'build'; bench.runBefore = await capture(root); bench.runTools = new Map(); bench.runFailure = null;
-  bench.task = { id: 'opgave', root, label: 'Byg', mode: 'build', startedAt: 1, aiFiles: new Set(), aiHashes: new Map(), reads: [], completed: new Set(), commandParts: new Set(), commands: 0 };
+  chat.running = true; chat.runMode = 'build'; chat.runBefore = await capture(root); chat.runTools = new Map(); chat.runFailure = null;
+  chat.task = { id: 'opgave', root, label: 'Byg', mode: 'build', startedAt: 1, aiFiles: new Set(), aiHashes: new Map(), reads: [], completed: new Set(), commandParts: new Set(), commands: 0 };
   await fs.writeFile(path.join(root, 'a.txt'), 'efter\n');
-  bench.runTools.set('t1', { id: 't1', tool: 'bash', state: { status: 'completed', input: { command: 'npm test' }, title: 'npm test', output: 'linje 1\nlinje 2\nFEJL: 1 test fejlede\ntoken=sk-abcdefghijklmnopqrstuv', metadata: { exit: 1 } } });
+  chat.runTools.set('t1', { id: 't1', tool: 'bash', state: { status: 'completed', input: { command: 'npm test' }, title: 'npm test', output: 'linje 1\nlinje 2\nFEJL: 1 test fejlede\ntoken=sk-abcdefghijklmnopqrstuv', metadata: { exit: 1 } } });
   await bench.stop();
   const review = events.find(event => event.type === 'run.review');
   assert.equal(review.status, 'stopped'); assert.deepEqual(review.files, ['a.txt']); assert.equal(review.task, 'opgave');
   assert.deepEqual(review.tools.map(tool => [tool.tool, tool.exit]), [['bash', 1]]);
   assert.match(review.tools[0].output, /FEJL: 1 test fejlede/); assert.doesNotMatch(review.tools[0].output, /sk-abcdefghij/);
   assert.ok(events.findIndex(event => event.type === 'run.review') < events.findIndex(event => event.type === 'run.status' && event.status === 'stopped'), 'kortet kommer før statusskiftet');
-  bench.engine = null; await bench.close();
+  chat.engine = null; await bench.close();
 });
 
 test('godkendelsen får værktøjets egne oplysninger med, og en fejl fra OpenCode får en type', async t => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'aura-godkend-')); t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const events = [];
   const bench = new Workbench({ directory: path.join(directory, 'data'), profiles, emit: event => events.push(event), safeStorage: {} });
-  await bench.activate({ root: directory, name: 'Prøve' });
-  bench.running = true; bench.runTools = new Map([['del', { id: 'del', callID: 'kald-1', tool: 'bash', state: { status: 'running', input: { command: 'npm test', description: 'Kører testene', workdir: path.join(directory, 'web') } } }]]);
-  bench.event({ type: 'permission.asked', properties: { id: 'p', permission: 'bash', patterns: ['npm test'], metadata: {}, tool: { messageID: 'm', callID: 'kald-1' } } });
+  await bench.activate({ root: directory, name: 'Prøve' }); const chat = bench.chat;
+  chat.running = true; chat.runTools = new Map([['del', { id: 'del', callID: 'kald-1', tool: 'bash', state: { status: 'running', input: { command: 'npm test', description: 'Kører testene', workdir: path.join(directory, 'web') } } }]]);
+  chat.event({ type: 'permission.asked', properties: { id: 'p', permission: 'bash', patterns: ['npm test'], metadata: {}, tool: { messageID: 'm', callID: 'kald-1' } } });
   const asked = events.find(event => event.type === 'permission.asked');
   assert.deepEqual(asked.properties.toolInput, { tool: 'bash', command: 'npm test', description: 'Kører testene', workdir: path.join(directory, 'web'), url: undefined });
-  bench.event({ type: 'session.error', properties: { error: { name: 'APIError', data: { message: 'Rate limit', statusCode: 429 } } } });
-  assert.deepEqual(bench.runFailure, { kind: 'limit', status: 429, message: 'Rate limit' });
-  bench.running = false; await bench.close();
+  chat.event({ type: 'session.error', properties: { error: { name: 'APIError', data: { message: 'Rate limit', statusCode: 429 } } } });
+  assert.deepEqual(chat.runFailure, { kind: 'limit', status: 429, message: 'Rate limit' });
+  chat.running = false; await bench.close();
 });

@@ -11,7 +11,7 @@ async function toOnboarding(page) {
 async function menuClick(page, selector) {
   const toggles = {
     '#support-button': '#settings-toggle', '#connections-button': '#settings-toggle', '#features-button': '#settings-toggle',
-    '#git-button': '#project-menu-toggle', '#publish-button': '#project-menu-toggle', '#new-conversation': '#project-menu-toggle',
+    '#git-button': '#project-menu-toggle', '#publish-button': '#project-menu-toggle',
     '#attach-preview': '#preview-options'
   };
   // Instruktionerne i et projekt ligger under Indstillinger › Funktioner › Avanceret.
@@ -57,7 +57,10 @@ async function enableSharing(page) {
 }
 // Den guidede opsætning åbnes fra Indstillinger › AI-forbindelser › Tilføj forbindelse.
 async function openSetup(page) {
-  await menuClick(page, '#connections-button'); await page.click('#connection-add'); await page.waitForSelector('#setup:not([hidden])');
+  await menuClick(page, '#connections-button');
+  // Dialogen glider ind; klikket venter, til den står stille.
+  await page.waitForFunction(() => { const dialog = document.querySelector('#connections-dialog'); return dialog.open && !dialog.getAnimations().some(animation => animation.playState === 'running'); });
+  await page.click('#connection-add'); await page.waitForSelector('#setup:not([hidden])');
 }
 // En forbindelse tilføjes ad samme vej som en bruger: Tilføj forbindelse › Jeg har en adgangsnøgle › Vælg en anden.
 // Svarer serveren med modeller, fortsætter prøven med forbindelsen; ellers vælger den senere.

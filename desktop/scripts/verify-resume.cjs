@@ -68,7 +68,7 @@ const http = require('node:http');
     // Projektvalg må ikke overføre hverken kladde eller samtale.
     await open(other); assert.equal(await page.inputValue('#prompt'), ''); assert.equal(await page.locator('#messages').textContent(), '');
     await draft('Kladde til det andet projekt');
-    await page.locator('#recent-projects button').filter({ hasText: path.basename(project) }).click();
+    await page.locator('#project-list .project-name').filter({ hasText: path.basename(project) }).click();
     await page.waitForFunction(() => document.querySelector('#prompt').value === 'Husk plads til fem aktiviteter.');
     // Vilkårene er accepteret for projektet før genstarten. Bygningen sender planen uden at vise resuméet igen.
     await page.fill('#prompt', ''); await page.click('#build-plan');
@@ -83,13 +83,14 @@ const http = require('node:http');
     await page.waitForSelector('#data-dialog[open]'); assert.match(await page.locator('#data-history-text').textContent(), /medsendes efter dit tilvalg/);
     await page.click('#accept-send'); await page.locator('#run-status').filter({ hasText: 'Klar' }).waitFor({ timeout: 60000 });
     assert.ok(requests.some(r => JSON.stringify(r.messages).includes('Tidligere samtale, som brugeren har valgt') && JSON.stringify(r.messages).includes('violet-cykel')));
-    // Ny samtale er en eksplicit handling med bevaret arkiv og uændrede projektfiler.
-    await app.evaluate(({ dialog }) => { dialog.showMessageBox = async () => ({ response: 1 }); });
-    await require('./ui-test-helpers.cjs').menuClick(page, '#new-conversation'); await page.waitForFunction(() => document.querySelector('#messages').textContent === '');
+    // Ny samtale starter en tom samtale ved siden af den gamle, som bevares i sidepanelet; projektfilerne er uændrede.
+    await page.click('#new-conversation'); await page.waitForFunction(() => document.querySelector('#messages').textContent === '');
     assert.equal(await page.inputValue('#prompt'), ''); assert.equal(await page.isVisible('#plan-card'), false);
     const state = await page.evaluate(() => window.harness.connectionState()); assert.equal(state.value.workspace.messages.length, 0);
     const storage = path.join(root, 'appdata', 'harness', 'workspaces');
-    assert.ok((await fs.readdir(storage)).some(file => file.endsWith('-archives')));
+    const chatFolder = require('node:crypto').createHash('sha256').update(project).digest('hex') + '-chats';
+    assert.equal((await fs.readdir(path.join(storage, chatFolder))).length, 2, 'den gamle samtale er bevaret som sin egen fil');
+    await page.locator('#project-list .chat-row').filter({ hasText: 'Lav en side til fælleshuset' }).waitFor();
     assert.match(await fs.readFile(path.join(project, 'public/index.html'), 'utf8'), /Fælleshuset er klar/);
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).setSize(980, 720));
     await page.locator('#prompt').focus(); assert.equal(await page.evaluate(() => document.activeElement.id), 'prompt');
@@ -111,7 +112,7 @@ const http = require('node:http');
     assert.equal(await page.isVisible('#plan-card'), false); assert.equal(requests.length,requestCount);
     assert.equal(await page.isVisible('#stop'), false);
 
-    console.log(JSON.stringify({ status: 'bestået', root, checks: ['rigtig genstart med plan, kladde og samtale', 'genåbning uden netværkskald', 'kladders adskillelse mellem projekter', 'accepterede vilkår huskes efter genstart; filgodkendelse efter genstart', 'nyt resumé, når tidligere samtale medsendes', 'rigtig filændring og preview', 'aktivt tilvalg af tidligere samtale', 'ny samtale med arkiv og bevarede filer', '980 × 720, tastaturfokus og dialoger', 'lukning under streaming bevarer delvist svar uden genstart'] }));
+    console.log(JSON.stringify({ status: 'bestået', root, checks: ['rigtig genstart med plan, kladde og samtale', 'genåbning uden netværkskald', 'kladders adskillelse mellem projekter', 'accepterede vilkår huskes efter genstart; filgodkendelse efter genstart', 'nyt resumé, når tidligere samtale medsendes', 'rigtig filændring og preview', 'aktivt tilvalg af tidligere samtale', 'ny samtale ved siden af den gamle med bevarede filer', '980 × 720, tastaturfokus og dialoger', 'lukning under streaming bevarer delvist svar uden genstart'] }));
   } catch (error) { if (page) { await page.screenshot({ animations: 'disabled', path: path.join(root, 'fejl.png'), timeout: 3000 }).catch(() => {}); console.error('Testmateriale: ' + root); } throw error; }
   finally { await app?.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

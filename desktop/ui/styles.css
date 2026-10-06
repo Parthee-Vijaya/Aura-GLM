@@ -46,9 +46,6 @@ nav button[aria-current=page] span { color: var(--accent); }
 .nav-label { color: var(--muted); font-size: 10px; font-weight: 650; letter-spacing: .08em; margin: 28px 10px 10px; }
 .project-item { padding: 10px; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; border-radius: 8px; }
 .project-item.active { color: var(--ink); background: #e9eff8; }
-#recent-projects { display: grid; gap: 3px; max-height: 22vh; overflow: auto; margin-top: 8px; }
-#recent-projects button { text-align: left; border: 0; background: transparent; font-size: 12px; overflow-wrap: anywhere; }
-#recent-projects button:hover { background: var(--tint); }
 #settings-toggle { margin-top: auto; text-align: left; }
 #intro-button, #tools-button { margin-top: 2px; text-align: left; }
 .sidebar-bottom { padding: 18px 8px 0; font-size: 11px; }
@@ -455,7 +452,7 @@ h2 .info, h3 .info { vertical-align: middle; }
 body.sidebar-collapsed { --sidebar: 60px; }
 body.sidebar-collapsed .sidebar { padding: 18px 8px 14px; align-items: center; }
 body.sidebar-collapsed .brand { flex-direction: column; gap: 14px; padding: 0 0 22px; }
-body.sidebar-collapsed :is(.brand-name, .nav-label, #active-project, #recent-projects, #tools-button, #intro-button, .sidebar-bottom) { display: none; }
+body.sidebar-collapsed :is(.brand-name, .nav-label, #project-list, #tools-button, #intro-button, .sidebar-bottom) { display: none; }
 body.sidebar-collapsed nav button { justify-content: center; padding: 10px; }
 body.sidebar-collapsed #settings-toggle { display: inline-grid; place-items: center; width: 40px; height: 40px; padding: 0; color: var(--muted); }
 body.sidebar-collapsed .settings-icon { display: inline-flex; }
@@ -775,3 +772,70 @@ body.picking #preview-stage { box-shadow: 0 0 0 2px var(--accent); }
 .conflict-file h5 { margin: 6px 0 2px; font-size: 11px; color: var(--muted); }
 .restore-data { margin: 8px 0; padding-left: 20px; font-size: 12px; line-height: 1.7; color: var(--muted); }
 #restore-dialog .compare img { max-height: 220px; }
+
+/* Sidepanelet: projekter med deres samtaler. Det åbne projekt og den åbne samtale er markeret med farve og tekst. */
+.project-list { list-style: none; margin: 0; padding: 0; display: grid; align-content: start; gap: 2px; flex: 1 1 auto; min-height: 60px; overflow: auto; }
+.project-row { display: flex; align-items: center; gap: 2px; }
+.project-name { flex: 1 1 auto; min-width: 0; text-align: left; border: 0; background: transparent; padding: 7px 8px; font-size: 12px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; display: flex; gap: 6px; align-items: center; }
+.project-name::before { content: "▸"; color: var(--muted); font-size: 10px; flex: 0 0 auto; }
+.project-name[aria-expanded="true"]::before { content: "▾"; }
+.project-entry:not(.is-current) .project-name { font-weight: 500; color: var(--muted); }
+.project-name:hover:not(:disabled), .project-add:hover:not(:disabled) { background: var(--tint); }
+.project-add { flex: 0 0 auto; border: 0; background: transparent; padding: 2px 8px; font-size: 15px; line-height: 1.4; color: var(--muted); }
+.project-entry:not(:hover):not(:focus-within):not(.is-current) .project-add { opacity: 0; }
+.chat-list { list-style: none; margin: 0 0 6px; padding: 0 0 0 14px; display: grid; gap: 1px; }
+.chat-list > li { position: relative; display: flex; align-items: center; min-width: 0; }
+.chat-row { flex: 1 1 auto; min-width: 0; display: grid; grid-template-columns: 8px minmax(0, 1fr) auto; align-items: center; gap: 7px; border: 0; background: transparent; padding: 6px 8px; font-size: 12px; font-weight: 450; text-align: left; color: var(--ink); }
+.chat-row:hover:not(:disabled) { background: var(--tint); }
+.chat-row[aria-current="true"] { background: #e3ecfa; color: #163b75; font-weight: 600; }
+.chat-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-meta { font-size: 10.5px; color: var(--muted); white-space: nowrap; }
+.chat-meta.is-waiting { color: #8a5300; font-weight: 600; }
+.chat-meta.is-running, .chat-meta.is-unread { color: var(--accent); font-weight: 600; }
+.chat-status { width: 7px; height: 7px; border-radius: 50%; background: transparent; }
+.chat-status.is-running { background: var(--accent); animation: chat-pulse 1.4s ease-in-out infinite; }
+.chat-status.is-waiting { background: #d58a00; }
+.chat-status.is-unread { background: var(--accent); }
+.chat-status.is-interrupted { background: #c3ccd8; }
+@keyframes chat-pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .chat-status.is-running { animation: none; } }
+.chat-more { position: absolute; right: 2px; top: 50%; transform: translateY(-50%); border: 0; background: #e9f0fb; padding: 2px 6px; font-size: 11px; color: var(--muted); }
+.chat-list > li:not(:hover):not(:focus-within) .chat-more:not([aria-expanded="true"]) { opacity: 0; }
+.chat-all { padding: 4px 8px; font-size: 11px; }
+.chat-rename { flex: 1 1 auto; margin: 0; }
+.chat-rename input { padding: 5px 8px; font-size: 12px; }
+.chat-menu { position: fixed; inset: auto; margin: 0; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: #fff; box-shadow: 0 8px 24px #18223524; display: none; flex-direction: column; min-width: 150px; }
+.chat-menu:popover-open { display: flex; }
+.chat-menu button { border: 0; background: transparent; text-align: left; padding: 7px 10px; font-size: 12px; font-weight: 500; }
+.chat-menu button:hover { background: var(--tint); }
+.chat-menu .danger { color: #a3282a; }
+.composer-wait { color: #8a5300; }
+
+/* Kommandopaletten: et søgefelt øverst i vinduet med appens egne handlinger, samtaler og projekter. */
+dialog.palette { width: min(560px, calc(100vw - 32px)); max-height: min(520px, 70vh); margin: 12vh auto auto; padding: 8px; display: none; flex-direction: column; gap: 4px; overflow: hidden; border-radius: 14px; }
+dialog.palette[open] { display: flex; }
+.palette input#palette-input { border: 0; border-bottom: 1px solid var(--line); border-radius: 8px 8px 0 0; padding: 12px; font-size: 15px; }
+.palette input#palette-input:focus-visible { outline: none; box-shadow: inset 0 -2px 0 var(--accent); }
+.palette ul { list-style: none; margin: 0; padding: 4px 0; overflow-y: auto; min-height: 0; }
+.palette-group { padding: 10px 10px 4px; font-size: 11px; font-weight: 650; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.palette-item { display: flex; align-items: baseline; gap: 12px; padding: 8px 10px; border-radius: 8px; cursor: pointer; font-size: 13px; }
+.palette-item[aria-selected="true"] { background: var(--tint); color: var(--accent-hover); }
+.palette-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.palette-meta { flex-shrink: 0; font-size: 12px; color: var(--muted); }
+.palette-empty { padding: 8px 10px; margin: 0; }
+.palette-foot { margin: 0; padding: 6px 10px 2px; border-top: 1px solid var(--line); font-size: 11px; }
+kbd { font: 600 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; padding: 2px 5px; border: 1px solid #ccd7e6; border-bottom-width: 2px; border-radius: 5px; background: #f8fafc; }
+
+/* Eksempler på idéer under idéfeltet: ét link og tre faste valg. */
+.idea-examples { margin-top: 6px; }
+.idea-examples > .text-button { padding-left: 0; }
+.idea-example-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; margin-top: 6px; }
+.idea-example { display: grid; gap: 2px; text-align: left; padding: 10px 12px; font-weight: 400; }
+.idea-example strong { font-weight: 600; font-size: 13px; }
+.idea-example span { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+/* En samtale med status har statussen på en linje under navnet, så navnet får hele rækkens bredde. */
+.chat-row.has-status { row-gap: 0; }
+.chat-row.has-status .chat-meta { grid-column: 2; grid-row: 2; }
+.chat-row.has-status .chat-status { grid-row: 1 / span 2; }
+.composer-wait { margin: 0 0 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

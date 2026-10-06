@@ -483,15 +483,18 @@
   narrow.addEventListener('change', () => { overlay = false; applySidebar(); });
   document.addEventListener('keydown', event => { if (event.key === 'Escape' && overlay) { overlay = false; applySidebar(); $('#sidebar-toggle').focus(); } });
   document.addEventListener('pointerdown', event => { if (overlay && !event.target.closest('#sidebar')) { overlay = false; applySidebar(); } });
-  $('#sidebar').addEventListener('click', event => { if (overlay && event.target.closest('nav button, #recent-projects button, #tools-button, #intro-button')) { overlay = false; applySidebar(); } });
+  $('#sidebar').addEventListener('click', event => { if (overlay && event.target.closest('nav button, #project-list .chat-row, #project-list .project-name, #tools-button, #intro-button')) { overlay = false; applySidebar(); } });
   applySidebar();
 
   // ---------- Hændelser ----------
+  // Fanerne viser den åbne samtale. Hændelser fra en samtale i baggrunden venter, til den åbnes.
+  const mine = event => !event.chat || event.chat === viewFor().id;
   window.harness.onEvent(event => {
-    if (event.type === 'activity' && event.root === current?.root) putEntry(event.entry);
-    if (event.type === 'run.status') {
+    if (event.type === 'activity' && event.root === current?.root && mine(event)) putEntry(event.entry);
+    if (event.type === 'run.status' && mine(event)) {
       activity.running = ['starting', 'working'].includes(event.status); updateActivityStatus(); updateActivityBadge();
     }
+    if (event.type === 'changes.updated' && event.root === current?.root && !mine(event)) { code.stale = true; return; }
     if (event.type === 'changes.updated' && event.root === current?.root) {
       changes.latest = event.task; code.stale = true;
       if (active === 'changes' && changes.data && changes.mode === 'session') { changes.stale = true; $('#changes-notice').hidden = false; }
@@ -499,9 +502,10 @@
       else { changes.stale = true; changes.source = event.task; changes.file = ''; }
       if (active === 'code') action(checkCodeFile);
     }
+    if (event.type === 'run.review' && !mine(event)) { action(async () => { await loadCodeList(); linkifyAll(); }); return; }
     if (event.type === 'run.review' && event.files?.length && active !== 'changes') badge('changes', event.files.length, event.files.length === 1 ? 'ændret fil' : 'ændrede filer');
     if (event.type === 'run.review') action(async () => { await loadCodeList(); linkifyAll(); });
-    if (event.type === 'plan.ready' && active !== 'plan') { $('#plan-badge').hidden = false; $('#plan-badge').replaceChildren(visuallyHidden('ny plan')); }
+    if (event.type === 'plan.ready' && mine(event) && active !== 'plan') { $('#plan-badge').hidden = false; $('#plan-badge').replaceChildren(visuallyHidden('ny plan')); }
   });
   // Et nyt projekt starter i Forhåndsvisning med tomme faner.
   async function onProject() {
@@ -516,5 +520,13 @@
     // Fillisten først, så stier i den gemte aktivitet kan blive til links.
     await action(loadCodeList); await action(loadActivity);
   }
-  window.workspace = { show, onProject, showVersions, showVersion, openFile, showChange, linkify, linkifyAll, references: () => references.map(ref => ({ ...ref })), clearReferences: () => { references = []; target = null; renderReferences(); }, setTarget: value => { target = value ? { id: value.id, label: value.label } : null; renderReferences(); }, target: () => target && { ...target }, get active() { return active; } };
+  // En anden samtale åbnes: Ændringer under Denne samtale og Aktivitet følger den. Kode og Versioner gælder projektet.
+  async function onChat() {
+    $('#plan-badge').hidden = true; badge('changes', 0);
+    Object.assign(changes, { data: null, file: '', stale: true, latest: '', sessionSource: '' });
+    if (changes.mode === 'session') { changes.source = ''; $('#changes-source').replaceChildren(option('', 'Ingen opgaver endnu')); $('#changes-source').disabled = true; $('#changes-overview').hidden = true; $('#changes-diff').hidden = true; $('#changes-empty').hidden = false; $('#changes-notice').hidden = true; if (active === 'changes') await action(() => loadChanges()); }
+    references = []; target = null; renderReferences();
+    activity.running = running; await action(loadActivity); updateActivityStatus();
+  }
+  window.workspace = { show, onProject, onChat, showVersions, showVersion, openFile, showChange, linkify, linkifyAll, references: () => references.map(ref => ({ ...ref })), clearReferences: () => { references = []; target = null; renderReferences(); }, setTarget: value => { target = value ? { id: value.id, label: value.label } : null; renderReferences(); }, target: () => target && { ...target }, get active() { return active; } };
 })();

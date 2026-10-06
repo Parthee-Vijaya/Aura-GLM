@@ -138,7 +138,7 @@ test('en tekstrettelse ændrer kun den valgte tekst, står som din og kan fortry
   await assert.rejects(bench.textEdit({ id: heading.id, text: 'Find et lokale' }), /uændret/);
   await assert.rejects(bench.textEdit({ id: heading.id, text: '  ' }), /Skriv den nye tekst/);
   await assert.rejects(bench.textEdit({ id: heading.id, text: 'apiKey = "sk-ant-abcdefghijklmnopqrstuvwxyz123456"' }), /nøgle/);
-  bench.running = true; await assert.rejects(bench.textEdit({ id: heading.id, text: 'Book' }), /Vent, til AI’en er færdig/); bench.running = false;
+  bench.claim(bench.chat); bench.chat.running = true; await assert.rejects(bench.textEdit({ id: heading.id, text: 'Book' }), /Vent, til AI’en er færdig/); bench.chat.running = false; bench.release(bench.chat);
   const result = await bench.textEdit({ id: heading.id, text: 'Book et lokale\nnu' });
   assert.deepEqual([result.file, result.line, result.text], ['public/index.html', 4, 'Book et lokale nu']);
   const after = await fs.readFile(path.join(root, 'public/index.html'), 'utf8');
@@ -202,7 +202,7 @@ test('fortryd en AI-opgave uden version: nye filer slettes, slettede filer komme
   bench.session().tasks.push({ ...task, id: 'opgave-3', undone: false, files: [{ file: '../uden-for.txt', before: 'a', after: 'b' }] });
   await assert.rejects(bench.undoTask({ task: 'opgave-3' }), /ligger ikke i projektet/);
   await assert.rejects(bench.undoTask({ task: 'findes-ikke' }), /findes ikke længere/);
-  bench.running = true; await assert.rejects(bench.undoTask({ task: 'opgave-1' }), /Vent/); bench.running = false;
+  bench.claim(bench.chat); bench.chat.running = true; await assert.rejects(bench.undoTask({ task: 'opgave-1' }), /Vent/); bench.chat.running = false; bench.release(bench.chat);
   await bench.close();
 });
 

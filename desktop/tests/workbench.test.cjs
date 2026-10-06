@@ -46,21 +46,26 @@ test('instruktioner kan tilpasses og gendannes pr. projekt uden at ændre biblio
 });
 test('gendannelsens markør fjerner gamle planer, også når historikskrivning fejler',async t=>{
  const bench=new Workbench({directory:await temp(t),profiles,emit:()=>{},safeStorage:{}});const project={root:bench.store.root,name:'Prøve'};await bench.activate(project);
- await bench.history.update(project.root,data=>{data.plan={id:'gammel',text:'Byg den gamle fil'};data.draft='Bevar kladden';});await bench.activate(project);
- const update=bench.history.update.bind(bench.history);bench.history.update=async()=>{throw Error('Syntetisk diskfejl');};
- await bench.invalidatePlan('gendannelse-1');assert.equal(bench.plan,null);assert.equal(bench.workspace.plan,null);assert.equal(bench.workspace.draft,'Bevar kladden');assert.match(bench.historyWarning,/kunne ikke/);
- bench.history.update=update;await bench.activate(project);assert.equal(bench.plan.id,'gammel');await bench.invalidatePlan('gendannelse-1');assert.equal(bench.plan,null);assert.equal((await bench.history.read(project.root)).plan,null);
- await bench.history.update(project.root,data=>{data.plan={id:'ny',text:'Ny plan for gendannede filer'};});await bench.activate(project);await bench.invalidatePlan('gendannelse-1');assert.equal(bench.plan.id,'ny');await bench.close();
+ const id=bench.chat.id;
+ await bench.history.updateChat(project.root,id,data=>{data.plan={id:'gammel',text:'Byg den gamle fil'};data.draft='Bevar kladden';});await bench.activate(project);
+ const update=bench.history.updateChat.bind(bench.history);bench.history.updateChat=async()=>{throw Error('Syntetisk diskfejl');};
+ await bench.invalidatePlan('gendannelse-1');assert.equal(bench.chat.plan,null);assert.equal(bench.workspace.plan,null);assert.equal(bench.workspace.draft,'Bevar kladden');assert.match(bench.chat.historyWarning,/kunne ikke/);
+ bench.history.updateChat=update;await bench.activate(project);assert.equal(bench.chat.plan.id,'gammel');await bench.invalidatePlan('gendannelse-1');assert.equal(bench.chat.plan,null);assert.equal((await bench.history.readChat(project.root,id)).plan,null);
+ await bench.history.updateChat(project.root,id,data=>{data.plan={id:'ny',text:'Ny plan for gendannede filer'};});await bench.activate(project);await bench.invalidatePlan('gendannelse-1');assert.equal(bench.chat.plan.id,'ny');
+ // En anden samtale nulstilles, når den åbnes efter gendannelsen, og kun én gang.
+ const other=(await bench.history.createChat(project.root)).id;await bench.history.updateChat(project.root,other,data=>{data.plan={id:'anden',text:'Anden plan'};data.messages=[{id:'u',role:'user',text:'Anden samtale'}];});
+ await bench.openChat(other);assert.equal(bench.chat.plan,null);assert.equal(bench.chat.lastPlan.id,'anden');
+ await bench.close();
 });
 test('stop under motoropstart sender aldrig prompten', async t => {
  let entered, release, calls=0; const reached = new Promise(r=>entered=r); const blocked = new Promise(r=>release=r);
  const bench = new Workbench({ directory:await temp(t), profiles, emit:()=>{}, safeStorage:{}, engineFactory:()=>({ active:false, start:async()=>{entered();await blocked;}, send:async()=>calls++, abort:async()=>{}, close:async()=>{} }) });
- bench.project = {root:bench.store.root};
- bench.prepared = { root:bench.project.root, disclosure:{fingerprint:'test'}, connection:{kind:'compatible',name:'Prøve',baseURL:'http://127.0.0.1:1/v1'}, model:{id:'test'}, references:[], context:{ rules:'', skills:[], titles:[], features:{ versioner:true } } };
+ await bench.activate({root:await temp(t),name:'Prøve'}); const chat = bench.chat;
+ chat.prepared = { root:chat.root, disclosure:{fingerprint:'test'}, connection:{kind:'compatible',name:'Prøve',baseURL:'http://127.0.0.1:1/v1'}, model:{id:'test'}, references:[], context:{ rules:'', skills:[], titles:[], features:{ versioner:true } } };
  const pending = bench.send({text:'Må ikke sendes',fingerprint:'test'});
  const rejection = assert.rejects(pending, /stoppet/);
  await reached; await bench.stop(); release(); await rejection;
- assert.equal(calls,0); assert.equal(bench.running,false);
+ assert.equal(calls,0); assert.equal(bench.running,false); assert.equal(bench.busyRoot(chat.root),false,'samtalen slipper projektet efter stop');
  await bench.close();
 });
 test('gateway kræver nøgle, fastholder model og OpenRouter-udbyder uden fallback', async t => {
@@ -97,12 +102,14 @@ test('planlægning lukker skrive-, shell- og ukendte værktøjer, men bevarer l�
 
 test('svar på planlægningsspørgsmål følger med i afklaringen, og afvist stop ændrer ikke status', async t => {
  const bench = new Workbench({directory:await temp(t), profiles, emit:()=>{}, safeStorage:{}});
- bench.runMode='plan'; bench.planConversation=[]; bench.engine={request:async()=>true};
+ await bench.activate({root:await temp(t),name:'Prøve'}); const chat = bench.chat;
+ chat.runMode='plan'; chat.planConversation=[]; chat.engine={request:async()=>true,close:async()=>{}};
  await bench.question({id:'spørgsmål',answers:[['Kun interne brugere']]});
- assert.match(bench.planConversation[0],/Kun interne brugere/);
- bench.runStopped=false; bench.plan={id:'bevar'}; bench.finishing=Promise.resolve();
+ assert.match(chat.planConversation[0],/Kun interne brugere/);
+ chat.runStopped=false; chat.plan={id:'bevar'}; chat.finishing=Promise.resolve();
  await assert.rejects(bench.stop(),/Afslutningen/);
- assert.equal(bench.runStopped,false); assert.equal(bench.plan.id,'bevar');
+ assert.equal(chat.runStopped,false); assert.equal(chat.plan.id,'bevar');
+ chat.finishing=null; await bench.close();
 });
 
 test('planlægning vælger plan-agenten og beholder de samme eksplicitte tilladelser', async () => {
@@ -140,12 +147,13 @@ test('streamet tekst bevares ved stop, mens arbejdsnoter og tilladelser udelades
  const directory=await temp(t), root=path.join(directory,'projekt'); await fs.mkdir(root);
  const bench=new Workbench({directory:path.join(directory,'data'),profiles,emit:()=>{},safeStorage:{}});
  await bench.activate({root,name:'Prøve'});
- bench.runUser={id:'u',role:'user',text:'Min besked'}; bench.runMode='plan'; bench.running=true;
- bench.event({type:'message.updated',properties:{info:{id:'a',role:'assistant'}}});
- bench.event({type:'message.part.updated',properties:{part:{id:'t',messageID:'a',type:'text',text:'Svar'}}});
- bench.event({type:'message.part.delta',properties:{partID:'t',field:'text',delta:' som streames'}});
- bench.event({type:'message.part.updated',properties:{part:{id:'r',messageID:'a',type:'reasoning',text:'Intern note'}}});
- bench.event({type:'permission.asked',properties:{id:'approval',permission:'edit'}});
+ const chat=bench.chat;
+ chat.runUser={id:'u',role:'user',text:'Min besked'}; chat.runMode='plan'; chat.running=true;
+ chat.event({type:'message.updated',properties:{info:{id:'a',role:'assistant'}}});
+ chat.event({type:'message.part.updated',properties:{part:{id:'t',messageID:'a',type:'text',text:'Svar'}}});
+ chat.event({type:'message.part.delta',properties:{partID:'t',field:'text',delta:' som streames'}});
+ chat.event({type:'message.part.updated',properties:{part:{id:'r',messageID:'a',type:'reasoning',text:'Intern note'}}});
+ chat.event({type:'permission.asked',properties:{id:'approval',permission:'edit'}});
  await bench.stop(); await bench.close();
  const reopened=await bench.activate({root,name:'Prøve'});
  assert.equal(reopened.workspace.status,'stopped'); assert.equal(reopened.workspace.plan,null);
@@ -155,22 +163,25 @@ test('streamet tekst bevares ved stop, mens arbejdsnoter og tilladelser udelades
 });
 
 test('Tillad for denne opgave gælder kun filer i projektmappen og kun indtil opgaven slutter', async t => {
- const emitted = [], replies = [], root = await temp(t);
- const bench = new Workbench({ directory: await temp(t), profiles, emit: event => emitted.push(event), safeStorage: {} });
- bench.project = { root }; bench.running = true; bench.historyWarning = 'Ingen historik i denne prøve.';
- bench.engine = { pending: new Map(), reply: async (id, allow) => { replies.push([id, allow]); } };
- const ask = (id, permission, metadata = {}) => { const properties = { id, permission, metadata, patterns: [] }; bench.engine.pending.set(id, properties); bench.event({ type: 'permission.asked', properties }); };
+ const all = [], replies = [], root = await temp(t);
+ // Sidepanelets samlede opdateringer kommer med forsinkelse og er ikke en del af denne prøve.
+ const emitted = { at: index => all.filter(event => event.type !== 'chats.updated').at(index) };
+ const bench = new Workbench({ directory: await temp(t), profiles, emit: event => all.push(event), safeStorage: {} });
+ await bench.activate({ root, name: 'Prøve' }); const chat = bench.chat;
+ chat.running = true; chat.historyWarning = 'Ingen historik i denne prøve.';
+ chat.engine = { pending: new Map(), reply: async (id, allow) => { replies.push([id, allow]); }, close: async () => {} };
+ const ask = (id, permission, metadata = {}) => { const properties = { id, permission, metadata, patterns: [] }; chat.engine.pending.set(id, properties); chat.event({ type: 'permission.asked', properties }); };
  const settle = () => new Promise(resolve => setImmediate(resolve));
  ask('1', 'edit', { filepath: path.join(root, 'public/index.html') });
  assert.equal(emitted.at(-1).properties.id, '1'); assert.deepEqual(replies, []);
  // Kun en filændring i projektet kan tillades for hele opgaven.
  ask('2', 'bash', { command: 'ls' });
  await assert.rejects(bench.reply({ id: '2', allow: true, scope: 'task' }), /projektmappen/);
- assert.equal(bench.allowProjectEdits, false);
+ assert.equal(chat.allowProjectEdits, false);
  await bench.reply({ id: '1', allow: true, scope: 'task' });
  ask('3', 'edit', { filepath: path.join(root, 'public/styles.css') }); await settle();
  assert.deepEqual(replies, [['1', true], ['3', true]]);
- assert.deepEqual(emitted.at(-1), { type: 'permission.auto', file: 'public/styles.css' });
+ assert.deepEqual(emitted.at(-1), { type: 'permission.auto', file: 'public/styles.css', chat: chat.id });
  // Uden for projektet, Git-historik, hemmeligheder, kommandoer og web spørger stadig.
  for (const [id, permission, metadata] of [['4', 'edit', { filepath: path.join(path.dirname(root), 'andet', 'fil.txt') }], ['5', 'edit', { filepath: path.join(root, '.git', 'config') }], ['6', 'edit', { filepath: path.join(root, '.env.local') }], ['7', 'edit', { filepath: path.join(root, 'noegler', 'server.pem') }], ['8', 'edit', { filepath: 'public/relativ.html' }], ['9', 'bash', { command: 'rm -rf public' }], ['10', 'webfetch']]) {
   ask(id, permission, metadata); await settle();
@@ -178,11 +189,12 @@ test('Tillad for denne opgave gælder kun filer i projektmappen og kun indtil op
  }
  assert.equal(replies.length, 2);
  // Når opgaven er slut, gælder tilladelsen ikke længere.
- bench.event({ type: 'session.idle' }); await bench.finishing;
- assert.equal(bench.allowProjectEdits, false);
- bench.running = true;
+ chat.event({ type: 'session.idle' }); await bench.finishing;
+ assert.equal(chat.allowProjectEdits, false);
+ chat.running = true;
  ask('11', 'edit', { filepath: path.join(root, 'public/index.html') }); await settle();
  assert.equal(emitted.at(-1).properties?.id, '11'); assert.equal(replies.length, 2);
+ chat.running = false; await bench.close();
 });
 
 
@@ -190,26 +202,30 @@ test('forbruget tælles pr. modelkald og prissættes med ræsonnement som output
  const emitted = [];
  const bench = new Workbench({ directory: await temp(t), profiles, emit: event => emitted.push(event), safeStorage: {} });
  const root = await temp(t); await bench.activate({ root, name: 'Prøve' });
- assert.deepEqual(bench.currentUsage(), { input: 0, output: 0, reasoning: 0, cacheRead: 0, cacheWrite: 0, calls: 0, cost: 0, unpriced: 0 });
- bench.runSteps = new Map(); bench.runPrice = require('../core/connections.cjs').priceFor({ kind: 'anthropic' }, { id: 'claude-opus-5-5' });
- const step = (id, tokens) => bench.event({ type: 'message.part.updated', properties: { part: { id, type: 'step-finish', tokens } } });
+ const chat = bench.chat;
+ assert.deepEqual(chat.currentUsage(), { input: 0, output: 0, reasoning: 0, cacheRead: 0, cacheWrite: 0, calls: 0, cost: 0, unpriced: 0 });
+ chat.runSteps = new Map(); chat.runPrice = require('../core/connections.cjs').priceFor({ kind: 'anthropic' }, { id: 'claude-opus-5-5' });
+ const step = (id, tokens) => bench.chat.event({ type: 'message.part.updated', properties: { part: { id, type: 'step-finish', tokens } } });
  step('a', { input: 1000, output: 200, reasoning: 100, cache: { read: 10000, write: 2000 } });
  step('a', { input: 1000, output: 200, reasoning: 100, cache: { read: 10000, write: 2000 } });
  step('b', { input: 500, output: 100, reasoning: 0, cache: { read: 0, write: 0 } });
- const usage = bench.currentUsage();
+ const usage = chat.currentUsage();
  assert.equal(usage.calls, 2, 'samme modelkald tælles kun én gang');
  assert.equal(usage.input, 1500); assert.equal(usage.output, 300); assert.equal(usage.reasoning, 100);
  // Opus 5.5: 4 USD ind, 20 USD ud, 0,2 USD fra cache og 5 USD til cache pr. million tokens.
  assert.ok(Math.abs(usage.cost - (1500 * 4 + 400 * 20 + 10000 * 0.2 + 2000 * 5) / 1e6) < 1e-12);
  assert.equal(emitted.filter(e => e.type === 'usage').length, 2);
  // Forbruget gemmes med samtalen og er nulstillet i en ny samtale.
- bench.running = true; await bench.saveHistory('idle'); bench.running = false;
+ chat.runUser = { id: 'u', role: 'user', text: 'Første opgave' };
+ chat.running = true; await chat.saveHistory('idle'); chat.running = false;
  await bench.activate({ root, name: 'Prøve' });
- assert.equal(bench.currentUsage().calls, 2);
+ assert.equal(bench.chat.currentUsage().calls, 2);
+ // Forbruget hører til samtalen: en ny samtale starter fra nul, og den gamle beholder sit.
  await bench.newConversation();
- assert.equal(bench.currentUsage().calls, 0);
- bench.runPrice = null; step('c', { input: 10, output: 5 });
- assert.equal(bench.currentUsage().unpriced, 1);
+ assert.notEqual(bench.chat.id, chat.id); assert.equal(bench.chat.currentUsage().calls, 0);
+ bench.chat.runSteps = new Map(); bench.chat.runPrice = null; step('c', { input: 10, output: 5 });
+ assert.equal(bench.chat.currentUsage().unpriced, 1);
+ await bench.openChat(chat.id); assert.equal(bench.chat.currentUsage().calls, 2);
  await bench.close();
 });
 
@@ -223,4 +239,113 @@ test('en Corti-forbindelse beholder miljø og nøgle, når den redigeres uden ny
   assert.equal(renamed.baseURL, 'https://ai.fr.corti.app/v1', 'miljøet fra nøglen bevares');
   assert.equal(renamed.hasKey, true, 'nøglen bevares, fordi adressen er den samme');
   assert.equal(bench.store.decrypt((await bench.store.read()).connections[0]), key);
+});
+
+// En falsk motor og et færdigt "Før du sender", så samtalernes regler kan prøves uden en rigtig AI.
+function fakeSend(bench, engines) {
+ bench.engineFactory = options => { const engine = { options, active: false, resumed: Boolean(options.resume), session: { id: options.resume || `ses-${engines.length + 1}` }, pending: new Map(), sent: [], start: async () => { engine.active = true; }, send: async text => { engine.sent.push(text); }, request: async () => true, reply: async () => {}, abort: async () => {}, close: async () => { engine.active = false; } }; engines.push(engine); return engine; };
+ return async (chat, text, fingerprint = 'regler-1') => {
+  chat.prepared = { mode: 'free', root: chat.root, connection: { id: 'c', kind: 'compatible', name: 'Prøve', baseURL: 'http://127.0.0.1:1/v1' }, model: { id: 'test' }, route: null, references: [], fileRefs: [], view: null, autoCheckpoint: false, startup: null,
+   disclosure: { fingerprint, consentKey: 'samtykke', modelName: 'test', provider: 'Prøve' }, context: { rules: '', skills: [], titles: [], features: { versioner: false }, integrations: [] } };
+  return bench.send({ chat: chat.id, text, fingerprint });
+ };
+}
+
+test('samtaler i samme projekt: én arbejder ad gangen, og godkendelser, spørgsmål og hændelser går til den rigtige samtale', async t => {
+ const all = [], engines = [], root = await temp(t);
+ const bench = new Workbench({ directory: await temp(t), profiles, emit: event => all.push(event), safeStorage: {} });
+ const send = fakeSend(bench, engines);
+ await bench.activate({ root, name: 'Prøve' }); const first = bench.chat;
+ await send(first, 'Byg en forside');
+ assert.equal(first.running, true); assert.equal(bench.busyRoot(root), true);
+ // En ny samtale kan åbnes og skrives i, mens den første arbejder.
+ await bench.newChat(); const second = bench.chat;
+ assert.notEqual(second.id, first.id); assert.equal(first.running, true, 'den første samtale arbejder videre i baggrunden');
+ await bench.saveDraft({ chat: second.id, text: 'Næste idé', mode: 'plan' });
+ await assert.rejects(send(second, 'Lav en kontaktside'), /»Byg en forside« arbejder allerede/);
+ assert.equal(second.running, false); assert.equal(engines.length, 1, 'ingen motor startes for den ventende samtale');
+ await assert.rejects(bench.textEdit({ chat: second.id, id: 'x' }), /Vent/);
+ await assert.rejects(bench.deleteChat({ id: first.id }, async () => {}), /Stop opgaven/);
+ // Godkendelser og spørgsmål fra den første samtales motor besvares der, også når en anden samtale er åben.
+ engines[0].pending.set('p1', { permission: 'bash', metadata: {} });
+ first.event({ type: 'permission.asked', properties: { id: 'p1', permission: 'bash', metadata: {}, patterns: [] } });
+ assert.equal(all.findLast(event => event.type === 'permission.asked').chat, first.id, 'hændelsen bærer samtalens id');
+ assert.equal(first.waiting, true);
+ const replies = []; engines[0].reply = async (...args) => replies.push(args);
+ await bench.reply({ id: 'p1', allow: true });
+ assert.deepEqual(replies, [['p1', true, '']]);
+ assert.equal(first.activityList().find(entry => entry.id === 'approval-p1').status, 'allowed'); assert.equal(second.activityList().length, 0);
+ first.event({ type: 'question.asked', properties: { id: 'q1', questions: [{ question: 'Farve?', header: 'Farve', options: [] }] } });
+ const asked = []; engines[0].request = async (...args) => { asked.push(args); return true; };
+ await bench.question({ id: 'q1', answers: [['Blå']] });
+ assert.equal(asked[0][0], '/question/q1/reply');
+ // Sidepanelet får samtalernes status samlet.
+ await new Promise(resolve => setTimeout(resolve, 150));
+ const listed = all.findLast(event => event.type === 'chats.updated');
+ assert.equal(listed.active, second.id);
+ assert.deepEqual(listed.chats.map(chat => [chat.title, chat.running]), [['Næste idé', false], ['Byg en forside', true]]);
+ // Når den første er færdig, kan den anden arbejde, og den første slettes ikke ved en fejl.
+ first.event({ type: 'session.idle' }); await bench.finishing;
+ assert.equal(first.running, false); assert.equal(bench.busyRoot(root), false);
+ await send(second, 'Lav en kontaktside');
+ assert.equal(engines.length, 2); assert.equal(engines[0].active, false, 'den ledige motor i samme mappe lukkes, før en ny starter');
+ second.event({ type: 'session.idle' }); await bench.finishing;
+ // Omdøb og slet.
+ await bench.renameChat({ id: first.id, title: 'Forsiden' });
+ assert.equal((await bench.chatList()).find(chat => chat.id === first.id).title, 'Forsiden');
+ const trashed = [];
+ const state = await bench.deleteChat({ id: second.id }, async file => { trashed.push(file); await fs.rm(file); });
+ assert.equal(trashed.length, 1); assert.equal(state.chat, first.id, 'den nyeste tilbageværende samtale åbnes');
+ assert.deepEqual((await bench.chatList()).map(chat => chat.id), [first.id]);
+ await bench.close();
+});
+
+test('en samtale fortsætter sin AI-session, når forbindelse, model og regler er de samme', async t => {
+ const engines = [], root = await temp(t), directory = await temp(t);
+ const bench = new Workbench({ directory, profiles, emit: () => {}, safeStorage: {} });
+ const send = fakeSend(bench, engines);
+ await bench.activate({ root, name: 'Prøve' });
+ await send(bench.chat, 'Første besked'); bench.chat.event({ type: 'session.idle' }); await bench.finishing;
+ assert.equal(engines[0].options.resume, null);
+ assert.deepEqual((await bench.history.readChat(root, bench.chat.id)).opencode, { session: 'ses-1', fingerprint: 'regler-1' });
+ // Appen lukkes og åbnes igen: samme regler fortsætter sessionen, andre regler starter en ny.
+ await bench.close(); await bench.activate({ root, name: 'Prøve' });
+ await send(bench.chat, 'Anden besked'); bench.chat.event({ type: 'session.idle' }); await bench.finishing;
+ assert.equal(engines[1].options.resume, 'ses-1');
+ assert.equal(bench.chat.activityList().some(entry => entry.title === 'AI-sessionen fortsætter'), true);
+ await bench.close(); await bench.activate({ root, name: 'Prøve' });
+ await send(bench.chat, 'Tredje besked', 'regler-2'); bench.chat.event({ type: 'session.idle' }); await bench.finishing;
+ assert.equal(engines[2].options.resume, null);
+ assert.equal(bench.chat.activityList().some(entry => entry.title === 'Ny AI-session'), true);
+ await bench.close();
+});
+
+test('motoren fortsætter en kendt session og opretter en ny, når den gamle ikke findes', async () => {
+ const { OpenCodeEngine } = require('../core/engine.cjs');
+ const calls = [];
+ const engine = (resume, known) => Object.assign(new OpenCodeEngine({ root: '/tmp/x', resume }), { request: async (url, method) => { calls.push([url, method || 'GET']); if (url === '/session' && method === 'POST') return { id: 'ny' }; if (url === `/session/${known}`) return { id: known }; throw new Error('404'); } });
+ const kept = engine('ses_gammel', 'ses_gammel'); assert.equal((await kept.openSession()).id, 'ses_gammel'); assert.equal(kept.resumed, true);
+ const gone = engine('ses_borte', 'andet'); assert.equal((await gone.openSession()).id, 'ny'); assert.equal(gone.resumed, false);
+ const unsafe = engine('../../config', 'x'); assert.equal((await unsafe.openSession()).id, 'ny');
+ assert.deepEqual(calls, [['/session/ses_gammel', 'GET'], ['/session/ses_borte', 'GET'], ['/session', 'POST'], ['/session', 'POST']], 'en usikker id sendes aldrig til motoren');
+});
+
+test('Ændringer og Aktivitet bevares pr. samtale, når projektet genåbnes, fx efter en gendannelse', async t => {
+ const root = await temp(t);
+ const bench = new Workbench({ directory: await temp(t), profiles, emit: () => {}, safeStorage: {} });
+ await bench.activate({ root, name: 'Prøve' }); const first = bench.chat.id;
+ const task = bench.recordEdit({ kind: 'direct', label: 'Min rettelse', files: [{ file: 'a.txt', before: 'a', after: 'b' }], title: 'Du rettede en tekst' });
+ // Som ved en gendannelse: projektet lukkes, der logges, og projektet åbnes igen.
+ await bench.close();
+ bench.log({ kind: 'restore', title: 'Filerne er sat tilbage', status: 'completed' });
+ await bench.activate({ root, name: 'Prøve' });
+ assert.equal(bench.chat.id, first);
+ assert.equal(bench.findTask(task.id)?.label, 'Min rettelse');
+ assert.deepEqual(bench.activityList().map(entry => entry.title), ['Du rettede en tekst', 'Filerne er sat tilbage']);
+ assert.equal((await bench.changeOverview()).tasks.length, 1);
+ // En ny samtale har sine egne, tomme Ændringer; den første har stadig sine.
+ bench.chat.data.draft = 'x'; await bench.saveDraft({ text: 'Kladde', mode: 'plan' });
+ await bench.newChat(); assert.notEqual(bench.chat.id, first); assert.equal(bench.activityList().length, 0);
+ await bench.openChat(first); assert.equal(bench.activityList().length, 2);
+ await bench.close();
 });

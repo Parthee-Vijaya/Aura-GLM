@@ -117,21 +117,28 @@ handle('project:open', () => exclusive(async () => {
   if (selection.canceled) return null;
   return activate(await openProject(selection.filePaths[0]));
 }));
-handle('project:recent', () => workbench.history.recent());
+// Seneste projekter med deres samtaler til sidepanelet. Det åbne projekts samtaler har deres status lige nu.
+handle('project:recent', async () => Promise.all((await workbench.history.recent()).map(async item => ({ ...item, chats: await workbench.chatList(item.root).catch(() => []) }))));
 handle('project:reopen', id => exclusive(async () => {
   const item = (await workbench.history.recent()).find(p => p.id === id);
   if (!item) throw new Error('Projektet findes ikke på listen. Brug Åbn projekt for at vælge mappen.');
   return activate(await openProject(item.root));
 }));
-handle('workspace:new-conversation', () => exclusive(async () => {
-  if (!project || workbench.running) throw new Error('Stop opgaven, før du starter en ny samtale.');
-  const choice = await dialog.showMessageBox(window, { type: 'question', title: 'Ny samtale', message: 'Start en ny samtale i dette projekt?', detail: 'Plan og kladde ryddes fra visningen. Den tidligere samtale arkiveres i appens datamappe og sendes ikke med. Projektfilerne bevares.', buttons: ['Annuller', 'Start ny samtale'], defaultId: 0, cancelId: 0 });
+// Samtaler i projektet. En ny samtale starter tom; de tidligere står i sidepanelet og kan åbnes igen.
+handle('workspace:new-conversation', () => exclusive(async () => { if (!project) throw new Error('Åbn et projekt først.'); return workbench.newChat(); }));
+handle('chat:open', id => exclusive(async () => { if (!project) throw new Error('Åbn et projekt først.'); return workbench.openChat(id); }));
+handle('chat:rename', value => exclusive(() => workbench.renameChat(value)));
+// Sletning flytter samtalens fil til papirkurven, så den kan hentes igen uden for Aura.
+handle('chat:delete', value => exclusive(async () => {
+  if (!project) throw new Error('Åbn et projekt først.');
+  const title = (await workbench.chatList()).find(item => item.id === value?.id)?.title || 'Ny samtale';
+  const choice = await dialog.showMessageBox(window, { type: 'question', title: 'Slet samtale', message: `Slet samtalen »${title}«?`, detail: 'Samtalen flyttes til papirkurven. Projektfilerne og versionerne bevares.', buttons: ['Annuller', 'Slet samtalen'], defaultId: 0, cancelId: 0 });
   if (choice.response !== 1) return null;
-  return workbench.newConversation();
+  return workbench.deleteChat(value, file => shell.trashItem(file));
 }));
 handle('workspace:draft', input => {
   if (!project || input.root !== project.root) throw new Error('Projektet er skiftet. Kladden blev ikke gemt i en anden mappe.');
-  return workbench.history.draft(project.root, input).then(() => true);
+  return workbench.saveDraft({ chat: input.chat, text: input.text, mode: input.mode });
 });
 handle('project:new', () => exclusive(async () => {
   if (workbench.running) throw new Error('Stop den aktive opgave, før du skifter projekt.');
@@ -271,7 +278,7 @@ handle('git:restore-review', input => exclusive(async () => {
   const root = requireIdleProject();
   let request = { ...(input?.commit ? { commit: input.commit } : {}), ...(input?.undo ? { undo: true } : {}), ...(input?.revert ? { revert: input.revert } : {}) };
   if (input?.task) {
-    const task = workbench.session()?.tasks.find(item => item.id === input.task);
+    const task = workbench.findTask(input.task);
     if (!task || !task.files.length) throw new Error('Opgaven findes ikke længere i denne samtale. Brug Versioner for at gå længere tilbage.');
     request = { task: { files: task.files } };
   }
@@ -325,7 +332,7 @@ handle('git:restore', input => exclusive(async () => {
   const reopened = await activate(await openProject(root));
   // Ændringen står under Ændringer som din. Billedet efter tages i baggrunden af samme side i samme størrelse.
   // En opgave i denne samtale, der er fortrudt, kan ikke fortrydes igen fra kortet.
-  if (restored?.files && pending?.task) { const done = workbench.session()?.tasks.find(item => item.id === pending.task); if (done) done.undone = true; }
+  if (restored?.files && pending?.task) { const done = workbench.findTask(pending.task); if (done) done.undone = true; }
   if (restored?.files) {
     const files = restored.changes.filter(change => change.before !== undefined && change.after !== undefined).map(change => ({ file: change.file, before: change.before, after: change.after }));
     const task = workbench.recordEdit({ kind: 'undo', label: label.trim() || (pending?.kind === 'undo' ? 'Fortrudt gendannelse' : 'Gendannet version'), files, title: '', log: false });
@@ -433,7 +440,7 @@ handle('agent:send', value => exclusive(async () => {
   if (['installing', 'starting', 'stopping'].includes(devServer.state)) throw new Error('Vent på opstarten af forhåndsvisningen, eller stop den først.');
   return workbench.send(value);
 }));
-handle('agent:stop', () => workbench.stop());
+handle('agent:stop', value => workbench.stop(value));
 handle('agent:reply', value => workbench.reply(value));
 handle('agent:question', value => workbench.question(value));
 // Afklaring og plan: briefen er brugerens egne ord, og planen kan rettes af brugeren. Intet sendes, før næste besked.
@@ -443,9 +450,9 @@ handle('plan:edit', value => exclusive(() => workbench.editPlan(value)));
 handle('plan:restore', value => exclusive(() => workbench.restorePlan(value)));
 // Arbejdsfladens faner: Ændringer, Kode og Aktivitet. Alt er skrivebeskyttet; stier valideres her i hovedprocessen.
 // Ændringer: opgaverne i denne samtale med deres før/efter-billeder, når Aura har taget dem.
-handle('changes:overview', async () => {
+handle('changes:overview', async value => {
   if (!project) return { running: false, tasks: [], session: null };
-  const root = project.root, overview = await workbench.changeOverview();
+  const root = project.root, overview = await workbench.changeOverview(value);
   for (const task of overview.tasks) task.images = await images.pairFor(root, { task: task.id }).catch(() => null);
   return overview;
 });
@@ -459,13 +466,13 @@ handle('changes:file', async value => {
   }
   return workbench.changeFile(value);
 });
-handle('code:list', async () => {
+handle('code:list', async value => {
   if (!project) throw new Error('Åbn et projekt først.');
-  const root = project.root, result = await projectFiles.listFiles(root), changed = workbench.changedFiles();
+  const root = project.root, result = await projectFiles.listFiles(root), changed = workbench.changedFiles(value);
   return { root, truncated: result.truncated, files: result.files.map(file => ({ ...file, changed: changed.get(file.path) || null })), deleted: [...changed].filter(([, kind]) => kind === 'slettet').map(([file]) => file) };
 });
 handle('code:read', file => { if (!project) throw new Error('Åbn et projekt først.'); return projectFiles.readFile(project.root, file); });
-handle('activity:list', () => project ? workbench.activityList() : []);
+handle('activity:list', value => project ? workbench.activityList(value?.chat) : []);
 handle('skills:list', () => { if (!project) throw new Error('Åbn et projekt først.'); return workbench.skills.list(project.root); });
 handle('skills:save', value => exclusive(async () => {
   if (!project || workbench.running) throw new Error('Åbn et projekt, og stop en eventuel opgave før skill-ændringer.');
@@ -476,7 +483,7 @@ handle('features:get', () => workbench.features.get(project?.root));
 handle('features:save', value => exclusive(async () => {
   if (workbench.running || workbench.finishing) throw new Error('Stop opgaven, før du ændrer funktioner.');
   const result = await workbench.features.save(project?.root, value);
-  workbench.prepared = null;
+  for (const chat of workbench.chats.values()) chat.prepared = null;
   return result;
 }));
 handle('preview:attach', value => exclusive(async () => {
@@ -484,7 +491,7 @@ handle('preview:attach', value => exclusive(async () => {
   if (!value) { await devServer.stop(); forceStatic = true; externalPreview = null; if (preview) await preview.close(); const next = await openProject(project.root); preview = next.staticPreview ? await startPreview(project.root) : null; return preview?.url || null; }
   let url; try { url = new URL(value); } catch { throw new Error('Angiv en lokal serveradresse.'); }
   if (!['http:', 'https:'].includes(url.protocol) || !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) || url.username || url.password || url.search || url.hash) throw new Error('Brug en lokal http- eller https-adresse uden login eller parametre.');
-  if (workbench.engine?.url === url.origin || workbench.gateway?.url.startsWith(url.origin + '/')) throw new Error('Agentens interne server kan ikke bruges som forhåndsvisning.');
+  if (workbench.servers().some(server => server === url.origin || server.startsWith(url.origin + '/'))) throw new Error('Agentens interne server kan ikke bruges som forhåndsvisning.');
   try { const response = await fetch(url, { redirect: 'error', signal: AbortSignal.timeout(5000) }); await response.body?.cancel(); if (!response.ok) throw new Error(); }
   catch { throw new Error('Den lokale udviklingsserver svarer ikke. Start den separat; appen kører ingen kommando automatisk.'); }
   await devServer.stop();
@@ -716,7 +723,7 @@ app.whenReady().then(() => {
   protocol.handle('harness', async request => {
     const url = new URL(request.url);
     const name = url.pathname.slice(1);
-    if (url.host !== 'app' || !['index.html', 'app.js', 'workspace.js', 'plan-view.js', 'planning.js', 'approval-view.js', 'approvals.js', 'preview-edit.js', 'history.js', 'model-advice.js', 'server.js', 'viewport.js', 'hosting.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name)) return new Response('Ikke fundet', { status: 404 });
+    if (url.host !== 'app' || !['index.html', 'app.js', 'workspace.js', 'plan-view.js', 'planning.js', 'approval-view.js', 'approvals.js', 'preview-edit.js', 'history.js', 'chats.js', 'palette.js', 'model-advice.js', 'server.js', 'viewport.js', 'hosting.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name)) return new Response('Ikke fundet', { status: 404 });
     return new Response(await fs.readFile(path.join(__dirname, 'ui', name)), { headers: { 'Content-Type': name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : 'text/html; charset=utf-8' } });
   });
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
@@ -741,6 +748,12 @@ app.whenReady().then(() => {
       if (isMainFrame || !picking.active) return;
       let frame = null; try { frame = webFrameMain.fromId(processId, routingId); } catch { return; }
       if (frame && fromPreview(frame.url)) injectPicker().catch(() => {});
+    });
+    // ⌘K (Ctrl+K på Windows og Linux) åbner kommandopaletten, også når fokus står i forhåndsvisningen.
+    window.webContents.on('before-input-event', (event, input) => {
+      const modifier = process.platform === 'darwin' ? input.meta && !input.control : input.control && !input.meta;
+      if (input.type !== 'keyDown' || input.isAutoRepeat || String(input.key).toLowerCase() !== 'k' || !modifier || input.alt || input.shift) return;
+      event.preventDefault(); sendEvent({ type: 'palette.toggle' });
     });
     window.webContents.on('will-navigate', event => event.preventDefault());
     window.webContents.on('will-attach-webview', event => event.preventDefault());

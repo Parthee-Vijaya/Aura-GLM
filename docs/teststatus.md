@@ -2,6 +2,53 @@
 
 Kontrolleret 28. september 2026. Dette er status for den aktuelle arbejdsmappe, ikke en erklæring om, at alle installationsfiler eller modeller er klar. Der er ikke committet eller pushet under denne gennemgang.
 
+## Samtaler, kommandopalet og eksempler · 6. oktober 2026
+
+Første del (6A) af sjette milepæl i [planen for brugerfladen](ux-plan.md). Afprøvet på Mac med OpenCode 1.18.33. Der er ikke committet eller pushet i dette repository.
+
+- **Enhedstestet:** 190 automatiske tests består, når testfilerne køres én ad gangen. De nye og omskrevne dækker:
+  - samtalefiler: genåbning af kladde, plan og samtale, afbrudt opgave, adskilte projekter og samtaler, grænsen på 200 beskeder og bevarelse af en beskadiget samtalefil;
+  - flytning af en ældre samtale og arkiverede samtaler til samtalefiler, med bevaret brief, gendannelsesmarkør og uændret arkiv;
+  - en tom samtale genbruges, en samtale med kladde gør ikke, navne efter første besked eller kladden, omdøbning og sletning gennem papirkurven;
+  - redning efter en beskadiget projektfil: filen lægges til side, og samtalerne findes igen;
+  - to samtaler i samme projekt: kun én arbejder ad gangen, den anden afvises med samtalens navn, godkendelser og spørgsmål går til den rigtige samtale, og sidepanelet får status samlet;
+  - AI-sessionen fortsættes med samme regler og ikke med andre, og motoren sender aldrig en usikker sessions-id videre;
+  - Ændringer og Aktivitet bevares pr. samtale, når projektet genåbnes, fx efter en gendannelse.
+- **Kørt mod rigtigt materiale i Electron:** `npm run test:chats` bruger den rigtige OpenCode-motor, rigtige projektfiler og en kontrolleret modelserver. Prøven har 10 delprøver:
+  1. Eksempler på idéer udfylder idé og navn og skjules, når feltet har tekst.
+  2. Paletten viser ikke handlinger fra funktioner, der er slået fra, og giver fokus tilbage efter Escape.
+  3. En ny samtale åbnes, mens en anden venter på godkendelse; sidepanelet viser "venter på dig", og Send venter med navnet på den anden samtale.
+  4. Paletten finder samtalen ved søgning og skifter med Enter; godkendelsen står i den rigtige samtale.
+  5. En samtale arbejder i baggrunden med egen status og eget svar, et andet projekt kan ikke åbnes imens, og "nyt resultat" markeres og forsvinder ved åbning.
+  6. Piletaster, Enter og ⌘K virker; genvejen virker også med fokus i forhåndsvisningen (sendt gennem browserens tastaturvej).
+  7. Omdøb og slet fra samtalens menu; den slettede samtalefil sendes til papirkurven.
+  8. Efter genstart åbnes samme samtale, og AI-sessionen fortsætter: modellen får samtalens tidligere beskeder.
+  9. Et projekt fra før samtalerne får sin samtale og sit arkiv som samtaler; arkivfilerne er uændrede.
+  10. 980 × 720, 150 % zoom og reduceret bevægelse.
+- **Fundet og rettet under afprøvningen:**
+  - Efter Stop og Fejl viste status "Klar", fordi status blev skrevet om, når samtalerne blev opdateret. En samtale viser nu sin egen seneste status.
+  - En kladde skrevet lige før lukning gik tabt, fordi den hurtige lokale kopi blev gemt under den gamle nøgle uden samtale. En ikke-gemt kladde fra en ældre version flyttes til den første samtale, der åbnes.
+  - Ændringer og Aktivitet forsvandt, når projektet blev genåbnet efter en gendannelse; "Filerne er sat tilbage" blev ikke logget. De ligger nu hos arbejdsbænken pr. samtale.
+  - Ventelinjen nævnte altid "Ny samtale" og pressede skrivefeltets værktøjslinje sammen; den har nu samtalens navn og sin egen linje.
+  - Samtalenavne blev skåret ned til to bogstaver ved siden af status; status står nu under navnet. Projektlisten havde et hul og stod i forkert rækkefølge.
+  - Paletten gav fokus tilbage for sent og tog det fra den fane, handlingen flyttede til; uden projekt viste den kun én handling.
+  - `Workbench.close()` ryddede samtalerne, så arbejdsbænken ikke kunne bruges videre i samme projekt. Den lukker nu kun motorerne.
+- **Kørsler:** Alle 20 Electron-prøver består i én samlet kørsel. `test:resume` og `test:agent` er tilpasset sidepanelet og samtalerne. Hjælpefunktionen til AI-forbindelser venter nu på, at dialogen står stille, før den klikker; et klik under dialogens animation ramte ikke knappen i 1 af 13 forsøg. To fejl i en tidligere samlet kørsel skyldtes, at enhedstestene kørte samtidig.
+- **Målt:** 3.197 synlige ord, 267 valg og 51 ⓘ på 44 skærme mod 2.995, 244 og 50 på 41 skærme efter milepæl 5. Klik pr. opgave er uændret, og der er ingen sidefejl.
+  - Nye skærme: sidepanelet med projekter og samtaler (44 ord og 13 valg med sidepanelets faste knapper og links, målt med to samtaler), kommandopaletten (34 ord) og eksemplerne på idéer (3 valg bag ét link).
+  - "Hvad vil du bygge?" har ét valg mere: linket til eksemplerne.
+  - "Fortryd opgaven" siger nu, når Aura ikke har et billede fra før opgaven.
+
+Ikke afprøvet:
+- En rigtig model og en person uden teknisk baggrund.
+- Skærmlæser (VoiceOver), Windows, Ctrl+K på Windows og Linux og en pakket app.
+- Mange samtaler i ét projekt; sidepanelet viser seks og "Vis alle".
+
+Kendte begrænsninger:
+- Kun én samtale ad gangen kan arbejde i et projekt. Samtidige opgaver i hver sin kopi kommer i 6B.
+- Ændringer og Aktivitet huskes for de otte senest brugte samtaler, så længe appen er åben.
+- En samtale, der arbejder, kan ikke slettes, og et andet projekt kan ikke åbnes, før den er færdig.
+
 ## Visuel historik · 6. oktober 2026
 
 Femte milepæl i [planen for brugerfladen](ux-plan.md). Afprøvet på Mac med OpenCode 1.18.33. Git-versionerne i prøverne er oprettet i nye midlertidige projekter; der er ikke committet eller pushet i dette repository.

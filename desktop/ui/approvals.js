@@ -35,8 +35,9 @@
     if (diff.rows.length > 400) box.append(node('div', 'Ændringen er lang. Resten ses under Ændringer, når den er gemt.', 'diff-gap'));
     return box;
   }
-  const record = text => $('#messages').append(node('p', text, 'chat-message answer-record'));
-  function show(p) {
+  const record = (v, text) => v.log.append(node('p', text, 'chat-message answer-record'));
+  // v er samtalens visning. Kortet står i den samtale, hvis AI spurgte, også når en anden samtale er åben.
+  function show(p, v = viewFor()) {
     const where = target(p), { title, effect } = explanation(p, where);
     const box = node('section', undefined, 'approval'); box.dataset.id = p.id;
     box.append(node('p', `Godkendelse · ${kinds[p.permission] || 'Handling'}`, 'approval-kind'), node('strong', title, 'approval-title'));
@@ -70,11 +71,11 @@
     // Handlingen i almindeligt dansk til linjen i samtalen, fx "ændre filer i projektet: public/index.html".
     const label = `${title.replace(/\?$/, '').replace(/^Må AI’en /, '')}${where.text ? `: ${where.text.split('\n')[0].slice(0, 120)}` : ''}`;
     const reply = (allow, scope, message) => action(async () => {
-      await call('reply', { id: p.id, allow, scope, ...(message ? { message } : {}) });
-      box.remove(); doneWaiting(p.id);
-      if (!allow && !message) { rejectedThisRun = true; lastRejection = { title, target: where.text }; }
-      record(!allow ? (message ? `Du afviste, at AI’en må ${label}, og skrev: ${message}` : `Du afviste, at AI’en må ${label}. AI’en stopper.`) : scope ? 'Du gav AI’en lov til at ændre filer i projektet resten af opgaven.' : `Du gav AI’en lov til at ${label}.`);
-      setStatusDetail(!allow ? (message ? 'AI’en har fået din besked og fortsætter …' : 'Handlingen er afvist. AI’en stopper.') : 'Godkendelsen er sendt. AI’en fortsætter …');
+      await call('reply', { id: p.id, allow, scope, chat: v.id, ...(message ? { message } : {}) });
+      box.remove(); doneWaiting(p.id, v);
+      if (!allow && !message) { v.rejectedThisRun = true; v.lastRejection = { title, target: where.text }; }
+      record(v, !allow ? (message ? `Du afviste, at AI’en må ${label}, og skrev: ${message}` : `Du afviste, at AI’en må ${label}. AI’en stopper.`) : scope ? 'Du gav AI’en lov til at ændre filer i projektet resten af opgaven.' : `Du gav AI’en lov til at ${label}.`);
+      setStatusDetail(!allow ? (message ? 'AI’en har fået din besked og fortsætter …' : 'Handlingen er afvist. AI’en stopper.') : 'Godkendelsen er sendt. AI’en fortsætter …', v);
     });
     for (const [text, allow, scope] of choices) { const button = node('button', text, scope ? 'primary' : undefined); button.type = 'button'; button.onclick = () => reply(allow, scope); row.append(button); }
     box.append(row);
@@ -91,11 +92,11 @@
       box.append(form); input.focus();
     };
     box.append(other);
-    $('#approvals').append(box); box.scrollIntoView({ block: 'nearest' });
-    waitFor(p.id, title, box);
+    v.approvals.append(box); if (v === viewFor()) box.scrollIntoView({ block: 'nearest' });
+    waitFor(p.id, title, box, v);
   }
   window.harness.onEvent(event => {
-    if (event.type === 'permission.replied') { const box = [...$('#approvals').children].find(item => item.dataset.id === event.properties?.requestID); if (box) { box.remove(); doneWaiting(event.properties.requestID); } }
+    if (event.type === 'permission.replied') { const v = viewFor(event.chat), box = [...v.approvals.children].find(item => item.dataset.id === event.properties?.requestID); if (box) { box.remove(); doneWaiting(event.properties.requestID, v); } }
   });
   window.approvals = { show };
 })();

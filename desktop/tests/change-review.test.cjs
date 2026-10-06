@@ -66,17 +66,17 @@ test('arbejdsbænken husker opgavens ændringer og tilskriver dem efter AI’ens
   await fs.writeFile(path.join(root, 'public/index.html'), '<h1>Før</h1>\n'); await fs.writeFile(path.join(root, 'noter.txt'), 'egne noter\n');
   const events = [];
   const bench = new Workbench({ directory: path.join(directory, 'data'), profiles, emit: event => events.push(event), safeStorage: {} });
-  bench.project = { root };
+  await bench.activate({ root, name: 'Prøve' }); const chat = bench.chat;
   const before = await capture(root);
   const session = bench.session(); session.baseline = before; session.startedAt = 1;
-  bench.task = { id: 'opgave-1', root, label: 'Byg siden', mode: 'build', startedAt: 1, aiFiles: new Set(), aiHashes: new Map(), reads: [], completed: new Set(), commandParts: new Set(), commands: 0 };
+  chat.task = { id: 'opgave-1', root, label: 'Byg siden', mode: 'build', startedAt: 1, aiFiles: new Set(), aiHashes: new Map(), reads: [], completed: new Set(), commandParts: new Set(), commands: 0 };
   // AI’en skriver index.html med sit værktøj; brugeren retter samtidig sine noter i et andet program.
   await fs.writeFile(path.join(root, 'public/index.html'), '<h1>Efter</h1>\n');
-  bench.observeTool({ id: 'del-1', tool: 'write', state: { status: 'running', input: { filePath: path.join(root, 'public/index.html') } } });
-  bench.observeTool({ id: 'del-1', tool: 'write', state: { status: 'completed', input: { filePath: path.join(root, 'public/index.html') } } });
+  chat.observeTool({ id: 'del-1', tool: 'write', state: { status: 'running', input: { filePath: path.join(root, 'public/index.html') } } });
+  chat.observeTool({ id: 'del-1', tool: 'write', state: { status: 'completed', input: { filePath: path.join(root, 'public/index.html') } } });
   await fs.writeFile(path.join(root, 'noter.txt'), 'egne noter, rettet af brugeren\n');
-  const finished = await bench.finishTask('idle', await changes(root, before));
-  assert.equal(finished.id, 'opgave-1'); assert.equal(bench.task, null);
+  const finished = await chat.finishTask('idle', await changes(root, before));
+  assert.equal(finished.id, 'opgave-1'); assert.equal(chat.task, null);
   const overview = await bench.changeOverview();
   assert.deepEqual(overview.tasks[0].files.map(f => [f.file, f.by]), [['public/index.html', 'ai'], ['noter.txt', 'anden']]);
   assert.deepEqual(overview.session.files.map(f => [f.file, f.by]), [['public/index.html', 'ai'], ['noter.txt', 'anden']]);

@@ -2,74 +2,176 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { randomUUID } = require('node:crypto');
 
-// brief er null, indtil brugeren eller et svar ændrer den; så bruges projektets idé som udgangspunkt.
-const empty = () => ({ version: 1, draft: '', mode: 'plan', messages: [], plan: null, planConversation: [], status: 'idle', brief: null });
-// Samtalen er lokale brugerdata, ikke projektfiler eller adgangstilladelser.
+// Et projekt har flere samtaler. Projektfilen har briefen og listen over samtaler; hver samtale har sin egen fil med
+// beskeder, kladde, plan og forbrug. Samtalerne er lokale brugerdata, ikke projektfiler eller adgangstilladelser.
+//
+// workspaces/<projekt>.json            { version: 2, brief, chats: [oversigt], active, restorationID }
+// workspaces/<projekt>-chats/<id>.json  { version: 1, id, title, draft, mode, messages, plan, … }
+// Ældre projekter havde én samtale i projektfilen og arkiverede samtaler i <projekt>-archives. De flyttes til
+// samtalefiler første gang projektet åbnes; arkivfilerne bevares uændret.
+const now = () => new Date().toISOString();
+const emptyChat = (id, title = '') => ({ version: 1, id, title, renamed: false, draft: '', mode: 'plan', messages: [], plan: null, planConversation: [], lastPlan: null, status: 'idle', usage: null, createdAt: now(), updatedAt: now() });
+const emptyProject = () => ({ version: 2, brief: null, chats: [], active: null, restorationID: null });
+const idPattern = /^[0-9a-f-]{36}$/;
+const damaged = 'Oversigten over projektets samtaler kan ikke læses. Projektfilerne er ikke berørt, og filen er bevaret. Start en ny samtale med + for at fortsætte.';
+// En samtales navn: brugerens første besked, til første punktum og højst 60 tegn ved et ordskifte.
+function titleFrom(messages) {
+  const text = String(messages.find(m => m.role === 'user')?.text || '').split('\n\n')[0].replace(/\s+/g, ' ').trim();
+  if (!text) return '';
+  const sentence = (text.match(/^.+?[.!?](?=\s|$)/) || [text])[0].replace(/[.!?]$/, '');
+  return sentence.length <= 60 ? sentence : sentence.slice(0, 60).replace(/[\s,.;:]+\S*$/, '') + ' …';
+}
+// Oversigten i projektfilen, så sidepanelet kan vise samtalerne uden at læse dem alle.
+// En samtale uden beskeder hedder det, brugeren er begyndt at skrive.
+const summary = chat => ({ id: chat.id, title: chat.title || titleFrom(chat.messages) || titleFrom([{ role: 'user', text: chat.draft || '' }]), renamed: Boolean(chat.renamed), createdAt: chat.createdAt, updatedAt: chat.updatedAt, status: chat.status, count: chat.messages.length, draft: Boolean(chat.draft) });
+function validChat(data) {
+  return data && data.version === 1 && idPattern.test(data.id) && Array.isArray(data.messages) && Array.isArray(data.planConversation) && typeof data.draft === 'string';
+}
+
 class WorkspaceHistory {
   constructor(store) { this.store = store; this.queue = Promise.resolve(); }
   file(root) { return path.join(this.store.root, 'workspaces', this.store.projectKey(root) + '.json'); }
-  async read(root) {
-    try {
-      const data = JSON.parse(await fs.readFile(this.file(root), 'utf8'));
-      if (data.version !== 1 || !Array.isArray(data.messages) || !Array.isArray(data.planConversation) || typeof data.draft !== 'string') throw new Error();
-      return data;
-    } catch (error) {
-      if (error.code === 'ENOENT') return empty();
-      throw new Error('Den gemte samtale kan ikke læses. Filen er bevaret; projektfilerne er ikke berørt.');
+  folder(root) { return this.file(root).replace(/\.json$/, '') + '-chats'; }
+  chatFile(root, id) { if (!idPattern.test(id || '')) throw new Error('Samtalen findes ikke.'); return path.join(this.folder(root), `${id}.json`); }
+  // Alle skrivninger går gennem én kø og skrives atomisk, så projektfil og samtalefil aldrig skrives samtidig.
+  serial(work) { const task = this.queue.then(work); this.queue = task.catch(() => {}); return task; }
+  async write(target, data) {
+    await fs.mkdir(path.dirname(target), { recursive: true, mode: 0o700 });
+    const temp = target + '.' + randomUUID() + '.tmp';
+    await fs.writeFile(temp, JSON.stringify(data), { mode: 0o600 });
+    await fs.rename(temp, target);
+  }
+  async readJSON(file) { return JSON.parse(await fs.readFile(file, 'utf8')); }
+  // Projektfilen. En ældre fil med én samtale flyttes til version 2 her, inden for køen.
+  async project(root) {
+    let data;
+    try { data = await this.readJSON(this.file(root)); }
+    catch (error) { if (error.code === 'ENOENT') return emptyProject(); throw new Error(damaged); }
+    if (data.version === 2 && Array.isArray(data.chats)) return data;
+    if (data.version !== 1 || !Array.isArray(data.messages) || !Array.isArray(data.planConversation) || typeof data.draft !== 'string') throw new Error(damaged);
+    return this.migrate(root, data);
+  }
+  // En projektfil, der ikke kan læses, flyttes uændret til arkivet, og oversigten bygges igen ud fra samtalefilerne.
+  // Briefen lå i den beskadigede fil og starter forfra; filen kan stadig findes i appens lokale data.
+  async recover(root) {
+    const file = this.file(root), archive = file.replace(/\.json$/, '') + '-archives';
+    await fs.mkdir(archive, { recursive: true, mode: 0o700 });
+    await fs.rename(file, path.join(archive, `beskadiget-${now().replace(/[:.]/g, '-')}.json`));
+    const chats = [];
+    let names = []; try { names = (await fs.readdir(this.folder(root))).filter(name => idPattern.test(name.replace(/\.json$/, ''))); } catch { /* Ingen samtalefiler. */ }
+    for (const name of names) { try { const data = await this.readJSON(path.join(this.folder(root), name)); if (validChat(data)) chats.push(summary(data)); } catch { /* Springes over og bevares. */ } }
+    const project = { ...emptyProject(), chats, recoveredAt: now() };
+    await this.write(file, project);
+    return project;
+  }
+  async migrate(root, old) {
+    const chats = [];
+    const archive = this.file(root).replace(/\.json$/, '') + '-archives';
+    let names = []; try { names = (await fs.readdir(archive)).filter(name => name.endsWith('.json')); } catch { /* Ingen arkiverede samtaler. */ }
+    for (const name of names) {
+      try {
+        const data = await this.readJSON(path.join(archive, name));
+        if (data.version !== 1 || !Array.isArray(data.messages) || !data.messages.length) continue;
+        chats.push({ ...emptyChat(randomUUID()), ...pick(data), createdAt: data.updatedAt || now(), updatedAt: data.updatedAt || now(), status: data.status === 'working' ? 'interrupted' : data.status || 'idle' });
+      } catch { /* En arkivfil, der ikke kan læses, bevares og springes over. */ }
     }
+    chats.sort((a, b) => a.updatedAt.localeCompare(b.updatedAt));
+    const current = { ...emptyChat(randomUUID()), ...pick(old), createdAt: old.updatedAt || now(), updatedAt: old.updatedAt || now() };
+    chats.push(current);
+    for (const chat of chats) { chat.title = titleFrom(chat.messages); await this.write(this.chatFile(root, chat.id), chat); }
+    const project = { version: 2, brief: old.brief || null, chats: chats.map(summary), active: current.id, restorationID: old.restorationID || null, migratedAt: now() };
+    await this.write(this.file(root), project);
+    return project;
   }
-  update(root, change) {
-    const task = this.queue.then(async () => {
-      const data = await this.read(root);
-      await change(data);
-      data.updatedAt = new Date().toISOString();
-      const target = this.file(root);
-      await fs.mkdir(path.dirname(target), { recursive: true, mode: 0o700 });
-      const temp = target + '.' + randomUUID() + '.tmp';
-      await fs.writeFile(temp, JSON.stringify(data), { mode: 0o600 });
-      await fs.rename(temp, target);
-      return data;
+  async readChat(root, id) {
+    try { const data = await this.readJSON(this.chatFile(root, id)); if (!validChat(data)) throw new Error(); return data; }
+    catch (error) { if (error.code === 'ENOENT') throw new Error('Samtalen findes ikke længere.'); throw new Error('Samtalen kan ikke læses. Filen er bevaret, og projektfilerne er ikke berørt. Start en ny samtale med + for at fortsætte.'); }
+  }
+  updateProject(root, change) {
+    return this.serial(async () => { const data = await this.project(root); await change(data); data.updatedAt = now(); await this.write(this.file(root), data); return data; });
+  }
+  // Ændrer én samtale og dens linje i projektets oversigt.
+  updateChat(root, id, change) {
+    return this.serial(async () => {
+      const project = await this.project(root), chat = await this.readChat(root, id);
+      await change(chat);
+      chat.updatedAt = now(); if (!chat.renamed) chat.title = titleFrom(chat.messages);
+      await this.write(this.chatFile(root, id), chat);
+      project.chats = [...project.chats.filter(item => item.id !== id), summary(chat)];
+      project.updatedAt = chat.updatedAt; await this.write(this.file(root), project);
+      return chat;
     });
-    this.queue = task.catch(() => {});
-    return task;
   }
+  // Åbner projektet: briefen, samtalerne og den aktive samtale. Findes ingen, oprettes en tom.
   async open(project) {
-    const data = await this.update(project.root, data => {
+    const data = await this.serial(async () => {
+      const value = await this.project(project.root);
+      if (!value.chats.length || !value.chats.some(item => item.id === value.active)) {
+        const chat = value.chats.at(-1) ? null : emptyChat(randomUUID());
+        if (chat) { await this.write(this.chatFile(project.root, chat.id), chat); value.chats.push(summary(chat)); }
+        value.active = chat?.id || [...value.chats].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0].id;
+        value.updatedAt = now(); await this.write(this.file(project.root), value);
+      }
+      return value;
+    });
+    await this.store.saveProject(project.root, { recent: { root: project.root, name: project.name, at: now() } });
+    return data;
+  }
+  // Én samtale. En opgave, der var i gang, da appen lukkede, står som afbrudt, og dens plan kan kun læses.
+  openChat(root, id) {
+    return this.updateChat(root, id, data => {
       if (['working', 'interrupted'].includes(data.status)) {
-        // En afbrudt opgaves plan bygges ikke uden ny planlægning, men kan læses som den seneste plan.
         data.status = 'interrupted'; if (data.plan) data.lastPlan = { ...data.plan, reason: 'afbrudt', retiredAt: Date.now() }; data.plan = null;
         if (!data.draft) data.draft = [...data.messages].reverse().find(m => m.role === 'user')?.text || '';
       }
-    });
-    await this.store.saveProject(project.root, { recent: { root: project.root, name: project.name, at: data.updatedAt } });
-    return data;
+    }).then(async chat => { await this.updateProject(root, project => { project.active = id; }); return chat; });
   }
-  startConversation(root) {
-    const task = this.queue.then(async () => {
-      const target = this.file(root), archive = target.replace(/\.json$/, '') + '-archives';
-      const previous = await fs.readFile(target);
-      await fs.mkdir(archive, { recursive: true, mode: 0o700 });
-      await fs.writeFile(path.join(archive, randomUUID() + '.json'), previous, { mode: 0o600 });
-      // Briefen beskriver projektet og følger med til den nye samtale. Plan og beskeder arkiveres.
-      let brief = null; try { brief = JSON.parse(previous.toString('utf8')).brief || null; } catch {}
-      const temp = target + '.' + randomUUID() + '.tmp';
-      await fs.writeFile(temp, JSON.stringify({ ...empty(), brief }), { mode: 0o600 });
-      await fs.rename(temp, target);
+  // En ny samtale. En tom samtale genbruges, så der ikke opstår mange tomme samtaler. Kan projektfilen ikke læses,
+  // er en ny samtale vejen videre: filen gemmes til side, og samtalerne findes igen.
+  createChat(root) {
+    return this.serial(async () => {
+      let project;
+      try { project = await this.project(root); } catch (error) { if (error.message !== damaged) throw error; project = await this.recover(root); }
+      const empty = project.chats.find(item => !item.count && !item.draft);
+      const chat = empty ? await this.readChat(root, empty.id) : emptyChat(randomUUID());
+      if (!empty) await this.write(this.chatFile(root, chat.id), chat);
+      project.chats = [...project.chats.filter(item => item.id !== chat.id), summary(chat)]; project.active = chat.id;
+      project.updatedAt = now(); await this.write(this.file(root), project);
+      return chat;
     });
-    this.queue = task.catch(() => {});
-    return task;
+  }
+  renameChat(root, id, title) {
+    if (typeof title !== 'string' || /[\r\n\0]/.test(title) || title.trim().length > 80) throw new Error('Skriv et navn på én linje og højst 80 tegn.');
+    return this.updateChat(root, id, chat => { chat.title = title.trim(); chat.renamed = Boolean(title.trim()); });
+  }
+  // Sletning flytter filen med remove, fx til papirkurven; samtalen fjernes fra projektets oversigt.
+  removeChat(root, id, remove = file => fs.rm(file, { force: true })) {
+    return this.serial(async () => {
+      const project = await this.project(root);
+      if (!project.chats.some(item => item.id === id)) throw new Error('Samtalen findes ikke længere.');
+      await remove(this.chatFile(root, id));
+      project.chats = project.chats.filter(item => item.id !== id);
+      if (project.active === id) project.active = [...project.chats].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0]?.id || null;
+      project.updatedAt = now(); await this.write(this.file(root), project);
+      return project;
+    });
+  }
+  // Samtalerne i et projekt, nyeste først. Tomme samtaler vises ikke, medmindre de er den aktive.
+  async chats(root) {
+    const project = await this.project(root);
+    return [...project.chats].filter(item => item.count || item.draft || item.id === project.active).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   }
   async recent() {
     return Object.entries((await this.store.read()).projects).filter(([, p]) => p.recent).map(([id, p]) => ({ id, ...p.recent })).sort((a,b) => b.at.localeCompare(a.at)).slice(0, 12);
   }
-  draft(root, input) {
+  draft(root, id, input) {
     if (typeof input.text !== 'string' || input.text.length > 30000 || !['plan','build','free'].includes(input.mode)) throw new Error('Ugyldig kladde.');
-    return this.update(root, data => { data.draft = input.text; data.mode = input.mode; });
+    return this.updateChat(root, id, data => { data.draft = input.text; data.mode = input.mode; });
   }
-  saveBrief(root, brief) { return this.update(root, data => { data.brief = brief; }); }
-  savePlan(root, plan, planConversation, lastPlan) { return this.update(root, data => { data.plan = plan; data.planConversation = planConversation; data.lastPlan = lastPlan || null; }); }
-  saveRun(root, run) {
-    return this.update(root, data => {
+  saveBrief(root, brief) { return this.updateProject(root, data => { data.brief = brief; }); }
+  savePlan(root, id, plan, planConversation, lastPlan) { return this.updateChat(root, id, data => { data.plan = plan; data.planConversation = planConversation; data.lastPlan = lastPlan || null; }); }
+  saveRun(root, id, run) {
+    return this.updateChat(root, id, data => {
       for (const message of run.messages) {
         if (!['user','assistant','system'].includes(message.role) || typeof message.text !== 'string') continue;
         const existing = data.messages.findIndex(m => m.id === message.id);
@@ -87,4 +189,9 @@ class WorkspaceHistory {
     });
   }
 }
-module.exports = { WorkspaceHistory };
+// Samtalens felter fra en ældre fil.
+function pick(data) {
+  const keys = ['draft', 'mode', 'messages', 'plan', 'planConversation', 'lastPlan', 'status', 'usage', 'trimmed', 'restorationID'];
+  return Object.fromEntries(keys.filter(key => data[key] !== undefined).map(key => [key, data[key]]));
+}
+module.exports = { WorkspaceHistory, titleFrom };

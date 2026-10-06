@@ -43,9 +43,9 @@ async function until(check, description) { for (let i=0;i<300;i++) { if (await c
   await bench.send({text:'Planlæg en startside. Prøv også at skrive en fil; det skal afvises.',fingerprint:planning.fingerprint});
   await until(()=>!bench.running,'plan færdig');
   assert.equal(await fs.readFile(path.join(project,'public/index.html'),'utf8'),'<h1>Før</h1>');
-  assert.ok(bench.plan?.text, 'Planen skal kunne godkendes');
-  assert.doesNotMatch(bench.plan.text,/Arbejdsnote før værktøjskald/);
-  assert.match(bench.plan.context,/Arbejdsnote før værktøjskald/);
+  assert.ok(bench.chat.plan?.text, 'Planen skal kunne godkendes');
+  assert.doesNotMatch(bench.chat.plan.text,/Arbejdsnote før værktøjskald/);
+  assert.match(bench.chat.plan.context,/Arbejdsnote før værktøjskald/);
   const planRequests=requests.filter(r=>r.tools?.length);
   assert.ok(planRequests.length);
   assert.ok(planRequests.every(r=>!r.tools.some(t=>['write','edit','bash'].includes(t.function.name))), 'Skrive- og shellværktøjer må ikke udbydes i planlægning');
@@ -53,7 +53,7 @@ async function until(check, description) { for (let i=0;i<300;i++) { if (await c
   const { projectGuidance } = require('../core/project-guidance.cjs');
   assert.equal(planning.projectGuidance, projectGuidance, 'Datagennemgangen skal vise de ekstra projektinstruktioner');
   assert.ok(planRequests.some(r => r.messages.some(m => typeof m.content === 'string' && m.content.includes(projectGuidance))), 'Projektvejledningen skal nå frem til modelserveren under planlægning');
-  const planID=bench.plan.id;
+  const planID=bench.chat.plan.id;
   await assert.rejects(bench.prepare({...selection,mode:'build',planID:'forældet'}),/seneste plan/);
   const disclosure=await bench.prepare({...selection,mode:'build',planID});
   await assert.rejects(bench.send({text:'Test',fingerprint:'forkert'}));
@@ -72,7 +72,7 @@ async function until(check, description) { for (let i=0;i<300;i++) { if (await c
   assert.ok(requests.some(r=>JSON.stringify(r).includes('<name>harness-git-og-samarbejde</name>')), 'bibliotekets skills vises for modellen');
   preview=await startPreview(project);assert.match(await(await fetch(preview.url)).text(),/Bygget gennem agenten/);
   await bench.close();permission='reject';await fs.writeFile(path.join(project,'public/index.html'),'<h1>Bevar</h1>');
-  const declined=await bench.prepare(selection);await bench.send({text:'Prøv igen.',fingerprint:declined.fingerprint});await until(()=>!bench.running,'afvist handling');assert.equal(bench.plan,null,'Direkte arbejde ugyldiggør tidligere plan');
+  const declined=await bench.prepare(selection);await bench.send({text:'Prøv igen.',fingerprint:declined.fingerprint});await until(()=>!bench.running,'afvist handling');assert.equal(bench.chat.plan,null,'Direkte arbejde ugyldiggør tidligere plan');
   assert.equal(await fs.readFile(path.join(project,'public/index.html'),'utf8'),'<h1>Bevar</h1>');
   await bench.close();mode='wait';const canceled=await bench.prepare(selection);await bench.send({text:'Vent på svar.',fingerprint:canceled.fingerprint});await pause(1000);await bench.stop();assert.equal(bench.running,false);
   console.log(JSON.stringify({status:'bestået',root,checks:['planlægning afviser fremprovokeret skriveforsøg','plan og afklaring følger til bygning','forældet plan afvises','afslutning viser faktiske filændringer','rigtig OpenCode-motor','kontrolleret modelserver','krævet datagennemgang','værktøjskald og godkendelse','rigtig filændring','preview fra disk','afvist ændring bevaret','stop'],model:'Simuleret kompatibel API, ikke en ekstern AI-model'}));
