@@ -27,11 +27,13 @@ const zenTerms = [
   [/^muse-spark/, 'Bruges til at træne Metas modeller', 'Zen oplyser, at prompts og svar må bruges til at træne fremtidige Meta-modeller.'],
   [/^(big-pickle|mimo|ling|nemotron|jev|deepseek)/, 'Kan bruges til at forbedre modellen', 'Zen oplyser, at indsamlede data kan bruges til at forbedre modellen.']
 ];
-// Oplyste API-priser i USD pr. million tokens for de modeller, appen anbefaler. Kontrolleret 29. september 2026.
+// Oplyste API-priser i USD pr. million tokens. Kontrolleret 29. september 2026, med særskilte datoer ved nye opslag.
 // Kataloget har forrang, når det selv oplyser en pris.
 const knownPrices = [
   ['anthropic', /^claude-fable-5/, 10, 50], ['anthropic', /^claude-opus-5/, 4, 20], ['anthropic', /^claude-sonnet-5/, 2, 10], ['anthropic', /^claude-haiku-4-5/, 1, 5],
-  ['mistral', /^mistral-medium-(3-5|latest)/, 1.5, 7.5], ['mistral', /^mistral-large-(2512|latest)/, 0.5, 1.5], ['mistral', /^codestral-(2508|latest)/, 0.3, 0.9],
+  ['mistral', /^mistral-large-4(?:-0)?$/, 1.36, 4.18, { cacheRead: 0.14, checkedAt: '2026-10-07', note: 'Overslaget bruger normal listepris. Mistrals midlertidige lanceringsrabat er ikke trukket fra.' }],
+  // Et bevægeligt "latest"-alias må ikke få den gamle Large 3-pris uden dokumentation for, hvad det peger på.
+  ['mistral', /^mistral-medium-(3-5|latest)/, 1.5, 7.5], ['mistral', /^mistral-large-2512$/, 0.5, 1.5], ['mistral', /^codestral-(2508|latest)/, 0.3, 0.9],
   ['corti', /^corti-s1-mini/, 1, 4], ['corti', /^corti-s1/, 2, 8]
 ];
 const priceSources = { anthropic: 'https://platform.claude.com/docs/en/about-claude/pricing', mistral: 'https://docs.mistral.ai/inference/pricing', corti: 'https://docs.corti.ai/models/models' };
@@ -47,9 +49,9 @@ function priceFor(connection, model, route = null) {
   const known = knownPrice(connection.kind, model.id);
   if (!known) return null;
   const read = connection.kind === 'anthropic' ? (/^claude-fable-5/.test(model.id) ? 0.025 : /^claude-opus-5-5/.test(model.id) ? 0.05 : 0.1) : connection.kind === 'corti' ? 0.1 : 1;
-  return { input: known.input, output: known.output, cacheRead: known.input * read, cacheWrite: connection.kind === 'anthropic' ? known.input * 1.25 : known.input };
+  return { input: known.input, output: known.output, cacheRead: known.cacheRead ?? known.input * read, cacheWrite: connection.kind === 'anthropic' ? known.input * 1.25 : known.input };
 }
-function knownPrice(kind, id) { const found = knownPrices.find(([provider, pattern]) => provider === kind && pattern.test(id)); return found ? { input: found[2], output: found[3], source: priceSources[kind] } : null; }
+function knownPrice(kind, id) { const found = knownPrices.find(([provider, pattern]) => provider === kind && pattern.test(id)); return found ? { input: found[2], output: found[3], source: priceSources[kind], checkedAt: definitions[kind].checkedAt, ...found[4] } : null; }
 const usd = value => value.toLocaleString('da-DK', { maximumFractionDigits: 2 });
 function endpoint(value) {
   let url; try { url = new URL(value); } catch { throw new Error('Angiv en fuld serveradresse med http:// eller https://.'); }
@@ -128,9 +130,9 @@ function disclosure(connection, model, route = null) {
     recipients: connection.kind === 'openrouter' ? `OpenRouter → ${route?.name || 'Ukendt modeludbyder'}` : `${def.name} · ${url.hostname}`,
     region: site.region || def.region || (loopback ? 'Forbindelsen går til denne computer. Selve modellens behandlingssted er endnu ikke verificeret.' : 'Ukendt; serveradressen dokumenterer ikke behandlingsstedet.'),
     retention: def.retention || 'Ikke verificeret for denne forbindelse. Konto-, model- og servervilkår kan variere.',
-    training: zen ? zen[2] : def.training, price: free ? '0 i oplyst pris for input/output. Kvoter, øvrige gebyrer og senere prisændringer kan gælde.' : price ? `Oplyst API-pris: ${JSON.stringify(price)}` : known ? `${usd(known.input)} USD pr. million tokens, du sender, og ${usd(known.output)} USD pr. million tokens i svar, ifølge ${def.provider}s prisliste (kontrolleret ${def.checkedAt}). Prisen kan ændre sig; se dit forbrug hos udbyderen.` : 'Ukendt pris eller egen drift. Ingen garanti om gratis brug.',
+    training: zen ? zen[2] : def.training, price: free ? '0 i oplyst pris for input/output. Kvoter, øvrige gebyrer og senere prisændringer kan gælde.' : price ? `Oplyst API-pris: ${JSON.stringify(price)}` : known ? `${usd(known.input)} USD pr. million tokens, du sender, og ${usd(known.output)} USD pr. million tokens i svar, ifølge ${def.provider}s prisliste (kontrolleret ${known.checkedAt}). ${known.note ? known.note + ' ' : ''}Prisen kan ændre sig; se dit forbrug hos udbyderen. Kilde: ${known.source}` : 'Ukendt pris eller egen drift. Ingen garanti om gratis brug.',
     provider: def.provider || def.name, regionShort: site.regionShort || def.regionShort || null, trainingShort: zen?.[1] || def.trainingShort || null, retentionShort: def.retentionShort || null,
-    priceShort: free ? 'Gratis ifølge kataloget. Kvoter kan gælde.' : known && !price ? `${usd(known.input)} USD ind og ${usd(known.output)} USD ud pr. million tokens` : null,
+    priceShort: free ? 'Gratis ifølge kataloget. Kvoter kan gælde.' : known && !price ? `${usd(known.input)} USD ind og ${usd(known.output)} USD ud pr. million tokens${known.note ? ' · normal listepris' : ''}` : null,
     capabilities: model.capabilities?.tools === true ? 'Kataloget angiver værktøjskald; faktisk kodearbejde er ikke verificeret for denne model.' : model.capabilities?.tools === false ? 'Kataloget angiver ikke værktøjsunderstøttelse. Modellen kan være uegnet som kodeagent.' : 'Værktøjsunderstøttelse er ukendt. Modelkataloget er ikke et kompatibilitetsbevis.',
     material: 'Beskeder, samtalehistorik, fælles regler, projektkontekst og de filer/værktøjsresultater agenten læser. Referencefiler kræver særskilt tilvalg. Modelskift starter en ny session.',
     security: url.protocol === 'http:' && !loopback ? 'HTTP uden TLS. Tailscale-kryptering er kun gældende, hvis forbindelsen faktisk går gennem Tailscale; det er ikke verificeret her.' : 'Forbindelsesadressen er kontrolleret. Det er ikke en sikkerhedsgodkendelse af tjenesten.',
@@ -140,7 +142,7 @@ function disclosure(connection, model, route = null) {
 }
 // Tal fra et modelkatalog bruges kun, når de ligner rigtige tokengrænser.
 function tokenCount(value) { const number = Number(value); return Number.isInteger(number) && number >= 1024 && number <= 10_000_000 ? number : null; }
-// Dokumenterede grænser for de modeller, appen anbefaler. Kataloget har forrang, når det oplyser grænserne.
+// Grænser for kendte modeller. Kataloget har forrang, når det oplyser grænserne.
 // Ukendte modeller beholder de forsigtige standarder, så en lille lokal model ikke får for store kald.
 const knownLimits = [
   ['anthropic', /^claude-3-haiku/, { context: 200000, output: 4096 }],
@@ -148,6 +150,8 @@ const knownLimits = [
   // Claude 5 kan rumme en million tokens. Samtalen komprimeres alligevel ved 200.000, så hvert kald ikke bliver dyrt.
   ['anthropic', /^claude-/, { context: 200000, output: 32000 }],
   ['zen', /^claude-/, { context: 200000, output: 32000 }],
+  // Modelkortet oplyser 1M kontekst. De 32.000 svartokens er Auras loft, ikke modellens dokumenterede maksimum.
+  ['mistral', /^mistral-large-4(?:-0)?$/, { context: 1000000, output: 32000 }],
   ['mistral', /^mistral-(large|medium)/, { context: 200000, output: 16384 }],
   ['mistral', /codestral|devstral/, { context: 128000, output: 16384 }],
   // Cortis katalog oplyser 262.144 tokens kontekst, men ingen grænse for svarlængden. Corti S1 tænker, før den svarer, og
@@ -163,7 +167,8 @@ function modelLimits(connection, model) {
 }
 function engineProvider(connection, model, gatewayURL, token) {
   const anthropic = connection.kind === 'anthropic' || (connection.kind === 'zen' && /^claude-/.test(model.id));
-  return { npm: anthropic ? '@ai-sdk/anthropic' : '@ai-sdk/openai-compatible', name: connection.name,
+  // Mistral sender både tekst og strukturerede tænkeafsnit. Dets adapter bevarer disse gennem streaming og værktøjssvar.
+  return { npm: anthropic ? '@ai-sdk/anthropic' : connection.kind === 'mistral' ? '@ai-sdk/mistral' : '@ai-sdk/openai-compatible', name: connection.name,
     options: { baseURL: gatewayURL, apiKey: token },
     models: { [model.id]: { name: model.name, tool_call: true, limit: modelLimits(connection, model) } } };
 }

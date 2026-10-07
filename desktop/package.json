@@ -13,6 +13,7 @@
     "test:desktop": "node scripts/verify-desktop.cjs",
     "test:agent": "node scripts/verify-agent.cjs",
     "test:chat": "node scripts/verify-chat.cjs",
+    "test:mistral": "node scripts/verify-mistral.cjs",
     "test:live": "node scripts/verify-live-agent.cjs",
     "test:setup": "node scripts/verify-setup.cjs",
     "test:hosting": "node scripts/verify-hosting.cjs",

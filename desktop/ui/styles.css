@@ -136,6 +136,7 @@ form > section.panel { margin-bottom: 24px; }
 .composer textarea:focus-visible { outline: none; }
 .composer:has(textarea:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 .composer-toolbar { display: flex; align-items: center; gap: 6px; }
+#send, #stop { flex-shrink: 0; white-space: nowrap; }
 /* Model, udbyder og indsats skal altid kunne læses helt; teksten må bryde over to linjer i et smalt panel. */
 #model-chip { margin-right: auto; flex: 1 1 auto; min-width: 0; text-align: left; white-space: normal; line-height: 1.4; font-weight: 450; font-size: 11px; color: var(--muted); }
 #composer-mode { font-size: 10px; margin: 0; }

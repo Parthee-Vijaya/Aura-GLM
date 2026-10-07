@@ -3,6 +3,29 @@ const assert=require('node:assert/strict');
 const http=require('node:http');
 const {normalize,listModels,disclosure,engineProvider}=require('../core/connections.cjs');
 const {startGateway}=require('../core/gateway.cjs');
+test('Large 4 bruger Mistrals adapter, kataloggrænser og listepris uden en permanent lanceringsrabat', () => {
+ const {modelLimits,priceFor}=require('../core/connections.cjs');
+ const connection=normalize({kind:'mistral',name:'Min Mistral'});
+ for(const id of ['mistral-large-4','mistral-large-4-0']) {
+  const model={id,name:'Mistral Large 4'};
+  assert.equal(engineProvider(connection,model,'http://127.0.0.1:1/v1','midlertidig').npm,'@ai-sdk/mistral');
+  assert.deepEqual(modelLimits(connection,model),{context:1000000,output:32000});
+  assert.deepEqual(modelLimits(connection,{...model,limits:{context:524288,output:262144}}),{context:524288,output:32000});
+  assert.deepEqual(priceFor(connection,model),{input:1.36,output:4.18,cacheRead:0.14,cacheWrite:1.36});
+  const data=disclosure(connection,model);
+  assert.match(data.price,/kontrolleret 2026-10-07/);
+  assert.match(data.price,/lanceringsrabat er ikke trukket fra/);
+  assert.match(data.price,/https:\/\/docs.mistral.ai\/inference\/pricing/);
+  assert.equal(data.checkedAt,'2026-09-29','prisopslaget må ikke foregive et nyt opslag af datavilkårene');
+  assert.match(data.priceShort,/normal listepris/);
+ }
+ assert.equal(priceFor(connection,{id:'mistral-large-latest'}),null,'et flytbart alias får ikke automatisk Large 3-prisen');
+ assert.equal(priceFor(connection,{id:'mistral-large-4-1'}),null,'en ukendt fremtidig version får ingen opdigtet pris');
+ const priced={id:'mistral-large-4',price:{prompt:'0.00000068',completion:'0.00000209',input_cache_read:'0.00000007'}};
+ for(const [field,value] of Object.entries({input:0.68,output:2.09,cacheRead:0.07,cacheWrite:0.68})) assert.ok(Math.abs(priceFor(connection,priced)[field]-value)<1e-10,field);
+ assert.notEqual(disclosure(connection,priced).fingerprint,disclosure(connection,{id:priced.id}).fingerprint);
+ assert.equal(engineProvider({kind:'compatible'}, {id:'mistral-large-4'}, 'http://127.0.0.1:1/v1','t').npm,'@ai-sdk/openai-compatible','egne servere beholder deres valgte protokol');
+});
 test('Corti og Mistral fastholder destination; ukendte udbydere afvises',()=>{
  for(const [kind,host] of [['corti','ai.eu.corti.app'],['mistral','api.mistral.ai']]) {
   const c=normalize({kind,name:kind,baseURL:'https://example.invalid'});assert.equal(new URL(c.baseURL).hostname,host);

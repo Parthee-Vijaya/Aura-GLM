@@ -776,10 +776,11 @@ function updateModelSummary() {
   const connection = state?.connections.find(c => c.id === $('#connection-select').value);
   const provider = state?.definitions?.[connection?.kind]?.provider || connection?.name || '';
   const effort = model.value && window.ModelAdvice.effort(connection?.kind, model.value);
-  const label = model.value ? [model.selectedOptions[0].textContent, provider, effort && `${effort} indsats`].filter(Boolean).join(' · ') : 'Vælg AI';
+  const effortLabel = effort ? `${effort} indsats` : connection?.kind === 'mistral' ? 'standardindsats' : '';
+  const label = model.value ? [model.selectedOptions[0].textContent, provider, effortLabel].filter(Boolean).join(' · ') : 'Vælg AI';
   $('#model-summary').textContent = model.value ? model.selectedOptions[0].textContent : 'Vælg din AI';
   $('#model-chip').textContent = label;
-  $('#model-chip').title = effort ? `${effort[0].toUpperCase()}${effort.slice(1)} indsats er udbyderens standard for modellen. Klik for at skifte model.` : 'Klik for at skifte model eller forbindelse.';
+  $('#model-chip').title = effort ? `${effort[0].toUpperCase()}${effort.slice(1)} indsats er udbyderens standard for modellen. Klik for at skifte model.` : connection?.kind === 'mistral' ? 'Aura sender ikke et valg af indsats. Mistrals standard gælder; niveauet er ikke verificeret. Klik for at skifte model eller forbindelse.' : 'Klik for at skifte model eller forbindelse.';
   $('#connection-status').textContent = model.value ? (state?.connections.find(c => c.id === $('#connection-select').value)?.name || 'Valgt forbindelse') + ' · ' + model.value : 'Ingen model valgt';
 }
 // Forbruget i samtalen: tokens ind og ud og en anslået pris ud fra udbyderens prisliste. Det faktiske forbrug står hos udbyderen.
@@ -1295,20 +1296,20 @@ let modelCatalog = [], activePlan = null;
 function modelDescription(model) {
   const price = model.price;
   const known = price && price.prompt != null && price.completion != null && Number.isFinite(Number(price.prompt)) && Number.isFinite(Number(price.completion));
-  const cost = !known ? 'Pris ukendt' : Number(price.prompt) === 0 && Number(price.completion) === 0 ? '0 USD for input/output*' : `${Number(price.prompt) * 1e6} / ${Number(price.completion) * 1e6} USD pr. mio. input-/outputtokens`;
+  const cost = !known ? 'Kataloget oplyser ingen pris' : Number(price.prompt) === 0 && Number(price.completion) === 0 ? '0 USD for input/output*' : `${Number(price.prompt) * 1e6} / ${Number(price.completion) * 1e6} USD pr. mio. input-/outputtokens`;
   return `${cost} · ${model.capabilities?.tools === true ? 'Værktøjskald angivet i kataloget' : model.capabilities?.tools === false ? 'Ingen værktøjskald angivet' : 'Kodeværktøjer ikke verificeret'}`;
 }
 // For udbyderne i opsætningen vælges udbyderens eget udgangspunkt på forhånd. Det er ikke en anbefaling fra appen; modellen står under skrivefeltet og i resuméet før første afsendelse.
 function preselectRecommended(connectionID) {
   const kind = state.connections.find(c => c.id === connectionID)?.kind;
   if (!featuredProviders.some(item => item.kind === kind)) return;
-  const { curated, picks } = window.ModelAdvice.suggest(modelCatalog, kind);
-  if (curated && picks[0]) $('#model-select').value = picks[0].model.id;
+  const { defaultID } = window.ModelAdvice.suggest(modelCatalog, kind);
+  if (defaultID) $('#model-select').value = defaultID;
 }
 function markChosenModel() { for (const button of document.querySelectorAll('#model-shortlist .model-choice')) button.setAttribute('aria-pressed', String(button.dataset.model === $('#model-select').value)); }
 function renderShortlist() {
   const kind = state.connections.find(c => c.id === $('#connection-select').value)?.kind;
-  const { curated, picks } = window.ModelAdvice.suggest(modelCatalog, kind);
+  const { curated, defaultID, picks } = window.ModelAdvice.suggest(modelCatalog, kind);
   $('#model-shortlist').replaceChildren();
   for (const { model, text } of picks) {
     const button = node('button', undefined, 'model-choice'); button.type = 'button'; button.dataset.model = model.id;
@@ -1322,7 +1323,7 @@ function renderShortlist() {
     $('#model-shortlist').append(button);
   }
   // Modellen øverst er udbyderens eget udgangspunkt, ikke appens anbefaling. Det står synligt; resten ligger bag ⓘ.
-  const hint = node('p', !picks.length ? 'Ingen forslag fra din forbindelse. Se alle modeller nedenfor.' : curated ? 'Den første er udbyderens eget udgangspunkt.' : 'Et udvalg fra din forbindelse.', 'hint');
+  const hint = node('p', !picks.length ? 'Ingen forslag fra din forbindelse. Se alle modeller nedenfor.' : defaultID ? 'Den første er udbyderens eget udgangspunkt.' : 'Et udvalg fra din forbindelse.', 'hint');
   if (picks.length) hint.append(info('modellerne', `${curated ? 'Aura anbefaler ingen model. ' : ''}Du ser pris og modtager, før noget sendes.`));
   $('#model-shortlist').append(hint);
   markChosenModel();

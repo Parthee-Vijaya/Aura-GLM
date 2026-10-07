@@ -6,7 +6,8 @@
     // Anthropic: "If you're unsure which model to use, start with Claude Opus 5.5" (platform.claude.com/docs/en/about-claude/models/overview).
     anthropic: [[/opus/i, 'Anthropics eget udgangspunkt'], [/sonnet/i, 'Hurtigere og billigere end Opus'], [/haiku/i, 'Hurtigst og billigst']],
     // Mistral udfasede Devstral 31. juli 2026 og peger på Mistral Medium 3.5 til agenter og kode. Codestral er lavet til kodeforslag.
-    mistral: [[/^mistral-medium-(latest|3-5)/i, 'Mistrals model til agenter og kode'], [/^mistral-large-(latest|2512)/i, 'Mistrals store model · billigere pr. token'], [/devstral/i, 'Mistrals ældre kodemodel']],
+    // Large 4 er en offentlig prøveversion fra 6. oktober 2026. Medium bevares som Mistrals hidtidige udgangspunkt til kode.
+    mistral: [[/^mistral-medium-(latest|3-5)/i, 'Mistrals model til agenter og kode'], [/^mistral-large-4(?:-0)?$/i, 'Mistral Large 4 · offentlig prøveversion'], [/^mistral-large-(latest|2512)$/i, 'Mistrals øvrige Large-model']],
     corti: [[/^corti-s1$/i, 'Cortis hovedmodel'], [/^corti-s1-mini$/i, 'Mindre og billigere'], [/s1/i, 'Cortis model i EU']],
     openrouter: [[/claude.*(opus|sonnet)/i, 'Claude gennem OpenRouter'], [/devstral|codestral|mistral-medium/i, 'Mistral gennem OpenRouter'], [/qwen.*coder/i, 'Åben kodemodel gennem OpenRouter']],
     // Zens gratis modeller virker kun fra OpenCodes egne programmer.
@@ -24,14 +25,14 @@
   }
   function suggest(catalog, kind) {
     const usable = catalog.filter(model => model.capabilities?.tools !== false);
-    const picks = [];
-    for (const [pattern, text] of advice[kind] || []) {
+    const picks = []; let defaultID = null;
+    for (const [index, [pattern, text]] of (advice[kind] || []).entries()) {
       const match = usable.filter(model => pattern.test(model.id) && !picks.some(pick => pick.model.id === model.id)).sort(newestFirst)[0];
-      if (match) picks.push({ model: match, text });
+      if (match) { picks.push({ model: match, text }); if (index === 0) defaultID = match.id; }
     }
-    if (picks.length) return { curated: true, picks: picks.slice(0, 3) };
+    if (picks.length) return { curated: true, defaultID, picks: picks.slice(0, 3) };
     const fallback = [...usable].sort((a, b) => Number(b.capabilities?.tools === true) - Number(a.capabilities?.tools === true) || a.name.localeCompare(b.name, 'da')).slice(0, 3);
-    return { curated: false, picks: fallback.map(model => ({ model, text: model.capabilities?.tools === true ? 'Kan bruge kodeværktøjer ifølge kataloget' : 'Understøttelse af kodeværktøjer er ukendt' })) };
+    return { curated: false, defaultID: null, picks: fallback.map(model => ({ model, text: model.capabilities?.tools === true ? 'Kan bruge kodeværktøjer ifølge kataloget' : 'Understøttelse af kodeværktøjer er ukendt' })) };
   }
   const api = { suggest, newestFirst, effort };
   if (typeof module === 'object' && module.exports) module.exports = api; else root.ModelAdvice = api;

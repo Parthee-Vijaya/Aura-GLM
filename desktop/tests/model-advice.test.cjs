@@ -29,10 +29,22 @@ test('Mistral og OpenRouter får kodemodeller først; modeller uden værktøjer 
   const mistral = suggest(['mistral-large-latest', 'codestral-2508', 'mistral-medium-latest', 'devstral-medium-2507', 'pixtral-12b'].map(id => model(id)).concat(model('devstral-2512', false)), 'mistral');
   assert.equal(mistral.picks[0].model.id, 'mistral-medium-latest');
   assert.ok(!mistral.picks.some(pick => pick.model.id === 'devstral-2512'), 'modeller uden værktøjskald springes over');
-  assert.deepEqual(mistral.picks.slice(1).map(pick => pick.model.id), ['mistral-large-latest', 'devstral-medium-2507']);
+  assert.deepEqual(mistral.picks.slice(1).map(pick => pick.model.id), ['mistral-large-latest']);
   assert.ok(!mistral.picks.some(pick => pick.model.id.startsWith('codestral')));
   const openrouter = suggest(['openai/gpt-4o', 'anthropic/claude-sonnet-4.5', 'mistralai/devstral-medium', 'qwen/qwen3-coder'].map(id => model(id)), 'openrouter');
   assert.deepEqual(openrouter.picks.map(pick => pick.model.id), ['anthropic/claude-sonnet-4.5', 'mistralai/devstral-medium', 'qwen/qwen3-coder']);
+});
+
+test('Large 4 vises én gang som prøveversion, kun når kataloget har den, og overtager ikke standardvalget', () => {
+  const catalog = ['mistral-medium-latest', 'mistral-large-4', 'mistral-large-4-0', 'mistral-large-2512'].map(id => model(id));
+  const { picks } = suggest(catalog, 'mistral');
+  assert.equal(picks.length, 3);
+  assert.equal(picks[0].model.id, 'mistral-medium-latest');
+  assert.equal(picks[1].model.id, 'mistral-large-4-0');
+  assert.match(picks[1].text, /offentlig prøveversion/);
+  assert.equal(suggest(catalog, 'mistral').defaultID, 'mistral-medium-latest');
+  assert.equal(suggest([model('mistral-large-4')], 'mistral').defaultID, null, 'prøveversionen er ikke et nyt standardvalg, selv om Medium mangler');
+  assert.equal(suggest([model('mistral-medium-latest'), model('mistral-large-4', false)], 'mistral').picks.length, 1);
 });
 
 test('ukendte udbydere og egne servere får et udvalg uden anbefaling', () => {

@@ -247,6 +247,7 @@ npm run test:desktop
 npm run test:setup
 npm run test:agent
 npm run test:chat
+npm run test:mistral
 npm run test:resume
 npm run test:frameworks
 npm run test:hosting
@@ -465,6 +466,20 @@ Team `2UX98897JW` tilhører Progressify ApS; det eksisterende signeringscertifik
 
 
 ## Corti S1 og Mistral · 25. september 2026
+
+### Mistral Large 4 · 7. oktober 2026
+
+Mistrals katalog hentes, når forbindelsen åbnes. Når kontoen har `mistral-large-4` eller `mistral-large-4-0`, vises modellen blandt højst tre modelkort som **offentlig prøveversion**. Et gemt modelvalg bevares. Mistral Medium er fortsat Mistrals hidtidige udgangspunkt til kode; mangler den i kataloget, vælger brugeren selv. Large 4 overtager ikke automatisk pladsen.
+
+Mistral-forbindelser bruger nu `@ai-sdk/mistral`, som følger med den fastlåste OpenCode 1.18.33. Adapteren læser både almindelig tekst og strukturerede tænkeafsnit, adskiller dem under streaming og bevarer tænkeafsnittene i samtalehistorikken efter værktøjskald. Aura sender ikke et valg af indsats; modellens niveau er derfor ikke angivet som verificeret i appen. Andre kompatible servere beholder deres eksisterende adapter.
+
+Katalogets tokengrænser har forrang. Uden en oplyst grænse bruges modelkortets 1M kontekst for Large 4. Appens loft på 32.000 svartokens pr. kald er ikke en påstand om modellens maksimale svarlængde. Prisen følger kataloget, hvis det oplyser en; ellers bruges normal listepris på 1,36 USD ind, 4,18 USD ud og 0,14 USD for cachelæst input pr. million tokens. Mistrals lanceringsrabat er ikke trukket fra dette overslag. Det står i gennemgangen før afsendelse. Det bevægelige `mistral-large-latest` får ikke længere en gammel Large 3-pris uden dokumentation for aliasets indhold.
+
+Kilder kontrolleret 7. oktober 2026: [modelkort](https://docs.mistral.ai/models/mistral-large), [prisliste](https://docs.mistral.ai/inference/pricing), [svarformat og historik](https://docs.mistral.ai/studio/conversations/reasoning) og [lancering](https://mistral.ai/news/mistral-large-4/). Prisopslaget ændrer ikke kontroldatoen for datavilkårene. Adgang til API'et betyder heller ikke, at modellens vægte allerede kan hentes til lokal drift.
+
+`npm run test:mistral` afprøver modelvalget, prisgennemgangen, streaming, bevaret historik, godkendt filændring, preview, afvisning, Stop, nøglefejl og genåbning. Den bruger den rigtige Electron-app og OpenCode, men en kontrolleret lokal modelserver og syntetiske data. Den kontakter ikke Mistral og siger ikke noget om modellens kode- eller sprogkvalitet. Se den daterede afprøvning i [teststatus](../docs/teststatus.md).
+
+### Den oprindelige tilslutning
 
 Vælg **Corti S1 · EU** eller **Mistral API** under forbindelser, gem din API-nøgle, og hent kontoens aktuelle modeller. Intet modelvalg, forbrug eller skift til anden udbyder sker automatisk. Nøgler bruger det eksisterende krypterede lager og sendes kun fra hovedprocessens gateway.
 
