@@ -12,6 +12,7 @@ async function deploymentArtifact(root, directory = '.') {
   if (await fs.realpath(top) !== root) throw new Error('Åbn Git-repositoryets rodmappe før udgivelse.');
   if ((await run(root, ['status', '--porcelain=v1', '-z', '--untracked-files=all'])).length) throw new Error('Gem eller gennemgå lokale ændringer før udgivelse.');
   const head = (await run(root, ['rev-parse', '--verify', 'HEAD'])).toString().trim();
+  const [name, at] = (await run(root, ['log', '-1', '--format=%s%x00%cI', head])).toString().trim().split('\0');
   const prefix = directory === '.' ? '' : directory + '/';
   const entries = (await run(root, ['ls-tree', '-rz', '--full-tree', head])).toString('utf8').split('\0').filter(Boolean);
   const files = []; let bytes = 0;
@@ -32,6 +33,6 @@ async function deploymentArtifact(root, directory = '.') {
   if (!files.length) throw new Error('Mappen har ingen filer i den gemte Git-version. Ignorerede eller ugemte buildfiler udgives ikke.');
   files.sort((a, b) => a.file < b.file ? -1 : a.file > b.file ? 1 : 0);
   const hash = createHash('sha256').update(JSON.stringify(files.map(f => [f.file, f.sha256]))).digest('hex');
-  return { root, directory, head, hash, bytes, files };
+  return { root, directory, head, hash, bytes, files, version: { name, at } };
 }
 module.exports = { deploymentArtifact };

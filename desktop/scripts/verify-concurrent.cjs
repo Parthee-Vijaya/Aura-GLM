@@ -232,6 +232,16 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
     await page.locator('#server-status').filter({ hasText: 'Forhåndsvisningen kører' }).waitFor(); await page.click('[data-close="preview-dialog"]');
     const mergeURL = await page.locator('#preview').getAttribute('src'); await page.frameLocator('#preview').locator('h1').filter({ hasText: 'Før' }).waitFor();
     await switchChat(originalChat, project); await page.click('#stop'); await page.locator('#stop').waitFor({ state: 'hidden' });
+    // Deling fra en rigtig uflettet kopi bruger altid projektets gemte version.
+    await app.evaluate(async(_,modulePath)=>{const {VercelDeployment}=process.mainModule.require(modulePath);VercelDeployment.prototype.inspect=async()=>({id:'prj_copy_share',name:'Projektets test',access:'Ikke afprøvet',environmentKeys:[],portal:'https://vercel.com/test/copy'});VercelDeployment.prototype.deploy=async()=>{throw Error('Kopiprøven må aldrig uploade');};},path.resolve(__dirname,'../core/deployment-providers.cjs'));
+    await switchChat(mergeTitle, mergeRoot);
+    const shareState=await call('deploymentState');assert.equal(shareState.context.viewingCopy,true);assert.ok(shareState.context.copyCount>=1);
+    const shareReview=await call('deploymentReview',{provider:'vercel',project:'copy-test',scope:'test',mode:'source',directory:'.'});
+    const originalArtifact=await require('../core/deployment-artifact.cjs').deploymentArtifact(project,'.');
+    assert.equal(shareReview.head,originalArtifact.head);assert.equal(shareReview.hash,originalArtifact.hash);assert.equal(shareReview.context.viewingCopy,true);
+    assert.match(await fs.readFile(path.join(mergeRoot,frameworkFile),'utf8'),/Ny kontakt/);assert.ok(!(await fs.readFile(path.join(project,frameworkFile),'utf8')).includes('Ny kontakt'));
+    await switchChat(originalChat, project);
+    checks.push('deling gennem IPC fra en uflettet kopi viser kopiens afgrænsning og pakker alene projektets gemte Git-version; ingen upload');
     await fs.appendFile(path.join(project, frameworkFile), '<!-- Brugerens ugemte rettelse -->\n');
     // Forsink afslutningen af den rigtige filindlæsning, mens brugeren vælger indfletningen med tastaturet.
     // Hovedprocessen og materialet er uændrede; kun rendererens ventetid styres, så fokusræset kan gentages.

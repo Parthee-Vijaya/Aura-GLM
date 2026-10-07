@@ -44,6 +44,40 @@ Udfyld først invitationen, når download og den aftalte model er afprøvet. Der
 
 Test af React/Vite eller Astro omfatter også gennemgang af installation, start, mobilvisning, stop og genstart af preview. Apps med native platformskrav skal vurderes særskilt; denne test beviser ikke iOS-, Android- eller appbutiksunderstøttelse.
 
+## Milepæl 7: observation af det samlede forløb
+
+**Status: ikke gennemført med en testperson.** Guiden nedenfor er klar; automatiske Electron-prøver tæller ikke som en brugerobservation. Brug den aftalte AI-forbindelse og noter den konkrete model. En kontrolleret testmodel kan bruges til at undersøge betjeningen, men så vurderes modellens kvalitet ikke.
+
+Observatøren klargør installation og adgang efter afsnittet ovenfor. Brug et nyt projekt og opdigtede data. Optag kun skærm eller lyd efter testpersonens accept. Registrer ingen nøgler, rigtige personoplysninger eller fulde samtaler med arbejdsdata. Noter hjælp med det samme; fuldførelse efter vejledning tæller som gennemført **med hjælp**.
+
+Giv testpersonen disse opgaver én ad gangen, uden at nævne knapper:
+
+1. “Lav en lille oversigt over tre fiktive mødelokaler, hvor man kan finde et lokale med plads til sit møde.” Lad personen vælge eller formulere idéen, læse Før du sender og gennemgå planen. Spørg: “Hvad tror du bliver sendt, og hvem får det?”
+2. “Få første udkast bygget, og prøv at bruge det.” Observer godkendelsen og previewet. Spørg: “Hvad har Aura kontrolleret, og hvad vil du selv prøve?” Noter om siden faktisk løser opgaven; en vist side er ikke tilstrækkeligt.
+3. “Ret overskriften til dit eget navn for oversigten. Se bagefter, hvad du ændrede, og sæt rettelsen tilbage.” Observer valg af element, tekstrettelse, Ændringer og Fortryd. Kontroller både fil og preview bagefter; gem ingen fuldførelse, hvis kun knappen blev fundet.
+4. “Bed AI’en om én ændring. Fortryd derefter AI’ens opgave, men behold en anden rettelse, du selv laver.” Personen skal forklare gendannelsens gennemgang før bekræftelse. Observer, om ændringer og brugerens rettelse faktisk får det beskrevne resultat.
+5. “Find den version, du vil lade en anden prøve, og gennemgå, hvordan den kan deles.” Stop før upload, hvis en rigtig testdestination og tilladelse ikke er klargjort. Spørg: “Hvilken version deler du, hvor lander den, og hvem kan åbne den?” Lad personen skelne GitHub-sikkerhedskopi fra et testlink. En uflettet kopi må ikke opfattes som det, der udgives.
+6. Hvis et godkendt testlink allerede findes: lad testpersonen åbne det med **sin egen adgang**, prøve appens vigtigste funktion og forklare kontrollerne. Et HTTP-svar uden login er ikke testpersonens adgangsprøve. Noter kontotype, hvilken rute der blev åbnet, og om funktionen virkede; skriv ikke loginoplysninger. Uden et testlink registreres dette trin som **ikke afprøvet**.
+
+Ved 980 × 720 og større tekst: lad personen finde og betjene gennemgang, bekræftelse og Luk med tastatur. Slå reduceret bevægelse til. Noter skjult tekst, uventet fokusflytning og hjælp, der blev nødvendig. En særskilt test med skærmlæser registreres særskilt.
+
+### Observationsnotat, der udfyldes efter testen
+
+Kopiér dette afsnit til et dateret notat. Ingen felter er evidens, før de er udfyldt efter en faktisk observation.
+
+- Dato, observatør og anonymt deltager-ID:
+- Deltagerens udviklererfaring og eventuel erfaring med AI:
+- Appversion / commit, installationsfil og SHA-256, system og arkitektur:
+- Model, udbyder og forbindelse: rigtig model / kontrollerede svar:
+- For hvert trin 1–6: **uden hjælp / med hjælp / ikke gennemført / ikke afprøvet**:
+- Deltagerens forventning og egne ord om version, destination og adgang:
+- Konkret handling, resultat i fil og preview, eventuel hjælp og næste forsøg:
+- Tastatur, størrelse, zoom, reduceret bevægelse og eventuel skærmlæser:
+- Testlink, udgivelsesversion og observeret adgang/funktion, eller hvorfor trin 6 ikke blev prøvet:
+- Fund, der skal rettes, og gentagelse efter rettelsen:
+
+Der kan først stå “observeret med en person uden udviklererfaring”, når notatet findes. Invitation og deling af en installation kræver desuden de konkrete pakke- og adgangsprøver i begyndelsen af dokumentet. Ingen samlet “færdig”-status følger alene af grønne automatiske prøver.
+
 ## Til den, der observerer
 
 Bed testeren tænke højt. Start med opgaven, og undlad at fortælle, hvilken knap der skal trykkes på. Noter konkrete handlinger og formuleringer. Hvis du må forklare et trin, registreres det som hjælp, ikke som en selvstændigt gennemført opgave.

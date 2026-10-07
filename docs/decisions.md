@@ -544,3 +544,13 @@ Fundet og rettet under afprøvningen med Corti:
   - Corti S1 har nu 262.144 tokens kontekst og 32.000 tokens svar.
   - En opgave, der slutter uden svar og uden ændringer, siger det nu og tilbyder Prøv igen.
 - **Git-filtre:** Et globalt filter som Git LFS stoppede alle automatiske versioner. Nu stopper kun filtre, som projektet selv bruger via `.gitattributes`.
+
+## Deling og samlet brugerforløb · 7. oktober 2026
+
+Milepæl 7 præciserer de eksisterende GitHub-, Vercel- og Azure-forløb. Der tilføjes ingen hostingadapter, adgangstjeneste eller automatisk udgivelse. Projektets gemte version deles; uflettede kopier og ugemte rettelser er udeladt og forklares før afsendelse. Eksisterende konti, filbeskyttelse og engangsgodkendelser bevares.
+
+- Versionens navn og tidspunkt står før de tekniske ID'er. Navnet i kvitteringen er det, der blev gennemgået; senere omdøbning ændrer ikke kvitteringen eller den sendte version.
+- Destination, gennemgang og resultat vises hver for sig. Ret destination bevarer formularens værdier, men kræver en ny gennemgang og et nyt samtykke.
+- En udbyderstatus, et anonymt HTTP-svar og et filmatch er særskilte kontroller. Ingen af dem beviser fuld funktion eller en bestemt testpersons adgang. En ny mislykket kontrol må ikke beholde gammel succes som aktuel evidens.
+- Ved ubekræftet upload henvises til udbyderens oversigt før et nyt forsøg. Ingen automatisk gentagelse. GitHub-versionsbekræftelse beskriver kode og historik og kaldes ikke en udgivelse af appen.
+- Observationen med en person uden udviklererfaring er endnu ikke udført. Guiden og notatskabelonen i testforloeb.md gør den konkret; automatiske prøver må ikke udfylde den på personens vegne. Milepælens tekniske evidens og den udestående observation registreres hver for sig i teststatus.md.

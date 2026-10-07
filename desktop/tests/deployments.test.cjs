@@ -22,3 +22,25 @@ test('Azure accepterer ikke en gammel testudgivelse som resultatet af ny upload'
  const c={project:'test',subscription:'sub',group:'group'},receipt={startedAt:'2026-09-24T10:00:00Z'};
  assert.equal((await provider.status(c,receipt)).state,'AWAITING_UPDATE');lastUpdatedOn='2026-09-24T10:01:00Z';assert.equal((await provider.status(c,receipt)).state,'READY');
 });
+
+test('hver kontrol erstatter gammel evidens; fejl og adgang lover ikke en fungerende app', async () => {
+ const f=fixture(),r=await f.deployments.review('/test',config);await f.deployments.deploy('/test',r.token);
+ let checked=await f.deployments.check('/test');assert.equal(checked.checks.content.status,'matched');
+ f.provider.status=async()=>{throw Error('privat token i fejl');};checked=await f.deployments.check('/test');
+ assert.equal(checked.checks.provider.status,'unknown');assert.equal(checked.checks.content.status,'skipped');assert.equal(JSON.stringify(checked).includes('privat token'),false);
+ f.provider.status=async()=>({state:'BUILDING'});checked=await f.deployments.check('/test');assert.equal(checked.checks.site.status,'skipped');
+ f.provider.status=async()=>({state:'READY',url:'https://test.vercel.app'});
+ for(const status of [401,403,302,500]){f.deployments.fetcher=async(_url,options)=>{assert.equal(options.redirect,'manual');assert.equal(options.credentials,'omit');assert.equal(options.headers,undefined);return new Response('Privat side',{status});};checked=await f.deployments.check('/test');assert.equal(checked.checks.site.http,status);assert.equal(checked.checks.content.status,'skipped');assert.ok(!JSON.stringify(checked).includes('Privat side'));}
+ f.deployments.fetcher=async()=>{throw Error('netværksfejl');};checked=await f.deployments.check('/test');assert.equal(checked.checks.site.status,'unreachable');assert.equal(f.uploads(),1);
+});
+test('indholdskontrollen skelner filmatch, bygget kildekode og for stort svar', async()=>{
+ const f=fixture(),r=await f.deployments.review('/test',config);await f.deployments.deploy('/test',r.token);
+ f.deployments.fetcher=async()=>new Response('Anden side');assert.equal((await f.deployments.check('/test')).checks.content.status,'different');
+ f.deployments.fetcher=async()=>new Response('x'.repeat(2*1024*1024+1));assert.equal((await f.deployments.check('/test')).checks.content.status,'too-large');
+ f.state.deploymentLast.indexHash=null;f.deployments.fetcher=async()=>new Response('Bygget hos udbyderen');assert.equal((await f.deployments.check('/test')).checks.content.status,'built');
+});
+test('versionens navn følger godkendelsen og ændrer ikke uploadens indhold', async()=>{
+ const f=fixture();f.state.versionNames={[artifact.head]:'Klar til tester'};
+ const r=await f.deployments.review('/test',config);assert.equal(r.version.name,'Klar til tester');f.state.versionNames[artifact.head]='Et nyt lokalt navn';
+ const receipt=await f.deployments.deploy('/test',r.token);assert.equal(receipt.version.name,'Klar til tester');assert.equal(receipt.head,artifact.head);assert.equal(receipt.hash,artifact.hash);
+});

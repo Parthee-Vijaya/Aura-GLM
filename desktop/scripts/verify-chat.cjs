@@ -152,6 +152,26 @@ const { run } = require('../core/git.cjs');
   await page.click('#tab-changes'); await page.click('#changes-view-session'); await page.locator('#changes-files .file-row[data-file="public/index.html"]').waitFor();
   assert.match(await page.locator('#changes-diff-lines').innerText(),/Bygget fra desktopchatten/);
   await page.click('#tab-preview');
+  // Sammenhængende forløb på den byggede fil: ret i preview, se diff, fortryd og gennemgå deling.
+  if (!process.env.HARNESS_TEST_PACKAGE) {
+    const built = await fs.readFile(path.join(project, 'public/index.html'), 'utf8');
+    await page.click('#preview-pick'); await page.frameLocator('#preview').locator('[data-aura-markering]').waitFor({state:'attached'});
+    await page.frameLocator('#preview').locator('h1').click();await page.locator('#pick-title').filter({hasText:'Overskrift'}).waitFor();
+    await page.click('#pick-edit');await page.fill('#pick-value','En overskrift jeg selv rettede');await page.press('#pick-value','Enter');
+    await page.locator('#pick-check.check-ok').filter({hasText:'nye tekst'}).waitFor({timeout:30000});
+    assert.match(await fs.readFile(path.join(project,'public/index.html'),'utf8'),/En overskrift jeg selv rettede/);
+    await page.click('#pick-diff');assert.match(await page.locator('#changes-diff-lines').innerText(),/En overskrift jeg selv rettede/);
+    await page.click('#tab-preview');await page.click('#pick-undo');await page.locator('#pick-check.check-ok').filter({hasText:'oprindelige tekst'}).waitFor({timeout:30000});
+    assert.equal(await fs.readFile(path.join(project,'public/index.html'),'utf8'),built);
+    await page.click('#preview-pick');
+    await require('./ui-test-helpers.cjs').enableSharing(page);
+    await app.evaluate(async(_,modulePath)=>{const {VercelDeployment}=process.mainModule.require(modulePath);VercelDeployment.prototype.inspect=async()=>({id:'prj_journey',name:'Samlet forløb',access:'Adgang ikke kontrolleret',region:'Ukendt',environmentKeys:[],portal:'https://vercel.com/test/journey'});VercelDeployment.prototype.deploy=async()=>{throw Error('Forløbsprøven må aldrig uploade');};},path.resolve(__dirname,'../core/deployment-providers.cjs'));
+    await page.click('#deploy-button');await page.waitForFunction(()=>!document.querySelector('#deployment-fields').disabled);await page.fill('#deploy-project','journey');await page.click('#deployment-form button[type=submit]');
+    await page.waitForSelector('#deployment-review:not([hidden])');assert.match(await page.locator('#deployment-summary').innerText(),/Byg første udkast/);assert.equal(await page.isEnabled('#deployment-send'),false);
+    await page.click('[data-close="deployment-dialog"]');
+    assert.equal((await run(project,['status','--porcelain'])).toString(),'');
+    console.log('Samlet idé → plan → bygning → tekstrettelse → diff → fortrydelse → delingsgennemgang bestået på samme projektfil; ingen cloud-upload');
+  }
   await require('./ui-test-helpers.cjs').menuClick(page, '#skills-button');await page.selectOption('#skill-select','harness-git-og-samarbejde');
   const original=await page.inputValue('#skill-content');await page.fill('#skill-content',original+'\nTesttilpasning.');await page.click('#skill-save');
   await page.locator('#skill-source').filter({hasText:'Lokal tilpasning'}).waitFor();

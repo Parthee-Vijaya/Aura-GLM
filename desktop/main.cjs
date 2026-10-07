@@ -455,7 +455,8 @@ handle('git:automatic', value => exclusive(async () => {
 }));
 
 function hostingIdle() { if (workbench.running || workbench.finishing) throw new Error('Vent på den igangværende AI-opgave.'); }
-handle('hosting:state', async () => ({ ...await github.state(), project: Boolean(project), publication: project ? await publishing.status(project.root).catch(error => ({ message: error.message, selected: null })) : null }));
+async function sharingContext() { return { projectName: project?.name || '', viewingCopy: Boolean(workbench.chat?.copy), copyCount: project ? (await workbench.chatList()).filter(chat => chat.isolated).length : 0 }; }
+handle('hosting:state', async () => ({ context: await sharingContext(), ...await github.state(), project: Boolean(project), publication: project ? await publishing.status(project.root).catch(error => ({ message: error.message, selected: null })) : null }));
 handle('hosting:token', token => exclusive(async () => { hostingIdle(); publishing.reviews.clear(); return github.connectToken(token); }));
 handle('hosting:login', () => exclusive(async () => { hostingIdle(); return github.startLogin(); }));
 handle('hosting:poll', id => exclusive(async () => { hostingIdle(); publishing.reviews.clear(); return github.poll(id); }));
@@ -465,12 +466,12 @@ handle('hosting:disconnect', () => exclusive(async () => { hostingIdle(); publis
 handle('hosting:catalog', () => exclusive(async () => { hostingIdle(); return { owners: await github.owners(), repositories: await github.repositories() }; }));
 handle('hosting:create', input => exclusive(async () => { hostingIdle(); return github.create(input); }));
 handle('hosting:attach', fullName => exclusive(() => publishing.attach(requireIdleProject(), fullName)));
-handle('hosting:review', () => exclusive(() => publishing.review(requireIdleProject())));
+handle('hosting:review', () => exclusive(async () => ({ ...await publishing.review(requireIdleProject()), context: await sharingContext() })));
 handle('hosting:push', token => exclusive(() => publishing.push(requireIdleProject(), token)));
 handle('hosting:open', async () => { const root = requireIdleProject(); const selected = (await workbench.store.project(root)).publication; if (!selected) throw new Error('Vælg repository først.'); return shell.openExternal('https://github.com/' + require('./core/github.cjs').repository(selected.fullName)); });
 
-handle('deployment:state', () => deployments.state(requireIdleProject()));
-handle('deployment:review', input => exclusive(() => deployments.review(requireIdleProject(), input)));
+handle('deployment:state', async () => ({ ...await deployments.state(requireIdleProject()), context: await sharingContext() }));
+handle('deployment:review', input => exclusive(async () => ({ ...await deployments.review(requireIdleProject(), input), context: await sharingContext() })));
 handle('deployment:send', token => exclusive(() => deployments.deploy(requireIdleProject(), token)));
 handle('deployment:check', () => exclusive(() => deployments.check(requireIdleProject())));
 handle('deployment:open', async kind => {
@@ -788,7 +789,7 @@ app.whenReady().then(async () => {
   protocol.handle('harness', async request => {
     const url = new URL(request.url);
     const name = url.pathname.slice(1);
-    if (url.host !== 'app' || !['index.html', 'app.js', 'workspace.js', 'plan-view.js', 'planning.js', 'approval-view.js', 'approvals.js', 'preview-edit.js', 'history.js', 'chats.js', 'palette.js', 'model-advice.js', 'server.js', 'viewport.js', 'hosting.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name)) return new Response('Ikke fundet', { status: 404 });
+    if (url.host !== 'app' || !['index.html', 'app.js', 'workspace.js', 'plan-view.js', 'planning.js', 'approval-view.js', 'approvals.js', 'preview-edit.js', 'history.js', 'chats.js', 'palette.js', 'model-advice.js', 'server.js', 'viewport.js', 'share-view.js', 'hosting.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name)) return new Response('Ikke fundet', { status: 404 });
     return new Response(await fs.readFile(path.join(__dirname, 'ui', name)), { headers: { 'Content-Type': name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : 'text/html; charset=utf-8' } });
   });
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));

@@ -847,3 +847,15 @@ kbd { font: 600 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
 .copy-notice #copy-path { overflow-wrap: anywhere; }
 .workspace-scope { margin: 0; padding: 6px 12px; color: var(--accent); background: #e8f1ff; font-size: 12px; }
 .chat-status.is-merge { background: var(--accent); }
+
+/* Deling: resumé før tekniske oplysninger. */
+.share-summary { display: grid; grid-template-columns: minmax(100px, 130px) minmax(0, 1fr); gap: 12px 18px; margin: 20px 0; }
+.share-summary dt { font-weight: 600; color: var(--muted); }
+.share-summary dd { margin: 0; overflow-wrap: anywhere; line-height: 1.55; }
+#deployment-result, #hosting-review-result { margin-top: 18px; }
+#deployment-state, #hosting-destination { font-weight: 600; line-height: 1.6; overflow-wrap: anywhere; }
+#deployment-receipt { font-size: 13px; }
+#deployment-receipt dd, #hosting-details dd { overflow-wrap: anywhere; margin: 4px 0 14px; }
+#hosting-target-section > summary, #hosting-account > summary { padding-block: 12px; }
+#hosting-review-title:focus, #deployment-review-title:focus, #deployment-result-title:focus { outline: 2px solid var(--accent); outline-offset: 4px; }
+@media (max-width: 650px) { .share-summary { grid-template-columns: minmax(0, 1fr); gap: 5px; } .share-summary dd { margin-bottom: 14px; } }

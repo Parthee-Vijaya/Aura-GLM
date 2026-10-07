@@ -2,6 +2,7 @@ const { randomUUID, createHash } = require('node:crypto');
 const path = require('node:path');
 const { deploymentArtifact } = require('./deployment-artifact.cjs');
 const { VercelDeployment, AzureDeployment, publicURL } = require('./deployment-providers.cjs');
+const { defaultName } = require('./history.cjs');
 const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 function relative(value) { if(typeof value!=='string'||!value||value.includes('\\')||value.includes(':')||value.startsWith('/')||value.split('/').some(p=>p==='..')||path.posix.normalize(value)!==value) throw Error('Angiv en relativ mappe uden ..'); return value; }
 function configuration(input) {
@@ -35,8 +36,11 @@ class Deployments {
     const config=configuration(input), artifact=await this.artifact(root,config.directory); validateArtifact(config,artifact);
     const target=await this.providers[config.provider].inspect(config);
     const token=randomUUID(); this.reviews.clear(); this.reviews.set(token,{root,config,head:artifact.head,hash:artifact.hash,targetHash:hash(target),expires:Date.now()+300000});
+    const project = await this.store.project(root);
+    const version = { name: project.versionNames?.[artifact.head] || defaultName(artifact.version?.name || 'Gemt version'), at: artifact.version?.at || null };
+    this.reviews.get(token).version = version;
     await this.store.saveProject(root,{deploymentConfig:config});
-    return {token,config,target,head:artifact.head,hash:artifact.hash,bytes:artifact.bytes,files:artifact.files.map(f=>f.file),environment:config.provider==='azure'?'harness-test':'preview',cost:'Forbrug og eventuelle omkostninger følger din hostingkonto. Appen har ingen verificeret pris eller automatisk udgiftsgrænse.',build:config.mode==='source'?'Udbyderen bygger kildekoden. Installations- og buildscripts kan køre og bruge projektets preview-miljøvariabler.':'Færdige filer uploades. Der køres ingen projektkommando lokalt.',material:'De viste filer fra denne Git-version sendes til hostingudbyderen. Hemmelighedskontrollen er heuristisk og finder ikke alt.'};
+    return {token,config,target,version,head:artifact.head,hash:artifact.hash,bytes:artifact.bytes,files:artifact.files.map(f=>f.file),environment:config.provider==='azure'?'harness-test':'preview',cost:'Forbrug og eventuelle omkostninger følger din hostingkonto. Appen har ingen verificeret pris eller automatisk udgiftsgrænse.',build:config.mode==='source'?'Udbyderen bygger kildekoden. Installations- og buildscripts kan køre og bruge projektets preview-miljøvariabler.':'Færdige filer uploades. Der køres ingen projektkommando lokalt.',material:'De viste filer fra denne Git-version sendes til hostingudbyderen. Hemmelighedskontrollen er heuristisk og finder ikke alt.'};
   }
   async settings(root) {
     const {config}=await this.state(root);
@@ -48,7 +52,7 @@ class Deployments {
     if(!r||r.root!==root||r.expires<Date.now()) throw Error('Gennemgå udgivelsen igen.');
     const a=await this.artifact(root,r.config.directory), provider=this.providers[r.config.provider], target=await provider.inspect(r.config);
     if(a.head!==r.head||a.hash!==r.hash||hash(target)!==r.targetHash) throw Error('Version eller destination har ændret sig. Gennemgå udgivelsen igen.');
-    const receipt={config:r.config,target,head:a.head,hash:a.hash,startedAt:new Date().toISOString(),state:'SUBMITTING',id:null,url:null,indexHash:r.config.mode!=='source'?a.files.find(f=>f.file===(r.config.provider==='azure'&&r.config.frontend!=='.'?r.config.frontend+'/':'')+'index.html')?.sha256:null};
+    const receipt={config:r.config,target,version:r.version,head:a.head,hash:a.hash,startedAt:new Date().toISOString(),state:'SUBMITTING',id:null,url:null,checks:null,indexHash:r.config.mode!=='source'?a.files.find(f=>f.file===(r.config.provider==='azure'&&r.config.frontend!=='.'?r.config.frontend+'/':'')+'index.html')?.sha256:null};
     await this.store.saveProject(root,{deploymentLast:receipt});
     try { Object.assign(receipt,await provider.deploy(r.config,a,target)); }
     catch { receipt.state='UNKNOWN'; await this.store.saveProject(root,{deploymentLast:receipt}); throw Error('Upload blev ikke bekræftet. Kontrollér udbyderens oversigt før et nyt forsøg. Dit lokale projekt er bevaret.'); }
@@ -57,22 +61,40 @@ class Deployments {
   async check(root) {
     let receipt=(await this.store.project(root)).deploymentLast;
     if(!receipt?.id) throw Error('Der er ingen kendt udgivelse at kontrollere. Se udbyderens oversigt ved ukendt uploadresultat.');
-    const provider=this.providers[receipt.config.provider], result=await provider.status(receipt.config,receipt);
-    receipt={...receipt,...result,checkedAt:new Date().toISOString(),verification:'Udbyderens status er kontrolleret; siden er endnu ikke verificeret.'};
-    if(receipt.state==='READY'&&receipt.url) {
-      publicURL(receipt.url,receipt.config.provider==='vercel'?'.vercel.app':'.azurestaticapps.net');
+    const at = new Date().toISOString();
+    // En ny kontrol erstatter den gamle evidens, også når den fejler.
+    receipt = { ...receipt, checkedAt: at, checks: { at, provider: { status: 'unknown' }, site: { status: 'skipped' }, content: { status: 'skipped' } }, verification: 'Udbyderens status kunne ikke kontrolleres. Se oversigten hos udbyderen.' };
+    await this.store.saveProject(root, { deploymentLast: receipt });
+    try {
+      const result = await this.providers[receipt.config.provider].status(receipt.config, receipt);
+      Object.assign(receipt, result);
+      receipt.checks.provider = { status: 'checked', state: receipt.state };
+      receipt.verification = 'Udbyderens status er kontrolleret; siden er endnu ikke verificeret.';
+    } catch {
+      await this.store.saveProject(root, { deploymentLast: receipt });
+      return receipt;
+    }
+    if (receipt.state === 'READY' && receipt.url) {
       try {
-        const response=await this.fetcher(receipt.url,{redirect:'manual',signal:AbortSignal.timeout(15000)});
-        if(!response.ok || (response.status>=300&&response.status<400)) await response.body?.cancel();
-        if(response.status===401||response.status===403) receipt.verification='Siden kræver adgang. Åbn linket med din konto og gennemgå appen.';
-        else if(response.status>=300&&response.status<400) receipt.verification='Siden viderestiller. Åbn linket og kontrollér adgang og indhold.';
-        else if(!response.ok) receipt.verification=`Siden svarede med HTTP ${response.status}.`;
-        else if(receipt.indexHash) {
-          const reader=response.body.getReader();let total=0;const chunks=[];
-          for(;;) {const {done,value}=await reader.read();if(done)break;total+=value.length;if(total>2*1024*1024){await reader.cancel();throw Error();}chunks.push(value);}
-          receipt.verification=createHash('sha256').update(Buffer.concat(chunks)).digest('hex')===receipt.indexHash?'Startsiden svarer og matcher den godkendte fil. Øvrige brugerrejser skal gennemgås.':'Siden svarer, men indholdet matcher ikke den godkendte startside. Kontrollér udgivelsen.';
-        } else {await response.body?.cancel();receipt.verification='Siden svarer med HTTP 200–299. Backend, login og øvrige brugerrejser skal stadig gennemgås.';}
-      } catch { receipt.verification='Testadressen kunne ikke verificeres. Åbn linket og kontrollér udgivelsen.'; }
+        publicURL(receipt.url, receipt.config.provider === 'vercel' ? '.vercel.app' : '.azurestaticapps.net');
+        const response = await this.fetcher(receipt.url, { redirect: 'manual', credentials: 'omit', signal: AbortSignal.timeout(15000) });
+        receipt.checks.site = { status: 'answered', http: response.status };
+        if (!response.ok) await response.body?.cancel();
+        if (response.status === 401 || response.status === 403) receipt.verification = 'Siden kræver adgang. Åbn linket med din konto og gennemgå appen.';
+        else if (response.status >= 300 && response.status < 400) receipt.verification = 'Siden viderestiller. Åbn linket og kontrollér adgang og indhold.';
+        else if (!response.ok) receipt.verification = `Siden svarede med HTTP ${response.status}.`;
+        else if (receipt.indexHash) {
+          const reader = response.body.getReader(); let total = 0; const chunks = [];
+          for (;;) { const { done, value } = await reader.read(); if (done) break; total += value.length; if (total > 2 * 1024 * 1024) { await reader.cancel(); receipt.checks.content = { status: 'too-large' }; throw Error(); } chunks.push(value); }
+          const matches = createHash('sha256').update(Buffer.concat(chunks)).digest('hex') === receipt.indexHash;
+          receipt.checks.content = { status: matches ? 'matched' : 'different' };
+          receipt.verification = matches ? 'Startsiden svarer og matcher den godkendte fil. Øvrige brugerrejser skal gennemgås.' : 'Siden svarer, men indholdet matcher ikke den godkendte startside. Kontrollér udgivelsen.';
+        } else { await response.body?.cancel(); receipt.checks.content = { status: 'built' }; receipt.verification = 'Siden svarer med HTTP 200–299. Backend, login og øvrige brugerrejser skal stadig gennemgås.'; }
+      } catch {
+        if (receipt.checks.site.status !== 'answered') receipt.checks.site = { status: 'unreachable' };
+        else if (receipt.checks.content.status !== 'too-large') receipt.checks.content = { status: 'unreadable' };
+        receipt.verification = 'Testadressen kunne ikke verificeres. Åbn linket og kontrollér udgivelsen.';
+      }
     }
     await this.store.saveProject(root,{deploymentLast:receipt});return receipt;
   }

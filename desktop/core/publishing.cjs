@@ -1,6 +1,7 @@
 const fs = require('node:fs/promises');
 const { randomUUID } = require('node:crypto');
 const { run, protectedPath, secretContent } = require('./git.cjs');
+const { defaultName } = require('./history.cjs');
 const { hooksBlock } = require('./checkpoints.cjs');
 
 class GitTransport {
@@ -65,9 +66,14 @@ class Publishing {
     await this.store.saveProject(root, { publication: { provider: this.provider.id, fullName: target.fullName, id: target.id, remoteName } });
     this.reviews.clear(); return target;
   }
+  async version(root, head) {
+    if (!head) return null;
+    const [name, at] = (await run(root, ['log', '-1', '--format=%s%x00%cI', head])).toString().trim().split('\0');
+    return { name: (await this.store.project(root)).versionNames?.[head] || defaultName(name), at };
+  }
   async status(root) {
     const repo = await this.git.repository(root); const selected = (await this.store.project(root)).publication;
-    return { branch: repo.branch || '', head: repo.head || '', changes: repo.files?.length || 0, selected: selected || null, message: selected ? 'Destination gemt. Kontrollér serveren for aktuel status.' : 'Kun lokalt · intet repository valgt.' };
+    return { version: await this.version(root, repo.head), branch: repo.branch || '', head: repo.head || '', changes: repo.files?.length || 0, selected: selected || null, message: selected ? 'Destination gemt. Kontrollér serveren for aktuel status.' : 'Kun lokalt · intet repository valgt.' };
   }
   async scan(root, commits) {
     const paths = new Set(), scanned = new Map(); let total = 0;
@@ -91,7 +97,8 @@ class Publishing {
   async review(root) {
     const repo = await this.local(root); const target = await this.target(root);
     const remoteHead = await this.transport.head(repo.root, target, repo.branch);
-    if (remoteHead === repo.head) return { synchronized: true, target, branch: repo.branch, head: repo.head, files: [], commits: [] };
+    const version = await this.version(root, repo.head), checkedAt = new Date().toISOString();
+    if (remoteHead === repo.head) return { synchronized: true, version, checkedAt, target, branch: repo.branch, head: repo.head, files: [], commits: [] };
     if (remoteHead) {
       await this.transport.fetch(repo.root, target, repo.branch);
       if (await this.transport.head(repo.root, target, repo.branch) !== remoteHead) throw new Error('Serveren blev ændret under gennemgangen. Kontrollér igen.');
@@ -101,8 +108,8 @@ class Publishing {
     const commits = (await run(repo.root, ['rev-list', '--max-count=101', repo.head, ...(remoteHead ? ['^' + remoteHead] : [])])).toString().trim().split('\n').filter(Boolean);
     if (commits.length > 100) throw new Error('Publiceringen indeholder mere end 100 commits. Gennemgå den i dit Git-værktøj.');
     const files = await this.scan(repo.root, commits);
-    const token = randomUUID(); this.reviews.clear(); this.reviews.set(token, { root: repo.root, head: repo.head, branch: repo.branch, remoteHead, target, expires: Date.now() + 300000 });
-    return { token, target, branch: repo.branch, head: repo.head, remoteHead, commits, files, synchronized: false };
+    const token = randomUUID(); this.reviews.clear(); this.reviews.set(token, { root: repo.root, head: repo.head, branch: repo.branch, remoteHead, target, version, expires: Date.now() + 300000 });
+    return { token, version, checkedAt, target, branch: repo.branch, head: repo.head, remoteHead, commits, files, synchronized: false };
   }
   async push(root, token) {
     const review = this.reviews.get(token); this.reviews.delete(token);
@@ -114,7 +121,7 @@ class Publishing {
     catch { throw new Error('Push blev ikke bekræftet. Kontrollér serverstatus før et nyt forsøg. Rettigheder, branchregler eller nye serverændringer kan have afvist det. Intet force-push blev forsøgt.'); }
     const confirmed = await this.transport.head(repo.root, target, repo.branch);
     if (confirmed !== repo.head) throw new Error('Push-resultatet kunne ikke bekræftes. Kontrollér serveren igen.');
-    return { head: confirmed, branch: repo.branch, target, message: 'Versionen er bekræftet på Git-serveren. Applikationen er ikke deployet.' };
+    return { version: review.version, checkedAt: new Date().toISOString(), head: confirmed, branch: repo.branch, target, message: 'Versionen er bekræftet på Git-serveren. Applikationen er ikke deployet.' };
   }
 }
 module.exports = { Publishing, GitTransport };

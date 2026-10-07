@@ -21,6 +21,8 @@ async function fixture(t) {
 test('udgivelsespakke indeholder præcis den gemte mappe og stabilt indholdsfingeraftryk', async t => {
   const { root } = await fixture(t);
   const first = await deploymentArtifact(root, 'public');
+  assert.equal(first.version.name, 'Gem isoleret testmateriale');
+  assert.ok(Number.isFinite(Date.parse(first.version.at)));
   assert.deepEqual(first.files.map(f => f.file), ['index.html']);
   assert.equal(first.files[0].data.toString(), '<h1>En bestemt version</h1>');
   assert.equal((await deploymentArtifact(root, 'public')).hash, first.hash);

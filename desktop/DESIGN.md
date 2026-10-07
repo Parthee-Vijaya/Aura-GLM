@@ -123,3 +123,11 @@ Kontroller skal kunne bruges med tastatur og have synligt fokus. Menuer skal kun
 ## Afprøvning
 
 Gennemgå både velkomst, tomt projekt, igangværende opgave, godkendelse, færdigt resultat, genåbning og fejl. Brug også vinduet ved 980 × 720 og reduceret bevægelse. Skærmbilleder alene viser ikke, om menuernes handlinger virker; gennemfør brugerforløbene i Electron.
+
+## Deling: version, destination og faktisk kontrol
+
+Delingsdialoger viser én fase ad gangen: destination, gennemgang og resultat. Resuméet viser versionens genkendelige navn og tidspunkt, modtager og miljø samt adgang og omkostninger. Filer, fulde ID'er, branch, fingeraftryk og kontokonfiguration ligger under Se detaljer. Ret destination bevarer felterne og kasserer godkendelsen.
+
+Et uploadresultat er knyttet til den gennemgåede version og destination. Udbyderens status, HTTP-svar uden login, filmatch og testpersonens adgang må ikke blandes sammen. En mislykket frisk kontrol erstatter gammel evidens. Ved ukendt upload er udbyderens oversigt vejen videre; ingen automatisk gentagelse. GitHub viser kode og historik, ikke et link til en udgivet app. Uflettede kopier står synligt som udeladt fra delingen.
+
+Dialogerne kan rulle ved større tekst; gennemgang og resultat får synligt tastaturfokus, og Escape returnerer til åbneren. Skærmbilleder ved Electron-zoom tages med vinduets capturePage. Forståeligheden afgøres ved observation med en testperson efter docs/testforloeb.md; automatiske prøver tæller som separat teknisk evidens.

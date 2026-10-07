@@ -23,8 +23,8 @@ async function fixture(t) {
 test('gennemgå og push rigtige commits til isoleret Git-server; genkend synkronisering',async t=>{
  const {project,remote,publishing,save}=await fixture(t);
  await run(project,['config','filter.ubrugt.clean','kommando-der-ikke-findes']);
- let review=await publishing.review(project);assert.equal(review.remoteHead,null);assert.deepEqual(review.files,['index.html']);
- const result=await publishing.push(project,review.token);assert.equal((await run(remote,['rev-parse',`refs/heads/${result.branch}`])).toString().trim(),result.head);
+ let review=await publishing.review(project);assert.equal(review.version.name,'Gem testversion');assert.ok(Number.isFinite(Date.parse(review.checkedAt)));assert.equal(review.remoteHead,null);assert.deepEqual(review.files,['index.html']);
+ const result=await publishing.push(project,review.token);assert.deepEqual(result.version,review.version);assert.equal((await run(remote,['rev-parse',`refs/heads/${result.branch}`])).toString().trim(),result.head);
  assert.equal((await publishing.review(project)).synchronized,true);
  await save('Anden');review=await publishing.review(project);assert.equal(review.commits.length,1);await publishing.push(project,review.token);
  assert.equal((await run(remote,['show',`${result.branch}:index.html`])).toString(),'Anden');
