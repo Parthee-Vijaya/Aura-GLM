@@ -81,8 +81,17 @@ Valg i implementeringen, som kan ændres:
 - **Én fil pr. samtale.** Projektfilen har briefen og oversigten; hver samtale har beskeder, kladde, plan, forbrug og OpenCodes sessions-id. Den tidligere samtale og arkiverede samtaler flyttes ved første åbning, og arkivet bevares.
 - **AI-sessionen fortsætter** pr. samtale, når forbindelse, model og regler er de samme som sidst; ellers startes en ny, og Aktivitet siger det.
 - **I 6A arbejder én samtale ad gangen** i projektmappen. De andre kan skrives i, og deres Send venter med en forklaring. Godkendelser, spørgsmål og resultater hører til den samtale, der stillede dem, også mens en anden er åben.
-- **Kopi frem for Git-worktrees i 6B:** samtidige opgaver får hver sin kopi, som Aura laver og rydder op. På macOS er kopien en APFS-klon (`cp -c`), som er hurtig og ikke fylder, før filerne ændres; andre steder en almindelig kopi. Et worktree ville starte fra sidste commit uden de ugemte ændringer, kræve Git og tilføje grene. Kopien flettes ind med samme gennemgang som Fortryd og gendannelse.
+- **Kopi frem for Git-worktrees i 6B:** samtidige opgaver får hver sin kopi, som Aura laver og rydder op. Implementeringen bruger `fs.copyFile` med `COPYFILE_FICLONE`, som deler filindhold på understøttede filsystemer og ellers kopierer almindeligt. På macOS medtages `node_modules` med interne links til kopiens egne pakker; andre platforme installerer pakker efter gennemgang. Et worktree ville starte fra sidste commit uden de ugemte ændringer, kræve Git og tilføje grene. Kopien flettes ind med samme gennemgang som Fortryd og gendannelse.
 - **Paletten** trykker på appens egne knapper, så valgte funktioner og låste handlinger gælder også dér. Genvejen fanges i hovedprocessen, så den også virker med fokus i forhåndsvisningen.
+
+### Anden del: samtidige opgaver · 7. oktober 2026
+
+- Hver opgave reserverer sin arbejdsmappe fra opstart til afslutning. Kun en optaget projektmappe udløser en ny kopi; en allerede uflettet kopi bruges videre af samme samtale. Samtaleskift låses ikke af en motors opstart.
+- Grundlaget gemmes fra den oprettede kopi, så en samtidig ekstern rettelse under kopieringen ikke fejlagtigt tilskrives AI'en. Hver kopi har sit eget runtime, sin motor og sine preview-servere. Godkendelser og Stop følger samtalen.
+- Indfletning kræver ledigt projekt og ledig kildekopi samt en aktuel gennemgang af begge. Default ved konflikt er brugerens linjer. Indfletningen registreres som brugerens godkendte handling, så brugerlinjer ikke tilskrives AI'en.
+- Automatiske versioner gælder i projektet, når funktionen er aktiv. Kopier indeholder ingen `.git` og opretter ingen versioner. Previewbilleder før og efter indfletningen hører til det faktisk flettede projekt og bindes til versionen. Journalen gemmer indfletningens før- og efterindhold, så Fortryd også uden Git fjerner netop indfletningen og bevarer senere brugerrettelser med konfliktvalg ved samme linjer.
+- Uflettede kopier bevares ved lukning og genstart, også hvis manifestet ikke længere kan læses. Kun dokumenterede uafsluttede oprettelser med deres egen markør og allerede indflettede kopier ryddes automatisk. Sletning kræver den eksisterende bekræftelse med en præcis advarsel om kopiens filer.
+- Størrelsesgrænser og filbeskyttelse gælder også indfletning. Hvis en ændring ikke kan gennemgås, afvises indfletningen, og kopien bevares til manuel behandling. Godkendte kommandoer har fortsat brugerens OS-rettigheder.
 
 ## Få valg og udvælgelse af skills · 29. september 2026
 

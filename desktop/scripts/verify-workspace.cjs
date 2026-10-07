@@ -157,7 +157,7 @@ const helpers = require('./ui-test-helpers.cjs');
     // Ændringer: resumé først, derefter linje-diff. Brugerens samtidige rettelse tilskrives ikke AI'en.
     await page.click('#tab-changes');
     await page.locator('#changes-heading').filter({ hasText: '2 filer ændret under opgaven' }).waitFor();
-    assert.match(await page.locator('#changes-basis').textContent(), /Sammenlignet med filerne, da opgaven »BYG en side, hvor man finder et lokale« startede i dag/);
+    assert.match(await page.locator('#changes-basis').textContent(), /Sammenlignet med filerne i projektet, da opgaven »BYG en side, hvor man finder et lokale« startede i dag/);
     const rows = await page.locator('#changes-files .file-row').evaluateAll(items => items.map(item => [item.dataset.file, item.querySelector('.by-tag').textContent]));
     assert.deepEqual(rows, [['public/index.html', 'AI’en'], ['noter.txt', 'En kommando eller dig']]);
     assert.match(await page.locator('#changes-others').textContent(), /1 fil blev ændret under opgaven, men ikke af AI’ens filværktøjer/);

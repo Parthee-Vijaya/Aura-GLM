@@ -81,8 +81,8 @@
   $('#changes-view-session').onclick = () => { if (changes.mode !== 'session') action(showSession); };
   $('#changes-view-versions').onclick = () => { if (changes.mode !== 'versions') { showVersions(); action(() => window.versions.load()); } };
   async function loadChanges({ source } = {}) {
-    const root = current?.root; if (!root || changes.mode !== 'session') return;
-    const data = await call('changesOverview'); if (current?.root !== root) return;
+    const root = current?.workspaceRoot || current?.root; if (!root || changes.mode !== 'session') return;
+    const data = await call('changesOverview'); if ((current?.workspaceRoot || current?.root) !== root) return;
     changes.data = data; changes.stale = false; $('#changes-notice').hidden = true;
     const options = [...data.tasks.map(task => option(task.id, `${task.status === 'idle' ? '' : 'Afbrudt · '}${versionTime(task.startedAt)} · ${shortLabel(task.label, 48)}${task.undone ? " · fortrudt" : ""}`)), ...(data.session ? [option('session', `Hele samtalen · siden ${versionTime(data.session.startedAt)}`)] : [])];
     $('#changes-source').replaceChildren(...(options.length ? options : [option('', 'Ingen opgaver endnu')])); $('#changes-source').disabled = !options.length;
@@ -98,16 +98,16 @@
     if (!view) { $('#changes-empty p').textContent = changes.data?.running ? 'AI’en arbejder. Ændringerne vises her, når opgaven er færdig.' : 'Når AI’en har lavet en opgave, ser du her, hvilke filer der er ændret, og præcis hvilke linjer.'; return; }
     const session = changes.source === 'session', { totals } = view;
     // Dine egne rettelser og fortrydelser i Aura står som dine, ikke som en opgave.
-    const own = !session && ['direct', 'undo'].includes(view.kind);
+    const own = !session && ['direct', 'undo', 'merge'].includes(view.kind);
     // Før- og efterbillede af forhåndsvisningen, når Aura har taget dem for opgaven.
     compare.hidden = true;
     if (!session && view.images && window.versions) window.versions.fillCompare(compare, view.images);
     $('#changes-heading').textContent = !totals.files ? (session ? 'Ingen filer er ændret i denne samtale' : 'Opgaven ændrede ingen filer') : session ? `${plural(totals.files, 'fil', 'filer')} ændret i denne samtale` : own ? `${plural(totals.files, 'fil', 'filer')} ændret af dig` : `${plural(totals.files, 'fil', 'filer')} ændret under opgaven`;
     const lines = totals.files ? ` I alt ${plural(totals.added, 'linje', 'linjer')} tilføjet og ${totals.removed.toLocaleString('da-DK')} fjernet.` : '';
     $('#changes-basis').textContent = session
-      ? `Sammenlignet med filerne, da den første ændring i samtalen begyndte ${versionTime(view.startedAt)}. Alle ændringer er med, også dine egne.${lines}`
-      : own ? `${view.kind === 'undo' ? 'Du fortrød' : 'Du rettede i forhåndsvisningen'} ${versionTime(view.startedAt)}: ${shortLabel(view.label.replace(/^(Fortrudt|Tekstrettelse): /, ''), 90)}.${lines}`
-      : `Sammenlignet med filerne, da opgaven »${shortLabel(view.label, 60)}« startede ${versionTime(view.startedAt)}.${view.status === 'idle' ? '' : view.status === 'stopped' ? ' Opgaven blev stoppet undervejs.' : ' Opgaven blev ikke færdig.'}${view.undone ? ' Den er fortrudt siden.' : ''}${lines}`;
+      ? `${view.basis === 'merge' ? 'Sammenlignet med projektfilerne før indfletningen' : 'Sammenlignet med filerne, da den første ændring i samtalen begyndte'} ${versionTime(view.startedAt)}. Alle ændringer er med, også dine egne.${lines}`
+      : own ? `${view.kind === 'merge' ? 'Du flettede ind' : view.kind === 'undo' ? 'Du fortrød' : 'Du rettede i forhåndsvisningen'} ${versionTime(view.startedAt)}: ${shortLabel(view.label.replace(/^(Flettet ind|Fortrudt|Tekstrettelse): /, ''), 90)}.${lines}`
+      : `Sammenlignet med filerne i ${view.workspace === 'kopi' ? 'samtalens kopi' : 'projektet'}, da opgaven »${shortLabel(view.label, 60)}« startede ${versionTime(view.startedAt)}.${view.status === 'idle' ? '' : view.status === 'stopped' ? ' Opgaven blev stoppet undervejs.' : ' Opgaven blev ikke færdig.'}${view.undone ? ' Den er fortrudt siden.' : ''}${lines}`;
     const notes = [];
     if (totals.mixed) notes.push(`${plural(totals.mixed, 'fil er', 'filer er')} ændret af både AI’en og andre.`);
     if (totals.others) notes.push(session ? `${plural(totals.others, 'fil er', 'filer er')} ikke ændret af AI’en.` : `${plural(totals.others, 'fil blev', 'filer blev')} ændret under opgaven, men ikke af AI’ens filværktøjer.`);
@@ -150,15 +150,16 @@
   for (const text of ['Før', 'Efter']) { const figure = node('figure'), img = node('img'); img.alt = ''; figure.append(img, node('figcaption', text)); compare.append(figure); }
   $('#changes-basis').after(compare);
   async function showDiff(file, { focus = false } = {}) {
-    const root = current?.root, source = changes.source;
+    const root = current?.workspaceRoot || current?.root, source = changes.source;
     const detail = await call('changesFile', { source, file });
-    if (current?.root !== root || changes.source !== source) return;
+    if ((current?.workspaceRoot || current?.root) !== root || changes.source !== source) return;
     changes.file = file;
     for (const button of document.querySelectorAll('#changes-files .file-row')) button.setAttribute('aria-pressed', String(button.dataset.file === file));
     $('#changes-diff').hidden = false; $('#changes-diff-title').textContent = file;
     $('#changes-open-code').hidden = detail.change === 'slettet';
     const notes = [help(detail.by)];
     if (detail.secret) notes.push('Filen kan indeholde en nøgle eller adgangskode, så linjerne vises ikke her.');
+    if (detail.binary) notes.push('Filen er binær, så den har ingen linje-diff. Åbn den under Kode.');
     if (detail.invisible) notes.push('Forskellen ligger i usynlige tegn, fx linjeskift eller mellemrum i slutningen af filen.');
     if (detail.approximate) notes.push('Filen er ændret så meget, at den vises som fjernet og skrevet på ny.');
     if (detail.truncated) notes.push('Ændringen er lang. Kun begyndelsen vises; se hele filen under Kode.');
@@ -202,8 +203,8 @@
     for (const file of code.files) { const name = file.path.split('/').pop(); code.names.set(name, code.names.has(name) ? null : file.path); }
   }
   async function loadCodeList() {
-    const root = current?.root; if (!root) return;
-    const data = await call('codeList'); if (current?.root !== root) return;
+    const root = current?.workspaceRoot || current?.root; if (!root) return;
+    const data = await call('codeList'); if ((current?.workspaceRoot || current?.root) !== root) return;
     code.files = data.files; code.stale = false; code.truncated = data.truncated; rebuildIndex(); renderCodeList(); linkifyAll();
   }
   function fileButton(file) {
@@ -288,17 +289,17 @@
   });
   async function openFile(file, { line = null, to = null, focus = true } = {}) {
     show('code');
-    const root = current?.root;
+    const root = current?.workspaceRoot || current?.root;
     if (!code.files || code.stale) await action(loadCodeList);
     try {
       const data = await call('codeRead', file);
-      if (current?.root !== root) return;
+      if ((current?.workspaceRoot || current?.root) !== root) return;
       renderCode(data, { from: line, to });
       // I et smalt panel lukker fillisten, så koden får pladsen. Bredt står den ved siden af.
       if ($('#work-surface').clientWidth < 640) browser(false);
       if (focus) $('#code-title').focus();
     } catch (error) {
-      if (current?.root !== root) return;
+      if ((current?.workspaceRoot || current?.root) !== root) return;
       code.path = ''; code.text = null; updateReferenceButton();
       $('#code-file').hidden = true; $('#code-empty').hidden = true; $('#code-error').hidden = false;
       $('#code-error').textContent = `${file}: ${error.message}`; $('#code-current').textContent = 'Vælg en fil';
@@ -308,9 +309,9 @@
   // Når brugeren vender tilbage til en fil, der er ændret siden, vises en besked i stedet for at skifte indholdet under dem.
   async function checkCodeFile() {
     if (!code.path || code.text === null) return;
-    const root = current?.root, file = code.path;
-    try { const data = await call('codeRead', file); if (current?.root === root && code.path === file && data.text !== code.text) $('#code-notice').hidden = false; }
-    catch { if (current?.root === root && code.path === file) $('#code-notice').hidden = false; }
+    const root = current?.workspaceRoot || current?.root, file = code.path;
+    try { const data = await call('codeRead', file); if ((current?.workspaceRoot || current?.root) === root && code.path === file && data.text !== code.text) $('#code-notice').hidden = false; }
+    catch { if ((current?.workspaceRoot || current?.root) === root && code.path === file) $('#code-notice').hidden = false; }
   }
   $('#code-reload').onclick = () => openFile(code.path, { line: code.from, to: code.to });
 
@@ -350,7 +351,7 @@
   function resolve(text) {
     const match = /^(.+?)(?::(\d+)(?:[-–](\d+))?)?$/.exec(text.trim()); if (!match || !code.files) return null;
     let file = match[1].replace(/^\.\//, '');
-    const root = current?.root;
+    const root = current?.workspaceRoot || current?.root;
     if (root && file.startsWith(root + '/')) file = file.slice(root.length + 1);
     if (!code.index.has(file)) file = !file.includes('/') ? code.names.get(file) : null;
     if (!file) return null;
@@ -455,8 +456,8 @@
     el.replaceChildren(visuallyHidden(activity.waiting ? 'venter på dig' : activity.running ? 'AI’en arbejder' : 'ny aktivitet'));
   }
   async function loadActivity() {
-    const root = current?.root;
-    const entries = await call('activityList'); if (current?.root !== root) return;
+    const root = current?.workspaceRoot || current?.root;
+    const entries = await call('activityList'); if ((current?.workspaceRoot || current?.root) !== root) return;
     activity.entries.clear(); $('#activity-list').replaceChildren(); $('#activity-list').hidden = true; $('#activity-empty').hidden = false;
     for (const entry of entries) putEntry(entry);
     activity.unseen = false; activity.toBottom = true; updateActivityBadge();
@@ -526,6 +527,8 @@
     Object.assign(changes, { data: null, file: '', stale: true, latest: '', sessionSource: '' });
     if (changes.mode === 'session') { changes.source = ''; $('#changes-source').replaceChildren(option('', 'Ingen opgaver endnu')); $('#changes-source').disabled = true; $('#changes-overview').hidden = true; $('#changes-diff').hidden = true; $('#changes-empty').hidden = false; $('#changes-notice').hidden = true; if (active === 'changes') await action(() => loadChanges()); }
     references = []; target = null; renderReferences();
+    code.files = null; code.stale = true; await action(loadCodeList);
+    if (code.path) await openFile(code.path);
     activity.running = running; await action(loadActivity); updateActivityStatus();
   }
   window.workspace = { show, onProject, onChat, showVersions, showVersion, openFile, showChange, linkify, linkifyAll, references: () => references.map(ref => ({ ...ref })), clearReferences: () => { references = []; target = null; renderReferences(); }, setTarget: value => { target = value ? { id: value.id, label: value.label } : null; renderReferences(); }, target: () => target && { ...target }, get active() { return active; } };

@@ -166,7 +166,7 @@ body.resizing-workspace iframe { pointer-events: none; }
 #preview-surface { position: relative; flex: 1; min-height: 0; overflow: auto; background: #eef3fa; }
 #preview-stage { position: relative; margin: 0 auto; flex-shrink: 0; overflow: hidden; background: white; }
 iframe { border: 0; width: 100%; height: 100%; background: #fff; }
-#preview { display: block; transform-origin: top left; max-width: none; }
+.preview-frame { display: block; transform-origin: top left; max-width: none; }
 #server-actions { display: flex; gap: 8px; margin: 20px 0; }
 #server-details, #server-manual { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--line); }
 #server-log, #server-command { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 11px; line-height: 1.6; background: var(--canvas); padding: 12px; border-radius: 8px; }
@@ -252,7 +252,8 @@ dialog p { font-size: 13px; }
 #demo-preview { height: 340px; border: 1px solid var(--line); border-radius: 12px; }
 body.introduction-open > .sidebar, body.introduction-open > .app-content { visibility: hidden; }
 h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus { outline: none; }
-#message { position: fixed; bottom: 20px; left: calc(50% + 90px); transform: translateX(-50%); max-width: min(600px, 65vw); background: #fff; border: 1px solid #c5d5eb; box-shadow: 0 6px 28px #17325220; border-radius: 12px; padding: 14px 18px; font-size: 12px; z-index: 9999; }
+#message { margin: 12px 0; background: #fff; border: 1px solid #c5d5eb; border-radius: 12px; padding: 14px 18px; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+#workspace > #message { margin: 8px 20px; flex-shrink: 0; max-height: 20vh; overflow: auto; }
 #message.error { border-color: #dfb8b3; color: #982f28; }
 @keyframes dialog-arrive { from { opacity: 0; transform: translateY(8px) scale(.99); } to { opacity: 1; transform: none; } }
 @keyframes step-arrive { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
@@ -839,3 +840,10 @@ kbd { font: 600 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
 .chat-row.has-status .chat-meta { grid-column: 2; grid-row: 2; }
 .chat-row.has-status .chat-status { grid-row: 1 / span 2; }
 .composer-wait { margin: 0 0 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.copy-notice { padding: 12px; margin: 12px 0; background: var(--accent-soft, #e8f1ff); border-radius: 10px; }
+.copy-notice p { margin: 0 0 8px; }
+.copy-notice details { margin-top: 8px; }
+.copy-notice #copy-path { overflow-wrap: anywhere; }
+.workspace-scope { margin: 0; padding: 6px 12px; color: var(--accent); background: #e8f1ff; font-size: 12px; }
+.chat-status.is-merge { background: var(--accent); }

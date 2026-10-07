@@ -20,6 +20,7 @@
     { label: 'Sikkerhedskopi', target: '#publish-button', words: ['github', 'backup', 'upload'] },
     { label: 'Del', target: '#deploy-button', words: ['udgiv', 'deploy', 'vercel', 'azure'] },
     { label: 'Vælg AI-model', target: '#model-chip', words: ['model', 'indsats', 'skift'] },
+    { label: 'Flet ind i projektet', target: '#merge-copy', words: ['kopi', 'indflet', 'samtale'], first: true },
     { label: 'Stop opgaven', target: '#stop', words: ['afbryd', 'stop'], first: true },
     { label: 'Nyt projekt', target: '#new', words: ['opret', 'idé'] },
     { label: 'Åbn et projekt fra computeren', target: '#open', words: ['mappe', 'åbn'] },

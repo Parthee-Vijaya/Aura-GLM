@@ -109,13 +109,13 @@ const helpers = require('./ui-test-helpers.cjs');
     await page.waitForFunction(() => document.querySelector('#messages').textContent === '' && document.querySelector('#prompt').value === '');
     await row(titleA).locator('.chat-meta.is-waiting').filter({ hasText: 'venter på dig' }).waitFor();
     assert.equal(await page.isVisible('#approvals button'), false, 'godkendelsen hører til samtale A');
-    await page.locator('#composer-wait').filter({ hasText: `Venter på samtalen »${titleA}«` }).waitFor();
-    assert.equal(await page.isDisabled('#send'), true);
+    assert.equal(await page.isVisible('#composer-wait'), false);
+    assert.equal(await page.isDisabled('#send'), false);
     await draft('Planlæg en kontaktside. opgave-b');
     await row('Planlæg en kontaktside').waitFor();
     assert.equal(await fs.readFile(path.join(project, 'public/index.html'), 'utf8'), '<!doctype html><title>Forening</title><h1>Foreningens side</h1>', 'intet er skrevet uden godkendelse');
     await page.screenshot({ animations: 'disabled', path: path.join(root, 'to-samtaler.png') });
-    checks.push('ny samtale, mens en anden venter på godkendelse; status i sidepanelet; send venter med navn');
+    checks.push('ny samtale, mens en anden venter på godkendelse; status i sidepanelet; en ny opgave kan sendes i sin egen kopi');
 
     // Paletten finder samtale A og skifter til den. Godkendelsen står der stadig.
     options = await palette('forside');

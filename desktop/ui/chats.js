@@ -17,6 +17,7 @@
   function status(chat) {
     const v = views.get(chat.id);
     if (v?.running || chat.running) return (v?.waitingFor.length || chat.waiting) ? { key: 'waiting', text: 'venter på dig' } : { key: 'running', text: 'arbejder' };
+    if (chat.mergeReady) return { key: 'merge', text: 'klar til at flette' };
     if (v?.unread) return { key: 'unread', text: 'nyt resultat' };
     if (chat.status === 'interrupted') return { key: 'interrupted', text: 'afbrudt' };
     return null;
@@ -86,7 +87,9 @@
     if (view.id === id) { $('#prompt').focus(); return; }
     await saveChatDraft();
     await showChat(await call('chatOpen', id));
-    $('#prompt').focus();
+    // Filindlæsning kan stadig være i gang, efter at samtalen er vist. Bevar et fokus, brugeren selv flyttede
+    // til fx indfletningsknappen imens; sidepanelets eget valg giver ellers fokus til skrivefeltet.
+    if (document.activeElement === document.body || document.activeElement.closest('#project-list')) $('#prompt').focus();
   }
   async function newChatIn(project) {
     if (project.root !== current?.root) await openProject(project);

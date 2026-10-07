@@ -3,8 +3,8 @@
   const active = () => ['installing', 'starting', 'running', 'stopping'].includes(status?.state);
   const labels = { idle: '', installing: 'Installerer pakker …', installed: 'Pakkerne er klar', starting: 'Starter forhåndsvisningen …', running: 'Forhåndsvisningen kører', stopping: 'Stopper …', stopped: 'Forhåndsvisningen er stoppet', error: 'Forhåndsvisningen kræver din hjælp' };
   function update(value) {
-    if (!value || value.root !== current?.root) return;
-    if (status?.root !== value.root) { managedURL = null; review = null; $('#server-review').hidden = true; $('#server-scripts').checked = false; }
+    if (!value || value.root !== current?.root || (value.workspaceRoot && value.workspaceRoot !== current?.workspaceRoot)) return;
+    if (status?.root !== value.root || status?.workspaceRoot !== value.workspaceRoot) { managedURL = null; review = null; $('#server-review').hidden = true; $('#server-scripts').checked = false; }
     status = value;
     if (value.state === 'running' && value.url && current.previewURL !== value.url) { managedURL = value.url; showPreview(value.url, true); }
     else if (!value.url && managedURL) { if (current.previewURL === managedURL) showPreview(null); managedURL = null; }

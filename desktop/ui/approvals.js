@@ -6,7 +6,7 @@
   // Målet vises som en sti i projektet, når det er muligt. OpenCode regner mønstre ud fra Git-roden eller fra computerens rod.
   function target(p) {
     const file = typeof p.metadata?.filepath === 'string' ? p.metadata.filepath : '';
-    const root = current?.root || '';
+    const root = p.workspaceRoot || current?.workspaceRoot || current?.root || '';
     if (p.permission === 'edit' && file && root && (file.startsWith(root + '/') || file.startsWith(root + '\\'))) return { projectFile: true, text: file.slice(root.length + 1).replaceAll('\\', '/') };
     if (p.permission === 'bash') return { text: p.toolInput?.command || p.metadata?.command || (p.patterns || []).join('\n') };
     if (p.permission === 'webfetch') return { text: p.metadata?.url || p.toolInput?.url || (p.patterns || []).join('\n') };
@@ -38,7 +38,9 @@
   const record = (v, text) => v.log.append(node('p', text, 'chat-message answer-record'));
   // v er samtalens visning. Kortet står i den samtale, hvis AI spurgte, også når en anden samtale er åben.
   function show(p, v = viewFor()) {
-    const where = target(p), { title, effect } = explanation(p, where);
+    const where = target(p), explanationText = explanation(p, where);
+    const title = p.isolated && where.projectFile ? 'Må AI’en ændre filer i samtalens kopi?' : explanationText.title;
+    const effect = p.isolated && where.projectFile ? 'Kun kopien ændres. Du gennemgår ændringerne, før de flettes ind i projektet.' : explanationText.effect;
     const box = node('section', undefined, 'approval'); box.dataset.id = p.id;
     box.append(node('p', `Godkendelse · ${kinds[p.permission] || 'Handling'}`, 'approval-kind'), node('strong', title, 'approval-title'));
     const facts = node('dl', undefined, 'approval-facts');

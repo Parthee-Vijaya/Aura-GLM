@@ -15,7 +15,7 @@ const secret = (before, after) => Boolean((before && secretContent(before)) || (
 function taskAttribution(task, file) {
   const entry = task.files.find(item => item.file === file);
   if (!entry) return null;
-  if (['direct', 'undo'].includes(task.kind)) return 'dig';
+  if (['direct', 'undo', 'merge'].includes(task.kind)) return 'dig';
   if (task.aiFiles?.has(file)) {
     if (task.aiHashes?.has(file) && task.aiHashes.get(file) !== hash(value(entry.after))) return 'blandet';
     return 'ai';
@@ -52,7 +52,7 @@ function totals(files) {
 }
 
 function taskSummary(task) {
-  const files = sorted((task.files || []).map(entry => fileSummary(entry.file, value(entry.before), value(entry.after), taskAttribution(task, entry.file))));
+  const files = sorted((task.files || []).map(entry => entry.binary ? { file: entry.file, change: !entry.beforeExists ? 'ny' : !entry.afterExists ? 'slettet' : 'ændret', added: 0, removed: 0, by: taskAttribution(task, entry.file), binary: true, secret: false } : fileSummary(entry.file, value(entry.before), value(entry.after), taskAttribution(task, entry.file))));
   return { id: task.id, kind: task.kind || 'ai', undone: Boolean(task.undone), label: task.label, mode: task.mode, status: task.status, startedAt: task.startedAt, endedAt: task.endedAt, commands: task.commands || 0, skipped: task.skipped || 0, unavailable: Boolean(task.unavailable), checkpoint: task.checkpoint ? { status: task.checkpoint.status, message: task.checkpoint.message } : null, files, totals: totals(files) };
 }
 // baseline og current er øjebliksbilleder fra changes.capture: { files: Map(sti → tekst), skipped }.

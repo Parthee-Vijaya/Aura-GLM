@@ -249,7 +249,7 @@ const helpers = require('./ui-test-helpers.cjs');
     console.log(JSON.stringify({ status: 'bestået', root, checks: checks.length }, null, 2));
   } catch (error) {
     console.error(error);
-    try { await page?.screenshot({ path: path.join(root, 'fejl.png'), animations: 'disabled' }); console.error('Skærmbillede:', path.join(root, 'fejl.png')); console.error(JSON.stringify(await page?.evaluate(async () => ({ polling, revision, next: (await window.harness.revision()).value, src: document.querySelector('#preview').src })))); console.error(await page?.locator('#message').textContent({ timeout: 1000 })); } catch {}
+    try { await page?.screenshot({ path: path.join(root, 'fejl.png'), animations: 'disabled' }); console.error('Skærmbillede:', path.join(root, 'fejl.png')); console.error(JSON.stringify(await page?.evaluate(async () => ({ polling, revision, next: (await window.harness.revision()).value, src: document.querySelector('#preview').src })))); console.error(await page?.locator('#message').textContent({ timeout: 1000 })); console.error('Serverens log:', await page?.locator('#server-log').textContent({ timeout: 1000 })); } catch {}
     process.exitCode = 1;
   } finally { await app?.close(); server.closeAllConnections(); server.close(); }
 

@@ -8,16 +8,16 @@ const { lineStats } = require('./diff.cjs');
 
 // Typen ud fra versionsbeskrivelsen, som Aura selv skriver. Andre beskrivelser er brugerens egne versioner.
 const KINDS = [
-  [/^Afbrudt AI-opgave: /, 'stopped'], [/^AI-opgave: /, 'ai'], [/^Gendannet til: /, 'restore'], [/^Gendannet version$/, 'restore'],
-  [/^Fortrudt: /, 'undo'], [/^Fortrudt gendannelse$/, 'undo'], [/^Dine ændringer før (gendannelsen|fortrydelsen)$/, 'saved'], [/^Projekt oprettet$/, 'start']
+  [/^Flettet ind: /, 'merge'], [/^Afbrudt AI-opgave: /, 'stopped'], [/^AI-opgave: /, 'ai'], [/^Gendannet til: /, 'restore'], [/^Gendannet version$/, 'restore'],
+  [/^Fortrudt: /, 'undo'], [/^Fortrudt gendannelse$/, 'undo'], [/^Dine ændringer før (gendannelsen|fortrydelsen|indfletningen)$/, 'saved'], [/^Projekt oprettet$/, 'start']
 ];
 const kindOf = message => (KINDS.find(([pattern]) => pattern.test(message)) || [null, 'manual'])[1];
-const kindLabels = { ai: 'AI-opgave', stopped: 'Afbrudt AI-opgave', restore: 'Gendannet', undo: 'Fortrudt', saved: 'Dine ændringer', start: 'Start', manual: 'Din version' };
+const kindLabels = { merge: 'Flettet ind', ai: 'AI-opgave', stopped: 'Afbrudt AI-opgave', restore: 'Gendannet', undo: 'Fortrudt', saved: 'Dine ændringer', start: 'Start', manual: 'Din version' };
 // Et kort navn: beskrivelsen uden Auras præfiks, til første punktum og højst 60 tegn ved et ordskifte. En gendannelse
 // og en fortrydelse nævner den version, de handler om, så de ikke forveksles med den.
 function defaultName(message) {
   const value = String(message || '').replace(/\s+/g, ' ').trim();
-  const text = value.replace(/^(Afbrudt AI-opgave|AI-opgave|Gendannet til|Fortrudt): /, '');
+  const text = value.replace(/^(Flettet ind|Afbrudt AI-opgave|AI-opgave|Gendannet til|Fortrudt): /, '');
   if (text === 'Projekt oprettet') return 'Projektet blev oprettet';
   const sentence = (text.match(/^.+?[.!?](?=\s|$)/) || [text])[0].replace(/[.!?]$/, '');
   const short = sentence.length <= 60 ? sentence || 'Version' : sentence.slice(0, 60).replace(/[\s,.;:]+\S*$/, '') + ' …';

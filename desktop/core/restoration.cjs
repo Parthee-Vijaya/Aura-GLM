@@ -82,22 +82,33 @@ class Restoration {
   }
   async review(root, input) {
     this.reviews.clear();
-    const optional = Boolean(input?.undo || input?.task);
+    const optional = Boolean(input?.undo || input?.task || input?.merge);
     const repo = await this.repository(root, optional), files = [];
     root = repo?.root || await fs.realpath(root);
     const previous = await this.previous(root);
     if (!input?.undo && previous && ['prepared', 'applying', 'failed'].includes(previous.state)) throw new Error('Sidste gendannelse blev afbrudt. Gennemgå først kopien fra før gendannelsen.');
     if (input?.undo) {
       if (!previous) throw new Error('Der findes ingen tidligere gendannelse at fortryde.');
+      const merged = [];
       for (const item of previous.files) {
         validFile(item.file);
         if (!/^[a-f0-9]{64}$|^deleted$/.test(item.hash) || !['100644', '100755', undefined].includes(item.mode) || !/^[0-9]+$/.test(item.copy) || (item.fileMode !== undefined && (!Number.isInteger(item.fileMode) || item.fileMode < 0 || item.fileMode > 0o777))) throw new Error('Kopien kan ikke valideres.');
         const data = item.hash === 'deleted' ? null : await fs.readFile(path.join(path.dirname(this.journal(root)), previous.id, item.copy));
         const target = data === null ? { ...EMPTY } : inspect(data, item.mode, item.fileMode);
         if (target.hash !== item.hash) throw new Error('Kopien blev ændret. Gendannelsen er afbrudt.');
+        if (previous.kind === 'merge') {
+          if (!/^[a-f0-9]{64}$|^deleted$/.test(item.afterHash) || !/^[0-9]+$/.test(item.afterCopy) || !['100644', '100755', undefined].includes(item.afterMode)) throw new Error('Indfletningens grundlag kan ikke valideres.');
+          const after = item.afterHash === 'deleted' ? null : await fs.readFile(path.join(path.dirname(this.journal(root)), previous.id, item.afterCopy));
+          if ((after === null ? 'deleted' : hash(after)) !== item.afterHash) throw new Error('Indfletningens grundlag blev ændret. Gennemgå filerne manuelt.');
+          merged.push({ file: item.file, base: after, theirs: data, mode: item.mode }); continue;
+        }
         const before = await current(root, item.file);
         if (!same(before, target)) files.push({ file: item.file, before, target });
       }
+      if (merged.length) files.push(...await revertFiles(root, merged));
+    } else if (input?.merge) {
+      if (!Array.isArray(input.merge.files) || input.merge.files.length > 200) throw new Error('Kopien ændrede mere end 200 filer. Gennemgå den uden for Aura.');
+      files.push(...await revertFiles(root, input.merge.files));
     } else if (input?.task) {
       // En opgave i denne samtale: filerne før og efter kommer fra Auras øjebliksbilleder.
       if (!Array.isArray(input.task.files) || input.task.files.length > 200) throw new Error('Opgaven kan ikke fortrydes her.');
@@ -133,10 +144,10 @@ class Restoration {
       }
     }
     if (files.length > 200 || files.reduce((n,f) => n + (f.before.data?.length || 0) + (f.target?.data?.length || f.choice?.theirs?.data?.length || 0), 0) > 32 * MAX) throw new Error('Gendannelsen er for stor til appens gennemgang. Brug dit Git-værktøj.');
-    const token = randomUUID(); this.reviews.set(token, { root, repo, files, undo: Boolean(input?.undo), previous: previous?.id });
+    const token = randomUUID(); this.reviews.set(token, { root, repo, files, kind: input?.merge ? 'merge' : 'restore', undo: Boolean(input?.undo), previous: previous?.id });
     const text = value => value?.data?.includes(0) ? null : value?.data?.toString() ?? null;
     const action = (before, target) => target.data === null ? 'Slettes' : before.data === null ? 'Genskabes' : 'Ændres';
-    return { token, undo: Boolean(input?.undo), kind: input?.undo ? 'undo' : input?.task ? 'task' : input?.revert ? 'revert' : 'restore', untracked: repo ? repo.files.filter(f => f.status === '??' && !files.some(item => item.file === f.file)).length : 0, git: Boolean(repo),
+    return { token, undo: Boolean(input?.undo), undoMerge: Boolean(input?.undo && previous?.kind === 'merge'), kind: input?.merge ? 'merge' : input?.undo ? 'undo' : input?.task ? 'task' : input?.revert ? 'revert' : 'restore', untracked: repo ? repo.files.filter(f => f.status === '??' && !files.some(item => item.file === f.file)).length : 0, git: Boolean(repo),
       conflicts: files.filter(f => f.outcome === 'conflict').length,
       files: files.map(f => f.outcome === 'conflict' ? { file: f.file, outcome: 'conflict', action: 'Du vælger', conflict: conflictView(f) }
         : { file: f.file, outcome: f.outcome || 'restore', action: action(f.before, f.target), before: text(f.before), after: text(f.target), binary: Boolean(f.before.data?.includes(0) || f.target.data?.includes(0)) }) };
@@ -158,11 +169,17 @@ class Restoration {
       review.files = review.files.filter(f => !same(f.target, f.before));
       if (!review.files.length) return { files: 0, paths: [], at: new Date().toISOString(), changes: [] };
       const id = randomUUID(), folder = path.join(path.dirname(this.journal(root)), id);
-      const journal = { version: 1, root, id, at: new Date().toISOString(), state: 'prepared', files: [] };
+      const journal = { version: 1, root, id, at: new Date().toISOString(), state: 'prepared', kind: review.kind, files: [] };
       await fs.mkdir(folder, { recursive: true, mode: 0o700 });
       for (const [i, f] of review.files.entries()) {
         if (f.before.data !== null) await atomic(path.join(folder, String(i)), f.before.data);
-        journal.files.push({ file: f.file, hash: f.before.hash, mode: f.before.mode, fileMode: f.before.fileMode, copy: String(i) });
+        const saved = { file: f.file, hash: f.before.hash, mode: f.before.mode, fileMode: f.before.fileMode, copy: String(i) };
+        if (review.kind === 'merge') {
+          const afterCopy = String(i + review.files.length);
+          if (f.target.data !== null) await atomic(path.join(folder, afterCopy), f.target.data);
+          Object.assign(saved, { afterHash: f.target.hash, afterMode: f.target.mode, afterCopy });
+        }
+        journal.files.push(saved);
       }
       await atomic(this.journal(root), JSON.stringify(journal));
       try {
@@ -179,7 +196,7 @@ class Restoration {
         throw new Error('Gendannelsen blev afbrudt. Nogle filer kan være ændret. Vælg Kopien før sidste gendannelse i Versioner for at gennemgå og genskabe dem.');
       }
       const text = value => value.data === null ? null : value.data.includes(0) ? undefined : value.data.toString();
-      return { files: review.files.length, paths: review.files.map(f => f.file), at: journal.at, id, changes: review.files.map(f => ({ file: f.file, before: text(f.before), after: text(f.target) })) };
+      return { files: review.files.length, paths: review.files.map(f => f.file), at: journal.at, id, changes: review.files.map(f => ({ file: f.file, before: text(f.before), after: text(f.target), ...(f.before.data?.includes(0) || f.target.data?.includes(0) ? { binary: true, beforeExists: f.before.data !== null, afterExists: f.target.data !== null, afterHash: f.target.hash } : {}) })) };
     } finally { this.git.busy = false; }
   }
 }

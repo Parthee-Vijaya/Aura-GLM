@@ -68,6 +68,22 @@ test('stop under motoropstart sender aldrig prompten', async t => {
  assert.equal(calls,0); assert.equal(bench.running,false); assert.equal(bench.busyRoot(chat.root),false,'samtalen slipper projektet efter stop');
  await bench.close();
 });
+test('Stop under lagring efter afsendelse afslutter opgaven og genopliver ikke arbejdet', async t => {
+ const events = []; let entered, release;
+ const reached = new Promise(r => entered = r), blocked = new Promise(r => release = r);
+ const bench = new Workbench({ directory: await temp(t), profiles, emit: event => events.push(event), safeStorage: {}, engineFactory: () => ({ active: true, start: async () => {}, send: async () => {}, abort: async () => {}, close: async () => {} }) });
+ await bench.activate({ root: await temp(t), name: 'Prøve' }); const chat = bench.chat;
+ chat.prepared = { mode: 'free', root: chat.root, disclosure: { fingerprint: 'test', consentKey: 'test' }, connection: { kind: 'compatible', name: 'Prøve', baseURL: 'http://127.0.0.1:1/v1' }, model: { id: 'test' }, references: [], context: { rules: '', skills: [], titles: [], features: {} } };
+ const save = bench.store.saveProject.bind(bench.store); bench.store.saveProject = async (root, values) => { if (values.consents) { entered(); await blocked; } return save(root, values); };
+ const pending = bench.send({ text: 'Stop under lagring', fingerprint: 'test' }), rejected = assert.rejects(pending, /stoppet/);
+ await reached; await assert.rejects(bench.send({ text: 'Dobbeltklik', fingerprint: 'test' }), /allerede en opgave/);
+ await bench.stop(); release(); await rejected;
+ assert.equal(bench.running, false); assert.equal(bench.busyRoot(chat.root), false);
+ assert.equal((await bench.history.readChat(chat.project.root, chat.id)).status, 'stopped');
+ assert.equal(events.filter(event => event.type === 'run.status').at(-1).status, 'stopped');
+ assert.equal(events.some(event => event.type === 'run.status' && event.status === 'working'), false);
+ await bench.close();
+});
 test('gateway kræver nøgle, fastholder model og OpenRouter-udbyder uden fallback', async t => {
  const received=[];
  const upstream=http.createServer(async(req,res)=>{let raw='';for await(const chunk of req)raw+=chunk;received.push({headers:req.headers,body:JSON.parse(raw)});res.setHeader('content-type','application/json');res.end('{}');});
@@ -251,7 +267,7 @@ function fakeSend(bench, engines) {
  };
 }
 
-test('samtaler i samme projekt: én arbejder ad gangen, og godkendelser, spørgsmål og hændelser går til den rigtige samtale', async t => {
+test('samtaler i samme projekt: samtidige opgaver i separate mapper, og godkendelser, spørgsmål og hændelser går til den rigtige samtale', async t => {
  const all = [], engines = [], root = await temp(t);
  const bench = new Workbench({ directory: await temp(t), profiles, emit: event => all.push(event), safeStorage: {} });
  const send = fakeSend(bench, engines);
@@ -262,8 +278,10 @@ test('samtaler i samme projekt: én arbejder ad gangen, og godkendelser, spørgs
  await bench.newChat(); const second = bench.chat;
  assert.notEqual(second.id, first.id); assert.equal(first.running, true, 'den første samtale arbejder videre i baggrunden');
  await bench.saveDraft({ chat: second.id, text: 'Næste idé', mode: 'plan' });
- await assert.rejects(send(second, 'Lav en kontaktside'), /»Byg en forside« arbejder allerede/);
- assert.equal(second.running, false); assert.equal(engines.length, 1, 'ingen motor startes for den ventende samtale');
+ await send(second, 'Lav en kontaktside');
+ assert.equal(second.running, true); assert.equal(engines.length, 2);
+ assert.notEqual(second.root, root); assert.ok(second.copy);
+ assert.equal(engines[0].active, true, 'den første motor fortsætter under kopiens opgave');
  await assert.rejects(bench.textEdit({ chat: second.id, id: 'x' }), /Vent/);
  await assert.rejects(bench.deleteChat({ id: first.id }, async () => {}), /Stop opgaven/);
  // Godkendelser og spørgsmål fra den første samtales motor besvares der, også når en anden samtale er åben.
@@ -274,7 +292,7 @@ test('samtaler i samme projekt: én arbejder ad gangen, og godkendelser, spørgs
  const replies = []; engines[0].reply = async (...args) => replies.push(args);
  await bench.reply({ id: 'p1', allow: true });
  assert.deepEqual(replies, [['p1', true, '']]);
- assert.equal(first.activityList().find(entry => entry.id === 'approval-p1').status, 'allowed'); assert.equal(second.activityList().length, 0);
+ assert.equal(first.activityList().find(entry => entry.id === 'approval-p1').status, 'allowed'); assert.equal(second.activityList().some(e => e.id === 'approval-p1'), false);
  first.event({ type: 'question.asked', properties: { id: 'q1', questions: [{ question: 'Farve?', header: 'Farve', options: [] }] } });
  const asked = []; engines[0].request = async (...args) => { asked.push(args); return true; };
  await bench.question({ id: 'q1', answers: [['Blå']] });
@@ -283,12 +301,12 @@ test('samtaler i samme projekt: én arbejder ad gangen, og godkendelser, spørgs
  await new Promise(resolve => setTimeout(resolve, 150));
  const listed = all.findLast(event => event.type === 'chats.updated');
  assert.equal(listed.active, second.id);
- assert.deepEqual(listed.chats.map(chat => [chat.title, chat.running]), [['Næste idé', false], ['Byg en forside', true]]);
+ assert.deepEqual(listed.chats.map(chat => [chat.title, chat.running]), [['Lav en kontaktside', true], ['Byg en forside', true]]);
  // Når den første er færdig, kan den anden arbejde, og den første slettes ikke ved en fejl.
  first.event({ type: 'session.idle' }); await bench.finishing;
  assert.equal(first.running, false); assert.equal(bench.busyRoot(root), false);
- await send(second, 'Lav en kontaktside');
- assert.equal(engines.length, 2); assert.equal(engines[0].active, false, 'den ledige motor i samme mappe lukkes, før en ny starter');
+ assert.equal(second.running, true); assert.equal(engines[0].active, true);
+ assert.equal(bench.busyRoot(second.root), true);
  second.event({ type: 'session.idle' }); await bench.finishing;
  // Omdøb og slet.
  await bench.renameChat({ id: first.id, title: 'Forsiden' });
@@ -347,5 +365,28 @@ test('Ændringer og Aktivitet bevares pr. samtale, når projektet genåbnes, fx 
  bench.chat.data.draft = 'x'; await bench.saveDraft({ text: 'Kladde', mode: 'plan' });
  await bench.newChat(); assert.notEqual(bench.chat.id, first); assert.equal(bench.activityList().length, 0);
  await bench.openChat(first); assert.equal(bench.activityList().length, 2);
+ await bench.close();
+});
+
+test('Stop venter på versionen, når abort samtidig sender idle, og frigiver ikke mappen for tidligt', async t => {
+ const root = await temp(t), events = [];
+ await fs.writeFile(path.join(root, 'a.txt'), 'før\n');
+ const bench = new Workbench({ directory: await temp(t), profiles, emit: event => events.push(event), safeStorage: {} });
+ await bench.activate({ root, name: 'Prøve' }); const chat = bench.chat;
+ chat.running = true; chat.runMode = 'free'; chat.runBefore = await require('../core/changes.cjs').capture(root);
+ bench.checkpointOwner = chat; bench.claims.set(root, chat);
+ chat.engine = { abort: async () => chat.event({ type: 'session.idle' }), close: async () => {} };
+ let release, entered, finishes = 0;
+ const gate = new Promise(resolve => { release = resolve; }), waiting = new Promise(resolve => { entered = resolve; });
+ bench.checkpoints.finish = async () => { finishes++; entered(); await gate; };
+ const stopped = bench.stop(); await waiting; await new Promise(resolve => setImmediate(resolve));
+ try {
+  assert.equal(bench.busyRoot(root), true, 'en anden opgave eller indfletning kan ikke overtage mappen under versionsgemningen');
+  assert.equal(events.some(event => event.type === 'run.status' && event.status === 'stopped'), false);
+ } finally { release(); await stopped; }
+ assert.equal(finishes, 1, 'abort og idle må ikke afslutte versionen hver for sig');
+ assert.equal(bench.busyRoot(root), false);
+ assert.equal(events.filter(event => event.type === 'run.review').length, 1);
+ assert.equal(events.filter(event => event.type === 'run.status' && event.status === 'stopped').length, 1);
  await bench.close();
 });

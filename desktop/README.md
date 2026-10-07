@@ -87,9 +87,15 @@ Fejl i modelkataloget før afsendelse vises i arbejdsområdet med **Gennemgå AI
 
 Sidepanelet viser de seneste projekter med deres samtaler, nyeste først. Det åbne projekt er foldet ud; et klik på en samtale åbner den, og **+** ved projektet eller **Ny samtale** øverst starter en ny. En tom samtale genbruges, så der ikke opstår mange tomme. En samtale får navn efter første besked og kan omdøbes eller slettes under **•••**. Sletning flytter samtalefilen til papirkurven; projektfilerne og versionerne ændres ikke.
 
-En samtale kan arbejde, mens en anden er åben. Sidepanelet viser **arbejder**, **venter på dig** og **nyt resultat** under samtalens navn, og godkendelser og spørgsmål står i den samtale, der stillede dem. Kun én samtale ad gangen kan arbejde i projektmappen: De andre kan skrives i, men **Send** venter, og over skrivefeltet står, hvilken samtale der arbejder. Mens en samtale arbejder, kan et andet projekt ikke åbnes.
+Flere samtaler kan arbejde samtidigt i samme projekt. Sidepanelet viser **arbejder**, **venter på dig**, **nyt resultat** og **klar til at flette** under samtalens navn. Godkendelser, spørgsmål, Stop og forbrug gælder hver sin samtale. Mens en opgave arbejder, kan et andet projekt ikke åbnes.
 
-Hver samtale fortsætter sin egen AI-session i OpenCode, også efter genstart, så længe forbindelse, model og regler er de samme som sidst. Ellers starter en ny session, og det står under Aktivitet.
+Den første opgave bruger projektmappen. Sender en anden samtale, mens mappen er optaget, får den en lokal kopi med projektets aktuelle, også ugemte, filer. **Samtalens kopi** står over forhåndsvisningen, og samtalen viser **Flet ind i projektet**. Indfletning venter kun på projektet og kildekopien; andre kopier kan fortsætte. Kode, ændringer, aktivitet og forhåndsvisning følger samtalens arbejdsmappe. Formularer og rulning i preview bevares ved samtaleskift. Vite og Astro har hver sin server; en kopis server startes efter den eksisterende gennemgang og genstarter ikke automatisk efter lukning.
+
+**Flet ind i projektet** gennemgår kopiens ændringer i forhold til filerne ved kopiens oprettelse og projektets filer nu. Projektets øvrige rettelser bevares. Ved konflikt viser Aura begge linjer, og **Behold dine linjer** er anbefalet. Filerne kontrolleres igen før indfletning. Med aktive automatiske versioner gemmes berørte ugemte projektfiler først, og indfletningen gemmes som en ny version. Når projektets preview kører, får versionen billeder før og efter af det faktisk flettede projekt, i samme visning. **Fortryd indfletningen** står på resultatkortet og bruger Auras journal, også uden Git og med versionsfunktionen slået fra. Den fjerner indfletningens ændringer og bevarer dine senere rettelser; ved samme linjer vælger du igen. Den seneste indfletning kan desuden fortrydes fra **Ændringer › Versioner**. En senere gendannelse afløser journalen; kortet afviser i så fald at fortryde en anden handling.
+
+En uflettet kopi bevares over genstart og kan bruges til flere opgaver. Den fjernes efter indfletning eller bekræftet sletning af samtalen; sletningen advarer om tab af uflettede ændringer. Kopierne ligger under appens lokale data og er ikke en online sikkerhedskopi. På macOS bruges filkloner, hvor filsystemet understøtter det; andre platforme bruger almindelig kopiering uden `node_modules`. Git-metadata, kendte nøglefiler, genererede mapper og projektets symbolske links udelades. Interne pakkelinks på macOS peger på kopiens egne pakker. Valgte private referencer følger stadig datagennemgangen og motorens læsebeskyttelse.
+
+Hver samtale fortsætter sin egen AI-session i OpenCode, også efter genstart, så længe arbejdsmappe, forbindelse, model og regler er de samme som sidst. Ved skift til en kopi eller tilbage til projektet starter en ny session med det nye arbejdsområde. Plan og afklaring følger med; tidligere beskeder medsendes efter dit valg. En ny session står under Aktivitet.
 
 **Kommandopalet:** ⌘K (Ctrl+K på Windows og Linux) åbner en valgfri palet, hvor man kan søge efter en handling, en samtale eller et projekt. Den har ingen knap og nævnes under **Hjælp og feedback**. Paletten trykker på appens egne knapper, så en funktion, der er slået fra, eller en handling, der er låst, mens AI'en arbejder, heller ikke kan vælges dér. Piletasterne vælger, Enter udfører, og Escape lukker og giver fokus tilbage. Genvejen virker også med fokus i forhåndsvisningen.
 
@@ -178,7 +184,9 @@ Et bekræftet push betyder, at versionen blev set på serveren ved kontrollen. S
 - `core/git.cjs`, `core/checkpoints.cjs`: lokal Git-gennemgang, Git fra start i nye projekter, Gem version med ét klik, aktivt filvalg og automatiske versioner efter AI-opgaver.
 - `core/projects.cjs`: lokale mapper og kompatibilitet med `harness.json`, version 1.
 - `core/designs.cjs`: genbrug af designmateriale uden modelkald. Kopier i appdata er almindelige lokale filer, ikke krypteret dokumentlagring.
-- `core/workbench.cjs`: forbindelsesvalg, datagennemgang og sessioner; agentmotoren kan udskiftes via `engineFactory`.
+- `core/workbench.cjs`, `core/chat-session.cjs`, `core/workspace-history.cjs`: projektets valg og brief, særskilt opgavetilstand og motor pr. samtale, samtalefiler og reservation af arbejdsmapper; agentmotoren kan udskiftes via `engineFactory`.
+- `core/copies.cjs`: lokale samtalekopier, sammenligningsgrundlag, genåbning og oprydning. Indfletning bruger den eksisterende `core/restoration.cjs` og `core/merge.cjs`; der oprettes ingen Git-worktrees eller grene.
+- `ui/chats.js`, `ui/palette.js`: sidepanelets projekter og samtaler samt søgning efter eksisterende handlinger.
 - `core/connections.cjs`: normalisering, modelkatalog, egenskaber, leverandørrouting, dataoplysninger og motorkonfiguration. Anthropic Messages samt OpenAI-kompatible Chat Completions er implementeret. Responses-only modeller og modeller uden brugbare værktøjskald er ikke generelt understøttet; katalogsynlighed er ikke kompatibilitetsbevis.
 - `core/engine.cjs`: versionskontrol, adgangskodebeskyttet loopback-server, sessionsstream, stop og godkendelser. Motoren får isolerede konfigurations-/datamapper; brugerens OpenCode-opsætning overskrives ikke. Effektive tilladelser kontrolleres før start. Automatisk deling, snapshots, plugins, MCP og eksterne skills er slået fra.
 - `core/gateway.cjs`: autentificeret loopback-forbindelse mellem motor og valgt model. Den rigtige udbydernøgle bliver i hovedprocessen; motoren får en midlertidig nøgle. Ingen reserveudbyder eller automatisk ændring til en anden model.
@@ -204,6 +212,8 @@ Previewets renderer har ikke Node-/IPC-adgang. Statisk preview serverer kun almi
 Ret i siden indsætter kun et valgscript i forhåndsvisningens ramme, mens brugeren selv har slået tilstanden til. Scriptet kører i sidens egen verden fra hovedprocessen; sandbox, indholdspolitik og netværksregler er de samme, og siden får ingen adgang til Aura. Det, siden sender tilbage, er upålidelige data: felterne begrænses, kontroltegn fjernes, og et element med en mulig nøgle vises og sendes ikke. Sidens eget script kan stadig se markeringen og kalde valgscriptet, mens tilstanden er slået til. Tekstsøgningen finder den viste tekst i kildefilerne og tåler linjeskift og almindelige HTML-tegnkoder, men ikke tekst, der sættes sammen i koden, kommer fra data eller ændres af CSS. Aura retter aldrig i kommentarer, scripts, genererede mapper eller beskyttede filer. Fortryd uden version virker for tekstfiler, så længe appen er åben, og kun når filerne stadig er, som ændringen efterlod dem. Fortryd for en tekstrettelse står på kortet, indtil man vælger et nyt element; derefter er Versioner vejen tilbage.
 
 Fletningen ved Fortryd sammenligner linjer. Ændringer på linjer lige op ad hinanden flettes; ændringer af de samme linjer er en konflikt. Billedfiler og andre binære filer flettes ikke; ændrede du dem efter opgaven, vælger du hele filen. Efter en gendannelse stoppes en Vite- eller Astro-server, og der tages intet billede efter, før den er startet igen.
+
+Indfletning fra en samtalekopi har samme filbeskyttelse som gendannelse: højst 200 ændrede filer, 2 MB pr. fil og gennemgangens samlede størrelsesgrænse. Ændrede private referencer, symbolske links, mulige nøgler, Git LFS og ændrede eksekveringsrettigheder kræver manuel gennemgang; kopien bevares. Grundlaget omfatter højst 2.000 filer og 64 MB. Ændringer, der ikke kan gennemgås, må ikke forsvinde ved en ellers vellykket indfletning. Kopien er et separat arbejdsområde, ikke en OS-sandbox for godkendte kommandoer.
 
 Statisk preview genindlæser ved filændringer; Vite og Astro bruger deres egen HMR. Filgrænsen for statiske filer er 10 MB. Ændringsoversigten udelader afhængigheder, kendte hemmelighedsfiler, referencer, binære/store filer og overstiger ikke 1.000 tekstfiler/10 MB samlet. Filnavne alene identificerer ikke alle hemmeligheder.
 
@@ -232,7 +242,7 @@ Pakkerne har Node/npm med. Ved kørsel fra kildekoden bruges en eksisterende Nod
 Kør fra `desktop/`:
 
 ```bash
-npm test
+node --test --test-concurrency=1 tests/*.test.cjs
 npm run test:desktop
 npm run test:setup
 npm run test:agent
@@ -245,9 +255,16 @@ npm run test:planning
 npm run test:approvals
 npm run test:preview-edit
 npm run test:history
+npm run test:chats
+npm run test:concurrent
+AURA_COPY_FRAMEWORK=astro npm run test:concurrent
 ```
 
 `npm run test:preview-edit` henter de samme fastlåste React-, Vite- og Astro-pakker som `test:frameworks`. `AURA_SKIP_FRAMEWORKS=1` springer den del over.
+
+`test:concurrent` bruger flere rigtige OpenCode-motorer, en kontrolleret lokal modelserver og midlertidige projektfiler. Den afprøver samtidige godkendelser, særskilt kode og preview, formularer ved samtaleskift, indfletning uden og med konflikt, Fortryd uden Git, Stop, genstart, oprydning og to rigtige frameworkservere. Standardprøven bruger Vite 8.3.1; `AURA_COPY_FRAMEWORK=astro` bruger Astro 7.3.5. Begge gennemgår også indfletning fra en kopi, hvor frameworket har kørt, og at kopiens server stoppes uden at stoppe projektets. Automatiske versioner og før/efter-billeder kontrolleres alene i testprojektet. Tastaturfokus kontrolleres med styret ventetid efter den faktiske filindlæsning. Kør Electron-prøver og enhedsprøver hver for sig. ZIP-prøvens bytekontrol kræver samme Node/zlib som ved pakkegenereringen; brug den fastlåste Node fra `desktop/.runtime/<platform>/node/`, hvis systemets version komprimerer anderledes.
+
+Astro-varianten flytter også kopiens manifest til side mellem to opstarter og kontrollerer, at appen viser problemet og bevarer filerne. Billedprøven venter på faktiske IPC-svar i en løkke; den fastlåste Playwright gentager ikke en asynkron `waitForFunction`-betingelse, som returnerer `false`.
 
 Git-, publicerings- og chattestene opretter rigtige commits med syntetiske filer og testidentitet i nye, isolerede midlertidige repositories. Publiceringstestene pusher kun mellem nye lokale testrepositories. GitHub-API’et simuleres i testen; ingen eksterne repositories oprettes. De committer eller pusher ikke dette projekt. Electron-testen bevarer den normale hjemmemappe, så macOS safeStorage kan bruge den eksisterende nøglering; testidentiteten sættes kun lokalt i testrepositoryet. Nøgleringen skal aldrig nulstilles som led i testen.
 

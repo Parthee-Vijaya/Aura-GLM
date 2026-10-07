@@ -23,7 +23,7 @@ function titleFrom(messages) {
 }
 // Oversigten i projektfilen, så sidepanelet kan vise samtalerne uden at læse dem alle.
 // En samtale uden beskeder hedder det, brugeren er begyndt at skrive.
-const summary = chat => ({ id: chat.id, title: chat.title || titleFrom(chat.messages) || titleFrom([{ role: 'user', text: chat.draft || '' }]), renamed: Boolean(chat.renamed), createdAt: chat.createdAt, updatedAt: chat.updatedAt, status: chat.status, count: chat.messages.length, draft: Boolean(chat.draft) });
+const summary = chat => ({ id: chat.id, title: chat.title || titleFrom(chat.messages) || titleFrom([{ role: 'user', text: chat.draft || '' }]), renamed: Boolean(chat.renamed), createdAt: chat.createdAt, updatedAt: chat.updatedAt, status: chat.status, count: chat.messages.length, draft: Boolean(chat.draft), copy: chat.copy || null });
 function validChat(data) {
   return data && data.version === 1 && idPattern.test(data.id) && Array.isArray(data.messages) && Array.isArray(data.planConversation) && typeof data.draft === 'string';
 }

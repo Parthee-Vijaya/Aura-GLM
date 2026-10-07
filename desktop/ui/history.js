@@ -151,12 +151,15 @@
     $('#restore-title').textContent = options.title || 'Gå tilbage til en tidligere version'; $('#restore-confirm').textContent = options.confirm || 'Gå tilbage til denne version';
     const choice = document.querySelector('input[name="restore-choice"][value="ours"]'); if (choice) choice.checked = true;
     $('#restore-dialog').showModal();
-    review = await call('restoreReview', { ...input, view: window.previewViewSize?.() || null });
-    if (review.undo) { $('#restore-title').textContent = 'Fortryd sidste gendannelse'; $('#restore-confirm').textContent = 'Fortryd gendannelsen'; label = 'Fortrudt gendannelse'; }
+    review = await call(input.merge ? 'chatMergeReview' : 'restoreReview', { ...input, view: window.previewViewSize?.() || null });
+    review.mergeChat = input.merge ? input.chat : null;
+    document.querySelector('input[name="restore-choice"][value="theirs"]').parentElement.lastChild.textContent = input.merge ? ' Brug linjerne fra kopien' : ' Brug linjerne fra før';
+    if (review.undo) { $('#restore-title').textContent = options.title || (review.undoMerge ? 'Fortryd sidste indfletning' : 'Fortryd sidste gendannelse'); $('#restore-confirm').textContent = options.confirm || (review.undoMerge ? 'Fortryd indfletningen' : 'Fortryd gendannelsen'); label = review.undoMerge ? 'Fortrudt indfletning' : 'Fortrudt gendannelse'; }
     const files = review.files, kept = files.filter(f => f.outcome === 'kept').length, conflicts = files.filter(f => f.outcome === 'conflict');
     const changing = files.length - conflicts.length;
     $('#restore-summary').textContent = !files.length ? 'Filerne svarer allerede til det, du vil tilbage til.'
       : `${changing ? `${count(changing, 'fil sættes', 'filer sættes')} tilbage.` : ''}${kept ? ` Dine senere rettelser i ${count(kept, 'fil', 'filer')} bevares.` : ''}${conflicts.length ? ` I ${count(conflicts.length, 'fil', 'filer')} har I begge rettet de samme linjer; du vælger nedenfor.` : ''}`.trim();
+    if (review.kind === 'merge') $('#restore-summary').textContent = files.length ? `${count(files.length, 'fil', 'filer')} fra kopien gennemgås. ${kept ? 'Projektets øvrige rettelser bevares. ' : ''}${conflicts.length ? `${count(conflicts.length, 'fil har', 'filer har')} konflikter; dine linjer er anbefalet.` : 'Ændringerne kan flettes ind.'}` : 'Kopien har ingen ændringer at flette ind. Du kan afslutte kopien og fortsætte i projektet.';
     // Billederne: forhåndsvisningen nu og det, den går tilbage til, hvis Aura har et billede af det.
     const imgs = review.images || {};
     if (imgs.now || imgs.target) {
@@ -168,21 +171,23 @@
       $('#restore-compare').classList.toggle('single', !imgs.now || !imgs.target); $('#restore-compare').hidden = false;
     }
     // Et billede uden sit modstykke siges højt, så det ene billede ikke ligner en sammenligning.
-    $('#restore-images-note').textContent = imgs.now && !imgs.target ? `Aura har intet billede af, hvordan det så ud ${review.kind === 'restore' ? 'i versionen' : 'før'}.` : '';
-    $('#restore-images-note').hidden = !(imgs.now && !imgs.target);
-    for (const file of files) { const item = node('li'); item.append(node('code', file.file), ` · ${outcomeText(file)}`); $('#restore-outcomes').append(item); }
+    const imageNote = imgs.now && !imgs.target ? (review.kind === 'merge' ? 'Aura har intet billede af samtalens kopi.' : `Aura har intet billede af, hvordan det så ud ${review.kind === 'restore' ? 'i versionen' : 'før'}.`)
+      : imgs.target && !imgs.now ? `Aura har intet billede af ${review.kind === 'merge' ? 'projektets' : 'den aktuelle'} forhåndsvisning nu.` : '';
+    $('#restore-images-note').textContent = imageNote;
+    $('#restore-images-note').hidden = !imageNote;
+    for (const file of files) { const item = node('li'); item.append(node('code', file.file), ` · ${review.kind === 'merge' ? (file.outcome === 'conflict' ? 'Du vælger linjerne' : file.outcome === 'kept' ? 'Flettes ind; projektets øvrige linjer bevares' : file.action) : outcomeText(file)}`); $('#restore-outcomes').append(item); }
     if (conflicts.length) {
       $('#restore-conflicts').hidden = false;
       for (const file of conflicts) {
         const box = node('section', undefined, 'conflict-file'); box.append(node('h4', file.file));
-        if (file.conflict.whole) box.append(node('p', 'Hele filen er ændret af jer begge, eller den er slettet eller binær.', 'hint'), node('h5', 'Din version'), node('pre', file.conflict.ours ?? '(filen findes ikke)'), node('h5', 'Før'), node('pre', file.conflict.theirs ?? '(filen fandtes ikke)'));
-        else for (const part of file.conflict.parts) box.append(node('h5', `Omkring linje ${part.line} · dine linjer`), node('pre', part.ours || '(ingen linjer)'), node('h5', 'Før'), node('pre', part.theirs || '(ingen linjer)'));
+        if (file.conflict.whole) box.append(node('p', 'Hele filen er ændret af jer begge, eller den er slettet eller binær.', 'hint'), node('h5', 'Din version'), node('pre', file.conflict.ours ?? '(filen findes ikke)'), node('h5', review.kind === 'merge' ? 'Samtalens kopi' : 'Før'), node('pre', file.conflict.theirs ?? '(filen fandtes ikke)'));
+        else for (const part of file.conflict.parts) box.append(node('h5', `Omkring linje ${part.line} · dine linjer`), node('pre', part.ours || '(ingen linjer)'), node('h5', review.kind === 'merge' ? 'Samtalens kopi' : 'Før'), node('pre', part.theirs || '(ingen linjer)'));
         $('#restore-conflict-lines').append(box);
       }
     }
     if (review.unsaved?.length) {
       const names = review.unsaved.slice(0, 3).join(', ') + (review.unsaved.length > 3 ? ` og ${review.unsaved.length - 3} flere` : '');
-      $('#restore-unsaved').textContent = review.saveFirst ? `Dine ugemte ændringer i ${names} gemmes først som versionen »Dine ændringer før ${review.kind === 'restore' ? 'gendannelsen' : 'fortrydelsen'}«, så du kan hente dem igen.` : `Dine ugemte ændringer i ${names} gemmes i en kopi, så du kan fortryde under Versioner.`;
+      $('#restore-unsaved').textContent = review.saveFirst ? `Dine ugemte ændringer i ${names} gemmes først som versionen »Dine ændringer før ${review.kind === 'merge' ? 'indfletningen' : review.kind === 'restore' ? 'gendannelsen' : 'fortrydelsen'}«, så du kan hente dem igen.` : `Dine ugemte ændringer i ${names} gemmes i en kopi, så du kan fortryde under Versioner.`;
       $('#restore-unsaved').hidden = false;
     }
     // Hvad der ellers berøres, i almindeligt dansk. Filernes indhold står nederst.
@@ -190,27 +195,42 @@
       'Aura gemmer først en kopi af filerne, som de er nu.',
       review.untracked ? `${count(review.untracked, 'fil', 'filer')} uden for versionerne bevares.` : '',
       'Nøgler, .env-filer, private referencer og installerede pakker røres ikke.',
-      'Samtalen og briefen bevares. Planen skal laves igen, fordi den beskriver en anden version.',
-      review.framework ? 'Forhåndsvisningens server stoppes. Start den igen bagefter.' : 'Forhåndsvisningen genindlæses.',
-      review.saveAfter ? 'Resultatet gemmes som en ny version. Historikken bevares, og du kan gå frem igen.' : review.git ? 'Resultatet gemmes ikke som en version. Du kan fortryde det med Fortryd sidste gendannelse.' : 'Projektet har ikke versioner. Du kan fortryde med Fortryd sidste gendannelse under Ændringer › Versioner.'
+      review.kind === 'merge' ? 'Samtalen, briefen og projektets historik bevares. Kopien slettes efter indfletning; nye opgaver arbejder i projektet.' : 'Samtalen og briefen bevares. Planen skal laves igen, fordi den beskriver en anden version.',
+      review.kind === 'merge' ? 'Kopiens forhåndsvisning afsluttes. En kørende forhåndsvisning af projektet bevares.' : review.framework ? 'Forhåndsvisningens server stoppes. Start den igen bagefter.' : 'Forhåndsvisningen genindlæses.',
+      review.saveAfter ? 'Resultatet gemmes som en ny version. Historikken bevares, og du kan gå frem igen.' : review.kind === 'merge' ? 'Resultatet gemmes ikke som en version. Du kan fortryde indfletningen på resultatkortet.' : review.git ? 'Resultatet gemmes ikke som en version. Du kan fortryde det med Fortryd sidste gendannelse.' : 'Projektet har ikke versioner. Du kan fortryde med Fortryd sidste gendannelse under Ændringer › Versioner.'
     ].filter(Boolean);
     $('#restore-data').replaceChildren(...data.map(text => node('li', text)));
     for (const file of files.filter(f => f.outcome !== 'conflict')) {
       const row = node('details'); row.append(node('summary', `${file.action}: ${file.file}`));
-      if (file.binary) row.append(node('p', 'Binær fil. Kontrollér billedet eller skrifttypen efter gendannelse.'));
+      if (file.binary) row.append(node('p', `Binær fil. Kontrollér billedet eller skrifttypen efter ${review.kind === 'merge' ? 'indfletning' : 'gendannelse'}.`));
       else row.append(node('h4', 'Nu'), node('pre', file.before ?? '(findes ikke)'), node('h4', 'Efter'), node('pre', file.after ?? '(slettes)'));
       $('#restore-files').append(row);
     }
-    $('#restore-confirm').disabled = !files.length;
+    $('#restore-confirm').disabled = !files.length && review.kind !== 'merge';
+    if (!files.length && review.kind === 'merge') $('#restore-confirm').textContent = 'Afslut kopien';
   }
   $('#restore-undo').onclick = () => action(() => reviewRestoration({ undo: true }));
   $('#restore-confirm').onclick = () => action(async () => {
     if (!review) return;
     const ours = document.querySelector('input[name="restore-choice"]:checked')?.value !== 'theirs';
     const choices = Object.fromEntries(review.files.filter(f => f.outcome === 'conflict').map(f => [f.file, ours ? 'ours' : 'theirs']));
-    const token = review.token, git = review.git; review = null; $('#restore-confirm').disabled = true;
-    const result = await call('restoreVersion', { token, label, choices });
-    await displayProject(result.project);
+    const token = review.token, git = review.git, mergeChat = review.mergeChat; review = null; $('#restore-confirm').disabled = true;
+    const result = await call(mergeChat ? 'chatMerge' : 'restoreVersion', { token, label, choices, ...(mergeChat ? { chat: mergeChat } : {}) });
+    if (result.project) await displayProject(result.project);
+    else if (result.state) { await showChat(result.state); await refreshRecent(); }
+    if (mergeChat) {
+      $('#restore-dialog').close();
+      const box = viewFor(mergeChat).review; box.replaceChildren(node('h3', result.restored.files ? 'Kopiens ændringer er flettet ind' : 'Kopien er afsluttet'));
+      box.append(node('p', result.restored.files ? `${count(result.restored.files, 'fil er', 'filer er')} ændret i projektet.${result.saved ? ' Gemt som en ny version.' : ''} Prøv resultatet i forhåndsvisningen.` : 'Projektfilerne er uændrede. Nye opgaver arbejder i projektet.'));
+      if (result.restored.files) {
+        const buttons = node('div', undefined, 'row'), changes = node('button', 'Se ændringerne'), undo = node('button', 'Fortryd indfletningen');
+        changes.type = undo.type = 'button'; changes.onclick = () => action(() => window.workspace.showChange(result.task));
+        undo.onclick = () => action(() => reviewRestoration({ undo: true, expected: result.restored.id }, { title: 'Fortryd indfletningen?', confirm: 'Fortryd indfletningen' }));
+        buttons.append(changes, undo); box.append(buttons);
+      }
+      if (result.error) box.append(node('p', result.error)); box.hidden = false;
+      message(result.error || 'Kopien er afsluttet. Du arbejder nu i projektet.'); return;
+    }
     $('#restore-dialog').close();
     const changed = result.restored?.files || 0, files = `${count(changed, 'fil er', 'filer er')} sat tilbage`;
     const first = result.savedFirst ? ' Dine ugemte ændringer blev gemt som en version først.' : '';

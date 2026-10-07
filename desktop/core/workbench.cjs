@@ -11,6 +11,8 @@ const { Checkpoints } = require('./checkpoints.cjs');
 const brief = require('./brief.cjs');
 const { ChatSession, planningReply } = require('./chat-session.cjs');
 const { Activity } = require('./activity.cjs');
+const { Copies } = require('./copies.cjs');
+const { capture } = require('./changes.cjs');
 
 // Det, der hører til hele projektet: forbindelser, funktioner, skills, briefen, versioner og forhåndsvisningens valg,
 // og projektets samtaler. Hver samtale er en ChatSession med sin egen motor og opgave. Kun én samtale ad gangen kan
@@ -28,11 +30,11 @@ class Workbench {
     this.engineFactory = engineFactory; this.profiles = profiles; this.emit = emit; this.catalogs = new Map();
     this.chats = new Map(); this.chatID = null; this.claims = new Map(); this.project = null; this.previewSelections = new Map();
     // Samtalernes Ændringer og Aktivitet, så længe appen er åben, også når projektet lukkes og åbnes igen.
-    this.memory = new Map(); this.lastChatID = null;
+    this.memory = new Map(); this.lastChatID = null; this.copies = new Copies(this.store); this.allocation = Promise.resolve();
   }
   // Den åbne samtale. Handlinger uden en bestemt samtale gælder den.
   get chat() { return this.chats.get(this.chatID) || null; }
-  get running() { return [...this.chats.values()].some(chat => chat.running); }
+  get running() { return [...this.chats.values()].some(chat => chat.running || chat.sending); }
   get finishing() { return [...this.chats.values()].find(chat => chat.finishing)?.finishing || null; }
   get workspace() { return this.chat?.data || null; }
   // Motorer og forbindelser i brug, så forhåndsvisningen aldrig peger på dem.
@@ -53,13 +55,32 @@ class Workbench {
   }
 
   // ---------- Hvem arbejder i hvilken mappe ----------
+  // Reservationen omfatter også opstarten, så to samtidige Send aldrig vælger projektmappen begge to.
+  allocate(chat) {
+    const operation = this.allocation.then(async () => {
+      const holder = this.claims.get(chat.root);
+      if (holder && holder !== chat) {
+        const copy = await this.copies.create(this.project.root, chat.id);
+        await chat.close(false);
+        try { chat.data = await this.history.updateChat(this.project.root, chat.id, data => { data.copy = { id: copy.id }; data.opencode = null; }); }
+        catch (error) { await this.copies.remove(copy); throw error; }
+        chat.copy = copy; chat.root = copy.root; chat.prepared.root = copy.root;
+        chat.changes.baseline = null; chat.changes.current = null; chat.changes.basis = null;
+        await this.workspaceHook?.(chat);
+        chat.emit({ type: 'chat.workspace', root: this.project.root, workspaceRoot: copy.root, isolated: true });
+        chat.log({ kind: 'copy', title: 'Opgaven får sin egen kopi', detail: 'Projektfilerne ændres først, når du vælger Flet ind i projektet.', status: 'completed' });
+      }
+      this.claims.set(chat.root, chat);
+    });
+    this.allocation = operation.catch(() => {}); return operation;
+  }
   claimable(chat) {
     const other = this.claims.get(chat.root);
-    if (other && other !== chat && (other.running || other.finishing)) throw new Error(`Samtalen »${other.title || 'Ny samtale'}« arbejder allerede i projektet. Vent, til den er færdig, eller stop den.`);
+    if (other && other !== chat && (other.running || other.starting || other.finishing)) throw new Error(`Samtalen »${other.title || 'Ny samtale'}« arbejder allerede i projektet. Vent, til den er færdig, eller stop den.`);
   }
   claim(chat) { this.claimable(chat); this.claims.set(chat.root, chat); }
   release(chat) { if (this.claims.get(chat.root) === chat) this.claims.delete(chat.root); }
-  busyRoot(root) { const chat = this.claims.get(root); return Boolean(chat && (chat.running || chat.finishing)); }
+  busyRoot(root) { return [...this.chats.values()].some(chat => chat.root === root && (chat.sending || chat.running || chat.starting || chat.finishing)); }
   // Motorer for samme mappe deler arbejdsmappe; en anden samtales ledige motor lukkes, før en ny starter.
   async closeOthers(chat) { for (const other of this.chats.values()) if (other !== chat && other.root === chat.root && !other.running && other.engine) await other.close(false); }
   // Sidepanelet opdateres samlet, højst én gang pr. 100 ms.
@@ -71,7 +92,7 @@ class Workbench {
   // ---------- Projekt og samtaler ----------
   async state() {
     const state = await this.store.read(), chat = this.chat;
-    return { connections: state.connections.map(c => this.store.publicConnection(c)), definitions: connections.definitions, engineVersion: VERSION, projectSettings: this.project ? await this.store.project(this.project.root) : {}, running: this.running, workspace: chat?.data || null, historyWarning: this.historyWarning || chat?.historyWarning || '', usage: chat ? chat.currentUsage() : null, features: await this.features.get(this.project?.root), brief: this.project ? this.brief : null, plan: chat?.plan || null, lastPlan: chat?.lastPlan || null, chat: chat?.id || null, chatRunning: Boolean(chat?.running), chats: this.project ? await this.chatList() : [] };
+    return { connections: state.connections.map(c => this.store.publicConnection(c)), definitions: connections.definitions, engineVersion: VERSION, projectSettings: this.project ? await this.store.project(this.project.root) : {}, running: this.running, workspace: chat?.data || null, historyWarning: this.historyWarning || chat?.historyWarning || '', usage: chat ? chat.currentUsage() : null, features: await this.features.get(this.project?.root), brief: this.project ? this.brief : null, plan: chat?.plan || null, lastPlan: chat?.lastPlan || null, chat: chat?.id || null, chatRunning: Boolean(chat?.running), workspaceRoot: chat?.root || this.project?.root, isolated: Boolean(chat?.copy), copy: chat?.copy ? { id: chat.copy.id, omissions: chat.copy.omissions } : null, chats: this.project ? await this.chatList() : [] };
   }
   async activate(project) {
     await this.close();
@@ -93,11 +114,14 @@ class Workbench {
     let chat = this.chats.get(id);
     if (!chat) {
       const data = await this.history.openChat(this.project.root, id);
-      chat = new ChatSession(this, data, this.project.root);
+      const copy = data.copy?.id ? await this.copies.load(data.copy.id, this.project.root) : null;
+      if (data.copy && !copy) { data.copy = null; await this.history.updateChat(this.project.root, id, item => { item.copy = null; }); }
+      chat = new ChatSession(this, data, copy?.root || this.project.root); chat.copy = copy;
+      if (copy) chat.log({ kind: 'copy', title: 'Samtalens kopi er hentet', detail: 'Den er endnu ikke flettet ind i projektet.', status: 'completed' });
       this.chats.set(id, chat);
     } else await this.history.updateProject(this.project.root, project => { project.active = id; });
     this.chatID = id;
-    if (this.restorationID) await chat.invalidatePlan(this.restorationID);
+    if (this.restorationID && !chat.copy) await chat.invalidatePlan(this.restorationID);
     this.chatsChanged();
     return this.state();
   }
@@ -117,10 +141,13 @@ class Workbench {
   async deleteChat(input, remove) {
     if (!this.project) throw new Error('Åbn et projekt først.');
     const chat = this.chats.get(input?.id);
-    if (chat?.running || chat?.finishing) throw new Error('Stop opgaven i samtalen, før du sletter den.');
-    if (chat) { await chat.close(); this.chats.delete(chat.id); }
-    this.memory.delete(input?.id);
+    if (chat?.running || chat?.sending || chat?.finishing) throw new Error('Stop opgaven i samtalen, før du sletter den.');
+    const data = await this.history.readChat(this.project.root, input.id);
+    const copy = chat?.copy || (data.copy?.id ? await this.copies.load(data.copy.id, this.project.root) : null);
     const project = await this.history.removeChat(this.project.root, input?.id, remove);
+    if (chat) { await chat.close(); this.chats.delete(chat.id); }
+    if (copy) { await this.releaseWorkspace?.(copy.root); await this.copies.remove(copy); }
+    this.memory.delete(input?.id);
     if (this.chatID === input?.id) { this.chatID = null; return project.active ? this.openChat(project.active) : this.newChat(); }
     this.chatsChanged();
     return this.state();
@@ -128,7 +155,7 @@ class Workbench {
   // Projektets samtaler med deres status lige nu: arbejder, venter på dig, afbrudt eller klar.
   async chatList(root = this.project?.root) {
     const list = await this.history.chats(root);
-    return list.map(item => { const live = root === this.project?.root ? this.chats.get(item.id) : null; return { ...item, title: live?.data.title || item.title, running: Boolean(live?.running), waiting: Boolean(live?.running && live?.waiting) }; });
+    return list.map(item => { const live = root === this.project?.root ? this.chats.get(item.id) : null; return { ...item, title: live?.data.title || item.title, running: Boolean(live?.running), waiting: Boolean(live?.running && live?.waiting), isolated: Boolean(live?.copy || item.copy), mergeReady: Boolean((live?.copy || item.copy) && !live?.running) }; });
   }
   async newConversation() { return this.newChat(); }
 
@@ -138,7 +165,7 @@ class Workbench {
   activityList(id) { return this.chats.get(id || this.chatID)?.activityList() || []; }
   session(id) { return this.chats.get(id || this.chatID)?.session() || null; }
   // Efter en gendannelse beskriver planerne en anden version. Den åbne samtale nulstilles nu, de andre, når de åbnes.
-  async invalidatePlan(restorationID) { this.restorationID = restorationID; await this.chat?.invalidatePlan(restorationID); }
+  async invalidatePlan(restorationID) { this.restorationID = restorationID; if (!this.chat?.copy) await this.chat?.invalidatePlan(restorationID); }
   // Briefen: brugerens egne ord. Ændringer gælder fra næste besked og starter ikke en ny modelsession.
   async saveBrief(input) {
     if (!this.project) throw new Error('Åbn et projekt først.');
@@ -160,6 +187,7 @@ class Workbench {
   }
   // Et valgt element huskes, så beskeden til AI'en og tekstrettelsen bruger Auras eget valg og ikke data fra skærmen.
   rememberSelection(selection) {
+    selection = { ...selection, workspaceRoot: this.chat?.root };
     this.previewSelections.set(selection.id, selection);
     for (const key of this.previewSelections.keys()) if (this.previewSelections.size > 20) this.previewSelections.delete(key);
     return selection;
@@ -219,6 +247,54 @@ class Workbench {
   recordEdit(input) { return this.chatFor().recordEdit(input); }
   ensureBaseline() { return this.chatFor().ensureBaseline(); }
   findTask(id) { for (const changes of this.memory.values()) { const task = changes.tasks.find(item => item.id === id); if (task) return task; } return null; }
+  async mergeReview(input) {
+    const chat = this.chatFor(input?.chat);
+    if (!chat.copy) throw new Error('Samtalen arbejder i projektet og har ingen kopi at flette.');
+    if (this.busyRoot(this.project.root) || this.busyRoot(chat.root)) throw new Error('Vent på opgaven i projektet og i denne kopi, før du fletter.');
+    const diff = await this.copies.diff(chat.copy);
+    if (diff.unsupported.length) throw new Error(`Kopien har ændringer, der kræver manuel gennemgang: ${diff.unsupported.join(', ')}. Kopien er bevaret.`);
+    const request = { merge: diff }, review = await this.restoration.review(this.project.root, request);
+    const auto = (await this.store.project(this.project.root)).autoCheckpoint === true && (await this.features.get(this.project.root)).effective.versioner === true;
+    let unsaved = [];
+    if (review.git) { const repo = await this.git.repository(this.project.root); unsaved = review.files.map(f => f.file).filter(f => repo.files.some(item => item.file === f)); }
+    Object.assign(review, { unsaved, saveFirst: auto && review.git && Boolean(unsaved.length), saveAfter: auto && review.git, copy: chat.copy.id });
+    this.pendingMerge = { chat: chat.id, copy: chat.copy.id, token: review.token, request, signature: JSON.stringify(review.files), source: JSON.stringify(diff), unsaved, git: review.git };
+    return review;
+  }
+  async mergeApply(input) {
+    if (input?.choices && (typeof input.choices !== 'object' || Object.keys(input.choices).length > 200 || Object.values(input.choices).some(value => !['ours','theirs'].includes(value)))) throw new Error('Ugyldigt valg af linjer.');
+    const pending = this.pendingMerge; this.pendingMerge = null;
+    const chat = this.chatFor(input?.chat), root = this.project.root;
+    if (!pending || pending.chat !== chat.id || pending.token !== input?.token || pending.copy !== chat.copy?.id) throw new Error('Gennemgå kopien igen før indfletning.');
+    if (this.busyRoot(root) || this.busyRoot(chat.root)) throw new Error('Vent på opgaven i projektet og i denne kopi, før du fletter.');
+    if (JSON.stringify(await this.copies.diff(chat.copy)) !== pending.source) throw new Error('Kopien har ændret sig. Gennemgå den igen.');
+    const auto = pending.git && (await this.store.project(root)).autoCheckpoint === true && (await this.features.get(root)).effective.versioner === true;
+    let token = pending.token, savedFirst = null, saved = null, error = null;
+    if (auto && pending.unsaved.length) {
+      const status = await this.git.review(root), files = status.files.filter(f => !f.blocked && pending.unsaved.includes(f.file)).map(f => f.file);
+      // Kontrollér filerne inden den første versionsskrivning, også når kopien er ændret eksternt.
+      const verify = await this.restoration.review(root, pending.request);
+      if (JSON.stringify(verify.files) !== pending.signature) throw new Error('Projektfilerne har ændret sig. Gennemgå indfletningen igen.');
+      if (files.length) savedFirst = await this.git.commit(root, { token: status.token, files, message: 'Dine ændringer før indfletningen' });
+      token = (await this.restoration.review(root, pending.request)).token;
+    }
+    const baseline = await capture(root);
+    const restored = pending.request.merge.files.length && pending.signature !== '[]' ? await this.restoration.apply(root, token, input.choices || {}) : { files: 0, paths: [], changes: [] };
+    if (auto && restored.paths.length) {
+      try { const status = await this.git.review(root), files = status.files.filter(f => !f.blocked && restored.paths.includes(f.file)).map(f => f.file); if (files.length) saved = await this.git.commit(root, { token: status.token, files, message: `Flettet ind: ${chat.title || 'Samtalens kopi'}` }); }
+      catch (failure) { error = `Filerne er flettet ind, men versionen kunne ikke gemmes: ${failure.message}`; }
+    }
+    // Journalen gør indfletningen fortrydelig. Kopien ryddes først, når handlingen er registreret i samtalen.
+    const copy = chat.copy;
+    await chat.close(false); await this.releaseWorkspace?.(chat.root);
+    chat.data = await this.history.updateChat(root, chat.id, data => { data.copy = null; data.opencode = null; });
+    await this.copies.write({ ...copy, merged: true });
+    chat.copy = null; chat.root = root; chat.prepared = null; chat.changes.baseline = baseline; chat.changes.current = null; chat.changes.startedAt = Date.now(); chat.changes.basis = 'merge';
+    const files = restored.changes.map(f => ({ ...f }));
+    const edit = files.length ? chat.recordEdit({ kind: 'merge', label: `Flettet ind: ${chat.title}`, files, title: 'Du flettede samtalens kopi ind', detail: `${files.length} filer · dine linjer bevares ved konflikt` }) : null;
+    await this.copies.remove(copy); await this.workspaceHook?.(chat); this.chatsChanged();
+    return { restored, error, saved, savedFirst, task: edit?.id || null, state: await this.state() };
+  }
   // Lukker samtalernes motorer og afbryder en opgave i gang. Projektet og samtalerne forbliver åbne; activate skifter dem.
   async close() {
     for (const chat of this.chats.values()) await chat.close();

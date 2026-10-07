@@ -42,7 +42,8 @@
     "test:approvals": "node scripts/verify-approvals.cjs",
     "test:preview-edit": "node scripts/verify-preview-edit.cjs",
     "test:history": "node scripts/verify-history.cjs",
-    "test:chats": "node scripts/verify-chats.cjs"
+    "test:chats": "node scripts/verify-chats.cjs",
+    "test:concurrent": "node scripts/verify-concurrent.cjs"
   },
   "engines": {
     "node": ">=22.12.0"

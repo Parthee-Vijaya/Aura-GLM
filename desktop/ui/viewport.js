@@ -1,7 +1,7 @@
 (() => {
   const el = id => document.getElementById(id);
   const grid = document.querySelector('.work-grid');
-  const divider = el('workspace-divider'), surface = el('preview-surface'), stage = el('preview-stage'), frame = el('preview');
+  const divider = el('workspace-divider'), surface = el('preview-surface'), stage = el('preview-stage');
   const preset = el('viewport-preset'), width = el('viewport-width'), height = el('viewport-height'), zoom = el('viewport-zoom');
   const sizes = { desktop: [1920, 1080], tablet: [768, 1024], phone: [390, 844] };
   const storageKey = 'harness-workspace-layout-v1';
@@ -37,6 +37,8 @@
     const scale = fluid || settings.zoom === 'actual' ? 1 : Math.min(1, Math.max(1, surface.clientWidth - 24) / w, Math.max(1, surface.clientHeight - 24) / h);
     stage.style.width = `${w * scale}px`; stage.style.height = `${h * scale}px`;
     stage.style.marginTop = fluid ? '0' : '12px';
+    const frame = el('preview');
+    if (!frame) return;
     frame.style.width = `${w}px`; frame.style.height = `${h}px`; frame.style.transform = `scale(${scale})`;
     size = { width: w, height: h };
     el('viewport-info').textContent = `${w} × ${h} · ${Math.round(scale * 100)} %`;
@@ -44,6 +46,7 @@
   }
   // Den størrelse, siden vises i. Før/efter-billederne i historikken tages i samme størrelse.
   let size = { width: 1280, height: 800 };
+  window.previewLayout = render;
   window.previewViewSize = () => settings.preset === 'fluid' ? { ...size } : { width: settings.width, height: settings.height };
   let pointer = null;
   divider.addEventListener('pointerdown', event => {
