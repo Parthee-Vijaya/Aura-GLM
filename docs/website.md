@@ -31,6 +31,8 @@ Nye værktøjer tilføjes i kataloget med regelfil, skillmapper, kontrol, forbeh
 
 ## Afprøvning
 
+**7. oktober 2026:** den samlede side er bygget fra faktiske repository-/release-svar. Repositoryet er stadig privat, der er nul releases, og Pages-API svarer HTTP 404. Ingen synlighed eller udgivelse er ændret. De fem sider er kørt i Chrome ved 1280 og 390 pixels: 10 visninger, 79 lokale links med HTTP 200 og ingen sidefejl eller vandret overløb. Installationssiden og forsiden bruger Auras koboltfarve. Testen dækker lokal betjening og faktiske metadata, ikke adgang fra en testpersons konto eller installation. Gentag med `npm run test:demo-web -- RELEASE-JSON REPOSITORY-JSON` fra `desktop/`.
+
 ```bash
 cd desktop
 npm test

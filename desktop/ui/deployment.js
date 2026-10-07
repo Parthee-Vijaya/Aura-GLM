@@ -23,7 +23,7 @@
   function invalidate() { review = null; $('#deployment-review').hidden = true; $('#deployment-ack').checked = false; $('#deployment-send').disabled = true; }
   function showForm() { invalidate(); $('#deployment-form').hidden = false; $('#deployment-result').hidden = true; focus = $('#deploy-project'); }
   function modes() {
-    const azure = $('#deploy-provider').value === 'azure'; $('#deploy-azure').hidden = !azure; $('#deploy-vercel').hidden = azure;
+    const azure = $('#deploy-provider').value === 'azure'; $('#deploy-scope').required = !azure; $('#deploy-subscription').required = azure; $('#deploy-group').required = azure; $('#deploy-azure').hidden = !azure; $('#deploy-vercel').hidden = azure;
     for (const option of $('#deploy-mode').options) option.disabled = azure ? option.value === 'source' : option.value === 'functions';
     if ($('#deploy-mode').selectedOptions[0].disabled) $('#deploy-mode').value = 'static';
     $('#deploy-functions').hidden = !azure || $('#deploy-mode').value !== 'functions';
@@ -34,7 +34,7 @@
     $('#deployment-form').hidden = true;
     $('#deployment-state').textContent = `${view.version(r)} → ${view.destination(r)}`;
     rows('#deployment-checks', view.checks(r));
-    $('#deployment-verification').textContent = (r.checkedAt && !r.checks ? 'Tidligere kontrolnotat (ikke genkontrolleret): ' : '') + (r.verification || 'Kontrollér udgivelsen, og afprøv derefter linket med testpersonen. Uploadsvaret beviser ikke, at appen virker.');
+    $('#deployment-verification').textContent = (r.checkedAt && !r.checks ? 'Tidligere kontrolnotat (ikke genkontrolleret): ' : '') + (r.verification || (!r.id ? 'Uploadresultatet er ikke bekræftet. Kontrollér udbyderens oversigt, før du prøver en ny upload.' : 'Kontrollér udgivelsen, og afprøv derefter linket med testpersonen. Uploadsvaret beviser ikke, at appen virker.'));
     rows('#deployment-receipt', [['Upload påbegyndt', view.time(r.startedAt)], ['Versionens ID', r.head], ['Indholdets fingeraftryk', r.hash], ['Senest registrerede udbyderstatuskode', r.state], ['Testadresse', r.url], ['Adgang rapporteret ved upload', r.target.access], ['Seneste kontrol', r.checkedAt ? view.time(r.checkedAt) : 'Ingen kontrol registreret']]);
     $('#deployment-portal').hidden = Boolean(r.id && r.state !== 'UNKNOWN' && r.checks?.provider.status !== 'unknown' && r.state !== 'ERROR');
     $('#deployment-check').hidden = !r.id; $('#deployment-open').hidden = !r.url;

@@ -1,6 +1,6 @@
 (() => {
   const $ = selector => document.querySelector(selector);
-  let review = null, creation = null, login = null, timer = null, focus = null;
+  let review = null, creation = null, login = null, timer = null, focus = null, selected = false;
   const view = window.ShareView;
   function rows(id, values) { $(id).replaceChildren(...values.flatMap(([label, value]) => { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = label; dd.textContent = value || 'Ikke oplyst'; return [dt, dd]; })); }
   async function api(method, value) { const result = await window.harness[method](value); if (!result.ok) throw new Error(result.error); return result.value; }
@@ -8,9 +8,9 @@
     $('#hosting-body').disabled = true; $('#hosting-feedback').textContent = '';
     try { await fn(); }
     catch (error) { invalidate(); $('#hosting-target-section').hidden = false; $('#hosting-feedback').textContent = error.message; }
-    finally { $('#hosting-body').disabled = false; if (focus) { focus.focus(); focus = null; } }
+    finally { $('#hosting-body').disabled = false; if (focus) { focus.scrollIntoView({ block: 'start' }); focus.focus({ preventScroll: true }); focus = null; } }
   }
-  function invalidate() { review = null; $('#hosting-review-result').hidden = true; $('#hosting-ack').checked = false; $('#hosting-push').disabled = true; $('#hosting-target-section').hidden = false; $('#hosting-publication').hidden = false; $('#hosting-project-title').hidden = false; }
+  function invalidate() { review = null; $('#hosting-review-result').hidden = true; $('#hosting-ack').checked = false; $('#hosting-push').disabled = true; $('#hosting-target-section').hidden = false; $('#hosting-publication').hidden = false; $('#hosting-project-title').hidden = false; $('#hosting-review').hidden = !selected; $('#hosting-open').hidden = !selected; }
   async function refresh() {
     const state = await api('hostingState');
     $('#hosting-status').textContent = state.connected ? `Konto gemt: ${state.login}${state.expired ? ' · adgang udløbet' : ' · kontrollér adgang før publicering'}` : 'Ingen GitHub-konto forbundet.';
@@ -24,6 +24,7 @@
     $('#hosting-publication').textContent = state.publication?.selected ? `${state.publication.selected.fullName} · ${state.publication.changes} ugemte filer. Serverstatus er endnu ikke kontrolleret.` : state.publication?.message || '';
     $('#hosting-scope').textContent = view.scope(state.context);
     $('#hosting-target-section').open = !state.publication?.selected;
+    selected = Boolean(state.publication?.selected);
     $('#hosting-open').disabled = !state.publication?.selected; $('#hosting-open').hidden = !state.publication?.selected;
     $('#hosting-review').disabled = !state.publication?.selected; $('#hosting-review').hidden = !state.publication?.selected;
   }
@@ -63,9 +64,9 @@
   function showReview(result, sent = false) {
     $('#hosting-review-result').hidden = false; $('#hosting-publication').hidden = true; $('#hosting-project-title').hidden = true; $('#hosting-target-section').hidden = true; $('#hosting-technical').open = false;
     $('#hosting-review-title').textContent = result.synchronized || sent ? 'Versionen findes på serveren' : 'Gennemgå sikkerhedskopien';
-    $('#hosting-destination').textContent = `${view.version(result)} → ${result.target.fullName}. ${result.synchronized || sent ? 'Versionen er bekræftet på serveren.' : `${result.commits.length} versioner sendes.`}`;
+    $('#hosting-destination').textContent = `${view.version(result)} → ${result.target.fullName}. ${result.synchronized || sent ? 'Versionen er bekræftet på serveren.' : `${result.commits.length} ${result.commits.length === 1 ? 'version sendes' : 'versioner sendes'}.`}`;
     rows('#hosting-summary', [['Adgang ifølge GitHub', result.target.private ? 'Privat repository. Testpersonens læseadgang er ikke afprøvet.' : 'Offentligt repository. Alle kan se kode og historik.'], ['Kontrol', `${view.time(result.checkedAt)} · ${result.synchronized || sent ? 'Serverens version er bekræftet' : 'Historik og destination er gennemgået; ingen filer er sendt'}`], ['Det deles', 'Kode og versionshistorik. Appen er ikke udgivet; dette er ikke et testlink.']]);
-    rows('#hosting-details', [['Versionens ID', result.head], ['Branch', result.branch], ['Udgående historik', result.synchronized || sent ? 'Ingen versioner afventer denne overførsel' : `${result.commits.length} versioner · ${result.remoteHead ? 'eksisterende branch opdateres' : 'ny branch på serveren'}`]]);
+    rows('#hosting-details', [['Versionens ID', result.head], ['Branch', result.branch], ['Udgående historik', result.synchronized || sent ? 'Ingen versioner afventer denne overførsel' : `${result.commits.length} ${result.commits.length === 1 ? 'version' : 'versioner'} · ${result.remoteHead ? 'eksisterende branch opdateres' : 'ny branch på serveren'}`]]);
     $('#hosting-files').replaceChildren(...(result.files || []).map(file => { const li = document.createElement('li'); li.textContent = file; return li; }));
     review = result.token || null; $('#hosting-review').hidden = Boolean(review); $('#hosting-open').hidden = Boolean(review); $('#hosting-consent').hidden = !review; $('#hosting-ack').checked = false; $('#hosting-push').disabled = true;
     focus = $('#hosting-review-title');
@@ -74,7 +75,7 @@
     invalidate(); const result = await api('hostingReview'); showReview(result); $('#hosting-scope').textContent = view.scope(result.context);
     $('#hosting-feedback').textContent = result.synchronized ? 'Lokalt og på serveren · synkroniseret.' : 'Bekræft nedenfor for at sende den gennemgåede version.';
   });
-  $('#hosting-edit').onclick = () => { invalidate(); $('#hosting-target-section').open = true; $('#hosting-review').hidden = false; $('#hosting-open').hidden = false; $('#hosting-target').focus(); };
+  $('#hosting-edit').onclick = () => { invalidate(); $('#hosting-target-section').open = true; $('#hosting-target').focus(); };
   $('#hosting-ack').onchange = () => { $('#hosting-push').disabled = !review || !$('#hosting-ack').checked; };
   $('#hosting-push').onclick = () => act(async () => { const token = review; invalidate(); if (!token) return; const result = await api('hostingPush', token); await refresh(); showReview(result, true); $('#hosting-feedback').textContent = result.message; });
   $('#hosting-open').onclick = () => act(() => api('hostingOpen'));

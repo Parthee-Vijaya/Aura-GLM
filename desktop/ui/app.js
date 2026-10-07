@@ -372,7 +372,7 @@ function fillChat(next, fresh) {
     $('#prompt').value = history.draft || '';
     if (history.messages.length || history.draft) $('#work-mode').value = history.mode === 'build' && !next.plan ? defaultMode() : history.mode;
     $('#resume-notice summary').textContent = ['interrupted', 'working'].includes(history.status) && !v.running ? 'Den forrige opgave blev afbrudt' : 'Tidligere samtale';
-    $('#resume-text').textContent = ['interrupted', 'working'].includes(history.status) && !v.running ? 'Den forrige opgave blev afbrudt. Gennemgå filerne, før du fortsætter. Intet er genstartet.' : 'Din samtale er hentet fra denne computer. Vælg selv, om den skal medsendes til AI’en.';
+    $('#resume-text').textContent = ['interrupted', 'working'].includes(history.status) && !v.running ? 'Den forrige opgave blev afbrudt. Gennemgå filerne, før du fortsætter. Intet er genstartet.' : 'Din samtale er hentet fra denne computer. Hos samme AI kan samtalen fortsætte med tidligere beskeder og værktøjsresultater. Start Ny samtale for et nyt forløb. Du kan også vælge at medsende en ekstra kopi, fx ved skift af AI.';
     if (history.trimmed) $('#resume-text').textContent += ' Den ældste del af samtalen er udeladt af hensyn til størrelse.';
   }
   if (next.historyWarning) $('#resume-text').textContent = next.historyWarning;
@@ -528,10 +528,12 @@ function showData(data, canSend) {
   const unknown = [data.region, data.retention, data.training, data.price].filter(v => /ukendt|ikke verificeret/i.test(String(v)));
   $('#data-warning').hidden = !unknown.length;
   $('#data-warning').textContent = 'Nogle vilkår er ukendte for denne forbindelse. Del kun det, du er sikker på, at du må dele.';
-  $('#data-lead').textContent = `Din besked, ${data.brief ? 'projektbriefen, ' : ''}planen og de projektfiler, AI’en læser, sendes til ${data.provider || data.connection}.`;
-  // Tidligere samtale nævnes kun i første lag, når den faktisk sendes med.
-  $('#data-history-text').textContent = data.historyIncluded ? 'Tidligere samtale medsendes efter dit tilvalg. Se indholdet under alle oplysninger.' : '';
-  $('#data-history-text').hidden = !data.historyIncluded;
+  const hasPlan = Array.isArray(data.planContext) ? data.planContext.length > 0 : Boolean(data.planContext);
+  const material = ['Din besked', data.brief ? 'projektbriefen' : '', hasPlan ? 'planen og afklaringen' : ''].filter(Boolean);
+  $('#data-lead').textContent = `${material.join(', ')} og de projektfiler, AI’en læser, sendes til ${data.provider || data.connection}.`;
+  // Den fortsatte agentsession kan allerede have historik. Tilvalget nedenfor er en ekstra kopi, ikke en kontakt til at slette AI'ens kontekst.
+  $('#data-history-text').textContent = 'I denne samtale kan AI’en bruge tidligere beskeder og værktøjsresultater. Start Ny samtale for et nyt forløb.' + (data.historyIncluded ? ' En ekstra kopi af tidligere samtale medsendes efter dit tilvalg. Se indholdet under alle oplysninger.' : '');
+  $('#data-history-text').hidden = false;
   // Filhenvisninger står i første lag, fordi de er nyt materiale, brugeren selv har valgt at dele.
   // Et valgt element står også i første lag: AI'en får elementets tekst, placering og et uddrag af sidens HTML.
   const shared = [data.fileReferences?.length ? `Filhenvisninger: ${data.fileReferences.join(', ')}. AI’en får stien og læser selv filen i projektet.` : '', data.previewReference ? `Valgt i forhåndsvisningen: ${data.previewReference}. AI’en får elementets tekst, placering og et uddrag af sidens HTML; se det under alle oplysninger.` : ''].filter(Boolean);
@@ -725,7 +727,7 @@ $('#connection-form').onsubmit = event => {
 };
 $('#connection-select').onchange = () => { autoConnect = true; action(() => loadModels()); }; $('#model-select').onchange = () => { updateModelSummary(); action(() => loadRoutes()); };
 $('#data-button').onclick = () => action(async () => showData(await call('prepare', selection()), false));
-$('#chat-form').onsubmit = event => { event.preventDefault(); action(async () => { const text = $('#prompt').value.trim(); if (!text || running) return; if (!$('#connection-select').value) { openTaskSettings(); showConnectionWarning('Forbind en AI for at sende beskeden. Din kladde er bevaret.'); return; } if (!$('#model-select').value || (!$('#route-row').hidden && !$('#route-select').value)) { openTaskSettings(); message('Vælg model og eventuel modeludbyder.', true); return; } $('#send').disabled = true; try { const data = await call('prepare', selection()); if (data.accepted || reviewKey(data) === acceptedFingerprint) await sendNow(data, text); else { pendingSend = { data, text }; showData(data, true); } } catch (error) { connectionFailed(error.message); throw error; } finally { $('#send').disabled = running; } }); };
+$('#chat-form').onsubmit = event => { event.preventDefault(); action(async () => { const text = $('#prompt').value.trim(); if (!text || running) return; if (!$('#connection-select').value && !state?.connections?.length) { showSetup('Tilslut en AI for at sende beskeden. Din kladde er bevaret.'); return; } if (!$('#connection-select').value || !$('#model-select').value || (!$('#route-row').hidden && !$('#route-select').value)) { openTaskSettings(); message('Vælg model og eventuel modeludbyder.', true); return; } $('#send').disabled = true; try { const data = await call('prepare', selection()); if (data.accepted || reviewKey(data) === acceptedFingerprint) await sendNow(data, text); else { pendingSend = { data, text }; showData(data, true); } } catch (error) { connectionFailed(error.message); throw error; } finally { $('#send').disabled = running; } }); };
 $('#accept-send').onclick = () => action(async () => { const pending = pendingSend; pendingSend = null; if (pending) await sendNow(pending.data, pending.text); });
 $('#stop').onclick = () => action(() => call('stop'));
 $('#skills-button').onclick = () => action(async () => { skillList = await call('skills'); $('#skill-select').replaceChildren(...skillList.map(s => option(s.id, s.enabled ? s.title : `${s.title} · slået fra`))); showSkill(); $('#skills-dialog').showModal(); });
@@ -736,6 +738,12 @@ $('#preview-form').onsubmit = event => { event.preventDefault(); action(async ()
 $('#static-preview').onclick = () => action(async () => { showPreview(await call('attachPreview', '')); $('#preview-dialog').close(); });
 $('#refresh').onclick = () => { if (current?.previewURL) $('#preview').src = current.previewURL; };
 for (const button of document.querySelectorAll('[data-close]')) button.onclick = () => document.getElementById(button.dataset.close).close();
+// Menuhandlingen er skjult igen, når dialogen lukkes. Giv fokus tilbage til den synlige menuåbner.
+for (const id of ['support-dialog', 'connections-dialog', 'features-dialog']) document.getElementById(id).addEventListener('close', () => {
+  if (document.querySelector('dialog[open]') || setupActive) return;
+  const active = document.activeElement;
+  if (active === document.body || !active?.checkVisibility({ checkVisibilityCSS: true })) $('#settings-toggle').focus();
+});
 $('#connections-dialog').addEventListener('close', () => { $('#api-key').value = ''; });
 setInterval(async () => { if (!current || polling) return; polling = true; const project = current, root = current.workspaceRoot; try { const next = await call('revision'); if (current !== project || current.workspaceRoot !== root || !next) return; if (revision && next !== revision) $('#preview').src = current.previewURL; revision = next; $('#preview-status').textContent = 'Lokal forhåndsvisning'; } catch { $('#preview-status').textContent = 'Kan ikke læse siden – kontrollér projektfilerne'; } finally { polling = false; } }, 1500);
 action(async () => { $('#create').disabled = true; try { state = await call('connectionState'); renderConnections(); updateProvider(); await loadDesigns(); await loadStartup(); applyFeatures(); renderLocation(await call('projectLocation')); restoreIdeaDraft(); showIdeaExamples(); await refreshRecent(); setupControls(); for (const id of ['#welcome-build', '#welcome-example', '#welcome-open']) $(id).disabled = false; if ($('#welcome-dialog').open) $('#welcome-title').focus(); else { $('#purpose').focus(); await reopenLast(); } } finally { projectLoading = false; $('#create').disabled = false; applyRunning(); } });
@@ -848,7 +856,7 @@ function featureRow(feature, checked, onChange, note, withSkills = true) {
   if (withSkills && integration) title.append(info(feature.title, [`System: ${integration.system}`, `Ejer: ${integration.owner}`, `Adgang: ${integration.access}`, `Data: ${integration.data}`, `Dataflow: ${integration.dataFlow}`, `Pris: ${integration.cost}`, integration.itRoute ? 'Kræver hjælp fra IT-afdelingen.' : '', integration.sensitive ? 'Omfatter følsomme personoplysninger.' : '', `Skillen vedligeholdes af ${integration.maintainer} og er kontrolleret ${integration.checkedAt}.`].filter(Boolean).join('\n')));
   else if (withSkills) title.append(info(feature.title, `${feature.skills.length === 1 ? 'Skill' : 'Skills'}, AI’en henter, når opgaven passer:\n${feature.skills.map(skill => `• ${skill.title}: ${skill.summary}`).join('\n')}${requires.length ? `\n\nBygger på ${requires.join(' og ')}, som slås til sammen med den.` : ''}`));
   const text = node('span'); text.append(title, node('small', feature.summary));
-  const input = node('input'); input.type = 'checkbox'; input.setAttribute('role', 'switch'); input.dataset.feature = feature.id; input.checked = checked; input.disabled = running;
+  const input = node('input'); input.type = 'checkbox'; input.setAttribute('role', 'switch'); input.setAttribute('aria-label', feature.title); input.dataset.feature = feature.id; input.checked = checked; input.disabled = running;
   input.onchange = () => onChange(feature.id, input.checked);
   label.append(text, input); row.append(label);
   if (note) row.append(note);
@@ -962,6 +970,7 @@ function completeIntroduction(mode) {
 }
 function showIntroduction(step = 'path') {
   $('#welcome-path').hidden = step !== 'path'; $('#welcome-start').hidden = step !== 'start'; $('#welcome-demo').hidden = true;
+  $('#welcome-dialog').setAttribute('aria-labelledby', step === 'path' ? 'welcome-path-title' : 'welcome-title');
   document.body.classList.add('introduction-open'); if (!$('#welcome-dialog').open) $('#welcome-dialog').showModal(); $(step === 'path' ? '#welcome-path-title' : '#welcome-title').focus();
 }
 function closeIntroduction() { document.body.classList.remove('introduction-open'); $('#welcome-dialog').close(); }
@@ -992,9 +1001,9 @@ function demoPreview(list) {
   $('#demo-change').textContent = list ? 'Vis aktiviteterne som kort' : 'Vis aktiviteterne som en liste';
   $('#demo-change').dataset.list = String(list);
 }
-$('#welcome-example').onclick = () => { $('#welcome-start').hidden = true; $('#welcome-demo').hidden = false; demoPreview(false); $('#demo-title').focus(); };
+$('#welcome-example').onclick = () => { $('#welcome-start').hidden = true; $('#welcome-demo').hidden = false; $('#welcome-dialog').setAttribute('aria-labelledby', 'demo-title'); demoPreview(false); $('#demo-title').focus(); };
 $('#demo-change').onclick = () => demoPreview($('#demo-change').dataset.list !== 'true');
-$('#demo-back').onclick = () => { $('#welcome-start').hidden = false; $('#welcome-demo').hidden = true; $('#welcome-title').focus(); };
+$('#demo-back').onclick = () => showIntroduction('start');
 $('#path-app').onclick = () => showIntroduction('start');
 $('#welcome-back').onclick = () => showIntroduction('path');
 $('#path-tools').onclick = () => { completeIntroduction('tools'); closeIntroduction(); openTools(); };
@@ -1538,7 +1547,10 @@ async function newChat() { if (!current) return; await saveChatDraft(); const ne
 $('#merge-copy').onclick = () => action(() => reviewRestoration({ merge: true, chat: view.id }, { title: 'Flet samtalens ændringer ind?', confirm: 'Flet ind i projektet', label: `Flettet ind: ${chatTitle(view.id)}` }));
 $('#new-conversation').onclick = () => action(newChat);
 
-function openTaskSettings() { $('#model-options').open = true; if (!$('#task-dialog').open) $('#task-dialog').showModal(); }
+function openTaskSettings() {
+  if (!state?.connections?.length) { showSetup('Tilslut en AI for at bygge videre. Din kladde er bevaret.'); return; }
+  $('#model-options').open = true; if (!$('#task-dialog').open) $('#task-dialog').showModal();
+}
 $('#model-chip').onclick = openTaskSettings;
 for (const id of ['settings-menu', 'project-menu', 'preview-menu']) {
   document.getElementById(id).addEventListener('click', event => { if (event.target.closest('button') && (id !== 'preview-menu' || event.target.closest('#attach-preview'))) document.getElementById(id).hidePopover(); });

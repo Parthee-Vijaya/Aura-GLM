@@ -1,0 +1,55 @@
+// Bygger kun en lokal side fra eksplicitte GitHub-metadata. Opretter eller udgiver ingen release.
+const { chromium } = require('playwright');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const os = require('node:os');
+const http = require('node:http');
+const assert = require('node:assert/strict');
+const { build } = require('../../scripts/build-pages.cjs');
+const { auditUI } = require('./ui-audit.cjs');
+(async () => {
+  assert.equal(process.argv.length, 4, 'Angiv release- og repository-JSON hentet fra GitHub');
+  const releases = JSON.parse(await fs.readFile(process.argv[2], 'utf8'));
+  const metadata = JSON.parse(await fs.readFile(process.argv[3], 'utf8'));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'aura-demo-web-'));
+  const site = await build(releases, metadata, path.join(root, 'site'));
+  const errors = [], screens = [];
+  const server = http.createServer(async (req, res) => {
+    try {
+      const url = new URL(req.url, 'http://127.0.0.1'), file = path.resolve(site, '.' + decodeURIComponent(url.pathname.endsWith('/') ? url.pathname + 'index.html' : url.pathname));
+      if (!file.startsWith(site + path.sep)) { res.writeHead(403); return res.end(); }
+      const type = path.extname(file); res.setHeader('content-type', ({ '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'application/javascript', '.json': 'application/json' })[type] || 'application/octet-stream');
+      res.end(await fs.readFile(file));
+    } catch { res.writeHead(404); res.end(); }
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  let browser;
+  try {
+    browser = await chromium.launch({ channel: 'chrome', headless: true });
+    const page = await browser.newPage(); const origin = `http://127.0.0.1:${server.address().port}`;
+    await page.route('**/*', route => route.request().url().startsWith(origin + '/') ? route.continue() : route.abort());
+    page.on('pageerror', e => errors.push(e.message));
+    const links = new Set();
+    for (const width of [1280, 390]) for (const file of ['index.html', 'desktop.html', 'pakker.html', 'skills.html', 'vaerktoejer.html']) {
+      await page.setViewportSize({ width, height: 844 }); await page.goto(origin + '/' + file);
+      assert.equal(await page.locator('main').count(), 1);
+      const audit = await page.evaluate(auditUI, 'body');
+      assert.deepEqual(audit.unnamed, [], `${file}: navngivne kontroller`);
+      assert.equal(audit.horizontalOverflow, false, `${file}: intet vandret overløb ved ${width}`);
+      for (const url of await page.locator('a[href]').evaluateAll(els => els.map(el => el.href))) if (url.startsWith(origin)) links.add(url);
+      const image = path.join(root, `${width}-${file}.png`); await page.screenshot({ path: image, fullPage: true }); screens.push({ file, width, image, audit });
+      if (file === 'desktop.html') {
+        if (!releases.some(r => !r.draft && r.assets?.length)) assert.equal(await page.locator('.artifact').count(), 0, 'Ingen opdigtede installationsfiler');
+        assert.match(await page.locator('body').innerText(), /test|Test/);
+      }
+    }
+    for (const url of links) {
+      const response = await page.request.get(url); assert.equal(response.ok(), true, `Lokalt link findes: ${url}`);
+    }
+    await page.goto(origin); const skip = page.locator('a[href="#main"]');
+    if (await skip.count()) { await skip.focus(); await page.keyboard.press('Enter'); assert.equal(await page.evaluate(() => location.hash), '#main'); }
+    assert.deepEqual(errors, []);
+    const report = { status: 'bestået', root, screens, localLinks: links.size, errors, private: metadata.private, published: false, limitation: 'Lokal visning; ikke installation eller adgang fra en testpersons konto.' };
+    await fs.writeFile(path.join(root, 'rapport.json'), JSON.stringify(report, null, 2)); console.log(JSON.stringify(report));
+  } finally { await browser?.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
+})().catch(e => { console.error(e); process.exitCode = 1; });

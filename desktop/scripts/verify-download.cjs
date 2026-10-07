@@ -7,7 +7,7 @@ const os=require('node:os');
 const assert=require('node:assert/strict');
 const {createHash}=require('node:crypto');
 (async()=>{
- const root=path.join(__dirname,'../release');const manifest=JSON.parse(await fs.readFile(path.join(root,'release.json'),'utf8'));
+ const root=process.argv[2] ? path.resolve(process.argv[2]) : path.join(__dirname,'../release');const manifest=JSON.parse(await fs.readFile(path.join(root,'release.json'),'utf8'));
  assert(manifest.files.length);const allowed=new Set(['index.html','desktop.css','release.json','SHA256SUMS.txt',...manifest.files.map(f=>f.name)]);
  const server=http.createServer(async(req,res)=>{const name=decodeURIComponent(new URL(req.url,'http://localhost').pathname.slice(1)||'index.html');if(!allowed.has(name)){res.writeHead(404);return res.end();}res.setHeader('content-type',name.endsWith('.html')?'text/html; charset=utf-8':name.endsWith('.css')?'text/css':'application/octet-stream');createReadStream(path.join(root,name)).pipe(res);});
  await new Promise(r=>server.listen(0,'127.0.0.1',r));let browser;

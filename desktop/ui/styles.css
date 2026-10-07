@@ -860,3 +860,5 @@ kbd { font: 600 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
 #hosting-target-section > summary, #hosting-account > summary { padding-block: 12px; }
 #hosting-review-title:focus, #deployment-review-title:focus, #deployment-result-title:focus { outline: 2px solid var(--accent); outline-offset: 4px; }
 @media (max-width: 650px) { .share-summary { grid-template-columns: minmax(0, 1fr); gap: 5px; } .share-summary dd { margin-bottom: 14px; } }
+
+#hosting-review-title, #deployment-review-title, #deployment-result-title { scroll-margin-block-start: 90px; }

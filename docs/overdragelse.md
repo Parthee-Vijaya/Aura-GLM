@@ -2,6 +2,12 @@
 
 Skrevet 6. oktober 2026 til den, der fortsætter arbejdet (fx Codex). Læs først `AGENTS.md`, `desktop/DESIGN.md`, [planen for brugerfladen](ux-plan.md), [beslutningerne](decisions.md) og [teststatus](teststatus.md).
 
+## Aktuel status · 7. oktober 2026
+
+Afsnittene om 6A og 6B nedenfor beskriver den oprindelige overdragelse. **6B er nu gennemført og committet af brugeren.** Milepæl 7 er teknisk implementeret og afprøvet; de seneste detaljer og præcise begrænsninger står i [teststatus](teststatus.md#deling-og-samlet-brugerforløb--7-oktober-2026) og [UX-planen](ux-plan.md). Kontroller altid Git-status, og gentag ikke de historiske implementeringsopgaver nedenfor.
+
+Tilbage til kriteriet for milepæl 7: observer det samlede forløb med en faktisk person uden udviklererfaring efter [guiden og notatskabelonen](testforloeb.md#milepæl-7-observation-af-det-samlede-forløb). Kontroller den konkrete installationsfil, aftalte model og testpersonens adgang før invitation. Brugerobservationen er en del af den første pilot; den behøver ikke være gennemført, før den første person inviteres. Automatiske prøver erstatter ikke observationen. Den efterfølgende [demogennemgang](demogennemgang.md) og [korte testmateriale](demo-til-testere.md) er skrevet; en lokal beta.4-pakke er kørt med kontrolleret model, men Developer ID/notarisation, Corti på aktuel version og testerens downloadadgang mangler. Se teststatus for fil, kontrolsum og faktisk evidens. Start ikke nye hosting-/adgangssystemer eller ekstra milepæle uden en ny aftale.
+
 ## Regler, der altid gælder
 
 - Al kommunikation og alle projekttekster er på dansk. Produktnavne, identifikatorer, stier og kommandoer bevares.
@@ -13,11 +19,11 @@ Skrevet 6. oktober 2026 til den, der fortsætter arbejdet (fx Codex). Læs førs
 - Spørg før du udvider scope. Byg den fulde version af det, der er bedt om.
 - Arbejd i milepæle: afslut med verifikation og stop. Opsummer ændringer, faktisk udført verifikation og begrænsninger, og skeln mellem *skrevet*, *enhedstestet*, *kørt mod rigtigt materiale* og *deployet og observeret*. Giv brugeren et dansk forslag til commit-besked, og vent.
 
-## Status
+## Historisk status ved overdragelsen
 
 - Milepæl 1–5 er implementeret, testet og committet af brugeren.
 - Milepæl 6 er delt i to. **6A er færdig og verificeret, men måske ikke committet endnu.** Tjek `git status`. Fire nye filer skal med i commit: `desktop/core/chat-session.cjs`, `desktop/ui/chats.js`, `desktop/ui/palette.js` og `desktop/scripts/verify-chats.cjs`. To af dem (`palette.js`, `verify-chats.cjs`) er ændret på disken efter sidste kørsel; kør testene igen, før du bygger videre.
-- Tilbage: **6B** og **milepæl 7**. Derefter betragtes Aura som færdig til testere.
+- Tilbage: **6B** og **milepæl 7**. Det er ikke i sig selv dokumentation for, at en installation, model eller invitation er klar.
 
 ## Sådan er 6A bygget
 

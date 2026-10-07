@@ -1,7 +1,7 @@
 @import url("desktop.css");
 
 :root { color: #1d293d; background: #f7f9fc; }
-a { color: #1557c0; }
+a { color: #0052cc; }
 header a:last-child { font-size: 14px; font-weight: 400; }
 main { padding-top: 40px; }
 .eyebrow { color: #52647e; letter-spacing: .1em; }
@@ -31,12 +31,12 @@ main { padding-top: 40px; }
 .downloads { border-color: #dbe3ef; }
 .artifact { border-color: #dbe3ef; }
 .artifact small { color: #52647e; }
-.button { background: #1557c0; }
+.button { background: #0052cc; }
 .button:hover { background: #10479d; }
 footer { color: #52647e; border-color: #dbe3ef; }
 section[id] { scroll-margin-top: 24px; }
-a:focus-visible { outline: 3px solid #1557c0; outline-offset: 5px; }
-.skip { position: absolute; left: 16px; top: 0; padding: 12px 18px; background: white; border: 1px solid #1557c0; transform: translateY(-150%); }
+a:focus-visible { outline: 3px solid #0052cc; outline-offset: 5px; }
+.skip { position: absolute; left: 16px; top: 0; padding: 12px 18px; background: white; border: 1px solid #0052cc; transform: translateY(-150%); }
 .skip:focus { transform: translateY(8px); }
 @media (max-width: 680px) {
   main { padding: 28px 24px; }

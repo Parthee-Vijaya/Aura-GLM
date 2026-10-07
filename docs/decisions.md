@@ -554,3 +554,14 @@ Milepæl 7 præciserer de eksisterende GitHub-, Vercel- og Azure-forløb. Der ti
 - En udbyderstatus, et anonymt HTTP-svar og et filmatch er særskilte kontroller. Ingen af dem beviser fuld funktion eller en bestemt testpersons adgang. En ny mislykket kontrol må ikke beholde gammel succes som aktuel evidens.
 - Ved ubekræftet upload henvises til udbyderens oversigt før et nyt forsøg. Ingen automatisk gentagelse. GitHub-versionsbekræftelse beskriver kode og historik og kaldes ikke en udgivelse af appen.
 - Observationen med en person uden udviklererfaring er endnu ikke udført. Guiden og notatskabelonen i testforloeb.md gør den konkret; automatiske prøver må ikke udfylde den på personens vegne. Milepælens tekniske evidens og den udestående observation registreres hver for sig i teststatus.md.
+
+## Gennemgang før demo · 7. oktober 2026
+
+Brugeren har bedt om en samlet UI/UX-gennemgang og klargøring før en pilot med testpersoner. Den eksisterende retning bevares: Mac og Corti S1 fra beslutningen den 1. oktober; ingen ny modelanbefaling, hostingadapter eller offentlig udgivelse foretages som del af gennemgangen.
+
+- Uden gemt forbindelse går Vælg AI og Send direkte til forbindelsesguiden; kladden bevares ved Vælg senere.
+- En fortsat AI-session kan bruge tidligere beskeder og værktøjsresultater. Før du sender forklarer det i første lag. Tilvalget handler om en ekstra historikkopi, ikke om at slå tidligere kontekst fra. Ny samtale starter et nyt forløb.
+- Dialognavne følger synlige overskrifter, kontakter har egne navne, og fokus returnerer til en synlig menuåbner. Hjælp har en foldet førstegangsvejledning. Installationssiden følger Auras eksisterende koboltfarve.
+- Gem version venter på den igangværende filgennemgang. Det kontrolleres med et forsinket faktisk IPC-svar i den pakkede app.
+- Kandidaten er `0.2.0-beta.4`; den lokale pakke er ikke en notariseret eller publiceret udgivelse. CI-kontroller er skrevet, men ikke kørt på GitHub i denne gennemgang.
+- Den første brugerobservation er pilotens formål. Afprøvet model, konkret installation og downloadadgang går forud for invitation; brugerobservationen fuldender derefter milepæl 7. Rapport og kort testmateriale ligger i demogennemgang.md og demo-til-testere.md.

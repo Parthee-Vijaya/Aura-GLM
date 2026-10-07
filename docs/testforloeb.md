@@ -2,6 +2,8 @@
 
 Formålet er at se, om en person uden udviklererfaring selv kan bygge, ændre og genfinde en lille app. Brug kun opdigtede oplysninger. En test af brugerfladen er ikke en godkendelse til at behandle kommunale personoplysninger.
 
+Det korte materiale, der kan sendes til testpersonerne, står i [Demo til testere](demo-til-testere.md). Vedligeholderens samlede UI/UX-vurdering og udsendelsesgrænser står i [demogennemgangen](demogennemgang.md). Første brugerobservation gennemføres under piloten; den skal ikke allerede være bestået for at invitere den første person. Model, downloadadgang og den konkrete installation skal derimod være afprøvet først.
+
 ## Før invitationen sendes
 
 Vedligeholderen udfylder disse oplysninger for **den konkrete installationsfil**, ikke blot for kildekoden:

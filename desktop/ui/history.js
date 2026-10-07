@@ -46,6 +46,7 @@
   }
   async function load() {
     const root = current?.root;
+    $('#git-save-all').disabled = true;
     $('#git-refresh').disabled = true; $('#git-identity').hidden = true; $('#git-quick').hidden = true; $('#git-summary').textContent = 'Henter versioner …';
     $('#git-auto').disabled = true; $('#restore-undo').hidden = true;
     try {
@@ -68,7 +69,7 @@
       // Kopien før sidste gendannelse kræver ikke Git; kun et Git-problem i et projekt med versioner stopper den.
       $('#restore-undo').hidden = !result.restoration || (result.autoCheckpoint && !interrupted); $('#restore-undo').disabled = Boolean(result.block) && result.initialized;
       if (interrupted) $('#git-feedback').textContent = 'Sidste gendannelse blev afbrudt. Vælg Fortryd sidste gendannelse for at genskabe filerne fra før gendannelsen.';
-    } finally { $('#git-auto').disabled = false; $('#git-refresh').disabled = false; }
+    } finally { $('#git-auto').disabled = false; $('#git-refresh').disabled = false; $('#git-save-all').disabled = false; }
   }
   function renderList() {
     const items = status?.history || [], shown = showAll ? items : items.slice(0, visible);

@@ -18,6 +18,8 @@ Eksempler i appen: AI-adgang har to store valg. Udbyder har tre ligestillede kor
 
 Tæl de synlige valg, før en skærm kaldes færdig, og gennemfør forløbet i appen.
 
+Dialogens tilgængelige navn skal bruge den overskrift, der faktisk vises i det aktuelle trin. Kontakter har deres eget navn, også når rækken indeholder en ⓘ-knap. Ved lukning skal fokus lande på en synlig åbner; en skjult menuhandling er ikke et brugbart returpunkt. Første lag i Før du sender forklarer tidligere beskeder i den fortsatte AI-session. Et tilvalg af en ekstra historikkopi må ikke ligne en kontakt til at slå den eksisterende session fra. Uden gemt AI-forbindelse skal Vælg AI føre direkte til forbindelsesguiden.
+
 ## Det, man møder
 
 - Første skærm spørger, om man vil bygge i appen eller bruge Aura Harness i sit eget kodeværktøj.

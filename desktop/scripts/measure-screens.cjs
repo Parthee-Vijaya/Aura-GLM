@@ -9,6 +9,7 @@ const os = require('node:os');
 const http = require('node:http');
 const { execFileSync } = require('node:child_process');
 const helpers = require('./ui-test-helpers.cjs');
+const { auditUI } = require('./ui-audit.cjs');
 
 const state = { project: null, builds: 0, requests: 0 };
 const page = title => `<!doctype html><html lang="da"><head><meta charset="utf-8"><title>${title}</title></head><body><h1>${title}</h1><p>Tre fiktive mødelokaler.</p></body></html>`;
@@ -71,8 +72,9 @@ const server = http.createServer(async (req, res) => {
       return { words: text ? text.split(' ').length : 0, choices: controls.filter(el => !el.matches('input:not([type=checkbox]):not([type=radio]), textarea, .info')).length, infos: controls.filter(el => el.matches('.info')).length, fields: controls.filter(el => el.matches('input:not([type=checkbox]):not([type=radio]), textarea')).length, text };
     }, selector);
     const file = `${String(++counter).padStart(2, '0')}-${name}.png`;
-    await win.screenshot({ path: path.join(out, file), animations: 'disabled' });
-    results.push({ name, title, file, ...data });
+    const windowImage = await app.evaluate(async ({ BrowserWindow }) => (await BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).webContents.capturePage()).toPNG().toString('base64'));
+    await fs.writeFile(path.join(out, file), Buffer.from(windowImage, 'base64'));
+    results.push({ name, title, file, ...data, audit: await win.evaluate(auditUI, selector) });
   }
   try {
     await win.waitForFunction(() => !document.querySelector('#welcome-build').disabled);
