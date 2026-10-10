@@ -16,10 +16,14 @@ const {createHash}=require('node:crypto');
   browser=await chromium.launch({channel:'chrome',headless:true});const page=await browser.newPage({viewport:{width:1200,height:1000},acceptDownloads:true});
   await page.goto(`http://127.0.0.1:${server.address().port}`);await page.locator('.artifact').first().waitFor();assert.equal(await page.locator('.artifact').count(),manifest.files.length);
   await page.screenshot({path:path.join(output,'downloadside.png'),fullPage:true});
-  const [download]=await Promise.all([page.waitForEvent('download'),page.locator('.artifact a').first().click()]);
-  const file=path.join(output,download.suggestedFilename());await download.saveAs(file);
-  assert.equal(createHash('sha256').update(await fs.readFile(file)).digest('hex'),manifest.files[0].sha256);
+  for (const [index, artifact] of manifest.files.entries()) {
+   const [download]=await Promise.all([page.waitForEvent('download'),page.locator('.artifact a').nth(index).click()]);
+   assert.equal(download.suggestedFilename(),artifact.name,'Linket henter den angivne installationsfil');
+   const file=path.join(output,artifact.name);await download.saveAs(file);
+   assert.equal((await fs.stat(file)).size,artifact.bytes,'Downloadens størrelse matcher filoversigten');
+   assert.equal(createHash('sha256').update(await fs.readFile(file)).digest('hex'),artifact.sha256,'Kontrolsum matcher for '+artifact.name);
+  }
   await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:path.join(output,'mobil.png'),fullPage:true});
-  console.log(JSON.stringify({status:'bestået',output,checks:['faktiske links','rigtig fil hentet via browser','SHA-256 matcher','desktop og mobil'],publiceret:false}));
+  console.log(JSON.stringify({status:'bestået',output,files:manifest.files.map(f=>f.name),checks:['alle installationslinks','alle filer hentet via browser','filnavne, størrelser og SHA-256 matcher','desktop og mobil'],publiceret:false}));
  }finally{await browser?.close();server.closeAllConnections();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e);process.exitCode=1;});

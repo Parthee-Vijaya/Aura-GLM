@@ -440,7 +440,7 @@ npm run runtime:prepare -- darwin-arm64
 npm run package:mac -- --arm64
 ```
 
-Intel-Mac bruger `darwin-x64` og `--x64`. Windows bygges på Windows med mål `win32-x64` og `npm run package:windows -- --x64`; ARM64 bruger `win32-arm64` og `--arm64`. Pakken er en betaversion. Windows-kørsel kræver særskilt afprøvning på Windows, også hvis krydsbygning lykkes.
+Intel-Mac bruger `darwin-x64` og `--x64`. Windows bruger mål `win32-x64` og `npm run package:windows -- --x64`; ARM64 bruger `win32-arm64` og `--arm64`. Windows-pakken kan også bygges lokalt fra Mac med de nødvendige byggeværktøjer. En krydsbygget `.exe` er ikke en afprøvning på Windows: installation, første start og opdatering skal stadig prøves der. Pakken er en betaversion.
 
 Signering sker kun, når `HARNESS_SIGN_IDENTITY` eksplicit angives til det godkendte Developer ID-certifikat ved Mac-bygning. Angiv certifikatnavnet uden præfikset `Developer ID Application:`; den lokalt godkendte identitet er `mekbas IVS (2UX98897JW)`. Der er ingen automatisk valg af certifikat. Notarisation er særskilt og kræver en opsat Apple-profil; en signeret pakke er ikke automatisk notariseret. Indtil notarisation er gennemført, må testpakken ikke beskrives som en friktionsfri installation på andre Mac-computere. Omgå ikke kommunens installationspolitik.
 
@@ -451,7 +451,7 @@ npm run release:site
 
 `test:package` starter den pakkede app med isoleret brugerdata og begrænset PATH, kontrollerer medfølgende værktøjer, opretter et syntetisk projekt og viser preview. Den nulstiller aldrig macOS-nøgleringen. Downloadfiler og den genererede downloadside ligger i `desktop/release/` og skal distribueres separat, ikke committes som binære filer. Bygning uploader ikke noget. Downloadsiden viser kun faktiske filer og SHA-256; den opfinder ikke publicerede links.
 
-Vedligeholdere kan starte workflowet **Byg testpakker** manuelt efter eget commit/push. Workflowet uploader byggeartefakter til den konkrete GitHub Actions-kørsel, ikke en offentlig Release. Mac-pakker fra workflowet er usignerede, medmindre en særskilt godkendt signeringsopsætning tilføjes. Kildearkiver og tredjepartslicenser følger med runtime; projektets egen kode er under EUPL-1.2; se LICENSE.
+Workflowet **Byg testpakker** har kun manuel start. Fra 10. oktober 2026 kræver hver konkret kørsel brugerens udtrykkelige tilladelse, også efter commit/push. Byg lokalt som udgangspunkt; et ønske om installationsfiler er ikke tilladelse til at bruge GitHub-minutter. Workflowet uploader byggeartefakter til den konkrete GitHub Actions-kørsel, ikke en offentlig Release. Mac-pakker fra workflowet er usignerede, medmindre en særskilt godkendt signeringsopsætning tilføjes. Kildearkiver og tredjepartslicenser følger med runtime; projektets egen kode er under EUPL-1.2; se LICENSE.
 
 Workflowet prøver også plan, filændring, preview og fortrydelse gennem rigtig OpenCode med en lokal testmodel. Det bruger ingen ekstern model eller API-nøgle. Byggearkiver gemmes i syv dage; de er midlertidige prøver og skal ikke bruges som permanente downloadlinks. Den ændring frigør ikke plads fra ældre arkiver. En fuld lagerkvote skal håndteres særskilt, før en ny kørsel kan gemme sine filer.
 
@@ -464,6 +464,16 @@ npm run release:site -- release
 ```
 
 Scriptet indsender den konkrete DMG til Apple, kræver Accepted, vedhæfter billetten og validerer den. En kvittering bindes til filens SHA-256. Downloadsiden markerer kun en fil som notariseret, hvis kvittering og aktuel kontrolsum matcher. En ny bygning kræver ny notarisation. Profilnavnet er ikke en adgangskode; profilen oprettes lokalt med Apples værktøj. Apple-login og private nøgler må ikke lægges i repositoryet.
+
+Kontrollér også appen inde i DMG'en med `syspolicy_check distribution`. En billet på diskbilledet er ikke en billet på selve appen: kontrollen 10. oktober fandt `Notary Ticket Missing` på appen, selv om Gatekeeper accepterede den som `Notarized Developer ID`. Efter Apples første godkendelse vedhæftes billetten derfor til den signerede `.app` med `xcrun stapler staple`, og appen kontrolleres igen. Pak derefter den samme app med `electron-builder --prepackaged` til en ny outputmappe. Det bevarer den afprøvede kode og signatur. Den endelige DMG indsendes og kontrolleres særskilt, før filoversigt og kontrolsummer dannes. Overskriv ikke en tidligere afprøvet installationsfil undervejs.
+
+Eksempel på pakning af en allerede signeret og staplet Apple Silicon-app fra `desktop/`:
+
+```bash
+npx --no-install electron-builder --config electron-builder.cjs --mac dmg --arm64 --prepackaged release/mac-arm64/Aura.app --publish never --config.directories.output=release/notarized-arm64
+```
+
+Intel bruger `--x64` og den tilsvarende Intel-app. En Intel-app kørt med Rosetta er ikke en prøve på Intel-hardware; den medfølgende OpenCode-binær kan kræve CPU-egenskaber, som Rosetta ikke stiller til rådighed. Windows- og Intel-pakker må ikke beskrives som installationsafprøvet alene på baggrund af en vellykket bygning.
 
 
 ### Faktisk afprøvning · 25. september 2026

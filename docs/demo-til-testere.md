@@ -6,7 +6,7 @@ Dette er testmateriale, ikke en annoncering af en publiceret version. Udfyld den
 
 Send personerne teksten nedenfor sammen med installationsoplysningerne. Fortæl ikke på forhånd, hvor hver knap ligger. Hvis du observerer testen, noter hvor personen tøver, hvad de forventer, og hvilken hjælp du giver. Første brugerobservation er en del af denne test, ikke noget, der skal opfindes på forhånd.
 
-**Status 10. oktober:** beta.5 retter en fejl med Windows-linjeskift, som blev fundet i den nye CI-kørsel. Apple-login er oprettet, men indsendelse er ikke det samme som notarisation. Rigtig modelprøve, godkendt installationsfil og testerens downloadadgang skal fortsat dokumenteres for den konkrete version. GitHubs lager til byggearkiver er desuden fyldt. Kontroller [aktuel teststatus](teststatus.md#installationskontrol-før-invitation--10-oktober-2026), og udfyld version, download, AI-adgang og kontakt før invitationen sendes. Kontaktvejen kan være svar direkte til den, der inviterer; opfind ikke en supportadresse.
+**Status 10. oktober:** tre lokale beta.5-installationsfiler er bygget til Apple Silicon, Intel-Mac og Windows x64. De er ikke publiceret. Apple Silicon-appen består signatur-, billet- og distributionskontroller; de nyeste Mac-diskbilleder følges hos Apple. Windows er usigneret og ikke installationsafprøvet. Intel-opstart består under Rosetta, men hele byggeforløbet er ikke verificeret der. De gamle GitHub-arkiver er ryddet med tilladelse, og automatiske workflows er slået fra. Kontroller [aktuel teststatus](teststatus.md#installationskontrol-før-invitation--10-oktober-2026), og udfyld version, download, AI-adgang og kontakt før invitationen sendes. Kontaktvejen kan være svar direkte til den, der inviterer.
 
 ## Til dig, der prøver appen
 

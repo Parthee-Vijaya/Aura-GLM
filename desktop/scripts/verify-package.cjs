@@ -12,11 +12,12 @@ const { execFileSync } = require('node:child_process');
  const root = await fs.mkdtemp(path.join(os.tmpdir(),'harness-package-'));
  const platformPath = process.platform==='win32' ? path.join(process.env.SystemRoot,'System32') : '/usr/bin:/bin:/usr/sbin:/sbin';
  const env={...process.env,PATH:platformPath,HARNESS_OPENCODE_PATH:'',ELECTRON_RUN_AS_NODE:undefined};
- assert.equal(execFileSync(runtime.opencode,['--version'],{env,encoding:'utf8'}).trim(),require('../runtime-lock.json').opencode);
- assert.match(execFileSync(runtime.node,['--version'],{env,encoding:'utf8'}),/v22\.23\.3/);
- assert.match(execFileSync(runtime.git,['--version'],{env,encoding:'utf8'}),/2\.53\.0/);
+ const toolCheck={env,encoding:'utf8',timeout:30000};
+ assert.equal(execFileSync(runtime.opencode,['--version'],toolCheck).trim(),require('../runtime-lock.json').opencode);
+ assert.match(execFileSync(runtime.node,['--version'],toolCheck),/v22\.23\.3/);
+ assert.match(execFileSync(runtime.git,['--version'],toolCheck),/2\.53\.0/);
  const npm = path.join(resources,'runtime/node',process.platform==='win32'?'node_modules/npm/bin/npm-cli.js':'lib/node_modules/npm/bin/npm-cli.js');
- assert.match(execFileSync(runtime.node,[npm,'--version'],{env,encoding:'utf8'}),/^\d+\./);
+ assert.match(execFileSync(runtime.node,[npm,'--version'],toolCheck),/^\d+\./);
  let app,page;
  try {
   app = await electron.launch({executablePath,args:['--user-data-dir='+path.join(root,'appdata')],env});
