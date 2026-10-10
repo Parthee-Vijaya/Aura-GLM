@@ -12,10 +12,10 @@ const FEATURE_GROUPS = ['integrationer'];
 const MAX_SKILL_LINES = 300;
 
 function parseFrontmatter(text, where) {
-  const match = /^---\n([\s\S]*?)\n---\n/.exec(text);
+  const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n/.exec(text);
   if (!match) throw new Error(`${where}: SKILL.md skal begynde med et YAML-felt afgrænset af ---.`);
   const fields = {};
-  for (const line of match[1].split('\n')) {
+  for (const line of match[1].split(/\r?\n/)) {
     const field = /^([a-z-]+): (.+)$/.exec(line);
     if (!field) throw new Error(`${where}: YAML-feltet må kun indeholde enkle linjer med navn: værdi.`);
     if (fields[field[1]] !== undefined) throw new Error(`${where}: ${field[1]} står flere gange.`);

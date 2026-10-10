@@ -6,7 +6,22 @@ const os=require('node:os');
 const {createHash}=require('node:crypto');
 const {download}=require('../scripts/prepare-runtime.cjs');
 const {generate}=require('../scripts/release-site.cjs');
+const {execFileSync}=require('node:child_process');
 async function temp(t){const root=await fs.mkdtemp(path.join(os.tmpdir(),'harness-package-unit-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));return root;}
+test('checkout med Windows-indstillinger bevarer kildefiler og downloadpakkernes bytes',async t=>{
+ const root=await temp(t),source=path.join(root,'kilde'),output=path.join(root,'checkout med mellemrum');
+ await fs.mkdir(source);await fs.mkdir(output);
+ const repository=path.join(__dirname,'../..');
+ const attributes=await fs.readFile(path.join(repository,'.gitattributes'),'utf8');
+ await fs.writeFile(path.join(source,'.gitattributes'),attributes+'\nkontrol.txt text eol=crlf\n');
+ await fs.writeFile(path.join(source,'kontrol.txt'),'kontrol\n');
+ const files=['profiles/skills/harness-ide-og-afgraensning/SKILL.md','site/dist/catalog.json','site/dist/downloads/aura-harness-codex-0.2.0.zip'];
+ for(const file of files){await fs.mkdir(path.dirname(path.join(source,file)),{recursive:true});await fs.copyFile(path.join(repository,file),path.join(source,file));}
+ const git=args=>execFileSync('git',['-C',source,'-c','core.autocrlf=true',...args],{stdio:'pipe'});
+ git(['init']);git(['add','.']);git(['checkout-index','--all','--prefix='+output.replaceAll('\\','/')+'/']);
+ assert.equal(await fs.readFile(path.join(output,'kontrol.txt'),'utf8'),'kontrol\r\n','Prøven fremkalder faktisk Windows-linjeskift');
+ for(const file of files)assert.deepEqual(await fs.readFile(path.join(output,file)),await fs.readFile(path.join(repository,file)),file);
+});
 test('runtime-download afviser forkert kontrolsum og bruger verificeret cache',async t=>{
  const root=await temp(t), file=path.join(root,'runtime.tar.gz'), data=Buffer.from('syntetisk runtime');
  const entry={url:'https://example.invalid/runtime',checksum:createHash('sha256').update(data).digest('hex')};

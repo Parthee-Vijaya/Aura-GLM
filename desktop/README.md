@@ -277,6 +277,14 @@ Den valgfrie webkontrol bruger en lokal testmodel, men lader den rigtige agents 
 node scripts/verify-design-web.cjs
 ```
 
+`test:live-app` gennemfører det afgrænsede mødelokaleforløb i Aura med en rigtig model: plan, bygning, filtrering i preview på computer/mobil, rettelse og bytekontrol efter Fortryd. Nøglen indtastes direkte i prøvens isolerede appvindue. Brug kun syntetiske data og egen godkendte adgang; modelkald kan koste penge. Prøven sletter sine appdata med den krypterede nøgle bagefter og ændrer ikke brugerens normale appdata eller nøglering. Resultatstien udskrives; en valgfri resultatmappe skal være ny.
+
+```bash
+HARNESS_LIVE_PROVIDER=corti HARNESS_TEST_PACKAGE="release/mac-arm64/Aura.app" npm run test:live-app -- /private/tmp/aura-corti-proeve corti-s1
+```
+
+Udelad `HARNESS_TEST_PACKAGE` for at køre fra kildekoden. `--controlled` gennemfører samme prøve med lokal kontrolleret model og rigtig OpenCode; det er ikke en live-modelprøve. `--controlled --controlled-failure` fremkalder HTTP 401 og skal ende med exit 1 og en fejlrapport. Den signerede kandidat og den faktiske eksterne status står i [teststatus](../docs/teststatus.md#tre-konkrete-prøver-før-udsendelse--8-oktober-2026).
+
 Den særskilte eksterne modelprøve sender kun syntetisk projektmateriale og offentlige regler til Zen-modellen `big-pickle`, uden API-nøgle. Kontrollér aktuelle vilkår før en ny kørsel; den indgår ikke i standardtestene:
 
 ```bash
@@ -418,7 +426,7 @@ Afslutningen viser ændrede tekstfiler registreret i den enkelte opgave og **Kon
 
 ### Demogennemgang · 7. oktober 2026
 
-Den aktuelle kandidat er `0.2.0-beta.4`. [Demogennemgangen](../docs/demogennemgang.md) beskriver UI/UX, datagrænser og det, der stadig kræves før udsendelse. [Demo til testere](../docs/demo-til-testere.md) er det korte testmateriale; [teststatus](../docs/teststatus.md) skelner mellem lokal kode, pakket app, rigtig model og publiceret installation.
+Den aktuelle kandidat er `0.2.0-beta.5`. [Demogennemgangen](../docs/demogennemgang.md) beskriver UI/UX, datagrænser og det, der stadig kræves før udsendelse. [Demo til testere](../docs/demo-til-testere.md) er det korte testmateriale; [teststatus](../docs/teststatus.md) skelner mellem lokal kode, pakket app, rigtig model og publiceret installation. Beta.5 retter indlæsning af skills med Windows-linjeskift. Repositoryets `.gitattributes` bevarer desuden ens tekstfiler ved checkout, så de genererede instruktionspakker kan kontrolleres byte for byte på begge platforme.
 
 `npm run test:demo` prøver første start uden AI, kladde, forbindelsesguide, navngivne kontroller, fokus, tastatur, 980 × 720, 150 % zoom, reduceret bevægelse og genåbning. Det kan også køres med `HARNESS_TEST_PACKAGE` sat til den konkrete `.app` eller `.exe`. `measure:screens` registrerer en afgrænset DOM-kontrol og tager billeder direkte fra Electron-vinduet. Det erstatter ikke en skærmlæserprøve eller brugerobservation.
 
@@ -445,12 +453,14 @@ npm run release:site
 
 Vedligeholdere kan starte workflowet **Byg testpakker** manuelt efter eget commit/push. Workflowet uploader byggeartefakter til den konkrete GitHub Actions-kørsel, ikke en offentlig Release. Mac-pakker fra workflowet er usignerede, medmindre en særskilt godkendt signeringsopsætning tilføjes. Kildearkiver og tredjepartslicenser følger med runtime; projektets egen kode er under EUPL-1.2; se LICENSE.
 
+Workflowet prøver også plan, filændring, preview og fortrydelse gennem rigtig OpenCode med en lokal testmodel. Det bruger ingen ekstern model eller API-nøgle. Byggearkiver gemmes i syv dage; de er midlertidige prøver og skal ikke bruges som permanente downloadlinks. Den ændring frigør ikke plads fra ældre arkiver. En fuld lagerkvote skal håndteres særskilt, før en ny kørsel kan gemme sine filer.
+
 
 Notarisation efter opsætning af lokal `notarytool`-profil:
 
 ```bash
-node scripts/notarize.cjs release/beta.3/AI-Harness-0.2.0-beta.3-mac-arm64.dmg PROFILNAVN
-npm run release:site -- release/beta.3
+node scripts/notarize.cjs release/Aura-0.2.0-beta.5-mac-arm64.dmg ai-harness-notary
+npm run release:site -- release
 ```
 
 Scriptet indsender den konkrete DMG til Apple, kræver Accepted, vedhæfter billetten og validerer den. En kvittering bindes til filens SHA-256. Downloadsiden markerer kun en fil som notariseret, hvis kvittering og aktuel kontrolsum matcher. En ny bygning kræver ny notarisation. Profilnavnet er ikke en adgangskode; profilen oprettes lokalt med Apples værktøj. Apple-login og private nøgler må ikke lægges i repositoryet.

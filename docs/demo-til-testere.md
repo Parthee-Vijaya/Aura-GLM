@@ -6,6 +6,8 @@ Dette er testmateriale, ikke en annoncering af en publiceret version. Udfyld den
 
 Send personerne teksten nedenfor sammen med installationsoplysningerne. Fortæl ikke på forhånd, hvor hver knap ligger. Hvis du observerer testen, noter hvor personen tøver, hvad de forventer, og hvilken hjælp du giver. Første brugerobservation er en del af denne test, ikke noget, der skal opfindes på forhånd.
 
+**Status 10. oktober:** beta.5 retter en fejl med Windows-linjeskift, som blev fundet i den nye CI-kørsel. Apple-login er oprettet, men indsendelse er ikke det samme som notarisation. Rigtig modelprøve, godkendt installationsfil og testerens downloadadgang skal fortsat dokumenteres for den konkrete version. GitHubs lager til byggearkiver er desuden fyldt. Kontroller [aktuel teststatus](teststatus.md#installationskontrol-før-invitation--10-oktober-2026), og udfyld version, download, AI-adgang og kontakt før invitationen sendes. Kontaktvejen kan være svar direkte til den, der inviterer; opfind ikke en supportadresse.
+
 ## Til dig, der prøver appen
 
 Vi vil gerne vide, om Aura kan hjælpe dig med at bygge en lille app ved at beskrive den. Du tester også, om vi forklarer det tydeligt. Hvis du går i stå, er det nyttig feedback.

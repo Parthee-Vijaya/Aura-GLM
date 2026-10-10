@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
-const { loadLibrary } = require('../core/library.cjs');
+const { loadLibrary, validateSkillText } = require('../core/library.cjs');
 const { layoutFor } = require('../core/adapters.cjs');
 const installer = require('../core/installer.cjs');
 const profiles = path.join(__dirname, '..', '..', 'profiles');
@@ -53,6 +53,27 @@ test('et samlet valg af alle værktøjer giver én installation uden modstridend
   await installer.apply(root, layout.entries, settings, plan.token);
   assert.ok(layout.dirs.includes('.agents/skills') && layout.dirs.includes('.claude/skills'));
   assert.equal(new Set(layout.entries.map(entry => entry.path)).size, layout.entries.length);
+});
+
+test('det rigtige bibliotek kan indlæses og installeres med Windows-linjeskift', async t => {
+  const source = await loadLibrary(profiles);
+  const copy = await temp(t, 'harness-windows-linjer-');
+  await fs.cp(profiles, copy, { recursive: true });
+  for (const skill of source.skills) for (const file of skill.files) {
+    await fs.writeFile(path.join(copy, 'skills', skill.name, file.path), file.content.replace(/\r?\n/g, '\r\n'));
+  }
+  const library = await loadLibrary(copy);
+  assert.deepEqual(library.skills.map(skill => skill.description), source.skills.map(skill => skill.description));
+  const root = await temp(t, 'harness-windows-installation-');
+  const layout = layoutFor(library, ['codex']);
+  const settings = { version: library.version, tools: layout.tools };
+  const plan = await installer.plan(root, layout.entries, settings);
+  await installer.apply(root, layout.entries, settings, plan.token);
+  const name = 'harness-ide-og-afgraensning';
+  const installed = await fs.readFile(path.join(root, '.agents/skills', name, 'SKILL.md'), 'utf8');
+  assert.equal(installed, await fs.readFile(path.join(copy, 'skills', name, 'SKILL.md'), 'utf8'), 'Installation bevarer filens faktiske indhold');
+  assert.equal(validateSkillText(name, installed).fields.name, name);
+  assert.throws(() => validateSkillText(name, installed.replace('description:', 'ukendt-felt:')), /ikke tilladt/, 'Windows-linjeskift lemper ikke feltkontrollen');
 });
 
 test('skillsene overholder Agent Skills-formatet og indeholder ingen scripts', async () => {
