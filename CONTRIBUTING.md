@@ -1,67 +1,41 @@
 # Bidrag til Aura Harness
 
-Dansk er dokumentets primære sprog. En engelsk version følger nedenfor.
+Aura Harness er en udviklingsbeta med to brugsveje: instruktioner til dit eget kodeværktøj og desktopappen Aura. Vi tager udgangspunkt i kommunernes behov og vil gerne høre fra både udviklere og dem, der afprøver værktøjerne i deres arbejde.
 
-## Projektets aktuelle fokus
+Kontaktperson for betaen er **Parthee Vijayamohan**, [pavi@kalundborg.dk](mailto:pavi@kalundborg.dk). Kontaktpersonen koordinerer spørgsmål og bidrag med projektets bidragydere. Der er ingen garanteret svartid eller supportaftale.
 
-Projektet er i en tidlig afklarings- og designfase. Den første POC skal være en enkel brugerflade, hvor man kan hente AI-konfigurationsfiler og læse, hvordan de bruges med blandt andet Claude Code, Codex og OpenCode.
+## Fejl, forslag og erfaringer
 
-Konfigurationerne skal formidle god udviklingspraksis, eksempelvis versionsstyring og at undgå hemmeligheder i commits. Instruktioner til en AI er vejledning og kan ikke i sig selv garantere, at regler bliver overholdt.
+[Opret en issue](https://github.com/ai-alliancen-org/ai-harness/issues) med det, du forsøgte, hvad du forventede, og hvad der skete. Oplys version, operativsystem og nødvendige trin. Brug opdigtede data, og fjern private oplysninger fra skærmbilleder og logs.
 
-Bidrag til krav, anvendelsestilfælde, konfigurationsfiler, vejledninger og afprøvning er velkomne. Større udvidelser bør drøftes, før implementeringen begynder.
+Sikkerhedsproblemer skal [rapporteres privat](SECURITY.md), ikke i en offentlig issue. Del aldrig borgeroplysninger, API-nøgler, adgangskoder, privat korrespondance eller fortroligt materiale fra samarbejdspartnere.
 
-## Sådan bidrager du
+## Ændringer i kode og indhold
 
-- Beskriv behovet og de mennesker, bidraget skal hjælpe, gerne med et konkret kommunalt eksempel.
-- Skeln mellem en foreslået funktion og en eksisterende, afprøvet funktion.
-- Angiv, hvilket værktøj eller hvilken del af projektet bidraget vedrører, samt eventuelle nye afhængigheder.
-- Forklar, hvordan andre kan efterprøve resultatet, også når noget går galt. For værktøjsspecifikke konfigurationer skal du angive, hvilke versioner og miljøer du har afprøvet dem i.
-- Skriv vejledninger, så de kan følges uden indforstået teknisk viden. Brug dansk som udgangspunkt.
-- Medtag ikke borgeroplysninger, adgangskoder, API-nøgler, privat korrespondance eller fortrolige oplysninger fra samarbejdspartnere. Brug pladsholdere i eksempler.
+1. Beskriv behovet i en issue, før du begynder på en større ændring eller ny integration. En konkret rettelse kan sendes direkte som en pull request.
+2. Arbejd i din egen fork og branch. Hold ændringen samlet om ét behov, og bevar eksisterende projekters filer og indstillinger.
+3. Skriv brugerflade, vejledninger og beskrivelser på almindeligt dansk. Se [sprogvejledningen](docs/sprog.md) og appens [designprincipper](desktop/DESIGN.md).
+4. Afprøv det berørte forløb. Beskriv separat, hvad der er skrevet, enhedstestet, kørt mod rigtige filer eller tjenester og observeret med brugere. Simulerede svar skal fremgå som simulerede. Manglende Windows- eller Mac-afprøvning skal stå tydeligt.
+5. Åbn en pull request med problemet, ændringen og din afprøvning. Knyt den til den relevante issue, og nævn nye afhængigheder eller ændrede rettigheder. Et bidrag flettes først efter en vedligeholders gennemgang.
 
-## Fremtidige integrationer
+AI må gerne hjælpe med bidraget. Den, der indsender, skal selv gennemgå koden og kunne forklare dens funktion, rettigheder og begrænsninger. En models påstand om, at en test består, er ikke testdokumentation.
 
-På sigt ønsker vi at understøtte bidrag med modelforbindelser, værktøjs- og datakonnektorer, hostingadaptere, skabeloner og organisationsprofiler. Deres endelige grænseflader er endnu ikke fastlagt, og de er ikke krav til den første POC.
+## Find den rigtige del
 
-Et integrationsforslag bør beskrive den ansvarlige vedligeholder, licens, understøttede versioner, funktioner, konfiguration, nødvendige rettigheder, håndtering af legitimationsoplysninger og driftsansvar. Medtag et reproducerbart eksempel på korrekt funktion samt relevante eksempler på afviste handlinger og genopretning efter fejl.
+- **Grundregler og skills:** redigér kilderne i `profiles/`. Filplaceringer og beskrivelser ligger i `profiles/catalog.json`. Ændr kun en regel med en konkret begrundelse og en kilde, hvor det er relevant. Angiv værktøj, version og metode, når noget kaldes afprøvet.
+- **Webguide og pakker:** se [bygning af hjemmesiden](docs/website.md). Genererede pakker og katalogsider bygges fra `profiles/`; de redigeres ikke direkte.
+- **Appen og integrationer:** se [desktop/README.md](desktop/README.md) og [det tekniske grundlag](docs/teknisk-grundlag.md). Brug de eksisterende adaptere og det fælles bibliotek. Oplys modtagere, databehandling, pris, nødvendige rettigheder og ansvar for drift.
 
-At en integration er tilgængelig fra fællesskabet, er ikke det samme som, at projektet har verificeret den, eller at en kommune har godkendt den. Et bidrag må ikke ubemærket udvide eksisterende installationers rettigheder eller blive aktiveret som standard.
+En integration skal have en ansvarlig kontakt, licens, kendte versioner og en reproducerbar afprøvning af både korrekt funktion og relevante fejl. Den må ikke aktivere sig selv, skifte til en betalt udbyder eller udvide brugerens rettigheder ubemærket. Tilgængelighed i kataloget er ikke en kommunal godkendelse.
 
-## Beslutninger, der stadig mangler
+## Lokal afprøvning
 
-Projektet er licenseret under EUPL-1.2; se [LICENSE](LICENSE). Bidrag modtages under samme licens. Projektets vedligeholdere, bidragsvilkår, proces for verifikation af integrationer og private kanal til indrapportering af sikkerhedsproblemer er endnu ikke fastlagt. Disse forhold skal afklares, før eksterne kodebidrag påbegyndes.
+Appens afhængigheder og de lokale testkommandoer står i [desktop/README.md](desktop/README.md). Webguiden bygges med `node scripts/build-packages.cjs`; Pages-samlingen beskrives i [docs/website.md](docs/website.md).
 
----
+GitHub Actions kører kun manuelt. Start eller genstart ikke workflows uden aftale med vedligeholderen om den konkrete kørsel. Et push, en pull request eller en release skal ikke starte CI/CD. Lokale resultater og deres begrænsninger vedlægges bidraget.
 
-# Contributing to Aura Harness
+## Licens
 
-Danish is the primary language of this document. This section provides the English version.
+Projektet bruger [EUPL-1.2](LICENSE), og bidrag indsendes under samme licens. Indsend kun materiale, du har ret til at dele. Bevar ophavsretstekster og licensoplysninger i tredjepartskode, og oplys om nye afhængigheder og deres licenser. Kopiér ikke logoer, designs, kommunale dokumenter eller kode fra andre projekter uden at have afklaret retten til det.
 
-## Current project focus
-
-The project is in an early discovery and design phase. The first POC will be a simple interface where people can download AI configuration files and learn how to use them with tools including Claude Code, Codex, and OpenCode.
-
-The configurations should convey good development practices, such as version control and keeping secrets out of commits. AI instructions provide guidance and cannot, by themselves, guarantee that rules are followed.
-
-Contributions to requirements, use cases, configuration files, guides, and evaluation are welcome. Larger extensions should be discussed before implementation begins.
-
-## How to contribute
-
-- Describe the need and the people your contribution should help, preferably with a concrete municipal example.
-- Distinguish a proposed feature from an existing, tested feature.
-- Identify the tool or part of the project your contribution concerns, along with any new dependencies.
-- Explain how others can verify the result, including failure cases. For tool-specific configurations, state which versions and environments you tested them in.
-- Write guides that can be followed without assumed technical knowledge. Use Danish by default.
-- Do not include citizen records, passwords, API keys, private correspondence, or confidential partner information. Use placeholders in examples.
-
-## Future integrations
-
-In the longer term, we intend to support contributions of model connections, tool and data connectors, hosting adapters, templates, and organisation profiles. Their final interfaces are not yet specified, and they are not requirements for the first POC.
-
-An integration proposal should identify its maintainer, license, supported versions, capabilities, configuration, required permissions, credential handling, and operating responsibilities. Include a reproducible success case and relevant examples of denied actions and recovery from failures.
-
-Community availability, project verification, and approval by an individual municipality are different statuses. A contribution must not silently expand existing installations' permissions or become enabled by default.
-
-## Decisions still required
-
-The project is licensed under the EUPL-1.2; see [LICENSE](LICENSE). Contributions are accepted under the same licence. The maintainers, contribution terms, integration-verification process, and private security-reporting channel are not yet established. These matters must be resolved before external code contributions begin.
+Se [betastatus](docs/beta.md) for de aktuelle begrænsninger og [teststatus](docs/teststatus.md) for dokumenteret afprøvning.

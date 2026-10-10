@@ -1,6 +1,7 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const {render,build}=require('../../scripts/build-pages.cjs');
+const {assertPublicPages}=require('../../scripts/pages-access.cjs');
 const fs=require('node:fs/promises');
 const os=require('node:os');
 const path=require('node:path');
@@ -12,3 +13,34 @@ test('Pages viser installationsfiler med det nye og det tidligere navn',()=>{con
 test('Pages viser adgangskrav og ingen opdigtede downloads',()=>{assert.match(render([],meta),/kræver login/);assert.doesNotMatch(render([],meta),/Hent Mac/);assert.doesNotMatch(render([{...release,draft:true}],meta),/Hent Mac/);});
 test('Pages bruger faktiske releasefiler og afviser fremmede links',()=>{const html=render([release],meta);assert.match(html,/Hent Mac · Apple-chip/);assert.match(html,/SHA-256/);assert.throws(()=>render([{...release,assets:[{...release.assets[0],browser_download_url:'https://example.org/fil'}]}],meta),/matcher ikke/);assert.doesNotMatch(render([{...release,assets:[{name:'.env',state:'uploaded'}]}],meta),/\.env/);});
 test('Pages bevarer instruktionspakker og bygger tom tilstand fra rigtige skabeloner',async t=>{const dir=await fs.mkdtemp(path.join(os.tmpdir(),'harness-pages-'));t.after(()=>fs.rm(dir,{recursive:true,force:true}));await build([],meta,dir);assert.match(await fs.readFile(path.join(dir,'index.html'),'utf8'),/endnu ingen offentliggjort/);assert.match(await fs.readFile(path.join(dir,'pakker.html'),'utf8'),/Claude/);await fs.access(path.join(dir,'downloads/aura-harness-codex-0.2.0.zip'));await fs.access(path.join(dir,'skills.html'));assert.match(await fs.readFile(path.join(dir,'catalog.json'),'utf8'),/harness-sikkerhedsgennemgang/);assert.ok(!(await fs.readdir(dir)).some(f=>f.endsWith('.dmg')));});
+
+test('Offentlig beta viser betastatus og faktiske downloads uden privat adgangstekst', async t => {
+  const publicMeta = { ...meta, private: false, visibility: 'public' };
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'harness-pages-public-'));
+  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  await build([release], publicMeta, dir);
+  const html = await fs.readFile(path.join(dir, 'index.html'), 'utf8');
+  assert.match(html, /UDVIKLINGSBETA/);
+  assert.match(html, /EUPL-1\.2/);
+  assert.match(html, /docs\/beta\.md/);
+  assert.match(html, /SECURITY\.md/);
+  assert.match(html, /Hent Mac/);
+  assert.doesNotMatch(html, /kræver login|privat(e| )repository|licens og vedligeholdelsesansvar skal/);
+  assert.doesNotMatch(render([], publicMeta), /kræver login|Hent Mac/);
+});
+
+test('Pages afviser privat, ukendt eller forkert repository før offentlig udgivelse', () => {
+  const pages = { public: true, build_type: 'workflow' };
+  const publicMeta = { ...meta, private: false, visibility: 'public' };
+  assert.doesNotThrow(() => assertPublicPages(publicMeta, pages));
+  for (const repository of [meta, {}, null, { ...publicMeta, private: 'false' }, { ...publicMeta, visibility: 'private' }, { ...publicMeta, full_name: 'other/repo' }]) {
+    assert.throws(() => assertPublicPages(repository, pages), /repositoryet skal være offentligt/);
+  }
+});
+
+test('Pages afviser manglende adgangsoplysninger og automatisk branch-bygning', () => {
+  const publicMeta = { ...meta, private: false, visibility: 'public' };
+  for (const pages of [null, {}, { public: false, build_type: 'workflow' }, { public: 'true', build_type: 'workflow' }, { public: true, build_type: 'legacy' }, { public: true }]) {
+    assert.throws(() => assertPublicPages(publicMeta, pages), /Pages skal være offentlig/);
+  }
+});

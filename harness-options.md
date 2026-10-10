@@ -1,5 +1,7 @@
 # An open public-sector application-building harness
 
+> Historisk oplæg fra 22. september 2026. Beskrivelserne af manglende implementering gælder tidspunktet for oplægget. Se [aktuel betastatus](docs/beta.md).
+
 Discussion brief · 22 September 2026
 
 Status: research and proposed experiments. No harness has been implemented, unit-tested, run against real material, or deployed. Product capabilities below were checked against primary documentation; architectural recommendations are judgments, not benchmark results.

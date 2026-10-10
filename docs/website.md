@@ -2,7 +2,7 @@
 
 ## Byg pakker og sider lokalt
 
-Kræver Node.js 22.12 eller nyere. Der er ingen eksterne afhængigheder, konti eller API-nøgler.
+Brug Node.js 22.23.3, som også er fastlåst til appens bygning. Andre Node-versioner kan komprimere ZIP-filerne forskelligt og dermed give andre kontrolsummer. Bygningen har ingen eksterne afhængigheder, konti eller API-nøgler.
 
 Byg pakkerne, kataloget og de genererede sider fra det fælles bibliotek:
 
@@ -31,7 +31,7 @@ Nye værktøjer tilføjes i kataloget med regelfil, skillmapper, kontrol, forbeh
 
 ## Afprøvning
 
-**7. oktober 2026:** den samlede side er bygget fra faktiske repository-/release-svar. Repositoryet er stadig privat, der er nul releases, og Pages-API svarer HTTP 404. Ingen synlighed eller udgivelse er ændret. De fem sider er kørt i Chrome ved 1280 og 390 pixels: 10 visninger, 79 lokale links med HTTP 200 og ingen sidefejl eller vandret overløb. Installationssiden og forsiden bruger Auras koboltfarve. Testen dækker lokal betjening og faktiske metadata, ikke adgang fra en testpersons konto eller installation. Gentag med `npm run test:demo-web -- RELEASE-JSON REPOSITORY-JSON` fra `desktop/`.
+Kør enhedsprøverne og browserprøven lokalt. Browserprøven bygger ud fra gemte GitHub-metadata og kontrollerer de fem sider på computer- og mobilbredde, begge brugsveje og de lokale links. Den udgiver intet. Aktuelle resultater og afgrænsning står i [gennemgangen før offentliggørelse](offentliggoerelse.md).
 
 ```bash
 cd desktop
@@ -50,9 +50,21 @@ npm test
 
 Workflowet `.github/workflows/pages.yml` kan kun startes manuelt. Det er desuden deaktiveret på GitHub fra 10. oktober 2026 efter brugerens ønske om at spare Actions-minutter. Ingen push eller release må starte en bygning. Genaktivering og hver konkret kørsel kræver brugerens udtrykkelige tilladelse; en anmodning om installationsfiler er ikke tilladelse til at bruge Actions. Workflowet uploader kun den genererede statiske mappe, aldrig installationsfiler, tokens eller repositoryroden. Det opretter ingen releases, tags eller commits.
 
-**Aktuel adgang:** Kun inviterede testere. Repositoryet er privat, og organisationens abonnement er GitHub Free (kontrolleret 25. september 2026). Privat Pages kræver [GitHub Enterprise Cloud](https://docs.github.com/en/enterprise-cloud@latest/pages/getting-started-with-github-pages/changing-the-visibility-of-your-github-pages-site). Derfor er Pages endnu ikke aktiveret. Deployment sker kun, når GitHubs Pages-API udtrykkeligt oplyser `public: false`; et privat repository gør ikke automatisk selve Pages-siden privat. Så længe Pages ikke er slået til, bygger workflowet siden og springer udgivelsen over med en besked i kørslen. Offentlig Pages, en uklar synlighed og andre API-fejl stopper kørslen som fejl. Kontrollen blev ændret 29. september 2026, fordi hvert push ellers endte som en fejlet kørsel, selv om intet var gået i stykker.
+### Klargøring til offentlig beta
 
-Indtil privat Pages er tilgængeligt, kan inviterede testere med læseadgang hente installationsfiler fra repositoryets private Releases. Der findes endnu ingen release med installationsfiler. Udgiv kun de gennemgåede pakker gennem repositoryets CI/CD med præcis signerings-/teststatus og kontrolsummer. Det nuværende pakkeworkflow leverer midlertidige Actions-arkiver; det opretter ikke en Release. Apple-loginprofilen er oprettet og valideret 10. oktober; notarisation og downloadadgang skal stadig kontrolleres for den konkrete fil, jf. [teststatus](teststatus.md#installationskontrol-før-invitation--10-oktober-2026). En offentlig informationsside med private downloads er en anden mulighed, men er ikke valgt eller aktiveret.
+Repositoryet er fortsat privat, og Pages er ikke aktiveret. Koden er klargjort til offentlig adgang, men dette ændrer ingen indstillinger på GitHub. [Gennemgangen før offentliggørelse](offentliggoerelse.md) skal afsluttes, før synligheden ændres.
+
+Workflowet kræver en manuel start på `main` med bekræftelsen `offentlig_udgivelse`. Feltet er som udgangspunkt slået fra. Det kontrollerer friske API-svar før bygning, før upload og før udgivelse:
+
+- Repositoryet skal være `ai-alliancen-org/ai-harness` med `private: false` og `visibility: public`.
+- Pages skal oplyse `public: true` og `build_type: workflow`. Branch-baseret automatisk Pages-bygning accepteres ikke.
+- En manglende Pages-opsætning, ukendt adgang eller API-fejl stopper kørslen. Workflowet opretter ikke selv Pages og gør ikke repositoryet offentligt.
+
+`scripts/pages-access.cjs` indeholder den fælles kontrol. Den kan også køres lokalt mod gemte API-svar. Vedligeholderen skal særskilt godkende skiftet til offentlig adgang, opsætningen af Pages med GitHub Actions som kilde samt genaktivering og den konkrete manuelle kørsel. Vælg ikke “Deploy from a branch”, da det kan starte bygninger ved push.
+
+Kun hjemmesiden og tekstpakkerne uploades som Pages-indhold. Installationsfiler hentes via faktiske GitHub Releases; de kopieres ikke til Pages. Et offentligt repository har også offentlige publicerede Releases og offentlig historik. Private testfiler skal derfor ikke lægges i en publiceret Release her.
+
+Der findes endnu ingen release med installationsfiler. Udgiv kun gennemgåede pakker med præcis signerings-/teststatus og kontrolsummer. En anmodning om at klargøre betaen giver ikke tilladelse til en Release eller en betalt byggeproces. Se [betastatus](beta.md) og [den konkrete installationskontrol](teststatus.md#installationskontrol-før-invitation--10-oktober-2026).
 
 ### Se den samlede forside lokalt
 
@@ -61,15 +73,21 @@ Læs metadata med den eksisterende GitHub CLI-adgang. Disse kommandoer ændrer i
 ```bash
 mkdir -p .cache
 gh api repos/ai-alliancen-org/ai-harness/releases > .cache/pages-releases.json
-gh api repos/ai-alliancen-org/ai-harness --jq '{full_name, private}' > .cache/pages-repository.json
+gh api repos/ai-alliancen-org/ai-harness --jq '{full_name, private, visibility}' > .cache/pages-repository.json
 node scripts/build-pages.cjs .cache/pages-releases.json .cache/pages-repository.json
 python3 -m http.server 4184 --bind 127.0.0.1 --directory .cache/pages
 ```
 
 Åbn http://127.0.0.1:4184/. Bygningen samler forsiden, webguiden og installationssiden, så de interne links kan afprøves. Tjek store og små vinduer, tastaturnavigation og begge brugsveje. De to JSON-filer og den byggede mappe er lokale, ignorerede filer.
 
-**Verifikation:** Tre automatiske tests afprøver tom tilstand, privat adgangstekst, udeladelse af kladder, downloadadresser og bevarelse af POC 1-pakker. Siden er også bygget fra repositoryets faktiske API-svar, som aktuelt indeholder nul releases. Ingen Pages-deployment eller download fra GitHub Releases er endnu udført. Kildeændringerne skal først gennemgås, committes og pushes af vedligeholderen.
+### Gentag browserkontrollen
 
-Den 28. september 2026 er den omskrevne forside bygget fra friske GitHub-metadata og afprøvet i browseren. Begge brugsveje er fulgt til webguide og installationsside; alle tre værktøjsvalg viser det tilsvarende downloadlink. Springlink og tastaturfokus er kontrolleret. Visning ved 1280 og 390 pixels er kontrolleret uden vandret overløb. De tre Pages-tests og tre tests af de faktiske downloadpakker består. Det dokumenterer siden og pakkeindholdet, ikke modeladfærd, brugerforståelse eller de foreslåede nye integrationer.
+Fra `desktop/`, med Google Chrome installeret:
 
-Samme dag er værktøjsoversigten bygget med de allerede hentede GitHub-metadata og afprøvet via forsidens link. Alle ti værktøjer vises, kategorilink og springlink er fulgt, og forbindelsen videre til de eksisterende pakker er kontrolleret. Ved 390 pixels vises én kolonne; ved 1280 pixels viser browserens layout to kolonner uden vandret overløb. De 37 lokale HTML-links og ressourcer i Pages-outputtet findes, og de seks eksisterende tests består. Arkitekturbeskrivelsen bygger på kildegennemgang, og oplysninger om de ti værktøjer på deres officielle dokumentation. Ingen ny værktøjsintegration, Pi-motor, webbackend eller offentlig deployment er afprøvet eller tilføjet.
+```bash
+npm run test:demo-web -- ../.cache/pages-releases.json ../.cache/pages-repository.json
+```
+
+Kontrollér også billederne fra prøven. Et simuleret `private: false` i en lokal kopi af metadata kan bruges til at afprøve den offentlige visning; det er ikke dokumentation for repositoryets faktiske adgang. Den sidste kontrol før upload skal altid bruge friske svar fra GitHub.
+
+GitHub ændres først efter vedligeholderens gennemgang, commit og push samt særskilt godkendelse af offentliggørelsen og den konkrete kørsel.

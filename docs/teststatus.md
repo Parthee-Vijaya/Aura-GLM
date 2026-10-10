@@ -1,6 +1,8 @@
 # Teststatus før invitation
 
-Senest kontrolleret 10. oktober 2026. Afsnittene er daterede, så tidligere begrænsninger kan læses i deres sammenhæng. Dette er status for den aktuelle arbejdsmappe, ikke en erklæring om, at alle installationsfiler eller modeller er klar. Der er ikke committet eller pushet i dette repository under denne gennemgang.
+Senest kontrolleret 11. oktober 2026. Afsnittene er daterede, så tidligere begrænsninger kan læses i deres sammenhæng. Dette er status for den aktuelle arbejdsmappe, ikke en erklæring om, at alle installationsfiler eller modeller er klar. Der er ikke committet eller pushet i dette repository under denne gennemgang.
+
+[Gennemgangen før offentlig beta](offentliggoerelse.md) samler historik- og logkontrol samt de lokale prøver af README, hjemmeside og udgivelseskontrol. Den offentliggør ikke appen og ændrer ikke installationsstatus nedenfor.
 
 ## Installationskontrol før invitation · 10. oktober 2026
 

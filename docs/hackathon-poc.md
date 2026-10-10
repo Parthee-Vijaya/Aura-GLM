@@ -1,5 +1,7 @@
 # Hackathon POC
 
+> Historisk oplæg til den første POC, ikke en beskrivelse af den aktuelle app. Se [betastatus](beta.md) og [teststatus](teststatus.md) for det, der findes og er afprøvet.
+
 Proposed event: 23 October 2026 · approximately 30–40 participants
 
 **Maturity: written.** This is a discussion specification. No application, integration, isolation boundary, or deployment workflow has been implemented or tested.

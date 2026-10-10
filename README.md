@@ -1,5 +1,7 @@
 # Aura Harness
 
+**Udviklingsbeta · EUPL-1.2.** Brug og tilpas instruktionerne, læs koden, og bidrag med erfaringer. Aura-appen er under afprøvning. Se [betastatus og kendte begrænsninger](docs/beta.md), før du installerer.
+
 Aura Harness er et udviklingsværktøj og en fælles arbejdsmetode til at bygge applikationer med AI, fra idé til drift. Vi henvender os til udviklere, IT-medarbejdere og teknisk interesserede kolleger i kommunerne, som vil have hjælp til at skrive kode og holde styr på et projekt.
 
 Vi samler en fælles arbejdsmetode, vejledninger og instruktioner til kodeagenter. De skal hjælpe med opgaven, koden, afprøvningen og driften, herunder hvor data behandles, hvem der har adgang, og hvordan en anden udvikler kan overtage projektet. Desktopappen Aura er én måde at bruge Aura Harness på.
@@ -30,7 +32,7 @@ I Claude Code og OpenCode er det afprøvet med en kontrolleret modelserver, at g
 
 Appen samler samtale med din AI, kodeændringer, forhåndsvisning og versionsgemning. Du bruger din egen modelforbindelse, og projektfilerne ligger på din computer. Der er også hjælp til testudgivelse hos de hostingtjenester, der er understøttet. Ved første start vælger du mellem at bygge i appen og at lægge Aura Harness i dit eget kodeværktøj; begge veje kan åbnes igen senere.
 
-Se [installation og opsætning](desktop/README.md) og [den konkrete teststatus](docs/teststatus.md). Appen er en testversion til inviterede brugere. Et komplet forløb fra download til drift er endnu ikke afprøvet på en almindelig testers egen computer.
+Se [installation og opsætning](desktop/README.md) og [den konkrete teststatus](docs/teststatus.md). Installationsfiler vises i [GitHub Releases](https://github.com/ai-alliancen-org/ai-harness/releases), når de er udgivet. Et komplet forløb fra download til drift er endnu ikke afprøvet på en almindelig testers egen computer. Brug opdigtede data til afprøvning.
 
 ## Hvad bygger appen på?
 
@@ -68,9 +70,10 @@ Koden, brugeren bygger, ligger i almindelige projektfiler. Med versionsstyring o
 
 ## Projekt og bidrag
 
-Projektet tager udgangspunkt i kommunernes behov og kan også bruges i andre sammenhænge. Koden er open source under EUPL-1.2, som findes på alle EU-sprog, også dansk; se [LICENSE](LICENSE). Vedligeholdelsesansvaret skal stadig aftales.
+Projektet tager udgangspunkt i kommunernes behov og kan også bruges i andre sammenhænge. Koden er licenseret under EUPL-1.2; se [LICENSE](LICENSE). Kontaktperson for betaen er Parthee Vijayamohan, [pavi@kalundborg.dk](mailto:pavi@kalundborg.dk).
 
 - [Bidrag med erfaringer, kode eller integrationer](CONTRIBUTING.md)
+- [Rapportér et sikkerhedsproblem privat](SECURITY.md)
 - [Læs research og forslag til det fælles Aura Harness](docs/harness-grundlag.md)
 - [Se de eksisterende instruktioner og skills](profiles/)
 - [Byg og vedligehold hjemmesiden](docs/website.md)

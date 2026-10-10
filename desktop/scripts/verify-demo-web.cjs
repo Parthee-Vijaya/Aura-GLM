@@ -46,10 +46,24 @@ const { auditUI } = require('./ui-audit.cjs');
     for (const url of links) {
       const response = await page.request.get(url); assert.equal(response.ok(), true, `Lokalt link findes: ${url}`);
     }
-    await page.goto(origin); const skip = page.locator('a[href="#main"]');
-    if (await skip.count()) { await skip.focus(); await page.keyboard.press('Enter'); assert.equal(await page.evaluate(() => location.hash), '#main'); }
+    // Følg de to faktiske brugsveje, og kræv et fungerende springlink.
+    await page.goto(origin);
+    await page.locator('a.skip').focus(); await page.keyboard.press('Enter');
+    assert.equal(await page.evaluate(() => location.hash), '#valg');
+    assert.equal(await page.locator('.choices .choice-link').count(), 2);
+    await page.locator('.choices .choice-link').nth(0).click();
+    assert.equal(new URL(page.url()).pathname, '/pakker.html');
+    await page.goto(origin);
+    await page.locator('.choices .choice-link').nth(1).click();
+    assert.equal(new URL(page.url()).hash, '#desktop');
+    await page.getByRole('link', { name: 'Installation og hjælp →' }).click();
+    assert.equal(new URL(page.url()).pathname, '/desktop.html');
+    assert.equal(await page.getByRole('link', { name: 'Læs betastatus og kendte begrænsninger ↗' }).count(), 1);
+    await page.goto(origin);
+    await page.setViewportSize({ width: 1280, height: 844 });
+    await page.screenshot({ path: path.join(root, 'forside.png') });
     assert.deepEqual(errors, []);
-    const report = { status: 'bestået', root, screens, localLinks: links.size, errors, private: metadata.private, published: false, limitation: 'Lokal visning; ikke installation eller adgang fra en testpersons konto.' };
+    const report = { status: 'bestået', root, screens, localLinks: links.size, primaryChoices: 2, journeys: ['Webguide', 'App og betastatus'], skipLink: '#valg', errors, private: metadata.private, published: false, limitation: 'Lokal visning; ikke installation eller adgang fra en testpersons konto.' };
     await fs.writeFile(path.join(root, 'rapport.json'), JSON.stringify(report, null, 2)); console.log(JSON.stringify(report));
   } finally { await browser?.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
 })().catch(e => { console.error(e); process.exitCode = 1; });
