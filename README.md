@@ -1,80 +1,120 @@
+<p align="center">
+  <img src="docs/images/aura-icon.png" width="88" alt="Aura">
+</p>
+
 # Aura Harness
 
-**Udviklingsbeta · EUPL-1.2.** Brug og tilpas instruktionerne, læs koden, og bidrag med erfaringer. Aura-appen er under afprøvning. Se [betastatus og kendte begrænsninger](docs/beta.md), før du installerer.
+Aura Harness hjælper dig med at bygge applikationer med AI og holde styr på opgaven, koden og afprøvningen. Brug desktopappen **Aura**, eller læg de fælles instruktioner i det kodeværktøj, du allerede arbejder med.
 
-Aura Harness er et udviklingsværktøj og en fælles arbejdsmetode til at bygge applikationer med AI, fra idé til drift. Vi henvender os til udviklere, IT-medarbejdere og teknisk interesserede kolleger i kommunerne, som vil have hjælp til at skrive kode og holde styr på et projekt.
+Projektet tager udgangspunkt i kommunernes behov og henvender sig til udviklere, IT-medarbejdere og teknisk interesserede kolleger, der vil bygge, forstå og gennemgå deres egne løsninger.
 
-Vi samler en fælles arbejdsmetode, vejledninger og instruktioner til kodeagenter. De skal hjælpe med opgaven, koden, afprøvningen og driften, herunder hvor data behandles, hvem der har adgang, og hvordan en anden udvikler kan overtage projektet. Desktopappen Aura er én måde at bruge Aura Harness på.
+[Kom i gang](#kom-i-gang) · [Brug dit eget kodeværktøj](#brug-dit-eget-kodeværktøj) · [Betastatus](https://github.com/ai-alliancen-org/ai-harness/blob/main/docs/beta.md) · [Bidrag](https://github.com/ai-alliancen-org/ai-harness/blob/main/CONTRIBUTING.md)
 
-Du behøver ikke kunne kode en hel løsning fra bunden. Du skal være villig til at forstå de tjenester, du forbinder, gennemgå ændringer og afklare data og drift med din organisation. Aura Harness skal gøre de valg lettere at træffe. Et Promte-abonnement er ikke nødvendigt; adgang og eventuel betaling til valgte AI- og hostingtjenester håndteres særskilt.
+![Auras arbejdsområde med samtale, projektoversigt og et lokalt eksempel med tre mødelokaler i forhåndsvisningen.](docs/images/aura-arbejdsomraade.png)
 
-## To måder at bruge Aura Harness
+*Arbejdsområdet i Aura. Eksempelprojektet er åbnet lokalt og bruger opdigtede mødelokaler. Skærmbilledet viser forhåndsvisningen, ikke resultatet af en live-modelkørsel.*
 
-### Brug dit eget kodeværktøj
+> **Udviklingsbeta.** Appen er under afprøvning. Brug opdigtede data og et separat testprojekt. Læs [betastatus og kendte begrænsninger](https://github.com/ai-alliancen-org/ai-harness/blob/main/docs/beta.md), før du installerer.
 
-Behold det kodeværktøj, du bruger i dag, og giv det Aura Harness' grundregler og 12 skills til arbejdet fra idé til drift. Der er pakker til 23 kodeværktøjer, blandt andet Claude Code, Codex, OpenCode, Cursor, GitHub Copilot, Gemini CLI, Mistral Vibe og Zed. Lovable får en tekst til platformens egne felter.
+## Vælg, hvordan du vil arbejde
 
-- [Læs, hvad hver skill gør, og hvad den ikke gør](profiles/SKILLS.md). Samme oversigt findes som webside i [skills.html](site/dist/skills.html).
-- [Se, hvor filerne lægges i hvert værktøj](site/dist/vaerktoejer.html), og hvordan du kontrollerer, at de er indlæst.
-- [Hent pakken til dit værktøj i webguiden](site/dist/index.html).
+| | Aura-appen | Dit eget kodeværktøj |
+|---|---|---|
+| **Du får** | Samtale, plan, kodeændringer, forhåndsvisning og versioner i samme arbejdsområde. | Fælles grundregler og skills til arbejdet fra idé til drift. |
+| **Du vælger selv** | AI-forbindelse, model, projekt og funktioner. | Kodeværktøj, model og hvilke skills der installeres. |
+| **Kom i gang** | Start appen, og vælg **Byg i Aura-appen**. | Vælg **Brug Aura Harness i mit kodeværktøj**, eller installér fra kommandolinjen. |
 
-Der er tre måder at installere på: med Aura-appen, ved at bede din egen kodeagent følge vejledningen i pakken eller manuelt. Udviklere med adgang til repositoryet kan også bruge kommandolinjen:
+![Auras første skærm med valget mellem at bygge i appen og bruge Aura Harness i sit eget kodeværktøj.](docs/images/aura-velkomst.png)
+
+*Begge indgange kan åbnes igen fra appens sidepanel.*
+
+## Byg i Aura
+
+Beskriv, hvad du vil lave, og arbejd videre med AI’en i et lokalt projekt. Samtalen står ved siden af arbejdsfladen, hvor du kan se resultatet og gennemgå det arbejde, der ligger bag.
+
+- **Afklar og planlæg.** Beskriv brugerne, opgaven og de vigtigste krav. Gennemgå AI’ens forslag, før du beder den bygge.
+- **Følg ændringerne.** Gennemgå filændringer og de handlinger, der kræver din godkendelse. Fanerne Plan, Ændringer, Kode og Aktivitet samler detaljerne.
+- **Se og afprøv resultatet.** Brug forhåndsvisningen til at prøve løsningen i forskellige skærmstørrelser. Understøttede webprojekter kan startes gennem appen.
+- **Gem og fortryd.** Brug lokale Git-versioner til at følge arbejdet og gennemgå en tidligere version, før du gendanner den.
+
+Projektfilerne ligger på din computer. Du kan åbne dem i en anden editor og fortsætte arbejdet dér. AI-modellen vælges separat og kan køre hos en udbyder eller på en modelserver, du har adgang til.
+
+### Vælg den hjælp, du har brug for
+
+Under **Indstillinger → Funktioner** vælger du blandt andet planlægning, versioner, design, kodekvalitet og hjælp til sikkerhed og data. Valgene kan gælde alle projekter eller kun det aktuelle. Integrationer som Adresser og CVR vælges til særskilt.
+
+![Dialogen Funktioner med valg af planlægning, versioner, design, sikkerhed, kodekvalitet og integrationer.](docs/images/aura-funktioner.png)
+
+*Funktionerne styrer, hvilke arbejdsgange og instruktioner Aura stiller til rådighed. De er ikke en sikkerheds- eller myndighedsgodkendelse.*
+
+## Brug dit eget kodeværktøj
+
+Aura Harness kan også bruges uden desktopappen. Grundreglerne og de 12 skills er læsbare tekstfiler, som kodeagenten kan bruge til afgrænsning, arkitektur, design, kodning, afprøvning, data og drift.
+
+Der er pakker til blandt andet Claude Code, Codex, OpenCode, Cursor, GitHub Copilot, Gemini CLI, Mistral Vibe og Zed. Lovable får en tekst til platformens egne felter. Se [kataloget og de enkelte skills](https://github.com/ai-alliancen-org/ai-harness/blob/main/profiles/SKILLS.md).
+
+![Auras værktøjsvalg med Claude Code, GitHub Copilot, Codex og Cursor samt adgang til de øvrige værktøjer.](docs/images/aura-kodevaerktoej.png)
+
+*Appen viser, hvilke filer og afsnit der ændres, før du installerer. Egne regler bevares, og lokalt ændrede filer springes over ved opdatering.*
+
+Fra repositoryets rod kan du også installere i et andet projekt:
 
 ```bash
-node scripts/harness.cjs install --tools claude-code,cursor --project ../mit-projekt
+node scripts/harness.cjs install --tools codex --project ../mit-projekt
 ```
 
-I appen kan du vælge skills til og fra i fire kategorier; grundreglerne er altid med. Installationen viser de præcise ændringer, før noget skrives. Eksisterende filer overskrives aldrig: Aura Harness tilføjer et afgrænset afsnit i fx `AGENTS.md` og `.gitignore` og springer ændrede filer over. `.harness/installation.json` registrerer version og kontrolsummer, så en opdatering eller fjernelse kun rører uændrede filer. Skillsene indeholder kun tekst, ingen scripts og ingen værktøjstilladelser.
+Skillsene giver instruktioner til agenten. De indeholder ikke scripts eller værktøjstilladelser. Indlæsningen er afprøvet i Claude Code og OpenCode med en kontrolleret modelserver; de øvrige værktøjer følger deres dokumentation. Det viser ikke, hvor godt en bestemt model følger instruktionerne.
 
-I Claude Code og OpenCode er det afprøvet med en kontrolleret modelserver, at grundregler og skills bliver sendt til modellen. De øvrige værktøjer følger deres officielle dokumentation. Hvor godt en bestemt model følger instruktionerne, er ikke målt.
+## Kom i gang
 
-### Brug Aura-appen
+### Prøv appen
 
-Appen samler samtale med din AI, kodeændringer, forhåndsvisning og versionsgemning. Du bruger din egen modelforbindelse, og projektfilerne ligger på din computer. Der er også hjælp til testudgivelse hos de hostingtjenester, der er understøttet. Ved første start vælger du mellem at bygge i appen og at lægge Aura Harness i dit eget kodeværktøj; begge veje kan åbnes igen senere.
+Når du har en Aura-installation, kan du vælge **Prøv et eksempel** ved opstart. Det indbyggede eksempel bruger faste svar og kræver hverken en AI-konto eller en API-nøgle.
 
-Se [installation og opsætning](desktop/README.md) og [den konkrete teststatus](docs/teststatus.md). Installationsfiler vises i [GitHub Releases](https://github.com/ai-alliancen-org/ai-harness/releases), når de er udgivet. Et komplet forløb fra download til drift er endnu ikke afprøvet på en almindelig testers egen computer. Brug opdigtede data til afprøvning.
+![Det indbyggede eksempel med en besked om bibliotekets aktiviteter og den tilhørende forhåndsvisning.](docs/images/aura-eksempel.png)
 
-## Hvad bygger appen på?
+*Et lokalt eksempel, der viser samspillet mellem besked og forhåndsvisning. Der foretages ingen modelkald.*
 
-Vi har bygget vores egen **Electron-app** til Mac og Windows med **OpenCode som lokal kodeagent**. Vi bruger en fast OpenCode-version gennem en adapter og en særskilt konfiguration. Vi vedligeholder ikke en fork af OpenCode. AI-modellen vælges separat og kan køre hos en udbyder eller på en modelserver, brugeren har adgang til.
+Installationsfiler og udgivelsesnoter hører til i [GitHub Releases](https://github.com/ai-alliancen-org/ai-harness/releases). **Status 11. oktober 2026:** Der er endnu ingen udgivet installationspakke dér. Beta.5 er bygget lokalt til Mac og Windows; læs den platformsspecifikke [teststatus](https://github.com/ai-alliancen-org/ai-harness/blob/main/docs/teststatus.md).
 
-Aura tilføjer den guidede opstart, fælles instruktioner, modelforbindelser, godkendelser, forhåndsvisning, Git og hjælp til testudgivelse. Det følger det oprindelige forslag om at genbruge en agentmotor og bygge vores eget produkt omkring den.
+### Start fra kildekoden
 
-Fælles organisationslogin, et revisionsspor med verificerede godkendere og en isoleret afvikling af hele kodeagenten er endnu ikke bygget. Pi er en mulig alternativ motor, som skal afprøves; det indgår ikke i appen. Se [det tekniske grundlag og vurderingen af Pi](docs/teknisk-grundlag.md).
+Kræver adgang til repositoryet, Git, Node.js 22.12 eller nyere og npm.
 
-## Hele vejen fra idé til drift
+```bash
+git clone https://github.com/ai-alliancen-org/ai-harness.git
+cd ai-harness/desktop
+npm ci
+npm run runtime:prepare
+npm start
+```
 
-Det fælles Aura Harness skal hjælpe brugeren med at:
+`runtime:prepare` henter og kontrollerer de versioner af de medfølgende værktøjer, som projektet har låst. Vælg derefter din AI-forbindelse i appen, eller fortsæt uden AI for at se dig omkring. Adgang og eventuel betaling til model- og hostingtjenester håndteres særskilt.
 
-1. **Afklare idéen.** Hvem skal bruge løsningen, hvad skal den kunne, og hvilke data behøver den?
-2. **Vælge en egnet løsning.** Tag højde for kommunens eksisterende systemer, design, adgangskrav og muligheder for hosting.
-3. **Bygge og kontrollere.** Bevar ændringshistorikken, beskyt nøgler, og afprøv funktioner, adgang og tilgængelighed.
-4. **Udgive med et kendt ansvar.** Afklar databehandling og godkendelser, og kontrollér den faktiske tjeneste efter udgivelse.
-5. **Vedligeholde eller overdrage.** Dokumentér opsætning, drift, opdateringer og gendannelse, så andre kan tage over.
+Se [installation, opsætning og lokale testkommandoer](https://github.com/ai-alliancen-org/ai-harness/blob/main/desktop/README.md).
 
-Dette er produktets retning. Det fulde forløb er endnu ikke dækket af de nuværende downloadpakker. [Det faglige grundlag](docs/harness-grundlag.md) beskriver research, forslag til skills og de dele, der mangler.
+## Teknologi, data og betastatus
 
-## Kontrol over data og leverandører
+Aura er en Electron-app til Mac og Windows med OpenCode som lokal kodeagent. Vi bruger en fast version gennem en adapter; AI-modellen er et separat valg. Grundregler og skills kommer fra det samme bibliotek, uanset om du bruger Aura eller dit eget kodeværktøj.
 
-Vi vil gøre datasuverænitet konkret: hvor data behandles og opbevares, hvem der kan tilgå dem, hvilke vilkår der gælder, og om kode og data kan flyttes til en anden leverandør. Det gælder både AI-værktøjet under udviklingen og den færdige apps database, hosting, logs og sikkerhedskopier.
+Lokale projektfiler betyder ikke, at al databehandling er lokal. En ekstern model eller hostingtjeneste kan modtage kode og data. Den konkrete brug skal derfor vurderes ud fra de valgte tjenester, adgangsforhold og organisationens krav.
 
-Aura Harness skal støtte kommunens arbejde med sikkerhed og GDPR. Instruktioner er dog ikke adgangskontrol eller en godkendelse til at behandle personoplysninger. Den konkrete løsning skal vurderes af kommunen og de relevante fagpersoner. Grundlaget beskriver [hvilke oplysninger og kontroller vi foreslår](docs/harness-grundlag.md#data-og-drift).
+Appen har endnu ikke fælles organisationslogin, en isoleret sandbox for hele agenten eller et revisionsspor med verificerede godkendere. Et komplet forløb fra download til drift er heller ikke afprøvet på en almindelig testers egen computer. Instruktionerne erstatter ikke en vurdering af sikkerhed, persondata eller drift.
 
-## Brug og tilpas de relevante dele
+[Læs det tekniske grundlag](https://github.com/ai-alliancen-org/ai-harness/blob/main/docs/teknisk-grundlag.md) og [retningen for det fælles Aura Harness](https://github.com/ai-alliancen-org/ai-harness/blob/main/docs/harness-grundlag.md).
 
-Grundregler beskriver det fælles ansvar. Skills beskriver bestemte arbejdsopgaver. Projektprofiler skal samle valg om teknologi, design og arbejdsgang. Kommuner og leverandører skal kunne bidrage med indhold og integrationer uden at være bundet til én model, Git-tjeneste eller hostingudbyder.
+## Find rundt og bidrag
 
-Grundregler og skills ligger i [profiles](profiles/) som læsbare filer, og [kataloget](profiles/catalog.json) beskriver hvert værktøjs filplaceringer. Lokale tilpasninger bevares ved opdatering. Appens egen AI bruger det samme bibliotek og henter skills efter behov. Brugeren vælger funktionerne under Indstillinger › Funktioner. Organisationsprofiler med kommunens egne krav og standardvalg er endnu ikke bygget.
+| Mappe | Indhold |
+|---|---|
+| `desktop/` | Aura-appen, agentadapteren og lokale prøver. |
+| `profiles/` | Grundregler, skills og kataloget over kodeværktøjer. |
+| `site/` | Webguiden og pakker til de understøttede værktøjer. |
+| `scripts/` | Installation og bygning af instruktionspakker. |
+| `docs/` | Betastatus, afprøvning, teknisk grundlag og vejledninger. |
 
-Koden, brugeren bygger, ligger i almindelige projektfiler. Med versionsstyring og den nødvendige dokumentation kan en udvikler overtage arbejdet uden Aura.
+Bidrag med fejlrapporter, erfaringer fra afprøvning, forbedrede instruktioner eller kode. Beskriv, hvad du forsøgte, hvad du forventede, og hvad der skete. Se [bidragsvejledningen](https://github.com/ai-alliancen-org/ai-harness/blob/main/CONTRIBUTING.md), eller [opret en issue](https://github.com/ai-alliancen-org/ai-harness/issues). Sikkerhedsproblemer skal [rapporteres privat](https://github.com/ai-alliancen-org/ai-harness/blob/main/SECURITY.md).
 
-## Projekt og bidrag
+Koden er licenseret under [EUPL-1.2](https://github.com/ai-alliancen-org/ai-harness/blob/main/LICENSE).
 
-Projektet tager udgangspunkt i kommunernes behov og kan også bruges i andre sammenhænge. Koden er licenseret under EUPL-1.2; se [LICENSE](LICENSE). Kontaktperson for betaen er Parthee Vijayamohan, [pavi@kalundborg.dk](mailto:pavi@kalundborg.dk).
-
-- [Bidrag med erfaringer, kode eller integrationer](CONTRIBUTING.md)
-- [Rapportér et sikkerhedsproblem privat](SECURITY.md)
-- [Læs research og forslag til det fælles Aura Harness](docs/harness-grundlag.md)
-- [Se de eksisterende instruktioner og skills](profiles/)
-- [Byg og vedligehold hjemmesiden](docs/website.md)
-- [Skriv tekster til projektet](docs/sprog.md)
+*Skærmbillederne er taget i Aura 0.2.0-beta.5 på macOS den 11. oktober 2026 med isolerede appdata og opdigtede eksempler.*
