@@ -37,7 +37,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh api --paginate --slurp 'repos/ai-alliancen-org/ai-harness/releases?per_page=100' --jq 'add' > "$RUNNER_TEMP/releases.json"
+          gh api --paginate --slurp 'repos/ai-alliancen-org/ai-harness/releases?per_page=100' | jq 'add' > "$RUNNER_TEMP/releases.json"
           node scripts/build-pages.cjs "$RUNNER_TEMP/releases.json" "$RUNNER_TEMP/repository.json"
       - name: Kontrollér adgang igen før upload
         env:

@@ -52,7 +52,9 @@ Workflowet `.github/workflows/pages.yml` kan kun startes manuelt. Det er desuden
 
 ### Klargøring til offentlig beta
 
-Repositoryet er fortsat privat, og Pages er ikke aktiveret. Koden er klargjort til offentlig adgang, men dette ændrer ingen indstillinger på GitHub. [Gennemgangen før offentliggørelse](offentliggoerelse.md) skal afsluttes, før synligheden ændres.
+**Status 11. oktober 2026:** Repositoryet er offentligt, og Pages er oprettet med GitHub Actions som kilde og HTTPS aktiveret. Siden er endnu ikke udgivet; workflowet er fortsat deaktiveret. [Gennemgangen før offentliggørelse](offentliggoerelse.md) dokumenterer kontrollen før skiftet til offentlig adgang.
+
+Den lokale kontrol af udgivelseskommandoen fandt, at GitHub CLI ikke kan kombinere `--slurp` med `--jq`. Workflowet sender nu de indsamlede sider til `jq 'add'` som en separat kommando. Den rettede kommando er afprøvet mod repositoryets faktiske releasedata. Rettelsen skal være på `main`, før den godkendte manuelle udgivelse startes.
 
 Workflowet kræver en manuel start på `main` med bekræftelsen `offentlig_udgivelse`. Feltet er som udgangspunkt slået fra. Det kontrollerer friske API-svar før bygning, før upload og før udgivelse:
 
