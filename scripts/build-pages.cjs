@@ -3,6 +3,8 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const escape = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const repository = 'ai-alliancen-org/ai-harness';
+// Publish only the reviewed README artwork, never the complete docs directory.
+const pageImages = ['aura-icon.png', 'aura-arbejdsomraade.png', 'aura-funktioner.png', 'aura-eksempel.png'];
 function render(releases, metadata) {
   if (!Array.isArray(releases) || metadata.full_name !== repository || typeof metadata.private !== 'boolean') throw new Error('Ugyldige repository- eller releasedata.');
   const release = releases.filter(r => !r.draft && r.published_at && Array.isArray(r.assets))
@@ -25,6 +27,10 @@ async function build(releases, metadata, output = path.join(root, '.cache/pages'
   const fragment = render(releases, metadata);
   await fs.mkdir(output, {recursive:true});
   await fs.cp(path.join(root, 'site/dist'), output, {recursive:true});
+  await fs.mkdir(path.join(output, 'images'), {recursive:true});
+  for (const name of pageImages) {
+    await fs.copyFile(path.join(root, 'docs/images', name), path.join(output, 'images', name));
+  }
   await fs.copyFile(path.join(root, 'site/dist/index.html'), path.join(output, 'pakker.html'));
   let html = await fs.readFile(path.join(root, 'site/dist/overview.html'), 'utf8');
   html = html.replace(/<!-- artifacts -->[\s\S]*?<!-- \/artifacts -->/, fragment);

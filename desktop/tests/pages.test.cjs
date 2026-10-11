@@ -44,3 +44,18 @@ test('Pages afviser manglende adgangsoplysninger og automatisk branch-bygning', 
     assert.throws(() => assertPublicPages(publicMeta, pages), /Pages skal være offentlig/);
   }
 });
+
+test('Pages inkluderer kun de anvendte README-billeder og bevarer originalerne', async t => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'harness-pages-images-'));
+  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  await build([], meta, dir);
+  const html = await fs.readFile(path.join(dir, 'index.html'), 'utf8');
+  const referenced = [...html.matchAll(/<img\b[^>]*\bsrc="images\/([^"/]+)"/g)].map(match => match[1]);
+  assert.ok(referenced.length > 0);
+  assert.deepEqual((await fs.readdir(path.join(dir, 'images'))).sort(), [...new Set(referenced)].sort());
+  for (const name of referenced) {
+    assert.deepEqual(await fs.readFile(path.join(dir, 'images', name)), await fs.readFile(path.join(__dirname, '../../docs/images', name)));
+  }
+  await assert.rejects(fs.access(path.join(dir, 'docs')));
+  await assert.rejects(fs.access(path.join(dir, 'images/aura-velkomst.png')));
+});

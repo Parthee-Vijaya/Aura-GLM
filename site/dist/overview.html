@@ -9,7 +9,7 @@
 </head>
 <body>
   <a class="skip" href="#valg">Gå til valg af værktøj</a>
-  <header><a href="./">Aura Harness</a><a href="https://github.com/ai-alliancen-org/ai-harness">Projektet på GitHub ↗</a></header>
+  <header><a class="brand" href="./"><img src="images/aura-icon.png" width="36" height="36" alt="">Aura Harness</a><a href="https://github.com/ai-alliancen-org/ai-harness">Projektet på GitHub ↗</a></header>
   <main>
     <p class="eyebrow">UDVIKLINGSBETA · EUPL-1.2</p>
     <h1>Fra idé til<br>en app i drift.</h1>
@@ -26,11 +26,40 @@
         <p class="eyebrow">SAMLET I EN DESKTOPAPP</p>
         <h2>Byg i<br>Aura-appen</h2>
         <p>Beskriv din idé, byg med din egen AI, og se resultatet ved siden af samtalen. Appen samler kodeændringer, forhåndsvisning og versionsgemning.</p>
-        <a class="choice-link" href="#desktop">Se appen og betastatus →</a>
+        <a class="choice-link" href="#arbejdsomraade">Se, hvordan du arbejder i Aura →</a>
       </article>
     </section>
 
     <p class="explore"><a href="vaerktoejer.html">Se, hvordan Aura Harness bruges i hvert kodeværktøj →</a> <a href="skills.html">Læs om de 12 skills →</a></p>
+
+    <section class="workspace" id="arbejdsomraade" aria-labelledby="workspace-title">
+      <p class="eyebrow">ET KIG IND I APPEN</p>
+      <h2 id="workspace-title">Samtalen og løsningen i samme arbejdsområde</h2>
+      <p>Beskriv opgaven, gennemgå planen, og afprøv resultatet ved siden af samtalen. Fanerne Plan, Ændringer, Kode og Aktivitet hjælper dig med at følge arbejdet.</p>
+      <figure class="product-image">
+        <a href="images/aura-arbejdsomraade.png" target="_blank" rel="noopener" aria-label="Se arbejdsområdet i fuld størrelse (åbner i en ny fane)"><img src="images/aura-arbejdsomraade.png" width="2880" height="1816" loading="lazy" decoding="async" alt="Aura med samtale til venstre og en lokal oversigt over tre opdigtede mødelokaler til højre."></a>
+        <figcaption>Aura 0.2.0-beta.5 på Mac. Et lokalt eksempel med opdigtede mødelokaler, ikke resultatet af en live-modelkørsel. Tryk på billedet for at se det større.</figcaption>
+      </figure>
+      <ol class="workspace-steps">
+        <li><strong>Afklar og planlæg</strong><span>Beskriv brugerne, opgaven og kravene. Gennemgå AI’ens forslag, før du beder den bygge.</span></li>
+        <li><strong>Gennemgå og afprøv</strong><span>Se filændringer og handlinger, der kræver godkendelse. Afprøv understøttede webprojekter i forhåndsvisningen.</span></li>
+        <li><strong>Gem og fortryd</strong><span>Følg arbejdet i lokale Git-versioner, og gennemgå en tidligere version, før du gendanner den.</span></li>
+      </ol>
+      <p>Projektfilerne ligger på din computer og kan åbnes i en anden editor. Du vælger AI-modellen separat.</p>
+      <a class="button" href="#desktop">Se installation og betastatus →</a>
+    </section>
+
+    <section class="note" aria-labelledby="features-title">
+      <h2 id="features-title">Vælg den hjælp, dit projekt har brug for</h2>
+      <p>Under <strong>Indstillinger → Funktioner</strong> vælger du blandt andet planlægning, versioner, design, kodekvalitet og hjælp til sikkerhed og data. Valgene kan gælde alle projekter eller kun det aktuelle. Adresser og CVR vælges til særskilt.</p>
+      <details class="product-detail">
+        <summary>Se funktionsvalgene i appen</summary>
+        <figure class="product-image">
+          <a href="images/aura-funktioner.png" target="_blank" rel="noopener" aria-label="Se funktionsvalgene i fuld størrelse (åbner i en ny fane)"><img src="images/aura-funktioner.png" width="2880" height="1816" loading="lazy" decoding="async" alt="Auras dialog Funktioner med valg for alle projekter eller det aktuelle projekt og særskilte valg af Adresser og CVR."></a>
+          <figcaption>Valgene styrer arbejdsgange og instruktioner. De er ikke en sikkerheds- eller myndighedsgodkendelse.</figcaption>
+        </figure>
+      </details>
+    </section>
 
     <section class="note" aria-labelledby="maalgruppe-title">
       <h2 id="maalgruppe-title">Hvem er Aura Harness til?</h2>
@@ -61,6 +90,7 @@
       <h2 id="indhold-title">Fælles indhold, som kan tilpasses</h2>
       <p>Grundregler beskriver, hvordan agenten skal arbejde. <a href="skills.html">Skills</a> er vejledninger til bestemte opgaver, fx sikkerhedsgennemgang, udgivelse eller overdragelse, og de peger på danske offentlige krav, hvor de er relevante. Projektprofiler skal samle kommunens valg om teknologi, design og arbejdsgang.</p>
       <p>Du skal kunne vælge de relevante dele og bruge dem i flere værktøjer. Koden, du bygger, ligger i almindelige filer, så en udvikler kan overtage projektet.</p>
+      <p>Appen viser de berørte filer og afsnit før installation. Egne regler bevares, og lokalt ændrede filer springes over ved opdatering. Skillsene indeholder instruktioner, ikke scripts eller værktøjstilladelser. <a href="skills.html">Se de enkelte skills og deres rammer →</a></p>
     </section>
 
     <section id="desktop" class="downloads" aria-labelledby="download-title">
@@ -69,13 +99,21 @@
       <p>Projektfilerne ligger lokalt. Du forbinder selv en AI hos en udbyder eller på din egen modelserver. Installationspakken indeholder OpenCode, Git og Node/npm.</p>
       <!-- artifacts --><p>Installationsfiler vises her, når en testversion er udgivet i GitHub Releases.</p><!-- /artifacts -->
       <p><a href="desktop.html">Installation og hjælp →</a></p>
+      <details class="product-detail">
+        <summary>Prøv et eksempel uden AI-konto</summary>
+        <p>Når du har en Aura-installation, kan du vælge <strong>Prøv et eksempel</strong> ved opstart. Eksemplet bruger faste svar og kræver hverken en AI-konto eller en API-nøgle. Det foretager ingen modelkald.</p>
+        <figure class="product-image">
+          <a href="images/aura-eksempel.png" target="_blank" rel="noopener" aria-label="Se det lokale eksempel i fuld størrelse (åbner i en ny fane)"><img src="images/aura-eksempel.png" width="2880" height="1816" loading="lazy" decoding="async" alt="Det indbyggede eksempel med en besked om bibliotekets aktiviteter og resultatet i forhåndsvisningen."></a>
+          <figcaption>Et lokalt eksempel med opdigtede aktiviteter og faste svar. Det er en visning af arbejdsformen, ikke en afprøvning af en AI-model.</figcaption>
+        </figure>
+      </details>
     </section>
 
     <section class="note" aria-labelledby="grundlag-title">
       <h2 id="grundlag-title">Hvordan appen er bygget</h2>
       <p>Aura er vores egen Electron-app til Mac og Windows. OpenCode kører lokalt som kodeagent under brugerfladen. Vi bruger en fast version med vores egen konfiguration og har ikke lavet en fork af OpenCode.</p>
       <p>Aura samler opstart, instruktioner, modelforbindelser, godkendelser, forhåndsvisning og Git. Modellen vælges separat. Når du bruger vores instruktionspakker i et andet kodeværktøj, arbejder du med det værktøjs egen agent.</p>
-      <p>Fælles organisationslogin og en isoleret afvikling af hele agenten er endnu ikke bygget. Pi er en mulig alternativ motor, som vi har undersøgt i dokumentationen; appen bruger fortsat OpenCode.</p>
+      <p>Fælles organisationslogin, en isoleret afvikling af hele agenten og et revisionsspor med verificerede godkendere er endnu ikke bygget. Pi er en mulig alternativ motor, som vi har undersøgt i dokumentationen; appen bruger fortsat OpenCode.</p>
       <a href="https://github.com/ai-alliancen-org/ai-harness/blob/main/docs/teknisk-grundlag.md">Læs om arkitekturen og Pi ↗</a>
     </section>
 
