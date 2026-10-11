@@ -3,6 +3,8 @@
 :root { color: #1d293d; background: #f7f9fc; }
 a { color: #0052cc; }
 header a:last-child { font-size: 14px; font-weight: 400; }
+.brand { display: inline-flex; align-items: center; gap: 10px; }
+header { align-items: center; }
 main { padding-top: 40px; }
 .eyebrow { color: #52647e; letter-spacing: .1em; }
 .lead { max-width: 750px; color: #52647e; }
@@ -13,6 +15,20 @@ main { padding-top: 40px; }
 .choices p { color: #52647e; }
 .choice-link { margin-top: auto; padding-top: 12px; font-weight: 600; text-underline-offset: 4px; }
 .explore { margin: -32px 0 40px; }
+.workspace { margin: 48px 0 36px; }
+.workspace h2 { font-size: clamp(26px, 4vw, 36px); letter-spacing: -.03em; max-width: 720px; }
+.workspace > p { max-width: 760px; color: #52647e; }
+.product-image { margin: 24px 0; }
+.product-image a { display: block; border-radius: 12px; }
+.product-image img { display: block; width: 100%; height: auto; border: 1px solid #dbe3ef; border-radius: 12px; }
+.product-image figcaption { margin: 12px 0 0; max-width: 760px; font-size: 13px; line-height: 1.6; color: #52647e; }
+.workspace-steps { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin: 28px 0; }
+.workspace-steps li { border-top: 2px solid #0052cc; padding-top: 14px; }
+.workspace-steps strong, .workspace-steps span { display: block; }
+.workspace-steps span { margin-top: 8px; color: #52647e; line-height: 1.6; }
+.product-detail { background: #eef3fa; border: 1px solid #dbe3ef; padding: 20px; margin: 20px 0; }
+.product-detail summary { line-height: 1.5; }
+.product-detail .product-image { margin-bottom: 0; }
 .tool-index h1 { font-size: clamp(38px, 6vw, 64px); max-width: 800px; }
 .tool-nav { display: flex; flex-wrap: wrap; gap: 12px 24px; margin: 32px 0; }
 .tool-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 40px; }
@@ -46,6 +62,12 @@ a:focus-visible { outline: 3px solid #0052cc; outline-offset: 5px; }
   .explore { margin-top: -12px; }
   .tool-list { grid-template-columns: 1fr; }
   .choices h2 { font-size: 28px; }
+  header .brand { font-size: 18px; }
+  header a:last-child { max-width: 130px; text-align: right; }
+  .workspace-steps { grid-template-columns: 1fr; gap: 18px; }
+  .workspace { margin-top: 36px; }
+  .product-detail { padding: 16px; }
+  .downloads { padding: 20px; }
   .journey li { grid-template-columns: 28px 1fr; gap: 4px 12px; }
   .journey span { grid-column: 2; }
   footer { flex-direction: column; }
