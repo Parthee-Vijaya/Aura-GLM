@@ -16,7 +16,7 @@
     "opencode-linux-x64-baseline": "1.18.33",
     "opencode-linux-x64-baseline-musl": "1.18.33"
   },
-  "files": ["cli/*.cjs", "cli/README.md", "desktop/core/*.cjs", "desktop/runtime-lock.json", "profiles/", "scripts/harness.cjs", "LICENSE"],
+  "files": ["cli/*.cjs", "cli/*.md", "docs/komplai-api-token.md", "desktop/core/*.cjs", "desktop/runtime-lock.json", "profiles/", "scripts/harness.cjs", "LICENSE"],
   "scripts": {
     "test:cli": "node --test --test-concurrency=1 cli/tests/*.test.cjs",
     "test:cli-live": "node cli/tests/verify-cli.cjs"

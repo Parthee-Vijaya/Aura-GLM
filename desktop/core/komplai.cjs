@@ -7,8 +7,9 @@ const messages = {
   aura_not_configured: 'Komplai-login er ikke åbnet endnu. Kontakt Komplai, eller vælg en anden forbindelse.',
   coding_not_enabled: 'Din organisation har ikke åbnet for kodeværktøjer. Bed jeres administrator kontakte Komplai.',
   insufficient_scope: 'Denne konto har ikke adgang til kodeværktøjer.',
-  invalid_token: 'Dit login er udløbet. Log ind med Komplai igen.',
-  invalid_api_key: 'Adgangen er udløbet eller tilbagekaldt. Log ind med Komplai igen.',
+  invalid_token: 'Adgangen blev afvist. Log ind med Komplai igen, eller kontrollér dit API-token.',
+  invalid_api_key: 'Adgangen er udløbet eller tilbagekaldt. Log ind med Komplai igen, eller indsæt et nyt API-token.',
+  api_key_required: 'Brug et Komplai API-token til kodeværktøjer.',
   terms_changed: 'Organisationens priser eller datavilkår har ændret sig. Hent modellerne igen og gennemgå oplysningerne.',
   ai_credit_exhausted: 'Organisationens AI-kreditter er brugt. Kontakt jeres administrator.',
 };

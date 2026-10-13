@@ -505,8 +505,14 @@ handle('setup:status', async () => {
 });
 handle('connections:discover', () => require('./core/local-discovery.cjs').discoverLocalModels());
 const komplaiLogin = new (require('./core/komplai.cjs').KomplaiLogin)();
-handle('komplai:login', () => komplaiLogin.start(url => shell.openExternal(url)));
-handle('komplai:cancel', () => komplaiLogin.cancel());
+const komplaiToken = new (require('./core/komplai-token.cjs').KomplaiToken)();
+handle('komplai:login', () => { komplaiToken.cancel(); return komplaiLogin.start(url => shell.openExternal(url)); });
+handle('komplai:cancel', () => { komplaiLogin.cancel(); komplaiToken.cancel(); });
+handle('komplai:token-check', value => { komplaiLogin.cancel(); return komplaiToken.check(value); });
+handle('komplai:token-connect', value => exclusive(async () => {
+  if (workbench.running) throw new Error('Stop opgaverne først.');
+  await komplaiToken.connect(value, workbench.store); return workbench.state();
+}));
 handle('komplai:connect', value => exclusive(async () => {
   if (workbench.running) throw new Error('Stop opgaverne først.');
   await komplaiLogin.connect(value, workbench.store); return workbench.state();
@@ -840,4 +846,4 @@ app.whenReady().then(async () => {
   app.on('activate', () => { if (!window) createWindow(); });
 });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
-app.on('before-quit', event => { komplaiLogin.cancel(); if (quitReady) return; event.preventDefault(); shutdown().finally(() => { quitReady = true; app.quit(); }); });
+app.on('before-quit', event => { komplaiLogin.cancel(); komplaiToken.cancel(); if (quitReady) return; event.preventDefault(); shutdown().finally(() => { quitReady = true; app.quit(); }); });

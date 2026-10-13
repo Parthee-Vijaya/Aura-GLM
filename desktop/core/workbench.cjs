@@ -215,7 +215,8 @@ class Workbench {
     if ([...this.chats.values()].some(chat => chat.running && chat.prepared?.connection?.id !== id)) throw new Error('Stop opgaverne først.');
     if (connection.kind === 'komplai') {
       for (const chat of this.chats.values()) if (chat.prepared?.connection?.id === id) { await chat.stop(); await chat.close(false); chat.prepared = null; }
-      await require('./komplai.cjs').disconnect(connection, this.store.decrypt(connection));
+      // Et indsat token kan også bruges i andre programmer. Fjernelse her tilbagekalder kun Auras egne loginadgange.
+      if (connection.account?.authMethod !== 'token') await require('./komplai.cjs').disconnect(connection, this.store.decrypt(connection));
     }
     if (this.running) throw new Error('Stop opgaverne først.'); await this.closeEngines(); await this.store.update(state => { state.connections = state.connections.filter(c => c.id !== id); }); this.catalogs.delete(id); return this.state(); }
   async closeEngines() { for (const chat of this.chats.values()) if (!chat.running) await chat.close(false); }

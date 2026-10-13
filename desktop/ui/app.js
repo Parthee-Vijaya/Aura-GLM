@@ -412,7 +412,7 @@ function renderConnections() {
   for (const connection of state.connections) {
     $('#connection-select').append(option(connection.id, connection.name));
     const row = node('div', undefined, 'saved-connection'), text = node('span');
-    text.append(node('strong', connection.name), node('small', connection.kind === 'komplai' ? `Komplai-login · udløber ${new Date(connection.account.expiresAt).toLocaleDateString('da-DK')}` : connection.hasKey ? 'Nøgle gemt' : 'Uden nøgle'));
+    text.append(node('strong', connection.name), node('small', connection.kind === 'komplai' ? `Komplai ${connection.account.authMethod === 'token' ? 'API-token' : 'login'} · udløber ${new Date(connection.account.expiresAt).toLocaleDateString('da-DK')}` : connection.hasKey ? 'Nøgle gemt' : 'Uden nøgle'));
     const edit = node('button', 'Rediger', 'text-button'); edit.type = 'button'; edit.setAttribute('aria-label', `Rediger ${connection.name}`);
     edit.onclick = () => editConnection(connection);
     row.append(text, edit); $('#saved-connections').append(row);
@@ -432,7 +432,8 @@ function editConnection(connection) {
   $('#connection-form').reset(); $('#connection-id').value = connection.id; $('#provider-kind').value = connection.kind; updateProvider();
   $('#connection-name').value = connection.name; $('#base-url').value = connection.baseURL; $('#api-key').value = ''; $('#clear-key').checked = false;
   $('#connection-feedback').textContent = ''; connectionView('edit');
-  $('#connection-remove').textContent = connection.kind === 'komplai' ? 'Log ud og tilbagekald adgang' : 'Fjern forbindelse';
+  $('#connection-remove').textContent = connection.kind === 'komplai' ? connection.account.authMethod === 'token' ? 'Fjern token fra Aura' : 'Log ud og tilbagekald adgang' : 'Fjern forbindelse';
+  if (connection.account?.authMethod === 'token') $('#connection-feedback').textContent = 'Fjernelse her påvirker ikke tokenet i andre programmer. Du kan tilbagekalde det i Komplai.';
   if (connection.kind === 'komplai') { $('#komplai-feedback').textContent = 'Du er forbundet til ' + connection.account.organisationName + '.'; $('#komplai-login').focus(); } else $('#api-key').focus();
 }
 $('#connection-back').onclick = () => { resetKomplaiLogin(); $('#api-key').value = ''; connectionView('list'); };
@@ -721,24 +722,47 @@ $('#new').onclick = () => action(async () => { await saveChatDraft(); try { loca
 $('#create-form').onsubmit = event => { event.preventDefault(); action(async () => { $('#create').disabled = true; try { const created = await call('createProject', { name: $('#name').value, purpose: $('#purpose').value, color: $('#color').value, links: $('#links').value.split('\n').map(line => line.trim()).filter(Boolean), tests: $('#tests').value, startup: startupValues() }); if (created) { await displayProject(created); clearIdeaDraft(); $('#start-idea').click(); } } finally { $('#create').disabled = false; } }); };
 $('#connections-button').onclick = () => action(async () => { if (setupActive && setupStep === 'provider') setupPage('tools'); moveConnectionForm(false); state = await call('connectionState'); renderConnections(); updateProvider(); connectionView('list'); $('#connections-feedback').textContent = ''; $('#connections-dialog').showModal(); });
 $('#provider-kind').onchange = () => { resetKomplaiLogin(); updateProvider(); };
-let komplaiOrganisations = [], komplaiGeneration = 0;
+let komplaiOrganisations = [], komplaiGeneration = 0, komplaiTokenReview = null;
 function resetKomplaiLogin() {
-  ++komplaiGeneration; komplaiOrganisations = [];
+  ++komplaiGeneration; komplaiOrganisations = []; komplaiTokenReview = null;
   call('komplaiCancel').catch(() => {});
   $('#komplai-organisations').hidden = true; $('#komplai-login').hidden = false; $('#komplai-login').disabled = false;
+  $('#komplai-token').value = ''; $('#komplai-token-entry').hidden = true; $('#komplai-token-start').hidden = false; $('#komplai-token-check').disabled = false;
+  $('#komplai-organisation').hidden = false; $('#komplai-organisation').previousElementSibling.hidden = false;
   $('#komplai-cancel').hidden = true; $('#komplai-feedback').textContent = '';
   $('#provider-kind').hidden = false; $('#provider-kind').previousElementSibling.hidden = false; $('#komplai-help').hidden = false;
 }
 function showKomplaiOrganisation() {
-  const selected = komplaiOrganisations.find(o => o.id === $('#komplai-organisation').value);
+  const selected = komplaiTokenReview?.account || komplaiOrganisations.find(o => o.id === $('#komplai-organisation').value);
   $('#komplai-confirm').disabled = !selected;
   $('#komplai-credit-summary').textContent = selected ? `${selected.name}: ${(selected.balance.availableMicros / 1e6).toLocaleString('da-DK', { maximumFractionDigits: 2 })} kr. tilbage i fælles AI-kreditter.` : '';
+  if (komplaiTokenReview) $('#komplai-credit-summary').textContent += ` Tokenet udløber ${new Date(selected.credential.expiresAt).toLocaleDateString('da-DK')}.`;
   $('#komplai-terms').textContent = selected ? `${selected.data.recipients}. ${selected.data.region} ${selected.data.training} ${selected.data.retention} ${selected.data.platformStorage} ${selected.data.accounting} Kilde: ${selected.data.source}. Kontrolleret ${selected.data.checkedAt}.` : '';
 }
 $('#komplai-organisation').onchange = showKomplaiOrganisation;
+$('#komplai-token-start').onclick = () => {
+  resetKomplaiLogin();
+  $('#komplai-token-entry').hidden = false; $('#komplai-login').hidden = true; $('#komplai-token-start').hidden = true; $('#komplai-cancel').hidden = false;
+  $('#provider-kind').hidden = true; $('#provider-kind').previousElementSibling.hidden = true; $('#komplai-help').hidden = true;
+  if (setupActive) { $('#setup-title').textContent = 'Indsæt dit Komplai-token'; $('#setup-subtitle').textContent = 'Brug et personligt API-token med adgang til kodeværktøjer.'; }
+  $('#komplai-token').focus();
+};
+$('#komplai-token-check').onclick = () => action(async () => {
+  const generation = ++komplaiGeneration, token = $('#komplai-token').value;
+  $('#komplai-token').value = ''; $('#komplai-token-check').disabled = true; $('#komplai-feedback').textContent = 'Kontrollerer tokenet …';
+  try {
+    const result = await call('komplaiTokenCheck', token); if (generation !== komplaiGeneration) return;
+    komplaiTokenReview = result; $('#komplai-token-entry').hidden = true; $('#komplai-organisations').hidden = false;
+    $('#komplai-organisation').hidden = true; $('#komplai-organisation').previousElementSibling.hidden = true;
+    $('#komplai-feedback').textContent = ''; showKomplaiOrganisation();
+    if (setupActive) { $('#setup-title').textContent = 'Vil du bruge organisationens kreditter?'; $('#setup-subtitle').textContent = 'Kommende AI-opgaver betales af organisationen nedenfor.'; }
+    $('#komplai-confirm').focus();
+  } catch (error) { if (generation === komplaiGeneration) { $('#komplai-feedback').textContent = error.message; $('#komplai-token').focus(); } }
+  finally { if (generation === komplaiGeneration) $('#komplai-token-check').disabled = false; }
+});
 $('#komplai-login').onclick = () => action(async () => {
   const generation = ++komplaiGeneration;
-  $('#komplai-login').disabled = true; $('#komplai-cancel').hidden = false; $('#komplai-feedback').textContent = 'Fortsæt i browseren. Denne side venter på dit login.'; $('#komplai-organisations').hidden = true;
+  $('#komplai-login').disabled = true; $('#komplai-token-start').hidden = true; $('#komplai-cancel').hidden = false; $('#komplai-feedback').textContent = 'Fortsæt i browseren. Denne side venter på dit login.'; $('#komplai-organisations').hidden = true;
   try {
     const result = await call('komplaiLogin'); if (generation !== komplaiGeneration) return; komplaiOrganisations = result.organisations;
     $('#komplai-organisation').replaceChildren(...komplaiOrganisations.map(o => option(o.id, o.name)));
@@ -755,14 +779,14 @@ $('#komplai-confirm').onclick = () => action(async () => {
   $('#komplai-confirm').disabled = true;
   try {
     const previous = new Set(state.connections.map(c => c.id));
-    state = await call('komplaiConnect', $('#komplai-organisation').value); renderConnections();
+    state = komplaiTokenReview ? await call('komplaiTokenConnect', komplaiTokenReview.reviewID) : await call('komplaiConnect', $('#komplai-organisation').value); renderConnections();
     const selected = state.connections.find(c => !previous.has(c.id));
-    $('#komplai-organisations').hidden = true; $('#komplai-login').hidden = false; $('#komplai-cancel').hidden = true; $('#komplai-feedback').textContent = '';
+    resetKomplaiLogin();
     if (setupActive && selected) { $('#setup-connection').value = selected.id; setupPage('saved'); await testSetupConnection(); } else connectionView('list');
   } catch (error) { $('#komplai-feedback').textContent = error.message; } finally { $('#komplai-confirm').disabled = false; }
 });
 $('#connection-form').onsubmit = event => {
-  event.preventDefault(); if ($('#provider-kind').value === 'komplai') return; action(async () => {
+  event.preventDefault(); if ($('#provider-kind').value === 'komplai') { if (!$('#komplai-token-entry').hidden && !$('#komplai-token-check').disabled) $('#komplai-token-check').click(); return; } action(async () => {
     $('#save-connection').disabled = true;
     const generation = setupGeneration, guided = setupActive && setupStep === 'provider';
     const previousIDs = new Set(state.connections.map(c => c.id));

@@ -1,6 +1,7 @@
 const { definitions } = require('../desktop/core/connections.cjs');
 const { discoverLocalModels } = require('../desktop/core/local-discovery.cjs');
 const { KomplaiLogin } = require('../desktop/core/komplai.cjs');
+const { KomplaiToken } = require('../desktop/core/komplai-token.cjs');
 const { openBrowser } = require('./browser.cjs');
 
 async function unlockConnection(app, id) {
@@ -23,6 +24,22 @@ async function login(app, kind) {
   }
   if (!Object.hasOwn(definitions, kind)) throw new Error('Ukendt udbyder. Brug aura login uden udbydernavn.');
   if (kind === 'komplai') {
+    const method = await ui.choose('Hvordan vil du forbinde Komplai?', [{ label: 'Log ind i browseren', value: 'browser' }, { label: 'Brug API-token', value: 'token' }]);
+    if (!method) return null;
+    if (method === 'token') {
+      const flow = app.tokenFactory?.() || new KomplaiToken(); app.pendingLogin = flow;
+      try {
+        const token = await ui.ask('Komplai API-token', { secret: true, required: true }); ui.protect(token);
+        ui.line('Kontrollerer organisation, rettigheder og udløb. Ingen modelopgave eller projektfiler sendes.');
+        const review = await flow.check(token), account = review.account;
+        ui.line(`${account.name} · ${(account.balance.availableMicros / 1e6).toLocaleString('da-DK')} kr. i fælles AI-kreditter · token udløber ${new Date(account.credential.expiresAt).toLocaleDateString('da-DK')}`);
+        ui.line(JSON.stringify(account.data, null, 2));
+        if (!await ui.confirm('Tilslut tokenet og brug organisationens fælles kreditter til kommende AI-opgaver?')) return null;
+        await vault.unlock(ui);
+        const connection = await flow.connect(review.reviewID, bench.store);
+        ui.line('Komplai er tilsluttet med API-token. Modellen vælges separat.'); return connection.id;
+      } finally { flow.cancel(); app.pendingLogin = null; }
+    }
     await vault.unlock(ui);
     const flow = app.loginFactory?.() || new KomplaiLogin(); app.pendingLogin = flow;
     try {

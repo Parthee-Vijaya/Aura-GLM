@@ -15,7 +15,7 @@ aura chat [mappe]             Åbn et eksisterende projekt uden filændringer
 aura init [overmappe]         Opret et nyt projekt efter gennemgang
 aura resume                  Vælg et tidligere åbnet projekt
 aura login [udbyder]          Forbind din AI, fx komplai eller ollama
-aura logout                  Fjern en forbindelse (Komplai-adgang tilbagekaldes)
+aura logout                  Fjern en forbindelse efter gennemgang
 aura doctor                  Kontrollér Node, Git og OpenCode uden modelkald
 aura preview [mappe]         Start preview; hold terminalen åben
 aura save [mappe]            Gennemgå og gem en lokal Git-version
@@ -80,8 +80,11 @@ async function main(argv = process.argv.slice(2), ui = new Terminal()) {
       const connections = (await app.bench.store.read()).connections;
       if (!connections.length) { ui.line('Ingen gemte forbindelser.'); return; }
       const id = await ui.choose('Hvilken forbindelse skal fjernes?', connections.map(c => ({ label: c.name, value: c.id })));
-      if (id && await ui.confirm('Fjern forbindelsen? Komplai-adgang tilbagekaldes også hos Komplai.')) {
-        if (connections.find(c => c.id === id).kind === 'komplai') await vault.unlock(ui);
+      const connection = connections.find(c => c.id === id);
+      const revoke = connection?.kind === 'komplai' && connection.account?.authMethod !== 'token';
+      const question = revoke ? 'Fjern forbindelsen og tilbagekald denne loginadgang hos Komplai?' : connection?.kind === 'komplai' ? 'Fjern tokenet fra Aura? Det virker fortsat andre steder og kan tilbagekaldes i Komplai.' : 'Fjern forbindelsen?';
+      if (id && await ui.confirm(question)) {
+        if (revoke) await vault.unlock(ui);
         await app.bench.removeConnection(id); ui.line('Forbindelsen er fjernet.');
       }
       return;

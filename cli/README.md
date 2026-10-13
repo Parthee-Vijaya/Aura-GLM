@@ -43,7 +43,13 @@ Samtaler, kladder, planer og modelvalg gemmes uden for projektet. `/history` vis
 
 Ollama kan findes på standardadressen. En anden Ollama-server eller en kompatibel API kan angives manuelt, også en DGX Spark på en adresse, du har adgang til gennem Tailscale. Aura opsætter ikke Tailscale og ændrer ikke serveren. Et svar fra `/models` beviser hverken kodeevner, kvote eller faktisk behandlingssted.
 
-`aura login komplai` bruger det eksisterende browserlogin med PKCE, organisationsvalg og bekræftelse af fælles kreditter. Det kræver, at Komplais backend og organisationens adgang er aktiveret. Browseren skal kunne nå callback på **samme maskine**, hvor CLI'en kører. Login fra en SSH-server via en browser på en anden maskine er ikke understøttet som device flow. Brug en understøttet API-forbindelse, hvis du arbejder uden lokal browser. `aura logout` fjerner en forbindelse; en Komplai-forbindelse tilbagekaldes først hos Komplai.
+`aura login komplai` giver to valg: **Log ind i browseren** og **Brug API-token**. Begge bruger organisationens fælles kreditter. Komplais backend og organisationens adgang skal være aktiveret.
+
+Browserlogin bruger PKCE, organisationsvalg og bekræftelse af fælles kreditter. Browseren skal kunne nå callback på **samme maskine**, hvor CLI'en kører. Login fra en SSH-server via en browser på en anden maskine er ikke understøttet som device flow.
+
+Et personligt API-token indtastes skjult. Aura kontrollerer organisation, rettigheder og udløb uden et modelkald. Du ser organisation, fælles saldo og vilkår, før tokenet gemmes krypteret. Tokenet skal have `coding:read` og `coding:complete`. Forløbet kræver den metadataudvidelse, der er beskrevet i [Komplai-kontrakten](../docs/komplai-api-token.md); uden den afvises tilslutning med en forklaring. Der kan derfor ikke loves adgang med et produktions-token, før Komplai har indført kontrakten.
+
+`aura logout` fjerner forbindelsen. Ved browserlogin tilbagekaldes Auras token først hos Komplai. Et manuelt indsat token fjernes kun fra Aura, fordi det kan være i brug andre steder. Det kan tilbagekaldes i Komplai.
 
 Terminalversionen bruger **et separat lager krypteret med AES-256-GCM**, med nøgle afledt af din adgangssætning gennem scrypt. Nøgler og adgangssætning indtastes skjult. De skal ikke skrives i kommandoer, miljøfiler eller shellhistorik. Adgangssætningen gemmes ikke og kan ikke gendannes. Ved forkert adgangssætning bevares lageret. Taber du adgangssætningen, må forbindelserne oprettes igen i et nyt lager og gamle nøgler tilbagekaldes hos udbyderne.
 
@@ -88,3 +94,5 @@ Enhedstestene omfatter faktiske projektfiler, kryptering, afviste handlinger og 
 Kontrollér tarballens indhold og kontrolsum. Installér den i en separat mappe, og afprøv `aura doctor`, oprettelse/åbning, login, plan, kodeændring, afvisning, stop, preview og genåbning. En lokal arbejdsmappeprøve validerer ikke en offentliggjort pakke. Publicering, Git-ændringer og GitHub Actions udføres ikke af disse kommandoer.
 
 På Windows køres samme brugerforløb i både CMD og PowerShell. Kontrollér stier med mellemrum, skjult nøgleindtastning, Ctrl+C, genåbning af nøglelageret og browserlogin. På Linux prøves både en grafisk session og terminal uden nøgletjeneste. Registrér system, arkitektur, Node-version, pakkens kontrolsum og faktiske resultater i teststatus. Platformene skal markeres som uprøvede, indtil kontrollen er udført dér.
+
+En konkret installations- og testvejledning findes i [Windows-prøven](WINDOWS.md).

@@ -12,7 +12,7 @@ const { browserCommand } = require('../browser.cjs');
 const { packageName } = require('../runtime.cjs');
 const { Application } = require('../app.cjs');
 const { parse } = require('../aura.cjs');
-const { disclose } = require('../connections.cjs');
+const { disclose, login } = require('../connections.cjs');
 const actions = require('../actions.cjs');
 const { Store } = require('../../desktop/core/store.cjs');
 
@@ -112,6 +112,32 @@ test('datagennemgang kræver et aktivt ja; ukendte forhold og kilde vises', asyn
   assert.equal(await disclose(ui, { recipients: 'Prøveserver', region: 'Ukendt', price: 'Ukendt', source: 'test', accepted: false }), false);
   assert.match(ui.output, /Ukendt/); assert.match(ui.output, /Kilde: test/);
   assert.equal(await disclose(new UI(['send']), { accepted: false }), true);
+});
+test('Komplai-token i CLI indtastes skjult, gennemgås og krypteres; nej gemmer intet', async t => {
+  const key = 'kp_live_' + 't'.repeat(43), { app, ui, state } = await fixture(t);
+  const { KomplaiToken } = require('../../desktop/core/komplai-token.cjs');
+  const value = { id: 'org', name: 'Prøvekommune', contract: '1', balance: { availableMicros: 1000000 },
+    credential: { id: 'key', scopes: ['coding:read', 'coding:complete'], expiresAt: '2099-01-01T00:00:00Z' },
+    data: Object.fromEntries(['recipients', 'region', 'training', 'retention', 'source', 'checkedAt', 'version', 'mode', 'accounting', 'platformStorage'].map(k => [k, 'Syntetisk prøve'])) };
+  let calls = 0, hidden = false;
+  app.tokenFactory = () => new KomplaiToken({ fetcher: async () => { calls++; return Response.json(value); } });
+  const ask = ui.ask.bind(ui); ui.ask = async (label, options) => { if (label === 'Komplai API-token') hidden = options.secret; return ask(); };
+  ui.answers = ['token', key, 'nej'];
+  assert.equal(await login(app, 'komplai'), null); assert.equal(hidden, true);
+  assert.equal((await app.bench.store.read()).connections.length, 0); assert.equal(app.pendingLogin, null);
+  ui.answers = ['token', key, 'ja', 'lang adgangssætning', 'lang adgangssætning'];
+  const id = await login(app, 'komplai');
+  assert.equal((await app.bench.connection(id)).account.authMethod, 'token');
+  assert.equal(app.bench.store.decrypt(await app.bench.connection(id)), key);
+  assert.equal(calls, 3); assert.equal(ui.output.includes(key), false); assert.ok(ui.secrets.includes(key));
+  assert.match(ui.output, /Prøvekommune/); assert.match(ui.output, /fælles AI-kreditter/);
+  assert.equal((await fs.readFile(path.join(state, 'settings.json'), 'utf8')).includes(key), false);
+});
+test('Komplai-browserlogin kan stadig vælges uden at åbne tokenforløbet', async t => {
+  const { app, ui } = await fixture(t, ['browser', 'lang adgangssætning', 'lang adgangssætning', null]); let starts = 0, cancels = 0;
+  app.loginFactory = () => ({ start: async () => { starts++; return { organisations: [{ id: 'org', name: 'Prøvekommune' }] }; }, cancel: () => cancels++ });
+  app.tokenFactory = () => { throw Error('Tokenforløbet må ikke åbne'); };
+  assert.equal(await login(app, 'komplai'), null); assert.equal(starts, 1); assert.equal(cancels, 1); assert.equal(app.pendingLogin, null);
 });
 test('nye projekter og browserpreview bruger faktiske filer uden Git-commit', async t => {
   const { root, project, app, ui } = await fixture(t, ['Kalender', 'Vis aktiviteter', 'ja', 'nej']);
