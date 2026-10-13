@@ -57,6 +57,30 @@ Appens navn og egne menuer er **Aura**. En installation fra før navneskiftet be
 
 ## Opstart og forbindelser
 
+**Komplai** ligger under **Vælg en anden**. Brugeren logger ind med sin Komplai-konto og vælger den organisation, hvis fælles AI-kreditter skal bruges. Login, modelvalg og det korte resumé før afsendelse bruger navnet Komplai. **Se datavilkår** ved organisationsvalget og **Se alle oplysninger** før afsendelse viser de faktiske modtagere og behandlingssteder, herunder Scaleway og Hetzner, som oplyst af Komplais API. Ændringer i de oplysninger kræver ny godkendelse, selv om det korte resumé er uændret.
+
+En e-mailadresse med organisationens domæne giver ikke automatisk medlemskab eller adgang til fælles kreditter. Organisationen skal tilknytte brugeren, tildele den nødvendige appadgang og aktivere kodeværktøjer. Brugeren skal have gennemført Komplais eget login, så kontoen er knyttet til organisationen, før Aura forbindes. Aktiveringen gælder organisationen; der er ikke et separat godkendelsestrin for hvert modelkald eller et personligt beløbsloft i Aura.
+
+### Afgrænset prøve med Komplai
+
+`scripts/verify-komplai-live.cjs` er en særskilt prøve, som aldrig starter med enhedstests eller CI. Uden `--live` læser den kun den offentlige loginopsætning:
+
+```sh
+node scripts/verify-komplai-live.cjs
+```
+
+Efter godkendelse af en rigtig prøve angives organisationens id og den valgte model, aldrig nøgler eller adgangskoder:
+
+```sh
+node scripts/verify-komplai-live.cjs --live --organisation ORGANISATIONS_ID --model MODEL_ID
+```
+
+Prøven åbner et rigtigt browserlogin og bruger en isoleret mappe med opdigtet indhold. Modellen skal ændre én HTML-fil to gange, og resultatet kontrolleres i preview. Kontoens faktiske DKK-takster bruges til at beregne en konservativ maksimal pris før hvert kald. Når den samlede øvre pris ville overstige 10 kr., bliver kaldet afvist før afsendelse. Også fejlede og afbrudte kald tælles med. Der er ingen automatisk gentagelse eller anden model.
+
+Loftet gælder denne prøve, ikke almindelig brug af appen eller andre medarbejderes forbrug. Der er ingen omregning, hvor 1.000 kreditter er lig med 10 kr.; Komplais regnskab bruger DKK. Ved afslutning forsøger prøven at tilbagekalde adgangen og slette sit lokale nøglelager. Hvis tilbagekaldelsen fejler, bevares det krypterede lager til et nyt forsøg. Rapporten indeholder forbrug, model og resultat, men ingen adgangsnøgler. Se [teststatus](../docs/teststatus.md) for faktisk gennemførte prøver og udgivelsesstatus.
+
+### Den guidede opstart
+
 Ved første start vælger brugeren mellem **Byg i Aura-appen** og **Brug Aura Harness i mit kodeværktøj**. Den første vej viser **Hvordan vil du starte?** med Start et projekt, Prøv et eksempel og Åbn et projekt. **Spring introduktionen over** går direkte til projektoprettelsen og huskes på denne computer. Introduktionen kan åbnes igen fra sidepanelet. Den guidede vej tilbyder AI-forbindelse eller fortsættelse uden AI; derefter beskriver brugeren sin idé og får et kort, redigerbart navneforslag, fx **Oversigt over tre fiktive mødelokaler**. Projektet lægges i **Dokumenter › Aura** uden mappedialog; **Vælg en anden placering** åbner dialogen. Mappenavnet skriver æ, ø og å om til ae, oe og aa, og et projekt med samme navn får et nummer, så en eksisterende mappe aldrig genbruges. Designmateriale og avancerede projektvalg er foldet sammen. Brugeren kan oprette eller åbne et lokalt projekt uden AI- eller GitHub-konto. Velkomst og demonstration kontakter ingen modelserver. Når AI-opsætningen åbnes, henter appen automatisk Ollamas modelliste fra http://127.0.0.1:11434/api/tags med en kort timeout. Ingen modelnøgle dekrypteres under søgningen.
 
 AI-opsætningen viser to store valg: **Jeg har en adgangsnøgle** og **AI på min computer**. En gemt forbindelse vises som et tredje valg. Adgangsnøgle fører til tre ligestillede udbyderkort, **Claude**, **Mistral** og **Corti**, og **Bruger du en anden udbyder? Vælg en anden** for OpenRouter, OpenCode Zen, Ollama og egen server. Nøglefeltet vises først, når en udbyder er valgt. **Har du ikke en nøgle? Sådan får du en** viser trin for trin, hvordan man opretter konto, betaler, sætter en månedlig grænse og laver en nøgle hos den valgte udbyder. Knapperne åbner faste sider hos udbyderen; adresserne står i `main.cjs` og er kontrolleret 29. september 2026. Indstillingernes forbindelsesdialog viser fortsat den fulde liste. Den guidede introduktion skjuler sidepanelet og viser ét trin ad gangen. **Vælg senere** går videre uden AI og bevarer idéen. Tilbage vender til valgene uden at sende en besked; et indtastet nøglefelt tømmes.

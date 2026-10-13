@@ -48,8 +48,19 @@ async function main() {
     await page.click('#komplai-login'); await page.waitForSelector('#komplai-organisations:not([hidden])');
     assert.equal(await page.locator('#komplai-connect :is(button, select, summary):visible').count(), 4);
     assert.match(await page.locator('#komplai-credit-summary').textContent(), /Syntetisk prøvekommune.*fælles AI-kreditter/);
+    assert.doesNotMatch(await page.locator('#komplai-connect').innerText(), /Scaleway|Hetzner/);
+    await page.locator('#komplai-connect summary').click();
+    assert.match(await page.locator('#komplai-connect').innerText(), /Scaleway/);
+    assert.match(await page.locator('#komplai-connect').innerText(), /Hetzner/);
+    await page.locator('#komplai-connect summary').click();
     await page.screenshot({ path: path.join(root, 'organisation.png') });
     await page.click('#komplai-confirm'); await page.waitForSelector('#setup-continue:not([disabled])'); await page.click('#setup-continue');
+    const connected = (await page.evaluate(() => window.harness.connectionState())).value.connections.find(c => c.kind === 'komplai');
+    await app.evaluate((_, options) => {
+      const { KomplaiLiveBudget, budgetedFetch } = process.getBuiltinModule('module').createRequire(options.module)(options.module);
+      globalThis.komplaiTestBudget = new KomplaiLiveBudget(options);
+      globalThis.fetch = budgetedFetch(globalThis.fetch, globalThis.komplaiTestBudget);
+    }, { organisationId: connected.account.organisationId, modelId: 'synthetic-code', module: path.join(__dirname, 'komplai-live-budget.cjs') });
     await app.evaluate(({ dialog }, folder) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [folder] }); }, project);
     await page.click('#open');
     await page.waitForFunction(() => document.querySelector('#model-select').value === 'synthetic-code');
@@ -57,7 +68,23 @@ async function main() {
     async function send(message) {
       await page.fill('#prompt', message); await page.click('#send');
       await page.waitForFunction(() => document.querySelector('#data-dialog').open || !document.querySelector('#stop').hidden);
-      if (await page.locator('#data-dialog').evaluate(el => el.open)) { assert.match(await page.locator('#data-details').textContent(), /Scaleway/); assert.match(await page.locator('#data-details').textContent(), /DKK/); await page.click('#accept-send'); }
+      if (await page.locator('#data-dialog').evaluate(el => el.open)) {
+        assert.equal(await page.locator('#data-details').isVisible(), false);
+        assert.doesNotMatch(await page.locator('#data-dialog').innerText(), /Scaleway|Hetzner/);
+        assert.match(await page.locator('#data-summary').innerText(), /Komplai/);
+        await page.screenshot({ path: path.join(root, 'komplai-data-resume.png') });
+        await page.locator('#data-dialog > details > summary').click();
+        const details = await page.locator('#data-details').innerText();
+        assert.match(details, /Scaleway/); assert.match(details, /Hetzner/); assert.match(details, /Tyskland/);
+        const price = page.locator('#data-details dd').filter({ hasText: 'DKK' });
+        await price.locator('summary').click();
+        assert.match(await price.innerText(), /DKK/);
+        assert.equal(await price.locator('pre').evaluate(el => el.scrollWidth <= el.clientWidth), true, 'Hele prisoplysningen skal kunne læses uden vandret rulning');
+        await page.locator('#data-details dt').filter({ hasText: /^Modtagere$/ }).evaluate(el => el.scrollIntoView({ block: 'start' }));
+        await page.screenshot({ path: path.join(root, 'komplai-datadetaljer.png') });
+        await page.locator('#data-dialog > details > summary').click();
+        await page.click('#accept-send');
+      }
     }
     async function finished() { await page.waitForFunction(() => document.querySelector('#stop').hidden, null, { timeout: 60000 }); assert.deepEqual(errors, []); }
     await phase('write'); await send('Skift startsidens overskrift til Bygget gennem Komplai.');
@@ -69,6 +96,8 @@ async function main() {
     await phase('reject'); await send('Foreslå en anden overskrift.'); await page.waitForSelector('#approvals .approval', { timeout: 60000 }); await page.locator('#approvals button').filter({ hasText: /^Afvis$/ }).click(); await finished();
     assert.match(await fs.readFile(file, 'utf8'), /Bygget gennem Komplai/);
     await phase('stop'); await send('Vent på et nyt svar.'); await page.waitForFunction(() => !document.querySelector('#stop').disabled); await page.click('#stop'); await finished();
+    const budget = await app.evaluate(() => globalThis.komplaiTestBudget.summary());
+    assert(budget.calls >= 2); assert(budget.reservedUpperBoundDkk <= 10);
     const state = (await page.evaluate(() => window.harness.connectionState())).value;
     const connection = state.connections.find(c => c.kind === 'komplai'); assert.equal(connection.secret, undefined);
     await helpers.menuClick(page, '#connections-button'); await page.locator('#saved-connections button').first().click();

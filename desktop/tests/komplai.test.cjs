@@ -54,10 +54,20 @@ test('Komplai: egen loginserver, org-bundet katalog, DKK og ændrede vilkår', a
   const login = new KomplaiLogin({ fetcher: async () => Response.json({ issuer: 'https://angriber.invalid', clientId: 'c', scopes: ['openid'] }) });
   await assert.rejects(login.start(() => assert.fail()), /ikke bekræftes/);
   const connection = { kind: 'komplai', name: 'Komplai', baseURL: connections.definitions.komplai.baseURL, account: { organisationId: 'a' } };
-  const model = { id: 'kode', price: { prompt: '0.000002', completion: '0.000005', currency: 'DKK' }, komplai: { id: 'a', name: 'Kommune', contract: '1', data: { recipients: 'Komplai → Scaleway', region: 'EU', retention: 'Vilkår', training: 'Ingen', source: 'https://example.org', checkedAt: '2026-10-13', version: '1', accounting: 'Fælleskreditter', platformStorage: 'Metadata' } } };
+  const model = { id: 'kode', price: { prompt: '0.000002', completion: '0.000005', currency: 'DKK' }, komplai: { id: 'a', name: 'Kommune', contract: '1', data: { recipients: 'Komplai → Scaleway', region: 'Komplais API: Hetzner, Tyskland. Model: Scaleway, Frankrig.', retention: 'Vilkår', training: 'Ingen', source: 'https://example.org', checkedAt: '2026-10-13', version: '1', accounting: 'Fælleskreditter', platformStorage: 'Metadata' } } };
   assert.equal(connections.priceFor(connection, model).currency, 'DKK');
   const first = connections.disclosure(connection, model); assert.match(first.price, /DKK/);
-  model.komplai.contract = '2'; assert.notEqual(connections.disclosure(connection, model).fingerprint, first.fingerprint);
+  assert.equal(first.provider, 'Komplai');
+  assert.match(first.regionShort, /Komplai.*alle oplysninger/);
+  assert.doesNotMatch(first.regionShort, /Scaleway|Hetzner/);
+  assert.equal(first.recipients, model.komplai.data.recipients);
+  assert.equal(first.region, model.komplai.data.region);
+  model.komplai.data.region = 'Ukendt behandlingssted';
+  const changedRegion = connections.disclosure(connection, model);
+  assert.equal(changedRegion.regionShort, first.regionShort);
+  assert.equal(changedRegion.region, 'Ukendt behandlingssted');
+  assert.notEqual(changedRegion.fingerprint, first.fingerprint, 'Ny godkendelse kræves, selv om det korte resumé er uændret');
+  model.komplai.contract = '2'; assert.notEqual(connections.disclosure(connection, model).fingerprint, changedRegion.fingerprint);
   model.komplai.id = 'anden'; assert.throws(() => connections.disclosure(connection, model), /Hent organisationens modeller/);
 });
 
