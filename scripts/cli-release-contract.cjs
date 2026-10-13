@@ -33,20 +33,25 @@ function unpack(bytes) {
   if (!end || !files.has('cli/aura.cjs') || !files.has('package.json')) throw new Error('CLI-arkivet er ufuldstændigt.');
   return files;
 }
-function releaseFiles(release) {
+function releaseFiles(release, { draft = false } = {}) {
   const match = /^cli-v(.+)$/.exec(release?.tag_name || '');
   if (!match || !versionPattern.test(match[1]) || !Array.isArray(release.assets)) return [];
   const expected = names(match[1]);
   if (release.assets.length !== expected.length || new Set(release.assets.map(a => a.name)).size !== expected.length) return [];
+  // GitHub giver kladders filer et midlertidigt untagged-link. Offentlige links
+  // skal stadig matche det præcise versionstag; Pages bruger aldrig denne undtagelse.
+  const draftTag = draft && release.draft === true
+    ? release.assets[0]?.browser_download_url?.match(/\/releases\/download\/(untagged-[a-f0-9]{1,64})\//)?.[1] : null;
   for (const a of release.assets) {
     if (!expected.includes(a.name) || a.state !== 'uploaded' || !Number.isSafeInteger(a.size) || a.size <= 0 || !/^sha256:[a-f0-9]{64}$/.test(a.digest || '')) return [];
-    if (a.browser_download_url !== assetURL(release.tag_name, a.name)) throw new Error('CLI-downloadadressen matcher ikke repository og version.');
+    if (a.browser_download_url !== assetURL(release.tag_name, a.name)
+      && (!draftTag || a.browser_download_url !== assetURL(draftTag, a.name))) throw new Error('CLI-downloadadressen matcher ikke repository og version.');
   }
   return expected.map(name => release.assets.find(a => a.name === name));
 }
 function validateRelease(release, files, version) {
   if (!release?.draft || !release.prerelease || !release.body?.trim() || release.tag_name !== `cli-v${version}`) throw new Error('CLI-udgivelsen skal være en kladde med betamarkering, noter og korrekt tag.');
-  const assets = releaseFiles(release);
+  const assets = releaseFiles(release, { draft: true });
   if (!assets.length) throw new Error('CLI-udgivelsen mangler filer eller kontrolsummer.');
   for (const a of assets) {
     const bytes = files.get(a.name);

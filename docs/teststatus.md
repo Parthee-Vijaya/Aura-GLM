@@ -1,8 +1,27 @@
 # Teststatus før invitation
 
-Senest kontrolleret 13. oktober 2026. Afsnittene er daterede, så tidligere begrænsninger kan læses i deres sammenhæng. Dette er status for den aktuelle arbejdsmappe, ikke en erklæring om, at alle installationsfiler eller modeller er klar. Der er ikke committet eller pushet i dette repository under denne gennemgang.
+Senest kontrolleret 13. oktober 2026. Afsnittene er daterede, så tidligere begrænsninger kan læses i deres sammenhæng. Dette er status for den aktuelle arbejdsmappe, ikke en erklæring om, at alle installationsfiler eller modeller er klar. Ingen commits er oprettet herfra. Godkendte tags, udgivelser og GitHub-kørsler fremgår af de enkelte afsnit.
 
 [Gennemgangen før offentlig beta](offentliggoerelse.md) samler historik- og logkontrol samt de lokale prøver af README, hjemmeside og udgivelseskontrol. Den offentliggør ikke appen og ændrer ikke installationsstatus nedenfor.
+
+## Første CLI-udgivelseskørsel · 13. oktober 2026
+
+Brugeren godkendte tagget `cli-v0.2.0-beta.6` på commit `6d71813` samt én CLI-kørsel og én efterfølgende Pages-kørsel. Tagget er oprettet og pushet. [CLI-kørsel 38418240100](https://github.com/ai-alliancen-org/ai-harness/actions/runs/38418240100) bestod bygning, CLI-tests og kontrol af pakken mod kildekoden på GitHubs Linux-runner. Det er ikke en fuld installation eller modelprøve på Linux.
+
+Offentliggørelsen stoppede efter upload: workflowet forsøgte at slå kladden op gennem `releases/tags/TAG`, som svarede 404. Kladden havde ID `411802543` og seks filer. CLI-jobbet er ikke genstartet, og ingen filer er slettet eller udskiftet.
+
+**Rettelsen er skrevet, enhedstestet og kørt mod den faktiske GitHub-kladde.** Den henter release og filer via ID og accepterer GitHubs midlertidige kladdeadresser uden at tillade dem på den offentlige downloadside. Alle seks faktiske filer matcher deres kontrolsummer og kildecommit; npm-pakken er byteidentisk med den allerede Mac-afprøvede kandidat. 17 relevante udgivelses- og Pages-tests består. Det gamle linkkrav er også udløst på de faktiske kladdemetadata. Workflowrettelsen er ikke kørt hos GitHub eller committet.
+
+**CLI-betaen og downloadsiden er offentliggjort og observeret.** Brugeren godkendte en engangsundtagelse til direkte offentliggørelse af den kontrollerede kladde. Før API-kaldet blev indhold, fil-ID'er, størrelser og kontrolsummer sammenlignet med den tidligere gennemgang. Release `411802543` blev offentliggjort som beta uden at ændre filer, tag, noter eller commits. [Pages-kørsel 38420229545](https://github.com/ai-alliancen-org/ai-harness/actions/runs/38420229545) på commit `6d71813` bestod. Der er kun startet de to godkendte kørsler: den oprindelige CLI-kørsel og Pages-kørslen.
+
+- [Den offentlige terminalside](https://ai-alliancen-org.github.io/ai-harness/terminal.html) er åbnet i en isoleret browser uden GitHub-login. Downloadknappen henter `aura-harness-0.2.0-beta.6.tgz` fra den rigtige version. Filen er byteidentisk med den kontrollerede Mac-pakke: SHA-256 `e0d09ca1f000034dcf4ca7ebd08cd231d79b77b9c982a1961c801abe8bd94b1d`.
+- Alle seks releasefiler er desuden hentet gennem de offentlige adresser uden login. Størrelser, kontrolsummer, kildecommit og arkivindhold består kontrollen. De tre platformsguides åbner den fastlåste version på GitHub.
+- Den faktiske side er visuelt gennemgået ved 1280 og 390 pixels. Download, viste kontrolsum og tre platformvalg er kontrolleret. Ingen vandret rulning på mobil eller JavaScript-fejl.
+- Windows CMD/PowerShell, Linux og Intel-Mac mangler stadig afprøvning på målmaskinerne. Der er ingen ny prøve af Komplais produktionslogin. Denne udgivelse indeholder terminalpakken, ikke nye desktopinstallationsfiler.
+
+Repositoryets fire workflowfiler har kun manuel start. GitHubs særskilte CodeQL-standardopsætning blev ved læsende kontrol fundet aktiv med automatisk kørsel; den er ikke ændret, og spørgsmålet om at deaktivere den afventer brugerens svar.
+
+Lokal evidens: `/private/tmp/aura-cli-draft-tests.log`, de kontrollerede kladdefiler i `/private/tmp/aura-cli-draft-by-id/`, metadata i `/private/tmp/aura-cli-draft-before-publish.json` og `/private/tmp/aura-cli-published-411802543.json`, offentlig download i `/private/tmp/aura-cli-public-Ur6vq7/` og resultatet i `/private/tmp/aura-cli-public-download-result.json`. Browserbilleder: `/private/tmp/aura-cli-public-desktop.png` og `/private/tmp/aura-cli-public-mobile.png`.
 
 ## Terminalpakke, platformsguides og GitHub-distribution · 13. oktober 2026
 

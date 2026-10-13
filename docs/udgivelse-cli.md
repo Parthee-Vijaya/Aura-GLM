@@ -2,7 +2,7 @@
 
 Terminalpakken udgives særskilt fra desktopappen. Den bruger tags som `cli-v0.2.0-beta.6`. Desktopappens tags begynder med `v`. GitHub Pages vælger den seneste komplette udgivelse af hver slags, så en terminalpakke ikke fjerner appens downloadknapper.
 
-**Alle workflows startes manuelt.** Commit, push, tags og Releases starter ingen byggejob. En konkret GitHub-kørsel kræver brugerens tilladelse. Lokal pakning offentliggør intet. Windows- og Linux-installation er stadig uprøvet, indtil resultatet fra en rigtig målmaskine er registreret.
+**Repositoryets workflowfiler har kun manuel start.** De starter ikke byggejob ved commit, push, tags eller Releases. Kontrollér også GitHubs særskilte standardopsætninger, fx CodeQL, som kan køre uden en workflowfil i repositoryet; den observerede status står i [teststatus](teststatus.md). En konkret GitHub-kørsel kræver brugerens tilladelse. Lokal pakning offentliggør intet. Windows- og Linux-installation er stadig uprøvet, indtil resultatet fra en rigtig målmaskine er registreret.
 
 ## Klargør lokalt
 
@@ -34,7 +34,7 @@ Ingen kørsel med en kontrolleret lokal model dokumenterer Komplais produktionsl
 1. Brugeren gennemgår, committer og pusher kode og dokumentation. Rodens `package.json` og `package-lock.json` skal have samme version. Filnavnet i de tre platformsguides skal følge versionen; pakningen afviser gamle filnavne. Pakkerne i `dist/` skal ikke committes.
 2. Brugeren opretter og pusher tagget `cli-vVERSION` på det samme commit, som den manuelle kørsel startes fra på `main`. Workflowet opretter ikke tags. Brug aldrig et eksisterende tag til ændrede filer.
 3. Start **Byg og udgiv terminalbeta** på `main` efter godkendelse af den konkrete kørsel. Angiv tagget. Uden `offentliggoer` bygges kun et midlertidigt Actions-artefakt. Med `offentliggoer` oprettes en ny kladde, filerne uploades, hentes og kontrolleres, og først derefter offentliggøres betaen.
-4. Kontrollen kræver det rigtige offentlige repository, tag på kørslens commit, en ren arbejdsmappe, fulgte kildefiler, komplet arkiv og matchende SHA-256. Uploadede filer kontrolleres igen mod den udvalgte kildekode. En lokal prøve med `publishable: false` afvises. En ny kontrol før offentliggørelse afviser ændrede filer eller udgivelsesnoter.
+4. Kontrollen kræver det rigtige offentlige repository, tag på kørslens commit, en ren arbejdsmappe, fulgte kildefiler, komplet arkiv og matchende SHA-256. `download-cli-draft.cjs` finder kladden i releaseoversigten og henter den samt filerne via deres ID'er. Opslag på `releases/tags/TAG` kan ikke bruges til denne kladde. GitHubs midlertidige `untagged-…`-adresser accepteres kun ved kladdekontrol; den offentlige side kræver stadig versionstaggede adresser. Uploadede filer kontrolleres igen mod den udvalgte kildekode. En lokal prøve med `publishable: false` afvises. En ny kontrol før offentliggørelse afviser ændrede filer eller udgivelsesnoter.
 5. Start **Udgiv downloadside** særskilt efter godkendelse af den konkrete kørsel. Siden får ingen opdigtede links til kommende versioner. Pakker og modelnøgler kopieres ikke ind i Pages.
 6. Åbn `https://ai-alliancen-org.github.io/ai-harness/terminal.html` uden GitHub-login. Hent pakken og kontroller den mod SHA-256 på siden. Afprøv den hentede fil på Windows og Linux efter de medfølgende vejledninger.
 

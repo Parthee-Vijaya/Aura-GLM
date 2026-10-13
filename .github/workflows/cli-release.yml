@@ -82,10 +82,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.tag }}
         run: |
-          gh api "repos/ai-alliancen-org/ai-harness/releases/tags/$RELEASE_TAG" > "$RUNNER_TEMP/cli-release.json"
-          gh release download "$RELEASE_TAG" --repo ai-alliancen-org/ai-harness --dir "$RUNNER_TEMP/cli-downloaded"
+          node scripts/download-cli-draft.cjs "$RELEASE_TAG" "$RUNNER_TEMP/cli-downloaded" "$RUNNER_TEMP/cli-release.json"
           node scripts/check-cli-release.cjs "$RUNNER_TEMP/cli-downloaded" "$RUNNER_TEMP/cli-release.json"
-          gh api "repos/ai-alliancen-org/ai-harness/releases/tags/$RELEASE_TAG" > "$RUNNER_TEMP/cli-release-again.json"
+          RELEASE_ID=$(node -p 'require(process.argv[1]).id' "$RUNNER_TEMP/cli-release.json")
+          gh api "repos/ai-alliancen-org/ai-harness/releases/$RELEASE_ID" > "$RUNNER_TEMP/cli-release-again.json"
           node -e 'const fs=require("node:fs"),{releaseSnapshot}=require("./scripts/release-contract.cjs");const [a,b]=process.argv.slice(1).map(p=>releaseSnapshot(JSON.parse(fs.readFileSync(p))));if(a!==b)throw Error("Udgivelsen blev ændret under kontrollen")' "$RUNNER_TEMP/cli-release.json" "$RUNNER_TEMP/cli-release-again.json"
           git fetch origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
           test "$(git rev-parse "refs/tags/$RELEASE_TAG^{commit}")" = "$GITHUB_SHA"

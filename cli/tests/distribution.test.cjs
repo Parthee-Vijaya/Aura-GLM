@@ -7,6 +7,7 @@ const { gzipSync } = require('node:zlib');
 const { names, sha256, unpack, releaseFiles, validateRelease } = require('../../scripts/cli-release-contract.cjs');
 const { assetURL } = require('../../scripts/release-contract.cjs');
 const { render, renderCLI, cliGuides, build } = require('../../scripts/build-pages.cjs');
+const { selectDraft, validateAssetIDs } = require('../../scripts/download-cli-draft.cjs');
 const version = '0.2.0-beta.6', tag = `cli-v${version}`;
 const meta = { full_name: 'ai-alliancen-org/ai-harness', private: false };
 function fixture() {
@@ -53,6 +54,21 @@ test('Pages holder CLI og desktop adskilt og vælger kun komplette offentliggjor
     const r = structuredClone(release); mutate(r); assert.equal(releaseFiles(r).length, 0); assert.doesNotMatch(renderCLI([r], meta), /Hent terminalpakken/);
   }
   assert.throws(() => renderCLI([release], { ...meta, full_name: 'wrong/repo' }));
+});
+test('GitHub-kladder findes via release-ID og tillader kun deres egne midlertidige filadresser', () => {
+  const { release, files } = fixture(); release.id = 411802543;
+  release.assets.forEach((a, i) => { a.id = 637367468 + i; a.url = `https://api.github.com/repos/${meta.full_name}/releases/assets/${a.id}`; a.browser_download_url = assetURL('untagged-9eb271ba7508f6aaf1fd', a.name); });
+  assert.equal(selectDraft([release], tag).id, release.id);
+  assert.equal(validateAssetIDs(release).length, 6);
+  assert.doesNotThrow(() => validateRelease(release, files, version));
+  assert.doesNotMatch(renderCLI([release], meta), /Hent terminalpakken/);
+  assert.throws(() => releaseFiles({ ...release, draft: false }, { draft: true }), /matcher ikke/);
+  for (const list of [[], [release, release], [{ ...release, draft: false }], [{ ...release, id: '../andet' }]]) assert.throws(() => selectDraft(list, tag));
+  for (const mutate of [r => r.assets[0].url = 'https://example.org/fil', r => r.assets[0].id = r.assets[1].id,
+    r => r.assets[0].browser_download_url = assetURL('untagged-abcdef', r.assets[0].name),
+    r => r.assets[0].browser_download_url = r.assets[0].browser_download_url.replace(meta.full_name, 'other/repo')]) {
+    const bad = structuredClone(release); mutate(bad); assert.throws(() => validateAssetIDs(bad));
+  }
 });
 test('Den faktiske Pages-bygning viser CLI-guides og bevarer appens tomme tilstand', async t => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aura-cli-pages-')); t.after(() => fs.rm(dir, { recursive: true, force: true }));
