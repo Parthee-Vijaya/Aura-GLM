@@ -51,7 +51,9 @@ Under **Indstillinger → Funktioner** vælger du blandt andet planlægning, ver
 
 Aura CLI giver adgang til samme kodeagent, regler og modelforbindelser fra terminalen. Du kan planlægge, gennemgå filændringer, se preview i browseren og genoptage samtalen. Git-versioner, projektkommandoer og testudgivelser kræver din godkendelse.
 
-CLI'en kræver Node og Git på udviklingsmaskinen. Den er skrevet til Linux, macOS og Windows og installeres foreløbig fra repositoryet eller en lokal npm-pakke. [Installation, kommandoer og nøglelager](cli/README.md) · [Faktisk afprøvning](docs/teststatus.md). Der er endnu ingen offentlig CLI-pakke.
+CLI'en kræver Node 22.12 eller nyere, npm og Git. Den pakkes til Windows, Linux og macOS. [Terminalsiden](https://ai-alliancen-org.github.io/ai-harness/terminal.html) viser den seneste komplette CLI-udgivelse, når den er offentliggjort. Download kræver ingen kloning af repositoryet. Windows og Linux mangler stadig en prøve på rigtige maskiner.
+
+[Windows: PowerShell og CMD](cli/WINDOWS.md) · [Linux](cli/LINUX.md) · [macOS](cli/MACOS.md) · [Kommandoer og nøglelager](cli/README.md) · [Faktisk afprøvning](docs/teststatus.md). **Status 13. oktober 2026:** Udgivelsesforløbet er klargjort; der er endnu ingen offentlig CLI-pakke.
 
 ## Brug dit eget kodeværktøj
 

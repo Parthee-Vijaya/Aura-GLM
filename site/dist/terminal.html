@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Aura i terminalen · Windows, Linux og macOS</title>
+  <meta name="description" content="Installér Aura CLI på din udviklingsmaskine. Kodeagent, godkendelser og skills i terminalen med preview i browseren.">
+  <link rel="stylesheet" href="desktop.css">
+  <link rel="stylesheet" href="terminal.css">
+</head>
+<body>
+  <header><a href="./">Aura Harness</a><a href="desktop.html">Leder du efter desktopappen?</a></header>
+  <main>
+    <p class="eyebrow">TERMINALBETA</p>
+    <h1>Dit projekt.<br>Din terminal.</h1>
+    <p class="lead">Planlæg, byg og gennemgå ændringer med Aura. Brug terminalen til samtalen og browseren til at afprøve din webapp.</p>
+    <p>Til udviklingsmaskiner med Node 22.12 eller nyere, npm og Git. Du vælger selv AI-forbindelse og model.</p>
+    <section class="downloads" aria-labelledby="download-title">
+      <h2 id="download-title">Hent Aura CLI</h2>
+      <!-- cli-artifacts --><p>Terminalpakken er endnu ikke offentliggjort. <a href="https://github.com/ai-alliancen-org/ai-harness/blob/main/cli/README.md">Start fra kildekoden</a>, eller læs installationsvejledningen nedenfor.</p><!-- /cli-artifacts -->
+    </section>
+    <section aria-labelledby="platform-title">
+      <h2 id="platform-title">Hvilken computer bruger du?</h2>
+      <div class="platforms">
+        <!-- cli-guides -->
+        <article class="platform"><h3>Windows</h3><p>PowerShell og CMD. Endnu ikke afprøvet på Windows.</p><a href="https://github.com/ai-alliancen-org/ai-harness/blob/main/cli/WINDOWS.md">Åbn vejledning til Windows →</a></article>
+        <article class="platform"><h3>Linux</h3><p>Terminal med eller uden skrivebord. Endnu ikke afprøvet på Linux.</p><a href="https://github.com/ai-alliancen-org/ai-harness/blob/main/cli/LINUX.md">Åbn vejledning til Linux →</a></article>
+        <article class="platform"><h3>macOS</h3><p>Afprøvet på Apple Silicon med lokal testmodel. Intel-Mac mangler.</p><a href="https://github.com/ai-alliancen-org/ai-harness/blob/main/cli/MACOS.md">Åbn vejledning til macOS →</a></article>
+        <!-- /cli-guides -->
+      </div>
+    </section>
+    <details><summary>Installation, AI-adgang og opdatering</summary>
+      <p>Hent npm-pakken og kontrolsummerne fra samme udgivelse. Vejledningen viser installation i din egen mappe og en kontrol af værktøjerne. Du behøver ikke klone repositoryet eller installere Aura globalt.</p>
+      <p>Der medfølger ingen AI-model eller kreditter. Komplai tilbyder browserlogin og API-token, når backend og din organisations adgang er klar. Vi har endnu ikke afprøvet det nye tokenforløb mod Komplais produktions-API.</p>
+      <p>Nøgler gemmes krypteret med en adgangssætning, du vælger. CLI'en kræver ingen grafisk nøglering. Projektfilerne er lokale, men en ekstern model kan modtage indhold efter din godkendelse.</p>
+      <p>Der er ingen automatisk opdatering. Installer en ny version i en ny mappe, og behold dine projekter og dit datalager. Platformsguiden beskriver sikkerhedskopiering og genåbning.</p>
+    </details>
+    <p class="boundary">Brug et separat projekt med opdigtede data til prøven. Kommandoer kører med din brugers rettigheder; terminalpakken isolerer ikke kode i en sandbox. Windows og Linux skal stadig afprøves på rigtige målmaskiner.</p>
+  </main>
+  <footer><a href="https://github.com/ai-alliancen-org/ai-harness/issues/new/choose">Fortæl os, hvordan prøven gik ↗</a><a href="https://github.com/ai-alliancen-org/ai-harness/blob/main/SECURITY.md">Rapportér en sikkerhedsfejl privat ↗</a></footer>
+</body>
+</html>

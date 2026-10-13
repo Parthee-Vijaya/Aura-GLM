@@ -51,4 +51,4 @@ function releaseSnapshot(release) {
   // Downloadtælleren ændres af vores egen kontrol. Sammenlign kun udgivelsens indhold.
   return JSON.stringify({ id: release.id, tag: release.tag_name, target: release.target_commitish, draft: release.draft, prerelease: release.prerelease, name: release.name, body: release.body, assets: release.assets.map(a => ({ id: a.id, name: a.name, state: a.state, size: a.size, digest: a.digest, url: a.browser_download_url })).sort((a, b) => a.name.localeCompare(b.name)) });
 }
-module.exports = { repository, installer, expectedFiles, assetURL, releaseFiles, validateRelease, releaseSnapshot, submissionIdPattern };
+module.exports = { repository, versionPattern, installer, expectedFiles, assetURL, releaseFiles, validateRelease, releaseSnapshot, submissionIdPattern };

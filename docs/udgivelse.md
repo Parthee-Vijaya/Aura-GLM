@@ -1,5 +1,7 @@
 # Udgiv en desktopbeta
 
+Terminalpakken har [sit eget udgivelsesforløb](udgivelse-cli.md) med tags, der begynder med `cli-v`. Den omfatter Windows, Linux og macOS og ændrer ikke desktopappens krav om platformsprøver og notarisation.
+
 Installationsfilerne ligger i GitHub Releases. [GitHub Pages](https://ai-alliancen-org.github.io/ai-harness/) viser downloadknapper til den seneste publicerede version med gyldige installationsfiler. Begge udgivelser kræver en særskilt, manuel kørsel. Et commit eller push starter ingen af dem.
 
 ## Klargør den konkrete version

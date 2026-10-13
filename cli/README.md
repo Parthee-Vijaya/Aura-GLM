@@ -4,6 +4,10 @@ Aura CLI bruger samme kodeagent, modelforbindelser, grundregler og skills som de
 
 CLI'en er til udviklingsmaskiner med **Node 22.12 eller nyere** og **Git**. Koden og de fastlåste motorpakker dækker Linux, macOS og Windows på x64 og arm64. Linux understøtter både glibc og musl. Faktisk afprøvning pr. platform står i [teststatus](../docs/teststatus.md). En platformsvariant i pakken er ikke i sig selv en installationsprøve.
 
+## Hent en udgivet terminalpakke
+
+[Terminalsiden](https://ai-alliancen-org.github.io/ai-harness/terminal.html) viser kun komplette, offentliggjorte CLI-udgivelser. Indtil den første udgivelse er klar, kan du starte fra kildekoden nedenfor. Pakken kan installeres i din egen mappe uden kloning eller global installation. Følg den konkrete platformsvejledning: [Windows](WINDOWS.md), [Linux](LINUX.md) eller [macOS](MACOS.md).
+
 ## Installation fra repositoryet
 
 Kør fra repositoryets rod:
@@ -86,13 +90,13 @@ Læs dette afsnit igen ved hver pakning. Kør fra repositoryets rod:
 ```sh
 npm run test:cli
 npm run test:cli-live
-npm pack --ignore-scripts --pack-destination /sti/til/pakkemappe
+npm run package:cli -- /sti/til/ny-pakkemappe --local
 ```
 
 Enhedstestene omfatter faktiske projektfiler, kryptering, afviste handlinger og Git-versioner i isolerede testrepositories. De ændrer ikke dette projekts Git-historik. Den samlede terminalprøve bruger Python 3's Unix-pty og rigtig OpenCode mod en kontrolleret lokal modelserver. Den bruger ingen eksterne AI-modeller. Python er kun en testafhængighed.
 
-Kontrollér tarballens indhold og kontrolsum. Installér den i en separat mappe, og afprøv `aura doctor`, oprettelse/åbning, login, plan, kodeændring, afvisning, stop, preview og genåbning. En lokal arbejdsmappeprøve validerer ikke en offentliggjort pakke. Publicering, Git-ændringer og GitHub Actions udføres ikke af disse kommandoer.
+Pakkescriptet kontrollerer arkivets faktiske filer mod kilderne og danner tre platformsguides, `CLI-RELEASE.json` og `SHA256SUMS.txt`. `--local` tillader endnu ikke committede ændringer og markerer pakken som uegnet til offentliggørelse. En release kræver en ren, fulgt kildeversion. Se [udgivelsesforløbet](../docs/udgivelse-cli.md). Kontrollér tarballens indhold og kontrolsum. Installér den i en separat mappe, og afprøv `aura doctor`, oprettelse/åbning, login, plan, kodeændring, afvisning, stop, preview og genåbning. En lokal arbejdsmappeprøve validerer ikke en offentliggjort pakke. Publicering, Git-ændringer og GitHub Actions udføres ikke af disse kommandoer.
 
 På Windows køres samme brugerforløb i både CMD og PowerShell. Kontrollér stier med mellemrum, skjult nøgleindtastning, Ctrl+C, genåbning af nøglelageret og browserlogin. På Linux prøves både en grafisk session og terminal uden nøgletjeneste. Registrér system, arkitektur, Node-version, pakkens kontrolsum og faktiske resultater i teststatus. Platformene skal markeres som uprøvede, indtil kontrollen er udført dér.
 
-En konkret installations- og testvejledning findes i [Windows-prøven](WINDOWS.md).
+Konkrete installations- og testvejledninger findes til [Windows](WINDOWS.md), [Linux](LINUX.md) og [macOS](MACOS.md).

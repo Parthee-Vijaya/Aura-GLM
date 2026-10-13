@@ -1,15 +1,17 @@
 # Afprøv Aura CLI på Windows
 
-Dette er en lokal testpakke til en udviklingsmaskine. Den indeholder terminalversionen, ikke Electron-appen. Den konkrete pakke er endnu ikke afprøvet på Windows. Ingen administratoradgang eller ændring af PowerShells scriptpolitik er nødvendig i vejledningen.
+Dette er terminalversionen til en udviklingsmaskine. Den konkrete CLI-pakke er endnu ikke afprøvet på Windows. Vejledningen installerer i din egen mappe og ændrer ikke PowerShells scriptpolitik. Arbejdspladsens regler kan stadig forhindre installation.
 
 Du skal have Node 22.12 eller nyere, npm og Git installeret efter arbejdspladsens regler. Pakken henter en fastlåst Windows-udgave af OpenCode fra npm. Den installerer ikke Docker eller projektets afhængigheder.
 
-## 1. Pak ud og kontroller filen
+## 1. Hent og kontroller filen
 
-Overfør `aura-cli-windows-test.zip` til Windows, og pak den ud i `Downloads\aura-cli-windows-test`. Åbn PowerShell i den mappe:
+Åbn [Auras terminalside](https://ai-alliancen-org.github.io/ai-harness/terminal.html). Når en CLI-beta er offentliggjort, henter du npm-pakken og `SHA256SUMS.txt` fra **samme udgivelse**. Opret mappen `Downloads\aura-cli`, og læg begge filer dér. Pak ikke `.tgz`-filen ud. Der er ingen CLI-download, før udgivelsen er publiceret.
+
+Åbn PowerShell i mappen. Kommandoerne nedenfor gælder `0.2.0-beta.6`; brug filnavnet fra den konkrete udgivelse, hvis versionen er en anden.
 
 ```powershell
-Set-Location "$HOME\Downloads\aura-cli-windows-test"
+Set-Location "$HOME\Downloads\aura-cli"
 node --version
 npm.cmd --version
 git --version
@@ -17,14 +19,14 @@ Get-FileHash .\aura-harness-0.2.0-beta.6.tgz -Algorithm SHA256
 Get-Content .\SHA256SUMS.txt
 ```
 
-Kontrolsummen skal være identisk med linjen for npm-pakken. `BUILD.json` angiver version, Git-udgangspunkt og kontrolsummer for kilderne. Pakken kan indeholde endnu ikke committede ændringer; versionsnummeret alene er ikke tilstrækkelig identifikation.
+Kontrolsummen skal være identisk med linjen for npm-pakken og den, der vises på terminalsiden. Stop ved forskel. `CLI-RELEASE.json` på udgivelsen angiver version, kildecommit og filernes kontrolsummer. Lokale prøver er markeret som ikke udgivelsesklare. En kontrolsum viser filens identitet, ikke at koden er sikker eller afprøvet på Windows.
 
 ## 2. Installer lokalt
 
 Bliv i den udpakkede mappe:
 
 ```powershell
-npm.cmd install --ignore-scripts --no-audit --no-fund --no-save .\aura-harness-0.2.0-beta.6.tgz
+npm.cmd install --include=optional --ignore-scripts --no-audit --no-fund --no-save .\aura-harness-0.2.0-beta.6.tgz
 .\node_modules\.bin\aura.cmd doctor
 ```
 
@@ -62,7 +64,7 @@ Versioner kan afprøves med `/save` og `/versions` i dette syntetiske projekt. G
 Luk Aura i PowerShell før denne prøve. Åbn CMD og brug samme installation og datalager:
 
 ```bat
-cd /d "%USERPROFILE%\Downloads\aura-cli-windows-test"
+cd /d "%USERPROFILE%\Downloads\aura-cli"
 set "AURA_HOME=%LOCALAPPDATA%\AuraCLI-WindowsTest"
 node_modules\.bin\aura.cmd doctor
 node_modules\.bin\aura.cmd resume
@@ -70,12 +72,15 @@ node_modules\.bin\aura.cmd resume
 
 Kontrollér skjult indtastning, æ/ø/å, mapper med mellemrum, kodeændring, afvisning, Ctrl+C, preview og genåbning. Kun én CLI må bruge samme datalager ad gangen. Afslut med `/exit`.
 
+Hvis du kun bruger CMD, kan du også installere dér: brug `npm.cmd install --include=optional --ignore-scripts --no-audit --no-fund --no-save aura-harness-0.2.0-beta.6.tgz`. Filens kontrolsum kan vises med `certutil -hashfile aura-harness-0.2.0-beta.6.tgz SHA256`.
+
 ## 5. Send resultaterne
 
 Udfyld i almindelig tekst. Send ikke adgangssætninger, tokens eller samtaler med private data:
 
 ```text
 Windows-version og arkitektur:
+CLI-version og kildecommit fra CLI-RELEASE.json:
 Node-, npm- og Git-version:
 SHA-256 for npm-pakken:
 Installation og doctor:
@@ -86,4 +91,6 @@ Danske tegn og mapper med mellemrum:
 Eventuel fejltekst og trin til at fremkalde fejlen:
 ```
 
-Ved oprydning er installation, datalager og projekter adskilte. Bevar projektmappen og datalageret, hvis du vil fortsætte. At slette installationen tilbagekalder ikke nøgler hos en udbyder. Den pakkede CLI kræver ingen Windows-nøglering; Electron-appens DPAPI skal afprøves særskilt.
+Ved opdatering: afslut Aura, hent den nye pakke i en ny installationsmappe, kontroller kontrolsummen og installer dér. Brug samme `AURA_HOME` for at genåbne dine samtaler. Bevar den gamle installation, indtil den nye er afprøvet. Tag en privat sikkerhedskopi af projekter og datalager før opdatering; en ældre version kan ikke forventes at læse et nyere dataformat.
+
+Ved oprydning er installation, datalager og projekter adskilte. Bevar projektmappen og datalageret, hvis du vil fortsætte. At slette installationen tilbagekalder ikke nøgler hos en udbyder. Den pakkede CLI kræver ingen Windows-nøglering; Electron-appens DPAPI skal afprøves særskilt. [Opret en fejlrapport](https://github.com/ai-alliancen-org/ai-harness/issues/new/choose), eller følg [den private sikkerhedskanal](https://github.com/ai-alliancen-org/ai-harness/blob/main/SECURITY.md).

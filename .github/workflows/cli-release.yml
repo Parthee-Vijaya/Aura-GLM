@@ -1,0 +1,92 @@
+name: Byg og udgiv terminalbeta
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Eksisterende tag på dette main-commit, fx cli-v0.2.0-beta.6'
+        required: true
+        type: string
+      offentliggoer:
+        description: 'Jeg godkender denne kørsel og offentliggørelse af terminalpakken'
+        required: true
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: cli-release
+  cancel-in-progress: false
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22.23.3'
+      - name: Kontrollér eksisterende tag og ren kildeversion
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          test "$RELEASE_TAG" = "cli-v$(node -p 'require("./package.json").version')"
+          test "$(git rev-parse "refs/tags/$RELEASE_TAG^{commit}")" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain)"
+      - name: Afprøv CLI og udgivelseskontrol uden modelkald
+        run: npm run test:cli
+      - name: Pak og sammenlign med den fulgte kildekode
+        run: npm run package:cli -- "$RUNNER_TEMP/aura-cli-release"
+      - uses: actions/upload-artifact@v5
+        with:
+          name: aura-cli-release
+          path: ${{ runner.temp }}/aura-cli-release/*
+          if-no-files-found: error
+          retention-days: 7
+  publish:
+    if: inputs.offentliggoer == true
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22.23.3'
+      - uses: actions/download-artifact@v6
+        with:
+          name: aura-cli-release
+          path: ${{ runner.temp }}/aura-cli-release
+      - name: Kontrollér pakke og kildecommit igen før upload
+        run: node scripts/build-cli-release.cjs "$RUNNER_TEMP/aura-cli-release" --check
+      - name: Opret en ny kladde ved det eksisterende tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          test "$RELEASE_TAG" = "cli-v$(node -p 'require("./package.json").version')"
+          git fetch origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+          test "$(git rev-parse "refs/tags/$RELEASE_TAG^{commit}")" = "$GITHUB_SHA"
+          gh api repos/ai-alliancen-org/ai-harness > "$RUNNER_TEMP/repository.json"
+          node -e 'const r=require(process.argv[1]);if(r.full_name!=="ai-alliancen-org/ai-harness"||r.private!==false)throw Error("Repositoryet skal være offentligt")' "$RUNNER_TEMP/repository.json"
+          gh release create "$RELEASE_TAG" --repo ai-alliancen-org/ai-harness --verify-tag --draft --prerelease --latest=false --title "Aura CLI ${RELEASE_TAG#cli-v}" --notes-file docs/releases/cli-beta.md
+          gh release upload "$RELEASE_TAG" "$RUNNER_TEMP/aura-cli-release/"* --repo ai-alliancen-org/ai-harness
+      - name: Hent de uploadede filer og kontrollér dem før offentliggørelse
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          gh api "repos/ai-alliancen-org/ai-harness/releases/tags/$RELEASE_TAG" > "$RUNNER_TEMP/cli-release.json"
+          gh release download "$RELEASE_TAG" --repo ai-alliancen-org/ai-harness --dir "$RUNNER_TEMP/cli-downloaded"
+          node scripts/check-cli-release.cjs "$RUNNER_TEMP/cli-downloaded" "$RUNNER_TEMP/cli-release.json"
+          gh api "repos/ai-alliancen-org/ai-harness/releases/tags/$RELEASE_TAG" > "$RUNNER_TEMP/cli-release-again.json"
+          node -e 'const fs=require("node:fs"),{releaseSnapshot}=require("./scripts/release-contract.cjs");const [a,b]=process.argv.slice(1).map(p=>releaseSnapshot(JSON.parse(fs.readFileSync(p))));if(a!==b)throw Error("Udgivelsen blev ændret under kontrollen")' "$RUNNER_TEMP/cli-release.json" "$RUNNER_TEMP/cli-release-again.json"
+          git fetch origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+          test "$(git rev-parse "refs/tags/$RELEASE_TAG^{commit}")" = "$GITHUB_SHA"
+          gh release edit "$RELEASE_TAG" --repo ai-alliancen-org/ai-harness --draft=false --prerelease --latest=false

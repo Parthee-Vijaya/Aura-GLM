@@ -4,6 +4,21 @@ Senest kontrolleret 13. oktober 2026. Afsnittene er daterede, så tidligere begr
 
 [Gennemgangen før offentlig beta](offentliggoerelse.md) samler historik- og logkontrol samt de lokale prøver af README, hjemmeside og udgivelseskontrol. Den offentliggør ikke appen og ændrer ikke installationsstatus nedenfor.
 
+## Terminalpakke, platformsguides og GitHub-distribution · 13. oktober 2026
+
+**Skrevet, enhedstestet og afprøvet med den faktiske lokale CLI-pakke på macOS arm64. Ikke offentliggjort eller afprøvet på Windows/Linux.** [Udgivelsesvejledningen](udgivelse-cli.md) beskriver det særskilte CLI-forløb. Desktopappens udgivelseskrav er bevaret.
+
+- **35 relevante tests består:** CLI, udgivelsesregler og eksisterende Pages-/desktoprelease-kontrol. Nye negative prøver afviser ekstra/manglende filer, forkerte versioner, kladder, fremmede downloadadresser, ændrede hashværdier, symlinks og uventede arkivstier.
+- **Den faktiske pakke er installeret separat på Mac.** Alle 93 installerede filer matcher både arkivet og kilderne. `doctor` finder Node 22.23.3, Git 2.50.1 og pakkens egen OpenCode 1.18.33. Terminalprøven gennemfører login, skjult nøgle, krypteret genåbning, plan, filændring, godkendelse, afvisning, preview, diff, stop, historik og en simuleret forbindelsesfejl. Modellen er en kontrolleret lokal server. Ingen betalte kald.
+- **Udgivelsesstop er udløst på rigtige pakkefiler.** En beskidt arbejdsmappe, en pakke markeret `publishable: false`, en ændret Windows-vejledning og en ekstra fil afvises. Kilder og arkiv er kontrolleret før og efter pakning. Det er ikke en GitHub-kørsel eller en platformsinstallation på Linux.
+- **Terminalsiden er set i browseren** ved 1280 og 390 pixels. Tre platformvalg, foldede detaljer, tastatur og reduceret bevægelse er kontrolleret. Ingen vandret rulning. Både den faktiske tomme releaseoversigt og en lokal visningsprøve med komplette metadata er afprøvet. Browserens download er dirigeret til den faktiske lokale npm-pakke og kontrolleret med SHA-256; det er ikke en offentlig GitHub-download.
+- **GitHub er kun læst.** API'et viser ingen Releases og en Pages-adresse på `https://ai-alliancen-org.github.io/ai-harness/`. Alle fire workflows er YAML-kontrolleret og har kun `workflow_dispatch`. Det nye CLI-workflow er ikke kørt hos GitHub. Der er ikke startet CI, oprettet tags, uploadet filer, committet eller pushet.
+- **Manglende prøver:** Windows i PowerShell/CMD udføres af brugeren efter [Windows-guiden](../cli/WINDOWS.md). Linux, macOS Intel, en almindelig ny bruger, faktisk offentlig download og Komplais produktionslogin mangler. Docker var ikke startet på denne Mac; der er ikke startet en Linux-maskine eller ændret infrastruktur.
+
+Den lokale kandidat ligger i `dist/cli-distribution-2026-10-13/candidate-1/`. Npm-pakkens SHA-256 er `e0d09ca1f000034dcf4ca7ebd08cd231d79b77b9c982a1961c801abe8bd94b1d`. Den er mærket som en lokal prøve og kan ikke passere offentliggørelseskontrollen. Udgivelsen skal pakkes igen fra det gennemgåede, rene commit.
+
+Lokal evidens: `/private/tmp/aura-distribution-unit.log`, `/private/tmp/aura-distribution-live.log`, browserbillederne `/private/tmp/aura-cli-page-desktop.png` og `/private/tmp/aura-cli-page-mobile.png`. Terminaludskriften ligger i `aura-cli-real-EKPxFX` under macOS' midlertidige mappe.
+
 ## Komplai API-token og Windows-prøve · 13. oktober 2026
 
 **Skrevet, enhedstestet og afprøvet i Electron med rigtig OpenCode, faktiske projektfiler og en kontrolleret lokal Komplai-server. Ikke afprøvet mod Komplais produktions-API.** App og CLI har API-token som alternativ til browserlogin. [API-kontrakten](komplai-api-token.md) angiver den nødvendige metadataudvidelse; klienten afviser tilslutning, hvis API'en endnu ikke leverer den.
