@@ -1,0 +1,66 @@
+name: Offentliggør gennemgået desktopbeta
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Eksisterende tag og releasekladde, fx v0.2.0-beta.6'
+        type: string
+        required: true
+      godkend_udgivelse:
+        description: 'Jeg godkender denne kørsel og offentliggørelse af de uploadede installationsfiler'
+        type: boolean
+        default: false
+        required: true
+      komplai_afproevet:
+        description: 'Rigtigt Komplai-login, modelkald og kreditregnskab er afprøvet; platformenes begrænsninger står i noterne'
+        type: boolean
+        default: false
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: desktop-release
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main' && inputs.godkend_udgivelse && inputs.komplai_afproevet
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ inputs.tag }}
+      GH_REPO: ai-alliancen-org/ai-harness
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22.23.3'
+      - name: Kontrollér version og eksisterende tag
+        shell: bash
+        run: |
+          node -e 'if (process.env.RELEASE_TAG !== "v" + require("./desktop/package.json").version) throw Error("Tag matcher ikke appversionen")'
+          test "$(git rev-parse "$RELEASE_TAG^{commit}")" = "$GITHUB_SHA"
+      - name: Hent kun filerne fra den eksisterende kladde
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/aura-release"
+          gh api "repos/$GH_REPO" > "$RUNNER_TEMP/repository.json"
+          gh api "repos/$GH_REPO/releases/tags/$RELEASE_TAG" > "$RUNNER_TEMP/release.json"
+          node -e 'const r=require(process.env.RUNNER_TEMP+"/release.json"); if (!r.draft || !r.prerelease) throw Error("Der skal allerede findes en beta-kladde")'
+          gh release download "$RELEASE_TAG" --dir "$RUNNER_TEMP/aura-release" --pattern 'Aura-*.dmg' --pattern 'Aura-*.exe' --pattern release.json --pattern SHA256SUMS.txt
+      - name: Kontrollér alle downloads og loginopsætning
+        run: node scripts/check-release.cjs "$RUNNER_TEMP/aura-release" "$RUNNER_TEMP/release.json" "$RUNNER_TEMP/repository.json"
+      - name: Kontrollér kladden igen og offentliggør den
+        shell: bash
+        run: |
+          gh api "repos/$GH_REPO/releases/tags/$RELEASE_TAG" > "$RUNNER_TEMP/release-current.json"
+          node -e 'const fs=require("fs");const {releaseSnapshot}=require("./scripts/release-contract.cjs");const p=process.env.RUNNER_TEMP; if(releaseSnapshot(JSON.parse(fs.readFileSync(p+"/release.json")))!==releaseSnapshot(JSON.parse(fs.readFileSync(p+"/release-current.json")))) throw Error("Kladdeudgivelsen blev ændret under kontrollen")'
+          git fetch origin "refs/tags/$RELEASE_TAG"
+          test "$(git rev-parse 'FETCH_HEAD^{commit}')" = "$GITHUB_SHA"
+          gh release edit "$RELEASE_TAG" --draft=false --prerelease --latest=false
+      - name: Næste trin
+        run: echo 'Betaen er offentliggjort. Pages skal opdateres med en særskilt godkendt manuel kørsel.' >> "$GITHUB_STEP_SUMMARY"

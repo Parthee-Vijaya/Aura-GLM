@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "version": "0.2.0",
+  "version": "0.2.1",
   "checkedAt": "2026-09-29",
   "controlWord": "FÆLLES-GRUNDLAG-02",
   "skillDirs": [
@@ -313,9 +313,9 @@
       "title": "Nøgler og afhængigheder",
       "summary": "Holder nøgler ude af kode, logs og Git og kontrollerer nye pakker, før de tilføjes.",
       "faq": {
-        "hvad": "Sørger for, at API-nøgler, tokens og adgangskoder hverken ender i koden, i browserens filer, i logs eller i Git. Før en ny pakke tilføjes, forklarer agenten behovet, kontrollerer navn, licens og kendte sårbarheder og bruger projektets låsefil.",
+        "hvad": "Holder hemmeligheder ude af kode, logs, rapporter og Git. Ved nye pakker kontrollerer agenten officiel kilde, udgiver, faktisk version, installationsscripts, licens og kendte sårbarheder. Offentlige klientnøgler vurderes efter deres rettigheder.",
         "hvornaar": "Når løsningen skal forbindes til en anden tjeneste, når der skal bruges en nøgle, og når pakker tilføjes eller opdateres.",
-        "resultat": "Konfiguration med navngivne miljøvariabler uden værdier, en begrundelse for hver ny pakke og en besked, hvis en hemmelighed er eksponeret.",
+        "resultat": "Konfiguration uden hemmelige værdier og en begrundet pakkekontrol med version, kilde og eventuelle uafklarede forhold. Fundne hemmeligheder gengives ikke.",
         "ikke": "Den finder ikke alle hemmeligheder automatisk og erstatter ikke en egentlig hemmelighedsscanning eller udskiftning af en lækket nøgle."
       },
       "sources": [
@@ -330,6 +330,14 @@
         {
           "title": "npm ci",
           "url": "https://docs.npmjs.com/cli/v11/commands/npm-ci/"
+        },
+        {
+          "title": "npm om installationsscripts",
+          "url": "https://docs.npmjs.com/cli/v11/using-npm/scripts/"
+        },
+        {
+          "title": "npm audit om sårbarheder, signaturer og dataflow",
+          "url": "https://docs.npmjs.com/cli/v11/commands/npm-audit/"
         }
       ]
     },
@@ -428,12 +436,12 @@
     {
       "name": "harness-sikkerhedsgennemgang",
       "title": "Sikkerhedsgennemgang",
-      "summary": "Gennemgår adgang, input, hemmeligheder og dataadskillelse og registrerer konkrete fund før drift.",
+      "summary": "Afprøver adgangsgrænser, gennemgår agentværktøjer og skelner mellem bekræftede fejl, mistanker og manglende kontroller.",
       "faq": {
-        "hvad": "Agenten gennemgår de dele, ændringen berører, med en tjekliste til små webapps: adgangskontrol på serveren, validering og escaping, hemmeligheder, afhængigheder, logning og adskillelse af brugeres data. Fund registreres med alvor og næste handling.",
-        "hvornaar": "Når en ændring berører login, adgang, formularer, filupload, data eller eksterne tjenester, og altid før en app sættes i drift.",
-        "resultat": "En liste over fund med sted, alvor, forslag og status samt en beskrivelse af, hvad der er kontrolleret, og hvad der ikke er.",
-        "ikke": "Den gør ikke appen sikker og er ikke en penetrationstest. Fravær af fund er ikke bevis for fravær af problemer."
+        "hvad": "Gennemgår de relevante dele af projektet og afprøver, at brugere og organisationer kun kan tilgå tilladte data. Omfatter også kodeagentens MCP-servere, hooks og rettigheder. Kontroller og fund dokumenteres uden hemmeligheder.",
+        "hvornaar": "Ved ændringer i login, adgang, input, data, eksterne tjenester eller agentværktøjer og før en app sættes i drift.",
+        "resultat": "En gennemgang knyttet til kodeversion og miljø med omfang, værktøjer, bekræftede fejl, mistanker og manglende kontroller. Hvert fund har evidens, konsekvens og næste handling.",
+        "ikke": "Den er ikke en automatisk scanner, sandbox, penetrationstest eller GDPR-godkendelse. Fravær af fund er ikke bevis for fravær af problemer."
       },
       "sources": [
         {
@@ -451,6 +459,18 @@
         {
           "title": "NIS2-loven",
           "url": "https://www.retsinformation.dk/eli/lta/2025/434"
+        },
+        {
+          "title": "OWASP om adgangskontrol",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html"
+        },
+        {
+          "title": "OWASP om MCP-sikkerhed",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/MCP_Security_Cheat_Sheet.html"
+        },
+        {
+          "title": "OWASP om prompt injection",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html"
         }
       ]
     },
@@ -459,9 +479,9 @@
       "title": "Udgivelse og gendannelse",
       "summary": "Gennemgår version, miljø, data og godkendelser før udgivelse og afprøver den rigtige adresse bagefter.",
       "faq": {
-        "hvad": "Før en udgivelse gennemgår agenten version, miljø, konfiguration, dataændringer, nødvendige godkendelser og vejen tilbage sammen med dig. Efter udgivelsen afprøves den rigtige adresse, adgangsbegrænsninger og logs.",
+        "hvad": "Gennemgår version, miljø, dataændringer, kontroller, nødvendige godkendelser og vejen tilbage. Manglende prøver og åbne fund skal fremgå. Berørte godkendelser vurderes på ny ved ændringer. Efter udgivelsen afprøves den rigtige adresse, adgang og logs.",
         "hvornaar": "Når du vil udgive til et test- eller driftsmiljø, eller når en version skal rulles tilbage.",
-        "resultat": "En tjekliste, en udgivelsesnote med commit, miljø og kontroller og en afprøvet vej tilbage.",
+        "resultat": "En udgivelsesnote med commit, miljø, kontrolgrundlag, åbne fund, ansvarlige roller og faktisk modtagne godkendelser samt en afprøvet vej tilbage.",
         "ikke": "Den udgiver ikke til drift og opretter ikke betalte ressourcer uden din udtrykkelige godkendelse. En godkendelse registreret i en fil er ikke en verificeret identitet."
       },
       "sources": [

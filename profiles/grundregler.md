@@ -1,6 +1,6 @@
 # Aura Harness · fælles grundregler
 
-Profil: grundregler · Version: 0.2.0 · Sprog: dansk
+Profil: grundregler · Version: 0.2.1 · Sprog: dansk
 
 Disse instruktioner guider arbejdet i dette projekt. De erstatter ikke værktøjets adgangskontrol, menneskelig gennemgang eller organisationens krav. Følg højere prioriterede instruktioner. Gør opmærksom på modstridende regler, og afklar dem før den berørte handling.
 

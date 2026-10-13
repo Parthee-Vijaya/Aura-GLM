@@ -17,11 +17,13 @@ Gennemgå [tjeklisten](references/udgivelsestjekliste.md) sammen med brugeren. D
 2. **Miljø:** test eller drift, hvilken tjeneste, hvilken region og hvilken konto. Udgiv til et testmiljø først, når det er muligt.
 3. **Konfiguration:** er miljøvariabler og hemmeligheder sat i tjenesten? Nævn kun navnene.
 4. **Data:** er der databaseændringer? Hvordan rettes de, hvis udgivelsen skal rulles tilbage? En tilbagerulning af koden ruller ikke data tilbage.
-5. **Kontroller:** hvilke tests og gennemgange er kørt på netop denne version, og hvad er stadig åbent?
-6. **Godkendelser:** hvilke godkendelser kræver organisationen, og foreligger de fra de rette roller? Nye dataforløb, leverandører, login eller en offentligt tilgængelig adresse kan kræve en særskilt vurdering.
+5. **Kontroller:** hvilke tests og gennemgange er kørt på netop denne version og konfiguration? Angiv værktøjsversioner, regelsæt, kontroldato og omfang. Skeln mellem bekræftede fejl, mistanker og kontroller, der ikke er gennemført; manglende prøver må ikke blive til et grønt resultat.
+6. **Godkendelser:** hvilke godkendelser kræver organisationen, og foreligger de fra de rette roller for denne version og dette miljø? Nye dataforløb, leverandører, login, agentrettigheder eller en offentligt tilgængelig adresse kan kræve en særskilt vurdering. Genåbn de berørte beslutninger ved sådanne ændringer; overfør ikke en gammel godkendelse automatisk.
 7. **Udgift og ejerskab:** hvem ejer kontoen, og hvad koster det?
 
 Hvis en nødvendig beslutning mangler, så udgiv ikke til drift. Arbejdet kan fortsætte med opdigtede data i et testmiljø.
+
+Knyt hvert åbent fund til næste handling og ansvarlig rolle. En risikovurdering eller accept skal beskrive det konkrete forhold og følge organisationens regler; en afkrydsning fra agenten er ikke en godkendelse. Registrér kun faktisk modtagne beslutninger, og angiv om identiteten er verificeret eller blot oplyst. Gem hverken tokens, rå nøglefund eller personoplysninger i udgivelsesnoten. En sikkerhedskontrol erstatter ikke en vurdering af databehandling og GDPR.
 
 ## Efter udgivelsen
 

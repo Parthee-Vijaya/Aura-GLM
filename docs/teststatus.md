@@ -4,6 +4,36 @@ Senest kontrolleret 13. oktober 2026. Afsnittene er daterede, så tidligere begr
 
 [Gennemgangen før offentlig beta](offentliggoerelse.md) samler historik- og logkontrol samt de lokale prøver af README, hjemmeside og udgivelseskontrol. Den offentliggør ikke appen og ændrer ikke installationsstatus nedenfor.
 
+## Instruktionspakke 0.2.1: fire sikkerhedstilføjelser · 13. oktober 2026
+
+**Skrevet, enhedstestet og installeret gennem appen i et isoleret projekt. Ikke offentliggjort.** De eksisterende skills er udvidet med kontrol af afhængigheders oprindelse, konkrete adgangsprøver mellem brugere og organisationer, gennemgang af agenters/MCP-værktøjers/hooks' rettigheder samt dokumentation af fund og godkendelser for den faktisk kontrollerede version. Der er fortsat 12 grundlæggende skills og to valgfrie integrationer. Ingen scannere eller eksekverbare scripts er tilføjet.
+
+- **Enhedstestet:** 29 relevante tests består for bibliotek, ZIP-pakker, installation, valgfrie funktioner og skills. De kontrollerer blandt andet referencer, filindhold, manifest og kontrolsummer samt bevarelse af brugerens egne filer. Alle 23 downloadpakker er genereret som version 0.2.1.
+- **Kørt i Electron:** Værktøjsforløbet installerer den nye reference `agentadgang.md` med byteidentisk indhold. Eksisterende projektregler bevares; gentagen installation og afinstallation med brugerændringer er afprøvet. Den udvidede sikkerhedsbeskrivelse er åbnet og visuelt gennemgået i appen. Git-commits forekommer kun i prøvens isolerede repository med syntetiske filer.
+- **Webguide afprøvet:** Fem sider ved to skærmbredder, 83 lokale links og begge hovedforløb består uden sidefejl, unavngivne betjeninger eller vandret overløb. Det er en lokal prøve, ikke kontrol af en ny offentlig udgivelse.
+- **Begrænsning:** Kontrollerne dokumenterer pakkernes indhold og installation, ikke at en rigtig model følger alle instruktionerne eller opdager konkrete sårbarheder. Ingen eksterne modelkald eller sikkerhedsscanning af en brugers projekt er gennemført. Skills er vejledning, ikke teknisk håndhævelse eller GDPR-godkendelse.
+- **Installationsfiler skal genbygges:** Arbejdsmappen og de nye webpakker bruger 0.2.1. De allerede byggede beta.6-installationsfiler nedenfor indeholder fortsat 0.2.0 og skal genbygges og kontrolleres før udgivelse. Ingen commits, push, GitHub Actions eller offentliggørelse er foretaget.
+
+Lokal evidens: `/private/tmp/aura-skills-021-unit.log`, `/private/tmp/aura-skills-021-tools.log` og `/private/tmp/aura-skills-021-web.log`. Skærmbilledet af den ændrede sikkerhedsbeskrivelse ligger i prøvemappen `harness-vaerktoejer-pqwoHg/02b-sikkerhedsskill.png` under macOS' midlertidige mappe.
+
+## Beta.6: installationsfiler og udgivelsesvej · 13. oktober 2026
+
+**Bygget og afprøvet lokalt med faktiske installationsfiler. Ikke offentliggjort.** Tre nye filer ligger i `desktop/release/beta.6/downloads/`: Mac med Apple Silicon, Intel-Mac og Windows x64. De indeholder Komplai-integrationen. Tidligere pakker er bevaret. [Udgivelsesvejledningen](udgivelse.md) beskriver de resterende trin; [udgivelsesnoterne](releases/0.2.0-beta.6.md) er en kladde.
+
+- **Skrevet og enhedstestet:** 18 relevante tests består for pakning, downloadoversigt, Pages og udgivelseskontrol. Blandede versioner, manglende eller ekstra filer, ugyldige kontrolsummer, ændret filindhold, manglende Mac-kvitteringer og ufuldstændig Komplai-konfiguration afvises. En mislykket kontrol af blandede versioner bevarer den eksisterende filoversigt.
+- **Faktisk pakkeindhold kontrolleret:** 66 kilde-/metadatafiler og 27 profilfiler matcher arbejdsmappekoden i begge monterede Mac-diskbilleder og i Windows-installationsprogrammets udpakkede indhold. Runtime-manifesterne matcher de fastlåste værktøjer: Node 22.23.3, Git 2.53.0 og OpenCode 1.18.33. Kontrollen afviste desuden en faktisk beta.5-app som forkert version. Dette er indholdskontrol, ikke en uafhængig sikkerhedsgennemgang af alle medfølgende programmer.
+- **Mac-signering:** Begge apps inde i diskbillederne består den strenge signaturkontrol med Developer ID og Team ID `2UX98897JW`. Beta.6 er endnu ikke notariseret. Ingen filer er indsendt til Apple i denne milepæl. Downloadoversigten viser derfor ikke pakkerne som notariserede, og udgivelseskontrollen afviser den aktuelle filoversigt.
+- **Pakket Apple Silicon-app afprøvet:** Oprettelse af projekt, faktisk forhåndsvisning og manuel versionsgemning består med isolerede appdata og de medfølgende værktøjer. Git-commits forekommer kun i prøvens nye repository med syntetiske filer.
+- **Byggeforløb i den pakkede app:** Rigtig OpenCode og en kontrolleret lokal modelserver gennemførte plan uden filændring, godkendt kodeændring, fungerende preview med filtrering, mobilvisning, en efterfølgende ændring og gendannelse til de oprindelige filbytes. Første forsøg stoppede med timeout under opsætningen; en gentagelse bestod uden ændring af appkoden. Årsagen til første stop er ikke fastslået. Prøven logger nu fejlkontekst i kontrolleret tilstand. Dette er ikke en rigtig Komplai- eller modelprøve.
+- **Downloads afprøvet:** En lokal browser hentede alle tre faktiske installationsfiler og kontrollerede filnavn, størrelse og SHA-256. De ekstra downloadkopier blev slettet efter kontrollen. Den lokale downloadside er afprøvet på både bred og smal skærm.
+- **Pages afprøvet:** Fem sider i to skærmbredder, 83 lokale links og begge hovedforløb består uden sidefejl eller vandret overløb. Det er prøvet både med GitHubs faktiske tomme Release-liste og med en lokal prøveudgivelse baseret på de tre filers faktiske metadata. Sidstnævnte er kun en visningsprøve, ikke en offentlig Release. Downloadsidens desktop- og mobilbilleder er gennemgået.
+- **Manuel offentliggørelse:** Det nye Release-workflow og de eksisterende bygge-/Pages-workflows har kun manuel start. YAML og kommandosyntaks er kontrolleret lokalt. Udgivelseslogikken er afprøvet med lokale filer; selve workflowet har ikke kørt hos GitHub. Ingen Actions-minutter, tags, Releases, commits, push eller deployment er startet herfra.
+- **Eksterne forudsætninger:** GitHub viste fortsat ingen Releases. Et faktisk læsende kald til `https://api.komplai.dk/v1/aura/config` gav HTTP 404, som udløste den nye kontrol og stoppede den. Komplais produktionslogin, modelkald og kreditregnskab er endnu ikke afprøvet. De tidligere kendte afhængighedsfund er ikke rettet af denne pakning og skal vurderes inden offentliggørelse; se [demogennemgangen](demogennemgang.md).
+
+**Mangler før kollegaprøven:** Apple-notarisation af de endelige Mac-filer, rigtig Komplai-prøve, offentlig Release og Pages-download samt installation og opdatering på testernes maskiner. Intel-Mac og Windows er ikke kørt på deres målplatforme i denne milepæl. Windows-filen er usigneret. Appen er ikke observeret hos en ny bruger.
+
+Lokal evidens: `/private/tmp/aura-beta6-unit-final.log`, `/private/tmp/aura-beta6-package.log`, `/private/tmp/aura-beta6-controlled-retry.log`, `/private/tmp/aura-beta6-download.log`, `/private/tmp/aura-beta6-web-final.log` og `/private/tmp/aura-beta6-web-actual.log`. Loggen for første afbrudte byggeprøve er `/private/tmp/aura-beta6-controlled.log`. Installerne, filoversigten og kontrolsummerne ligger i den ignorerede mappe `desktop/release/beta.6/downloads/`.
+
 ## Komplai-login og organisationens kreditter · 13. oktober 2026
 
 **Implementeret i Aura og Komplais backend; afprøvet lokalt med faktiske filer og isoleret kreditregnskab. Ikke deployet.** Komplai ligger under **Vælg en anden**. Brugeren logger ind i systembrowseren, vælger organisation og bekræfter brug af dens fælles AI-kreditter. Modeller, kundetakster i DKK og datavilkår kommer fra Komplai. Ingen Scaleway-nøgle indtastes i Aura, og der er ingen automatisk ændring af model eller betalingsform.
@@ -21,7 +51,7 @@ Senest kontrolleret 13. oktober 2026. Afsnittene er daterede, så tidligere begr
 
 Evidens: `desktop/tests/komplai.test.cjs`, `desktop/tests/komplai-live-budget.test.cjs`, `desktop/scripts/verify-komplai.cjs` og Komplai-repositoryets `packages/api-access/src/aura-http.integration.test.ts`. Den seneste gennemførte Electron-prøve har screenshots under `/private/var/folders/q9/914lvw356897pk8pb_29flv00000gn/T/aura-komplai-desktop-cxbnC6/`; datavisningen er visuelt gennemgået fra den forudgående prøve i `aura-komplai-desktop-qke3WC/`. Enhedslogs fra de tidligere kontroller ligger i `/private/tmp/aura-komplai-unit.log` og `/private/tmp/aura-komplai-targeted.log`.
 
-Før rigtig brug skal Komplais offentlige Aura-loginapp oprettes, backend udgives og organisationens coding-adgang, modeller og datavilkår aktiveres. Opsætningen står i Komplai-repositoryets `docs/AURA.md`. Ingen af de eksisterende installationsfiler indeholder denne milepæl.
+Før rigtig brug skal Komplais offentlige Aura-loginapp oprettes, backend udgives og organisationens coding-adgang, modeller og datavilkår aktiveres. Opsætningen står i Komplai-repositoryets `docs/AURA.md`. Pakker fra før beta.6 indeholder ikke denne milepæl; de nye lokale beta.6-filer er beskrevet ovenfor.
 
 ### Første kollegaprøve på Mac og Windows
 

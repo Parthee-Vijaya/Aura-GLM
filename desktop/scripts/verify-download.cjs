@@ -19,9 +19,12 @@ const {createHash}=require('node:crypto');
   for (const [index, artifact] of manifest.files.entries()) {
    const [download]=await Promise.all([page.waitForEvent('download'),page.locator('.artifact a').nth(index).click()]);
    assert.equal(download.suggestedFilename(),artifact.name,'Linket henter den angivne installationsfil');
-   const file=path.join(output,artifact.name);await download.saveAs(file);
-   assert.equal((await fs.stat(file)).size,artifact.bytes,'Downloadens størrelse matcher filoversigten');
-   assert.equal(createHash('sha256').update(await fs.readFile(file)).digest('hex'),artifact.sha256,'Kontrolsum matcher for '+artifact.name);
+   const stream=await download.createReadStream();assert(stream,'Browseren skal have hentet en læsbar fil');
+   const hash=createHash('sha256');let bytes=0;
+   for await(const chunk of stream){bytes+=chunk.length;hash.update(chunk);}
+   assert.equal(bytes,artifact.bytes,'Downloadens størrelse matcher filoversigten');
+   assert.equal(hash.digest('hex'),artifact.sha256,'Kontrolsum matcher for '+artifact.name);
+   await download.delete();
   }
   await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:path.join(output,'mobil.png'),fullPage:true});
   console.log(JSON.stringify({status:'bestået',output,files:manifest.files.map(f=>f.name),checks:['alle installationslinks','alle filer hentet via browser','filnavne, størrelser og SHA-256 matcher','desktop og mobil'],publiceret:false}));

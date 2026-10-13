@@ -448,9 +448,13 @@ Afslutningen viser ændrede tekstfiler registreret i den enkelte opgave og **Kon
 
 ## Installationspakker · beta
 
+### Aktuel kandidat · 13. oktober 2026
+
+`0.2.0-beta.6` klargøres med Komplai-forbindelsen. [Udgivelsesvejledningen](../docs/udgivelse.md) beskriver de tre installationsfiler, kontrollen mod kildekoden, signering og de særskilte manuelle Releases- og Pages-kørsler. [Teststatus](../docs/teststatus.md) angiver, hvor langt hver platform er afprøvet. Der er endnu ingen publiceret beta.6.
+
 ### Demogennemgang · 7. oktober 2026
 
-Den aktuelle kandidat er `0.2.0-beta.5`. [Demogennemgangen](../docs/demogennemgang.md) beskriver UI/UX, datagrænser og det, der stadig kræves før udsendelse. [Demo til testere](../docs/demo-til-testere.md) er det korte testmateriale; [teststatus](../docs/teststatus.md) skelner mellem lokal kode, pakket app, rigtig model og publiceret installation. Beta.5 retter indlæsning af skills med Windows-linjeskift. Repositoryets `.gitattributes` bevarer desuden ens tekstfiler ved checkout, så de genererede instruktionspakker kan kontrolleres byte for byte på begge platforme.
+Kandidaten ved denne gennemgang var `0.2.0-beta.5`. [Demogennemgangen](../docs/demogennemgang.md) beskriver UI/UX, datagrænser og det, der stadig kræves før udsendelse. [Demo til testere](../docs/demo-til-testere.md) er det korte testmateriale; [teststatus](../docs/teststatus.md) skelner mellem lokal kode, pakket app, rigtig model og publiceret installation. Beta.5 retter indlæsning af skills med Windows-linjeskift. Repositoryets `.gitattributes` bevarer desuden ens tekstfiler ved checkout, så de genererede instruktionspakker kan kontrolleres byte for byte på begge platforme.
 
 `npm run test:demo` prøver første start uden AI, kladde, forbindelsesguide, navngivne kontroller, fokus, tastatur, 980 × 720, 150 % zoom, reduceret bevægelse og genåbning. Det kan også køres med `HARNESS_TEST_PACKAGE` sat til den konkrete `.app` eller `.exe`. `measure:screens` registrerer en afgrænset DOM-kontrol og tager billeder direkte fra Electron-vinduet. Det erstatter ikke en skærmlæserprøve eller brugerobservation.
 

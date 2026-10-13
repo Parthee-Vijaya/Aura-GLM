@@ -1,4 +1,4 @@
-# Skills i Aura Harness 0.2.0
+# Skills i Aura Harness 0.2.1
 
 Genereret fra `profiles/catalog.json` af `scripts/build-packages.cjs`. Ret kataloget eller skillfilerne, ikke denne fil.
 
@@ -118,15 +118,15 @@ Nøgler, afhængigheder, persondata, leverandører og sikkerhedsgennemgang.
 
 `harness-noegler-og-afhaengigheder` · [SKILL.md](skills/harness-noegler-og-afhaengigheder/SKILL.md)
 
-**Hvad gør den?** Sørger for, at API-nøgler, tokens og adgangskoder hverken ender i koden, i browserens filer, i logs eller i Git. Før en ny pakke tilføjes, forklarer agenten behovet, kontrollerer navn, licens og kendte sårbarheder og bruger projektets låsefil.
+**Hvad gør den?** Holder hemmeligheder ude af kode, logs, rapporter og Git. Ved nye pakker kontrollerer agenten officiel kilde, udgiver, faktisk version, installationsscripts, licens og kendte sårbarheder. Offentlige klientnøgler vurderes efter deres rettigheder.
 
 **Hvornår bruges den?** Når løsningen skal forbindes til en anden tjeneste, når der skal bruges en nøgle, og når pakker tilføjes eller opdateres.
 
-**Hvad får du?** Konfiguration med navngivne miljøvariabler uden værdier, en begrundelse for hver ny pakke og en besked, hvis en hemmelighed er eksponeret.
+**Hvad får du?** Konfiguration uden hemmelige værdier og en begrundet pakkekontrol med version, kilde og eventuelle uafklarede forhold. Fundne hemmeligheder gengives ikke.
 
 **Hvad gør den ikke?** Den finder ikke alle hemmeligheder automatisk og erstatter ikke en egentlig hemmelighedsscanning eller udskiftning af en lækket nøgle.
 
-Kilder: [OWASP Secrets Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html), [Vite om miljøvariabler i browserkode](https://vite.dev/guide/env-and-mode), [npm ci](https://docs.npmjs.com/cli/v11/commands/npm-ci/)
+Kilder: [OWASP Secrets Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html), [Vite om miljøvariabler i browserkode](https://vite.dev/guide/env-and-mode), [npm ci](https://docs.npmjs.com/cli/v11/commands/npm-ci/), [npm om installationsscripts](https://docs.npmjs.com/cli/v11/using-npm/scripts/), [npm audit om sårbarheder, signaturer og dataflow](https://docs.npmjs.com/cli/v11/commands/npm-audit/)
 
 ### Data og leverandører
 
@@ -146,15 +146,15 @@ Kilder: [Datatilsynet om cloud](https://www.datatilsynet.dk/regler-og-vejledning
 
 `harness-sikkerhedsgennemgang` · [SKILL.md](skills/harness-sikkerhedsgennemgang/SKILL.md)
 
-**Hvad gør den?** Agenten gennemgår de dele, ændringen berører, med en tjekliste til små webapps: adgangskontrol på serveren, validering og escaping, hemmeligheder, afhængigheder, logning og adskillelse af brugeres data. Fund registreres med alvor og næste handling.
+**Hvad gør den?** Gennemgår de relevante dele af projektet og afprøver, at brugere og organisationer kun kan tilgå tilladte data. Omfatter også kodeagentens MCP-servere, hooks og rettigheder. Kontroller og fund dokumenteres uden hemmeligheder.
 
-**Hvornår bruges den?** Når en ændring berører login, adgang, formularer, filupload, data eller eksterne tjenester, og altid før en app sættes i drift.
+**Hvornår bruges den?** Ved ændringer i login, adgang, input, data, eksterne tjenester eller agentværktøjer og før en app sættes i drift.
 
-**Hvad får du?** En liste over fund med sted, alvor, forslag og status samt en beskrivelse af, hvad der er kontrolleret, og hvad der ikke er.
+**Hvad får du?** En gennemgang knyttet til kodeversion og miljø med omfang, værktøjer, bekræftede fejl, mistanker og manglende kontroller. Hvert fund har evidens, konsekvens og næste handling.
 
-**Hvad gør den ikke?** Den gør ikke appen sikker og er ikke en penetrationstest. Fravær af fund er ikke bevis for fravær af problemer.
+**Hvad gør den ikke?** Den er ikke en automatisk scanner, sandbox, penetrationstest eller GDPR-godkendelse. Fravær af fund er ikke bevis for fravær af problemer.
 
-Kilder: [OWASP ASVS](https://owasp.org/www-project-application-security-verification-standard/), [OWASP Top 10](https://owasp.org/Top10/), [OWASP Top 10 for LLM-applikationer](https://genai.owasp.org/llm-top-10/), [NIS2-loven](https://www.retsinformation.dk/eli/lta/2025/434)
+Kilder: [OWASP ASVS](https://owasp.org/www-project-application-security-verification-standard/), [OWASP Top 10](https://owasp.org/Top10/), [OWASP Top 10 for LLM-applikationer](https://genai.owasp.org/llm-top-10/), [NIS2-loven](https://www.retsinformation.dk/eli/lta/2025/434), [OWASP om adgangskontrol](https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html), [OWASP om MCP-sikkerhed](https://cheatsheetseries.owasp.org/cheatsheets/MCP_Security_Cheat_Sheet.html), [OWASP om prompt injection](https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html)
 
 ## Udgivelse og drift
 
@@ -164,11 +164,11 @@ Sæt i drift, rul tilbage, og gør arbejdet klar til at blive overtaget.
 
 `harness-udgivelse-og-gendannelse` · [SKILL.md](skills/harness-udgivelse-og-gendannelse/SKILL.md)
 
-**Hvad gør den?** Før en udgivelse gennemgår agenten version, miljø, konfiguration, dataændringer, nødvendige godkendelser og vejen tilbage sammen med dig. Efter udgivelsen afprøves den rigtige adresse, adgangsbegrænsninger og logs.
+**Hvad gør den?** Gennemgår version, miljø, dataændringer, kontroller, nødvendige godkendelser og vejen tilbage. Manglende prøver og åbne fund skal fremgå. Berørte godkendelser vurderes på ny ved ændringer. Efter udgivelsen afprøves den rigtige adresse, adgang og logs.
 
 **Hvornår bruges den?** Når du vil udgive til et test- eller driftsmiljø, eller når en version skal rulles tilbage.
 
-**Hvad får du?** En tjekliste, en udgivelsesnote med commit, miljø og kontroller og en afprøvet vej tilbage.
+**Hvad får du?** En udgivelsesnote med commit, miljø, kontrolgrundlag, åbne fund, ansvarlige roller og faktisk modtagne godkendelser samt en afprøvet vej tilbage.
 
 **Hvad gør den ikke?** Den udgiver ikke til drift og opretter ikke betalte ressourcer uden din udtrykkelige godkendelse. En godkendelse registreret i en fil er ikke en verificeret identitet.
 

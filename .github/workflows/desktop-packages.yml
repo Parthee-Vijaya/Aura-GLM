@@ -14,16 +14,19 @@ jobs:
             command: package:mac
             arch: arm64
             app: release/mac-arm64/Aura.app
+            resources: release/mac-arm64/Aura.app/Contents/Resources
           - os: macos-15-intel
             target: darwin-x64
             command: package:mac
             arch: x64
             app: release/mac/Aura.app
+            resources: release/mac/Aura.app/Contents/Resources
           - os: windows-latest
             target: win32-x64
             command: package:windows
             arch: x64
             app: release/win-unpacked/Aura.exe
+            resources: release/win-unpacked/resources
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -42,6 +45,8 @@ jobs:
       - run: npm run ${{ matrix.command }} -- --${{ matrix.arch }}
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Kontrollér pakkens version, kode, profiler og værktøjsmanifest
+        run: node scripts/verify-package-source.cjs "${{ matrix.resources }}" "${{ matrix.target }}"
       - name: Afprøv den pakkede app på Mac
         if: runner.os == 'macOS'
         run: npm run test:package -- "${{ matrix.app }}"

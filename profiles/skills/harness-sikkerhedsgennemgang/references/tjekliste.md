@@ -1,6 +1,6 @@
 # Tjekliste til sikkerhedsgennemgang
 
-Vælg de afsnit, ændringen berører. Skriv for hvert punkt: kontrolleret og i orden, fund, eller ikke relevant med kort begrundelse.
+Vælg de afsnit, ændringen berører. Brug for hver kontrol ét resultat: **Afprøvet uden fund**, **Bekræftet fejl**, **Skal undersøges**, **Ikke gennemført** eller **Ikke relevant** med begrundelse. En mistanke er ikke en bekræftet fejl, og en oversprunget kontrol er ikke bestået.
 
 ## Adgang og login
 
@@ -12,6 +12,18 @@ Vælg de afsnit, ændringen berører. Skriv for hvert punkt: kontrolleret og i o
 - [ ] Sessioner udløber, logout virker, og cookies er `Secure`, `HttpOnly` og har en passende `SameSite`.
 - [ ] Formularer, der ændrer data med cookie-baseret login, er beskyttet mod CSRF.
 - [ ] Antal loginforsøg og tunge handlinger er begrænset.
+
+### Afprøv grænsen mellem brugere og organisationer
+
+Brug kun syntetiske data og konti, som må bruges til prøven. Beskriv først den tilsigtede adgang, herunder delte data. En offentlig side uden brugerkonti kræver ikke et nyt login alene for denne prøve.
+
+1. Opret et privat testobjekt som bruger A, og bekræft, at A kan læse og ændre det. Det beviser, at objektet og funktionen findes, før en afvisning afprøves.
+2. Kald samme API som bruger B uden adgang. Prøv læsning og relevante skrivehandlinger med A's objekt-id. Skjulte knapper tæller ikke som afvisning. Kontrollér både svaret og bagefter, at objektet ikke er ændret eller lækket i lister og eksport.
+3. Har appen organisationer, gentag mellem to testorganisationer, også med ændret organisations-id i sti, parametre eller indhold. Retten skal afledes af den godkendte identitet og medlemskabet, ikke af det indsendte id alene.
+4. Afprøv uden login og med en almindelig bruger mod relevante administratorhandlinger. Kontrollér også et tilladt delt objekt, så prøven ikke blot viser, at alt er blokeret.
+5. Bruger løsningen databasepolitikker som RLS, afprøv dem med den rolle og adgangsvej, appens brugere faktisk får. En administratorkonto eller service-nøgle, der omgår politikkerne, beviser ikke, at de beskytter brugerne.
+
+Notér de faktiske kald, forventet adgang, observeret svar og dataændringer uden tokens eller rigtige personoplysninger. Manglende konti eller miljø betyder **Ikke gennemført** med en konkret næste handling.
 
 ## Input og output
 
@@ -44,10 +56,23 @@ Vælg de afsnit, ændringen berører. Skriv for hvert punkt: kontrolleret og i o
 - [ ] Prompten indeholder ingen hemmeligheder og kun nødvendige data.
 - [ ] Brugerne kan se, at de interagerer med en AI, hvor det er relevant.
 
-## Registrér fund
+## Agentens arbejdsredskaber
 
-| Fund | Sted | Alvor | Forslag | Status |
-|------|------|-------|---------|--------|
-| | | Kritisk / Høj / Middel / Lav | | Skal undersøges / Kræver handling / Afventer ansvarlig / Løst og kontrolleret / Ikke relevant med begrundelse |
+- [ ] Aktive MCP-servere, hooks, værktøjer og deres faktiske adgang er gennemgået efter referencen om agentadgang, også når den byggede app ikke selv bruger AI.
+- [ ] Instruktioner fra fremmed indhold giver ikke nye rettigheder, og en kontrolleret prøve kan ikke få værktøjerne til at overskride den aftalte adgang.
 
-Tjeklisten bygger på de gennemgående områder i OWASP ASVS og OWASP Top 10. Den er et udvalg til små webapps og erstatter ikke en fuld sikkerhedsvurdering.
+## Dokumentér kontroller og fund
+
+Brug projektets format, hvis det allerede findes. Oplys som minimum:
+
+- **Grundlag:** dato, miljø, commit-id og eventuelle lokale ændringer. Uden commit registreres en identificerbar filversion, fx filnavne og kontrolsummer. En prøve af ændrede filer må ikke tilskrives det uændrede commit.
+- **Dækning:** kontrollerede filer, adgangsveje og filtyper, værktøjsversioner og regelsæt samt det, der var udeladt, fejlede eller ikke kunne afprøves. Ved en ASVS-henvisning angives både standardversion og krav-id, som er kontrolleret i kilden.
+- **Resultat pr. kontrol:** hvad blev forsøgt, hvad forventedes, hvad blev observeret, og hvilket af de fem resultater gælder? Brug kun maskerede oplysninger.
+- **Fund:** eget id, sted, konsekvens, evidens, sikkerhed for fundet, begrundet alvor og næste handling med ansvarlig rolle. Et manglende login til testmiljøet er en manglende kontrol, ikke en konstateret fejl i appens login.
+- **Opfølgning:** løsningen og resultatet af en ny prøve på den rettede version. Sæt kun et fund til **Løst og kontrolleret**, når den relevante prøve er gennemført. Bevar tidligere resultater; omskriv ikke en gammel godkendelse til en ny.
+
+Et samlet resumé skal nævne manglende kontroller og åbne fund, også hvis de øvrige prøver bestod. Brug ikke et generelt »sikker«- eller »GDPR-godkendt«-stempel.
+
+## Kilder
+
+Tjeklisten er et udvalg til webapps og erstatter ikke en fuld sikkerhedsvurdering. Prøven af adgang følger [OWASP Authorization Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html). Versionerede krav kan findes i [OWASP ASVS](https://owasp.org/www-project-application-security-verification-standard/). Kilderne til disse tilføjelser er kontrolleret 13. oktober 2026.

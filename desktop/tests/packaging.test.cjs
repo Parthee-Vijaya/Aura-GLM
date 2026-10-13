@@ -34,9 +34,13 @@ test('downloadside viser kun eksisterende pakker og notarisation med matchende f
  const root=await temp(t),name='Aura-0.2.0-beta.4-mac-arm64.dmg';await fs.writeFile(path.join(root,name),'testpakke');await fs.writeFile(path.join(root,'privat.env'),'ikke en download');
  await fs.writeFile(path.join(root,name+'.notarized.json'),JSON.stringify({status:'Accepted',sha256:'forkert'}));
  let files=await generate(root);assert.equal(files.length,1);assert.equal(files[0].notarized,false);
- await fs.writeFile(path.join(root,name+'.notarized.json'),JSON.stringify({status:'Accepted',sha256:files[0].sha256}));
+ await fs.writeFile(path.join(root,name+'.notarized.json'),JSON.stringify({status:'Accepted',sha256:files[0].sha256,id:'12345678-1234-1234-1234-123456789abc',checkedAt:'2026-10-13T08:00:00Z'}));
  files=await generate(root);assert.equal(files[0].notarized,true);
  const html=await fs.readFile(path.join(root,'index.html'),'utf8');assert.match(html,/Notariseret af Apple/);assert.ok(!html.includes('privat.env'));
+ assert.equal(JSON.parse(await fs.readFile(path.join(root,'release.json'),'utf8')).version,'0.2.0-beta.4','En ældre pakke må ikke få kildekodens nye versionsnummer');
+ await fs.writeFile(path.join(root,'Aura-0.2.0-beta.5-win-x64.exe'),'anden version');
+ await assert.rejects(generate(root),/flere appversioner/);
+ assert.equal(JSON.parse(await fs.readFile(path.join(root,'release.json'),'utf8')).version,'0.2.0-beta.4','Ugyldige input må ikke overskrive den tidligere oversigt');
 });
 test('Git-opstartsformular udfylder kun manglende lokal identitet',async t=>{
  const {GitVersions,run}=require('../core/git.cjs'),root=await temp(t),git=new GitVersions();

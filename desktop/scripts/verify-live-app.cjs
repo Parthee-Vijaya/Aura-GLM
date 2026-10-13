@@ -178,6 +178,7 @@ async function main() {
     report.status = 'bestået';
   } catch (error) {
     report.status = 'fejl'; report.stage = stage; report.error = error.message.split('\n')[0];
+    if (controlled) note(error.stack || error.message);
     // Kun projekt/samtale efter opsætning; optag aldrig nøglefeltet ved opsætningsfejl.
     if (project) { await shot('fejl').catch(() => {}); await fs.writeFile(path.join(out, 'samtale.txt'), await page.locator('#messages').innerText().catch(() => '')); }
     throw error;

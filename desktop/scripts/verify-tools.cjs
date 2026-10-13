@@ -45,6 +45,11 @@ const { execFileSync } = require('node:child_process');
     assert.equal(await page.locator('#tools-skills details').count(), 14);
     await page.locator('#tools-skills details summary').first().click();
     assert.match(await page.locator('#tools-skills details').first().textContent(), /Hvad gør den ikke\?/);
+    await page.locator('#tools-skills details summary').first().click();
+    const securityInfo = page.locator('#tools-skills details').filter({ has: page.locator('summary strong', { hasText: /^Sikkerhedsgennemgang$/ }) });
+    await securityInfo.locator('summary').click();
+    await securityInfo.screenshot({ path: path.join(root, '02b-sikkerhedsskill.png'), animations: 'disabled' });
+    await securityInfo.locator('summary').click();
 
     // Et klik på et kort fører videre til mappevalget og derefter til et resumé i almindeligt dansk.
     await page.click('#tools-featured [data-tool="claude-code"]');
@@ -57,7 +62,7 @@ const { execFileSync } = require('node:child_process');
     assert.ok(plan.includes('Grundreglerne tilføjes nederst i AGENTS.md. Dine egne regler bevares.'), plan.join(' | '));
     assert.ok(plan.includes('CLAUDE.md oprettes med en henvisning til AGENTS.md.'), plan.join(' | '));
     assert.ok(plan.includes('12 skills lægges i .claude/skills.'), plan.join(' | '));
-    assert.match(await page.textContent('#tools-notes'), /\.gitignore udelader \.claude\/skills\/ \(19 filer\)/);
+    assert.match(await page.textContent('#tools-notes'), /\.gitignore udelader \.claude\/skills\/ \(20 filer\)/);
     assert.equal(await page.isVisible('#tools-operations'), false, 'filerne står bag Se de præcise ændringer');
     assert.equal(await page.textContent('#tools-install'), 'Installer');
     assert.equal(await page.textContent('#tools-skills-status'), 'Skills: 12 af 12 valgt');
@@ -109,6 +114,9 @@ const { execFileSync } = require('node:child_process');
     assert.doesNotMatch(agents, /harness-git-og-samarbejde/);
     assert.match(agents, /harness-integration-adresser/);
     await fs.access(path.join(project, '.claude/skills/harness-integration-adresser/references/adressevaelger.md'));
+    // Den nye reference skal følge med helt ud i brugerens projekt, uden tab af indhold.
+    const agentReference = 'skills/harness-sikkerhedsgennemgang/references/agentadgang.md';
+    assert.equal(await fs.readFile(path.join(project, '.claude', agentReference), 'utf8'), await fs.readFile(path.join(__dirname, '../../profiles', agentReference), 'utf8'));
     assert.equal(JSON.parse(await fs.readFile(path.join(project, '.harness/installation.json'), 'utf8')).skills.length, 10);
     assert.match(await fs.readFile(path.join(project, '.harness/LAES-MIG.md'), 'utf8'), /9 af 12 skills til arbejdet fra idé til drift samt integrationen Adresser\.[\s\S]*Integrationer, der kan vælges til i Aura-appen: CVR\./);
 
