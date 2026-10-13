@@ -83,7 +83,7 @@ function isolatedEnv(directory, config, password) {
 }
 class OpenCodeEngine {
   // resume: en tidligere OpenCode-session for samme samtale. Findes den ikke længere, oprettes en ny.
-  constructor({ root, directory, provider, model, references = [], mode = 'free', skills = [], resume = null, onEvent = () => {} }) { Object.assign(this, { root, directory, provider, model, references, mode, skills, resume, onEvent }); this.pending = new Map(); this.active = false; this.resumed = false; }
+  constructor({ root, directory, provider, model, references = [], mode = 'free', skills = [], resume = null, detached = false, onEvent = () => {} }) { Object.assign(this, { root, directory, provider, model, references, mode, skills, resume, detached, onEvent }); this.pending = new Map(); this.active = false; this.resumed = false; }
   async request(url, method = 'GET', body, signal) {
     const response = await fetch(`${this.url}${url}`, { method, headers: { authorization: this.auth, 'content-type': 'application/json', 'x-opencode-directory': encodeURIComponent(this.root) }, body: body === undefined ? undefined : JSON.stringify(body), signal: signal || AbortSignal.timeout(15000), redirect: 'error' });
     if (!response.ok) throw new Error(`Agentmotoren afviste handlingen (HTTP ${response.status}).`);
@@ -108,7 +108,8 @@ class OpenCodeEngine {
     const permission = permissions(this.root, this.references, this.mode, { directory: this.directory, names: this.skills.map(skill => skill.name) });
     this.config = engineConfig(this.provider, this.model, permission);
     if (/\{(?:env|file):/.test(JSON.stringify(this.config))) throw new Error('Konfigurationen indeholder en ikke tilladt variabelhenvisning.');
-    this.child = spawn(executable, ['serve', '--hostname', '127.0.0.1', '--port', '0'], { cwd: this.root, env: isolatedEnv(this.directory, this.config, password), windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+    // Terminalklienten styrer Stop via API'et; dens Ctrl+C må ikke også ramme motorens procesgruppe.
+    this.child = spawn(executable, ['serve', '--hostname', '127.0.0.1', '--port', '0'], { cwd: this.root, env: isolatedEnv(this.directory, this.config, password), detached: this.detached, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
     // Ingen rå proceslogs sendes til UI; de kan indeholde projektindhold.
     this.child.stderr.resume();
     this.child.on('exit', () => { if (this.active) { this.active = false; this.onEvent({ type: 'engine.error', message: 'Agentmotoren stoppede. Start opgaven igen for at oprette en ny session.', failure: { kind: 'engine' } }); } });

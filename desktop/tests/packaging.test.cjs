@@ -15,7 +15,9 @@ test('checkout med Windows-indstillinger bevarer kildefiler og downloadpakkernes
  const attributes=await fs.readFile(path.join(repository,'.gitattributes'),'utf8');
  await fs.writeFile(path.join(source,'.gitattributes'),attributes+'\nkontrol.txt text eol=crlf\n');
  await fs.writeFile(path.join(source,'kontrol.txt'),'kontrol\n');
- const files=['profiles/skills/harness-ide-og-afgraensning/SKILL.md','site/dist/catalog.json','site/dist/downloads/aura-harness-codex-0.2.0.zip'];
+ const catalog=JSON.parse(await fs.readFile(path.join(repository,'site/dist/catalog.json'),'utf8'));
+ const archive=catalog.tools.find(tool=>tool.id==='codex').archive;
+ const files=['profiles/skills/harness-ide-og-afgraensning/SKILL.md','site/dist/catalog.json','site/dist/'+archive];
  for(const file of files){await fs.mkdir(path.dirname(path.join(source,file)),{recursive:true});await fs.copyFile(path.join(repository,file),path.join(source,file));}
  const git=args=>execFileSync('git',['-C',source,'-c','core.autocrlf=true',...args],{stdio:'pipe'});
  git(['init']);git(['add','.']);git(['checkout-index','--all','--prefix='+output.replaceAll('\\','/')+'/']);

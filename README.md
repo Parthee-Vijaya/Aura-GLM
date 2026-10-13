@@ -4,7 +4,7 @@
 
 # Aura Harness
 
-Aura Harness hjælper dig med at bygge applikationer med AI og holde styr på opgaven, koden og afprøvningen. Brug desktopappen **Aura**, eller læg de fælles instruktioner i det kodeværktøj, du allerede arbejder med.
+Aura Harness hjælper dig med at bygge applikationer med AI og holde styr på opgaven, koden og afprøvningen. Brug desktopappen **Aura**, arbejd i terminalen, eller læg de fælles instruktioner i det kodeværktøj, du allerede arbejder med.
 
 Projektet tager udgangspunkt i kommunernes behov og henvender sig til udviklere, IT-medarbejdere og teknisk interesserede kolleger, der vil bygge, forstå og gennemgå deres egne løsninger.
 
@@ -46,6 +46,12 @@ Under **Indstillinger → Funktioner** vælger du blandt andet planlægning, ver
 ![Dialogen Funktioner med valg af planlægning, versioner, design, sikkerhed, kodekvalitet og integrationer.](docs/images/aura-funktioner.png)
 
 *Funktionerne styrer, hvilke arbejdsgange og instruktioner Aura stiller til rådighed. De er ikke en sikkerheds- eller myndighedsgodkendelse.*
+
+## Brug Aura i terminalen
+
+Aura CLI giver adgang til samme kodeagent, regler og modelforbindelser fra terminalen. Du kan planlægge, gennemgå filændringer, se preview i browseren og genoptage samtalen. Git-versioner, projektkommandoer og testudgivelser kræver din godkendelse.
+
+CLI'en kræver Node og Git på udviklingsmaskinen. Den er skrevet til Linux, macOS og Windows og installeres foreløbig fra repositoryet eller en lokal npm-pakke. [Installation, kommandoer og nøglelager](cli/README.md) · [Faktisk afprøvning](docs/teststatus.md). Der er endnu ingen offentlig CLI-pakke.
 
 ## Brug dit eget kodeværktøj
 

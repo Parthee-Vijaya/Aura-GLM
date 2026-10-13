@@ -3,7 +3,7 @@ const path = require('node:path');
 const { randomUUID, createHash } = require('node:crypto');
 
 class Store {
-  constructor(root, safeStorage) { this.root = root; this.safeStorage = safeStorage; this.queue = Promise.resolve(); }
+  constructor(root, safeStorage, platform = process.platform) { this.root = root; this.safeStorage = safeStorage; this.platform = platform; this.queue = Promise.resolve(); }
   async read() {
     try { const state = JSON.parse(await fs.readFile(path.join(this.root, 'settings.json'), 'utf8')); if (state.version !== 1) throw new Error(); return state; }
     catch (error) { if (error.code === 'ENOENT') return { version: 1, connections: [], projects: {} }; throw new Error('Appens indstillinger kan ikke læses. De er bevaret til gennemgang.'); }
@@ -21,13 +21,19 @@ class Store {
   }
   encrypt(key) {
     if (!key) return undefined;
-    if (!this.safeStorage.isEncryptionAvailable()) throw new Error('Operativsystemets nøglebeskyttelse er ikke tilgængelig. Nøglen blev ikke gemt.');
+    if (!this.encryptionAvailable()) throw new Error('Sikker nøglebeskyttelse er ikke tilgængelig. Nøglen blev ikke gemt. På Linux skal en nøgletjeneste være låst op; terminalversionen kan bruge sit krypterede lager.');
     return this.safeStorage.encryptString(key).toString('base64');
   }
   decrypt(connection) {
     if (!connection.secret) return '';
-    if (!this.safeStorage.isEncryptionAvailable()) throw new Error('Nøglelageret er låst eller utilgængeligt.');
+    if (!this.encryptionAvailable()) throw new Error('Nøglelageret er låst eller mangler sikker nøglebeskyttelse.');
     try { return this.safeStorage.decryptString(Buffer.from(connection.secret, 'base64')); } catch { throw new Error('Nøglen kan ikke dekrypteres på denne computer. Indtast den igen.'); }
+  }
+  encryptionAvailable() {
+    if (!this.safeStorage.isEncryptionAvailable()) return false;
+    // Electron kan melde kryptering tilgængelig på Linux, selv om den bruger en offentlig, fast adgangskode.
+    // CLI'ens lager har ikke denne metode; det bruger sin egen adgangssætning og nøgleafledning.
+    return this.platform !== 'linux' || this.safeStorage.getSelectedStorageBackend?.() !== 'basic_text';
   }
   publicConnection({ secret, ...connection }) { return { ...connection, hasKey: Boolean(secret) }; }
   projectKey(root) { return createHash('sha256').update(root).digest('hex'); }
