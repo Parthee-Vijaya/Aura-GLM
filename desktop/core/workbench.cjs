@@ -195,6 +195,7 @@ class Workbench {
 
   // ---------- Forbindelser og modeller ----------
   async saveConnection(input) {
+    if (input?.kind === 'komplai' || (input?.id && (await this.connection(input.id)).kind === 'komplai')) throw new Error('Brug Log ind med Komplai til denne forbindelse.');
     if (this.running) throw new Error('Stop opgaverne, før du ændrer forbindelser.');
     const connection = connections.normalize(input);
     await this.closeEngines();
@@ -209,10 +210,18 @@ class Workbench {
     this.catalogs.delete(connection.id); for (const chat of this.chats.values()) chat.prepared = null;
     return this.state();
   }
-  async removeConnection(id) { if (this.running) throw new Error('Stop opgaverne først.'); await this.closeEngines(); await this.store.update(state => { state.connections = state.connections.filter(c => c.id !== id); }); this.catalogs.delete(id); return this.state(); }
+  async removeConnection(id) {
+    const connection = await this.connection(id);
+    if ([...this.chats.values()].some(chat => chat.running && chat.prepared?.connection?.id !== id)) throw new Error('Stop opgaverne først.');
+    if (connection.kind === 'komplai') {
+      for (const chat of this.chats.values()) if (chat.prepared?.connection?.id === id) { await chat.stop(); await chat.close(false); chat.prepared = null; }
+      await require('./komplai.cjs').disconnect(connection, this.store.decrypt(connection));
+    }
+    if (this.running) throw new Error('Stop opgaverne først.'); await this.closeEngines(); await this.store.update(state => { state.connections = state.connections.filter(c => c.id !== id); }); this.catalogs.delete(id); return this.state(); }
   async closeEngines() { for (const chat of this.chats.values()) if (!chat.running) await chat.close(false); }
   async connection(id) { const connection = (await this.store.read()).connections.find(c => c.id === id); if (!connection) throw new Error('Vælg en gemt forbindelse.'); return connection; }
   async models(id) { const connection = await this.connection(id); const models = await connections.listModels(connection, this.store.decrypt(connection)); this.catalogs.set(id, models); return models; }
+  async komplaiAccount(id) { const connection = await this.connection(id); if (connection.kind !== 'komplai') throw new Error('Vælg en Komplai-forbindelse.'); return require('./komplai.cjs').account(connection, this.store.decrypt(connection)); }
   async routes(id, modelID) { const connection = await this.connection(id); return connections.routes(connection, this.store.decrypt(connection), modelID); }
   async selection(input) {
     if (!this.project) throw new Error('Åbn et projekt først.');

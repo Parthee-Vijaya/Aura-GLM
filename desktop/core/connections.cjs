@@ -1,5 +1,6 @@
 const { randomUUID, createHash } = require('node:crypto');
 const definitions = {
+  komplai: { name: 'Komplai', provider: 'Komplai', baseURL: 'https://api.komplai.dk/v1/aura/v1', protocol: 'openai', keyRequired: true, source: 'https://app.komplai.dk', training: 'Organisationens gældende vilkår hentes fra Komplai.' },
   // Vilkår for de tre udbydere i opsætningen er kontrolleret hos udbyderne 29. september 2026. De korte tekster vises i resuméet før afsendelse.
   corti: { name: 'Corti S1 · EU', provider: 'Corti', baseURL: 'https://ai.eu.corti.app/v1', protocol: 'openai', keyRequired: true, source: 'https://docs.corti.ai/models/regions', checkedAt: '2026-09-29',
     training: 'Corti oplyser, at data i EU-projekter aldrig bruges til træning. Kontrollér aftalen for jeres projekt.', trainingShort: 'Bruges ikke til træning, ifølge Corti',
@@ -44,7 +45,7 @@ function priceFor(connection, model, route = null) {
   if (catalog && catalog.prompt != null && catalog.completion != null) {
     const per = value => Number(value) * 1e6, input = per(catalog.prompt);
     if (!Number.isFinite(input) || !Number.isFinite(per(catalog.completion))) return null;
-    return { input, output: per(catalog.completion), cacheRead: catalog.input_cache_read != null ? per(catalog.input_cache_read) : input, cacheWrite: catalog.input_cache_write != null ? per(catalog.input_cache_write) : input };
+    return { ...(catalog.currency === 'DKK' ? { currency: 'DKK' } : {}), input, output: per(catalog.completion), cacheRead: catalog.input_cache_read != null ? per(catalog.input_cache_read) : input, cacheWrite: catalog.input_cache_write != null ? per(catalog.input_cache_write) : input };
   }
   const known = knownPrice(connection.kind, model.id);
   if (!known) return null;
@@ -106,6 +107,7 @@ async function listModels(connection, key) {
   if (!Array.isArray(models)) throw new Error('Serveren returnerede ingen læsbar modelliste.');
   return models.slice(0, 5000).filter(model => model && model.capabilities?.completion_chat !== false && !(connection.kind === 'corti' && /embedding/.test(model.id))).map(model => ({
     id: ollama ? model.name : model.id, name: model.name || model.display_name || model.id,
+    ...(connection.kind === 'komplai' ? { komplai: response.account, reasoningEfforts: model.reasoning_efforts || [] } : {}),
     price: model.pricing || null, capabilities: { tools: model.capabilities?.function_calling ?? model.supported_parameters?.includes('tools') ?? null },
     limits: { context: tokenCount(model.context_length ?? model.max_context_length ?? model.context_window ?? model.max_input_tokens), output: tokenCount(model.top_provider?.max_completion_tokens ?? model.max_output_tokens ?? model.max_tokens) },
     local: ollama && !model.remote_host && !/:.*cloud/.test(model.name) ? 'Ikke verificeret' : null
@@ -138,6 +140,11 @@ function disclosure(connection, model, route = null) {
     security: url.protocol === 'http:' && !loopback ? 'HTTP uden TLS. Tailscale-kryptering er kun gældende, hvis forbindelsen faktisk går gennem Tailscale; det er ikke verificeret her.' : 'Forbindelsesadressen er kontrolleret. Det er ikke en sikkerhedsgodkendelse af tjenesten.',
     source: site.source || def.source || 'Ingen leverandørkilde registreret; oplysninger skal kontrolleres hos serverens ejer.', checkedAt: def.checkedAt || '2026-09-22', evidence: 'Leverandørdokumentation og modelkatalog; ikke uafhængig revision.', route: route?.id || null
   };
+  if (connection.kind === 'komplai') {
+    const account = model.komplai;
+    if (!account?.contract || !account.data || account.id !== connection.account?.organisationId) throw new Error('Hent organisationens modeller igen, før du sender.');
+    Object.assign(data, { recipients: account.data.recipients, region: account.data.region, retention: `${account.data.retention} ${account.data.platformStorage}`, training: account.data.training, source: account.data.source, checkedAt: account.data.checkedAt, security: `Vilkår ${account.data.version}. Kontrakt ${account.contract}. Datatilstand: ${account.data.mode}.`, price: `${account.data.accounting} ${Number(price.prompt) * 1e6} DKK ind og ${Number(price.completion) * 1e6} DKK ud pr. million tokens.`, priceShort: `Fælles kreditter · ${account.name}`, regionShort: account.data.region, trainingShort: account.data.training, retentionShort: account.data.retention, evidence: 'Organisationens opsætning og aftale hos Komplai; ikke en selvstændig sikkerhedsgodkendelse.' });
+  }
   return { ...data, fingerprint: createHash('sha256').update(JSON.stringify(data)).digest('hex') };
 }
 // Tal fra et modelkatalog bruges kun, når de ligner rigtige tokengrænser.

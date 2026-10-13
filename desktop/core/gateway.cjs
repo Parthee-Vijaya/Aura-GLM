@@ -1,5 +1,5 @@
 const http = require('node:http');
-const { randomBytes } = require('node:crypto');
+const { randomBytes, randomUUID } = require('node:crypto');
 
 const IDLE_LIMIT = 120_000, TOTAL_LIMIT = 20 * 60_000;
 // Kun agentmotoren får en midlertidig adgangskode. Den rigtige modelnøgle bliver i hovedprocessen.
@@ -35,14 +35,25 @@ async function startGateway(connection, model, key, route, onFailure = () => {},
       const headers = { 'content-type': 'application/json' };
       if (anthropic) { headers['anthropic-version'] = '2023-06-01'; if (key) headers['x-api-key'] = key; }
       else if (key) headers.authorization = `Bearer ${key}`;
+      if (connection.kind === 'komplai') {
+        if (!model.komplai?.contract) throw new Error('Hent Komplais modeller og gennemgå datavilkårene igen.');
+        headers['x-komplai-contract'] = model.komplai.contract; headers['x-request-id'] = randomUUID();
+        body.stream_options = { include_usage: true };
+      }
       touch();
       const response = await fetch(`${base}${anthropic ? '/messages' : '/chat/completions'}`, { method: 'POST', headers, body: JSON.stringify(body), signal: AbortSignal.any([controller.signal, idle.signal, AbortSignal.timeout(totalLimit)]), redirect: 'error' });
       if (!response.ok) {
-        await response.body?.cancel();
+        let specific;
+        if (connection.kind === 'komplai') {
+          let code; try { code = JSON.parse(await require('./komplai.cjs').readBounded(response, 8192)).error; } catch {}
+          specific = code === 'ai_credit_exhausted' ? ['Organisationens AI-kreditter er brugt eller reserveret til igangværende opgaver. Kontakt jeres administrator, hvis der skal tilføjes kreditter.', 'quota']
+            : response.status === 401 ? ['Komplai-adgangen er udløbet eller tilbagekaldt. Log ind med Komplai igen under AI-forbindelser.', 'key']
+            : code === 'terms_changed' ? ['Komplais priser eller datavilkår er ændret. Hent modellerne igen og gennemgå oplysningerne.', 'rejected'] : null;
+        } else await response.body?.cancel();
         const advice = { 401: 'API-nøglen blev afvist. Kontrollér eller udskift den under AI-forbindelser.', 403: 'Din konto har ikke adgang til modellen. Kontrollér adgangen hos udbyderen.', 402: 'Udbyderen afviste kaldet på grund af saldo eller kvote. Kontrollér kontoen; appen vælger ikke en betalt erstatning.', 404: 'Modellen eller adressen blev ikke fundet. Hent modellisten igen, og kontrollér forbindelsen.', 429: 'Udbyderens forbrugsgrænse er nået. Prøv igen, når kvoten er tilgængelig.' }[response.status] || 'Kontrollér forbindelsen og modelvalget, og prøv igen.';
-        const message = `Modelserveren afviste kaldet (HTTP ${response.status}). ${advice}`;
+        const message = specific?.[0] || `Modelserveren afviste kaldet (HTTP ${response.status}). ${advice}`;
         const kind = { 401: 'key', 403: 'access', 402: 'quota', 404: 'notfound', 429: 'limit' }[response.status] || (response.status >= 500 ? 'server' : 'rejected');
-        fail(message, kind, response.status);
+        fail(message, specific?.[1] || kind, response.status);
         res.writeHead(response.status, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: { message, type: 'api_error' } }));
       }
       res.writeHead(200, { 'content-type': response.headers.get('content-type') || 'application/json', 'cache-control': 'no-store' });

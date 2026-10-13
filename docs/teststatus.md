@@ -1,8 +1,23 @@
 # Teststatus før invitation
 
-Senest kontrolleret 11. oktober 2026. Afsnittene er daterede, så tidligere begrænsninger kan læses i deres sammenhæng. Dette er status for den aktuelle arbejdsmappe, ikke en erklæring om, at alle installationsfiler eller modeller er klar. Der er ikke committet eller pushet i dette repository under denne gennemgang.
+Senest kontrolleret 13. oktober 2026. Afsnittene er daterede, så tidligere begrænsninger kan læses i deres sammenhæng. Dette er status for den aktuelle arbejdsmappe, ikke en erklæring om, at alle installationsfiler eller modeller er klar. Der er ikke committet eller pushet i dette repository under denne gennemgang.
 
 [Gennemgangen før offentlig beta](offentliggoerelse.md) samler historik- og logkontrol samt de lokale prøver af README, hjemmeside og udgivelseskontrol. Den offentliggør ikke appen og ændrer ikke installationsstatus nedenfor.
+
+## Komplai-login og organisationens kreditter · 13. oktober 2026
+
+**Implementeret i Aura og Komplais backend; afprøvet lokalt med faktiske filer og isoleret kreditregnskab. Ikke deployet.** Komplai ligger under **Vælg en anden**. Brugeren logger ind i systembrowseren, vælger organisation og bekræfter brug af dens fælles AI-kreditter. Modeller, kundetakster i DKK og datavilkår kommer fra Komplai. Ingen Scaleway-nøgle indtastes i Aura, og der er ingen automatisk ændring af model eller betalingsform.
+
+- **Enhedstestet:** Auras samlede suite bestod med 217 tests. Efter de sidste rettelser består de 27 relevante Komplai-/workbench-tests, herunder syv direkte Komplai-prøver af PKCE, afbrydelse, nøglelagring, organisationsbinding, vilkår, afregningsvisning, begrænsede svar og logoutfejl. Komplais 57 relevante enhedstests består: kodeprotokol, modelprofiler, kreditregnskab og eksisterende chat.
+- **Kørt med rigtig API og database:** Otte integrationsprøver består mod Fastify, PostgreSQL og OpenFGA. De afviser forkert klient og organisation, manglende bekræftelse, dubletter, ændrede priser, udløb og fjernet organisationsadgang. Cachetakst, fælles saldo og samtidige reservationer er kontrolleret. Afbrudte svar bevarer en usikker reservation. Logout virker også efter udløb eller fjernet adgang. En bevidst fjernet databasebegrænsning udløser migrationskontrollen; transaktionen rulles bagefter tilbage.
+- **Kørt i Electron med rigtig OpenCode:** Browser-callback, organisationsvalg, filgodkendelse, faktisk filændring, preview, afvisning, Stop og logout er gennemført i et isoleret projekt med mellemrum i navnet. Forbrug vises i DKK, og adgangsnøglen findes ikke i brugerfladens tekst. Projektet indeholder kun syntetiske filer. Der er ikke oprettet commits.
+- **Set i appen:** Komplai-login og organisationsvalg har hver sit trin. Organisationsformularen har fire synlige betjeninger: valg af organisation, bekræftelse, Afbryd og de foldede datavilkår. Afbryd efter login og efterfølgende nyt login er prøvet i Electron. Kodeændringen er vist i forhåndsvisningen. Der er endnu ingen observation af en ny bruger.
+- **Konfiguration kontrolleret:** Typekontrol af Komplais delte API-kode, API-tjeneste og Hub består. Terraform-konfigurationen består `validate` med den fastlåste Zitadel-provider i en isoleret mappe uden produktionsstate eller backend. Der er ikke kørt `plan` eller `apply`.
+- **Afgrænsning:** Loginudsteder og Scaleway-model er simulerede. Kryptering bruger en testudgave af nøglelageret, ikke den rigtige macOS-nøglering. Windows, pakket app, rigtigt Zitadel-login og konkrete Scaleway-modeller er ikke afprøvet i denne milepæl. Den lokale databaseprøve udelader Index-migrationen, der kræver pgvector, og er ikke en samlet migrationsgodkendelse af Komplai. Der er ingen eksterne modelkald, betalingsforbrug, ændringer af Zitadel, GitHub Actions eller deployment.
+
+Evidens: `desktop/tests/komplai.test.cjs`, `desktop/scripts/verify-komplai.cjs` og Komplai-repositoryets `packages/api-access/src/aura-http.integration.test.ts`. Den seneste gennemførte Electron-prøve har screenshots under `/private/var/folders/q9/914lvw356897pk8pb_29flv00000gn/T/aura-komplai-desktop-RCK8I8/`. Enhedslogs ligger i `/private/tmp/aura-komplai-unit.log` og `/private/tmp/aura-komplai-targeted.log`.
+
+Før rigtig brug skal Komplais offentlige Aura-loginapp oprettes, backend udgives og organisationens coding-adgang, modeller og datavilkår aktiveres. Opsætningen står i Komplai-repositoryets `docs/AURA.md`. Ingen af de eksisterende installationsfiler indeholder denne milepæl.
 
 ## Installationskontrol før invitation · 10. oktober 2026
 

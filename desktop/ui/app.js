@@ -162,6 +162,7 @@ function moveConnectionForm(guided) {
   $('#clear-key-row').hidden = guided && !$('#connection-id').value;
 }
 function setupPage(step) {
+  if (setupStep === 'provider' && step !== 'provider') resetKomplaiLogin();
   ++setupGeneration;
   setupStep = step;
   const headings = { choice: ['Hvordan vil du forbinde din AI?', 'Vælg den adgang, du allerede har.'], provider: ['Hvem er din udbyder?', 'Har du ikke en nøgle, viser vi dig, hvordan du får en.'], local: ['AI på din computer', 'Vi leder efter modeller, du allerede har i Ollama.'], saved: ['Din AI-forbindelse', 'Kontrollér forbindelsen, før du fortsætter.'], tools: ['Avanceret opsætning', 'Forbindelser og lokale værktøjer.'], features: ['Hvad skal Aura hjælpe med?', 'Du kan altid ændre det under Indstillinger › Funktioner.'], 'features-pick': ['Hvad vil du slå til?', 'Vælg de funktioner, du vil bruge. Resten kan du slå til senere under Indstillinger › Funktioner.'] };
@@ -180,6 +181,7 @@ const featuredProviders = [
   { kind: 'corti', name: 'Corti', text: 'Fra Corti i Danmark. Modeller i EU.' }
 ];
 function chooseProvider(kind) {
+  resetKomplaiLogin();
   $('#provider-kind').value = kind; updateProvider(); $('#connection-advanced').hidden = true;
   for (const card of document.querySelectorAll('#provider-cards button')) card.setAttribute('aria-pressed', String(card.dataset.kind === kind));
   $('#setup-provider-body').hidden = false; $('#api-key').focus();
@@ -199,6 +201,7 @@ $('#provider-other').onclick = () => {
   $('#setup-provider-body').hidden = false; $('#provider-kind').focus();
 };
 function setupProvider(connection) {
+  resetKomplaiLogin();
   $('#connection-form').reset(); $('#connection-id').value = connection?.id || ''; $('#connection-feedback').textContent = '';
   $('#connection-form').classList.remove('all-providers'); renderProviderCards();
   $('#provider-kind').value = connection?.kind || 'anthropic'; updateProvider();
@@ -248,6 +251,7 @@ async function leaveSetup(useAI) {
   // Første gang spørger appen, hvad den skal hjælpe med, før projektet oprettes. Vælg senere beholder standarden: alle funktioner.
   if (guidedSetup && !choosingFeatures && !state?.features?.chosen) { pendingAI = useAI; setupPage('features'); return; }
   autoConnect = useAI;
+  resetKomplaiLogin();
   ++setupGeneration; ++localDiscoveryGeneration; $('#api-key').value = ''; moveConnectionForm(false);
   guidedSetup = false; completeIntroduction('guided');
   document.body.classList.remove('setup-guided'); setupActive = false; $('#setup').hidden = true; $('#workspace').hidden = !current; $('#onboarding').hidden = Boolean(current);
@@ -408,7 +412,7 @@ function renderConnections() {
   for (const connection of state.connections) {
     $('#connection-select').append(option(connection.id, connection.name));
     const row = node('div', undefined, 'saved-connection'), text = node('span');
-    text.append(node('strong', connection.name), node('small', connection.hasKey ? 'Nøgle gemt' : 'Uden nøgle'));
+    text.append(node('strong', connection.name), node('small', connection.kind === 'komplai' ? `Komplai-login · udløber ${new Date(connection.account.expiresAt).toLocaleDateString('da-DK')}` : connection.hasKey ? 'Nøgle gemt' : 'Uden nøgle'));
     const edit = node('button', 'Rediger', 'text-button'); edit.type = 'button'; edit.setAttribute('aria-label', `Rediger ${connection.name}`);
     edit.onclick = () => editConnection(connection);
     row.append(text, edit); $('#saved-connections').append(row);
@@ -423,17 +427,21 @@ function connectionView(view) {
   $('#connections-heading').textContent = view === 'edit' ? 'Rediger forbindelse' : 'AI-forbindelser';
 }
 function editConnection(connection) {
+  resetKomplaiLogin();
   moveConnectionForm(false); editingConnection = connection.id;
   $('#connection-form').reset(); $('#connection-id').value = connection.id; $('#provider-kind').value = connection.kind; updateProvider();
   $('#connection-name').value = connection.name; $('#base-url').value = connection.baseURL; $('#api-key').value = ''; $('#clear-key').checked = false;
-  $('#connection-feedback').textContent = ''; connectionView('edit'); $('#api-key').focus();
+  $('#connection-feedback').textContent = ''; connectionView('edit');
+  $('#connection-remove').textContent = connection.kind === 'komplai' ? 'Log ud og tilbagekald adgang' : 'Fjern forbindelse';
+  if (connection.kind === 'komplai') { $('#komplai-feedback').textContent = 'Du er forbundet til ' + connection.account.organisationName + '.'; $('#komplai-login').focus(); } else $('#api-key').focus();
 }
-$('#connection-back').onclick = () => { $('#api-key').value = ''; connectionView('list'); };
+$('#connection-back').onclick = () => { resetKomplaiLogin(); $('#api-key').value = ''; connectionView('list'); };
 $('#connection-add').onclick = () => { $('#connections-dialog').close(); showSetup(); };
 $('#connection-test').onclick = () => action(async () => {
   $('#connection-feedback').textContent = 'Kontrollerer forbindelsen …';
   const models = await call('models', editingConnection);
-  $('#connection-feedback').textContent = models.length ? `Forbindelsen svarer med ${models.length} ${models.length === 1 ? 'model' : 'modeller'}.` : 'Forbindelsen svarer uden modeller. Tjek adgangen hos udbyderen.';
+  const account = models[0]?.komplai;
+  $('#connection-feedback').textContent = account ? `${account.name}: ${(account.balance.availableMicros / 1e6).toLocaleString('da-DK', { maximumFractionDigits: 2 })} kr. tilbage i fælles AI-kreditter. ${models.length} modeller tilgængelige.` : models.length ? `Forbindelsen svarer med ${models.length} ${models.length === 1 ? 'model' : 'modeller'}.` : 'Forbindelsen svarer uden modeller. Tjek adgangen hos udbyderen.';
 });
 $('#connection-remove').onclick = () => action(async () => {
   const id = editingConnection, selected = $('#connection-select').value;
@@ -485,8 +493,18 @@ function renderKeyGuide(kind) {
 function updateProvider() {
   const definition = state?.definitions[$('#provider-kind').value]; if (!definition) return;
   const help = { corti: 'Du skal bruge en API-nøgle fra et Corti-projekt i EU. Appen skifter aldrig automatisk til USA eller en anden model.', mistral: 'Du skal bruge en API-nøgle fra Mistral.', anthropic: 'Du skal bruge en API-nøgle fra Anthropic. Et Claude Pro- eller Max-abonnement kan ikke bruges her.', openrouter: 'Brug din OpenRouter-nøgle. Du vælger selv model og den udbyder, der modtager dine data. Gratis modeller er markeret i listen.', zen: 'Brug en nøgle fra OpenCode Zen. Zens gratis modeller virker ikke i Aura, fordi Zen kun giver gratis adgang fra OpenCodes egne programmer. Zens modeller kører i USA.', ollama: 'Forbind til en Ollama-server, som allerede kører. Kontrollér adressen nedenfor; appen installerer ikke modeller.', compatible: 'Brug adressen fra din organisation eller egen modelserver, fx DGX Spark. Appen ændrer ikke serveren eller Tailscale.' };
+  const isKomplai = $('#provider-kind').value === 'komplai';
+  $('#provider-cards').hidden = isKomplai; $('#provider-other').hidden = isKomplai;
+  $('#provider-kind').hidden = false; $('#provider-kind').previousElementSibling.hidden = false; $('#komplai-help').hidden = false;
+  if (setupActive && setupStep === 'provider') {
+    $('#setup-title').textContent = isKomplai ? 'Log ind med Komplai' : 'Hvem er din udbyder?';
+    $('#setup-subtitle').textContent = isKomplai ? 'Brug din eksisterende konto og organisationens AI-kreditter.' : 'Har du ikke en nøgle, viser vi dig, hvordan du får en.';
+  }
+  $('#komplai-connect').hidden = !isKomplai;
+  for (const selector of ['#api-key', '#clear-key-row', '#connection-cost', '#connection-advanced', '#save-connection']) $(selector).hidden = isKomplai;
+  $('#api-key').previousElementSibling.hidden = isKomplai;
   $('#provider-info').dataset.info = help[$('#provider-kind').value]; renderKeyGuide($('#provider-kind').value);
-  $('.key-guide').hidden = ['ollama', 'compatible'].includes($('#provider-kind').value);
+  $('.key-guide').hidden = ['ollama', 'compatible', 'komplai'].includes($('#provider-kind').value);
   $('#base-url').value = definition.baseURL; $('#connection-advanced').open = ['ollama', 'compatible'].includes($('#provider-kind').value); $('#base-url').readOnly = !['ollama', 'compatible'].includes($('#provider-kind').value);
   if (!$('#connection-id').value) $('#connection-name').value = definition.name;
 }
@@ -702,9 +720,49 @@ $('#open').onclick = () => action(async () => { await saveChatDraft(); await dis
 $('#new').onclick = () => action(async () => { await saveChatDraft(); try { localStorage.removeItem(lastProjectKey); } catch {} document.body.classList.remove('setup-guided'); setupActive = false; $('#setup').hidden = true; ++modelRequest; recovery = ''; $('#connection-warning').hidden = true; await call('newProject'); state.features = await call('featuresGet'); current = null; revision = null; acceptedFingerprint = null; views.clear(); mountView(makeView(null)); showPreview(null); $('#workspace').hidden = true; $('#onboarding').hidden = false; $('#skills-button').disabled = true; $('#new').setAttribute('aria-current', 'page'); $('#view-title').textContent = 'Projektopstart'; $('#create-form').reset(); $('#color-value').value = $('#color').value; showAssets([]); await loadStartup(); applyFeatures(); nameTouched = false; saveIdeaDraft(); showIdeaExamples(); $('#purpose').focus(); });
 $('#create-form').onsubmit = event => { event.preventDefault(); action(async () => { $('#create').disabled = true; try { const created = await call('createProject', { name: $('#name').value, purpose: $('#purpose').value, color: $('#color').value, links: $('#links').value.split('\n').map(line => line.trim()).filter(Boolean), tests: $('#tests').value, startup: startupValues() }); if (created) { await displayProject(created); clearIdeaDraft(); $('#start-idea').click(); } } finally { $('#create').disabled = false; } }); };
 $('#connections-button').onclick = () => action(async () => { if (setupActive && setupStep === 'provider') setupPage('tools'); moveConnectionForm(false); state = await call('connectionState'); renderConnections(); updateProvider(); connectionView('list'); $('#connections-feedback').textContent = ''; $('#connections-dialog').showModal(); });
-$('#provider-kind').onchange = updateProvider;
+$('#provider-kind').onchange = () => { resetKomplaiLogin(); updateProvider(); };
+let komplaiOrganisations = [], komplaiGeneration = 0;
+function resetKomplaiLogin() {
+  ++komplaiGeneration; komplaiOrganisations = [];
+  call('komplaiCancel').catch(() => {});
+  $('#komplai-organisations').hidden = true; $('#komplai-login').hidden = false; $('#komplai-login').disabled = false;
+  $('#komplai-cancel').hidden = true; $('#komplai-feedback').textContent = '';
+  $('#provider-kind').hidden = false; $('#provider-kind').previousElementSibling.hidden = false; $('#komplai-help').hidden = false;
+}
+function showKomplaiOrganisation() {
+  const selected = komplaiOrganisations.find(o => o.id === $('#komplai-organisation').value);
+  $('#komplai-confirm').disabled = !selected;
+  $('#komplai-credit-summary').textContent = selected ? `${selected.name}: ${(selected.balance.availableMicros / 1e6).toLocaleString('da-DK', { maximumFractionDigits: 2 })} kr. tilbage i fælles AI-kreditter.` : '';
+  $('#komplai-terms').textContent = selected ? `${selected.data.recipients}. ${selected.data.region} ${selected.data.training} ${selected.data.retention} ${selected.data.platformStorage} ${selected.data.accounting} Kilde: ${selected.data.source}. Kontrolleret ${selected.data.checkedAt}.` : '';
+}
+$('#komplai-organisation').onchange = showKomplaiOrganisation;
+$('#komplai-login').onclick = () => action(async () => {
+  const generation = ++komplaiGeneration;
+  $('#komplai-login').disabled = true; $('#komplai-cancel').hidden = false; $('#komplai-feedback').textContent = 'Fortsæt i browseren. Denne side venter på dit login.'; $('#komplai-organisations').hidden = true;
+  try {
+    const result = await call('komplaiLogin'); if (generation !== komplaiGeneration) return; komplaiOrganisations = result.organisations;
+    $('#komplai-organisation').replaceChildren(...komplaiOrganisations.map(o => option(o.id, o.name)));
+    $('#komplai-organisations').hidden = !komplaiOrganisations.length; $('#komplai-login').hidden = Boolean(komplaiOrganisations.length);
+    if (komplaiOrganisations.length) {
+      $('#provider-kind').hidden = true; $('#provider-kind').previousElementSibling.hidden = true; $('#komplai-help').hidden = true;
+      if (setupActive) { $('#setup-title').textContent = 'Vælg din organisation'; $('#setup-subtitle').textContent = 'Du bruger dens fælles kreditter, når du sender opgaver til AI.'; }
+    }
+    $('#komplai-feedback').textContent = komplaiOrganisations.length ? '' : 'Din konto har ingen organisation med adgang til kodeværktøjer. Kontakt jeres administrator.'; showKomplaiOrganisation();
+  } catch (error) { if (generation === komplaiGeneration) $('#komplai-feedback').textContent = error.message; } finally { if (generation === komplaiGeneration) $('#komplai-login').disabled = false; }
+});
+$('#komplai-cancel').onclick = () => { resetKomplaiLogin(); updateProvider(); $('#komplai-feedback').textContent = 'Login blev afbrudt.'; };
+$('#komplai-confirm').onclick = () => action(async () => {
+  $('#komplai-confirm').disabled = true;
+  try {
+    const previous = new Set(state.connections.map(c => c.id));
+    state = await call('komplaiConnect', $('#komplai-organisation').value); renderConnections();
+    const selected = state.connections.find(c => !previous.has(c.id));
+    $('#komplai-organisations').hidden = true; $('#komplai-login').hidden = false; $('#komplai-cancel').hidden = true; $('#komplai-feedback').textContent = '';
+    if (setupActive && selected) { $('#setup-connection').value = selected.id; setupPage('saved'); await testSetupConnection(); } else connectionView('list');
+  } catch (error) { $('#komplai-feedback').textContent = error.message; } finally { $('#komplai-confirm').disabled = false; }
+});
 $('#connection-form').onsubmit = event => {
-  event.preventDefault(); action(async () => {
+  event.preventDefault(); if ($('#provider-kind').value === 'komplai') return; action(async () => {
     $('#save-connection').disabled = true;
     const generation = setupGeneration, guided = setupActive && setupStep === 'provider';
     const previousIDs = new Set(state.connections.map(c => c.id));
@@ -744,7 +802,7 @@ for (const id of ['support-dialog', 'connections-dialog', 'features-dialog']) do
   const active = document.activeElement;
   if (active === document.body || !active?.checkVisibility({ checkVisibilityCSS: true })) $('#settings-toggle').focus();
 });
-$('#connections-dialog').addEventListener('close', () => { $('#api-key').value = ''; });
+$('#connections-dialog').addEventListener('close', () => { resetKomplaiLogin(); $('#api-key').value = ''; });
 setInterval(async () => { if (!current || polling) return; polling = true; const project = current, root = current.workspaceRoot; try { const next = await call('revision'); if (current !== project || current.workspaceRoot !== root || !next) return; if (revision && next !== revision) $('#preview').src = current.previewURL; revision = next; $('#preview-status').textContent = 'Lokal forhåndsvisning'; } catch { $('#preview-status').textContent = 'Kan ikke læse siden – kontrollér projektfilerne'; } finally { polling = false; } }, 1500);
 action(async () => { $('#create').disabled = true; try { state = await call('connectionState'); renderConnections(); updateProvider(); await loadDesigns(); await loadStartup(); applyFeatures(); renderLocation(await call('projectLocation')); restoreIdeaDraft(); showIdeaExamples(); await refreshRecent(); setupControls(); for (const id of ['#welcome-build', '#welcome-example', '#welcome-open']) $(id).disabled = false; if ($('#welcome-dialog').open) $('#welcome-title').focus(); else { $('#purpose').focus(); await reopenLast(); } } finally { projectLoading = false; $('#create').disabled = false; applyRunning(); } });
 // Kom tilbage: det senest åbnede projekt åbnes igen ved start, så man fortsætter, hvor man slap.
@@ -784,7 +842,7 @@ function updateModelSummary() {
   const connection = state?.connections.find(c => c.id === $('#connection-select').value);
   const provider = state?.definitions?.[connection?.kind]?.provider || connection?.name || '';
   const effort = model.value && window.ModelAdvice.effort(connection?.kind, model.value);
-  const effortLabel = effort ? `${effort} indsats` : connection?.kind === 'mistral' ? 'standardindsats' : '';
+  const effortLabel = effort ? `${effort} indsats` : ['mistral', 'komplai'].includes(connection?.kind) ? 'standardindsats' : '';
   const label = model.value ? [model.selectedOptions[0].textContent, provider, effortLabel].filter(Boolean).join(' · ') : 'Vælg AI';
   $('#model-summary').textContent = model.value ? model.selectedOptions[0].textContent : 'Vælg din AI';
   $('#model-chip').textContent = label;
@@ -797,7 +855,11 @@ function renderUsage(usage) {
   const target = $('#usage-status');
   if (!usage || !usage.calls) { target.textContent = 'Intet forbrug i denne samtale endnu'; target.title = ''; return; }
   const input = usage.input + usage.cacheRead + usage.cacheWrite;
-  const price = usage.unpriced === usage.calls ? 'pris ukendt' : usage.cost < 0.01 ? 'under 0,01 USD' : `ca. ${usage.cost.toLocaleString('da-DK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD${usage.unpriced ? ' + ukendt' : ''}`;
+  const amounts = [];
+  if (usage.calls > usage.unpriced + (usage.otherCalls || 0)) amounts.push(usage.cost < 0.01 ? 'under 0,01 USD' : `ca. ${usage.cost.toLocaleString('da-DK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`);
+  if (usage.otherCosts?.DKK != null) amounts.push(usage.otherCosts.DKK < 0.01 ? 'under 0,01 DKK' : `ca. ${usage.otherCosts.DKK.toLocaleString('da-DK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} DKK`);
+  if (usage.unpriced) amounts.push('pris ukendt');
+  const price = amounts.join(' + ');
   target.textContent = `Denne samtale: ${tokenCount(input)} tokens ind · ${tokenCount(usage.output + usage.reasoning)} ud · ${price}`;
   target.title = `${usage.calls} modelkald. Ind: ${tokenCount(usage.input)} nye, ${tokenCount(usage.cacheRead)} fra cache og ${tokenCount(usage.cacheWrite)} skrevet til cache. Ud: ${tokenCount(usage.output)} svar og ${tokenCount(usage.reasoning)} ræsonnement. Prisen er et overslag ud fra udbyderens listepris og kan afvige fra din faktura; se det faktiske forbrug hos udbyderen.`;
 }
@@ -1305,12 +1367,13 @@ let modelCatalog = [], activePlan = null;
 function modelDescription(model) {
   const price = model.price;
   const known = price && price.prompt != null && price.completion != null && Number.isFinite(Number(price.prompt)) && Number.isFinite(Number(price.completion));
-  const cost = !known ? 'Kataloget oplyser ingen pris' : Number(price.prompt) === 0 && Number(price.completion) === 0 ? '0 USD for input/output*' : `${Number(price.prompt) * 1e6} / ${Number(price.completion) * 1e6} USD pr. mio. input-/outputtokens`;
+  const cost = !known ? 'Kataloget oplyser ingen pris' : Number(price.prompt) === 0 && Number(price.completion) === 0 ? '0 USD for input/output*' : `${Number(price.prompt) * 1e6} / ${Number(price.completion) * 1e6} ${price.currency === 'DKK' ? 'DKK' : 'USD'} pr. mio. input-/outputtokens`;
   return `${cost} · ${model.capabilities?.tools === true ? 'Værktøjskald angivet i kataloget' : model.capabilities?.tools === false ? 'Ingen værktøjskald angivet' : 'Kodeværktøjer ikke verificeret'}`;
 }
 // For udbyderne i opsætningen vælges udbyderens eget udgangspunkt på forhånd. Det er ikke en anbefaling fra appen; modellen står under skrivefeltet og i resuméet før første afsendelse.
 function preselectRecommended(connectionID) {
   const kind = state.connections.find(c => c.id === connectionID)?.kind;
+  if (kind === 'komplai') { const id = modelCatalog[0]?.komplai?.defaultModel; if (id && modelCatalog.some(m => m.id === id)) $('#model-select').value = id; return; }
   if (!featuredProviders.some(item => item.kind === kind)) return;
   const { defaultID } = window.ModelAdvice.suggest(modelCatalog, kind);
   if (defaultID) $('#model-select').value = defaultID;

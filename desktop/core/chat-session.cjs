@@ -43,7 +43,8 @@ function addStep(usage, tokens = {}, price) {
   for (const key of Object.keys(step)) usage[key] += step[key];
   usage.calls += 1;
   // OpenCode trækker ræsonnement fra output. Udbyderne afregner ræsonnement som output, så det lægges til igen i prisen.
-  if (price) usage.cost += (step.input * price.input + (step.output + step.reasoning) * price.output + step.cacheRead * price.cacheRead + step.cacheWrite * price.cacheWrite) / 1e6;
+  if (price?.currency === 'DKK') { usage.otherCosts = { ...(usage.otherCosts || {}), DKK: (usage.otherCosts?.DKK || 0) + (step.input * price.input + (step.output + step.reasoning) * price.output + step.cacheRead * price.cacheRead + step.cacheWrite * price.cacheWrite) / 1e6 }; usage.otherCalls = (usage.otherCalls || 0) + 1; }
+  else if (price) usage.cost += (step.input * price.input + (step.output + step.reasoning) * price.output + step.cacheRead * price.cacheRead + step.cacheWrite * price.cacheWrite) / 1e6;
   else usage.unpriced += 1;
   return usage;
 }

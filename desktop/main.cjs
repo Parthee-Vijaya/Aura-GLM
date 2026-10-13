@@ -504,6 +504,14 @@ handle('setup:status', async () => {
   } catch (error) { return { git: error.message, project: Boolean(project) }; }
 });
 handle('connections:discover', () => require('./core/local-discovery.cjs').discoverLocalModels());
+const komplaiLogin = new (require('./core/komplai.cjs').KomplaiLogin)();
+handle('komplai:login', () => komplaiLogin.start(url => shell.openExternal(url)));
+handle('komplai:cancel', () => komplaiLogin.cancel());
+handle('komplai:connect', value => exclusive(async () => {
+  if (workbench.running) throw new Error('Stop opgaverne først.');
+  await komplaiLogin.connect(value, workbench.store); return workbench.state();
+}));
+handle('komplai:account', id => workbench.komplaiAccount(id));
 handle('connections:state', () => workbench.state());
 handle('connections:save', value => exclusive(() => workbench.saveConnection(value)));
 handle('connections:remove', value => exclusive(() => workbench.removeConnection(value)));
@@ -832,4 +840,4 @@ app.whenReady().then(async () => {
   app.on('activate', () => { if (!window) createWindow(); });
 });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
-app.on('before-quit', event => { if (quitReady) return; event.preventDefault(); shutdown().finally(() => { quitReady = true; app.quit(); }); });
+app.on('before-quit', event => { komplaiLogin.cancel(); if (quitReady) return; event.preventDefault(); shutdown().finally(() => { quitReady = true; app.quit(); }); });
