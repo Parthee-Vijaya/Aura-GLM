@@ -1,8 +1,13 @@
-const { app, BrowserWindow } = require('electron');
 const fs = require('node:fs/promises');
 const path = require('node:path');
-app.whenReady().then(async () => {
- const window = new BrowserWindow({ width:1024,height:1024,show:false,transparent:true,webPreferences:{offscreen:true,nodeIntegration:false,contextIsolation:true} });
- await window.loadURL('data:text/html;charset=utf-8,'+encodeURIComponent('<body style="margin:0;background:transparent"><svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><rect x="48" y="48" width="928" height="928" rx="218" fill="#18332f"/><path d="M322 742L512 278L702 742M390 575h244" fill="none" stroke="#e0f1d4" stroke-width="100" stroke-linecap="round" stroke-linejoin="round"/></svg></body>'));
- await fs.writeFile(path.join(__dirname,'../packaging/icon.png'),(await window.webContents.capturePage()).toPNG());app.quit();
-});
+
+// Det vedtagne logo er fælles for README, web, brugerflade og installationspakker.
+async function syncAuraIcons() {
+  const source = path.join(__dirname, '../../docs/images/aura-icon.png');
+  for (const target of ['../packaging/icon.png', '../ui/aura-icon.png']) {
+    await fs.copyFile(source, path.join(__dirname, target));
+  }
+}
+
+if (require.main === module) syncAuraIcons().catch(error => { console.error(error); process.exitCode = 1; });
+module.exports = { syncAuraIcons };

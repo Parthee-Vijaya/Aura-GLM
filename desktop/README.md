@@ -53,7 +53,9 @@ npm start
 
 Der findes lokale betapakker og pakker fra GitHub Actions; se [teststatus](../docs/teststatus.md) for præcis version og platform. Filernes signering og notarisation fremgår af den daterede teststatus. Pakker fra workflowet **Byg testpakker** er usignerede. Electron kan kræve netadgang ved installation fra kildekoden.
 
-Appens navn og egne menuer er **Aura**. En installation fra før navneskiftet beholder sin datamappe og sit navn i nøgleringen, så gemte forbindelser og nøgler kan læses (`core/app-identity.cjs`). Under `npm start` bruges stadig udviklingsprogrammet `Electron.app` på macOS; systemets Dock, procesvisning og visse systemdialoger kan derfor fortsat vise Electron. Fuld systemnavngivning kræver en pakket app med egne bundle-oplysninger. Der ændres ikke i den installerede Electron-afhængighed. Navneskiftet bevarer eksisterende data- og sessionsmapper.
+Appens navn og egne menuer er **Aura**. En installation fra før navneskiftet beholder sin datamappe og sit navn i nøgleringen, så gemte forbindelser og nøgler kan læses (`core/app-identity.cjs`). Under `npm start` bruges stadig udviklingsprogrammet `Electron.app` på macOS; procesvisning og visse systemdialoger kan derfor fortsat vise Electron. Dock-ikonet sættes til Aura-logoet ved opstart. Fuld systemnavngivning kræver en pakket app med egne bundle-oplysninger. Der ændres ikke i den installerede Electron-afhængighed. Navneskiftet bevarer eksisterende data- og sessionsmapper.
+
+Logoets original er `docs/images/aura-icon.png`. `npm run icons` kopierer den uændret til brugerfladen og installationsikonet; det sker også før `npm start` og pakning. Sidepanel, introduktion, AI-opsætning og favicon bruger samme billedfil.
 
 ## Opstart og forbindelser
 

@@ -11,6 +11,8 @@
   "description": "Byg applikationer med AI, lokale projektfiler og forhåndsvisning",
   "main": "main.cjs",
   "scripts": {
+    "icons": "node scripts/create-icon.cjs",
+    "prestart": "npm run icons",
     "start": "electron .",
     "test": "node --test --test-concurrency=1 tests/*.test.cjs",
     "test:updates": "node scripts/verify-updates.cjs",

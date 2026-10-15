@@ -192,11 +192,13 @@ function skillsPage(library) {
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Skills i Aura Harness</title>
   <meta name="description" content="Se hvilke skills der følger med Aura Harness: hvad hver skill gør, hvornår den bruges, og hvad den ikke gør.">
+  <link rel="icon" type="image/png" href="images/aura-icon.png">
+  <link rel="apple-touch-icon" href="images/aura-icon.png">
   <link rel="stylesheet" href="overview.css">
 </head>
 <body>
   <a class="skip" href="#skills">Gå til skillsene</a>
-  <header><a href="./">Aura Harness</a><a href="pakker.html">Webguide og pakker →</a></header>
+  <header><a class="brand" href="./"><img src="images/aura-icon.png" width="36" height="36" alt="">Aura Harness</a><a href="pakker.html">Webguide og pakker →</a></header>
   <main class="tool-index">
     <p class="eyebrow">DET FØLGER MED</p>
     <h1>Skills i Aura Harness.</h1>
@@ -254,11 +256,13 @@ function toolsPage(library, publicTools) {
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Kodeværktøjer · Aura Harness</title>
   <meta name="description" content="Brug Aura Harness' grundregler og skills i ${library.tools.length} kodeværktøjer og webplatforme, fx Claude Code, Codex, Cursor, GitHub Copilot og Gemini CLI.">
+  <link rel="icon" type="image/png" href="images/aura-icon.png">
+  <link rel="apple-touch-icon" href="images/aura-icon.png">
   <link rel="stylesheet" href="overview.css">
 </head>
 <body>
   <a class="skip" href="#oversigt">Gå til værktøjerne</a>
-  <header><a href="./">Aura Harness</a><a href="pakker.html">Webguide og pakker →</a></header>
+  <header><a class="brand" href="./"><img src="images/aura-icon.png" width="36" height="36" alt="">Aura Harness</a><a href="pakker.html">Webguide og pakker →</a></header>
   <main class="tool-index">
     <p class="eyebrow">BRUG DIT EGET VÆRKTØJ</p>
     <h1>Aura Harness i dit<br>eget kodeværktøj.</h1>
@@ -290,6 +294,8 @@ function fallbackList(publicTools) {
 
 async function build({ profiles = path.join(root, 'profiles'), output = path.join(root, 'site/dist'), markdown = path.join(profiles, 'SKILLS.md') } = {}) {
   const library = await loadLibrary(profiles);
+  await fs.mkdir(path.join(output, 'images'), { recursive: true });
+  await fs.copyFile(path.join(root, 'docs/images/aura-icon.png'), path.join(output, 'images/aura-icon.png'));
   const downloads = path.join(output, 'downloads');
   await fs.rm(downloads, { recursive: true, force: true });
   await fs.mkdir(downloads, { recursive: true });

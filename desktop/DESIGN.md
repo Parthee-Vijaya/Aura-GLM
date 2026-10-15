@@ -111,6 +111,7 @@ Datamodtagere, pris, behandlingssted og ukendte vilkår skal fortsat kunne vurde
 
 ## Visuelle valg
 
+- Aura-logoet i `docs/images/aura-icon.png` er fælles kilde til appen, introduktionen, websidernes favicon og installationsikonerne. Brug billedet uændret; et tastatursymbol eller et tegnet A erstatter ikke logoet. `npm run icons` i `desktop/` kopierer det til brugerfladen og pakningen.
 - Baggrund: kølig hvid `#F8FAFC`. Flader: hvid `#FFFFFF`.
 - Primær handling: kobolt `#0052CC`. Svag markering: `#E8F1FF`.
 - Brødtekst: `#182235`. Sekundær tekst: `#58677D`. Skillelinjer: `#E0E7F0`.

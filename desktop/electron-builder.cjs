@@ -15,6 +15,7 @@ module.exports = {
   publish: { provider: 'generic', url: 'https://ai-alliancen-org.github.io/ai-harness/updates/', channel: 'beta' },
   generateUpdatesFilesForAllChannels: false,
   beforePack: async context => {
+    await require('./scripts/create-icon.cjs').syncAuraIcons();
     const target = `${context.electronPlatformName}-${Arch[context.arch]}`;
     const folder = path.join(__dirname, '.runtime', target);
     const manifest = require(path.join(folder, 'manifest.json'));

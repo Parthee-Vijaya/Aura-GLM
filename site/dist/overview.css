@@ -3,8 +3,6 @@
 :root { color: #1d293d; background: #f7f9fc; }
 a { color: #0052cc; }
 header a:last-child { font-size: 14px; font-weight: 400; }
-.brand { display: inline-flex; align-items: center; gap: 10px; }
-header { align-items: center; }
 main { padding-top: 40px; }
 .eyebrow { color: #52647e; letter-spacing: .1em; }
 .lead { max-width: 750px; color: #52647e; }

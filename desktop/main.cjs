@@ -20,6 +20,7 @@ const { OwnTools } = require('./core/own-tools.cjs');
 // Appen hedder Aura. Datamappen og navnet i nøgleringen bevares fra før navneskiftet; se core/app-identity.cjs.
 const { appIdentity, rememberKeychain, projectParent, DISPLAY_NAME } = require('./core/app-identity.cjs');
 const identity = appIdentity({ appData: app.getPath('appData'), packaged: app.isPackaged, customUserData: app.commandLine.hasSwitch('user-data-dir'), userData: app.getPath('userData'), sessionData: app.getPath('sessionData') });
+const appIcon = path.join(__dirname, 'ui/aura-icon.png');
 rememberKeychain(identity);
 app.setName(identity.keychainName);
 app.setPath('userData', identity.userData);
@@ -839,8 +840,8 @@ app.whenReady().then(async () => {
     const url = new URL(request.url);
     const name = url.pathname.slice(1);
     const providerAsset = /^provider-(anthropic|azure|compatible|corti|komplai|mistral|ollama|openai|openrouter|zen)\.svg$/.test(name);
-    if (url.host !== 'app' || (!providerAsset && !['index.html', 'app.js', 'updates.js', 'workspace.js', 'plan-view.js', 'planning.js', 'approval-view.js', 'approvals.js', 'preview-edit.js', 'history.js', 'chats.js', 'palette.js', 'model-advice.js', 'connection-overview.js', 'chat-display.js', 'conversation-mode.js', 'live-work.js', 'server.js', 'viewport.js', 'share-view.js', 'hosting.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name))) return new Response('Ikke fundet', { status: 404 });
-    return new Response(await fs.readFile(path.join(__dirname, 'ui', name)), { headers: { 'Content-Type': providerAsset ? 'image/svg+xml' : name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : 'text/html; charset=utf-8' } });
+    if (url.host !== 'app' || (!providerAsset && !['index.html', 'aura-icon.png', 'app.js', 'updates.js', 'workspace.js', 'plan-view.js', 'planning.js', 'approval-view.js', 'approvals.js', 'preview-edit.js', 'history.js', 'chats.js', 'palette.js', 'model-advice.js', 'connection-overview.js', 'chat-display.js', 'conversation-mode.js', 'live-work.js', 'server.js', 'viewport.js', 'share-view.js', 'hosting.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name))) return new Response('Ikke fundet', { status: 404 });
+    return new Response(await fs.readFile(path.join(__dirname, 'ui', name)), { headers: { 'Content-Type': name === 'aura-icon.png' ? 'image/png' : providerAsset ? 'image/svg+xml' : name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : 'text/html; charset=utf-8' } });
   });
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
   session.defaultSession.setPermissionCheckHandler(() => false);
@@ -851,7 +852,7 @@ app.whenReady().then(async () => {
   });
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => callback({ responseHeaders: previewHeaders(details) }));
   function createWindow() {
-    window = new BrowserWindow({ width: 1440, height: 940, minWidth: 980, minHeight: 720, backgroundColor: '#F8FAFC', title: DISPLAY_NAME, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, webviewTag: false } });
+    window = new BrowserWindow({ width: 1440, height: 940, minWidth: 980, minHeight: 720, backgroundColor: '#F8FAFC', title: DISPLAY_NAME, icon: appIcon, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, webviewTag: false } });
     window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     // Fejl, som forhåndsvisningens side selv skriver i konsollen. Kun previewets ramme; appens egne meddelelser tælles ikke.
     window.webContents.on('console-message', event => {
@@ -878,6 +879,7 @@ app.whenReady().then(async () => {
     created.on('closed', () => { externalPreview = null; window = null; assets = []; project = null; });
     window.loadURL(uiURL);
   }
+  if (process.platform === 'darwin') app.dock.setIcon(appIcon);
   createWindow();
   app.on('activate', () => { if (!window) createWindow(); });
 });
