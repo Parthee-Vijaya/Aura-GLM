@@ -47,17 +47,15 @@ jobs:
       - name: Hent kun filerne fra den eksisterende kladde
         shell: bash
         run: |
-          mkdir -p "$RUNNER_TEMP/aura-release"
           gh api "repos/$GH_REPO" > "$RUNNER_TEMP/repository.json"
-          gh api "repos/$GH_REPO/releases/tags/$RELEASE_TAG" > "$RUNNER_TEMP/release.json"
-          node -e 'const r=require(process.env.RUNNER_TEMP+"/release.json"); if (!r.draft || !r.prerelease) throw Error("Der skal allerede findes en beta-kladde")'
-          gh release download "$RELEASE_TAG" --dir "$RUNNER_TEMP/aura-release" --pattern 'Aura-*.dmg' --pattern 'Aura-*.exe' --pattern release.json --pattern SHA256SUMS.txt
+          node scripts/download-desktop-draft.cjs "$RELEASE_TAG" "$RUNNER_TEMP/aura-release" "$RUNNER_TEMP/release.json"
       - name: Kontrollér alle downloads og loginopsætning
         run: node scripts/check-release.cjs "$RUNNER_TEMP/aura-release" "$RUNNER_TEMP/release.json" "$RUNNER_TEMP/repository.json"
       - name: Kontrollér kladden igen og offentliggør den
         shell: bash
         run: |
-          gh api "repos/$GH_REPO/releases/tags/$RELEASE_TAG" > "$RUNNER_TEMP/release-current.json"
+          RELEASE_ID=$(node -p 'require(process.argv[1]).id' "$RUNNER_TEMP/release.json")
+          gh api "repos/$GH_REPO/releases/$RELEASE_ID" > "$RUNNER_TEMP/release-current.json"
           node -e 'const fs=require("fs");const {releaseSnapshot}=require("./scripts/release-contract.cjs");const p=process.env.RUNNER_TEMP; if(releaseSnapshot(JSON.parse(fs.readFileSync(p+"/release.json")))!==releaseSnapshot(JSON.parse(fs.readFileSync(p+"/release-current.json")))) throw Error("Kladdeudgivelsen blev ændret under kontrollen")'
           git fetch origin "refs/tags/$RELEASE_TAG"
           test "$(git rev-parse 'FETCH_HEAD^{commit}')" = "$GITHUB_SHA"

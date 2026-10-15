@@ -51,7 +51,7 @@ npm ci
 npm start
 ```
 
-Der findes lokale betapakker og pakker fra GitHub Actions; se [teststatus](../docs/teststatus.md) for præcis version og platform. Den aktuelle lokale Apple Silicon-pakke er signeret, men afventer notarisation. CI-pakkerne er usignerede. Electron kan kræve netadgang ved installation fra kildekoden.
+Der findes lokale betapakker og pakker fra GitHub Actions; se [teststatus](../docs/teststatus.md) for præcis version og platform. Filernes signering og notarisation fremgår af den daterede teststatus. Pakker fra workflowet **Byg testpakker** er usignerede. Electron kan kræve netadgang ved installation fra kildekoden.
 
 Appens navn og egne menuer er **Aura**. En installation fra før navneskiftet beholder sin datamappe og sit navn i nøgleringen, så gemte forbindelser og nøgler kan læses (`core/app-identity.cjs`). Under `npm start` bruges stadig udviklingsprogrammet `Electron.app` på macOS; systemets Dock, procesvisning og visse systemdialoger kan derfor fortsat vise Electron. Fuld systemnavngivning kræver en pakket app med egne bundle-oplysninger. Der ændres ikke i den installerede Electron-afhængighed. Navneskiftet bevarer eksisterende data- og sessionsmapper.
 
@@ -450,7 +450,7 @@ Afslutningen viser ændrede tekstfiler registreret i den enkelte opgave og **Kon
 
 ### Aktuel kandidat · 13. oktober 2026
 
-`0.2.0-beta.6` klargøres med Komplai-forbindelsen. [Udgivelsesvejledningen](../docs/udgivelse.md) beskriver de tre installationsfiler, kontrollen mod kildekoden, signering og de særskilte manuelle Releases- og Pages-kørsler. [Teststatus](../docs/teststatus.md) angiver, hvor langt hver platform er afprøvet. Der er endnu ingen publiceret beta.6.
+`0.2.0-beta.6` klargøres med Komplai-forbindelsen. [Udgivelsesvejledningen](../docs/udgivelse.md) beskriver de tre installationsfiler, kontrollen mod kildekoden, signering og de særskilte manuelle Releases- og Pages-kørsler. [Teststatus](../docs/teststatus.md) angiver, hvor langt hver platform er afprøvet. Desktopbeta.6 er endnu ikke offentliggjort. Begge lokale Mac-installationsfiler er notariseret, og Windows-filen er indholdskontrolleret. Den separate terminaludgivelse `cli-v0.2.0-beta.6` er offentlig.
 
 ### Demogennemgang · 7. oktober 2026
 
@@ -458,7 +458,7 @@ Kandidaten ved denne gennemgang var `0.2.0-beta.5`. [Demogennemgangen](../docs/d
 
 `npm run test:demo` prøver første start uden AI, kladde, forbindelsesguide, navngivne kontroller, fokus, tastatur, 980 × 720, 150 % zoom, reduceret bevægelse og genåbning. Det kan også køres med `HARNESS_TEST_PACKAGE` sat til den konkrete `.app` eller `.exe`. `measure:screens` registrerer en afgrænset DOM-kontrol og tager billeder direkte fra Electron-vinduet. Det erstatter ikke en skærmlæserprøve eller brugerobservation.
 
-`npm run test:demo-web -- RELEASE-JSON REPOSITORY-JSON` bygger og afprøver den samlede side lokalt fra eksplicitte GitHub-metadata; se [website](../docs/website.md) for læsning af metadata. `node scripts/verify-download.cjs PAKKEMAPPE` henter en faktisk fil gennem en lokal browser og kontrollerer SHA-256 mod mappens `release.json`. Uden argument bruges `release/`. Generer først filoversigten med `npm run release:site -- PAKKEMAPPE`. Ingen af disse kontroller publicerer noget.
+`npm run test:demo-web -- RELEASE-JSON REPOSITORY-JSON` bygger og afprøver den samlede side lokalt fra eksplicitte GitHub-metadata; se [website](../docs/website.md) for læsning af metadata. `node scripts/verify-download.cjs PAKKEMAPPE` henter alle installationsfiler gennem en lokal browser og kontrollerer filnavne, størrelser og SHA-256 mod mappens `release.json`. Den kontrollerer også valgene App og Terminal samt mobilvisningen. Uden argument bruges `release/`. Generer først filoversigten med `npm run release:site -- PAKKEMAPPE`. Ingen af disse kontroller publicerer noget.
 
 Kør alle følgende kommandoer fra `desktop/`. Pakningen henter kun fastlåste værktøjer fra `runtime-lock.json`, kontrollerer deres SHA-256/SHA-512 og kopierer dem til appens ressourcemappe. Byg ikke fra en mappe med ukendte lokale ændringer. Appens kode pakkes fra en eksplicit filliste; projekter, nøgler, testmapper og udviklerens indstillinger medtages ikke. Git, Node/npm og OpenCode følger med; model, API-adgang, Docker og hosting-CLI'er følger ikke med. Installationen ændrer ikke systemets PATH eller eksisterende værktøjer.
 

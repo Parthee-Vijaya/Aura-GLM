@@ -30,8 +30,10 @@ const { auditUI } = require('./ui-audit.cjs');
     await page.route('**/*', route => route.request().url().startsWith(origin + '/') ? route.continue() : route.abort());
     page.on('pageerror', e => errors.push(e.message));
     const links = new Set();
-    for (const width of [1280, 390]) for (const file of ['index.html', 'desktop.html', 'pakker.html', 'skills.html', 'vaerktoejer.html']) {
+    for (const width of [1280, 390]) for (const file of ['index.html', 'desktop.html', 'terminal.html', 'pakker.html', 'skills.html', 'vaerktoejer.html']) {
       await page.setViewportSize({ width, height: 844 }); await page.goto(origin + '/' + file);
+      if (file === 'terminal.html') await page.waitForURL('**/desktop.html#terminal');
+      await page.locator('main').waitFor();
       assert.equal(await page.locator('main').count(), 1);
       const audit = await page.evaluate(auditUI, 'body');
       assert.deepEqual(audit.unnamed, [], `${file}: navngivne kontroller`);
@@ -40,7 +42,7 @@ const { auditUI } = require('./ui-audit.cjs');
       const image = path.join(root, `${width}-${file}.png`); await page.screenshot({ path: image, fullPage: true }); screens.push({ file, width, image, audit });
       if (file === 'desktop.html') {
         if (!releases.some(r => !r.draft && r.assets?.length)) assert.equal(await page.locator('.artifact').count(), 0, 'Ingen opdigtede installationsfiler');
-        assert.match(await page.locator('body').innerText(), /test|Test/);
+        assert.match(await page.locator('body').innerText(), /Beta/);
       }
     }
     for (const url of links) {
@@ -61,7 +63,33 @@ const { auditUI } = require('./ui-audit.cjs');
     assert.equal(new URL(page.url()).hash, '#desktop');
     await page.getByRole('link', { name: 'Installation og hjælp →' }).click();
     assert.equal(new URL(page.url()).pathname, '/desktop.html');
+    await page.locator('.beta-details > summary').click();
     assert.equal(await page.getByRole('link', { name: 'Læs betastatus og kendte begrænsninger ↗' }).count(), 1);
+    await page.locator('.beta-details > summary').click();
+    // App og terminal deler side; gamle terminallinks vælger stadig terminalen.
+    assert.equal(await page.getByRole('tab').count(), 2);
+    assert.equal(await page.locator('#app').isVisible(), true);
+    await page.getByRole('tab', { name: /^Terminal/ }).click();
+    assert.equal(await page.locator('#terminal').isVisible(), true);
+    assert.equal(await page.locator('#app').isVisible(), false);
+    assert.equal(await page.locator('.platform').count(), 3);
+    await page.goBack();
+    await page.locator('#app').waitFor({ state: 'visible' });
+    await page.getByRole('tab', { name: /^App/ }).focus();
+    await page.keyboard.press('End');
+    assert.equal(await page.locator('#terminal-choice').getAttribute('aria-selected'), 'true');
+    await page.keyboard.press('Home');
+    assert.equal(await page.locator('#app-choice').getAttribute('aria-selected'), 'true');
+    await page.goto(origin + '/terminal.html');
+    await page.waitForURL('**/desktop.html#terminal');
+    await page.locator('#terminal').waitFor({ state: 'visible' });
+    assert.doesNotMatch(await page.locator('body').innerText(), /Endnu ikke afprøvet|Intel-Mac mangler|Downloadknapper vises/);
+    const noScript = await browser.newContext({ javaScriptEnabled: false });
+    const fallback = await noScript.newPage();
+    await fallback.goto(origin + '/desktop.html');
+    assert.equal(await fallback.locator('#app').isVisible(), true);
+    assert.equal(await fallback.locator('#terminal').isVisible(), true);
+    await noScript.close();
     await page.goto(origin);
     await page.setViewportSize({ width: 1280, height: 844 });
     await page.screenshot({ path: path.join(root, 'forside.png') });

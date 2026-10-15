@@ -6,6 +6,7 @@ const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { expectedFiles, assetURL, validateRelease, releaseSnapshot } = require('../../scripts/release-contract.cjs');
 const { check } = require('../../scripts/check-release.cjs');
+const { selectDraft, validateAssetIDs } = require('../../scripts/download-desktop-draft.cjs');
 const version = '0.2.0-beta.6';
 function fixture() {
   const content = Buffer.from('Syntetisk installationsfil. Ikke et program.'), sha256 = createHash('sha256').update(content).digest('hex');
@@ -29,6 +30,23 @@ test('Gentagen kontrol tillader downloadtællere, men afviser ændrede noter og 
   const {release}=fixture(),before=releaseSnapshot(release);release.assets[0].download_count=2;
   assert.equal(releaseSnapshot(release),before);release.body='Ændrede noter';assert.notEqual(releaseSnapshot(release),before);
   release.body='Syntetiske udgivelsesnoter';release.assets[0].digest='ændret';assert.notEqual(releaseSnapshot(release),before);
+});
+test('Desktopkladder hentes via ID og må bruge GitHubs midlertidige downloadadresser', () => {
+  const f = fixture();
+  f.release.assets.forEach((a, i) => {
+    a.id = 100 + i; a.size ||= 100; a.digest ||= 'sha256:' + 'b'.repeat(64);
+    a.url = `https://api.github.com/repos/ai-alliancen-org/ai-harness/releases/assets/${a.id}`;
+    a.browser_download_url = assetURL('untagged-9eb271ba7508f6aaf1fd', a.name);
+  });
+  assert.equal(selectDraft([f.release], 'v' + version).id, f.release.id);
+  assert.equal(validateAssetIDs(f.release).length, 5);
+  assert.equal(validateRelease(f.release, f.manifest, f.checksums, version).files.length, 3);
+  for (const mutate of [r => r.assets[0].url = 'https://example.org/fil', r => r.assets[0].id = r.assets[1].id,
+    r => r.assets[1].browser_download_url = assetURL('untagged-abcdef', r.assets[1].name),
+    r => r.assets[0].browser_download_url = r.assets[0].browser_download_url.replace('ai-alliancen-org', 'other'),
+    r => r.assets[0].size = 0, r => r.assets.pop(), r => r.draft = false]) {
+    const bad = structuredClone(f.release); mutate(bad); assert.throws(() => validateAssetIDs(bad));
+  }
 });
 test('Udgivelseskontrollen læser de faktiske bytes og stopper ved manglende Komplai-login', async t => {
   const root=await fs.mkdtemp(path.join(os.tmpdir(),'aura-release-test-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));

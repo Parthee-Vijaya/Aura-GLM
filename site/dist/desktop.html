@@ -1,1 +1,61 @@
-<!doctype html><html lang="da"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hent Aura</title><meta name="description" content="Installér Aura og afprøv lokal AI-assisteret appudvikling."><link rel="stylesheet" href="desktop.css"></head><body><header><a href="./">Aura Harness</a><span>Udviklingsbeta</span></header><main><p class="eyebrow">AURA TIL MAC OG WINDOWS</p><h1>Byg og afprøv apps<br>på din computer.</h1><p class="lead">Beskriv det, du vil bygge. Gennemgå planen, og se resultatet ved siden af samtalen.</p><section class="downloads" aria-labelledby="download-title"><h2 id="download-title">Hent testversionen</h2><!-- artifacts --><p>Installationsfilerne er endnu ikke offentliggjort på denne side.</p><a class="button" href="https://github.com/ai-alliancen-org/ai-harness/releases">Se offentliggjorte versioner på GitHub ↗</a><!-- /artifacts --></section><p>Installation og opdatering er endnu ikke afprøvet på almindelige testeres egne Mac- og Windows-computere. <a href="https://github.com/ai-alliancen-org/ai-harness/blob/main/docs/beta.md">Læs betastatus og kendte begrænsninger ↗</a></p><p>Vil du arbejde i terminalen? <a href="terminal.html">Aura CLI til Windows, Linux og macOS →</a></p><section class="steps"><article><span>01</span><h2>Installér</h2><p>Mac: Åbn DMG-filen, og træk Aura til Programmer. Windows: Åbn installationsfilen, og følg trinene.</p></article><article><span>02</span><h2>Tilslut din AI</h2><p>Brug din egen API-adgang eller modelserver. Du behøver ingen GitHub-konto for at starte. Du kan også prøve den lokale demonstration uden AI.</p></article><article><span>03</span><h2>Byg og afprøv</h2><p>Opret et projekt med opdigtede data, beskriv idéen, og vælg Byg første udkast når du har gennemgået planen.</p></article></section><section class="note"><h2>Det følger med</h2><p>OpenCode, Git og Node/npm ligger inde i appen. Du skal ikke klone repositoryet eller installere dem via terminalen. Appen kan også lægge Aura Harness' grundregler og skills i et projekt, du arbejder på i dit eget kodeværktøj. Der medfølger ingen model, API-nøgle, Docker eller hostingkonto.</p><p>Projektfilerne ligger på din computer, hvor kodeagenten også kører. Den valgte model kan modtage projektindhold; gennemgå modtagere, pris og vilkår i appen. Hvis du vil udgive projektet på nettet, skal du også oprette forbindelse til en hostingtjeneste.</p></section><details><summary>Installation, opdatering og hjælp</summary><p>Mac med Apple-chip bruger ARM64. Intel-Mac bruger x64. På Windows skal pakken passe til computerens processor. Hent kun den pakke, der matcher din computer.</p><p>En signeret Mac-testpakke er ikke nødvendigvis notariseret af Apple. Gatekeeper eller organisationens politik kan derfor blokere installationen. Bed din IT-afdeling om hjælp; slå ikke sikkerhedskontroller fra.</p><p>Opdatering sker ved at installere en nyere version. Appen har endnu ingen automatisk opdatering. Projektmapper og gemte appindstillinger slettes ikke ved almindelig opdatering. Tag en sikkerhedskopi af dine projekter.</p><p>Ved fejl: oplys version, operativsystem, hvilket trin der fejlede og fejlteksten i <a href="https://github.com/ai-alliancen-org/ai-harness/issues">en fejlrapport på GitHub</a>. Del aldrig API-nøgler eller private kommunale data. Sikkerhedsproblemer sendes <a href="https://github.com/ai-alliancen-org/ai-harness/blob/main/SECURITY.md">privat til kontaktpersonen</a>.</p></details><p class="boundary">Dette er en testversion. En fungerende forhåndsvisning er ikke en godkendelse til behandling af borgerdata eller produktionsdrift.</p></main><footer><a href="https://github.com/ai-alliancen-org/ai-harness">Kildekode og bidrag ↗</a><span>AI Alliancen · Aura Harness</span></footer></body></html>
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Hent Aura · App og terminal</title>
+  <meta name="description" content="Hent Aura som app til Mac og Windows eller brug terminalpakken på Windows, Linux og macOS.">
+  <link rel="stylesheet" href="desktop.css">
+  <link rel="stylesheet" href="terminal.css">
+  <script src="downloads.js" defer></script>
+</head>
+<body>
+  <header><a href="./">Aura Harness</a><span>Beta</span></header>
+  <main>
+    <h1>Hent Aura.</h1>
+    <p class="lead">Byg med AI i appen, eller arbejd fra din terminal.</p>
+    <nav class="download-choices" aria-label="Vælg app eller terminal">
+      <a id="app-choice" href="#app" aria-controls="app"><strong>App</strong><span>Samtale og forhåndsvisning i ét vindue</span></a>
+      <a id="terminal-choice" href="#terminal" aria-controls="terminal"><strong>Terminal</strong><span>Til dit eget udviklingsmiljø</span></a>
+    </nav>
+    <section id="app" class="download-panel" aria-labelledby="app-choice">
+      <div class="downloads">
+        <h2>Hent appen</h2>
+        <p>Vælg den fil, der passer til din computer.</p>
+        <!-- artifacts --><p>Installationsfilerne klargøres.</p><!-- /artifacts -->
+      </div>
+      <details><summary>Installation og hjælp</summary>
+        <p>Mac: Åbn DMG-filen, og træk Aura til Programmer. Vælg Apple-chip eller Intel. Du finder processortypen under Apple-menuen → Om denne Mac.</p>
+        <p>Windows: Åbn installationsfilen, og følg trinene.</p>
+        <p>Git, Node/npm og OpenCode følger med appen. Du tilslutter selv din AI. Hvis din arbejdsplads styrer installationer, kan IT hjælpe med at få appen installeret.</p>
+        <p>Opdatér ved at installere den nye version. Behold dine projektmapper, og tag en sikkerhedskopi inden opdatering.</p>
+      </details>
+    </section>
+    <section id="terminal" class="download-panel" aria-labelledby="terminal-choice">
+      <div class="downloads">
+        <h2>Hent terminalpakken</h2>
+        <p>Til Windows, Linux og macOS med Node 22.12 eller nyere, npm og Git.</p>
+        <!-- cli-artifacts --><p>Læs <a href="https://github.com/ai-alliancen-org/ai-harness/blob/main/cli/README.md">installationsvejledningen</a>.</p><!-- /cli-artifacts -->
+      </div>
+      <h2>Installér på din computer</h2>
+      <div class="platforms">
+        <!-- cli-guides -->
+        <article class="platform"><h3>Windows</h3><p>Brug PowerShell eller CMD.</p><a href="https://github.com/ai-alliancen-org/ai-harness/blob/main/cli/WINDOWS.md">Installation på Windows →</a></article>
+        <article class="platform"><h3>Linux</h3><p>Brug terminalen lokalt eller via SSH.</p><a href="https://github.com/ai-alliancen-org/ai-harness/blob/main/cli/LINUX.md">Installation på Linux →</a></article>
+        <article class="platform"><h3>macOS</h3><p>Brug Terminal eller din foretrukne terminalapp.</p><a href="https://github.com/ai-alliancen-org/ai-harness/blob/main/cli/MACOS.md">Installation på macOS →</a></article>
+        <!-- /cli-guides -->
+      </div>
+      <details><summary>AI-adgang og opdatering</summary>
+        <p>Du tilslutter selv en AI-forbindelse. Der medfølger ingen model eller kreditter. Browserlogin kræver en browser på samme computer; ved SSH kan du bruge en API-nøgle.</p>
+        <p>Nøgler gemmes krypteret med din adgangssætning. Projektfilerne ligger lokalt. Den valgte model kan modtage projektindhold efter din godkendelse.</p>
+        <p>Installér en ny version i en ny mappe, og behold dine projekter og dit datalager. Vejledningen til din computer beskriver opdateringen.</p>
+      </details>
+    </section>
+    <details class="beta-details"><summary>Om betaen</summary>
+      <p>Brug opdigtede data, når du prøver Aura. Agentens kommandoer kører med din brugers rettigheder.</p>
+      <p><a href="https://github.com/ai-alliancen-org/ai-harness/blob/main/docs/beta.md">Læs betastatus og kendte begrænsninger ↗</a> · <a href="https://github.com/ai-alliancen-org/ai-harness/blob/main/docs/teststatus.md">Se afprøvning af de enkelte platforme ↗</a></p>
+    </details>
+  </main>
+  <footer><a href="https://github.com/ai-alliancen-org/ai-harness/issues/new/choose">Fejl og forslag ↗</a><a href="https://github.com/ai-alliancen-org/ai-harness/blob/main/SECURITY.md">Rapportér en sikkerhedsfejl privat ↗</a></footer>
+</body>
+</html>

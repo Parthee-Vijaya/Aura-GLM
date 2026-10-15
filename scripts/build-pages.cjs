@@ -13,7 +13,7 @@ function render(releases, metadata) {
     .map(release => ({ release, files: releaseFiles(release) }));
   const { release, files } = available.find(r => r.files.length) || {};
   const access = metadata.private ? '<p><strong>Adgang for inviterede testere.</strong> Downloads kræver login på GitHub og adgang til det private repository.</p>' : '';
-  if (!release) return access + '<p>Der er endnu ingen offentliggjort testversion. Downloadknapper vises, når installationsfilerne er udgivet.</p>';
+  if (!release) return access + '<p>Installationsfilerne klargøres.</p>';
   const prefix = `https://github.com/${repository}/releases/download/${encodeURIComponent(release.tag_name)}/`;
   const links = files.map(a => {
     const expected = prefix + encodeURIComponent(a.name);
@@ -44,10 +44,10 @@ function renderCLI(releases, metadata) {
 function cliGuides(releases) {
   const latest = releases.filter(r => !r.draft && Number.isFinite(Date.parse(r.published_at)))
     .sort((a, b) => Date.parse(b.published_at) - Date.parse(a.published_at)).find(r => cli.releaseFiles(r).length);
-  const platforms = [{ name: 'Windows', guide: 'WINDOWS.md', description: 'PowerShell og CMD. Endnu ikke afprøvet på Windows.' },
-    { name: 'Linux', guide: 'LINUX.md', description: 'Terminal med eller uden skrivebord. Endnu ikke afprøvet på Linux.' },
-    { name: 'macOS', guide: 'MACOS.md', description: 'Afprøvet på Apple Silicon med lokal testmodel. Intel-Mac mangler.' }];
-  return platforms.map(p => `<article class="platform"><h3>${p.name}</h3><p>${p.description}</p><a href="https://github.com/${repository}/blob/${latest ? encodeURIComponent(latest.tag_name) : 'main'}/cli/${p.guide}">Åbn vejledning til ${p.name} →</a></article>`).join('\n');
+  const platforms = [{ name: 'Windows', guide: 'WINDOWS.md', description: 'Brug PowerShell eller CMD.' },
+    { name: 'Linux', guide: 'LINUX.md', description: 'Brug terminalen lokalt eller via SSH.' },
+    { name: 'macOS', guide: 'MACOS.md', description: 'Brug Terminal eller din foretrukne terminalapp.' }];
+  return platforms.map(p => `<article class="platform"><h3>${p.name}</h3><p>${p.description}</p><a href="https://github.com/${repository}/blob/${latest ? encodeURIComponent(latest.tag_name) : 'main'}/cli/${p.guide}">Installation på ${p.name} →</a></article>`).join('\n');
 }
 async function build(releases, metadata, output = path.join(root, '.cache/pages')) {
   const fragment = render(releases, metadata);
@@ -61,12 +61,11 @@ async function build(releases, metadata, output = path.join(root, '.cache/pages'
   let html = await fs.readFile(path.join(root, 'site/dist/overview.html'), 'utf8');
   html = html.replace(/<!-- artifacts -->[\s\S]*?<!-- \/artifacts -->/, fragment);
   await fs.writeFile(path.join(output, 'index.html'), html);
-  const desktop = (await fs.readFile(path.join(root, 'site/dist/desktop.html'), 'utf8')).replace(/<!-- artifacts -->[\s\S]*?<!-- \/artifacts -->/, fragment);
-  await fs.writeFile(path.join(output, 'desktop.html'), desktop);
-  const terminal = (await fs.readFile(path.join(root, 'site/dist/terminal.html'), 'utf8'))
+  const desktop = (await fs.readFile(path.join(root, 'site/dist/desktop.html'), 'utf8'))
+    .replace(/<!-- artifacts -->[\s\S]*?<!-- \/artifacts -->/, fragment)
     .replace(/<!-- cli-artifacts -->[\s\S]*?<!-- \/cli-artifacts -->/, renderCLI(releases, metadata))
     .replace(/<!-- cli-guides -->[\s\S]*?<!-- \/cli-guides -->/, cliGuides(releases));
-  await fs.writeFile(path.join(output, 'terminal.html'), terminal);
+  await fs.writeFile(path.join(output, 'desktop.html'), desktop);
   await fs.writeFile(path.join(output, '.nojekyll'), '');
   return output;
 }

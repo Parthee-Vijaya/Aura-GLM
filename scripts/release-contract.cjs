@@ -14,7 +14,13 @@ function expectedFiles(version) {
 function assetURL(tag, name) {
   return `https://github.com/${repository}/releases/download/${encodeURIComponent(tag)}/${encodeURIComponent(name)}`;
 }
-function releaseFiles(release) {
+function matchesAssetURL(release, asset, { draft = false } = {}) {
+  if (asset.browser_download_url === assetURL(release.tag_name, asset.name)) return true;
+  const temporary = draft && release.draft === true
+    ? release.assets[0]?.browser_download_url?.match(/\/releases\/download\/(untagged-[a-f0-9]{1,64})\//)?.[1] : null;
+  return Boolean(temporary && asset.browser_download_url === assetURL(temporary, asset.name));
+}
+function releaseFiles(release, options = {}) {
   const version = release?.tag_name?.replace(/^v/, '');
   if (!versionPattern.test(version || '') || !Array.isArray(release.assets)) return [];
   const files = [], targets = new Set();
@@ -22,7 +28,7 @@ function releaseFiles(release) {
     const parsed = installer(asset.name);
     // ZIP-apps og filer fra en anden version må ikke forveksles med installationsprogrammet.
     if (!parsed || parsed.version !== version || parsed.extension === 'zip' || asset.state !== 'uploaded') continue;
-    if (asset.browser_download_url !== assetURL(release.tag_name, asset.name)) throw new Error('Downloadadressen matcher ikke repository og version.');
+    if (!matchesAssetURL(release, asset, options)) throw new Error('Downloadadressen matcher ikke repository og version.');
     if (!Number.isSafeInteger(asset.size) || asset.size <= 0 || !/^sha256:[a-f0-9]{64}$/.test(asset.digest || '')) continue;
     if (targets.has(parsed.target)) throw new Error('Flere installationsfiler til samme platform.');
     targets.add(parsed.target); files.push({ ...asset, ...parsed });
@@ -34,9 +40,9 @@ function validateRelease(release, manifest, checksums, version) {
   if (release?.draft !== true || release.tag_name !== `v${version}`) throw new Error('Udgivelsen skal være en kladde med det aftalte versionstag.');
   if (!release.prerelease || !release.body?.trim()) throw new Error('Kladdeudgivelsen mangler betamarkering eller udgivelsesnoter.');
   if (manifest?.version !== version || !Array.isArray(manifest.files) || manifest.files.length !== names.length) throw new Error('Filoversigten skal indeholde præcis de tre installationsfiler fra denne version.');
-  const assets = releaseFiles(release);
+  const assets = releaseFiles(release, { draft: true });
   const allowed = new Set([...names, 'release.json', 'SHA256SUMS.txt']);
-  if (release.assets.length !== allowed.size || new Set(release.assets.map(a => a.name)).size !== allowed.size || release.assets.some(a => !allowed.has(a.name) || a.state !== 'uploaded' || a.browser_download_url !== assetURL(release.tag_name, a.name))) throw new Error('Release må kun indeholde de tre installationsfiler, release.json og SHA256SUMS.txt.');
+  if (release.assets.length !== allowed.size || new Set(release.assets.map(a => a.name)).size !== allowed.size || release.assets.some(a => !allowed.has(a.name) || a.state !== 'uploaded' || !matchesAssetURL(release, a, { draft: true }))) throw new Error('Release må kun indeholde de tre installationsfiler, release.json og SHA256SUMS.txt.');
   for (const name of names) {
     const entries = manifest.files.filter(f => f.name === name), asset = assets.find(a => a.name === name);
     const file = entries[0];
@@ -51,4 +57,4 @@ function releaseSnapshot(release) {
   // Downloadtælleren ændres af vores egen kontrol. Sammenlign kun udgivelsens indhold.
   return JSON.stringify({ id: release.id, tag: release.tag_name, target: release.target_commitish, draft: release.draft, prerelease: release.prerelease, name: release.name, body: release.body, assets: release.assets.map(a => ({ id: a.id, name: a.name, state: a.state, size: a.size, digest: a.digest, url: a.browser_download_url })).sort((a, b) => a.name.localeCompare(b.name)) });
 }
-module.exports = { repository, versionPattern, installer, expectedFiles, assetURL, releaseFiles, validateRelease, releaseSnapshot, submissionIdPattern };
+module.exports = { repository, versionPattern, installer, expectedFiles, assetURL, matchesAssetURL, releaseFiles, validateRelease, releaseSnapshot, submissionIdPattern };

@@ -31,7 +31,7 @@ Nye værktøjer tilføjes i kataloget med regelfil, skillmapper, kontrol, forbeh
 
 ## Afprøvning
 
-Kør enhedsprøverne og browserprøven lokalt. Browserprøven bygger ud fra gemte GitHub-metadata og kontrollerer de fem sider på computer- og mobilbredde, begge brugsveje og de lokale links. Den udgiver intet. Aktuelle resultater og afgrænsning står i [gennemgangen før offentliggørelse](offentliggoerelse.md).
+Kør enhedsprøverne og browserprøven lokalt. Browserprøven bygger ud fra gemte GitHub-metadata og kontrollerer de seks indgange på computer- og mobilbredde, begge brugsveje og de lokale links. Den udgiver intet. Aktuelle resultater og afgrænsning står i [gennemgangen før offentliggørelse](offentliggoerelse.md).
 
 ```bash
 cd desktop
@@ -42,7 +42,9 @@ npm test
 
 ## Downloadside og GitHub Pages
 
-`site/dist/overview.html` er forsiden med projektets formål og de to brugsveje: eget kodeværktøj og Aura-appen. Afsnittet om arbejdsområdet og fold-ud-felterne om funktionsvalg og det lokale eksempel bygger på README’en. Skærmbillederne er fra Aura 0.2.0-beta.5 med opdigtede data; de viser ikke en live-modelkørsel. `scripts/build-pages.cjs` kopierer kun de fire navngivne billeder fra `docs/images/` til Pages-samlingens `images/`. Ret originalerne i `docs/images/`, og afprøv den samlede Pages-bygning, så billedlinks også kontrolleres. `desktop.html` er installationsvejledningen, og `index.html` er kilden til instruktionssiden `pakker.html`. Det faglige grundlag og de foreslåede kontroller ligger i [harness-grundlag.md](harness-grundlag.md) og [projektkontrol.md](projektkontrol.md); de er ikke en erklæring om implementerede funktioner.
+`site/dist/overview.html` er forsiden med projektets formål og de to brugsveje: eget kodeværktøj og Aura-appen. Afsnittet om arbejdsområdet og fold-ud-felterne om funktionsvalg og det lokale eksempel bygger på README’en. Skærmbillederne er fra Aura 0.2.0-beta.5 med opdigtede data; de viser ikke en live-modelkørsel. `scripts/build-pages.cjs` kopierer kun de fire navngivne billeder fra `docs/images/` til Pages-samlingens `images/`. Ret originalerne i `docs/images/`, og afprøv den samlede Pages-bygning, så billedlinks også kontrolleres. `desktop.html` samler downloads med to valg: **App** og **Terminal**. App viser installationsfiler til Mac og Windows; Terminal viser npm-pakken og de tre platformsguides. `terminal.html` sender gamle links til `desktop.html#terminal`. Uden JavaScript vises begge afsnit. `index.html` er kilden til instruktionssiden `pakker.html`. Det faglige grundlag og de foreslåede kontroller ligger i [harness-grundlag.md](harness-grundlag.md) og [projektkontrol.md](projektkontrol.md); de er ikke en erklæring om implementerede funktioner.
+
+Downloadkortene beskriver filen og installationen kort. Afprøvning og kendte begrænsninger findes under **Om betaen** og i udgivelsesnoterne. En platformsstatus må ikke ændres til afprøvet alene for at forkorte teksten. Downloadsiden viser kun offentliggjorte filer fra GitHub, aldrig lokale pakker eller kladder.
 
 `vaerktoejer.html` og `skills.html` genereres fra kataloget. Værktøjsoversigten viser for hvert værktøj, hvor filerne lægges, hvordan indlæsningen kontrolleres, og om placeringen er afprøvet eller følger dokumentationen. `skills.html` er FAQ'en om de skills, der følger med. [Teknisk grundlag](teknisk-grundlag.md) dokumenterer den faktiske OpenCode-arkitektur, Pi som kandidat og mulighederne for en senere webudgave. Brug den samlede Pages-bygning nedenfor, når navigationen mellem forside, værktøjsoversigt og pakker skal afprøves.
 

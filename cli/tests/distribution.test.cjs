@@ -74,10 +74,29 @@ test('Den faktiske Pages-bygning viser CLI-guides og bevarer appens tomme tilsta
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aura-cli-pages-')); t.after(() => fs.rm(dir, { recursive: true, force: true }));
   const { release } = fixture(); release.draft = false;
   await build([release], meta, dir);
-  const html = await fs.readFile(path.join(dir, 'terminal.html'), 'utf8');
+  const html = await fs.readFile(path.join(dir, 'desktop.html'), 'utf8');
   assert.match(html, /Hent terminalpakken/); assert.match(html, /LINUX.md/); assert.match(html, /MACOS.md/); assert.doesNotMatch(html, /<!-- cli-/);
   assert.equal((html.match(/class="platform"/g) || []).length, 3);
-  assert.match(await fs.readFile(path.join(dir, 'desktop.html'), 'utf8'), /endnu ingen offentliggjort/);
+  assert.match(html, /Installationsfilerne klargøres/);
+  assert.match(await fs.readFile(path.join(dir, 'terminal.html'), 'utf8'), /desktop\.html#terminal/);
   await build([], meta, dir);
-  assert.doesNotMatch(await fs.readFile(path.join(dir, 'terminal.html'), 'utf8'), /Hent terminalpakken/);
+  assert.doesNotMatch(await fs.readFile(path.join(dir, 'desktop.html'), 'utf8'), /href="[^"]+\.tgz"/);
+});
+test('Downloadsiden samler app og terminal uden at blande filtyper eller vise kladder', async t => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aura-downloads-')); t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  const { release } = fixture(); release.draft = false;
+  const desktop = { ...release, tag_name: 'v' + version, assets: ['mac-arm64.dmg', 'mac-x64.dmg', 'win-x64.exe'].map(target => {
+    const name = `Aura-${version}-${target}`;
+    return { name, state: 'uploaded', size: 1234, digest: 'sha256:' + 'c'.repeat(64), browser_download_url: assetURL('v' + version, name) };
+  }) };
+  await build([release, desktop], meta, dir);
+  const html = await fs.readFile(path.join(dir, 'desktop.html'), 'utf8');
+  assert.equal((html.match(/class="artifact"/g) || []).length, 3);
+  assert.match(html, /href="[^"]+\.tgz"/);
+  assert.doesNotMatch(html, /<!-- (cli-|artifacts)|Endnu ikke afprøvet|Intel-Mac mangler/);
+  await fs.access(path.join(dir, 'downloads.js'));
+  await build([release, { ...desktop, draft: true }], meta, dir);
+  const draft = await fs.readFile(path.join(dir, 'desktop.html'), 'utf8');
+  assert.doesNotMatch(draft, /class="artifact"/);
+  assert.match(draft, /href="[^"]+\.tgz"/);
 });
