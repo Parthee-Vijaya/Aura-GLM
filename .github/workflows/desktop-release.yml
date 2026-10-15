@@ -12,10 +12,10 @@ on:
         default: false
         required: true
       komplai_afproevet:
-        description: 'Rigtigt Komplai-login, modelkald og kreditregnskab er afprøvet; platformenes begrænsninger står i noterne'
+        description: 'Valgfrit: Komplai-login, modelkald og kreditregnskab er liveafprøvet; kontrollér også loginopsætningen'
         type: boolean
         default: false
-        required: true
+        required: false
 permissions:
   contents: read
 concurrency:
@@ -23,7 +23,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   publish:
-    if: github.ref == 'refs/heads/main' && inputs.godkend_udgivelse && inputs.komplai_afproevet
+    if: github.ref == 'refs/heads/main' && inputs.godkend_udgivelse
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -49,8 +49,11 @@ jobs:
         run: |
           gh api "repos/$GH_REPO" > "$RUNNER_TEMP/repository.json"
           node scripts/download-desktop-draft.cjs "$RELEASE_TAG" "$RUNNER_TEMP/aura-release" "$RUNNER_TEMP/release.json"
-      - name: Kontrollér alle downloads og loginopsætning
+      - name: Kontrollér alle downloads
         run: node scripts/check-release.cjs "$RUNNER_TEMP/aura-release" "$RUNNER_TEMP/release.json" "$RUNNER_TEMP/repository.json"
+      - name: Kontrollér Komplais loginopsætning efter den særskilte liveprøve
+        if: inputs.komplai_afproevet == true
+        run: node -e 'require("./scripts/check-release.cjs").checkKomplaiConfig().catch(error => { console.error(error.message); process.exitCode = 1; })'
       - name: Kontrollér kladden igen og offentliggør den
         shell: bash
         run: |

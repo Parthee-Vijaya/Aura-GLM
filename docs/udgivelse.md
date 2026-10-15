@@ -32,9 +32,9 @@ Erstat mappen med den faktiske mappe. Scriptet danner `release.json`, `SHA256SUM
 
 Afprøv download med `node scripts/verify-download.cjs release/udgivelseskandidat`. Installationsfiler, Apple-kvitteringer og lokale rapporter skal ikke committes. Udgivelsesnoterne skal beskrive faktisk signering og afprøvning samt kendte begrænsninger. For beta.6 findes en [kladde til noterne](releases/0.2.0-beta.6.md).
 
-## Komplai-prøven før beta.6 udgives
+## Særskilt prøve af Komplai
 
-Denne beta skal bruges til Komplai-login. Den må derfor ikke offentliggøres som klar til den prøve, før følgende er gennemført:
+Den generelle desktopbeta kan udgives med de øvrige AI-forbindelser, uafhængigt af Komplai. Det er godkendt af vedligeholderen 15. oktober 2026. Udgivelsesnoterne skal fortsat angive, at Komplai ikke er liveafprøvet, indtil følgende er gennemført:
 
 - Produktionsklienten til OAuth og API'et er tilgængelige.
 - En almindelig bruger har accepteret sin invitation til den valgte organisation og fået den nødvendige adgang. En mailadresse på organisationens domæne giver ikke i sig selv medlemskab.
@@ -47,8 +47,8 @@ Den hidtil aftalte automatiserede modelprøve har et loft på **10 kr.** Det er 
 
 1. Brugeren gennemgår, committer og pusher kildekoden og opretter et versionstag, fx `v0.2.0-beta.6`, på det gennemgåede commit. Tagget skal pege på samme commit som den `main`, workflowet startes fra. Ingen tag oprettes af workflowet.
 2. Opret en **kladde** i GitHub Releases med det eksisterende tag og betamarkeringen slået til. Upload præcis de tre installationsfiler, `release.json` og `SHA256SUMS.txt`. Brug de gennemgåede udgivelsesnoter. Upload ikke lokale logs, Apple-loginoplysninger, ZIP-apps eller testdata.
-3. Giv udtrykkelig tilladelse til den konkrete kørsel af **Offentliggør gennemgået desktopbeta**. Vælg `main`, angiv tagget og bekræft offentliggørelsen samt den gennemførte Komplai-prøve. Workflowet bygger ikke nye installationsfiler.
-4. Workflowet kontrollerer tag, version, offentlig adgang, kladdens indhold, størrelser, SHA-256 og Mac-kvitteringer. Det downloader og kontrollerer de faktiske installationsfiler og foretager et læsende kald til Komplais loginopsætning. Manglende eller ændrede oplysninger stopper udgivelsen. Loginopsætningens svar beviser ikke, at et modelkald virker; det er den særskilte prøve ovenfor.
+3. Giv udtrykkelig tilladelse til den konkrete kørsel af **Offentliggør gennemgået desktopbeta**. Vælg `main`, angiv tagget og bekræft offentliggørelsen. Lad `komplai_afproevet` være slået fra, indtil den særskilte Komplai-prøve er gennemført. Workflowet bygger ikke nye installationsfiler.
+4. Workflowet kontrollerer tag, version, offentlig adgang, kladdens indhold, størrelser, SHA-256 og Mac-kvitteringer. Det downloader og kontrollerer de faktiske installationsfiler. Manglende eller ændrede oplysninger stopper udgivelsen. Hvis `komplai_afproevet` er slået til, kontrolleres desuden Komplais offentlige loginopsætning; et fejlsvar stopper da udgivelsen. Konfigurationssvaret beviser ikke, at et modelkald virker; det er den særskilte prøve ovenfor.
    Kladden og dens fem filer hentes via deres GitHub-ID’er med `scripts/download-desktop-draft.cjs`. Et opslag via `releases/tags/TAG` kan give 404 for en kladde. GitHubs midlertidige `untagged-…`-adresser accepteres kun under kladdekontrollen; den offentlige side kræver adresser med det rigtige versionstag.
 5. Giv derefter særskilt tilladelse til **Udgiv downloadside** med `offentlig_udgivelse` slået til. Der er ingen automatisk Pages-kørsel efter en Release.
 6. Åbn Pages uden GitHub-login, hent hver offentlig installationsfil og kontrollér dens kontrolsum. Afprøv installation og opdatering på de maskiner, som betaen beskrives som afprøvet på. Registrér version og resultater i [teststatus](teststatus.md).

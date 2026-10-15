@@ -5,7 +5,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { expectedFiles, assetURL, validateRelease, releaseSnapshot } = require('../../scripts/release-contract.cjs');
-const { check } = require('../../scripts/check-release.cjs');
+const { check, checkKomplaiConfig } = require('../../scripts/check-release.cjs');
 const { selectDraft, validateAssetIDs } = require('../../scripts/download-desktop-draft.cjs');
 const version = '0.2.0-beta.6';
 function fixture() {
@@ -48,17 +48,21 @@ test('Desktopkladder hentes via ID og må bruge GitHubs midlertidige downloadadr
     const bad = structuredClone(f.release); mutate(bad); assert.throws(() => validateAssetIDs(bad));
   }
 });
-test('Udgivelseskontrollen læser de faktiske bytes og stopper ved manglende Komplai-login', async t => {
+test('Udgivelseskontrollen læser de faktiske bytes uden at kræve en AI-udbyder', async t => {
   const root=await fs.mkdtemp(path.join(os.tmpdir(),'aura-release-test-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));
   const f=fixture(), metadata={full_name:'ai-alliancen-org/ai-harness',private:false,visibility:'public'};
   for(const file of f.manifest.files)await fs.writeFile(path.join(root,file.name),f.content);
   await fs.writeFile(path.join(root,'release.json'),JSON.stringify(f.manifest));await fs.writeFile(path.join(root,'SHA256SUMS.txt'),f.checksums);
-  let calls=0;const unavailable=async()=>{calls++;return new Response('',{status:404});};
-  await assert.rejects(check(root,f.release,metadata,version,unavailable),/HTTP 404/);assert.equal(calls,1);
+  t.mock.method(globalThis, 'fetch', () => { throw new Error('Generel udgivelse må ikke kontakte en AI-udbyder'); });
+  assert.equal((await check(root,f.release,metadata,version)).version,version);
   await fs.writeFile(path.join(root,f.manifest.files[0].name),Buffer.alloc(f.content.length));
-  await assert.rejects(check(root,f.release,metadata,version,unavailable),/SHA-256/);assert.equal(calls,1,'Ændret fil stopper før netværket');
-  await fs.writeFile(path.join(root,f.manifest.files[0].name),f.content);
+  await assert.rejects(check(root,f.release,metadata,version),/SHA-256/);
+  await assert.rejects(check(root,f.release,{...metadata,private:true},version),/offentligt/);
+});
+test('Den særskilte Komplai-kontrol afviser manglende eller ufuldstændigt login', async () => {
+  let calls=0;const unavailable=async()=>{calls++;return new Response('',{status:404});};
+  await assert.rejects(checkKomplaiConfig(unavailable),/HTTP 404/);assert.equal(calls,1);
   const ready=async()=>Response.json({issuer:'https://auth.komplai.dk',clientId:'12345',authorizationEndpoint:'https://auth.komplai.dk/oauth/v2/authorize',tokenEndpoint:'https://auth.komplai.dk/oauth/v2/token',scopes:['openid','urn:zitadel:iam:org:project:id:123:aud']});
-  assert.equal((await check(root,f.release,metadata,version,ready)).version,version);
-  await assert.rejects(check(root,f.release,metadata,version,async()=>Response.json({issuer:'https://auth.komplai.dk',clientId:'123'})),/ufuldstændig/);
+  await assert.doesNotReject(checkKomplaiConfig(ready));
+  await assert.rejects(checkKomplaiConfig(async()=>Response.json({issuer:'https://auth.komplai.dk',clientId:'123'})),/ufuldstændig/);
 });

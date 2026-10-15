@@ -1,8 +1,18 @@
 # Teststatus før invitation
 
-Senest kontrolleret 13. oktober 2026. Afsnittene er daterede, så tidligere begrænsninger kan læses i deres sammenhæng. Dette er status for den aktuelle arbejdsmappe, ikke en erklæring om, at alle installationsfiler eller modeller er klar. Ingen commits er oprettet herfra. Godkendte tags, udgivelser og GitHub-kørsler fremgår af de enkelte afsnit.
+Senest kontrolleret 15. oktober 2026. Afsnittene er daterede, så tidligere begrænsninger kan læses i deres sammenhæng. Dette er status for den aktuelle arbejdsmappe, ikke en erklæring om, at alle installationsfiler eller modeller er klar. Ingen commits er oprettet herfra. Godkendte tags, udgivelser og GitHub-kørsler fremgår af de enkelte afsnit.
 
 [Gennemgangen før offentlig beta](offentliggoerelse.md) samler historik- og logkontrol samt de lokale prøver af README, hjemmeside og udgivelseskontrol. Den offentliggør ikke appen og ændrer ikke installationsstatus nedenfor.
+
+## Klargøring til offentlig desktopbeta · 15. oktober 2026
+
+Vedligeholderen har godkendt, at desktopbetaen udgives uafhængigt af Komplai-prøven. Kontrol af de faktiske installationsfiler, version, kontrolsummer og Mac-kvitteringer er fortsat obligatorisk. Komplai-kontrollen kan vælges til, når rigtigt login, modelkald og kreditregistrering er afprøvet; et fejlsvar stopper da udgivelsen. Udgivelsesnoterne skelner mellem den generelle beta og Komplais manglende liveprøve.
+
+De tre installationsfiler fra `current-20261013/downloads/` er genkontrolleret: SHA-256 matcher filoversigten, og hver platforms pakning matcher 67 appfiler, 28 profilfiler og de fastlåste værktøjsversioner i commit `2bebeb3`. Der er ikke ændret i appkode eller profiler efter pakningen. Den tidligere dokumenterede Mac-afprøvning gælder stadig disse filer; der er ikke udført en ny installation på Windows eller en anden Mac.
+
+26 relevante enhedstests består. Den ændrede udgivelseskontrol er også kørt mod alle tre faktiske installationsfiler med en lokal releasekontrakt: version, bytes, SHA-256 og Mac-kvitteringer består uden kald til en AI-udbyder. Ændret filindhold, privat repository og en fejl i den særskilte Komplai-kontrol afvises fortsat i testene. Dette er endnu ikke en prøve mod en GitHub-desktopkladde eller en udgivelseskørsel hos GitHub.
+
+Tagget `v0.2.0-beta.6`, upload til en releasekladde og én kørsel af hvert af de to udgivelsesworkflows er godkendt. De er endnu ikke udført. Ændringen af Komplai-kravet skal først committes og pushes af brugeren; tagget skal pege på den gennemgåede kildeversion med denne ændring.
 
 ## Fælles downloadside og genbyggede desktopfiler · 13. oktober 2026
 
