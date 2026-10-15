@@ -1,5 +1,6 @@
 const http = require('node:http');
 const { randomBytes, randomUUID } = require('node:crypto');
+const { usesResponses } = require('./connections.cjs');
 
 const IDLE_LIMIT = 120_000, TOTAL_LIMIT = 20 * 60_000;
 // Kun agentmotoren får en midlertidig adgangskode. Den rigtige modelnøgle bliver i hovedprocessen.
@@ -19,29 +20,35 @@ async function startGateway(connection, model, key, route, onFailure = () => {},
     const idle = new AbortController(); let idleTimer;
     const touch = () => { clearTimeout(idleTimer); idleTimer = setTimeout(() => idle.abort(), idleLimit); };
     try {
-      if (req.method !== 'POST' || !['/v1/chat/completions', '/v1/messages'].includes(req.url)) throw new Error('Ukendt modelhandling.');
+      const responses = usesResponses(connection);
+      const anthropic = connection.kind === 'anthropic' || connection.kind === 'zen' && /^claude-/.test(model.id);
+      if (req.method !== 'POST' || req.url !== (responses ? '/v1/responses' : anthropic ? '/v1/messages' : '/v1/chat/completions')) throw new Error('Ukendt modelhandling.');
       const chunks = []; let size = 0;
       for await (const chunk of req) { size += chunk.length; if (size > 4_000_000) throw new Error('Beskeden er for stor.'); chunks.push(chunk); }
       const body = JSON.parse(Buffer.concat(chunks).toString());
       if (body.model !== model.id) throw new Error('Modelskift kræver et nyt valg i appen.');
       delete body.models; delete body.route; delete body.plugins;
+      if (responses) {
+        body.store = false;
+        // Samtalen bor i Aura. Modellen får kun den historik, agenten faktisk sender i dette kald.
+        delete body.previous_response_id; delete body.conversation; delete body.background;
+      }
       if (connection.kind === 'openrouter') {
         if (!route?.id) throw new Error('Vælg en konkret OpenRouter-udbyder.');
         body.provider = { only: [route.id], allow_fallbacks: false };
         if (model.id.endsWith(':free')) body.provider.max_price = { prompt: 0, completion: 0, request: 0, image: 0 };
       }
-      const anthropic = req.url === '/v1/messages';
       const base = connection.kind === 'ollama' ? `${connection.baseURL}/v1` : connection.baseURL;
       const headers = { 'content-type': 'application/json' };
       if (anthropic) { headers['anthropic-version'] = '2023-06-01'; if (key) headers['x-api-key'] = key; }
-      else if (key) headers.authorization = `Bearer ${key}`;
+      else if (key) { if (connection.kind === 'azure') headers['api-key'] = key; else headers.authorization = `Bearer ${key}`; }
       if (connection.kind === 'komplai') {
         if (!model.komplai?.contract) throw new Error('Hent Komplais modeller og gennemgå datavilkårene igen.');
         headers['x-komplai-contract'] = model.komplai.contract; headers['x-request-id'] = randomUUID();
         body.stream_options = { include_usage: true };
       }
       touch();
-      const response = await fetch(`${base}${anthropic ? '/messages' : '/chat/completions'}`, { method: 'POST', headers, body: JSON.stringify(body), signal: AbortSignal.any([controller.signal, idle.signal, AbortSignal.timeout(totalLimit)]), redirect: 'error' });
+      const response = await fetch(`${base}${responses ? '/responses' : anthropic ? '/messages' : '/chat/completions'}`, { method: 'POST', headers, body: JSON.stringify(body), signal: AbortSignal.any([controller.signal, idle.signal, AbortSignal.timeout(totalLimit)]), redirect: 'error' });
       if (!response.ok) {
         let specific;
         if (connection.kind === 'komplai') {

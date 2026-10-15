@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  
+  <style>.k{fill:#0f172a}</style>
+  <text
+    x="32"
+    y="49"
+    text-anchor="middle"
+    font-family="Inter, system-ui, -apple-system, sans-serif"
+    font-size="46"
+    font-weight="700"
+    letter-spacing="-2"
+  ><tspan class="k">k</tspan><tspan fill="#0ea5e9">/</tspan></text>
+</svg>

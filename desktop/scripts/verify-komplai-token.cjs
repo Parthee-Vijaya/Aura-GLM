@@ -64,7 +64,7 @@ const helpers = require('./ui-test-helpers.cjs');
     };
     const start = async () => { await page.click('#komplai-token-start'); assert.equal(await page.locator('#komplai-token').getAttribute('type'), 'password'); };
     const check = async () => { await page.fill('#komplai-token', key); await page.click('#komplai-token-check'); await page.waitForFunction(() => !document.querySelector('#komplai-token-check').disabled); assert.equal(await page.inputValue('#komplai-token'), ''); };
-    await helpers.skipIntroduction(page); await helpers.openSetup(page); await page.click('#setup-add-provider'); await page.click('#provider-other'); await page.selectOption('#provider-kind', 'komplai');
+    await helpers.skipIntroduction(page); await helpers.openSetup(page); await page.click('#setup-add-provider'); await page.click('#provider-cards [data-kind="komplai"]');
     await screen('01-loginvalg'); await start(); await screen('02-token');
     for (const [mode, message] of [['invalid', 'API-token'], ['missing', 'API-opdateringen'], ['readonly', 'coding:complete']]) {
       phase = mode; await check(); assert.match(await page.locator('#komplai-feedback').innerText(), new RegExp(message)); assert.equal((await state()).connections.length, 0);

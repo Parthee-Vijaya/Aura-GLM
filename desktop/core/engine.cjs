@@ -64,7 +64,11 @@ async function writeSkills(directory, skills) {
       if (!SKILL_FILE.test(file.path) || typeof file.content !== 'string') throw new Error(`Skillen ${skill.name} indeholder en ugyldig fil.`);
       const target = path.join(root, skill.name, file.path);
       await fs.mkdir(path.dirname(target), { recursive: true, mode: 0o700 });
-      await fs.writeFile(target, file.content, { mode: 0o600 });
+      const references = skill.files.filter(item => item.path.startsWith('references/'));
+      const content = file.path === 'SKILL.md' && references.length
+        ? file.content + '\n\n## Referencefiler i denne kørsel\n\nLæs referencer med read-værktøjet og disse præcise filstier. De er en del af denne skill, ikke projektets private references-mappe.\n' + references.map(item => `- ${JSON.stringify(path.join(root, skill.name, item.path))}`).join('\n') + '\n'
+        : file.content;
+      await fs.writeFile(target, content, { mode: 0o600 });
     }
   }
 }
@@ -102,6 +106,7 @@ class OpenCodeEngine {
   async start() {
     const executable = await findExecutable();
     await fs.mkdir(this.directory, { recursive: true, mode: 0o700 });
+    this.directory = await fs.realpath(this.directory);
     await writeSkills(this.directory, this.skills);
     const password = randomBytes(32).toString('hex');
     this.auth = `Basic ${Buffer.from(`harness:${password}`).toString('base64')}`;

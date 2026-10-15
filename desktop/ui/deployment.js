@@ -1,5 +1,6 @@
 (() => {
   const $ = s => document.querySelector(s), view = window.ShareView;
+  let guides = [];
   let review = null, last = null, focus = null;
   const api = async (method, input) => { const r = await window.harness[method](input); if (!r.ok) throw Error(r.error); return r.value; };
   function rows(id, values) {
@@ -22,7 +23,30 @@
   }
   function invalidate() { review = null; $('#deployment-review').hidden = true; $('#deployment-ack').checked = false; $('#deployment-send').disabled = true; }
   function showForm() { invalidate(); $('#deployment-form').hidden = false; $('#deployment-result').hidden = true; focus = $('#deploy-project'); }
+  function showGuide(selector, id) {
+    const option = guides.find(item => item.id === id), target = $(selector); target.replaceChildren();
+    if (!option) return;
+    const text = (tag, value) => { const el = document.createElement(tag); el.textContent = value; return el; };
+    target.append(text('p', option.summary));
+    const detail = document.createElement('details'); detail.append(text('summary', 'Opsætning, data og aftaler'), text('p', option.scope));
+    const steps = document.createElement('ol'); steps.append(...option.steps.map(step => text('li', step))); detail.append(steps, text('p', option.data));
+    detail.append(text('p', 'Priser og eventuelle gratis kvoter følger din konto. Kontrollér vilkårene hos udbyderen.'));
+    for (const kind of Object.keys(option.links)) {
+      const button = text('button', { guide: 'Åbn udbyderens vejledning', data: 'Se aftaler og databehandling', region: 'Se regioner' }[kind]); button.type = 'button'; button.className = 'text-button';
+      button.onclick = () => api('deploymentGuideOpen', { id, kind }).catch(error => { $('#deployment-feedback').textContent = error.message; }); detail.append(button);
+    }
+    detail.append(text('small', 'Kilder gennemgået ' + new Date(option.checkedAt + 'T12:00:00Z').toLocaleDateString('da-DK') + '. Jeres konto og aftale er ikke kontrolleret.'));
+    target.append(detail);
+    if (!option.integrated) target.prepend(text('p', 'Udgives hos udbyderen. Aura uploader ikke herfra.'));
+  }
+  async function loadGuides() {
+    guides = await api('deploymentGuides');
+    $('#hosting-guide-choice').replaceChildren(...guides.filter(item => !item.integrated).map(item => new Option(item.name, item.id)));
+    showGuide('#hosting-guide-current', $('#deploy-provider').value); showGuide('#hosting-guide-other', $('#hosting-guide-choice').value);
+  }
+  $('#hosting-guide-choice').onchange = () => showGuide('#hosting-guide-other', $('#hosting-guide-choice').value);
   function modes() {
+    showGuide('#hosting-guide-current', $('#deploy-provider').value);
     const azure = $('#deploy-provider').value === 'azure'; $('#deploy-scope').required = !azure; $('#deploy-subscription').required = azure; $('#deploy-group').required = azure; $('#deploy-azure').hidden = !azure; $('#deploy-vercel').hidden = azure;
     for (const option of $('#deploy-mode').options) option.disabled = azure ? option.value === 'source' : option.value === 'functions';
     if ($('#deploy-mode').selectedOptions[0].disabled) $('#deploy-mode').value = 'static';
@@ -45,14 +69,14 @@
   $('#deploy-button').onclick = () => {
     $('#deployment-dialog').showModal(); invalidate(); $('#deployment-technical').open = false; $('#deployment-receipt-details').open = false;
     busy(async () => {
-      const s = await api('deploymentState');
+      const s = await api('deploymentState'); await loadGuides(); $('#hosting-other').open = false;
       if (s.config) for (const key of ['provider', 'project', 'scope', 'subscription', 'group', 'mode', 'directory', 'frontend', 'api']) $('#deploy-' + key).value = s.config[key] || '';
       else { $('#deployment-form').reset(); $('#deploy-provider').value = s.preference === 'azure' ? 'azure' : 'vercel'; }
       $('#deployment-scope').textContent = view.scope(s.context); modes(); last = null; showForm(); receipt(s.last);
       $('#deployment-feedback').textContent = s.last ? 'Seneste upload er hentet. En ny udgivelse kræver en ny gennemgang.' : 'Vælg destination, og gennemgå den gemte version før upload.';
     });
   };
-  $('#deployment-form').addEventListener('input', () => { invalidate(); modes(); });
+  $('#deployment-form').addEventListener('input', event => { if (event.target.id === 'hosting-guide-choice') return; invalidate(); modes(); });
   $('#deployment-form').onsubmit = e => {
     e.preventDefault(); invalidate(); busy(async () => {
       const r = await api('deploymentReview', input()); review = r.token;

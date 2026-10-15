@@ -80,19 +80,22 @@ form > section.panel { margin-bottom: 24px; }
 .create-footer { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 28px; }
 .create-footer p { margin: 0; font-size: 12px; color: var(--muted); }
 .section-title { display: flex; align-items: center; gap: 12px; }
-#workspace { height: calc(100vh - 48px); display: flex; flex-direction: column; background: #fff; }
+#workspace { height: 100dvh; display: flex; flex-direction: column; background: #fff; overflow: clip; }
 .app-content:has(#workspace:not([hidden])) > header { display: none; }
-#workspace { height: 100vh; }
+/* Arbejdsområdet har faste vinduesgrænser. Kun de indre paneler ruller.
+   Opstartens formularer og dialoger beholder deres egen rulning. */
+html:has(#workspace:not([hidden])), body:has(#workspace:not([hidden])) { height: 100%; overflow: clip; overscroll-behavior: none; }
+.app-content:has(#workspace:not([hidden])) { height: 100dvh; overflow: clip; }
 .workspace-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px; padding: 12px 22px; border-bottom: 1px solid var(--line); }
 .workspace-bar h1 { font-size: 16px; letter-spacing: -.015em; margin: 0; overflow-wrap: anywhere; }
 .workspace-storage { margin: 5px 0 0; font-size: 11px; }
 .actions { display: flex; flex-shrink: 0; gap: 8px; }
 .actions button { font-size: 12px; }
-.work-grid { display: grid; grid-template-columns: var(--chat-width, 420px) 7px minmax(0, 1fr); flex: 1; min-height: 0; }
-.chat { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.work-grid { display: grid; grid-template-columns: var(--chat-width, 420px) 7px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); flex: 1; min-height: 0; overflow: clip; }
+.chat { display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: clip; }
 .chat .section-title { padding: 10px 20px; min-height: 46px; border-bottom: 1px solid var(--line); justify-content: space-between; }
 .chat .section-title h2 { font-size: 12px; margin: 0; }
-.chat-content { padding: 26px 22px; overflow: auto; flex: 1; min-height: 80px; font-size: 13px; line-height: 1.75; }
+.chat-content { padding: 26px 22px; overflow: auto; overscroll-behavior: contain; flex: 1; min-height: 0; font-size: 13px; line-height: 1.75; }
 .chat-message { white-space: pre-wrap; overflow-wrap: anywhere; margin: 18px 0; font-size: 13px; line-height: 1.75; }
 .chat-message.user { background: #f0f4fa; border-radius: 12px; padding: 14px 16px; margin-left: 20px; }
 .chat-message.assistant { padding-right: 8px; }
@@ -485,7 +488,7 @@ body.sidebar-overlay .sidebar { width: 216px; z-index: 30; box-shadow: 0 12px 40
 .panel-bar select { width: auto; flex: 1 1 180px; min-width: 0; max-width: 100%; padding: 5px 8px; font-size: 12px; }
 .panel-label { margin: 0; font-size: 12px; color: var(--muted); }
 .panel-status { color: var(--muted); font-size: 12px; }
-.panel-scroll { flex: 1; min-height: 0; overflow: auto; padding: 18px 20px 28px; }
+.panel-scroll { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 18px 20px 28px; }
 .panel-empty { max-width: 420px; margin: 8vh auto 0; text-align: center; color: var(--muted); font-size: 13px; line-height: 1.7; }
 .panel-empty h2 { color: var(--ink); font-size: 17px; margin-bottom: 8px; }
 .panel-notice { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0 0 14px; padding: 8px 12px; border-radius: 8px; background: var(--tint); color: #214f91; font-size: 12px; }
@@ -863,3 +866,46 @@ kbd { font: 600 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
 @media (max-width: 650px) { .share-summary { grid-template-columns: minmax(0, 1fr); gap: 5px; } .share-summary dd { margin-bottom: 14px; } }
 
 #hosting-review-title, #deployment-review-title, #deployment-result-title { scroll-margin-block-start: 90px; }
+
+/* Forbindelsesoversigten viser højst fire rækker ad gangen. */
+#connections-search { margin-bottom: 14px; }
+.connection-pages { display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 14px; }
+.connection-pages span { font-size: 12px; color: var(--muted); }
+.saved-connection span { min-width: 0; gap: 3px; overflow-wrap: anywhere; }
+.saved-connection .connection-error { color: #a33025; }
+#connections-setup { display: block; margin: 12px auto 0; }
+#azure-fields { margin-top: 16px; }
+
+/* Alle udbydere har samme plads. Formularen vises på det næste trin. */
+#setup-provider[data-view="choose"] { max-width: 900px; }
+#setup-provider[data-view="details"] { max-width: 520px; }
+.provider-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.provider-card { display: grid; grid-template-columns: 28px 1fr; align-content: center; align-items: center; gap: 6px 14px; min-height: 104px; padding: 18px; }
+.provider-card img { grid-row: 1 / 3; object-fit: contain; }
+.provider-card strong { font-size: 17px; }
+.provider-card span { font-size: 12px; }
+.optional-color { display: flex; align-items: center; gap: 8px; }
+.optional-color input { width: auto; }
+@media (max-width: 700px) { .provider-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.color-value { white-space: nowrap; }
+.color-swatch { display: inline-block; vertical-align: -.12em; width: .9em; height: .9em; margin-right: .3em; border: 1px solid #9ba6b6; border-radius: 2px; background: repeating-conic-gradient(#eee 0% 25%, white 0% 50%) 0/6px 6px; position: relative; overflow: hidden; }
+.color-swatch::after { content: ''; position: absolute; inset: 0; background: var(--swatch-color); }
+.chat-latest { align-self: center; flex-shrink: 0; margin: 2px 0; font-size: 12px; }
+.activity-spinner { flex: 0 0 12px; width: 12px; height: 12px; border: 2px solid #bdd1ed; border-top-color: #0052cc; border-radius: 50%; animation: activity-spin .9s linear infinite; }
+#agent-progress { flex-basis: 100%; padding-left: 20px; font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.agent-activity.is-waiting .activity-spinner, .agent-activity.is-quiet .activity-spinner { animation: none; border-color: currentColor; opacity: .6; }
+@keyframes activity-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .activity-spinner { animation: none; } }
+
+[data-connection-status], [data-provider-status] { display: block; }
+[data-connection-status]::before, [data-provider-status]::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #7b8493; margin-right: 6px; vertical-align: middle; }
+[data-state="connected"]::before { background: #16704b; }
+[data-state="error"]::before { background: #b23c37; }
+[data-provider-status] { font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+.hosting-guide { font-size: 13px; margin: 10px 0 18px; color: var(--muted); }
+.hosting-guide p { margin: 8px 0; }
+.hosting-guide small { display: block; }
+.hosting-guide li { margin-bottom: 8px; }
+#hosting-other { margin-bottom: 20px; }

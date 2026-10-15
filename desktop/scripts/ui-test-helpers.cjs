@@ -1,5 +1,7 @@
 async function skipIntroduction(page) {
   page.setDefaultTimeout(20000);
+  // firstWindow kan returnere, før Electron har indlæst appens dokument.
+  await page.locator('#create').waitFor({ state: 'attached' });
   await page.waitForFunction(() => !document.querySelector('#create').disabled && !document.querySelector('#new').disabled);
   if (await page.locator('#welcome-dialog').evaluate(el => el.open)) await page.click('#welcome-skip');
 }
@@ -62,11 +64,10 @@ async function openSetup(page) {
   await page.waitForFunction(() => { const dialog = document.querySelector('#connections-dialog'); return dialog.open && !dialog.getAnimations().some(animation => animation.playState === 'running'); });
   await page.click('#connection-add'); await page.waitForSelector('#setup:not([hidden])');
 }
-// En forbindelse tilføjes ad samme vej som en bruger: Tilføj forbindelse › Jeg har en adgangsnøgle › Vælg en anden.
+// En forbindelse tilføjes ad samme vej som en bruger: Tilføj forbindelse › Jeg har en adgangsnøgle › udbyderens kort.
 // Svarer serveren med modeller, fortsætter prøven med forbindelsen; ellers vælger den senere.
 async function addConnection(page, { kind = 'compatible', name, baseURL, apiKey } = {}) {
-  await openSetup(page); await page.click('#setup-add-provider'); await page.click('#provider-other');
-  await page.selectOption('#provider-kind', kind);
+  await openSetup(page); await page.click('#setup-add-provider'); await page.click(`#provider-cards [data-kind="${kind}"]`);
   if ((name !== undefined || baseURL !== undefined) && !await page.locator('#connection-advanced').evaluate(el => el.open)) await page.click('#connection-advanced > summary');
   if (name !== undefined) await page.fill('#connection-name', name);
   if (baseURL !== undefined) await page.fill('#base-url', baseURL);

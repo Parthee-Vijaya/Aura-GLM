@@ -1,5 +1,13 @@
 const { randomUUID, createHash } = require('node:crypto');
 const definitions = {
+  openai: { name: 'OpenAI API', provider: 'OpenAI', baseURL: 'https://api.openai.com/v1', protocol: 'responses', keyRequired: true, source: 'https://developers.openai.com/api/docs/guides/your-data', checkedAt: '2026-10-15',
+    training: 'API-data bruges ikke til træning som standard. Et aktivt tilvalg hos OpenAI kan ændre dette.', trainingShort: 'Bruges ikke til træning som standard',
+    region: 'Ikke fastlagt. Aura bruger OpenAIs globale API-adresse; den dokumenterer ikke behandling i EU.', regionShort: 'Global API-adresse, region ikke fastlagt',
+    retention: 'Aura slår lagring af Responses-svar fra. OpenAI kan som standard gemme indhold i misbrugslogs i op til 30 dage. Særlige aftaler kan ændre dette.', retentionShort: 'Misbrugslogs i op til 30 dage som standard' },
+  azure: { name: 'Azure OpenAI / Microsoft Foundry', provider: 'Microsoft Azure', baseURL: '', protocol: 'responses', keyRequired: true, source: 'https://learn.microsoft.com/en-us/azure/foundry/responsible-ai/openai/data-privacy', checkedAt: '2026-10-15',
+    training: 'Microsoft oplyser, at prompts og svar ikke bruges til at træne grundmodeller uden tilladelse eller instruktion.', trainingShort: 'Grundmodeller trænes ikke uden tilladelse',
+    region: 'Afhænger af jeres deployment. Global kan behandle data på tværs af geografier, DataZone inden for sin zone. Serveradressen alene dokumenterer ikke regionen.', regionShort: 'Afhænger af jeres Azure-deployment',
+    retention: 'Afhænger af jeres aftale og misbrugsovervågning. Aura slår lagring af Responses-svar fra; det slår ikke Microsofts misbrugsovervågning fra.', retentionShort: 'Afhænger af aftale og misbrugsovervågning' },
   komplai: { name: 'Komplai', provider: 'Komplai', baseURL: 'https://api.komplai.dk/v1/aura/v1', protocol: 'openai', keyRequired: true, source: 'https://app.komplai.dk', training: 'Organisationens gældende vilkår hentes fra Komplai.' },
   // Vilkår for de tre udbydere i opsætningen er kontrolleret hos udbyderne 29. september 2026. De korte tekster vises i resuméet før afsendelse.
   corti: { name: 'Corti S1 · EU', provider: 'Corti', baseURL: 'https://ai.eu.corti.app/v1', protocol: 'openai', keyRequired: true, source: 'https://docs.corti.ai/models/regions', checkedAt: '2026-09-29',
@@ -20,7 +28,7 @@ const definitions = {
     training: 'Afhænger af modellen. Flere af Zens gratis modeller kan bruge dine data til at forbedre eller træne modeller.', region: 'USA. Zen oplyser, at alle modeller hostes i USA.', regionShort: 'USA',
     retention: 'Afhænger af modellen. Zen oplyser nul opbevaring for de fleste modeller og 30 dage for OpenAI og Anthropic.' },
   ollama: { name: 'Ollama', baseURL: 'http://127.0.0.1:11434', protocol: 'openai', keyRequired: false, source: 'https://docs.ollama.com/api/introduction', training: 'Afhænger af den valgte lokale modelserver og eventuel cloud-videresendelse.' },
-  compatible: { name: 'Egen server / DGX Spark', baseURL: '', protocol: 'openai', keyRequired: false, source: '', training: 'Ukendt. Kontroller serverens konfiguration og eventuel videresendelse.' }
+  compatible: { name: 'Egen server', baseURL: '', protocol: 'openai', keyRequired: false, source: '', training: 'Ukendt. Kontroller serverens konfiguration og eventuel videresendelse.' }
 };
 // Zens gratis modeller har forskellige vilkår. Kontrolleret på opencode.ai/docs/zen 29. september 2026.
 const zenTerms = [
@@ -75,14 +83,26 @@ function cortiEndpoint(key) {
 function normalize(input) {
   if (!input || !definitions[input.kind]) throw new Error('Vælg en understøttet forbindelsestype.');
   const def = definitions[input.kind];
-  const baseURL = endpoint(['compatible', 'ollama'].includes(input.kind) ? input.baseURL : input.kind === 'corti' && input.apiKey ? cortiEndpoint(input.apiKey) : def.baseURL);
+  const baseURL = input.kind === 'azure' ? azureEndpoint(input.baseURL) : endpoint(['compatible', 'ollama'].includes(input.kind) ? input.baseURL : input.kind === 'corti' && input.apiKey ? cortiEndpoint(input.apiKey) : def.baseURL);
   if (typeof input.name !== 'string' || !input.name.trim() || input.name.length > 100) throw new Error('Angiv et forbindelsesnavn på højst 100 tegn.');
   if (input.apiKey && (typeof input.apiKey !== 'string' || input.apiKey.length > 4096 || /[\r\n]/.test(input.apiKey))) throw new Error('API-nøglen er ugyldig.');
-  return { id: input.id || randomUUID(), name: input.name.trim(), kind: input.kind, baseURL };
+  const extra = {};
+  if (input.kind === 'azure') {
+    if (typeof input.deployment !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$/.test(input.deployment.trim())) throw new Error('Angiv deployment-navnet fra Azure. Brug bogstaver, tal, punktum, bindestreg eller understregning.');
+    if (input.protocol && !['responses', 'openai'].includes(input.protocol)) throw new Error('Vælg Responses eller Chat Completions.');
+    extra.deployment = input.deployment.trim(); extra.protocol = input.protocol || 'responses';
+  }
+  return { id: input.id || randomUUID(), name: input.name.trim(), kind: input.kind, baseURL, ...extra };
 }
+function azureEndpoint(value) {
+  const url = new URL(endpoint(value));
+  if (url.protocol !== 'https:' || url.port || !/^[a-z0-9-]+\.(openai\.azure\.com|services\.ai\.azure\.com)$/.test(url.hostname) || !['/', '/openai/v1'].includes(url.pathname)) throw new Error('Brug ressourcens HTTPS-adresse fra Azure OpenAI eller Foundry, fx https://mit-projekt.openai.azure.com.');
+  return `${url.origin}/openai/v1`;
+}
+function usesResponses(connection) { return (connection.protocol || definitions[connection.kind]?.protocol) === 'responses'; }
 async function requestJSON(url, { key = '', kind, method = 'GET', body, signal } = {}) {
   const headers = { accept: 'application/json' };
-  if (key) Object.assign(headers, kind === 'anthropic' ? { 'x-api-key': key, 'anthropic-version': '2023-06-01' } : { Authorization: `Bearer ${key}` });
+  if (key) Object.assign(headers, kind === 'anthropic' ? { 'x-api-key': key, 'anthropic-version': '2023-06-01' } : kind === 'azure' ? { 'api-key': key } : { Authorization: `Bearer ${key}` });
   if (body) headers['content-type'] = 'application/json';
   let response;
   try { response = await fetch(url, { method, headers, body: body && JSON.stringify(body), signal: signal || AbortSignal.timeout(15000), redirect: 'error' }); }
@@ -105,7 +125,9 @@ async function listModels(connection, key) {
   const response = await requestJSON(`${connection.baseURL}${ollama ? '/api/tags' : '/models'}`, { key, kind: connection.kind });
   const models = response[ollama ? 'models' : 'data'];
   if (!Array.isArray(models)) throw new Error('Serveren returnerede ingen læsbar modelliste.');
-  return models.slice(0, 5000).filter(model => model && model.capabilities?.completion_chat !== false && !(connection.kind === 'corti' && /embedding/.test(model.id))).map(model => ({
+  // Azures katalog beskriver modeller, ikke kundens deployment-navne. Vi sender kun til navnet, brugeren har angivet.
+  if (connection.kind === 'azure') return [{ id: connection.deployment, name: connection.deployment, price: null, capabilities: { tools: null }, configuredDeployment: true }];
+  return models.slice(0, 5000).filter(model => model && model.capabilities?.completion_chat !== false && !(connection.kind === 'corti' && /embedding/.test(model.id)) && (connection.kind !== 'openai' || /^(gpt-|chatgpt-|codex-|o\d)/.test(model.id) && !/audio|realtime|transcribe|image|tts|search|deep-research/.test(model.id))).map(model => ({
     id: ollama ? model.name : model.id, name: model.name || model.display_name || model.id,
     ...(connection.kind === 'komplai' ? { komplai: response.account, reasoningEfforts: model.reasoning_efforts || [] } : {}),
     price: model.pricing || null, capabilities: { tools: model.capabilities?.function_calling ?? model.supported_parameters?.includes('tools') ?? null },
@@ -128,7 +150,7 @@ function disclosure(connection, model, route = null) {
   const known = knownPrice(connection.kind, model.id);
   const zen = connection.kind === 'zen' ? zenTerms.find(([pattern]) => pattern.test(model.id)) : null;
   const data = {
-    connection: connection.name, model: model.id, endpoint: connection.baseURL,
+    connection: connection.name, model: model.id, endpoint: connection.baseURL, protocol: connection.protocol || def.protocol,
     recipients: connection.kind === 'openrouter' ? `OpenRouter → ${route?.name || 'Ukendt modeludbyder'}` : `${def.name} · ${url.hostname}`,
     region: site.region || def.region || (loopback ? 'Forbindelsen går til denne computer. Selve modellens behandlingssted er endnu ikke verificeret.' : 'Ukendt; serveradressen dokumenterer ikke behandlingsstedet.'),
     retention: def.retention || 'Ikke verificeret for denne forbindelse. Konto-, model- og servervilkår kan variere.',
@@ -175,8 +197,8 @@ function modelLimits(connection, model) {
 function engineProvider(connection, model, gatewayURL, token) {
   const anthropic = connection.kind === 'anthropic' || (connection.kind === 'zen' && /^claude-/.test(model.id));
   // Mistral sender både tekst og strukturerede tænkeafsnit. Dets adapter bevarer disse gennem streaming og værktøjssvar.
-  return { npm: anthropic ? '@ai-sdk/anthropic' : connection.kind === 'mistral' ? '@ai-sdk/mistral' : '@ai-sdk/openai-compatible', name: connection.name,
+  return { npm: anthropic ? '@ai-sdk/anthropic' : connection.kind === 'mistral' ? '@ai-sdk/mistral' : usesResponses(connection) ? '@ai-sdk/openai' : '@ai-sdk/openai-compatible', name: connection.name,
     options: { baseURL: gatewayURL, apiKey: token },
-    models: { [model.id]: { name: model.name, tool_call: true, limit: modelLimits(connection, model) } } };
+    models: { [model.id]: { name: model.name, tool_call: true, limit: modelLimits(connection, model), ...(usesResponses(connection) ? { options: { store: false, include: ['reasoning.encrypted_content'] } } : {}) } } };
 }
-module.exports = { definitions, endpoint, normalize, requestJSON, listModels, routes, disclosure, engineProvider, modelLimits, priceFor };
+module.exports = { definitions, endpoint, normalize, requestJSON, listModels, routes, disclosure, engineProvider, modelLimits, priceFor, usesResponses };

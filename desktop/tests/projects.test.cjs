@@ -74,3 +74,28 @@ test('en ny projekts startside vises ikke, før den er ændret, men eksisterende
   delete olderManifest.starter; await fs.writeFile(path.join(older.root, 'harness.json'), JSON.stringify(olderManifest));
   assert.equal((await openProject(older.root)).staticPreview, true);
 });
+
+test('en ny startside indeholder ingen valgt brandfarve eller Georgia', async t => {
+  const parent = await temporary(t), { designContext } = require('../core/projects.cjs');
+  const project = await createProject(parent, { ...input, color: null }, [], profiles);
+  const opened = await openProject(project.root);
+  assert.equal(opened.designChoices.color, null);
+  assert.equal(designContext(opened).primaryColor, null);
+  assert.match(designContext(opened).startingPoint, /pladsholder/);
+  assert.doesNotMatch(await fs.readFile(path.join(project.root, 'public/styles.css'), 'utf8'), /326556|Georgia|--brand/i);
+  const chosen = await createProject(parent, { ...input, color: '#ff0088' }, [], profiles);
+  assert.equal(designContext(await openProject(chosen.root)).primaryColor, '#ff0088');
+  const manifest = JSON.parse(await fs.readFile(path.join(chosen.root, 'harness.json'), 'utf8'));
+  delete manifest.designChoices;
+  await fs.writeFile(path.join(chosen.root, 'harness.json'), JSON.stringify(manifest));
+  assert.equal(designContext(await openProject(chosen.root)).primaryColor, null, 'en ældre automatisk farve bliver ikke bekræftet');
+});
+
+test('mappeadgang kontrolleres ved åbning og kan prøves igen uden filændringer', { skip: process.platform === 'win32' }, async t => {
+  const parent = await temporary(t), folder = path.join(parent, 'Lukket mappe'); await fs.mkdir(folder);
+  await fs.chmod(folder, 0);
+  try { await assert.rejects(openProject(folder), /Tillad mappeadgang/); }
+  finally { await fs.chmod(folder, 0o700); }
+  assert.equal((await openProject(folder)).root, await fs.realpath(folder));
+  assert.deepEqual(await fs.readdir(folder), []);
+});

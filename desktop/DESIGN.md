@@ -8,13 +8,13 @@ Aura skal kunne bruges af en person uden teknisk baggrund, som klikker sig igenn
 
 - **Ét spørgsmål pr. skærm.** Overskriften er spørgsmålet, fx "Hvilket kodeværktøj bruger du?".
 - **Få, store valg.** Ét eller to hovedvalg, højst tre til fire synlige. Når vi anbefaler et valg, står det først og er markeret som anbefalet. Spørger vi om noget, brugeren allerede har, fx sit kodeværktøj, vises de mest udbredte først.
-- **Resten bag ét link.** Fx "Bruger du en anden udbyder? Vælg en anden" eller "Et andet værktøj". Lange lister får søgning.
+- **Resten bag ét link.** Fx "Et andet værktøj". Lange lister får søgning. Udbyderoversigten har sin egen undtagelse nedenfor.
 - **Et klik fører videre,** når valget er entydigt. Der skal ikke også trykkes Næste.
 - **Resumé først, detaljer bagefter.** Sig i almindeligt dansk, hvad der sker. Filstier, modelnavne med versionsnumre, priser pr. token og konfiguration ligger bag "Se detaljer".
 - **Knappen siger, hvad der sker.** Skriv "Installer resten" frem for et afkrydsningsfelt og en generel knap.
 - **Én næste handling.** Når noget er færdigt, vises det vigtigste næste skridt; andre handlinger er sekundære.
 
-Eksempler i appen: AI-adgang har to store valg. Udbyder har tre ligestillede kort, Claude, Mistral og Corti, med faktuelle oplysninger og "En anden udbyder"; appen anbefaler aldrig en udbyder eller model. Modellen er udbyderens eget udgangspunkt, valgt på forhånd; modelknappen viser det, to alternativer og "Alle modeller". En filgodkendelse har tre knapper, hvor Tillad for denne opgave er den primære. Funktioner ved første start har to kort, Hele pakken (anbefalet) og Vælg selv. Kodeværktøj har fire kort og "Et andet værktøj".
+Eksempler i appen: AI-adgang har to store valg. Udbyderoversigten er en udtrykkeligt valgt undtagelse fra grænsen på fire valg: alle ti udbydere har lige store kort med et lille logo og forbindelsesstatus. Ingen udbyder eller model anbefales. Kun det valgte kort åbner en formular. Modellen er udbyderens eget udgangspunkt, valgt på forhånd; modelknappen viser det, to alternativer og "Alle modeller". En filgodkendelse har tre knapper, hvor Tillad for denne opgave er den primære. Funktioner ved første start har to kort, Hele pakken (anbefalet) og Vælg selv. Kodeværktøj har fire kort og "Et andet værktøj".
 
 Tæl de synlige valg, før en skærm kaldes færdig, og gennemfør forløbet i appen.
 
@@ -133,3 +133,10 @@ Delingsdialoger viser én fase ad gangen: destination, gennemgang og resultat. R
 Et uploadresultat er knyttet til den gennemgåede version og destination. Udbyderens status, HTTP-svar uden login, filmatch og testpersonens adgang må ikke blandes sammen. En mislykket frisk kontrol erstatter gammel evidens. Ved ukendt upload er udbyderens oversigt vejen videre; ingen automatisk gentagelse. GitHub viser kode og historik, ikke et link til en udgivet app. Uflettede kopier står synligt som udeladt fra delingen.
 
 Dialogerne kan rulle ved større tekst; gennemgang og resultat får synligt tastaturfokus, og Escape returnerer til åbneren. Skærmbilleder ved Electron-zoom tages med vinduets capturePage. Forståeligheden afgøres ved observation med en testperson efter docs/testforloeb.md; automatiske prøver tæller som separat teknisk evidens.
+
+## Forbindelser og hosting
+
+- Gemte AI-forbindelser vises fire ad gangen med søgning. Navn og udbyder står hver for sig. Status siger, hvornår kataloget senest svarede; ukontrollerede forbindelser får ingen grøn markering.
+- Efter tilslutning er Fortsæt hovedhandlingen. Tilføj en AI mere er et frivilligt valg. Gentagen opsætning må ikke slette kladder, projekt eller andre forbindelser.
+- Hostingens korte tekst beskriver leverandør og dataplacering. Opsætning, databehandleraftale, sikkerhed og kilde ligger i en fold. Ingen generel grøn GDPR-markering. En vejledning må ikke ligne en færdig uploadintegration.
+- Chatstatus viser faktisk aktivitet fra opstarten, også inden første svar. Tegn og tokens holdes adskilt. Ingen opdigtet procent eller tokenhastighed. Automatisk rulning stopper, når brugeren ruller op, og Seneste svar fører tilbage.

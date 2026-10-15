@@ -19,7 +19,7 @@ async function login(app, kind) {
   }
   if (kind === 'key') {
     kind = await ui.choose('Vælg udbyder', [{ label: 'Claude', value: 'anthropic' }, { label: 'Mistral', value: 'mistral' }, { label: 'Corti', value: 'corti' }, { label: 'Vælg en anden', value: 'other' }]);
-    if (kind === 'other') kind = await ui.choose('Vælg en anden udbyder', ['openrouter', 'zen', 'compatible', 'komplai'].map(value => ({ value, label: definitions[value].name })));
+    if (kind === 'other') kind = await ui.choose('Vælg en anden udbyder', ['openai', 'azure', 'openrouter', 'zen', 'compatible', 'komplai'].map(value => ({ value, label: definitions[value].name })));
     if (!kind) return null;
   }
   if (!Object.hasOwn(definitions, kind)) throw new Error('Ukendt udbyder. Brug aura login uden udbydernavn.');
@@ -61,13 +61,19 @@ async function login(app, kind) {
     const discovery = await discoverLocalModels();
     ui.line(discovery.models.length ? `${discovery.models.length} modeller fundet i Ollama på denne computer.` : 'Ingen kørende modeller fundet på Ollamas standardadresse. Du kan angive en anden adresse.');
   }
-  if (['compatible', 'ollama'].includes(kind)) baseURL = (await ui.ask('Serveradresse', { fallback: baseURL, required: true })).trim();
+  if (['compatible', 'ollama', 'azure'].includes(kind)) baseURL = (await ui.ask('Serveradresse', { fallback: baseURL, required: true })).trim();
+  const extra = {};
+  if (kind === 'azure') {
+    extra.deployment = await ui.ask('Deployment-navn fra Azure', { required: true });
+    extra.protocol = await ui.choose('Hvilket API bruger deploymentet?', [{ value: 'responses', label: 'Responses' }, { value: 'openai', label: 'Chat Completions' }]);
+    if (!extra.protocol) return null;
+  }
   const name = await ui.ask('Forbindelsens navn', { fallback: definition.name });
   const apiKey = await ui.ask(definition.keyRequired ? 'API-nøgle' : 'API-nøgle (tom ved ingen)', { secret: true, required: definition.keyRequired });
   ui.protect(apiKey);
   if (apiKey) await vault.unlock(ui);
   const before = new Set((await bench.store.read()).connections.map(c => c.id));
-  const state = await bench.saveConnection({ kind, name, baseURL, apiKey });
+  const state = await bench.saveConnection({ kind, name, baseURL, apiKey, ...extra });
   const connection = state.connections.find(c => !before.has(c.id));
   ui.line('Forbindelsen er gemt. Henter modellisten; ingen beskeder eller projektfiler sendes.');
   const models = await bench.models(connection.id);

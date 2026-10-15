@@ -17,6 +17,31 @@ const {run}=require('../core/git.cjs');
   await app.evaluate(({dialog},project)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[project]});},project);
   if(!live)await app.evaluate(async(_,modulePath)=>{const {VercelDeployment}=process.mainModule.require(modulePath);global.deploymentUploads=0;global.deploymentInspections=0;VercelDeployment.prototype.inspect=async()=>{global.deploymentInspections++;return ({id:'prj_test',name:'test',access:'Syntetisk kontrol',region:'Ukendt',environmentKeys:[],portal:'https://vercel.com/test/test'});};VercelDeployment.prototype.deploy=async()=>{global.deploymentUploads++;return {id:'dpl_test',state:'QUEUED',url:'https://test.vercel.app'};};VercelDeployment.prototype.status=async()=>({state:'READY',url:'https://test.vercel.app'});global.fetch=async()=>new Response('Login',{status:401});},path.resolve(__dirname,'../core/deployment-providers.cjs'));
   await page.click('#open');await page.waitForSelector('#workspace:not([hidden])');await page.click('#deploy-button');await page.waitForFunction(()=>!document.querySelector('#deployment-fields').disabled);
+  if (!live) {
+   assert.match(await page.locator('#hosting-guide-current').innerText(), /Amerikansk leverandør/);
+   assert.equal(await page.locator('#hosting-guide-current details').evaluate(el => el.open), false);
+   assert.equal(await page.locator('#hosting-other').evaluate(el => el.open), false);
+   await capture('hostingvalg');
+   await page.click('#hosting-other > summary');
+   assert.deepEqual(await page.locator('#hosting-guide-choice option').evaluateAll(items => items.map(item => item.value)), ['cloudflare','netlify','github-pages','komplai','promte']);
+   await app.evaluate(({shell}) => { global.hostingLinks=[]; shell.openExternal=async url=>{global.hostingLinks.push(url);}; });
+   for (const id of ['cloudflare','netlify','github-pages','komplai','promte']) {
+    await page.selectOption('#hosting-guide-choice',id);
+    assert.match(await page.locator('#hosting-guide-other').innerText(), /Aura uploader ikke herfra/);
+    await page.click('#hosting-guide-other details > summary');
+    assert.match(await page.locator('#hosting-guide-other').innerText(), /Kilder gennemgået/);
+    await page.locator('#hosting-guide-other button').first().click();
+    assert.notEqual(await page.locator('#deployment-feedback').textContent(), 'Arbejder …');
+    assert.equal(await app.evaluate(()=>global.deploymentUploads),0);
+   }
+   assert.equal((await app.evaluate(()=>global.hostingLinks)).length,5);
+   const invalid=await page.evaluate(()=>window.harness.deploymentGuideOpen({id:'https://example.invalid',kind:'guide'}));
+   assert.equal(invalid.ok,false);assert.equal((await app.evaluate(()=>global.hostingLinks)).length,5);
+   await page.selectOption('#hosting-guide-choice','cloudflare');await page.click('#hosting-guide-other details > summary');
+   await capture('hostingvejledning');await page.click('#hosting-other > summary');
+   await page.selectOption('#deploy-provider','azure');assert.match(await page.locator('#hosting-guide-current').innerText(),/Microsoft/);
+   await page.selectOption('#deploy-provider','vercel');
+  }
   await page.fill('#deploy-project',live?'ai-harness-test':'test');if(!live){await page.locator('#deployment-form').evaluate(form=>form.addEventListener('invalid',event=>{window.invalidDeploymentField=event.target.id;},true));await page.click('#deployment-form button[type=submit]');assert.equal(await page.evaluate(()=>window.invalidDeploymentField),'deploy-scope');assert.equal(await app.evaluate(()=>global.deploymentInspections),0);}await page.fill('#deploy-scope',live?'progressify':'test');
   await page.click('#deployment-form button[type=submit]');await page.waitForFunction(()=>!document.querySelector('#deployment-review').hidden || (!document.querySelector('#deployment-fields').disabled && document.querySelector('#deployment-feedback').textContent!=='Vælg destination, og gennemgå den gemte version før upload.'),{},{timeout:75000});if(await page.locator('#deployment-review').isHidden())throw Error(await page.locator('#deployment-feedback').textContent());await page.waitForSelector('#deployment-review:not([hidden])',{timeout:75000}).catch(async error=>{await page.screenshot({path:path.join(root,'fejl.png')});throw Error(error.message+' · '+await page.locator('#deployment-feedback').textContent());});
   assert.equal(await page.isEnabled('#deployment-send'),false);assert.equal(await page.isVisible('#deployment-form'),false);assert.equal(await page.isVisible('#deployment-details'),false);assert.match(await page.locator('#deployment-summary').textContent(),/Gem isoleret udgivelsestest/);assert.match(await page.locator('#deployment-files').textContent(),/index.html/);

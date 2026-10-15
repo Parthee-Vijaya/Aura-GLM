@@ -16,7 +16,7 @@ const { loadLibrary } = require('../core/library.cjs');
 const profiles = path.join(__dirname, '../../profiles');
 
 async function scenario(root, { git, mode }) {
-  const project = path.join(root, `projekt-${git ? 'git' : 'uden-git'}-${mode}`), directory = path.join(root, `motor-${git ? 'git' : 'uden'}-${mode}`);
+  const project = path.join(root, `projekt-${git ? 'git' : 'uden-git'}-${mode}`), directory = path.join(root, 'Library', 'Application Support', 'Aura', 'harness', 'runtime', require('node:crypto').createHash('sha256').update(`${git}-${mode}`).digest('hex'));
   await fs.mkdir(path.join(project, 'references'), { recursive: true });
   await fs.writeFile(path.join(project, 'references/valgt.md'), 'VALGT-REFERENCE');
   await fs.writeFile(path.join(project, 'references/andet.md'), 'PRIVAT-REFERENCE');
@@ -51,7 +51,14 @@ async function scenario(root, { git, mode }) {
     const body = JSON.parse(raw); requests.push(body);
     const done = (body.messages || []).filter(message => message.role === 'tool').length;
     const main = (body.tools || []).some(tool => tool.function?.name === 'read');
-    const step = main ? steps[done] : null;
+    let step = main ? steps[done] : null;
+    if (main && done === 1) {
+      const result = body.messages.filter(message => message.role === 'tool').at(-1);
+      const content = typeof result.content === 'string' ? result.content : JSON.stringify(result.content);
+      assert.ok(content.includes('Referencefiler i denne kørsel'), 'skillen viser præcise referencestier');
+      assert.ok(content.includes(skillReference), 'referencefilens sti kommer fra skill-værktøjet');
+      step = ['read', { filePath: skillReference }];
+    }
     res.setHeader('content-type', 'text/event-stream');
     const send = delta => res.write(`data: ${JSON.stringify({ id: 'prøve', object: 'chat.completion.chunk', created: 1, model: 'model', choices: [{ index: 0, delta, finish_reason: null }] })}\n\n`);
     if (step) send({ role: 'assistant', tool_calls: [{ index: 0, id: `kald-${requests.length}`, type: 'function', function: { name: step[0], arguments: JSON.stringify(step[1]) } }] });

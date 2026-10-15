@@ -27,7 +27,7 @@ class Workbench {
     // Versionen efter en opgave hører til den samtale, hvis opgave gemmes.
     this.git = new GitVersions();
     this.checkpoints = new Checkpoints(this.git, event => { const owner = this.checkpointOwner; if (owner) { owner.checkpointEvent(event); owner.emit(event); } else emit(event); });
-    this.engineFactory = engineFactory; this.profiles = profiles; this.emit = emit; this.catalogs = new Map();
+    this.engineFactory = engineFactory; this.profiles = profiles; this.emit = emit; this.catalogs = new Map(); this.catalogRequests = new Map();
     this.chats = new Map(); this.chatID = null; this.claims = new Map(); this.project = null; this.previewSelections = new Map();
     // Samtalernes Ændringer og Aktivitet, så længe appen er åben, også når projektet lukkes og åbnes igen.
     this.memory = new Map(); this.lastChatID = null; this.copies = new Copies(this.store); this.allocation = Promise.resolve();
@@ -207,7 +207,7 @@ class Workbench {
       connection.secret = input.apiKey ? this.store.encrypt(input.apiKey) : (input.clearKey || previous?.kind !== connection.kind || previous?.baseURL !== connection.baseURL ? undefined : previous?.secret);
       state.connections = [...state.connections.filter(c => c.id !== connection.id), connection];
     });
-    this.catalogs.delete(connection.id); for (const chat of this.chats.values()) chat.prepared = null;
+    this.catalogRequests.delete(connection.id); this.catalogs.delete(connection.id); for (const chat of this.chats.values()) chat.prepared = null;
     return this.state();
   }
   async removeConnection(id) {
@@ -218,10 +218,17 @@ class Workbench {
       // Et indsat token kan også bruges i andre programmer. Fjernelse her tilbagekalder kun Auras egne loginadgange.
       if (connection.account?.authMethod !== 'token') await require('./komplai.cjs').disconnect(connection, this.store.decrypt(connection));
     }
-    if (this.running) throw new Error('Stop opgaverne først.'); await this.closeEngines(); await this.store.update(state => { state.connections = state.connections.filter(c => c.id !== id); }); this.catalogs.delete(id); return this.state(); }
+    if (this.running) throw new Error('Stop opgaverne først.'); await this.closeEngines(); await this.store.update(state => { state.connections = state.connections.filter(c => c.id !== id); }); this.catalogRequests.delete(id); this.catalogs.delete(id); return this.state(); }
   async closeEngines() { for (const chat of this.chats.values()) if (!chat.running) await chat.close(false); }
   async connection(id) { const connection = (await this.store.read()).connections.find(c => c.id === id); if (!connection) throw new Error('Vælg en gemt forbindelse.'); return connection; }
-  async models(id) { const connection = await this.connection(id); const models = await connections.listModels(connection, this.store.decrypt(connection)); this.catalogs.set(id, models); return models; }
+  async models(id) {
+    const request = Symbol(); this.catalogRequests.set(id, request); this.catalogs.delete(id);
+    const connection = await this.connection(id);
+    const models = await connections.listModels(connection, this.store.decrypt(connection));
+    // Et sent katalogsvar må ikke genindføre adgang efter redigering, fjernelse eller en nyere kontrol.
+    if (this.catalogRequests.get(id) !== request) throw new Error('Forbindelsen blev ændret eller kontrolleret igen. Hent modellerne på ny.');
+    this.catalogs.set(id, models); return models;
+  }
   async komplaiAccount(id) { const connection = await this.connection(id); if (connection.kind !== 'komplai') throw new Error('Vælg en Komplai-forbindelse.'); return require('./komplai.cjs').account(connection, this.store.decrypt(connection)); }
   async routes(id, modelID) { const connection = await this.connection(id); return connections.routes(connection, this.store.decrypt(connection), modelID); }
   async selection(input) {

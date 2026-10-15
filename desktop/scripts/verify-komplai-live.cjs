@@ -29,7 +29,7 @@ async function main() {
     }, { organisationId, modelId, module: path.join(__dirname, 'komplai-live-budget.cjs') });
     page = await app.firstWindow(); await page.emulateMedia({ reducedMotion: 'reduce' });
     await helpers.skipIntroduction(page); await helpers.openSetup(page);
-    await page.click('#setup-add-provider'); await page.click('#provider-other'); await page.selectOption('#provider-kind', 'komplai');
+    await page.click('#setup-add-provider'); await page.click('#provider-cards [data-kind="komplai"]');
     console.log('Log ind i den browser, Aura åbner. Prøven bruger kun den valgte organisation og højst 10 kr.');
     await page.click('#komplai-login'); await page.waitForSelector('#komplai-organisations:not([hidden])', { timeout: 300000 });
     await page.selectOption('#komplai-organisation', organisationId);

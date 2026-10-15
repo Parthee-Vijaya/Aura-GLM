@@ -390,3 +390,23 @@ test('Stop venter på versionen, når abort samtidig sender idle, og frigiver ik
  assert.equal(events.filter(event => event.type === 'run.status' && event.status === 'stopped').length, 1);
  await bench.close();
 });
+
+
+test('et forsinket modelkatalog kan ikke genoplive en redigeret forbindelse eller erstatte en nyere kontrol', async t => {
+ const bench = new Workbench({ directory: await temp(t), profiles, emit: () => {}, safeStorage: {} });
+ const waiting = [];
+ const server = http.createServer((req, res) => waiting.push(res));
+ await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+ t.after(() => { server.closeAllConnections(); server.close(); });
+ const connection = (await bench.saveConnection({ kind: 'compatible', name: 'Før', baseURL: `http://127.0.0.1:${server.address().port}/v1` })).connections[0];
+ const until = async count => { for (let n = 0; waiting.length < count && n < 100; n++) await new Promise(r => setTimeout(r, 10)); assert.equal(waiting.length, count); };
+ const answer = (index, id) => waiting[index].end(JSON.stringify({ data: [{ id }] }));
+ const old = bench.models(connection.id); const oldRejected = assert.rejects(old, /ændret eller kontrolleret igen/);
+ await until(1); await bench.saveConnection({ ...connection, name: 'Efter' }); answer(0, 'gammel'); await oldRejected;
+ assert.equal(bench.catalogs.has(connection.id), false);
+ const slow = bench.models(connection.id), slowRejected = assert.rejects(slow, /ændret eller kontrolleret igen/); await until(2);
+ const latest = bench.models(connection.id); await until(3); answer(2, 'ny'); await latest; answer(1, 'forældet'); await slowRejected;
+ assert.equal(bench.catalogs.get(connection.id)[0].id, 'ny');
+ const failed = bench.models(connection.id), failure = assert.rejects(failed, /afviste/); await until(4);
+ waiting[3].writeHead(401); waiting[3].end('{}'); await failure; assert.equal(bench.catalogs.has(connection.id), false);
+});

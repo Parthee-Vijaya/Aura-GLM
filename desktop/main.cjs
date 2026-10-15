@@ -102,7 +102,7 @@ function handle(channel, action) {
     try { return { ok: true, value: await action(value) }; }
     catch (error) {
       recordFailure(channel.startsWith('git:') ? 'git' : channel.startsWith('connections:') ? 'forbindelse' : 'app', ['EACCES','EPERM'].includes(error.code) ? 'adgang' : error.code === 'ENOENT' ? 'mangler-fil' : 'handling');
-      const messages = { EEXIST: 'Der findes allerede en mappe med det projektnavn. Vælg et andet navn eller en anden placering.', ENOENT: 'En nødvendig fil eller mappe findes ikke. Kontrollér projektmappen.', EACCES: 'Appen har ikke adgang til den valgte mappe.', EPERM: 'Operativsystemet tillader ikke handlingen på den valgte placering.' };
+      const messages = { EEXIST: 'Der findes allerede en mappe med det projektnavn. Vælg et andet navn eller en anden placering.', ENOENT: 'En nødvendig fil eller mappe findes ikke. Kontrollér projektmappen.', EACCES: 'Aura har ikke adgang til mappen. Tillad mappeadgang i computerens indstillinger, og prøv igen, eller vælg en anden mappe.', EPERM: 'Computeren blokerer adgang til mappen. Tillad mappeadgang i indstillingerne, og prøv igen, eller vælg en anden mappe.' };
       return { ok: false, error: messages[error.code] || error.message };
     }
   });
@@ -121,7 +121,7 @@ function projectLocation() {
 handle('project:location', () => projectLocation());
 handle('project:choose-location', () => exclusive(async () => {
   const selection = await dialog.showOpenDialog(window, { title: 'Vælg, hvor dine projekter skal ligge', defaultPath: chosenParent || app.getPath('documents'), properties: ['openDirectory', 'createDirectory'] });
-  if (!selection.canceled) chosenParent = await fs.realpath(selection.filePaths[0]);
+  if (!selection.canceled) chosenParent = await require('./core/projects.cjs').checkProjectAccess(selection.filePaths[0]);
   return projectLocation();
 }));
 handle('project:create', input => exclusive(async () => {
@@ -131,7 +131,7 @@ handle('project:create', input => exclusive(async () => {
   if (!chosenParent) await fs.mkdir(parent, { recursive: true });
   // Uden funktionen Design og tilgængelighed bruges hverken designpakke, logo eller inspiration fra startsiden.
   const features = (await workbench.features.get()).effective;
-  const created = await createProject(parent, features.design ? input : { ...input, links: [] }, features.design ? assets : [], profileRoot);
+  const created = await createProject(parent, features.design ? input : { ...input, color: null, links: [] }, features.design ? assets : [], profileRoot);
   // Med Versioner og fortryd får nye projekter Git fra start og en version efter hver AI-opgave, så de altid kan fortrydes.
   // Et hostingønske eller en designpakke under en slået fra funktion følger ikke med projektet. Brugerens gemte standarder bevares.
   const projectStartup = { ...startup.values, ...(features.deling ? {} : { hosting: '' }), ...(features.design ? {} : { designID: '' }) };
@@ -470,6 +470,8 @@ handle('hosting:review', () => exclusive(async () => ({ ...await publishing.revi
 handle('hosting:push', token => exclusive(() => publishing.push(requireIdleProject(), token)));
 handle('hosting:open', async () => { const root = requireIdleProject(); const selected = (await workbench.store.project(root)).publication; if (!selected) throw new Error('Vælg repository først.'); return shell.openExternal('https://github.com/' + require('./core/github.cjs').repository(selected.fullName)); });
 
+handle('deployment:guides', () => require('./core/hosting-guidance.cjs').catalog());
+handle('deployment:guide-open', input => shell.openExternal(require('./core/hosting-guidance.cjs').link(input?.id, input?.kind)));
 handle('deployment:state', async () => ({ ...await deployments.state(requireIdleProject()), context: await sharingContext() }));
 handle('deployment:review', input => exclusive(async () => ({ ...await deployments.review(requireIdleProject(), input), context: await sharingContext() })));
 handle('deployment:send', token => exclusive(() => deployments.deploy(requireIdleProject(), token)));
@@ -485,6 +487,8 @@ handle('deployment:open', async kind => {
 
 // Faste sider hos udbyderne til nøglevejledningen. Kontrolleret 29. september 2026. Andre adresser åbnes aldrig herfra.
 const accountPages = {
+  openai: { start: 'https://platform.openai.com/', keys: 'https://platform.openai.com/api-keys' },
+  azure: { start: 'https://ai.azure.com/' },
   anthropic: { start: 'https://platform.claude.com/', billing: 'https://platform.claude.com/settings/billing', keys: 'https://platform.claude.com/settings/keys' },
   mistral: { start: 'https://console.mistral.ai/', billing: 'https://admin.mistral.ai/organization/billing', privacy: 'https://admin.mistral.ai/plateforme/privacy', keys: 'https://console.mistral.ai/api-keys' },
   corti: { start: 'https://console.corti.app/signup', console: 'https://console.corti.app/', keys: 'https://console.corti.app/corti-models' },
@@ -803,8 +807,9 @@ app.whenReady().then(async () => {
   protocol.handle('harness', async request => {
     const url = new URL(request.url);
     const name = url.pathname.slice(1);
-    if (url.host !== 'app' || !['index.html', 'app.js', 'workspace.js', 'plan-view.js', 'planning.js', 'approval-view.js', 'approvals.js', 'preview-edit.js', 'history.js', 'chats.js', 'palette.js', 'model-advice.js', 'server.js', 'viewport.js', 'share-view.js', 'hosting.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name)) return new Response('Ikke fundet', { status: 404 });
-    return new Response(await fs.readFile(path.join(__dirname, 'ui', name)), { headers: { 'Content-Type': name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : 'text/html; charset=utf-8' } });
+    const providerAsset = /^provider-(anthropic|azure|compatible|corti|komplai|mistral|ollama|openai|openrouter|zen)\.svg$/.test(name);
+    if (url.host !== 'app' || (!providerAsset && !['index.html', 'app.js', 'workspace.js', 'plan-view.js', 'planning.js', 'approval-view.js', 'approvals.js', 'preview-edit.js', 'history.js', 'chats.js', 'palette.js', 'model-advice.js', 'connection-overview.js', 'chat-display.js', 'server.js', 'viewport.js', 'share-view.js', 'hosting.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name))) return new Response('Ikke fundet', { status: 404 });
+    return new Response(await fs.readFile(path.join(__dirname, 'ui', name)), { headers: { 'Content-Type': providerAsset ? 'image/svg+xml' : name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : 'text/html; charset=utf-8' } });
   });
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
   session.defaultSession.setPermissionCheckHandler(() => false);

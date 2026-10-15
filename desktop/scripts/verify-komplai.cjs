@@ -37,7 +37,7 @@ async function main() {
     }, api);
     const page = await app.firstWindow(); page.on('pageerror', e => errors.push(e.message)); await page.emulateMedia({ reducedMotion: 'reduce' });
     await helpers.skipIntroduction(page);
-    await helpers.openSetup(page); await page.click('#setup-add-provider'); await page.click('#provider-other'); await page.selectOption('#provider-kind', 'komplai');
+    await helpers.openSetup(page); await page.click('#setup-add-provider'); await page.click('#provider-cards [data-kind="komplai"]');
     assert.equal(await page.locator('#api-key').isVisible(), false); assert.equal(await page.locator('#save-connection').isVisible(), false);
     await page.screenshot({ path: path.join(root, 'komplai-login.png') });
     await page.click('#komplai-login'); await page.waitForSelector('#komplai-organisations:not([hidden])');
