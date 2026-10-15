@@ -3,7 +3,7 @@
 (() => {
   const view = window.PlanView;
   const sourceText = { idé: 'Din idé', ønske: 'Dit ønske', svar: 'Dit svar', dig: 'Skrevet af dig' };
-  const reasonText = { afbrudt: 'opgaven blev afbrudt', stoppet: 'du stoppede opgaven', fejl: 'opgaven fejlede', gendannet: 'filerne er sat tilbage til en tidligere version', ny: 'du bad om en ny plan', direkte: 'du bad AI’en arbejde direkte uden plan' };
+  const reasonText = { afbrudt: 'opgaven blev afbrudt', stoppet: 'du stoppede opgaven', fejl: 'opgaven fejlede', gendannet: 'filerne er sat tilbage til en tidligere version', ny: 'du bad om en ny plan', fravalgt: 'du valgte at fortsætte samtalen uden at bygge', direkte: 'du bad AI’en arbejde direkte uden plan' };
   let brief = { items: [], updatedAt: null }, lastPlan = null, editing = null, editingPlan = false;
 
   // ---------- Projektbrief ----------
@@ -59,7 +59,7 @@
     const plan = activePlan, shown = plan || lastPlan;
     const planningNow = running && $('#work-mode').value === 'plan';
     $('#plan-empty').hidden = Boolean(shown);
-    $('#plan-empty').textContent = planningNow ? 'AI’en arbejder på en plan. Den kommer her, når den er klar.' : 'Ingen plan endnu. Beskriv din idé i samtalen med Afklar og planlæg, så foreslår AI’en en plan her.';
+    $('#plan-empty').textContent = planningNow ? 'AI’en arbejder på en plan. Den kommer her, når den er klar.' : 'Ingen plan endnu. Vælg Planlæg ved skrivefeltet, når du vil lave en plan.';
     $('#plan-text').replaceChildren(...(shown ? planSections(shown.text) : []));
     $('#plan-text').hidden = !shown || editingPlan; $('#plan-text').classList.toggle('is-retired', !plan && Boolean(lastPlan));
     $('#plan-meta').textContent = shown ? planMeta(shown) : '';

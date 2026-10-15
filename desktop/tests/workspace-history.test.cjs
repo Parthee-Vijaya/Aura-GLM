@@ -93,12 +93,15 @@ test('en ældre samtale og arkiverede samtaler flyttes til samtalefiler, og arki
   assert.equal((await history.open({root,name:'Gammel'})).active,project.active,'flytningen sker kun én gang');
 });
 test('en ny samtale genbruger en tom samtale, og tomme samtaler vises ikke', async t => {
+  t.mock.timers.enable({ apis: ['Date'], now: new Date('2026-10-15T10:00:00Z') });
   const {root,history}=await setup(t);
   const {active:first}=await history.open({root,name:'Samtaler'});
   assert.equal((await history.createChat(root)).id,first,'den tomme samtale genbruges');
   await history.saveRun(root,first,run([{id:'u',role:'user',text:'Første'}]));
+  t.mock.timers.tick(1000);
   const second=(await history.createChat(root)).id; assert.notEqual(second,first);
   await history.draft(root,second,{text:'Kun en kladde',mode:'plan'});
+  t.mock.timers.tick(1000);
   const third=(await history.createChat(root)).id; assert.notEqual(third,second,'en samtale med kladde genbruges ikke');
   assert.deepEqual((await history.chats(root)).map(item=>item.id),[third,second,first]);
   assert.equal((await history.chats(root)).find(item=>item.id===second).title,'Kun en kladde','en samtale uden beskeder hedder det, man er begyndt at skrive');

@@ -74,7 +74,7 @@ document.addEventListener('click', event => { const button = event.target.closes
 // Sidepanelets projekter og samtaler: se chats.js.
 async function refreshRecent() { await window.chats?.refresh(); }
 let draftTimer;
-async function saveChatDraft() {
+async function saveChatDraft(required = false) {
   clearTimeout(draftTimer);
   if (!current) return;
   const root = current.root, chat = view.id, text = $('#prompt').value, mode = $('#work-mode').value;
@@ -83,7 +83,7 @@ async function saveChatDraft() {
   try { localStorage.setItem(`harness.chatDraft.${root}.${chat}`, JSON.stringify({ text, mode })); } catch {}
   $('#draft-status').textContent = 'Gemmer kladde …';
   try { await call('saveDraft', { root, chat, text, mode }); if (current?.root === root && view.id === chat && $('#prompt').value === text) $('#draft-status').textContent = 'Kladde gemt på denne computer'; }
-  catch { if (current?.root === root && view.id === chat) $('#draft-status').textContent = 'Kladden kunne ikke gemmes. Kopiér teksten, før du lukker.'; }
+  catch { if (current?.root === root && view.id === chat) $('#draft-status').textContent = 'Kladden kunne ikke gemmes. Kopiér teksten, før du lukker.'; if (required === true) throw new Error('Kladden kunne ikke gemmes. Kopiér teksten, før du opdaterer.'); }
 }
 function option(value, label) { const el = node('option', label); el.value = value; return el; }
 // AI'ens svar er markdown. Vi viser overskrifter, fed og kursiv tekst, kode, lister og skillelinjer, men bygger kun
@@ -102,7 +102,7 @@ function inlineMarkdown(target, text) {
   if (last < text.length) target.append(text.slice(last));
 }
 function markdownInto(element, text) {
-  const blocks = [], lines = String(text || '').replace(/\r\n/g, '\n').split('\n');
+  const blocks = [], lines = window.ConversationMode.visible(text).replace(/\r\n/g, '\n').split('\n');
   let paragraph = null, list = null, code = null;
   const close = () => { paragraph = null; list = null; };
   for (const line of lines) {
@@ -342,7 +342,7 @@ function showPreview(url, external = false) {
 async function displayProject(project) {
   if (!project) return;
   ++modelRequest; recovery = ''; $('#connection-warning').hidden = true; document.body.classList.remove('setup-guided'); setupActive = false; $('#setup').hidden = true; setupControls();
-  modelCatalog = []; $('#model-shortlist').replaceChildren(); $('#work-mode').value = project.workbench.features?.effective.planlaegning === false ? 'free' : 'plan'; updateWorkMode();
+  modelCatalog = []; $('#model-shortlist').replaceChildren(); $('#work-mode').value = 'chat'; updateWorkMode();
   for (const frame of previewFrames.values()) if (frame.id !== 'preview') frame.remove(); previewFrames.clear(); previewRevisions.clear();
   current = project; revision = null; acceptedFingerprint = null;
   // Et nyt projekt: alle samtalers visninger hører til det gamle projekt.
@@ -379,6 +379,7 @@ async function displayProject(project) {
   fillChat(state, true);
   await refreshRecent();
   await window.workspace?.onProject();
+  window.versions?.refreshStatus();
   $('#project-name').tabIndex = -1; if (!setupActive) $('#project-name').focus();
 }
 // Den åbne samtales indhold: beskeder, kladde, arbejdsmåde, plan og besked om en afbrudt opgave. fresh betyder, at
@@ -390,9 +391,11 @@ function fillChat(next, fresh) {
   $('#project-intro').hidden = !empty; $('#start-idea').hidden = !empty;
   $('#resume-notice').hidden = !history?.messages?.length && !next.historyWarning; $('#resume-notice').open = false;
   $('#include-history').checked = false;
+  if (fresh) v.planOffer = history?.planOffer === true;
+  $('#plan-offer').hidden = !v.planOffer;
   if (fresh) { v.plan = next.plan || null; v.planCard = Boolean(next.plan) && history?.mode === 'plan'; }
   activePlan = v.plan; $('#plan-card').hidden = !v.planCard || !v.plan;
-  $('#work-mode').value = next.features?.effective.planlaegning === false ? 'free' : 'plan';
+  $('#work-mode').value = 'chat';
   $('#prompt').value = '';
   if (history) {
     $('#prompt').value = history.draft || '';
@@ -405,8 +408,8 @@ function fillChat(next, fresh) {
   // Kladden: det, der står i skrivefeltet i denne samtale, også hvis den ikke nåede at blive gemt.
   // Før samtalerne havde projektet én lokal kladde; den flyttes én gang til den samtale, der åbnes først.
   try { const key = `harness.chatDraft.${current.root}`, legacy = localStorage.getItem(key); if (legacy !== null) { if (localStorage.getItem(`${key}.${v.id}`) === null) localStorage.setItem(`${key}.${v.id}`, legacy); localStorage.removeItem(key); } } catch {}
-  try { const draft = JSON.parse(localStorage.getItem(`harness.chatDraft.${current.root}.${v.id}`)); if (draft && typeof draft.text === 'string' && (draft.text || !['working','interrupted'].includes(history?.status))) { $('#prompt').value = draft.text; if (['plan','free'].includes(draft.mode)) $('#work-mode').value = draft.mode; } } catch {}
-  if (v.draft) { $('#prompt').value = v.draft.text; if (['plan','free','build'].includes(v.draft.mode)) $('#work-mode').value = v.draft.mode; }
+  try { const draft = JSON.parse(localStorage.getItem(`harness.chatDraft.${current.root}.${v.id}`)); if (draft && typeof draft.text === 'string' && (draft.text || !['working','interrupted'].includes(history?.status))) { $('#prompt').value = draft.text; if (['chat','plan','free'].includes(draft.mode)) $('#work-mode').value = draft.mode; } } catch {}
+  if (v.draft) { $('#prompt').value = v.draft.text; if (['chat','plan','free','build'].includes(v.draft.mode)) $('#work-mode').value = v.draft.mode; }
   renderUsage(next.usage);
   updateWorkMode(); $('#draft-status').textContent = history?.draft ? 'Kladde hentet fra denne computer' : '';
   updateStartIdea(); applyRunning();
@@ -719,8 +722,9 @@ function doneWaiting(id, v = view) { v.waitingFor = v.waitingFor.filter(item => 
 function renderStatus() {
   const v = view, waiting = v.running && v.waitingFor.length > 0;
   $('#agent-activity').hidden = !v.running; $('#agent-activity').classList.toggle('is-waiting', waiting);
-  $('#agent-activity-text').textContent = waiting ? `Venter på dig: ${v.waitingFor[0].title}${v.waitingFor.length > 1 ? ` Og ${v.waitingFor.length - 1} mere.` : ''}` : v.statusDetail;
-  $('#agent-activity-jump').hidden = !waiting;
+  $('#agent-activity-text').textContent = waiting ? `Venter på dig: ${v.waitingFor[0].title}${v.waitingFor.length > 1 ? ` Og ${v.waitingFor.length - 1} mere.` : ''}` : window.ChatDisplay.phase(v) || v.statusDetail;
+  $('#agent-activity-jump').hidden = !waiting; $('#agent-follow').hidden = waiting;
+  window.liveWork?.render();
   const progress = window.ChatDisplay.progress(v);
   $('#agent-progress').textContent = progress.text; $('#agent-progress').hidden = waiting;
   $('#agent-activity').classList.toggle('is-quiet', progress.quiet && !waiting);
@@ -729,7 +733,7 @@ function renderStatus() {
 }
 $('#agent-activity-jump').onclick = () => { const item = view.waitingFor[0]; if (!item?.element?.isConnected) return; item.element.scrollIntoView({ block: 'nearest' }); item.element.querySelector('button, textarea, input')?.focus(); };
 function setRunning(value, status, v = view) {
-  if (value && !v.running) { v.runStartedAt = Date.now(); v.lastSignalAt = v.runStartedAt; v.receivedChars = 0; }
+  if (value && !v.running) { v.runStartedAt = Date.now(); v.lastSignalAt = v.runStartedAt; v.receivedChars = 0; v.modelProgress = null; v.todos = []; }
   if (!value) v.waitingFor = [];
   v.running = value; v.runLabel = status;
   if (value) v.statusDetail = status.startsWith('Starter') ? 'Aura starter AI’en …' : $('#work-mode').value === 'plan' ? 'Venter på modellens forslag …' : 'Venter på modellen …';
@@ -752,8 +756,8 @@ function applyRunning() {
   $('#merge-copy').disabled = projectLoading || running || Boolean(mainRunning);
   $('#copy-wait').hidden = !current?.isolated || running || !mainRunning;
   const value = busy;
-  for (const selector of ['#new', '#open', '#connections-button', '#skills-button', '#features-button', '#git-button', '#publish-button', '#setup-hosting', '#deploy-button', '#intro-button']) $(selector).disabled = value;
-  for (const selector of ['#model-chip', '#work-mode', '#build-plan', '#revise-plan', '#start-idea', '#model-load', '#model-search', '#connection-select', '#model-select', '#route-select']) $(selector).disabled = running;
+  for (const selector of ['#new', '#open', '#connections-button', '#skills-button', '#features-button', '#publish-button', '#setup-hosting', '#deploy-button', '#intro-button']) $(selector).disabled = value;
+  for (const selector of ['#composer-mode', '#accept-plan-offer', '#model-chip', '#work-mode', '#build-plan', '#revise-plan', '#start-idea', '#model-load', '#model-search', '#connection-select', '#model-select', '#route-select']) $(selector).disabled = running;
   for (const button of document.querySelectorAll('#model-shortlist button')) button.disabled = running;
   $('#include-history').disabled = running;
   setupControls();
@@ -796,8 +800,13 @@ window.harness.onEvent(event => {
   if (!event.chat && ['usage', 'plan.ready', 'run.review', 'git.checkpoint', 'session.new', 'run.status', 'message.updated', 'message.part.updated', 'message.part.delta', 'permission.asked', 'question.asked', 'engine.error', 'session.error'].includes(event.type) && !view.id) return;
   const v = viewFor(event.chat), active = v === view;
   if (v.running && ['message.part.updated', 'message.part.delta', 'permission.asked', 'question.asked', 'permission.replied', 'question.replied', 'usage'].includes(event.type)) v.lastSignalAt = Date.now();
-  if (event.type === 'message.part.delta' && typeof p.delta === 'string') { v.receivedChars += p.delta.length; if (active) renderStatus(); }
+  if (event.type === 'run.todos') { v.todos = event.todos; if (active) renderStatus(); return; }
+  if (event.type === 'files.written') { if (v.modelProgress) v.modelProgress.draft = null; if (active) renderStatus(); }
+  if (event.type === 'model.progress') { if (v.running) { v.modelProgress = event.progress; v.lastSignalAt = event.progress.lastContentAt; if (active) renderStatus(); } return; }
+  if (event.type === 'message.part.delta' && typeof p.delta === 'string' && v.partTypes.get(p.partID) === 'text') { v.receivedChars += p.delta.length; if (active) renderStatus(); }
   if (event.type === 'usage') { if (active) renderUsage(event.usage); return; }
+  if (event.type === 'plan.offer') { v.planOffer = event.offered; if (active) $('#plan-offer').hidden = !event.offered; }
+  if (event.type === 'plan.retired') { v.plan = null; v.planCard = false; if (active) { activePlan = null; $('#plan-card').hidden = true; } }
   if (event.type === 'plan.ready') { v.plan = event.plan; v.planCard = true; if (active) { activePlan = event.plan; window.planning?.onPlan(event.plan); $('#plan-card').hidden = false; if (v.followChat) requestAnimationFrame(() => $('#plan-card').scrollIntoView({ block: 'nearest' })); } }
   if (event.type === 'run.review') { renderRunReview(event, v); if (!active) { v.unread = true; window.chats?.render(); } }
   // Versionen efter opgaven vises på resultatkortet. Kun en oversprunget version nævnes i samtalen.
@@ -815,7 +824,7 @@ window.harness.onEvent(event => {
         if (v.lastTargetRef && !window.workspace?.target()) window.workspace?.setTarget(v.lastTargetRef);
         activePlan = null; $('#plan-card').hidden = true;
         if ($('#work-mode').value === 'build') { $('#work-mode').value = 'plan'; updateWorkMode(); }
-      } else v.draft = { text: v.lastSentText, mode: 'plan' };
+      } else v.draft = { text: v.lastSentText, mode: v.draft?.mode === 'build' ? 'plan' : v.draft?.mode || 'chat' };
     }
     if (!working) { v.approvals.replaceChildren(); if (active) saveChatDraft(); }
   }
@@ -829,7 +838,7 @@ window.harness.onEvent(event => {
     // Når et værktøj er færdigt, tænker modellen over næste skridt. Banneret må ikke blive stående på det afsluttede værktøj.
     if (part.type === 'tool' && v.running && ['completed', 'error'].includes(part.state?.status)) setStatusDetail('Venter på modellens næste svar …', v);
     if (part.type === 'text' && v.running) setStatusDetail('AI’en skriver …', v);
-    if (part.type === 'reasoning' && v.running) setStatusDetail('Modtager fra modellen …', v);
+    if (part.type === 'reasoning' && v.running) setStatusDetail('Modellen forbereder næste skridt …', v);
     if (part.type === 'tool') noteTool(part.id, v);
   }
   if (event.type === 'message.part.delta' && p.field === 'text' && v.partTypes.get(p.partID) === 'text' && v.roles.get(p.messageID) !== 'user') showAssistant(p.partID, (v.assistantText.get(p.partID) || '') + p.delta, v);
@@ -1051,7 +1060,7 @@ $('#model-done').onclick = () => { if (!$('#connection-select').value || !$('#mo
 
 // Funktioner: brugeren slår dem til og fra under Indstillinger › Funktioner. Et fravalg skjuler handlingen; filer og historik bevares.
 const featureOn = id => state?.features?.effective?.[id] !== false;
-const defaultMode = () => featureOn('planlaegning') ? 'plan' : 'free';
+const defaultMode = () => 'chat';
 function applyFeatures() {
   $('#git-button').hidden = !featureOn('versioner');
   for (const id of ['#deploy-button', '#publish-button', '#setup-hosting', '#startup-hosting-row']) $(id).hidden = !featureOn('deling');
@@ -1563,10 +1572,23 @@ function renderShortlist() {
 $('#model-search').oninput = () => { const query = $('#model-search').value.toLocaleLowerCase(); for (const item of $('#model-select').options) item.hidden = Boolean(item.value && item.value !== $('#model-select').value && !item.textContent.toLocaleLowerCase().includes(query)); };
 function updateWorkMode() {
   const mode = $('#work-mode').value;
-  $('#composer-mode').textContent = mode === 'plan' ? 'Planlægning' : '';
-  $('#mode-help').textContent = mode === 'plan' ? 'AI’en kan læse og stille spørgsmål. Filændringer og kommandoer er blokeret. Svar i samtalen, indtil planen passer.' : mode === 'build' ? 'AI’en bygger efter den plan, du har valgt. Handlinger kræver fortsat godkendelse.' : 'Skriv frit til kodeagenten. Filændringer, kommandoer og webopslag kræver godkendelse.';
+  $('#composer-mode').textContent = ({ chat: 'Samtale', plan: 'Planlæg', build: 'Byg', free: 'Arbejd direkte' })[mode];
+  $('#prompt').placeholder = window.workspace?.target() ? 'Hvad skal AI’en ændre her? Fx Gør teksten kortere.' : mode === 'chat' ? 'Stil et spørgsmål, eller beskriv din idé …' : 'Beskriv det, du vil bygge eller ændre …';
+  $('#mode-help').textContent = mode === 'chat' ? 'Tal med AI’en om projektet. Filerne ændres ikke.' : mode === 'plan' ? 'AI’en kan læse og stille spørgsmål. Filændringer og kommandoer er blokeret. Svar i samtalen, indtil planen passer.' : mode === 'build' ? 'AI’en bygger efter den plan, du har valgt. Handlinger kræver fortsat godkendelse.' : 'Skriv frit til kodeagenten. Filændringer, kommandoer og webopslag kræver godkendelse.';
 }
-$('#work-mode').onchange = () => { acceptedFingerprint = null; updateWorkMode(); };
+$('#work-mode').onchange = () => { acceptedFingerprint = null; updateWorkMode(); if ($('#work-mode').value === 'chat') { view.planCard = false; $('#plan-card').hidden = true; } };
+$('#composer-mode').onclick = () => { $('#task-dialog').showModal(); $('#task-dialog .workflow').open = true; $('#work-mode').focus(); };
+$('#accept-plan-offer').onclick = () => {
+  if (running) return;
+  $('#work-mode').value = 'plan'; updateWorkMode(); view.planOffer = false; $('#plan-offer').hidden = true;
+  if (!$('#prompt').value.trim()) $('#prompt').value = 'Lad os lave en plan for det, vi har talt om.';
+  $('#include-history').checked = true; acceptedFingerprint = null; saveChatDraft(); $('#prompt').focus();
+};
+$('#dismiss-plan-offer').onclick = () => action(async () => {
+  view.planOffer = false; $('#plan-offer').hidden = true;
+  await call('saveDraft', { root: current.root, chat: view.id, text: $('#prompt').value, mode: $('#work-mode').value, dismissPlanOffer: true });
+  $('#prompt').focus();
+});
 $('#revise-plan').onclick = () => {
   if (!activePlan || running) return;
   $('#work-mode').value = 'plan'; updateWorkMode();
@@ -1599,7 +1621,8 @@ const filesText = (count, prefix) => count ? `${prefix} ${count} ${count === 1 ?
 function undoAction(result, label, title, v = view) {
   if (!result.files.length || !result.task) return null;
   const checkpoint = v.lastCheckpoint?.status === 'saved' && v.lastCheckpoint.head ? v.lastCheckpoint : null, task = shortLabel(v.lastSentText);
-  return reviewButton(label, () => action(() => reviewRestoration(checkpoint ? { revert: checkpoint.head } : { task: result.task }, { title, confirm: title, label: `Fortrudt: ${task}` })));
+  const button = reviewButton(label, () => action(() => reviewRestoration(checkpoint ? { revert: checkpoint.head } : { task: result.task }, { title, confirm: title, label: `Fortrudt: ${task}` })));
+  button.classList.add('text-button'); return button;
 }
 const targetLine = (box, v = view) => { if (v.lastTarget) box.append(node('p', `Mål: ${v.lastTarget}`, 'review-target')); };
 // Kontroller med faktiske resultater: forhåndsvisningen, som Aura selv genindlæser, og de kommandoer, AI'en kørte.
@@ -1698,7 +1721,7 @@ function renderRunReview(result, v = view) {
       : 'AI’en stoppede uden at svare eller ændre filer. Prøv igen. Virker det stadig ikke, så vælg en anden model.'));
     box.append(reviewButton('Prøv igen', () => { $('#prompt').value = lastSentText; retrySend(); }, true)); return;
   }
-  if (result.mode === 'plan' && !result.files.length) { box.hidden = true; return; }
+  if (['chat', 'plan'].includes(result.mode) && !result.files.length) { box.hidden = true; return; }
   show();
   box.append(node('h3', 'Prøv resultatet i forhåndsvisningen')); targetLine(box, v); box.append(node('p', result.files.length ? `${result.files.length} ${result.files.length === 1 ? 'fil er ændret' : 'filer er ændret'}:` : 'Ingen filændringer registreret.'));
   reviewFiles(box, result);
@@ -1709,7 +1732,7 @@ function renderRunReview(result, v = view) {
     // Opgaven er gemt som en version. Fortryd sætter filerne tilbage til versionen før opgaven og gemmer det som en ny version.
     box.append(node('p', lastCheckpoint.message, 'hint'));
     if (lastCheckpoint.kept?.length) box.append(node('p', `Disse filer blev ikke gemt, fordi de kan indeholde hemmeligheder eller er for store: ${lastCheckpoint.kept.join(', ')}.`, 'hint'));
-    actions.append(...[undoAction(result, 'Fortryd opgaven', 'Fortryd opgaven', v)].filter(Boolean), reviewButton('Se ændringerne', () => window.workspace.showChange(result.task)));
+    actions.append(reviewButton('Se ændringerne', () => window.workspace.showChange(result.task)), ...[undoAction(result, 'Fortryd opgaven', 'Fortryd opgaven', v)].filter(Boolean));
   } else if (result.files.length) {
     const undo = undoAction(result, 'Fortryd opgaven', 'Fortryd opgaven', v); if (undo) actions.append(undo);
     actions.append(reviewButton('Gennemgå ændringer', () => window.workspace.showChange(result.task)));

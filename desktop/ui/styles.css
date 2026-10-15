@@ -85,7 +85,8 @@ form > section.panel { margin-bottom: 24px; }
 /* Arbejdsområdet har faste vinduesgrænser. Kun de indre paneler ruller.
    Opstartens formularer og dialoger beholder deres egen rulning. */
 html:has(#workspace:not([hidden])), body:has(#workspace:not([hidden])) { height: 100%; overflow: clip; overscroll-behavior: none; }
-.app-content:has(#workspace:not([hidden])) { height: 100dvh; overflow: clip; }
+.app-content:has(#workspace:not([hidden])) { height: 100dvh; overflow: clip; display: flex; flex-direction: column; }
+.app-content:has(#workspace:not([hidden])) #workspace { height: auto; min-height: 0; flex: 1; }
 .workspace-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px; padding: 12px 22px; border-bottom: 1px solid var(--line); }
 .workspace-bar h1 { font-size: 16px; letter-spacing: -.015em; margin: 0; overflow-wrap: anywhere; }
 .workspace-storage { margin: 5px 0 0; font-size: 11px; }
@@ -909,3 +910,26 @@ kbd { font: 600 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
 .hosting-guide small { display: block; }
 .hosting-guide li { margin-bottom: 8px; }
 #hosting-other { margin-bottom: 20px; }
+
+/* Opdateringen har én handling og bliver stående uden at dække arbejdsområdet. */
+.updates-notice { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; gap: 16px; padding: 8px 16px; background: #E8F1FF; border-bottom: 1px solid #E0E7F0; font-size: 13px; }
+.updates-notice.critical, .updates-warning { background: #FFF4DC; color: #644207; }
+.updates-warning { padding: 12px; border-radius: 8px; }
+#updates-dialog { max-width: 520px; }
+#updates-dialog progress { width: 100%; height: 8px; accent-color: #0052CC; }
+#updates-dialog details { margin-top: 24px; }
+#updates-error { color: #A1362E; }
+
+/* Faktisk fremdrift og kode under modtagelse. */
+.live-work { padding: 16px 20px; border-bottom: 1px solid var(--border, #e0e7f0); max-height: 56%; overflow: auto; flex-shrink: 0; }
+.live-work h3 { margin: 0 0 6px; font-size: 13px; }
+.live-work p { margin: 6px 0; }
+.live-todos { padding: 0; margin: 10px 0; list-style: none; font-size: 12px; }
+.live-todos li { margin: 5px 0; }
+.todo-in_progress { font-weight: 600; color: #0052cc; }
+.todo-completed, .todo-cancelled { color: #58677d; }
+.live-draft summary { cursor: pointer; overflow-wrap: anywhere; font-size: 12px; }
+.live-draft pre { max-height: 210px; overflow: auto; white-space: pre; background: #f8fafc; padding: 12px; font-size: 12px; line-height: 1.5; }
+#preview-empty .live-peek { max-width: 34em; color: #0052cc; }
+#composer-mode { white-space: nowrap; font-size: 11px; padding: 4px; }
+#agent-follow { margin-left: auto; font-size: 11px; }

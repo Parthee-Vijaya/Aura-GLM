@@ -2,7 +2,8 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const escape = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const { repository, releaseFiles } = require('./release-contract.cjs');
+const { repository, releaseFiles, hasUpdater, validateRelease, updateFeeds, assetURL } = require('./release-contract.cjs');
+const { createHash } = require('node:crypto');
 const cli = require('./cli-release-contract.cjs');
 // Publish only the reviewed README artwork, never the complete docs directory.
 const pageImages = ['aura-icon.png', 'aura-arbejdsomraade.png', 'aura-funktioner.png', 'aura-eksempel.png'];
@@ -49,7 +50,35 @@ function cliGuides(releases) {
     { name: 'macOS', guide: 'MACOS.md', description: 'Brug Terminal eller din foretrukne terminalapp.' }];
   return platforms.map(p => `<article class="platform"><h3>${p.name}</h3><p>${p.description}</p><a href="https://github.com/${repository}/blob/${latest ? encodeURIComponent(latest.tag_name) : 'main'}/cli/${p.guide}">Installation på ${p.name} →</a></article>`).join('\n');
 }
-async function build(releases, metadata, output = path.join(root, '.cache/pages')) {
+async function buildUpdateFeeds(releases, output, fetcher = fetch) {
+  const channels = new Set();
+  const available = releases.filter(r => !r.draft && hasUpdater(r.tag_name?.replace(/^v/, '')) && Number.isFinite(Date.parse(r.published_at)))
+    .sort((a,b) => Date.parse(b.published_at) - Date.parse(a.published_at));
+  // Gamle feeds må ikke overleve, hvis en udgivelse trækkes tilbage.
+  await fs.rm(path.join(output, 'updates'), { recursive: true, force: true });
+  for (const release of available) {
+    const version = release.tag_name.slice(1), channel = version.includes('-beta.') ? 'beta' : 'latest';
+    if (channels.has(channel)) continue;
+    const asset = release.assets.find(a => a.name === 'release.json');
+    if (!asset || asset.state !== 'uploaded' || asset.size > 65536 || !/^sha256:[a-f0-9]{64}$/.test(asset.digest || '') || asset.browser_download_url !== assetURL(release.tag_name, 'release.json')) throw new Error('Opdateringsoversigten mangler eller har en forkert adresse.');
+    const response = await fetcher(asset.browser_download_url, { signal: AbortSignal.timeout(30000) });
+    if (!response.ok) throw new Error('Opdateringsoversigten kunne ikke hentes.');
+    const chunks = []; let size = 0;
+    for await (const chunk of response.body) { size += chunk.length; if (size > 65536) throw new Error('Opdateringsoversigten er for stor.'); chunks.push(Buffer.from(chunk)); }
+    const data = Buffer.concat(chunks);
+    if (data.length !== asset.size || `sha256:${createHash('sha256').update(data).digest('hex')}` !== asset.digest) throw new Error('Opdateringsoversigtens kontrolsum stemmer ikke.');
+    const manifest = JSON.parse(data);
+    // Samme kontrakt som før offentliggørelsen, men med den publicerede udgivelses filoplysninger.
+    validateRelease({ ...release, draft: true }, manifest, manifest.files.map(f => `${f.sha256}  ${f.name}`).join('\n'), version);
+    for (const feed of updateFeeds(manifest)) {
+      const filename = path.join(output, feed.path); await fs.mkdir(path.dirname(filename), { recursive: true });
+      // JSON er også gyldig YAML. Begge læsere får præcis samme værdier uden en ekstra YAML-afhængighed.
+      await fs.writeFile(filename, JSON.stringify(feed.info, null, 2) + '\n');
+    }
+    channels.add(channel);
+  }
+}
+async function build(releases, metadata, output = path.join(root, '.cache/pages'), fetcher = fetch) {
   const fragment = render(releases, metadata);
   await fs.mkdir(output, {recursive:true});
   await fs.cp(path.join(root, 'site/dist'), output, {recursive:true});
@@ -66,6 +95,7 @@ async function build(releases, metadata, output = path.join(root, '.cache/pages'
     .replace(/<!-- cli-artifacts -->[\s\S]*?<!-- \/cli-artifacts -->/, renderCLI(releases, metadata))
     .replace(/<!-- cli-guides -->[\s\S]*?<!-- \/cli-guides -->/, cliGuides(releases));
   await fs.writeFile(path.join(output, 'desktop.html'), desktop);
+  if (!metadata.private) await buildUpdateFeeds(releases, output, fetcher);
   await fs.writeFile(path.join(output, '.nojekyll'), '');
   return output;
 }
@@ -73,4 +103,4 @@ if (require.main === module) Promise.all(process.argv.slice(2,4).map(f => fs.rea
   .then(([releases,metadata]) => build(releases,metadata))
   .then(p => console.log(`Pages-side bygget i ${p}. Ingen installationsfiler eller adgangstokens kopieret.`))
   .catch(e => {console.error(e.message);process.exitCode=1;});
-module.exports = {render,renderCLI,cliGuides,build};
+module.exports = {render,renderCLI,cliGuides,build,buildUpdateFeeds};

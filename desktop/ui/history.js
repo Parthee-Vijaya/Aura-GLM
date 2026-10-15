@@ -28,6 +28,34 @@
     return true;
   }
 
+  // Den lille status gælder projektets gemte versioner, også når samtalen arbejder i en kopi.
+  let statusRequest = 0, statusTimer;
+  async function refreshStatus() {
+    const request = ++statusRequest, root = current?.root;
+    $('#version-status').hidden = !root || !featureOn('versioner');
+    if (!root) return;
+    try {
+      const data = await call('gitStatus'); if (request !== statusRequest || root !== current?.root) return;
+      $('#version-status').textContent = !data.initialized ? 'Versioner er slået fra' : data.block ? 'Se versionsstatus' : data.changes ? count(data.changes, 'ugemt ændring', 'ugemte ændringer') : 'Alt er gemt';
+      $('#version-status').title = 'Se projektets versioner';
+      const busyChanged = status && Boolean(status.busy) !== Boolean(data.busy);
+      if (status) status = data;
+      busyControls(data);
+      if (busyChanged && !$('#versions-view').hidden) await load();
+    } catch { if (request === statusRequest) $('#version-status').textContent = 'Kontrollér versioner'; }
+  }
+  $('#version-status').onclick = () => $('#git-button').click();
+  window.harness.onEvent(event => {
+    if (!['files.written', 'run.status', 'git.checkpoint', 'changes.updated'].includes(event.type)) return;
+    clearTimeout(statusTimer); statusTimer = setTimeout(refreshStatus, 250);
+  });
+  function busyControls(data) {
+    const busy = Boolean(data?.busy);
+    for (const selector of ['#git-init', '#git-auto', '#git-save-all', '#version-rename', '#version-name', '#version-rename-form button[type="submit"]', '#git-identity button']) $(selector).disabled = busy;
+    $('#git-save').disabled = busy || !$('#git-files input:checked') || Boolean(data?.block);
+    $('#version-restore').disabled = $('#version-revert').disabled = busy || Boolean(data?.block);
+    $('#restore-undo').disabled = busy || Boolean(data?.block) && data.initialized;
+  }
   // ---------- Versioner ----------
   async function loadGitReview() {
     gitReview = null; $('#git-save').disabled = true; $('#git-files').replaceChildren();
@@ -45,7 +73,7 @@
     if (!gitReview.files.length) $('#git-files').append(node('p', 'Ingen ændringer at gemme.'));
   }
   async function load() {
-    const root = current?.root;
+    const root = current?.root; status = null;
     $('#git-save-all').disabled = true;
     $('#git-refresh').disabled = true; $('#git-identity').hidden = true; $('#git-quick').hidden = true; $('#git-summary').textContent = 'Henter versioner …';
     $('#git-auto').disabled = true; $('#restore-undo').hidden = true;
@@ -60,16 +88,20 @@
       $('#git-name').value = result.identity?.name || ''; $('#git-email').value = result.identity?.email || '';
       $('#git-name').readOnly = Boolean(result.identity?.name); $('#git-email').readOnly = Boolean(result.identity?.email);
       $('#git-settings').hidden = !result.initialized || result.wrongRoot; $('#git-auto').checked = result.autoCheckpoint;
-      const canSave = result.initialized && !result.block;
+      const canSave = result.initialized && !result.block && !result.busy;
+      if (result.busy) $('#git-summary').textContent += result.autoCheckpoint ? ' Aura gemmer en version efter opgaven.' : ' Du kan gemme, når opgaven er afsluttet.';
+      $('#git-init').disabled = result.busy;
+      $('#git-identity').hidden ||= result.busy;
       $('#git-quick').hidden = !canSave || !result.changes;
       if (canSave) { $('#git-form').hidden = false; if ($('#git-advanced').open) await loadGitReview(); }
       renderList();
       // Når gendannelser gemmes som versioner, klares fortrydelse med versionerne. Kopien vises kun efter en afbrudt gendannelse eller uden automatiske versioner.
       const interrupted = ['failed', 'prepared', 'applying'].includes(result.restoration?.state);
       // Kopien før sidste gendannelse kræver ikke Git; kun et Git-problem i et projekt med versioner stopper den.
-      $('#restore-undo').hidden = !result.restoration || (result.autoCheckpoint && !interrupted); $('#restore-undo').disabled = Boolean(result.block) && result.initialized;
+      $('#restore-undo').hidden = !result.restoration || (result.autoCheckpoint && !interrupted); $('#restore-undo').disabled = result.busy || Boolean(result.block) && result.initialized;
       if (interrupted) $('#git-feedback').textContent = 'Sidste gendannelse blev afbrudt. Vælg Fortryd sidste gendannelse for at genskabe filerne fra før gendannelsen.';
-    } finally { $('#git-auto').disabled = false; $('#git-refresh').disabled = false; $('#git-save-all').disabled = false; }
+    } catch (error) { $('#git-summary').textContent = 'Versionerne kunne ikke hentes. Prøv igen.'; throw error; }
+    finally { $('#git-auto').disabled = !status || status.busy; $('#git-refresh').disabled = false; $('#git-save-all').disabled = !status || status.busy; }
   }
   function renderList() {
     const items = status?.history || [], shown = showAll ? items : items.slice(0, visible);
@@ -101,7 +133,7 @@
     else note.textContent = 'Der er ingen billeder af denne version. Aura tager dem, når en version gemmes, mens forhåndsvisningen kører.';
     const latest = status?.history?.[0]?.commit === commit && !status.changes;
     $('#version-restore').hidden = latest; $('#version-revert').hidden = !data.parent;
-    $('#version-restore').disabled = $('#version-revert').disabled = Boolean(status?.block);
+    busyControls(status);
     $('#version-restore').classList.toggle('primary', !latest);
     window.workspace.showVersion(data);
     $('#version-title').focus();
@@ -236,7 +268,9 @@
     const changed = result.restored?.files || 0, files = `${count(changed, 'fil er', 'filer er')} sat tilbage`;
     const first = result.savedFirst ? ' Dine ugemte ændringer blev gemt som en version først.' : '';
     const text = result.error || (!changed ? 'Ingen filer blev ændret, fordi du beholdt dine linjer.' : result.saved ? `${files} og gemt som en ny version. Du kan gå frem igen under Ændringer › Versioner.${first}` : git ? `${files}. Gennemse forhåndsvisningen. Ændringerne er ikke gemt som en ny version.${first}` : `${files}. Gennemse forhåndsvisningen. Du kan fortryde det under Ændringer › Versioner.`);
-    $('#git-feedback').textContent = text; message(text, Boolean(result.error));
+    $('#git-feedback').textContent = text;
+    const box = view.review; box.replaceChildren(node('h3', result.error ? 'Gendannelsen kræver din opmærksomhed' : changed ? 'Filerne er sat tilbage' : 'Dine linjer er bevaret'), node('p', text)); box.hidden = false;
+    box.tabIndex = -1; box.focus();
   });
 
   // Nye billeder fra baggrunden: listen eller den åbne version opdateres, hvis de vises.
@@ -246,5 +280,5 @@
     else if (!$('#versions-view').hidden) action(load);
   });
   window.reviewRestoration = reviewRestoration;
-  window.versions = { load, open, fillCompare, reset() { status = null; version = null; showAll = false; cache.clear(); } };
+  window.versions = { load, open, fillCompare, refreshStatus, reset() { status = null; version = null; showAll = false; cache.clear(); } };
 })();

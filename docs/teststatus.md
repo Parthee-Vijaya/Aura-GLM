@@ -4,6 +4,41 @@ Senest kontrolleret 15. oktober 2026. Afsnittene er daterede, så tidligere begr
 
 [Gennemgangen før offentlig beta](offentliggoerelse.md) samler historik- og logkontrol samt de lokale prøver af README, hjemmeside og udgivelseskontrol. Den offentliggør ikke appen og ændrer ikke installationsstatus nedenfor.
 
+## Samtale, frivillig plan og synligt arbejde · 15. oktober 2026
+
+**Skrevet, enhedstestet og afprøvet i den rigtige Electron-app med OpenCode, lokale projektfiler og kontrollerede modelsvar. Ikke pakket eller udgivet.** Denne milepæl følger op på Corti-demoen; den dokumenterer brugerforløbet, ikke en forbedring af Cortis svartid.
+
+- **Samtale som standard:** Nye samtaler kan læse projektet, men motoren afviser skrivning og kommandoer. AI'en kan tilbyde Planlæg; brugeren kan også blive i samtalen. Fravalget gemmes og undertrykker senere planforslag i samme samtale. Kun en konkret plan med fire udfyldte afsnit giver et byggekort. Demoens præcise engelske afvisning og efterfølgende anerkendelse er kørt gennem appen uden byggekort eller filændring.
+- **Synlig fremdrift:** Modellens forberedelse, svartekst og værktøjsargumenter skelnes. Rå ræsonnement vises ikke. Følg arbejdet viser delopgaver og kode som tekst før filskrivning, mærket som endnu ikke gemt. Parserprøver dækker Chat Completions, Anthropic Messages og Responses, delte UTF-8-tegn, delvise argumenter, ugyldige pakker, store svar, beskyttede stier og mulige nøgler. Kodevisningen ændrer ikke strømmen til agentmotoren.
+- **Filer og versioner under arbejde:** Den faktiske filskrivning opdaterer Kode og Ændringer, mens næste modelsvar stadig holdes tilbage i prøven. Historikken kan læses; ændringsknapper er deaktiveret, også når en allerede åben historik møder en ny opgave. De bliver tilgængelige igen bagefter. Projektets status viser korrekt ental og flertal.
+- **Fortryd med kvittering:** Den sekundære knap åbner gennemgangen. Prøven bekræfter gendannelsen, sammenligner filen byte for byte og ser den gamle overskrift i det faktiske preview. Kvitteringen får fokus og fortæller, om en ny version er gemt.
+
+**264 enhedstests består.** `test:conversation-progress` består hele Samtale → Planlæg → Byg → livekode → filændring → versioner → Fortryd. `test:chat` består det eksisterende forløb med plan, byggegodkendelse, preview, direkte tekstrettelse, diff, fortrydelse og delingsgennemgang. `test:chat-feedback` består streaming, pause, rulning, bogstavelig HTML og faktisk tokenforbrug. `test:layout` består ved 980 × 720 og 150 procent zoom. De sidste to bruger syntetiske hændelser og en lokal modelserver som beskrevet i deres scripts. Ingen eksterne modelkald er foretaget.
+
+Skærmene er set i appen og som skærmbilleder. Planforslaget har to valg, det konkrete plankort tre, og Fortryd har én gennemgang med én bekræftelse. Den nye appprøve kontrollerer også 980 × 720 uden vandret overløb. En observeret prøve med en ikke-teknisk bruger mangler fortsat.
+
+**Udestående:** Skift af model, udbyder og indsats under en opgave, udbyderoversigten inde i Din AI og det nye open source-forløb er ikke del af denne milepæl. Den nye visning er ikke afprøvet mod eksterne Corti-, Claude- eller OpenAI-tjenester og ikke på Windows. De tidligere byggede 0.3.0-pakker nedenfor indeholder ikke disse kildeændringer og må ikke udgives som den aktuelle app. Endelige pakker, opgraderingsprøver og offentliggørelse udestår. Ingen commit, push eller CI-kørsel er udført.
+
+Lokal evidens: `/private/tmp/aura-conversation-units-final.log`, `/private/tmp/aura-conversation-progress-final.log`, `/private/tmp/aura-chat-new.log`, `/private/tmp/aura-feedback-new.log` og `/private/tmp/aura-layout-new.log`. Appprøvens log angiver mappen med skærmbilleder.
+
+## Opdateringer og 0.3.0-beta.1 · 15. oktober 2026
+
+**Skrevet, enhedstestet og delvist afprøvet med faktiske pakker. Ikke offentliggjort.** Aura søger automatisk efter opdateringer, men downloader og installerer kun efter brugerens valg. Kritiske rettelser giver en vedvarende advarsel uden at blokere arbejdet. Beta.6 skal opgraderes manuelt én gang.
+
+- **256 enhedstests består.** Det omfatter kanalvalg, filadresser, platform, kontrolsummer, fejl, gemt advarsel og genstart under igangværende arbejde. En tidligere ustabil historiktest bruger nu et kontrolleret ur, så rækkefølgen ikke afhænger af to filskrivninger inden for samme millisekund. Produktionsafhængighedernes npm-kontrol fandt ingen advisories.
+- **Rigtig Electron og HTTP-download:** Opdateringsdialog, fremdrift, afvisning af forkert SHA-512, ingen automatisk download, vedvarende advarsel, genstartsbeskyttelse og gemt kladde er kørt med en lokal server. Installationskaldet blev opsamlet, og arkivet var syntetisk. Denne prøve dokumenterer ikke native installation.
+- **Tre lokale pakninger:** Apple Silicon, Intel og Windows x64 matcher hver 83 appfiler, 28 profilfiler og runtime-låsefilen. Begge Mac-signaturer består den faktiske macOS-kontrol uden sandboxbegrænsning. Windows-installationsfilen er udpakket: alle 2.529 payloadfiler matcher den kontrollerede pakning. Den er fortsat usigneret.
+- **Apple Silicon-pakken er startet:** Med isolerede brugerdata og begrænset PATH er medfølgende Node/npm, Git og OpenCode, projektoprettelse, faktisk preview og versionsgemning afprøvet. Det er en prøve på udviklingsmaskinen, ikke på en ny Mac. Den samme lokale pakke er åbnet til brugerens demo.
+- **Downloadside:** Tidligere versioner står i en kort, sammenfoldet liste. Siden er afprøvet i Chrome ved desktop- og mobilbredde med faktiske beta.6-udgivelsesoplysninger, seks historikposter, 86 lokale links og uden vandret overløb. 0.3.0 fremstilles ikke som offentliggjort.
+
+**I gang ved demopausen:** De to indledende Mac-DMG'er er sendt til Apple. Apple Silicon-indsendelsen `199b5719-8a7a-49a6-ab10-cf1ce454c233` stod som `In Progress` ved statuskontrollen. Appbilletter, endelige DMG/ZIP-filer og deres notarisation mangler. Opgraderingsprøven er tilpasset beta.6 → 0.3.0-beta.1 og kan også afprøve Squirrel.Mac med den faktiske ZIP, men er endnu ikke kørt. Skærmtest er sat på pause under Teams-demoen. Native Windows-opdatering og installation af den nye version på Windows kræver særskilt prøve. Ingen tag, upload, commit, push eller GitHub-kørsel er udført for denne version.
+
+Pakninger: `desktop/release/0.3.0-beta.1/arm64-initial/`, `intel-initial/` og `windows/`. De foreløbige Mac-filer er ikke udgivelsesfiler. Lokal evidens: `/private/tmp/aura-update-units-final.log`, `/private/tmp/aura-update-ui.log`, `/private/tmp/aura-update-web.log`, `/private/tmp/aura-update-package-arm64.log` og `/private/tmp/aura-update-windows-installer.json`. Kildekontrollen skal gentages mod det commit, der senere tagges.
+
+## Installationsprøve på Mac og Windows · 15. oktober 2026
+
+**Afprøvet af brugeren på begge platforme:** Brugeren har installeret `v0.2.0-beta.6` på Mac og Windows og meldt, at installationen fungerede på begge maskiner. Det supplerer de tidligere automatiske pakke- og kildekontroller med en faktisk installationsprøve. Der er ikke oplyst OS-versioner, processorarkitektur eller et detaljeret testresultat for modelkald, nøglelagring og opdatering. Resultatet gælder beta.6, ikke de efterfølgende kildeændringer nedenfor.
+
 ## Forbindelser, arbejdsflade og hostingvejledning · 15. oktober 2026
 
 **Skrevet, enhedstestet og kørt i Electron på denne Mac med rigtig OpenCode, faktiske projektfiler og lokale testservere. Ikke udgivet.** Downloaden af beta.6 indeholder fortsat kildeversionen `26a214a`, ikke ændringerne i dette afsnit.

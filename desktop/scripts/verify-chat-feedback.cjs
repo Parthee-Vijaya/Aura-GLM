@@ -82,6 +82,6 @@ const helpers = require('./ui-test-helpers.cjs');
     assert.match(instructions, /pladsholder, ikke et vedtaget design/);
     assert.deepEqual(errors, []);
     console.log(JSON.stringify({ status: 'bestået', root, requests: requests.length, checks: ['mappeadgang', 'synlig opstart', 'lang tavshed', 'rigtig streaming', 'fire farveformater', 'HTML som tekst', 'manuel rulning', 'seneste svar', 'reduceret bevægelse', 'faktiske tokens', 'Python/Node/hosting i modelkald'] }));
-  } catch (error) { if (app) await (await app.firstWindow()).screenshot({ path: path.join(root, 'fejl.png') }).catch(() => {}); console.error('Evidens:', root); throw error; }
+  } catch (error) { if (app) await (await app.firstWindow()).screenshot({ path: path.join(root, 'fejl.png') }).catch(() => {}); console.error('Evidens:', root, errors); throw error; }
   finally { release?.(); finish?.(); await fs.chmod(project, 0o700); await app?.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

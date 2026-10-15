@@ -5,7 +5,7 @@ const { promisify } = require('node:util');
 const { pipeline } = require('node:stream/promises');
 const { createWriteStream } = require('node:fs');
 const run = promisify(execFile);
-const { repository, expectedFiles, matchesAssetURL } = require('./release-contract.cjs');
+const { repository, expectedFiles, releaseBinaries, matchesAssetURL } = require('./release-contract.cjs');
 function selectDraft(releases, tag) {
   if (!tag.startsWith('v')) throw new Error('Ugyldigt desktoptag.');
   expectedFiles(tag.slice(1));
@@ -15,9 +15,9 @@ function selectDraft(releases, tag) {
 }
 function validateAssetIDs(release) {
   selectDraft([release], release.tag_name);
-  const names = [...expectedFiles(release.tag_name.slice(1)), 'release.json', 'SHA256SUMS.txt'];
+  const names = [...releaseBinaries(release.tag_name.slice(1)), 'release.json', 'SHA256SUMS.txt'];
   const files = release.assets;
-  if (!Array.isArray(files) || files.length !== names.length || new Set(files.map(a => a.name)).size !== names.length || new Set(files.map(a => a.id)).size !== names.length) throw new Error('Desktopkladden skal indeholde fem forskellige filer og fil-IDer.');
+  if (!Array.isArray(files) || files.length !== names.length || new Set(files.map(a => a.name)).size !== names.length || new Set(files.map(a => a.id)).size !== names.length) throw new Error('Desktopkladden skal indeholde alle de krævede filer med forskellige fil-IDer.');
   for (const asset of files) {
     if (!names.includes(asset.name) || asset.state !== 'uploaded' || !Number.isSafeInteger(asset.size) || asset.size <= 0 || !/^sha256:[a-f0-9]{64}$/.test(asset.digest || '') || !Number.isSafeInteger(asset.id) || asset.id <= 0 || asset.url !== `https://api.github.com/repos/${repository}/releases/assets/${asset.id}` || !matchesAssetURL(release, asset, { draft: true })) throw new Error('Kladdefilens oplysninger matcher ikke repository, version og fil-ID.');
   }
@@ -39,7 +39,7 @@ async function download(tag, directory, metadataPath) {
     catch (error) { child.kill(); throw error; }
   }
   await fs.writeFile(metadataPath, JSON.stringify(release, null, 2) + '\n', { flag: 'wx' });
-  console.log(`Kladde ${release.id}: fem filer hentet via deres ID'er. Ingen udgivelse udført.`);
+  console.log(`Kladde ${release.id}: ${files.length} filer hentet via deres ID'er. Ingen udgivelse udført.`);
 }
 if (require.main === module) download(...process.argv.slice(2)).catch(error => { console.error(error.message); process.exitCode = 1; });
 module.exports = { selectDraft, validateAssetIDs, download };

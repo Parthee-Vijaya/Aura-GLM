@@ -48,7 +48,7 @@ function permissions(root, references, mode = 'free', skills = null) {
     // Kun de skills, brugerens funktioner har slået til, kan hentes. OpenCodes egne skills er skjult.
     skill = { '*': 'deny', ...Object.fromEntries(skills.names.map(name => [name, 'allow'])) };
   }
-  if (mode === 'plan') return { '*': 'deny', read, glob: 'allow', list: 'allow', grep: 'ask', webfetch: 'ask', external_directory: external, skill, question: 'allow' };
+  if (['chat', 'plan'].includes(mode)) return { '*': 'deny', read, glob: 'allow', list: 'allow', grep: 'ask', webfetch: 'ask', external_directory: external, skill, question: 'allow' };
   const edit = { '*': 'ask', '*.env*': 'deny', '*.key': 'deny', '*.pem': 'deny' };
   for (const pattern of everywhere('.git')) edit[pattern] = 'deny';
   if (skills?.names.length) edit[skillPattern(skills.directory)] = 'deny';
@@ -164,7 +164,7 @@ class OpenCodeEngine {
   }
   async send(text, system) {
     if (!this.active) throw new Error('Agenten er ikke startet.');
-    return this.request(`/session/${this.session.id}/prompt_async`, 'POST', { model: { providerID: 'harness', modelID: this.model.id }, agent: this.mode === 'plan' ? 'plan' : 'build', system, parts: [{ type: 'text', text }] });
+    return this.request(`/session/${this.session.id}/prompt_async`, 'POST', { model: { providerID: 'harness', modelID: this.model.id }, agent: ['chat', 'plan'].includes(this.mode) ? 'plan' : 'build', system, parts: [{ type: 'text', text }] });
   }
   async abort() { if (this.session && this.url) await this.request(`/session/${this.session.id}/abort`, 'POST'); this.pending.clear(); }
   // En afvisning med en besked stopper ikke opgaven: AI'en får beskeden som rettelse og fortsætter.

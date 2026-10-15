@@ -1,10 +1,11 @@
 const http = require('node:http');
 const { randomBytes, randomUUID } = require('node:crypto');
 const { usesResponses } = require('./connections.cjs');
+const { StreamProgress } = require('./stream-progress.cjs');
 
 const IDLE_LIMIT = 120_000, TOTAL_LIMIT = 20 * 60_000;
 // Kun agentmotoren får en midlertidig adgangskode. Den rigtige modelnøgle bliver i hovedprocessen.
-async function startGateway(connection, model, key, route, onFailure = () => {}, { idleLimit = IDLE_LIMIT, totalLimit = TOTAL_LIMIT } = {}) {
+async function startGateway(connection, model, key, route, onFailure = () => {}, { idleLimit = IDLE_LIMIT, totalLimit = TOTAL_LIMIT, onProgress = () => {}, root = '' } = {}) {
   const token = randomBytes(32).toString('hex');
   const active = new Set();
   let failed = false, stopped = false;
@@ -48,6 +49,7 @@ async function startGateway(connection, model, key, route, onFailure = () => {},
         body.stream_options = { include_usage: true };
       }
       touch();
+      const progress = new StreamProgress({ emit: onProgress, root });
       const response = await fetch(`${base}${responses ? '/responses' : anthropic ? '/messages' : '/chat/completions'}`, { method: 'POST', headers, body: JSON.stringify(body), signal: AbortSignal.any([controller.signal, idle.signal, AbortSignal.timeout(totalLimit)]), redirect: 'error' });
       if (!response.ok) {
         let specific;
@@ -64,7 +66,9 @@ async function startGateway(connection, model, key, route, onFailure = () => {},
         res.writeHead(response.status, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: { message, type: 'api_error' } }));
       }
       res.writeHead(200, { 'content-type': response.headers.get('content-type') || 'application/json', 'cache-control': 'no-store' });
-      for await (const chunk of response.body) { touch(); if (res.destroyed) break; res.write(chunk); }
+      const sse = (response.headers.get('content-type') || '').includes('text/event-stream');
+      for await (const chunk of response.body) { touch(); if (res.destroyed) break; res.write(chunk); try { progress.write(chunk, sse); } catch { /* Fremdrift må ikke afbryde svaret. */ } }
+      try { progress.end(sse); } catch { /* Selve svaret er allerede sendt videre. */ }
       res.end();
     } catch {
       if (idle.signal.aborted) fail(`Modellen svarede ikke i ${idleLimit >= 60_000 ? `${Math.round(idleLimit / 60_000)} min` : `${Math.max(1, Math.round(idleLimit / 1000))} s`}, så forbindelsen blev afbrudt. Din besked er bevaret.`, 'idle');

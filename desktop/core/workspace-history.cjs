@@ -10,7 +10,7 @@ const { randomUUID } = require('node:crypto');
 // Ældre projekter havde én samtale i projektfilen og arkiverede samtaler i <projekt>-archives. De flyttes til
 // samtalefiler første gang projektet åbnes; arkivfilerne bevares uændret.
 const now = () => new Date().toISOString();
-const emptyChat = (id, title = '') => ({ version: 1, id, title, renamed: false, draft: '', mode: 'plan', messages: [], plan: null, planConversation: [], lastPlan: null, status: 'idle', usage: null, createdAt: now(), updatedAt: now() });
+const emptyChat = (id, title = '') => ({ version: 1, id, title, renamed: false, draft: '', mode: 'chat', messages: [], plan: null, planConversation: [], lastPlan: null, status: 'idle', usage: null, createdAt: now(), updatedAt: now() });
 const emptyProject = () => ({ version: 2, brief: null, chats: [], active: null, restorationID: null });
 const idPattern = /^[0-9a-f-]{36}$/;
 const damaged = 'Oversigten over projektets samtaler kan ikke læses. Projektfilerne er ikke berørt, og filen er bevaret. Start en ny samtale med + for at fortsætte.';
@@ -165,8 +165,8 @@ class WorkspaceHistory {
     return Object.entries((await this.store.read()).projects).filter(([, p]) => p.recent).map(([id, p]) => ({ id, ...p.recent })).sort((a,b) => b.at.localeCompare(a.at)).slice(0, 12);
   }
   draft(root, id, input) {
-    if (typeof input.text !== 'string' || input.text.length > 30000 || !['plan','build','free'].includes(input.mode)) throw new Error('Ugyldig kladde.');
-    return this.updateChat(root, id, data => { data.draft = input.text; data.mode = input.mode; });
+    if (typeof input.text !== 'string' || input.text.length > 30000 || !['chat','plan','build','free'].includes(input.mode)) throw new Error('Ugyldig kladde.');
+    return this.updateChat(root, id, data => { data.draft = input.text; data.mode = input.mode; if (input.dismissPlanOffer === true) { data.planOffersDismissed = true; data.planOffer = false; } if (input.mode === 'plan') data.planOffer = false; });
   }
   saveBrief(root, brief) { return this.updateProject(root, data => { data.brief = brief; }); }
   savePlan(root, id, plan, planConversation, lastPlan) { return this.updateChat(root, id, data => { data.plan = plan; data.planConversation = planConversation; data.lastPlan = lastPlan || null; }); }

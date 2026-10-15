@@ -84,7 +84,7 @@
     const root = current?.workspaceRoot || current?.root; if (!root || changes.mode !== 'session') return;
     const data = await call('changesOverview'); if ((current?.workspaceRoot || current?.root) !== root) return;
     changes.data = data; changes.stale = false; $('#changes-notice').hidden = true;
-    const options = [...data.tasks.map(task => option(task.id, `${task.status === 'idle' ? '' : 'Afbrudt · '}${versionTime(task.startedAt)} · ${shortLabel(task.label, 48)}${task.undone ? " · fortrudt" : ""}`)), ...(data.session ? [option('session', `Hele samtalen · siden ${versionTime(data.session.startedAt)}`)] : [])];
+    const options = [...data.tasks.map(task => option(task.id, `${task.status === 'working' ? 'I gang · ' : task.status === 'idle' ? '' : 'Afbrudt · '}${versionTime(task.startedAt)} · ${shortLabel(task.label, 48)}${task.undone ? " · fortrudt" : ""}`)), ...(data.session ? [option('session', `Hele samtalen · siden ${versionTime(data.session.startedAt)}`)] : [])];
     $('#changes-source').replaceChildren(...(options.length ? options : [option('', 'Ingen opgaver endnu')])); $('#changes-source').disabled = !options.length;
     const wanted = source || changes.source;
     changes.source = options.some(item => item.value === wanted) ? wanted : data.tasks[0]?.id || (data.session ? 'session' : '');
@@ -95,7 +95,7 @@
     const view = changeView();
     $('#changes-empty').hidden = Boolean(view) || changes.mode === 'versions'; $('#changes-overview').hidden = !view; $('#changes-diff').hidden = true;
     if (view?.kind === 'version') return renderVersionFiles(view);
-    if (!view) { $('#changes-empty p').textContent = changes.data?.running ? 'AI’en arbejder. Ændringerne vises her, når opgaven er færdig.' : 'Når AI’en har lavet en opgave, ser du her, hvilke filer der er ændret, og præcis hvilke linjer.'; return; }
+    if (!view) { $('#changes-empty p').textContent = changes.data?.running ? 'AI’en arbejder. Ændringerne vises her, når filerne bliver skrevet.' : 'Når AI’en ændrer filer, ser du her, hvilke filer og linjer der er ændret.'; return; }
     const session = changes.source === 'session', { totals } = view;
     // Dine egne rettelser og fortrydelser i Aura står som dine, ikke som en opgave.
     const own = !session && ['direct', 'undo', 'merge'].includes(view.kind);
@@ -107,7 +107,7 @@
     $('#changes-basis').textContent = session
       ? `${view.basis === 'merge' ? 'Sammenlignet med projektfilerne før indfletningen' : 'Sammenlignet med filerne, da den første ændring i samtalen begyndte'} ${versionTime(view.startedAt)}. Alle ændringer er med, også dine egne.${lines}`
       : own ? `${view.kind === 'merge' ? 'Du flettede ind' : view.kind === 'undo' ? 'Du fortrød' : 'Du rettede i forhåndsvisningen'} ${versionTime(view.startedAt)}: ${shortLabel(view.label.replace(/^(Flettet ind|Fortrudt|Tekstrettelse): /, ''), 90)}.${lines}`
-      : `Sammenlignet med filerne i ${view.workspace === 'kopi' ? 'samtalens kopi' : 'projektet'}, da opgaven »${shortLabel(view.label, 60)}« startede ${versionTime(view.startedAt)}.${view.status === 'idle' ? '' : view.status === 'stopped' ? ' Opgaven blev stoppet undervejs.' : ' Opgaven blev ikke færdig.'}${view.undone ? ' Den er fortrudt siden.' : ''}${lines}`;
+      : `Sammenlignet med filerne i ${view.workspace === 'kopi' ? 'samtalens kopi' : 'projektet'}, da opgaven »${shortLabel(view.label, 60)}« startede ${versionTime(view.startedAt)}.${view.status === 'idle' ? '' : view.status === 'working' ? ' Opgaven er stadig i gang.' : view.status === 'stopped' ? ' Opgaven blev stoppet undervejs.' : ' Opgaven blev ikke færdig.'}${view.undone ? ' Den er fortrudt siden.' : ''}${lines}`;
     const notes = [];
     if (totals.mixed) notes.push(`${plural(totals.mixed, 'fil er', 'filer er')} ændret af både AI’en og andre.`);
     if (totals.others) notes.push(session ? `${plural(totals.others, 'fil er', 'filer er')} ikke ændret af AI’en.` : `${plural(totals.others, 'fil blev', 'filer blev')} ændret under opgaven, men ikke af AI’ens filværktøjer.`);
@@ -319,7 +319,6 @@
   // Målet fra forhåndsvisningen står først: ét element ad gangen, valgt med Ret i siden.
   let references = [], target = null;
   const referenceLabel = ref => ref.from ? `${ref.path} · ${ref.from === ref.to ? `linje ${ref.from}` : `linje ${ref.from}–${ref.to}`}` : ref.path;
-  const promptHint = $('#prompt').placeholder;
   function renderReferences() {
     $('#composer-refs').hidden = !references.length && !target;
     const chips = references.map((ref, index) => {
@@ -335,7 +334,7 @@
       chip.append(node('span', `Mål: ${target.label}`), remove); chips.unshift(chip);
     }
     $('#composer-refs').replaceChildren(...chips);
-    $('#prompt').placeholder = target ? 'Hvad skal AI’en ændre her? Fx Gør teksten kortere.' : promptHint;
+    updateWorkMode();
   }
   $('#code-reference').onclick = () => {
     if (!code.path || code.text === null) return;
@@ -491,6 +490,12 @@
   // Fanerne viser den åbne samtale. Hændelser fra en samtale i baggrunden venter, til den åbnes.
   const mine = event => !event.chat || event.chat === viewFor().id;
   window.harness.onEvent(event => {
+    if (event.type === 'files.written' && event.root === current?.root && mine(event)) {
+      code.stale = true; changes.stale = true;
+      badge('changes', event.files.length, 'ændrede filer');
+      action(async () => { await loadCodeList(); if (active === 'code') await checkCodeFile(); });
+      if (active === 'changes' && changes.mode === 'session') { if (!changes.data?.tasks?.length && !changes.file) action(() => loadChanges()); else $('#changes-notice').hidden = false; }
+    }
     if (event.type === 'activity' && event.root === current?.root && mine(event)) putEntry(event.entry);
     if (event.type === 'run.status' && mine(event)) {
       activity.running = ['starting', 'working'].includes(event.status); updateActivityStatus(); updateActivityBadge();
@@ -528,7 +533,7 @@
     if (changes.mode === 'session') { changes.source = ''; $('#changes-source').replaceChildren(option('', 'Ingen opgaver endnu')); $('#changes-source').disabled = true; $('#changes-overview').hidden = true; $('#changes-diff').hidden = true; $('#changes-empty').hidden = false; $('#changes-notice').hidden = true; if (active === 'changes') await action(() => loadChanges()); }
     references = []; target = null; renderReferences();
     code.files = null; code.stale = true; await action(loadCodeList);
-    if (code.path) await openFile(code.path);
+    if (code.path) { const selected = active; await openFile(code.path); show(selected); }
     activity.running = running; await action(loadActivity); updateActivityStatus();
   }
   window.workspace = { show, onProject, onChat, showVersions, showVersion, openFile, showChange, linkify, linkifyAll, references: () => references.map(ref => ({ ...ref })), clearReferences: () => { references = []; target = null; renderReferences(); }, setTarget: value => { target = value ? { id: value.id, label: value.label } : null; renderReferences(); }, target: () => target && { ...target }, get active() { return active; } };

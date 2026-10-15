@@ -1,21 +1,26 @@
 {
   "name": "aura-desktop",
   "productName": "Aura",
-  "version": "0.2.0-beta.6",
+  "version": "0.3.0-beta.1",
   "private": true,
   "license": "EUPL-1.2",
-  "feedback": { "name": "", "email": "" },
+  "feedback": {
+    "name": "",
+    "email": ""
+  },
   "description": "Byg applikationer med AI, lokale projektfiler og forhåndsvisning",
   "main": "main.cjs",
   "scripts": {
     "start": "electron .",
     "test": "node --test --test-concurrency=1 tests/*.test.cjs",
+    "test:updates": "node scripts/verify-updates.cjs",
     "test:desktop": "node scripts/verify-desktop.cjs",
     "test:demo": "node scripts/verify-demo.cjs",
     "test:demo-web": "node scripts/verify-demo-web.cjs",
     "test:agent": "node scripts/verify-agent.cjs",
     "test:chat": "node scripts/verify-chat.cjs",
     "test:chat-feedback": "node scripts/verify-chat-feedback.cjs",
+    "test:conversation-progress": "node scripts/verify-conversation-progress.cjs",
     "test:layout": "node scripts/verify-layout.cjs",
     "test:connections": "node scripts/verify-connections.cjs",
     "test:openai-azure": "node scripts/verify-openai-azure.cjs",
@@ -61,5 +66,9 @@
     "electron-builder": "26.16.1",
     "playwright": "1.63.0"
   },
-  "author": "AI Alliancen"
+  "author": "AI Alliancen",
+  "dependencies": {
+    "electron-updater": "6.8.9",
+    "semver": "7.8.5"
+  }
 }

@@ -19,13 +19,22 @@
       fragment.append(text.textContent.slice(offset)); text.replaceWith(fragment);
     }
   }
+  function phase(view) {
+    if (view.waitingFor?.length) return '';
+    const p = view.modelProgress;
+    if (!p || p.phase === 'received') return '';
+    return ({ waiting: 'Venter på udbyderen …', reasoning: 'Modellen forbereder næste skridt …', text: 'AI’en skriver et svar …', tool: p.draft ? `Modtager kode til ${p.draft.file} …` : 'Modellen forbereder en handling …' })[p.phase] || '';
+  }
   function progress(view, now = Date.now()) {
     const silence = Math.max(0, Math.floor((now - (view.lastSignalAt || view.runStartedAt)) / 1000));
     if (view.waitingFor?.length) return { quiet: false, text: '' };
+    const p = view.modelProgress;
+    if (p && silence < 15 && p.phase === 'reasoning') return { quiet: false, text: 'Der kommer fortsat signaler fra modellen. Intet nyt svar eller filindhold endnu.' };
+    if (p && silence < 15 && p.phase === 'tool') return { quiet: false, text: p.draft ? (p.draft.hidden ? 'Indhold med mulige nøgler skjules.' : `${p.draft.lines} linjer modtaget · ikke gemt endnu`) : 'Handlingen vises, når modellen har sendt dens oplysninger.' };
     const received = view.receivedChars ? `${view.receivedChars.toLocaleString('da-DK')} tegn modtaget` : '';
     return { quiet: silence >= 15, text: silence >= 15 ? `Ingen nye signaler i ${silence} s. Du kan vente eller stoppe.` : received || 'Venter på svar fra AI’en.' };
   }
-  const api = { swatches, progress };
+  const api = { swatches, progress, phase };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.ChatDisplay = api;
 })(typeof window === 'undefined' ? globalThis : window);

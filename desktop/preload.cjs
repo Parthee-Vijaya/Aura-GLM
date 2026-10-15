@@ -1,5 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 const methods = {
+  updatesState: 'updates:state', updatesCheck: 'updates:check', updatesDownload: 'updates:download', updatesRestart: 'updates:restart', updatesAutomatic: 'updates:automatic', updatesWebsite: 'updates:website', updatesNotes: 'updates:notes',
   chatMergeReview: 'chat:merge-review', chatMerge: 'chat:merge',
   supportReport: 'support:report', supportSave: 'support:save', supportFeedback: 'support:feedback', supportContact: 'support:contact',
   restoreReview: 'git:restore-review', restoreVersion: 'git:restore', historyVersion: 'history:version', historyRename: 'history:rename', historyImage: 'history:image',

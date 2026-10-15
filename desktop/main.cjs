@@ -30,7 +30,7 @@ let window, preview, project, busy = false, chosenParent = null;
 let assets = [];
 let github, publishing, deployments, restoration;
 let workbench, externalPreview = null, history, images;
-let ownTools;
+let ownTools, updates, updating = false;
 let devServer, detectedRuntime, forceStatic = false;
 const spaces = new Map(); let selectedRoot = null;
 function workspaceRoot() { return workbench?.chat?.root || project?.root; }
@@ -99,7 +99,10 @@ async function activate(next) {
 function handle(channel, action) {
   ipcMain.handle(channel, async (event, value) => {
     if (!window || event.sender !== window.webContents || event.senderFrame !== window.webContents.mainFrame || event.senderFrame.url !== uiURL) throw new Error('Adgang afvist.');
-    try { return { ok: true, value: await action(value) }; }
+    try {
+      if (updating && !channel.startsWith('updates:')) throw new Error('Aura gør klar til genstart.');
+      return { ok: true, value: await action(value) };
+    }
     catch (error) {
       recordFailure(channel.startsWith('git:') ? 'git' : channel.startsWith('connections:') ? 'forbindelse' : 'app', ['EACCES','EPERM'].includes(error.code) ? 'adgang' : error.code === 'ENOENT' ? 'mangler-fil' : 'handling');
       const messages = { EEXIST: 'Der findes allerede en mappe med det projektnavn. Vælg et andet navn eller en anden placering.', ENOENT: 'En nødvendig fil eller mappe findes ikke. Kontrollér projektmappen.', EACCES: 'Aura har ikke adgang til mappen. Tillad mappeadgang i computerens indstillinger, og prøv igen, eller vælg en anden mappe.', EPERM: 'Computeren blokerer adgang til mappen. Tillad mappeadgang i indstillingerne, og prøv igen, eller vælg en anden mappe.' };
@@ -107,6 +110,17 @@ function handle(channel, action) {
     }
   });
 }
+handle('updates:state', () => updates.snapshot());
+handle('updates:check', () => updates.check());
+handle('updates:download', () => updates.download());
+handle('updates:automatic', value => updates.automatic(value));
+handle('updates:restart', () => updates.restart());
+handle('updates:website', () => shell.openExternal('https://ai-alliancen-org.github.io/ai-harness/desktop.html'));
+handle('updates:notes', () => {
+  const version = updates.snapshot().available?.version;
+  if (!version || !/^\d+\.\d+\.\d+(?:-beta\.\d+)?$/.test(version)) throw new Error('Vælg en tilgængelig udgivelse.');
+  return shell.openExternal(`https://github.com/ai-alliancen-org/ai-harness/releases/tag/v${version}`);
+});
 async function exclusive(action) {
   if (busy) throw new Error('Vent på den igangværende handling.');
   busy = true;
@@ -199,7 +213,7 @@ handle('chat:merge', value => exclusive(async () => {
 }));
 handle('workspace:draft', input => {
   if (!project || input.root !== project.root) throw new Error('Projektet er skiftet. Kladden blev ikke gemt i en anden mappe.');
-  return workbench.saveDraft({ chat: input.chat, text: input.text, mode: input.mode });
+  return workbench.saveDraft({ chat: input.chat, text: input.text, mode: input.mode, dismissPlanOffer: input.dismissPlanOffer === true });
 });
 handle('project:new', () => exclusive(async () => {
   if (workbench.running) throw new Error('Stop den aktive opgave, før du skifter projekt.');
@@ -320,7 +334,9 @@ handle('support:feedback', async () => {
   return true;
 });
 handle('git:status', async () => {
-  const root = requireIdleProject(), status = await workbench.git.status(root);
+  if (!project) throw new Error('Åbn et projekt først.');
+  const root = project.root, status = await workbench.git.status(root);
+  status.busy = Boolean(workbench.running || workbench.finishing);
   status.history = await history.describe(root, status.history);
   const { images: all } = await images.index(root);
   for (const item of status.history) item.image = [...all].reverse().find(entry => entry.commit === item.commit && entry.role === 'after')?.id || null;
@@ -328,7 +344,8 @@ handle('git:status', async () => {
 });
 // Visuel historik: én version med filer og billeder, navne og billederne selv.
 handle('history:version', async commit => {
-  const root = requireIdleProject(), version = await history.version(root, commit);
+  if (!project) throw new Error('Åbn et projekt først.');
+  const root = project.root, version = await history.version(root, commit);
   return { ...version, images: await images.pairFor(root, { commit }) };
 });
 handle('history:rename', value => exclusive(async () => ({ name: await history.rename(requireIdleProject(), value?.commit, value?.name) })));
@@ -555,7 +572,7 @@ handle('changes:file', async value => {
   if (!project) throw new Error('Åbn et projekt først.');
   // En fil i en gemt version: før og efter læses fra Git. Ellers fra Auras øjebliksbilleder i denne samtale.
   if (typeof value?.source === 'string' && value.source.startsWith('version:')) {
-    const root = requireIdleProject(), commit = value.source.slice(8), file = await history.file(root, commit, value.file);
+    const root = project.root, commit = value.source.slice(8), file = await history.file(root, commit, value.file);
     const kind = kindOf((await require('./core/git.cjs').run(root, ['log', '-1', '--format=%s', commit])).toString().trim());
     return file.hidden ? { file: value.file, change: 'ændret', by: ['ai', 'stopped'].includes(kind) ? 'ai' : 'dig', secret: true, added: 0, removed: 0, hunks: [] } : fileDetail(value.file, file.before, file.after, ['ai', 'stopped'].includes(kind) ? 'ai' : 'dig');
   }
@@ -760,6 +777,7 @@ app.whenReady().then(async () => {
   Menu.setApplicationMenu(Menu.buildFromTemplate([
     { label: DISPLAY_NAME, submenu: [
       { label: `Om ${DISPLAY_NAME}`, role: 'about' },
+      { label: 'Opdateringer …', click: () => sendEvent({ type: 'updates.open' }) },
       ...(process.platform === 'darwin' ? [
         { type: 'separator' }, { label: 'Tjenester', role: 'services' },
         { type: 'separator' }, { label: `Skjul ${DISPLAY_NAME}`, role: 'hide' },
@@ -804,11 +822,24 @@ app.whenReady().then(async () => {
   await workbench.copies.cleanup();
   deployments = new Deployments(workbench.store);
   github = new GitHub(workbench.store); publishing = new Publishing({ store: workbench.store, git: workbench.git, provider: github });
+  updates = new (require('./core/updates.cjs').Updates)({
+    updater: app.isPackaged && ['darwin', 'win32'].includes(process.platform) ? require('electron-updater').autoUpdater : null,
+    store: workbench.store, version: app.getVersion(), enabled: app.isPackaged,
+    emit: event => { if (['error', 'ready'].includes(event.value.phase) && updating) { updating = false; quitReady = false; } sendEvent(event); },
+    busy: () => busy || updating || [...workbench.chats.values()].some(c => c.running || c.sending || c.starting || c.finishing)
+      || [...spaces.values()].some(ctx => ['installing', 'starting', 'stopping'].includes(ctx.devServer.state)),
+    prepare: async () => {
+      updating = true;
+      try { await workbench.store.queue; await workbench.history.queue; await shutdown(); quitReady = true; }
+      catch (error) { updating = false; quitReady = false; throw error; }
+    }
+  });
+  await updates.start();
   protocol.handle('harness', async request => {
     const url = new URL(request.url);
     const name = url.pathname.slice(1);
     const providerAsset = /^provider-(anthropic|azure|compatible|corti|komplai|mistral|ollama|openai|openrouter|zen)\.svg$/.test(name);
-    if (url.host !== 'app' || (!providerAsset && !['index.html', 'app.js', 'workspace.js', 'plan-view.js', 'planning.js', 'approval-view.js', 'approvals.js', 'preview-edit.js', 'history.js', 'chats.js', 'palette.js', 'model-advice.js', 'connection-overview.js', 'chat-display.js', 'server.js', 'viewport.js', 'share-view.js', 'hosting.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name))) return new Response('Ikke fundet', { status: 404 });
+    if (url.host !== 'app' || (!providerAsset && !['index.html', 'app.js', 'updates.js', 'workspace.js', 'plan-view.js', 'planning.js', 'approval-view.js', 'approvals.js', 'preview-edit.js', 'history.js', 'chats.js', 'palette.js', 'model-advice.js', 'connection-overview.js', 'chat-display.js', 'conversation-mode.js', 'live-work.js', 'server.js', 'viewport.js', 'share-view.js', 'hosting.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name))) return new Response('Ikke fundet', { status: 404 });
     return new Response(await fs.readFile(path.join(__dirname, 'ui', name)), { headers: { 'Content-Type': providerAsset ? 'image/svg+xml' : name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : 'text/html; charset=utf-8' } });
   });
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));

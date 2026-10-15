@@ -63,9 +63,12 @@ const { auditUI } = require('./ui-audit.cjs');
     assert.equal(new URL(page.url()).hash, '#desktop');
     await page.getByRole('link', { name: 'Installation og hjælp →' }).click();
     assert.equal(new URL(page.url()).pathname, '/desktop.html');
-    await page.locator('.beta-details > summary').click();
+    await page.locator('.beta-details:not(.version-history) > summary').click();
     assert.equal(await page.getByRole('link', { name: 'Læs betastatus og kendte begrænsninger ↗' }).count(), 1);
-    await page.locator('.beta-details > summary').click();
+    await page.locator('.beta-details:not(.version-history) > summary').click();
+    await page.getByText('Tidligere versioner', { exact: true }).click();
+    assert.equal(await page.locator('.version-history li').count(), 6);
+    await page.screenshot({ path: path.join(root, 'versionshistorik.png'), fullPage: true });
     // App og terminal deler side; gamle terminallinks vælger stadig terminalen.
     assert.equal(await page.getByRole('tab').count(), 2);
     assert.equal(await page.locator('#app').isVisible(), true);

@@ -19,6 +19,13 @@ async function verify(resources, target) {
   const archive = path.join(resources, 'app.asar'), source = require('../package.json');
   const packed = JSON.parse(asar.extractFile(archive, 'package.json').toString());
   for (const key of ['name', 'version', 'main', 'productName', 'license']) assert.equal(packed[key], source[key], `Forkert ${key} i den pakkede app`);
+  assert.deepEqual(packed.dependencies, source.dependencies, 'Pakkens opdateringsafhængigheder afviger fra kildekoden');
+  for (const [name, version] of Object.entries(source.dependencies || {})) {
+    assert.equal(JSON.parse(asar.extractFile(archive, `node_modules/${name}/package.json`).toString()).version, version, `Forkert pakket version af ${name}`);
+  }
+  const updateConfig = require('js-yaml').load(await fs.readFile(path.join(resources, 'app-update.yml'), 'utf8'));
+  assert.equal(updateConfig.provider, 'generic');
+  assert.equal(updateConfig.url, 'https://ai-alliancen-org.github.io/ai-harness/updates/');
   const names = ['main.cjs', 'preload.cjs', ...await files(path.join(root, 'core'), 'core/'), ...await files(path.join(root, 'ui'), 'ui/')];
   const profileRoot = path.join(root, '../profiles');
   const profiles = ['grundregler.md', 'gitignore.txt', 'catalog.json', ...await files(path.join(profileRoot, 'skills'), 'skills/')];
