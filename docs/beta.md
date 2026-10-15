@@ -10,15 +10,15 @@ Aura Harness samler instruktioner og værktøjer til at bygge med AI. Du kan bru
 
 ## Før du installerer
 
-Installationsfiler udgives i [GitHub Releases](https://github.com/ai-alliancen-org/ai-harness/releases). En lokal bygning eller en ændring på `main` betyder ikke, at der findes en tilsvarende download. Læs altid udgivelsesnoterne for den konkrete fil.
+[Hent Aura til Mac eller Windows](https://ai-alliancen-org.github.io/ai-harness/desktop.html). Download kræver ikke en GitHub-konto. Læs [udgivelsesnoterne](https://github.com/ai-alliancen-org/ai-harness/releases/tag/v0.2.0-beta.6) for den konkrete version.
 
-**Status 13. oktober 2026:** beta.6 med Komplai-forbindelsen er bygget lokalt til Mac med Apple-chip, Intel-Mac og Windows x64. Der er endnu ingen udgivet installationspakke i GitHub Releases. Den [manuelle udgivelse](udgivelse.md) er klargjort til vedligeholderens gennemgang.
+**Status 15. oktober 2026:** beta.6 er offentliggjort til Mac med Apple-chip, Intel-Mac og Windows x64. Alle tre installationsfiler er hentet uden login og kontrolleret mod udgivelsens filstørrelser og SHA-256. Downloadsiden er åbnet og gennemgået på den offentlige adresse.
 
-Instruktionspakke 0.2.1 udvider pakkekontrol, adgangsprøver, agentadgang og dokumentation før udgivelse. Den er klargjort i kildekoden og webguidens ZIP-filer, men endnu ikke publiceret. De lokale beta.6-installationsfiler er bygget før denne ændring og skal bygges og kontrolleres igen for at medtage den.
+Udgivelsen indeholder instruktionspakke 0.2.1 med udvidet pakkekontrol, adgangsprøver, agentadgang og dokumentation før udgivelse. Appkode, profiler og medfølgende værktøjer er sammenlignet med kildeversionen bag udgivelsens tag.
 
-- Begge Mac-apps er Developer ID-signeret. Kode, profiler og signatur er kontrolleret inde i de faktiske diskbilleder. Beta.6 er endnu ikke notariseret.
-- Appen til Apple-chip er startet med isolerede brugerdata; projektoprettelse, preview og lokale versioner er afprøvet med medfølgende værktøjer. Installation på en anden Mac mangler.
-- Intel-pakken er ikke afprøvet på en Intel-Mac.
+- Begge Mac-apps er Developer ID-signeret. App og diskbillede er notariseret og har vedhæftet Apples billet. Kode, profiler og signatur er kontrolleret inde i de faktiske diskbilleder.
+- Appen til Apple-chip er kørt fra den pakkede installation med isolerede brugerdata. Projekt, preview, lokale versioner, plan, filændring, godkendelser, stop og genåbning er afprøvet med medfølgende værktøjer og en kontrolleret modelserver. Installation på en anden Mac mangler.
+- Intel-appens grundforløb og samtale er kørt under Rosetta. Pakken er ikke afprøvet på en Intel-Mac.
 - Windows-pakken er usigneret. Indholdet er kontrolleret fra det faktiske installationsprogram på Mac; installation, første start og opdatering på Windows mangler.
 - Komplai-login med en almindelig brugers rigtige konto, model og fælles budget mangler endnu en samlet prøve i produktionsmiljøet.
 

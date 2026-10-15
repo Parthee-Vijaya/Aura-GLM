@@ -70,7 +70,7 @@ Workflowet kræver en manuel start på `main` med bekræftelsen `offentlig_udgiv
 
 Kun hjemmesiden og tekstpakkerne uploades som Pages-indhold. Installationsfiler hentes via faktiske GitHub Releases; de kopieres ikke til Pages. Et offentligt repository har også offentlige publicerede Releases og offentlig historik. Private testfiler skal derfor ikke lægges i en publiceret Release her.
 
-Der findes endnu ingen release med installationsfiler. Udgiv kun gennemgåede pakker med præcis signerings-/teststatus og kontrolsummer. En anmodning om at klargøre betaen giver ikke tilladelse til en Release eller en betalt byggeproces. Se [betastatus](beta.md) og [den konkrete installationskontrol](teststatus.md#installationskontrol-før-invitation--10-oktober-2026).
+**Status 15. oktober 2026:** [Desktopbeta 0.2.0-beta.6](https://github.com/ai-alliancen-org/ai-harness/releases/tag/v0.2.0-beta.6) er offentliggjort. [Pages-kørsel 38701021359](https://github.com/ai-alliancen-org/ai-harness/actions/runs/38701021359) på commit `26a214a` har udgivet den fælles downloadside med tre installationsknapper og terminalpakken. Siden er gennemgået i browseren, og alle installationsfiler er hentet uden login med matchende kontrolsummer. Se [betastatus](beta.md) og [teststatus](teststatus.md). Fremtidige udgivelser kræver fortsat gennemgåede pakker og udtrykkelig tilladelse til hver kørsel.
 
 ### Se den samlede forside lokalt
 

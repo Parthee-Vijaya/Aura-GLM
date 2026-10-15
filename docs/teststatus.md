@@ -4,6 +4,18 @@ Senest kontrolleret 15. oktober 2026. Afsnittene er daterede, så tidligere begr
 
 [Gennemgangen før offentlig beta](offentliggoerelse.md) samler historik- og logkontrol samt de lokale prøver af README, hjemmeside og udgivelseskontrol. Den offentliggør ikke appen og ændrer ikke installationsstatus nedenfor.
 
+## Offentlig desktopbeta · 15. oktober 2026
+
+**Udgivet og observeret:** [Aura 0.2.0-beta.6](https://github.com/ai-alliancen-org/ai-harness/releases/tag/v0.2.0-beta.6) og [downloadsiden](https://ai-alliancen-org.github.io/ai-harness/desktop.html) er offentligt tilgængelige uden GitHub-login. Tagget `v0.2.0-beta.6` peger på brugerens commit `26a214a30daffad8dce749a3c45020547c72dd7c` (`klargør offentlig desktopbeta`). Der er ikke oprettet commits eller ændret Git-identitet herfra.
+
+- **Faktiske filer:** De tre installationsfiler er sammenlignet med den taggede kildeversion: 67 appfiler, 28 profilfiler og fastlåste værktøjer pr. platform. Derefter er kladdens fem filer hentet via GitHub-ID og kontrolleret før offentliggørelse.
+- **De to godkendte kørsler bestod:** [Desktopudgivelse 38700874085](https://github.com/ai-alliancen-org/ai-harness/actions/runs/38700874085) og [Pages 38701021359](https://github.com/ai-alliancen-org/ai-harness/actions/runs/38701021359), begge på `26a214a`. Komplai-liveprøven var ikke et udgivelseskrav, som godkendt. Ingen yderligere kørsler blev startet.
+- **Offentlig download:** Begge DMG-filer, Windows-installationsfilen, `release.json` og `SHA256SUMS.txt` er hentet fra de offentlige adresser uden token eller cookies. Alle filstørrelser og SHA-256 matcher de kontrollerede udgivelsesfiler.
+- **Den udgivne side:** App- og Terminal-valgene er afprøvet i browseren. Appafsnittet viser beta.6 og de tre rigtige installationslinks; terminalafsnittet viser den særskilte CLI-pakke.
+- **Platforme:** De samme Mac-filer er signerede og notariserede med billet på app og diskbillede. Den tidligere dokumenterede prøve på Apple Silicon og under Rosetta gælder disse filer. Windows-installationsfilens indhold er kontrolleret, men den er usigneret og endnu ikke installeret på Windows. Intel-hardware og en anden Mac mangler fortsat. Offentlig download er ikke en ny platforms- eller modelprøve.
+
+Lokal evidens: `/private/tmp/aura-beta-publication.WZxSVT/` indeholder kladde- og udgivelsesmetadata. De fem anonyme downloads og deres kontrolresultat ligger i `/private/tmp/aura-public-downloads-nvlxri/verification.json`. Ingen nye eksterne modelkald eller betalt inferens er udført.
+
 ## Klargøring til offentlig desktopbeta · 15. oktober 2026
 
 Vedligeholderen har godkendt, at desktopbetaen udgives uafhængigt af Komplai-prøven. Kontrol af de faktiske installationsfiler, version, kontrolsummer og Mac-kvitteringer er fortsat obligatorisk. Komplai-kontrollen kan vælges til, når rigtigt login, modelkald og kreditregistrering er afprøvet; et fejlsvar stopper da udgivelsen. Udgivelsesnoterne skelner mellem den generelle beta og Komplais manglende liveprøve.

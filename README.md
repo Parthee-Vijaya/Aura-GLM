@@ -51,9 +51,9 @@ Under **Indstillinger → Funktioner** vælger du blandt andet planlægning, ver
 
 Aura CLI giver adgang til samme kodeagent, regler og modelforbindelser fra terminalen. Du kan planlægge, gennemgå filændringer, se preview i browseren og genoptage samtalen. Git-versioner, projektkommandoer og testudgivelser kræver din godkendelse.
 
-CLI'en kræver Node 22.12 eller nyere, npm og Git. Den pakkes til Windows, Linux og macOS. [Terminalsiden](https://ai-alliancen-org.github.io/ai-harness/terminal.html) viser den seneste komplette CLI-udgivelse, når den er offentliggjort. Download kræver ingen kloning af repositoryet. Windows og Linux mangler stadig en prøve på rigtige maskiner.
+CLI'en kræver Node 22.12 eller nyere, npm og Git. Hent pakken og vejledningen til Windows, Linux eller macOS på [terminalsiden](https://ai-alliancen-org.github.io/ai-harness/terminal.html). Download kræver ingen kloning af repositoryet. Platformsafprøvningen fremgår af [teststatus](docs/teststatus.md).
 
-[Windows: PowerShell og CMD](cli/WINDOWS.md) · [Linux](cli/LINUX.md) · [macOS](cli/MACOS.md) · [Kommandoer og nøglelager](cli/README.md) · [Faktisk afprøvning](docs/teststatus.md). **Status 13. oktober 2026:** Udgivelsesforløbet er klargjort; der er endnu ingen offentlig CLI-pakke.
+[Windows: PowerShell og CMD](cli/WINDOWS.md) · [Linux](cli/LINUX.md) · [macOS](cli/MACOS.md) · [Kommandoer og nøglelager](cli/README.md). [CLI-beta 0.2.0-beta.6](https://github.com/ai-alliancen-org/ai-harness/releases/tag/cli-v0.2.0-beta.6) er offentliggjort.
 
 ## Brug dit eget kodeværktøj
 
@@ -83,7 +83,7 @@ Når du har en Aura-installation, kan du vælge **Prøv et eksempel** ved opstar
 
 *Et lokalt eksempel, der viser samspillet mellem besked og forhåndsvisning. Der foretages ingen modelkald.*
 
-Installationsfiler og udgivelsesnoter hører til i [GitHub Releases](https://github.com/ai-alliancen-org/ai-harness/releases). **Status 11. oktober 2026:** Der er endnu ingen udgivet installationspakke dér. Beta.5 er bygget lokalt til Mac og Windows; læs den platformsspecifikke [teststatus](https://github.com/ai-alliancen-org/ai-harness/blob/main/docs/teststatus.md).
+[Hent Aura til Mac eller Windows](https://ai-alliancen-org.github.io/ai-harness/desktop.html). Beta 0.2.0-beta.6 er offentliggjort 15. oktober 2026 og kan hentes uden GitHub-login. Begge Mac-pakker er signerede og notariserede; Windows-pakken er usigneret. Se [udgivelsesnoter](https://github.com/ai-alliancen-org/ai-harness/releases/tag/v0.2.0-beta.6) og [platformsafprøvning](docs/teststatus.md).
 
 ### Start fra kildekoden
 
