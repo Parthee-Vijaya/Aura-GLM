@@ -1,7 +1,7 @@
 const { _electron: electron } = require('playwright');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
-const { createReadStream, constants } = require('node:fs');
+const { createReadStream } = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
 const http = require('node:http');
@@ -11,9 +11,12 @@ const helpers = require('./ui-test-helpers.cjs');
 (async () => {
   const oldBundle = path.resolve(process.argv[2] || ''), newBundle = path.resolve(process.argv[3] || '');
   const nativeZIP = process.argv[4] ? path.resolve(process.argv[4]) : null;
+  const installationOnly = process.argv[5] === '--installation-only';
+  if (process.argv[5] && !installationOnly || process.argv.length > 6) throw new Error('Ukendt testvalg. Brug eventuelt --installation-only efter ZIP-stien.');
   if (process.platform !== 'darwin' || !oldBundle.endsWith('.app') || !newBundle.endsWith('.app') || oldBundle === newBundle) throw new Error('Angiv to forskellige Mac-apps: tidligere version og ny version. Tilføj den nye ZIP for en native opdateringsprøve.');
   await fs.access(oldBundle); await fs.access(newBundle);
   const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'aura-upgrade-'))), programs = path.join(root, 'Programmer'), data = path.join(root, 'appdata');
+  console.log('Testmateriale: ' + root);
   let installed = path.join(programs, path.basename(oldBundle));
   await fs.mkdir(programs);
   let app, page, requests = 0, downloadCount = 0, updateInfo;
@@ -35,7 +38,8 @@ const helpers = require('./ui-test-helpers.cjs');
     await app.evaluate(({ session }) => session.fromPartition('electron-updater').webRequest.onBeforeRequest((_request, callback) => callback({ cancel: true })));
   }
   try {
-    await fs.cp(oldBundle, installed, { recursive: true, verbatimSymlinks: true, mode: constants.COPYFILE_FICLONE }); await launch();
+    // APFS-kloning skal lykkes udtrykkeligt; en skjult fuld kopi kan opbruge testmaskinens disk.
+    execFileSync('/bin/cp', ['-cR', oldBundle, installed]); await launch();
     const oldVersion = await app.evaluate(({ app }) => app.getVersion()), targetVersion = bundleVersion(newBundle);
     console.log('Tidligere version startet: ' + oldVersion);
     await page.fill('#name', 'Bevaret projekt'); await page.fill('#purpose', 'Syntetisk prøve af opdatering'); await page.click('#create'); await page.waitForSelector('#workspace:not([hidden])');
@@ -43,14 +47,17 @@ const helpers = require('./ui-test-helpers.cjs');
     const original = '<!doctype html><html lang="da"><meta charset="utf-8"><title>Opgraderingsprøve</title><h1>Bevaret indhold</h1></html>';
     await fs.writeFile(path.join(project, 'public/index.html'), original);
     await page.frameLocator('#preview').getByRole('heading', { name: 'Bevaret indhold' }).waitFor();
-    const connection = await page.evaluate(value => window.harness.saveConnection(value), { kind: 'compatible', name: 'Bevaret forbindelse', baseURL: serverURL + '/v1', apiKey: key });
-    assert.equal(connection.ok, true); assert.equal(JSON.stringify(connection).includes(key), false);
-    const id = connection.value.connections[0].id;
-    assert.equal((await page.evaluate(id => window.harness.models(id), id)).ok, true); assert.equal(requests, 1);
+    let id;
+    if (!installationOnly) {
+      const connection = await page.evaluate(value => window.harness.saveConnection(value), { kind: 'compatible', name: 'Bevaret forbindelse', baseURL: serverURL + '/v1', apiKey: key });
+      assert.equal(connection.ok, true); assert.equal(JSON.stringify(connection).includes(key), false);
+      id = connection.value.connections[0].id;
+      assert.equal((await page.evaluate(id => window.harness.models(id), id)).ok, true); assert.equal(requests, 1);
+    }
     assert.equal((await page.evaluate(() => window.harness.saveDesign({ name: 'Bevaret design', color: '#0052cc', links: ['https://design.gentofte.dk/'] }))).ok, true);
     await page.fill('#prompt', 'Bevar kladden gennem opdatering');
     await page.evaluate(async () => { await saveChatDraft(true); });
-    console.log('Projekt, forbindelse, kladde og design er gemt. Udskifter testappen.');
+    console.log(installationOnly ? 'Projekt, kladde og design er gemt. Særskilt installationsprøve uden nøglelagring.' : 'Projekt, forbindelse, kladde og design er gemt. Udskifter testappen.');
     if (nativeZIP) {
       const hash = createHash('sha512'); for await (const chunk of createReadStream(nativeZIP)) hash.update(chunk);
       updateInfo = { version: targetVersion, files: [{ url: `https://github.com/ai-alliancen-org/ai-harness/releases/download/v${targetVersion}/Aura-${targetVersion}-mac-${process.arch}.zip`, sha512: hash.digest('base64'), size: (await fs.stat(nativeZIP)).size }] };
@@ -71,14 +78,23 @@ const helpers = require('./ui-test-helpers.cjs');
           callback({ cancel: !request.url.startsWith(serverURL + '/') });
         });
         global.nativeTest = new Updates({ updater, store: { read: async () => ({}), update: async () => {} }, version: app.getVersion() });
+        const record = (event, detail = '') => require('node:fs').appendFileSync(root + '/native-events.jsonl', JSON.stringify({ at: new Date().toISOString(), event, detail }) + '\n');
+        global.recordNativeEvent = record;
+        for (const event of ['checking-for-update', 'update-available', 'update-not-available', 'update-downloaded']) updater.nativeUpdater.on(event, () => record(event));
+        updater.nativeUpdater.on('error', error => record('native-error', error.message));
+        app.on('before-quit', () => record('before-quit'));
+        app.on('will-quit', () => record('will-quit'));
+        // Squirrel genstarter uden --user-data-dir. Prøven åbner derfor selv appen igen med isolerede data.
         updater.autoRunAppAfterInstall = false;
         updater.on('error', error => { global.nativeFailure = error.message; });
         const state = await global.nativeTest.check(); if (state.phase !== 'available') throw new Error(JSON.stringify(state));
         const ready = await global.nativeTest.download(); if (ready.phase !== 'ready') throw new Error(JSON.stringify(ready));
+        record('download-ready');
       }, { source: path.resolve(__dirname, '..'), root, serverURL });
       assert.equal(downloadCount, 1);
+      console.log('Den signerede ZIP er hentet. Starter native installation.');
       const closed = app.waitForEvent('close', { timeout: 180000 });
-      await app.evaluate(() => { void global.nativeTest.restart(); });
+      await app.evaluate(() => { void global.nativeTest.restart().then(state => global.recordNativeEvent('restart-result', state)).catch(error => { global.nativeFailure = error.message; global.recordNativeEvent('restart-error', error.message); }); });
       await closed; app = null;
       const deadline = Date.now() + 120000;
       while (true) {
@@ -91,23 +107,25 @@ const helpers = require('./ui-test-helpers.cjs');
     } else {
       await app.close(); app = null;
       await fs.rm(installed, { recursive: true }); installed = path.join(programs, path.basename(newBundle));
-      await fs.cp(newBundle, installed, { recursive: true, verbatimSymlinks: true, mode: constants.COPYFILE_FICLONE });
+      execFileSync('/bin/cp', ['-cR', newBundle, installed]);
     }
     await launch();
     const newVersion = await app.evaluate(({ app }) => app.getVersion()); assert.equal(newVersion, targetVersion); assert.notEqual(newVersion, oldVersion);
-    assert.equal(requests, 1, 'Opdatering må ikke selv sende til den gemte forbindelse');
-    const state = await page.evaluate(() => window.harness.connectionState()); assert.ok(state.value.connections.some(c => c.id === id)); assert.equal(JSON.stringify(state).includes(key), false);
-    assert.equal((await page.evaluate(id => window.harness.models(id), id)).ok, true, 'Den gemte krypterede nøgle kan stadig bruges'); assert.equal(requests, 2);
+    assert.equal(requests, installationOnly ? 0 : 1, 'Opdatering må ikke selv sende til en forbindelse');
+    if (!installationOnly) {
+      const state = await page.evaluate(() => window.harness.connectionState()); assert.ok(state.value.connections.some(c => c.id === id)); assert.equal(JSON.stringify(state).includes(key), false);
+      assert.equal((await page.evaluate(id => window.harness.models(id), id)).ok, true, 'Den gemte krypterede nøgle kan stadig bruges'); assert.equal(requests, 2);
+    }
     assert.equal(await fs.readFile(path.join(project, 'public/index.html'), 'utf8'), original);
     await page.waitForSelector('#workspace:not([hidden])');
     await page.frameLocator('#preview').getByRole('heading', { name: 'Bevaret indhold' }).waitFor();
     assert.equal(await page.inputValue('#prompt'), 'Bevar kladden gennem opdatering');
     assert.ok((await page.evaluate(() => window.harness.listDesigns())).value.some(d => d.name === 'Bevaret design'));
     await page.screenshot({ path: path.join(root, 'opdateret.png'), animations: 'disabled' });
-    const result = { status: 'bestået', root, oldVersion, newVersion, native: Boolean(nativeZIP), checks: [nativeZIP ? 'Squirrel.Mac installerede signeret ZIP' : 'manuel udskiftning af app samme sted', 'uændrede projektfiler', 'forbindelse og krypteret testnøgle bevaret', 'ingen automatisk modelsendelse', 'designpakke og kladde bevaret'], limitation: 'Mac med isolerede brugerdata. Native prøve indlæser klienten i beta.6 udefra; almindelige beta.6-brugere skal opgradere manuelt. Windows kræver egen prøve.' };
+    const result = { status: 'bestået', root, oldVersion, newVersion, native: Boolean(nativeZIP), installationOnly, checks: [nativeZIP ? 'Squirrel.Mac installerede signeret ZIP' : 'manuel udskiftning af app samme sted', 'uændrede projektfiler', ...(!installationOnly ? ['forbindelse og krypteret testnøgle bevaret'] : []), 'ingen automatisk modelsendelse', 'designpakke og kladde bevaret'], limitation: 'Mac med isolerede brugerdata. Native prøve indlæser klienten i beta.6 udefra og dækker Squirrel-installation samt kontrolleret manuel genåbning; automatisk genstart er ikke afprøvet. Almindelige beta.6-brugere skal opgradere manuelt. Windows kræver egen prøve.' + (installationOnly ? ' Denne særskilte prøve dækker ikke nøglelagring eller bevarelse af forbindelse.' : '') };
     await fs.writeFile(path.join(root, 'rapport.json'), JSON.stringify(result, null, 2)); console.log(JSON.stringify(result));
   } catch (error) {
     await page?.screenshot({ path: path.join(root, 'fejl.png'), timeout: 3000 }).catch(() => {});
-    console.error('Testmateriale: ' + root); console.error(await app?.evaluate(() => global.nativeFailure).catch(() => null)); throw error;
+    console.error('Testmateriale: ' + root); console.error(await app?.evaluate(() => ({ failure: global.nativeFailure, state: global.nativeTest?.snapshot() })).catch(() => null)); throw error;
   } finally { await app?.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

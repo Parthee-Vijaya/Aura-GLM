@@ -29,6 +29,8 @@ async function generate(directory = path.join(root,'release')) {
  html=html.replace(/<!-- artifacts -->[\s\S]*?<!-- \/artifacts -->/,`<p>Version ${escape(version)}</p>${blocks || '<p>Installationsfilerne klargøres.</p>'}<details><summary>Kontrolsummer og filoversigt</summary><p><a href="SHA256SUMS.txt">Kontrolsummer</a> · <a href="release.json">Filoversigt</a></p></details>`);
  await fs.writeFile(path.join(directory,'index.html'),html);
  for (const name of ['desktop.css', 'terminal.css', 'downloads.js']) await fs.copyFile(path.join(root,'../site/dist',name),path.join(directory,name));
+ await fs.mkdir(path.join(directory,'images'),{recursive:true});
+ await fs.copyFile(path.join(root,'../docs/images/aura-icon.png'),path.join(directory,'images/aura-icon.png'));
  let update;
  if(hasUpdater(version)){
    const notice=JSON.parse(await fs.readFile(path.join(root,'packaging/update-notice.json'),'utf8'));

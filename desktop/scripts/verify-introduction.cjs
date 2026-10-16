@@ -11,6 +11,7 @@ const { run } = require('../core/git.cjs');
   app=await electron.launch({executablePath:bundle?(bundle.endsWith('.app')?path.join(bundle,'Contents/MacOS',path.basename(bundle,'.app')):bundle):require('electron'),args:[...(bundle?[]:[path.join(__dirname,'..')]),'--user-data-dir='+path.join(root,'appdata')],env:{...process.env,ELECTRON_RUN_AS_NODE:undefined}});
   await require('./ui-test-helpers.cjs').isolateDocuments(app,path.join(root,'Dokumenter'));
   const page=await app.firstWindow();page.on('pageerror',e=>errors.push(e.message));
+  await page.locator('#welcome-build').waitFor({state:'attached',timeout:60000});
   await page.waitForFunction(()=>!document.querySelector('#welcome-build').disabled);
   await app.evaluate(()=>{global.introRequests=0;global.localLookups=0;global.localModels=[{name:'qwen3:8b'}];global.fetch=async(url)=>{if(url==='http://127.0.0.1:11434/api/tags'){global.localLookups++;return new Response(JSON.stringify({models:global.localModels}));}global.introRequests++;throw Error('Ingen modelsendelse i introduktionen');};});
   assert.equal(await page.locator('#welcome-dialog').evaluate(e=>e.open),true);

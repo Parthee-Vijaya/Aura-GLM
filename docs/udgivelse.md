@@ -36,7 +36,7 @@ node scripts/release-site.cjs release/udgivelseskandidat
 
 Erstat mappen med den faktiske mappe. Scriptet danner `release.json`, `SHA256SUMS.txt` og en lokal downloadside. Det læser versionen fra filnavnene og afviser blandede versioner. En Mac-kvittering tæller kun, hvis den har status Accepted, et indsendelses-id, en kontroldato og samme SHA-256 som filen. En kvittering er lokal dokumentation; Linux-kontrollen hos GitHub foretager ikke selv Apples signatur- eller billetkontrol.
 
-Afprøv download med `node scripts/verify-download.cjs release/udgivelseskandidat`. Installationsfiler, Apple-kvitteringer og lokale rapporter skal ikke committes. Udgivelsesnoterne skal beskrive faktisk signering og afprøvning samt kendte begrænsninger. For 0.3.0-beta.1 findes en [kladde til noterne](releases/0.3.0-beta.1.md).
+Afprøv download med `node scripts/verify-download.cjs release/udgivelseskandidat`. Installationsfiler, Apple-kvitteringer og lokale rapporter skal ikke committes. Udgivelsesnoterne skal beskrive faktisk signering og afprøvning samt kendte begrænsninger. Se [udgivelsesnoterne for 0.3.0-beta.1](releases/0.3.0-beta.1.md).
 
 ## Særskilt prøve af Komplai
 
@@ -70,6 +70,14 @@ Den nye klient bruger electron-updater 6.8.9 og platformens installationsprogram
 `npm run test:updates` afprøver den faktiske klient, UI og HTTP-download mod en lokal server, herunder forkert SHA-512, fremdrift og gemt kladde. Installationskaldet opsamles i den prøve. Den native installation skal desuden køres mellem to signerede Mac-pakker og mellem to installerede Windows-versioner. En vellykket download er ikke bevis for, at installationen lykkes.
 
 `node scripts/verify-upgrade.cjs TIDLIGERE.app NY.app` fra `desktop/` prøver manuel udskiftning med isolerede brugerdata. Tilføj stien til den nye signerede og notariserede ZIP efter de to appstier for at bruge Squirrel.Mac til selve installationen. Beta.6 mangler opdateringsklienten, så prøven indlæser den nye klient i testprocessen uden at ændre den signerede gamle app. Det afprøver installationsmekanismen, men betyder ikke, at almindelige beta.6-installationer kan opdatere sig selv. Scriptet åbner appvinduer og må ikke køres under en demo.
+
+En særskilt installationsprøve uden nøglelagring vælges med `--installation-only` efter ZIP-stien:
+
+```bash
+node scripts/verify-upgrade.cjs TIDLIGERE.app NY.app NY.zip --installation-only
+```
+
+Valget springer gemning og brug af den krypterede testnøgle og forbindelse over. Det afprøver installation, projektfiler, design og kladde uden at kalde nøgleringen til nøglelagring. Det erstatter ikke den fulde prøve af databevarelse, herunder gemte forbindelser og krypterede nøgler. Begge native varianter genåbner appen kontrolleret med isolerede brugerdata; automatisk genstart er ikke dækket, fordi Squirrel ikke viderefører `--user-data-dir`.
 
 Filerne hentes fra dette repositorys GitHub Releases over HTTPS. SHA-512 kontrollerer downloadens indhold mod feedet; det er ikke en uafhængig udgiversignatur. Mac kontrollerer også appens kodesignatur. Windows-betaen er fortsat usigneret og har derfor ikke en Authenticode-kontrol af udgiverens identitet. GitHub-adgang, manuel gennemgang af udgivelser og beskyttelse af Pages er en del af tillidsgrundlaget. Slå ikke platformens signaturkontrol fra for at få en opdatering igennem.
 

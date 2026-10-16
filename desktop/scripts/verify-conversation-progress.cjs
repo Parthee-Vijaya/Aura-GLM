@@ -38,7 +38,10 @@ const { GitVersions } = require('../core/git.cjs');
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   try {
-    app = await electron.launch({ executablePath: require('electron'), args: [path.join(__dirname, '..'), '--user-data-dir=' + path.join(root, 'appdata')], env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined } });
+    const bundle = process.env.HARNESS_TEST_PACKAGE ? path.resolve(process.env.HARNESS_TEST_PACKAGE) : null;
+    const executablePath = bundle ? (bundle.endsWith('.app') ? path.join(bundle, 'Contents/MacOS', path.basename(bundle, '.app')) : bundle) : require('electron');
+    app = await electron.launch({ executablePath, args: [...(bundle ? [] : [path.join(__dirname, '..')]), '--user-data-dir=' + path.join(root, 'appdata')], env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined } });
+    const testedApp = await app.evaluate(({ app }) => ({ version: app.getVersion(), packaged: app.isPackaged }));
     await app.evaluate(() => { const original = global.fetch; global.fetch = (url, options) => { if (!/^http:\/\/127\.0\.0\.1:\d+\//.test(String(url))) throw Error('Prøven bruger kun lokal netadgang.'); return original(url, options); }; });
     const page = await app.firstWindow(); page.on('pageerror', e => errors.push(e.message));
     await helpers.skipIntroduction(page);
@@ -120,7 +123,7 @@ const { GitVersions } = require('../core/git.cjs');
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     await page.screenshot({ path: path.join(root, 'lille-vindue.png'), animations: 'disabled' });
     assert.deepEqual(errors, []);
-    console.log(JSON.stringify({ status: 'bestået', root, requests: requests.length, checks: ['Samtale som standard', 'demoens afvisning uden byggekort', 'frivilligt planvalg', 'afvisning huskes', 'konkret plan før bygning', 'ræsonnement skjules', 'kode før filskrivning', 'live filliste og diff', 'versioner under arbejde', 'fortryd med gennemgang og kvittering', '980 × 720'] }));
+    console.log(JSON.stringify({ status: 'bestået', root, package: bundle, app: testedApp, requests: requests.length, checks: ['Samtale som standard', 'demoens afvisning uden byggekort', 'frivilligt planvalg', 'afvisning huskes', 'konkret plan før bygning', 'ræsonnement skjules', 'kode før filskrivning', 'live filliste og diff', 'versioner under arbejde', 'fortryd med gennemgang og kvittering', '980 × 720'] }));
   } catch (error) { if (app) await (await app.firstWindow()).screenshot({ path: path.join(root, 'fejl.png') }).catch(() => {}); console.error('Evidens:', root, errors); throw error; }
   finally { Object.values(gates).forEach(resolve => resolve()); await app?.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

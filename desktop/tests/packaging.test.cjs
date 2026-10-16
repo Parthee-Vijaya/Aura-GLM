@@ -39,6 +39,10 @@ test('downloadside viser kun eksisterende pakker og notarisation med matchende f
  await fs.writeFile(path.join(root,name+'.notarized.json'),JSON.stringify({status:'Accepted',sha256:files[0].sha256,id:'12345678-1234-1234-1234-123456789abc',checkedAt:'2026-10-13T08:00:00Z'}));
  files=await generate(root);assert.equal(files[0].notarized,true);
  const html=await fs.readFile(path.join(root,'index.html'),'utf8');assert.match(html,/Notariseret af Apple/);assert.ok(!html.includes('privat.env'));
+ assert.match(html,/<img[^>]+src="images\/aura-icon\.png"/);
+ assert.match(html,/<link rel="icon"[^>]+href="images\/aura-icon\.png"/);
+ assert.match(html,/<link rel="apple-touch-icon"[^>]+href="images\/aura-icon\.png"/);
+ assert.deepEqual(await fs.readFile(path.join(root,'images/aura-icon.png')),await fs.readFile(path.join(__dirname,'../../docs/images/aura-icon.png')),'Den lokale downloadside bevarer Aura-logoets faktiske bytes');
  assert.equal(JSON.parse(await fs.readFile(path.join(root,'release.json'),'utf8')).version,'0.2.0-beta.4','En ældre pakke må ikke få kildekodens nye versionsnummer');
  await fs.writeFile(path.join(root,'Aura-0.2.0-beta.5-win-x64.exe'),'anden version');
  await assert.rejects(generate(root),/flere appversioner/);
