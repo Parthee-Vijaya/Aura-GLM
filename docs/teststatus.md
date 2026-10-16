@@ -4,6 +4,15 @@ Senest kontrolleret 16. oktober 2026. Afsnittene er daterede, så tidligere begr
 
 [Gennemgangen før offentlig beta](offentliggoerelse.md) samler historik- og logkontrol samt de lokale prøver af README, hjemmeside og udgivelseskontrol. Den offentliggør ikke appen og ændrer ikke installationsstatus nedenfor.
 
+## Offentlig desktopbeta 0.3.0-beta.1 · 16. oktober 2026
+
+**Udgivet og observeret:** [Aura 0.3.0-beta.1](https://github.com/ai-alliancen-org/ai-harness/releases/tag/v0.3.0-beta.1) og [downloadsiden](https://ai-alliancen-org.github.io/ai-harness/desktop.html) er offentligt tilgængelige uden GitHub-login. Tagget `v0.3.0-beta.1` peger på brugerens commit `79aa624f35a57c6ffe299845f67d7b0c0030c34a` (`verificér og dokumentér Aura 0.3.0-beta.1`), som også var `main`, da kørslerne startede. Der er ikke oprettet commits eller ændret Git-identitet herfra.
+
+- **Før upload:** Alle tre pakkers ressourcemapper består `verify-package-source.cjs` mod det taggede commit: 87 appfiler, 28 profilfiler og de fastlåste værktøjsversioner. `app.asar` i begge endelige Mac-ZIP'er er byteidentisk med de kontrollerede apps. SHA-256 for alle fem programfiler matcher `SHA256SUMS.txt`, og `verify-download.cjs` består lokalt.
+- **Kladde og offentliggørelse:** Kladden `414834066` fik præcis de syv filer; GitHubs SHA-256 for hver fil matcher filoversigten. Kun de to godkendte kørsler er startet: [Offentliggør gennemgået desktopbeta 38888341744](https://github.com/ai-alliancen-org/ai-harness/actions/runs/38888341744) med `komplai_afproevet` slået fra og [Udgiv downloadside 38888481989](https://github.com/ai-alliancen-org/ai-harness/actions/runs/38888481989). Begge bestod. Tagget udløste ingen andre kørsler.
+- **Offentlig download:** Downloadsiden viser v0.3.0-beta.1 med knapper til Mac · Apple-chip, Mac · Intel og Windows · x64. De tre installationsfiler og `SHA256SUMS.txt` er hentet fra de offentlige adresser uden token eller cookies; alle SHA-256 matcher. Beta-opdateringsfeeds for `darwin-arm64`, `darwin-x64` og `win32-x64` peger på de rigtige filer med samme størrelse og SHA-512 som filoversigten.
+- **Platforme:** Offentlig download er ikke en ny platformsprøve. Platformsstatus fremgår af kandidatafsnittet nedenfor: Windows-installation og -opdatering, automatisk genåbning efter Mac-opdatering, fysisk Intel-hardware og Komplai er fortsat ikke afprøvet.
+
 ## Aktuel kandidat til 0.3.0-beta.1 · 16. oktober 2026
 
 **Skrevet, enhedstestet og afprøvet som pakket Apple Silicon-app samt Intel-app under Rosetta med faktiske lokale filer. Windows-installationsfilens indhold er kontrolleret. Ikke offentliggjort.** Kandidaten bygger på brugerens commit `14ce0c3` med Aura-logoet samt lokale rettelser i test- og downloadforløbet. Dette afsnit opdaterer pakkestatus for de tidligere milepæle nedenfor; det er ikke en erklæring om en færdig udgivelse.
