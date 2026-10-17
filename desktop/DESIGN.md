@@ -142,6 +142,7 @@ Dialogerne kan rulle ved større tekst; gennemgang og resultat får synligt tast
 
 ## Forbindelser og hosting
 
+- Log ind med komplai er ét kort: Aura og komplais mærke med en bro imellem. Broen pulserer, mens browseren er åben, og bliver en fast linje med flueben, når kontoen er hentet. Kortet har én primær handling ad gangen: Log ind med komplai, Kontrollér token eller Brug organisationens kreditter. Brug et API-token er det andet valg; mens browseren er åben, er Afbryd den eneste handling. Én organisation vises som en flise med navn og saldo uden rullemenu; flere organisationer får rullemenuen over flisen. Status står i én boks i kortet med tegn og tekst: venter, fejl, oplysning eller forbundet. En gemt forbindelse gør nyt login til en sekundær knap, så Brug forbindelse er hovedhandlingen. komplai skrives altid med lille k.
 - Gemte AI-forbindelser vises fire ad gangen med søgning. Navn og udbyder står hver for sig. Status siger, hvornår kataloget senest svarede; ukontrollerede forbindelser får ingen grøn markering.
 - Efter tilslutning er Fortsæt hovedhandlingen. Tilføj en AI mere er et frivilligt valg. Gentagen opsætning må ikke slette kladder, projekt eller andre forbindelser.
 - Hostingens korte tekst beskriver leverandør og dataplacering. Opsætning, databehandleraftale, sikkerhed og kilde ligger i en fold. Ingen generel grøn GDPR-markering. En vejledning må ikke ligne en færdig uploadintegration.

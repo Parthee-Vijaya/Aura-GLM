@@ -4,28 +4,28 @@ const { randomBytes, createHash, randomUUID, timingSafeEqual } = require('node:c
 const API = 'https://api.komplai.dk/v1/aura';
 const ISSUER = 'https://auth.komplai.dk';
 const messages = {
-  aura_not_configured: 'Komplai-login er ikke åbnet endnu. Kontakt Komplai, eller vælg en anden forbindelse.',
-  coding_not_enabled: 'Din organisation har ikke åbnet for kodeværktøjer. Bed jeres administrator kontakte Komplai.',
+  aura_not_configured: 'komplai-login er ikke åbnet endnu. Kontakt komplai, eller vælg en anden forbindelse.',
+  coding_not_enabled: 'Din organisation har ikke åbnet for kodeværktøjer. Bed jeres administrator kontakte komplai.',
   insufficient_scope: 'Denne konto har ikke adgang til kodeværktøjer.',
-  invalid_token: 'Adgangen blev afvist. Log ind med Komplai igen, eller kontrollér dit API-token.',
-  invalid_api_key: 'Adgangen er udløbet eller tilbagekaldt. Log ind med Komplai igen, eller indsæt et nyt API-token.',
-  api_key_required: 'Brug et Komplai API-token til kodeværktøjer.',
+  invalid_token: 'Adgangen blev afvist. Log ind med komplai igen, eller kontrollér dit API-token.',
+  invalid_api_key: 'Adgangen er udløbet eller tilbagekaldt. Log ind med komplai igen, eller indsæt et nyt API-token.',
+  api_key_required: 'Brug et komplai API-token til kodeværktøjer.',
   terms_changed: 'Organisationens priser eller datavilkår har ændret sig. Hent modellerne igen og gennemgå oplysningerne.',
   ai_credit_exhausted: 'Organisationens AI-kreditter er brugt. Kontakt jeres administrator.',
 };
 async function json(url, { key, body, method = body ? 'POST' : 'GET', signal, fetcher = fetch } = {}) {
   let response;
   try { response = await fetcher(url, { method, redirect: 'error', signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(15000)]) : AbortSignal.timeout(15000), headers: { Accept: 'application/json', ...(key ? { Authorization: `Bearer ${key}` } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) }); }
-  catch { throw new Error(signal?.aborted ? 'Login blev afbrudt.' : 'Komplai kunne ikke kontaktes. Prøv igen, når forbindelsen virker.'); }
+  catch { throw new Error(signal?.aborted ? 'Login blev afbrudt.' : 'komplai kunne ikke kontaktes. Prøv igen, når forbindelsen virker.'); }
   const bodyText = await readBounded(response, 2_000_000);
-  let data; try { data = JSON.parse(bodyText); } catch { throw new Error('Svaret fra Komplai kunne ikke læses.'); }
-  if (!response.ok) { const error = new Error(messages[data.error] || (response.status === 401 ? messages.invalid_token : response.status === 403 ? messages.insufficient_scope : 'Komplai kunne ikke gennemføre handlingen. Prøv igen.')); error.status = response.status; throw error; }
+  let data; try { data = JSON.parse(bodyText); } catch { throw new Error('Svaret fra komplai kunne ikke læses.'); }
+  if (!response.ok) { const error = new Error(messages[data.error] || (response.status === 401 ? messages.invalid_token : response.status === 403 ? messages.insufficient_scope : 'komplai kunne ikke gennemføre handlingen. Prøv igen.')); error.status = response.status; throw error; }
   return data;
 }
 async function readBounded(response, maxBytes) {
   const reader = response.body?.getReader(); let size = 0, parts = [];
-  if (!reader) throw new Error('Komplai svarede ikke.');
-  try { while (true) { const item = await reader.read(); if (item.done) break; size += item.value.length; if (size > maxBytes) throw new Error('Svaret fra Komplai er for stort.'); parts.push(Buffer.from(item.value)); } } finally { await reader.cancel().catch(() => {}); reader.releaseLock(); }
+  if (!reader) throw new Error('komplai svarede ikke.');
+  try { while (true) { const item = await reader.read(); if (item.done) break; size += item.value.length; if (size > maxBytes) throw new Error('Svaret fra komplai er for stort.'); parts.push(Buffer.from(item.value)); } } finally { await reader.cancel().catch(() => {}); reader.releaseLock(); }
   return Buffer.concat(parts).toString();
 }
 const same = (a, b) => typeof a === 'string' && Buffer.byteLength(a) === Buffer.byteLength(b) && timingSafeEqual(Buffer.from(a), Buffer.from(b));
@@ -41,8 +41,8 @@ class KomplaiLogin {
     current.timer = setTimeout(() => { if (this.pending === current) this.cancel(); }, 300000); current.timer.unref();
     try {
       const config = await json(`${this.baseURL}/config`, { fetcher: this.fetcher, signal: current.controller.signal });
-      if (config.issuer !== this.issuer || typeof config.clientId !== 'string' || !config.clientId || !Array.isArray(config.scopes) || config.scopes.some(s => typeof s !== 'string' || /\s/.test(s))) throw new Error('Komplais loginopsætning kunne ikke bekræftes.');
-      for (const endpoint of [config.authorizationEndpoint, config.tokenEndpoint]) { if (typeof endpoint !== 'string' || new URL(endpoint).origin !== this.issuer || new URL(endpoint).username || new URL(endpoint).password || new URL(endpoint).hash) throw new Error('Komplais loginadresse kunne ikke bekræftes.'); }
+      if (config.issuer !== this.issuer || typeof config.clientId !== 'string' || !config.clientId || !Array.isArray(config.scopes) || config.scopes.some(s => typeof s !== 'string' || /\s/.test(s))) throw new Error('komplais loginopsætning kunne ikke bekræftes.');
+      for (const endpoint of [config.authorizationEndpoint, config.tokenEndpoint]) { if (typeof endpoint !== 'string' || new URL(endpoint).origin !== this.issuer || new URL(endpoint).username || new URL(endpoint).password || new URL(endpoint).hash) throw new Error('komplais loginadresse kunne ikke bekræftes.'); }
       const state = randomBytes(32).toString('base64url'), verifier = randomBytes(48).toString('base64url');
       const code = new Promise((resolve, reject) => {
         current.reject = reject;
@@ -72,14 +72,14 @@ class KomplaiLogin {
       const authorizationCode = await code;
       const response = await this.fetcher(config.tokenEndpoint, { method: 'POST', redirect: 'error', signal: AbortSignal.any([current.controller.signal, AbortSignal.timeout(15000)]), headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ grant_type: 'authorization_code', client_id: config.clientId, code: authorizationCode, redirect_uri: redirect, code_verifier: verifier }) });
       // Tokenresponsen føres aldrig videre til brugerfladen eller til fejlbeskeder.
-      if (!response.ok) { await response.body?.cancel(); throw new Error('Komplai kunne ikke bekræfte login. Prøv igen.'); }
+      if (!response.ok) { await response.body?.cancel(); throw new Error('komplai kunne ikke bekræfte login. Prøv igen.'); }
       const body = await readBounded(response, 64000);
       let tokens; try { tokens = JSON.parse(body); } catch { throw new Error('Ugyldigt svar fra login.'); }
       if (typeof tokens.access_token !== 'string' || !tokens.access_token || tokens.access_token.length > 16000 || tokens.token_type?.toLowerCase() !== 'bearer') throw new Error('Ugyldigt svar fra login.');
       if (this.pending !== current) throw new Error('Login blev afbrudt.');
       current.token = tokens.access_token;
       const result = await json(`${this.baseURL}/organisations`, { key: current.token, fetcher: this.fetcher, signal: current.controller.signal });
-      if (!Array.isArray(result.organisations)) throw new Error('Komplais organisationer kunne ikke læses.');
+      if (!Array.isArray(result.organisations)) throw new Error('komplais organisationer kunne ikke læses.');
       current.organisations = result.organisations;
       return { organisations: result.organisations };
     } catch (error) { if (this.pending === current) this.cancel(); throw error; }
@@ -90,9 +90,9 @@ class KomplaiLogin {
     // Kontroller nøglelageret før udstedelse, så en låst nøglering ikke skaber glemte adgange.
     store.encrypt('kontrol');
     const result = await json(`${this.baseURL}/connect`, { key: current.token, fetcher: this.fetcher, signal: current.controller.signal, body: { organisationId: organisation.id, contract: organisation.contract, acceptSharedCredits: true } });
-    if (typeof result.secret !== 'string' || !/^kp_live_[a-zA-Z0-9_-]{43}$/.test(result.secret) || typeof result.id !== 'string' || !Number.isFinite(Date.parse(result.expiresAt))) throw new Error('Komplai returnerede ikke en gyldig adgang.');
+    if (typeof result.secret !== 'string' || !/^kp_live_[a-zA-Z0-9_-]{43}$/.test(result.secret) || typeof result.id !== 'string' || !Number.isFinite(Date.parse(result.expiresAt))) throw new Error('komplai returnerede ikke en gyldig adgang.');
     try {
-      const connection = { id: randomUUID(), kind: 'komplai', name: `Komplai · ${organisation.name}`.slice(0, 100), baseURL: `${this.baseURL}/v1`, secret: store.encrypt(result.secret), account: { organisationId: organisation.id, organisationName: organisation.name, keyId: result.id, expiresAt: result.expiresAt } };
+      const connection = { id: randomUUID(), kind: 'komplai', name: `komplai · ${organisation.name}`.slice(0, 100), baseURL: `${this.baseURL}/v1`, secret: store.encrypt(result.secret), account: { organisationId: organisation.id, organisationName: organisation.name, keyId: result.id, expiresAt: result.expiresAt } };
       await store.update(state => { state.connections.push(connection); });
       this.cancel(); return store.publicConnection(connection);
     } catch (error) { await json(`${this.baseURL}/session`, { key: result.secret, method: 'DELETE', fetcher: this.fetcher }).catch(() => {}); throw error; }

@@ -195,7 +195,7 @@ class Workbench {
 
   // ---------- Forbindelser og modeller ----------
   async saveConnection(input) {
-    if (input?.kind === 'komplai' || (input?.id && (await this.connection(input.id)).kind === 'komplai')) throw new Error('Brug Log ind med Komplai til denne forbindelse.');
+    if (input?.kind === 'komplai' || (input?.id && (await this.connection(input.id)).kind === 'komplai')) throw new Error('Brug Log ind med komplai til denne forbindelse.');
     if (this.running) throw new Error('Stop opgaverne, før du ændrer forbindelser.');
     const connection = connections.normalize(input);
     await this.closeEngines();
@@ -229,7 +229,7 @@ class Workbench {
     if (this.catalogRequests.get(id) !== request) throw new Error('Forbindelsen blev ændret eller kontrolleret igen. Hent modellerne på ny.');
     this.catalogs.set(id, models); return models;
   }
-  async komplaiAccount(id) { const connection = await this.connection(id); if (connection.kind !== 'komplai') throw new Error('Vælg en Komplai-forbindelse.'); return require('./komplai.cjs').account(connection, this.store.decrypt(connection)); }
+  async komplaiAccount(id) { const connection = await this.connection(id); if (connection.kind !== 'komplai') throw new Error('Vælg en komplai-forbindelse.'); return require('./komplai.cjs').account(connection, this.store.decrypt(connection)); }
   async routes(id, modelID) { const connection = await this.connection(id); return connections.routes(connection, this.store.decrypt(connection), modelID); }
   async selection(input) {
     if (!this.project) throw new Error('Åbn et projekt først.');

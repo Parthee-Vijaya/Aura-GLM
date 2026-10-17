@@ -57,8 +57,8 @@ test('Komplai: egen loginserver, org-bundet katalog, DKK og ændrede vilkår', a
   const model = { id: 'kode', price: { prompt: '0.000002', completion: '0.000005', currency: 'DKK' }, komplai: { id: 'a', name: 'Kommune', contract: '1', data: { recipients: 'Komplai → Scaleway', region: 'Komplais API: Hetzner, Tyskland. Model: Scaleway, Frankrig.', retention: 'Vilkår', training: 'Ingen', source: 'https://example.org', checkedAt: '2026-10-13', version: '1', accounting: 'Fælleskreditter', platformStorage: 'Metadata' } } };
   assert.equal(connections.priceFor(connection, model).currency, 'DKK');
   const first = connections.disclosure(connection, model); assert.match(first.price, /DKK/);
-  assert.equal(first.provider, 'Komplai');
-  assert.match(first.regionShort, /Komplai.*alle oplysninger/);
+  assert.equal(first.provider, 'komplai');
+  assert.match(first.regionShort, /komplai.*alle oplysninger/);
   assert.doesNotMatch(first.regionShort, /Scaleway|Hetzner/);
   assert.equal(first.recipients, model.komplai.data.recipients);
   assert.equal(first.region, model.komplai.data.region);
@@ -117,6 +117,6 @@ test('Komplai: loginrespons har en øvre grænse og tilbagekaldelse skjuler ikke
   const original = globalThis.fetch;
   try {
     globalThis.fetch = async () => { throw new Error('hemmelig intern fejl'); };
-    await assert.rejects(disconnect({ baseURL: 'https://api.komplai.dk/v1/aura/v1' }, 'syntetisk'), /Komplai kunne ikke kontaktes/);
+    await assert.rejects(disconnect({ baseURL: 'https://api.komplai.dk/v1/aura/v1' }, 'syntetisk'), /komplai kunne ikke kontaktes/);
   } finally { globalThis.fetch = original; }
 });

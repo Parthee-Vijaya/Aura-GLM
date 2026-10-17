@@ -44,7 +44,7 @@ async function startGateway(connection, model, key, route, onFailure = () => {},
       if (anthropic) { headers['anthropic-version'] = '2023-06-01'; if (key) headers['x-api-key'] = key; }
       else if (key) { if (connection.kind === 'azure') headers['api-key'] = key; else headers.authorization = `Bearer ${key}`; }
       if (connection.kind === 'komplai') {
-        if (!model.komplai?.contract) throw new Error('Hent Komplais modeller og gennemgå datavilkårene igen.');
+        if (!model.komplai?.contract) throw new Error('Hent komplais modeller og gennemgå datavilkårene igen.');
         headers['x-komplai-contract'] = model.komplai.contract; headers['x-request-id'] = randomUUID();
         body.stream_options = { include_usage: true };
       }
@@ -56,8 +56,8 @@ async function startGateway(connection, model, key, route, onFailure = () => {},
         if (connection.kind === 'komplai') {
           let code; try { code = JSON.parse(await require('./komplai.cjs').readBounded(response, 8192)).error; } catch {}
           specific = code === 'ai_credit_exhausted' ? ['Organisationens AI-kreditter er brugt eller reserveret til igangværende opgaver. Kontakt jeres administrator, hvis der skal tilføjes kreditter.', 'quota']
-            : response.status === 401 ? ['Komplai-adgangen er udløbet eller tilbagekaldt. Log ind med Komplai igen under AI-forbindelser.', 'key']
-            : code === 'terms_changed' ? ['Komplais priser eller datavilkår er ændret. Hent modellerne igen og gennemgå oplysningerne.', 'rejected'] : null;
+            : response.status === 401 ? ['komplai-adgangen er udløbet eller tilbagekaldt. Log ind med komplai igen under AI-forbindelser.', 'key']
+            : code === 'terms_changed' ? ['komplais priser eller datavilkår er ændret. Hent modellerne igen og gennemgå oplysningerne.', 'rejected'] : null;
         } else await response.body?.cancel();
         const advice = { 401: 'API-nøglen blev afvist. Kontrollér eller udskift den under AI-forbindelser.', 403: 'Din konto har ikke adgang til modellen. Kontrollér adgangen hos udbyderen.', 402: 'Udbyderen afviste kaldet på grund af saldo eller kvote. Kontrollér kontoen; appen vælger ikke en betalt erstatning.', 404: 'Modellen eller adressen blev ikke fundet. Hent modellisten igen, og kontrollér forbindelsen.', 429: 'Udbyderens forbrugsgrænse er nået. Prøv igen, når kvoten er tilgængelig.' }[response.status] || 'Kontrollér forbindelsen og modelvalget, og prøv igen.';
         const message = specific?.[0] || `Modelserveren afviste kaldet (HTTP ${response.status}). ${advice}`;

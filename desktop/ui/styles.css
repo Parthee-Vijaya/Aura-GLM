@@ -935,3 +935,70 @@ kbd { font: 600 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
 #preview-empty .live-peek { max-width: 34em; color: #0052cc; }
 #composer-mode { white-space: nowrap; font-size: 11px; padding: 4px; }
 #agent-follow { margin-left: auto; font-size: 11px; }
+
+/* komplai-login: ét kort, der viser forbindelsen mellem Aura og komplai.
+   Broen pulserer, mens browseren er åben, og står fast, når kontoen er hentet. */
+.komplai { margin: 4px 0 0; padding: 32px 28px 24px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: 0 1px 2px #18365808, 0 18px 40px -20px #1836582e; }
+#connections-dialog .komplai { margin-top: 16px; padding: 24px 20px 18px; box-shadow: none; }
+.komplai-pair { display: flex; align-items: center; justify-content: center; margin: 0 0 22px; }
+.komplai-tile { display: grid; place-items: center; width: 56px; height: 56px; border: 1px solid var(--line); border-radius: 15px; background: #fff; box-shadow: 0 1px 2px #1836580f, 0 6px 16px -8px #18365833; }
+.komplai-tile img { display: block; width: 32px; height: 32px; object-fit: contain; }
+.komplai-mark { display: flex; align-items: center; justify-content: center; font: 700 27px/1 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: -.07em; color: #0f172a; padding-right: 3px; }
+.komplai-mark b { color: #0ea5e9; font-weight: 700; }
+.komplai-bridge { position: relative; display: flex; align-items: center; gap: 7px; padding: 0 16px; }
+.komplai-bridge i { width: 5px; height: 5px; border-radius: 50%; background: #c9d6e8; transition: background-color var(--motion-step); }
+.komplai[data-stage="waiting"] .komplai-bridge i { background: var(--accent); animation: komplai-travel 1.4s var(--ease-out) infinite; }
+.komplai[data-stage="waiting"] .komplai-bridge i:nth-child(2) { animation-delay: .12s; }
+.komplai[data-stage="waiting"] .komplai-bridge i:nth-child(3) { animation-delay: .24s; }
+.komplai[data-stage="waiting"] .komplai-bridge i:nth-child(4) { animation-delay: .36s; }
+.komplai[data-stage="waiting"] .komplai-bridge i:nth-child(5) { animation-delay: .48s; }
+.komplai:is([data-stage="organisation"], [data-stage="connected"]) .komplai-bridge i { opacity: 0; }
+.komplai:is([data-stage="organisation"], [data-stage="connected"]) .komplai-bridge::before { content: ""; position: absolute; left: 16px; right: 16px; top: 50%; height: 2px; margin-top: -1px; border-radius: 2px; background: var(--accent); animation: komplai-link var(--motion-step) var(--ease-out); }
+@keyframes komplai-link { from { transform: scaleX(.2); opacity: 0; } }
+.komplai:is([data-stage="organisation"], [data-stage="connected"]) .komplai-bridge::after { content: "✓"; position: absolute; left: 50%; top: 50%; display: grid; place-items: center; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; box-shadow: 0 0 0 4px var(--surface); }
+@keyframes komplai-travel { 0%, 100% { opacity: .2; transform: scale(.7); } 45% { opacity: 1; transform: scale(1.2); } }
+#komplai-help { margin: 0 0 22px; text-align: center; color: var(--muted); font-size: 13px; }
+#setup #komplai-help { display: none; }
+.komplai label { margin-top: 0; }
+.komplai :is(#komplai-token, #komplai-organisation) { font-size: 15px; padding: 12px 14px; border-radius: 10px; }
+#komplai-token { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .02em; }
+#komplai-token-entry .hint { margin: 10px 0 0; }
+.komplai :is(#komplai-login, #komplai-token-check, #komplai-confirm) { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px 20px; border-radius: 11px; font-size: 14px; font-weight: 600; letter-spacing: -.005em; box-shadow: 0 1px 2px #0052cc29, 0 8px 18px -10px #0052cc80; }
+.komplai :is(#komplai-token-check, #komplai-confirm) { margin-top: 18px; }
+#komplai-login svg { transition: transform var(--motion-fast) var(--ease-out); }
+#komplai-login:hover:not(:disabled) svg { transform: translate(1px, -1px); }
+.komplai-actions { display: grid; gap: 10px; margin-top: 4px; }
+.komplai-actions:has(> #komplai-cancel:not([hidden])) { margin-top: 2px; }
+.komplai-secondary { width: 100%; padding: 12px 20px; border-radius: 11px; color: var(--ink); font-size: 13px; font-weight: 550; }
+.komplai-actions #komplai-cancel { justify-self: center; color: var(--muted); font-size: 12px; }
+.komplai-actions #komplai-cancel:hover:not(:disabled) { color: var(--ink); background: transparent; border-color: transparent; }
+.komplai-account { display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 14px; row-gap: 2px; align-items: center; margin: 16px 0 0; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--canvas); }
+.komplai-account:empty { display: none; }
+#komplai-organisations > .komplai-account:first-child, #komplai-organisation[hidden] + .komplai-account { margin-top: 0; }
+.komplai-avatar { grid-row: span 2; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: var(--tint); color: var(--accent); font-size: 15px; font-weight: 700; letter-spacing: .02em; }
+.komplai-account-name { font-size: 15px; font-weight: 650; letter-spacing: -.01em; overflow-wrap: anywhere; }
+.komplai-balance { color: var(--muted); font-size: 12px; line-height: 1.55; }
+.komplai-balance strong { color: var(--ink); font-size: 13px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.komplai-expiry { display: block; }
+.komplai-terms { margin: 12px 0 0; padding: 0 2px; }
+.komplai-terms > summary { font-size: 12px; }
+.komplai-terms p { margin: 0; font-size: 12px; line-height: 1.6; color: var(--muted); }
+#komplai-feedback { margin: 0; }
+#komplai-feedback:not(:empty) { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 14px; padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px; background: var(--canvas); color: var(--ink); font-size: 12.5px; line-height: 1.55; animation: step-arrive var(--motion-step) var(--ease-out); }
+#komplai-organisations:not([hidden]) ~ #komplai-feedback:not(:empty), #komplai-token-entry:not([hidden]) ~ #komplai-feedback:not(:empty) { margin: 14px 0 0; }
+#komplai-feedback:not(:empty)::before { flex: 0 0 auto; display: grid; place-items: center; width: 18px; height: 18px; margin-top: 1px; border-radius: 50%; font-size: 11px; font-weight: 700; line-height: 1; content: "i"; background: #e3eaf4; color: var(--muted); font-family: Georgia, serif; font-style: italic; }
+#komplai-feedback[data-tone="wait"] { border-color: #cfe0fb; background: var(--tint); color: #12366e; }
+#komplai-feedback[data-tone="wait"]::before { content: ""; width: 14px; height: 14px; margin: 2px; border: 2px solid #b9d0f3; border-top-color: var(--accent); background: transparent; animation: komplai-spin .8s linear infinite; }
+#komplai-feedback[data-tone="error"] { border-color: #f0cfcf; background: #fdf3f3; color: #7c1f1f; }
+#komplai-feedback[data-tone="error"]::before { content: "!"; background: #c93c3c; color: #fff; font-family: inherit; font-style: normal; }
+#komplai-feedback[data-tone="success"] { border-color: #cbe6d6; background: #eff8f2; color: #1b5236; }
+#komplai-feedback[data-tone="success"]::before { content: "✓"; background: #24835b; color: #fff; font-family: inherit; font-style: normal; }
+@keyframes komplai-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .komplai[data-stage="waiting"] .komplai-bridge i { opacity: 1; } #komplai-login:hover svg { transform: none; } }
+@media (max-width: 560px) { .komplai { padding: 24px 18px 18px; } .komplai-bridge { padding: 0 10px; gap: 5px; } }
+:is(#komplai-organisations, #komplai-token-entry):not([hidden]) ~ .komplai-actions { margin-top: 12px; }
+/* En gemt forbindelse: "Brug forbindelse" under kortet er hovedhandlingen; nyt login er sekundært. */
+.komplai[data-stage="connected"] #komplai-help { display: none; }
+.komplai[data-stage="connected"] #komplai-login { background: var(--surface); border-color: var(--line); color: var(--ink); box-shadow: none; font-weight: 550; font-size: 13px; padding: 12px 20px; }
+.komplai[data-stage="connected"] #komplai-login:hover:not(:disabled) { background: #f2f6fc; border-color: #b5c8e4; color: var(--ink); }
+.komplai[data-stage="connected"] .komplai-actions { grid-template-columns: 1fr 1fr; }
