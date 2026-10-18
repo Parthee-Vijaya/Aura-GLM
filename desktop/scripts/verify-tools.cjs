@@ -42,7 +42,7 @@ const { execFileSync } = require('node:child_process');
     assert.equal(await page.getByRole('button', { name: 'Kopiér tekst' }).count(), 1);
     await page.fill('#tools-search', '');
     await page.click('#tools-included-summary');
-    assert.equal(await page.locator('#tools-skills details').count(), 14);
+    assert.equal(await page.locator('#tools-skills details').count(), 15);
     await page.locator('#tools-skills details summary').first().click();
     assert.match(await page.locator('#tools-skills details').first().textContent(), /Hvad gør den ikke\?/);
     await page.locator('#tools-skills details summary').first().click();
@@ -87,7 +87,7 @@ const { execFileSync } = require('node:child_process');
     const integrationer = page.locator('.skill-category', { has: page.locator('input[data-category="integrationer"]') });
     await integrationer.getByRole('button', { name: 'Vis skills' }).click();
     await page.check('#tools-categories input[data-skill="harness-integration-adresser"]');
-    assert.equal(await integrationer.locator('.skill-count').textContent(), '1 af 2');
+    assert.equal(await integrationer.locator('.skill-count').textContent(), '1 af 3');
     assert.match(await page.textContent('#tools-skill-total'), /^9 af 12 skills valgt og 1 integration\./);
     await page.click('#tools-skills-all');
     assert.equal(await page.isChecked('#tools-categories input[data-skill="harness-integration-cvr"]'), false, 'Vælg alle skills vælger ikke integrationer');
@@ -118,7 +118,7 @@ const { execFileSync } = require('node:child_process');
     const agentReference = 'skills/harness-sikkerhedsgennemgang/references/agentadgang.md';
     assert.equal(await fs.readFile(path.join(project, '.claude', agentReference), 'utf8'), await fs.readFile(path.join(__dirname, '../../profiles', agentReference), 'utf8'));
     assert.equal(JSON.parse(await fs.readFile(path.join(project, '.harness/installation.json'), 'utf8')).skills.length, 10);
-    assert.match(await fs.readFile(path.join(project, '.harness/LAES-MIG.md'), 'utf8'), /9 af 12 skills til arbejdet fra idé til drift samt integrationen Adresser\.[\s\S]*Integrationer, der kan vælges til i Aura-appen: CVR\./);
+    assert.match(await fs.readFile(path.join(project, '.harness/LAES-MIG.md'), 'utf8'), /9 af 12 skills til arbejdet fra idé til drift samt integrationen Adresser\.[\s\S]*Integrationer, der kan vælges til i Aura-appen: CVR, Promte\./);
 
     // Et værktøj mere tilføjes til installationen i stedet for at erstatte den.
     await page.click('#tools-done');
@@ -166,6 +166,6 @@ const { execFileSync } = require('node:child_process');
     assert.equal(git(['status', '--porcelain', '--', 'AGENTS.md', '.gitignore']).toString(), '');
     assert.equal(await app.evaluate(() => global.modelRequests), 0);
     assert.deepEqual(errors, []);
-    console.log(JSON.stringify({ status: 'bestået', root, checks: ['førstevalg fører til værktøjsforløbet', 'fire kort i første lag og resten bag Et andet værktøj med søgning', '12 skills og 2 integrationer med FAQ og tekst til webplatforme', 'et klik fører videre', 'skills vælges i kategorier eller enkeltvis med låste grundregler, integrationer vælges til for sig, og udvalget huskes', 'resumé i almindeligt dansk med filerne bag Se de præcise ændringer', 'intet skrives før gennemgang', 'eget AGENTS.md bevares med afsnit og import i CLAUDE.md', 'advarsel om .gitignore, der udelader skills', 'et værktøj mere tilføjes til installationen', 'gentagelse uden ændringer', 'Installer resten ved en fil, brugeren har ændret', 'fjernelse gendanner projektets egne filer og bevarer ændret skill', 'ingen netværks- eller modelkald'] }, null, 2));
+    console.log(JSON.stringify({ status: 'bestået', root, checks: ['førstevalg fører til værktøjsforløbet', 'fire kort i første lag og resten bag Et andet værktøj med søgning', '12 skills og 3 integrationer med FAQ og tekst til webplatforme', 'et klik fører videre', 'skills vælges i kategorier eller enkeltvis med låste grundregler, integrationer vælges til for sig, og udvalget huskes', 'resumé i almindeligt dansk med filerne bag Se de præcise ændringer', 'intet skrives før gennemgang', 'eget AGENTS.md bevares med afsnit og import i CLAUDE.md', 'advarsel om .gitignore, der udelader skills', 'et værktøj mere tilføjes til installationen', 'gentagelse uden ændringer', 'Installer resten ved en fil, brugeren har ændret', 'fjernelse gendanner projektets egne filer og bevarer ændret skill', 'ingen netværks- eller modelkald'] }, null, 2));
   } finally { await app?.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

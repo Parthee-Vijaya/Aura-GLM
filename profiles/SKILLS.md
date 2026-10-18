@@ -2,7 +2,7 @@
 
 Genereret fra `profiles/catalog.json` af `scripts/build-packages.cjs`. Ret kataloget eller skillfilerne, ikke denne fil.
 
-Aura Harness indeholder fælles grundregler og 12 skills samt to integrationer. Grundreglerne gælder altid. En skill er en kort vejledning til kodeagenten om én arbejdsopgave, som bruges, når opgaven passer. En integration er en skill om ét bestemt system, fx et offentligt register. Integrationerne følger ikke med pakkerne til kodeværktøjerne; de vælges til for de systemer, man bruger. I Aura-appen kan kategorier, enkelte skills og integrationer slås til og fra.
+Aura Harness indeholder fælles grundregler og 12 skills samt tre integrationer. Grundreglerne gælder altid. En skill er en kort vejledning til kodeagenten om én arbejdsopgave, som bruges, når opgaven passer. En integration er en skill om ét bestemt system, fx et offentligt register. Integrationerne følger ikke med pakkerne til kodeværktøjerne; de vælges til for de systemer, man bruger. I Aura-appen kan kategorier, enkelte skills og integrationer slås til og fra.
 
 ## Grundregler · altid med
 
@@ -237,6 +237,30 @@ Kilder: [Adressevælger · fonetisk søgning (Klimadatastyrelsen)](https://confl
 Skillen vedligeholdes af Aura Harness og er kontrolleret mod kilderne 2026-09-30.
 
 Kilder: [System-til-system-adgang til CVR-data (Erhvervsstyrelsen)](https://datacvr.virk.dk/artikel/system-til-system-adgang-til-cvr-data), [CVR på Datafordeleren](https://datafordeler.dk/vejledning/brugeradgang/anmodning-om-adgang/det-centrale-virksomhedsregister-cvr/), [Reklamebeskyttelse (Erhvervsstyrelsen)](https://datacvr.virk.dk/artikel/reklamebeskyttelse), [CVR-loven, LBK nr. 246 af 5. februar 2026](https://www.retsinformation.dk/eli/lta/2026/246), [CVR-bekendtgørelsen](https://www.retsinformation.dk/eli/lta/2022/1243), [Logning af brugernes anvendelser af personoplysninger (Datatilsynet)](https://www.datatilsynet.dk/regler-og-vejledning/behandlingssikkerhed/katalog-over-foranstaltninger/logning-af-brugernes-anvendelser-af-personoplysninger)
+
+### Promte
+
+`harness-integration-promte` · [SKILL.md](skills/harness-integration-promte/SKILL.md)
+
+**Hvad gør den?** Hjælper agenten med at opsætte et React-projekt efter Promtes byggeregler, bruge app-biblioteket til modeller, vidensbaser og data og uploade kildekoden med Promtes kommandolinjeværktøj.
+
+**Hvornår bruges den?** Når en løsning skal køre som app i et Promte-arbejdsområde.
+
+**Hvad får du?** Et projekt, som Promte kan bygge, uden nøgler i koden, og en version, der venter på godkendelse eller er udgivet i arbejdsområdet.
+
+**Hvad gør den ikke?** Opretter ikke en Promte-konto, et arbejdsområde eller administratorrettigheder for dig og godkender ikke versioner. Kommandolinjeværktøjet hentes fra npm, når brugeren siger ja.
+
+- **System:** Promte-apps via app-biblioteket og kommandolinjeværktøjet til upload
+- **Ejer:** Promte
+- **Adgang:** Kræver en Promte-installation og administratorrettighed i appens arbejdsområde. Login til upload godkendes i browseren og gælder i 30 dage.
+- **Data:** Appens egne data og filer i Promte, privat for hver bruger eller fælles for arbejdsområdet. Om der er persondata, afhænger af appen.
+- **Dataflow:** Appen kalder kun organisationens Promte-server, som sender modelkald videre til de modeller, organisationen har valgt. Kildekoden uploades til samme server, som bygger og gennemgår den.
+- **Pris:** Kræver en aftale med Promte. Prisen er ikke offentliggjort og er ikke verificeret her.
+- **IT-afdelingen:** Adgangen kræver hjælp fra IT-afdelingen.
+
+Skillen vedligeholdes af Promte og er kontrolleret mod kilderne 2026-10-18.
+
+Kilder: [Udvikl apps med kodeagenter (Promte)](https://app.promte.dk/docs/admin/udvikl-apps-med-kodeagenter), [Byg og udgiv AI-apps (Promte)](https://app.promte.dk/docs/admin/ai-apps), [@promte/app-library (npm)](https://www.npmjs.com/package/@promte/app-library), [@promte/app-upload (npm)](https://www.npmjs.com/package/@promte/app-upload)
 
 ## Spørgsmål og svar
 

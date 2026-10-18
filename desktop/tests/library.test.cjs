@@ -26,7 +26,7 @@ async function fixture(t, change = {}) {
 
 test('det rigtige bibliotek er gyldigt, og hvert værktøj kan installeres og fjernes igen', async t => {
   const library = await loadLibrary(profiles);
-  assert.equal(library.skills.length, 14);
+  assert.equal(library.skills.length, 15);
   assert.ok(library.tools.length >= 20, `${library.tools.length} værktøjer`);
   assert.ok(library.rules.includes(library.controlWord));
   for (const item of library.tools.filter(entry => entry.rules)) {
@@ -140,7 +140,7 @@ test('integrationer skal beskrive system, ejer, adgang og dataflow og stå for s
 test('funktionerne i appen dækker hele biblioteket og bygger kun på kendte funktioner', async () => {
   const library = await loadLibrary(profiles);
   assert.deepEqual(library.features.filter(feature => !feature.group).map(feature => feature.id), ['versioner', 'planlaegning', 'design', 'sikkerhed', 'kvalitet', 'deling']);
-  assert.deepEqual(library.features.filter(feature => feature.group === 'integrationer').map(feature => feature.id), ['integration-adresser', 'integration-cvr']);
+  assert.deepEqual(library.features.filter(feature => feature.group === 'integrationer').map(feature => feature.id), ['integration-adresser', 'integration-cvr', 'integration-promte']);
   assert.deepEqual(library.features.flatMap(feature => feature.skills).sort(), library.skills.map(skill => skill.name).sort());
   assert.deepEqual(library.features.find(feature => feature.id === 'deling').requires, ['versioner'], 'Del og sikkerhedskopi udgiver fra en gemt version');
   assert.deepEqual(library.features.filter(feature => !feature.group && feature.default === false).map(feature => feature.id), ['deling'], 'Del er ikke med i den anbefalede pakke, så længe den kræver udviklerværktøjer');
@@ -158,4 +158,5 @@ test('integrationsskills holder nøgler på serveren og nævner systemets regler
   assert.match(text('harness-integration-adresser'), /Brug ikke DAWA/);
   assert.match(text('harness-integration-adresser'), /EPSG:25832/);
   for (const rule of [/§ 17/, /reklamebeskyttede/, /CPR-numre må aldrig/, /opdigtede virksomheder/]) assert.match(text('harness-integration-cvr'), rule);
+  for (const rule of [/PromteAppProvider/, /devDependencies/, /Kør dem kun, når brugeren har sagt ja/, /Bed aldrig brugeren indsætte et token/]) assert.match(text('harness-integration-promte'), rule);
 });
