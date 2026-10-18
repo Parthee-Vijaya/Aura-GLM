@@ -206,7 +206,7 @@ function chooseProvider(kind) {
   resetKomplaiLogin(); $('#provider-kind').value = kind; updateProvider();
   $('#setup-provider').dataset.view = 'details'; $('#provider-cards').hidden = true;
   $('#setup-title').textContent = kind === 'komplai' ? 'Log ind med komplai' : `Forbind ${providerCards.find(item => item.kind === kind)?.name || kind}`;
-  $('#setup-subtitle').textContent = kind === 'komplai' ? 'Brug din konto og organisationens fælles AI-kreditter.' : ['ollama', 'compatible'].includes(kind) ? 'Indtast adressen på din modelserver.' : 'Brug din adgangsnøgle fra udbyderen.';
+  $('#setup-subtitle').textContent = kind === 'komplai' ? 'Brug din komplai-konto til AI og til at udgive apps.' : ['ollama', 'compatible'].includes(kind) ? 'Indtast adressen på din modelserver.' : 'Brug din adgangsnøgle fra udbyderen.';
   $('#connection-advanced').hidden = kind === 'komplai';
   $('#setup-provider-body').hidden = false; $('#setup-title').focus();
 }
@@ -496,7 +496,7 @@ $('#connections-next').onclick = () => { ++connectionPage; renderConnectionList(
 function catalogResult(models) {
   const account = models[0]?.komplai;
   const detail = models[0]?.configuredDeployment ? `Adgangen svarer. Deploymentet ${models[0].id} afprøves først, når du sender en opgave.` : models.length ? `${models.length} ${models.length === 1 ? 'model' : 'modeller'} i kataloget. Kodearbejde og ledig kvote er ikke afprøvet.` : 'Forbindelsen svarer uden modeller. Tjek adgangen hos udbyderen.';
-  return { status: 'ok', count: models.length, deployment: Boolean(models[0]?.configuredDeployment), detail: account ? `${account.name}: ${(account.balance.availableMicros / 1e6).toLocaleString('da-DK', { maximumFractionDigits: 2 })} kr. i fælles AI-kreditter. ${detail}` : detail };
+  return { status: 'ok', count: models.length, deployment: Boolean(models[0]?.configuredDeployment), detail: account ? `${account.name}: ${aiUsage(account.balance).join('')} ${detail}` : detail };
 }
 async function checkedModels(id) {
   const check = connectionChecks.begin(id); updateConnectionChecks();
@@ -621,7 +621,7 @@ function updateProvider() {
   $('#provider-kind').hidden = false; $('#provider-kind').previousElementSibling.hidden = false; $('#komplai-help').hidden = false;
   if (setupActive && setupStep === 'provider') {
     $('#setup-title').textContent = isKomplai ? 'Log ind med komplai' : 'Hvem er din udbyder?';
-    $('#setup-subtitle').textContent = isKomplai ? 'Brug din konto og organisationens fælles AI-kreditter.' : 'Har du ikke en nøgle, viser vi dig, hvordan du får en.';
+    $('#setup-subtitle').textContent = isKomplai ? 'Brug din komplai-konto til AI og til at udgive apps.' : 'Har du ikke en nøgle, viser vi dig, hvordan du får en.';
   }
   $('#komplai-connect').hidden = !isKomplai;
   for (const selector of ['#api-key', '#clear-key-row', '#connection-cost', '#connection-advanced', '#save-connection']) $(selector).hidden = isKomplai;
@@ -666,7 +666,7 @@ async function loadRoutes(saved = '') {
   if (routes.some(route => route.id === saved)) $('#route-select').value = saved;
 }
 function selection() { return { includeHistory: $('#include-history').checked, mode: $('#work-mode').value, planID: activePlan?.id, connectionID: $('#connection-select').value, modelID: $('#model-select').value, routeID: $('#route-select').value, references: [...document.querySelectorAll('#reference-choices input:checked')].map(el => el.value), fileRefs: window.workspace?.references() || [], previewTarget: window.workspace?.target()?.id || null, view: window.previewViewSize?.() || null, chat: view.id }; }
-const detailLabels = { workspace: 'Arbejdsmappe', mode: 'Arbejdsmåde', brief: 'Projektbrief, der sendes', previewReferenceText: 'Valgt element, der sendes', conversation: 'Tidligere samtale, der sendes', projectGuidance: 'Appens vejledning om projektvalg og design', planContext: 'Plan og afklaring, der sendes', projectChoices: 'Projektets opstartsvalg', projectDesign: 'Projektets designvalg', fileReferences: 'Filhenvisninger i beskeden', connection: 'Forbindelse', model: 'Model', endpoint: 'Serveradresse', recipients: 'Modtagere', region: 'Behandlingssted', retention: 'Opbevaring', training: 'Brug til træning', price: 'Pris og gratisbegrænsninger', capabilities: 'Modelmuligheder', material: 'Hvad sendes?', references: 'Udvalgte private referencer', skills: 'Skills, AI’en kan hente', localStorage: 'Lokal historik og yderligere netværk', security: 'Forbindelsens sikkerhed', source: 'Kilde', checkedAt: 'Dokumentation kontrolleret', evidence: 'Grundlag' };
+const detailLabels = { projectInstructions: 'Projektets egne regler, der sendes', workspace: 'Arbejdsmappe', mode: 'Arbejdsmåde', brief: 'Projektbrief, der sendes', previewReferenceText: 'Valgt element, der sendes', conversation: 'Tidligere samtale, der sendes', projectGuidance: 'Appens vejledning om projektvalg og design', planContext: 'Plan og afklaring, der sendes', projectChoices: 'Projektets opstartsvalg', projectDesign: 'Projektets designvalg', fileReferences: 'Filhenvisninger i beskeden', connection: 'Forbindelse', model: 'Model', endpoint: 'Serveradresse', recipients: 'Modtagere', region: 'Behandlingssted', retention: 'Opbevaring', training: 'Brug til træning', price: 'Pris og gratisbegrænsninger', capabilities: 'Modelmuligheder', material: 'Hvad sendes?', references: 'Udvalgte private referencer', skills: 'Skills, AI’en kan hente', localStorage: 'Lokal historik og yderligere netværk', security: 'Forbindelsens sikkerhed', source: 'Kilde', checkedAt: 'Dokumentation kontrolleret', evidence: 'Grundlag' };
 // Kort resumé i almindeligt dansk. Alle oplysninger ligger under "Se alle oplysninger".
 function showData(data, canSend) {
   $('#data-summary').replaceChildren();
@@ -691,6 +691,7 @@ function showData(data, canSend) {
   $('#data-details').replaceChildren();
   for (const [key, label] of Object.entries(detailLabels)) {
     const value = data[key];
+    if (key === 'projectInstructions' && !value) continue;
     if (['fileReferences', 'brief', 'previewReferenceText'].includes(key) && !value?.length) continue;
     const text = key === 'mode' ? ({ plan: 'Afklar og planlæg', build: 'Byg den valgte plan', free: 'Arbejd direkte' }[value]) : key === 'conversation' && !value ? 'Medsendes ikke. Den aktive samtale og en valgt plan indgår stadig.' : Array.isArray(value) ? value.join(', ') || 'Ingen' : value && typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value || 'Ingen');
     const dd = node('dd');
@@ -880,8 +881,17 @@ function resetKomplaiLogin() {
   $('#komplai-organisations').hidden = true; $('#komplai-login').hidden = false; $('#komplai-login').disabled = false;
   $('#komplai-token').value = ''; $('#komplai-token-entry').hidden = true; $('#komplai-token-start').hidden = false; $('#komplai-token-check').disabled = false;
   $('#komplai-organisation').hidden = false; $('#komplai-organisation').previousElementSibling.hidden = false;
+  $('#komplai-publish-row').hidden = true; $('#komplai-publish-also').checked = true; $('#komplai-confirm').textContent = 'Brug organisationens AI';
   $('#komplai-cancel').hidden = true; komplaiNotice(); komplaiStage('start');
   $('#provider-kind').hidden = false; $('#provider-kind').previousElementSibling.hidden = false; $('#komplai-help').hidden = false;
+}
+/** Månedens AI-forbrug under organisationens loft. Ældre API'er oplyser kun, hvad der er tilbage. */
+function aiUsage(balance) {
+  const kr = micros => (micros / 1e6).toLocaleString('da-DK', { maximumFractionDigits: 2 });
+  const limit = balance?.limitMicros ?? balance?.budgetMicros;
+  if (limit === 0) return ['Intet loft', ' for AI-forbrug er sat for denne måned. Kontakt jeres administrator.'];
+  if (Number.isFinite(limit) && Number.isFinite(balance?.spentMicros)) return [`${kr(balance.spentMicros)} kr.`, ` brugt af ${kr(limit)} kr. denne måned.`];
+  return [`${kr(balance?.availableMicros ?? 0)} kr.`, ' tilbage til AI denne måned.'];
 }
 function showKomplaiOrganisation() {
   const selected = komplaiTokenReview?.account || komplaiOrganisations.find(o => o.id === $('#komplai-organisation').value);
@@ -893,11 +903,18 @@ function showKomplaiOrganisation() {
     const avatar = node('span', initials, 'komplai-avatar'); avatar.setAttribute('aria-hidden', 'true');
     const name = node('span', selected.name, 'komplai-account-name'); name.append(node('span', ': ', 'visually-hidden'));
     const balance = node('span', undefined, 'komplai-balance');
-    balance.append(node('strong', `${(selected.balance.availableMicros / 1e6).toLocaleString('da-DK', { maximumFractionDigits: 2 })} kr.`), ' tilbage i fælles AI-kreditter.');
+    // Et login kan give AI gennem organisationen, komplai Publish eller begge.
+    if (selected.coding !== false) { const [amount, rest] = aiUsage(selected.balance); balance.append(node('strong', amount), rest); }
+    else balance.append('Udgiver til ', node('strong', selected.publishing.address), '. Ingen AI gennem komplai.');
     if (komplaiTokenReview) balance.append(node('span', ` Tokenet udløber ${new Date(selected.credential.expiresAt).toLocaleDateString('da-DK')}.`, 'komplai-expiry'));
     summary.replaceChildren(avatar, name, balance);
   }
-  $('#komplai-terms').textContent = selected ? `${selected.data.recipients}. ${selected.data.region} ${selected.data.training} ${selected.data.retention} ${selected.data.platformStorage} ${selected.data.accounting} Kilde: ${selected.data.source}. Kontrolleret ${selected.data.checkedAt}.` : '';
+  const both = Boolean(selected?.publishing && selected.coding !== false);
+  $('#komplai-publish-row').hidden = !both;
+  if (both) $('#komplai-publish-label').textContent = `Udgiv også apps til ${selected.publishing.address}`;
+  $('#komplai-confirm').textContent = selected && selected.coding === false ? 'Forbind komplai Publish' : 'Brug organisationens AI';
+  $('#komplai-terms').closest('details').hidden = Boolean(selected && selected.coding === false);
+  $('#komplai-terms').textContent = selected && selected.coding !== false ? `${selected.data.recipients}. ${selected.data.region} ${selected.data.training} ${selected.data.retention} ${selected.data.platformStorage} ${selected.data.accounting} Kilde: ${selected.data.source}. Kontrolleret ${selected.data.checkedAt}.` : '';
 }
 $('#komplai-organisation').onchange = showKomplaiOrganisation;
 $('#komplai-token-start').onclick = () => {
@@ -915,7 +932,7 @@ $('#komplai-token-check').onclick = () => action(async () => {
     komplaiTokenReview = result; $('#komplai-token-entry').hidden = true; $('#komplai-organisations').hidden = false;
     $('#komplai-organisation').hidden = true; $('#komplai-organisation').previousElementSibling.hidden = true;
     komplaiNotice(); komplaiStage('organisation'); showKomplaiOrganisation();
-    komplaiSetupHeading('Vil du bruge organisationens kreditter?', 'Kommende AI-opgaver betales af organisationen nedenfor.');
+    komplaiSetupHeading('Vil du bruge organisationens AI?', 'Forbruget betales af organisationen til udbyderens pris og tæller med i dens månedlige loft.');
     $('#komplai-confirm').focus();
   } catch (error) { if (generation === komplaiGeneration) { komplaiNotice(error.message, 'error'); $('#komplai-token').focus(); } }
   finally { if (generation === komplaiGeneration) $('#komplai-token-check').disabled = false; }
@@ -929,13 +946,14 @@ $('#komplai-login').onclick = () => action(async () => {
   try {
     const result = await call('komplaiLogin'); if (generation !== komplaiGeneration) return; komplaiOrganisations = result.organisations;
     $('#komplai-organisation').replaceChildren(...komplaiOrganisations.map(o => option(o.id, o.name)));
-    if (!komplaiOrganisations.length) { restart(); komplaiNotice('Din konto har ingen organisation med adgang til kodeværktøjer. Kontakt jeres administrator.', 'error'); return; }
+    if (!komplaiOrganisations.length) { restart(); komplaiNotice('Din konto har ingen organisation med AI eller komplai Publish gennem komplai. Kontakt jeres administrator.', 'error'); return; }
     // Én organisation er et ja/nej-spørgsmål; flere er et valg.
     const single = komplaiOrganisations.length === 1;
     $('#komplai-organisations').hidden = false; $('#komplai-organisation').hidden = single; $('#komplai-organisation').previousElementSibling.hidden = single;
     hideProviderChoice(); komplaiStage('organisation'); komplaiNotice(); showKomplaiOrganisation();
-    if (single) komplaiSetupHeading('Vil du bruge organisationens kreditter?', 'Kommende AI-opgaver betales af organisationen nedenfor.');
-    else komplaiSetupHeading('Vælg din organisation', 'Du bruger dens fælles kreditter, når du sender opgaver til AI.');
+    if (single && komplaiOrganisations[0].coding === false) komplaiSetupHeading('Vil du forbinde komplai Publish?', 'Organisationen har komplai Publish, men ikke AI gennem komplai.');
+    else if (single) komplaiSetupHeading('Vil du bruge organisationens AI?', 'Forbruget betales af organisationen til udbyderens pris og tæller med i dens månedlige loft.');
+    else komplaiSetupHeading('Vælg din organisation', 'Dit AI-forbrug betales af den organisation, du vælger.');
     $(single ? '#komplai-confirm' : '#komplai-organisation').focus();
   } catch (error) { if (generation === komplaiGeneration) { restart(); komplaiNotice(error.message, 'error'); $('#komplai-login').focus(); } }
 });
@@ -944,9 +962,13 @@ $('#komplai-confirm').onclick = () => action(async () => {
   $('#komplai-confirm').disabled = true;
   try {
     const previous = new Set(state.connections.map(c => c.id));
-    state = komplaiTokenReview ? await call('komplaiTokenConnect', komplaiTokenReview.reviewID) : await call('komplaiConnect', $('#komplai-organisation').value); renderConnections();
+    const chosen = komplaiOrganisations.find(o => o.id === $('#komplai-organisation').value);
+    const publishing = Boolean(chosen?.publishing && (chosen.coding === false || $('#komplai-publish-also').checked));
+    state = komplaiTokenReview ? await call('komplaiTokenConnect', komplaiTokenReview.reviewID) : await call('komplaiConnect', { organisationId: chosen.id, coding: chosen.coding !== false, publishing }); renderConnections(); applyFeatures();
     const selected = state.connections.find(c => !previous.has(c.id));
     resetKomplaiLogin();
+    if (chosen && chosen.coding === false) { updateProvider(); komplaiStage('connected'); komplaiNotice(`komplai Publish er forbundet til ${chosen.name}. Du kan udgive med Del. Vælg en AI-udbyder for at bygge.`, 'success'); return; }
+    if (publishing) komplaiNotice(`komplai Publish er også forbundet til ${chosen.name}.`, 'success');
     if (setupActive && selected) { $('#setup-connection').value = selected.id; setupPage('saved'); await testSetupConnection(); } else connectionView('list');
   } catch (error) { komplaiNotice(error.message, 'error'); } finally { $('#komplai-confirm').disabled = false; }
 });
@@ -1834,3 +1856,6 @@ $('#support-button').onclick = () => action(async () => {
 });
 $('#support-save').onclick = () => action(async () => { $('#support-status').textContent = await call('supportSave') ? 'Rapporten er gemt på din computer. Du vælger selv, om du vil dele den.' : 'Rapporten blev ikke gemt.'; });
 $('#support-feedback').onclick = () => action(() => call('supportFeedback'));
+
+// Del kan forbinde komplai (og eventuelt AI) fra sin egen dialog; appens øvrige visning følger med.
+window.addEventListener('harness:komplai-connected', () => action(async () => { state = await call('connectionState'); renderConnections(); applyFeatures(); }));

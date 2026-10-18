@@ -2,10 +2,24 @@ const { randomUUID, createHash } = require('node:crypto');
 const path = require('node:path');
 const { deploymentArtifact } = require('./deployment-artifact.cjs');
 const { VercelDeployment, AzureDeployment, publicURL } = require('./deployment-providers.cjs');
+const { KomplaiDeployment, validLabel, refusedFiles } = require('./komplai-publish.cjs');
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const { defaultName } = require('./history.cjs');
 const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 function relative(value) { if(typeof value!=='string'||!value||value.includes('\\')||value.includes(':')||value.startsWith('/')||value.split('/').some(p=>p==='..')||path.posix.normalize(value)!==value) throw Error('Angiv en relativ mappe uden ..'); return value; }
+// komplai Publish: én app pr. projekt, valgt eller ny. Synlighed vælges hver gang og har ingen standard.
+function komplaiConfiguration(input) {
+  if(!['public','private'].includes(input.visibility)) throw Error('Vælg, hvem der kan åbne appen.');
+  const c={provider:'komplai',mode:'static',directory:relative(input.directory||'public'),visibility:input.visibility,frontend:'.',api:''};
+  if(input.appId) { if(typeof input.appId!=='string'||!UUID.test(input.appId)) throw Error('Vælg en af dine apps hos komplai.'); c.appId=input.appId; return c; }
+  const name=typeof input.name==='string'?input.name.trim():'';
+  if(!name||name.length>100|| /[\x00-\x1f]/.test(name)) throw Error('Giv appen et navn på højst 100 tegn.');
+  c.name=name;
+  if(input.slug!==undefined) { if(input.slug!==''&&!validLabel(input.slug)) throw Error('Adressen kan ikke bruges. Brug 3 til 40 små bogstaver, tal og bindestreger. Ord som admin og www er reserveret.'); c.slug=input.slug; }
+  return c;
+}
 function configuration(input) {
+  if(input?.provider==='komplai') return komplaiConfiguration(input);
   if(!input||!['vercel','azure'].includes(input.provider)||!['static','source','functions'].includes(input.mode)) throw Error('Vælg en understøttet udbyder og projekttype.');
   if(input.provider==='azure'&&input.mode==='source'||input.provider==='vercel'&&input.mode==='functions') throw Error('Projekttypen understøttes ikke af denne adapter.');
   const c={provider:input.provider,mode:input.mode,directory:relative(input.directory||'public')};
@@ -30,17 +44,19 @@ function validateArtifact(c,a) {
   if(c.mode==='functions'&&!names.includes(c.api+'/host.json')) throw Error('Functions-mappen mangler host.json. API’et skal være færdigbygget og selvstændigt; appen kører ingen lokal npm-installation.');
 }
 class Deployments {
-  constructor(store,{providers,fetcher=(...args)=>fetch(...args),artifact=deploymentArtifact}={}) { this.store=store; this.providers=providers||{vercel:new VercelDeployment(),azure:new AzureDeployment()}; this.fetcher=fetcher;this.artifact=artifact;this.reviews=new Map(); }
+  constructor(store,{providers,fetcher=(...args)=>fetch(...args),artifact=deploymentArtifact}={}) { this.store=store; this.providers=providers||{komplai:new KomplaiDeployment(store),vercel:new VercelDeployment(),azure:new AzureDeployment()}; this.fetcher=fetcher;this.artifact=artifact;this.reviews=new Map(); }
   async state(root) { const p=await this.store.project(root); return {config:p.deploymentConfig||null,preference:p.startup?.hosting||'',last:p.deploymentLast||null}; }
   async review(root,input) {
     const config=configuration(input), artifact=await this.artifact(root,config.directory); validateArtifact(config,artifact);
+    if(config.provider==='komplai') { const refused=refusedFiles(artifact.files); if(refused.length) throw Error(`komplai Publish kan ikke modtage ${refused.length===1?'denne fil':'disse filer'}: ${refused.slice(0,5).join(', ')}${refused.length>5?' …':''}. Filnavne må kun have a-z, tal, bindestreg og punktum, og filtypen skal være en webside, et billede, en skrifttype eller lignende.`); }
     const target=await this.providers[config.provider].inspect(config);
     const token=randomUUID(); this.reviews.clear(); this.reviews.set(token,{root,config,head:artifact.head,hash:artifact.hash,targetHash:hash(target),expires:Date.now()+300000});
     const project = await this.store.project(root);
     const version = { name: project.versionNames?.[artifact.head] || defaultName(artifact.version?.name || 'Gemt version'), at: artifact.version?.at || null };
     this.reviews.get(token).version = version;
     await this.store.saveProject(root,{deploymentConfig:config});
-    return {token,config,target,version,head:artifact.head,hash:artifact.hash,bytes:artifact.bytes,files:artifact.files.map(f=>f.file),environment:config.provider==='azure'?'harness-test':'preview',cost:'Forbrug og eventuelle omkostninger følger din hostingkonto. Appen har ingen verificeret pris eller automatisk udgiftsgrænse.',build:config.mode==='source'?'Udbyderen bygger kildekoden. Installations- og buildscripts kan køre og bruge projektets preview-miljøvariabler.':'Færdige filer uploades. Der køres ingen projektkommando lokalt.',material:'De viste filer fra denne Git-version sendes til hostingudbyderen. Hemmelighedskontrollen er heuristisk og finder ikke alt.'};
+    const komplai=config.provider==='komplai';
+    return {token,config,target,version,head:artifact.head,hash:artifact.hash,bytes:artifact.bytes,files:artifact.files.map(f=>f.file),environment:komplai?'komplai.run':config.provider==='azure'?'harness-test':'preview',cost:komplai?'Følger organisationens aftale med komplai. Aura opretter ingen betalt ressource.':'Forbrug og eventuelle omkostninger følger din hostingkonto. Appen har ingen verificeret pris eller automatisk udgiftsgrænse.',build:config.mode==='source'?'Udbyderen bygger kildekoden. Installations- og buildscripts kan køre og bruge projektets preview-miljøvariabler.':'Færdige filer uploades. Der køres ingen projektkommando lokalt.',material:komplai?'De viste filer fra denne Git-version sendes til organisationens appmiljø hos komplai. Hemmelighedskontrollen er heuristisk og finder ikke alt.':'De viste filer fra denne Git-version sendes til hostingudbyderen. Hemmelighedskontrollen er heuristisk og finder ikke alt.'};
   }
   async settings(root) {
     const {config}=await this.state(root);
@@ -54,8 +70,14 @@ class Deployments {
     if(a.head!==r.head||a.hash!==r.hash||hash(target)!==r.targetHash) throw Error('Version eller destination har ændret sig. Gennemgå udgivelsen igen.');
     const receipt={config:r.config,target,version:r.version,head:a.head,hash:a.hash,startedAt:new Date().toISOString(),state:'SUBMITTING',id:null,url:null,checks:null,indexHash:r.config.mode!=='source'?a.files.find(f=>f.file===(r.config.provider==='azure'&&r.config.frontend!=='.'?r.config.frontend+'/':'')+'index.html')?.sha256:null};
     await this.store.saveProject(root,{deploymentLast:receipt});
-    try { Object.assign(receipt,await provider.deploy(r.config,a,target)); }
-    catch { receipt.state='UNKNOWN'; await this.store.saveProject(root,{deploymentLast:receipt}); throw Error('Upload blev ikke bekræftet. Kontrollér udbyderens oversigt før et nyt forsøg. Dit lokale projekt er bevaret.'); }
+    // En ny komplai-app gemmes straks, så et nyt forsøg opdaterer den samme app i stedet for at oprette endnu en.
+    const onCreated=async appId=>{ receipt.appId=appId; await this.store.saveProject(root,{deploymentConfig:{...r.config,appId,name:undefined,slug:undefined},deploymentLast:receipt}); };
+    const onUploaded=async result=>{ Object.assign(receipt,result); await this.store.saveProject(root,{deploymentLast:receipt}); };
+    try { Object.assign(receipt,await provider.deploy(r.config,a,target,{onCreated,onUploaded})); }
+    catch {
+      if(receipt.id) { receipt.state='UPLOADED'; receipt.verification='Filerne er modtaget hos komplai. Den efterfølgende status kunne ikke hentes. Kontrollér status før en ny upload.'; }
+      else { receipt.state='UNKNOWN'; await this.store.saveProject(root,{deploymentLast:receipt}); throw Error('Upload blev ikke bekræftet. Kontrollér udbyderens oversigt før et nyt forsøg. Dit lokale projekt er bevaret.'); }
+    }
     await this.store.saveProject(root,{deploymentLast:receipt}); return receipt;
   }
   async check(root) {
@@ -68,7 +90,7 @@ class Deployments {
     try {
       const result = await this.providers[receipt.config.provider].status(receipt.config, receipt);
       Object.assign(receipt, result);
-      receipt.checks.provider = { status: 'checked', state: receipt.state };
+      receipt.checks.provider = { status: 'checked', state: receipt.state, ...(receipt.config.provider === 'komplai' && ['public','private'].includes(result.visibility) ? { visibility: result.visibility } : {}) };
       receipt.verification = 'Udbyderens status er kontrolleret; siden er endnu ikke verificeret.';
     } catch {
       await this.store.saveProject(root, { deploymentLast: receipt });
@@ -76,11 +98,12 @@ class Deployments {
     }
     if (receipt.state === 'READY' && receipt.url) {
       try {
-        publicURL(receipt.url, receipt.config.provider === 'vercel' ? '.vercel.app' : '.azurestaticapps.net');
+        publicURL(receipt.url, { vercel: '.vercel.app', azure: '.azurestaticapps.net', komplai: '.komplai.run' }[receipt.config.provider]);
         const response = await this.fetcher(receipt.url, { redirect: 'manual', credentials: 'omit', signal: AbortSignal.timeout(15000) });
         receipt.checks.site = { status: 'answered', http: response.status };
         if (!response.ok) await response.body?.cancel();
-        if (response.status === 401 || response.status === 403) receipt.verification = 'Siden kræver adgang. Åbn linket med din konto og gennemgå appen.';
+        if ((response.status === 401 || response.status === 403) && receipt.config.provider === 'komplai' && receipt.checks.provider.visibility === 'private') receipt.verification = 'Appen kræver login med komplai. Åbn linket og log ind for at se den.';
+        else if (response.status === 401 || response.status === 403) receipt.verification = 'Siden kræver adgang. Åbn linket med din konto og gennemgå appen.';
         else if (response.status >= 300 && response.status < 400) receipt.verification = 'Siden viderestiller. Åbn linket og kontrollér adgang og indhold.';
         else if (!response.ok) receipt.verification = `Siden svarede med HTTP ${response.status}.`;
         else if (receipt.indexHash) {

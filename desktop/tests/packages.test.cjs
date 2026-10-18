@@ -26,6 +26,8 @@ test('hver pakke indeholder præcis det, installationen ville skrive, med gyldig
     const expected = new Map(layout.entries.map(entry => [`projekt/${entry.path}`, entry.kind === 'blok' ? withBlock('', entry.path, entry.content) : entry.content]));
     assert.deepEqual([...files.keys()].sort(), ['LAES-MIG.md', `projekt/${MANIFEST}`, ...expected.keys()].sort(), tool.id);
     for (const [name, content] of expected) assert.equal(files.get(name), content, `${tool.id}: ${name}`);
+    assert.equal(files.get('projekt/.harness/LICENSE'), library.license, `${tool.id}: fuld licenstekst`);
+    assert.match(files.get('projekt/.harness/NOTICE.md'), /AI Alliancen[\s\S]*EUPL-1.2[\s\S]*github.com\/ai-alliancen-org\/ai-harness/);
     const manifest = JSON.parse(files.get(`projekt/${MANIFEST}`));
     assert.equal(manifest.version, library.version);
     assert.deepEqual(manifest.tools, [tool.id]);

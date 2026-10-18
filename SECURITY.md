@@ -15,3 +15,5 @@ Projektet er en udviklingsbeta. Sikkerhedsrapporter modtages om den aktuelle kod
 Appens kodeagent kører på brugerens computer. Godkendelser og instruktioner begrænser arbejdsgangen, men hele agenten er ikke isoleret i en sandbox. Projektindhold kan sendes til de AI- og hostingtjenester, brugeren forbinder. Brug af Aura Harness er ikke en godkendelse til personoplysninger eller produktionsdrift.
 
 Se [betastatus](docs/beta.md) for kendte begrænsninger og [teststatus](docs/teststatus.md) for den faktiske afprøvning. Undersøg kun egne testprojekter og miljøer, som du har tilladelse til at afprøve. En sikkerhedsrapport giver ikke tilladelse til at tilgå andres data eller tjenester.
+
+Vedligeholdere finder konfiguration, aktivering og kontrol af CodeQL og Dependabot i [sikkerhedskontrol på GitHub](docs/sikkerhedskontrol.md).

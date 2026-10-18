@@ -49,3 +49,34 @@ test('Transporten stopper ved beløbsgrænsen og afviser andre destinationer fø
   for (const url of ['https://api.scaleway.ai/v1/chat/completions', 'https://api.komplai.dk/v1/aura/v1/chat/completions/', 'https://api.komplai.dk/v1/aura/v1/chat/completions?other=true']) await assert.rejects(send(url, { method: 'POST' }), /tillader kun/);
   assert.equal(sent, 2, 'Kun de to tilladte kald må nå transporten; fejl frigiver ikke testbudget');
 });
+
+test('Liveprøvens transport gennemfører det faktiske login med Publish-oplysninger uden at give udgivelsesadgang', async t => {
+  const { KomplaiLogin } = require('../core/komplai.cjs');
+  const calls = [], budget = create();
+  const transport = budgetedFetch(async (url, init) => {
+    calls.push(url);
+    assert.equal(init.redirect, 'error');
+    if (url.endsWith('/config')) return Response.json({ issuer: 'https://auth.komplai.dk', clientId: 'syntetisk', scopes: ['openid'], authorizationEndpoint: 'https://auth.komplai.dk/oauth/v2/authorize', tokenEndpoint: 'https://auth.komplai.dk/oauth/v2/token' });
+    if (url.endsWith('/token')) return Response.json({ access_token: 'syntetisk-login', token_type: 'Bearer' });
+    assert.equal(url, 'https://api.komplai.dk/v1/aura/organisations?include=publishing');
+    return Response.json({ organisations: [{ id: 'organisation', name: 'Prøveorganisation', coding: null, publishing: { address: 'komplai.run', tier: 'shared_free' } }] });
+  }, budget);
+  const login = new KomplaiLogin({ fetcher: transport }); t.after(() => login.cancel());
+  const result = await login.start(async address => {
+    const auth = new URL(address), callback = new URL(auth.searchParams.get('redirect_uri'));
+    callback.searchParams.set('state', auth.searchParams.get('state')); callback.searchParams.set('code', 'syntetisk-kode');
+    assert.equal((await fetch(callback)).status, 200);
+  });
+  assert.equal(result.organisations[0].coding, false);
+  assert.equal(result.organisations[0].publishing.address, 'komplai.run');
+  assert.equal(calls.length, 3); assert.equal(budget.summary().calls, 0);
+  for (const [route, method] of [
+    ['/organisations?include=publishing&other=true', 'GET'],
+    ['/organisations?include=publishing&include=publishing', 'GET'],
+    ['/organisations?include=other', 'GET'],
+    ['/organisations?include=publishing', 'POST'],
+    ['/publishing/connect', 'POST'],
+    ['/v1/models?include=publishing', 'GET'],
+  ]) await assert.rejects(transport('https://api.komplai.dk/v1/aura' + route, { method }), /tillader kun/);
+  assert.equal(calls.length, 3, 'Kun de kendte loginruter må nå transporten');
+});

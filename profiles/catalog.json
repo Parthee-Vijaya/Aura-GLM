@@ -72,11 +72,12 @@
     {
       "id": "integrationer",
       "title": "Integrationer",
-      "summary": "Hent data fra offentlige registre. Vælges til for de systemer, du bruger.",
+      "summary": "Vejledning til registre og tjenester. Vælges til for de systemer, du bruger.",
       "skills": [
         "harness-integration-adresser",
         "harness-integration-cvr",
-        "harness-integration-promte"
+        "harness-integration-promte",
+        "harness-integration-komplai-run"
       ]
     }
   ],
@@ -168,6 +169,16 @@
       "skills": [
         "harness-integration-promte"
       ]
+    },
+    {
+      "id": "integration-komplai-run",
+      "group": "integrationer",
+      "title": "Komplai Run",
+      "summary": "Forbered og del færdige browserapps i Komplai.",
+      "default": false,
+      "skills": [
+        "harness-integration-komplai-run"
+      ]
     }
   ],
   "questions": [
@@ -185,7 +196,7 @@
     },
     {
       "q": "Hvad er en integration?",
-      "a": "En integration er en skill om ét bestemt system, fx adresser eller CVR. Den forklarer, hvordan man får adgang, hvor nøgler skal ligge, hvilke data systemet giver, og hvilke regler der gælder. Integrationerne følger ikke med pakkerne. Du vælger dem til i Aura-appen for de systemer, dit projekt bruger."
+      "a": "En integration er en skill om ét bestemt system, fx adresser, CVR eller udgivelse med Komplai Run. Den forklarer adgang, nøgler, data og regler for systemet. Integrationerne følger ikke med pakkerne. Du vælger dem til i Aura-appen for de systemer, dit projekt bruger."
     },
     {
       "q": "Kan jeg ændre en skill?",
@@ -649,6 +660,39 @@
         "dataFlow": "Appen kalder kun organisationens Promte-server, som sender modelkald videre til de modeller, organisationen har valgt. Kildekoden uploades til samme server, som bygger og gennemgår den.",
         "cost": "Kræver en aftale med Promte. Prisen er ikke offentliggjort og er ikke verificeret her.",
         "itRoute": true,
+        "sensitive": false,
+        "checkedAt": "2026-10-18"
+      }
+    },
+    {
+      "name": "harness-integration-komplai-run",
+      "title": "Komplai Run",
+      "summary": "Forbereder statiske browserapps og vejleder om udgivelse fra Aura eller andre kodeværktøjer.",
+      "faq": {
+        "hvad": "Hjælper med at bygge og gennemgå de filer, Run kan vise, vælge adgang og kontrollere den udgivne app. I Auras desktopapp bruges Del; fra Aura-terminalen henvises til manuel upload i Hub. Andre kodeværktøjer kan bruge Komplais terminalværktøj.",
+        "hvornaar": "Når du har valgt Komplai Run til en browserapp eller vil opdatere en app der.",
+        "resultat": "En gennemgået browserapp med alle nødvendige filer, en vej til udgivelse og en tydelig beskrivelse af, hvad der er afprøvet.",
+        "ikke": "Giver ingen adgang og udgiver ikke uden dit valg. Agentens kommandoværktøj må ikke publicere i Aura. Run stiller ikke serverkode, database eller en AI-proxy til rådighed gennem denne udgivelsesvej."
+      },
+      "sources": [
+        {
+          "title": "Komplai Run · vejledning i Hub",
+          "url": "https://hub.komplai.dk/publish?guide=1"
+        },
+        {
+          "title": "Komplais offentlige udgivelseskit · API, skill og CLI 0.1.0",
+          "url": "https://hub.komplai.dk/komplai-publish/komplai-publish.zip"
+        }
+      ],
+      "integration": {
+        "system": "Komplai Run",
+        "owner": "Komplai",
+        "maintainer": "Aura Harness",
+        "access": "Kræver en Komplai-organisation med Run. Aura bruger login og en udgivelsesadgang til dine egne apps i 30 dage. Eget kodeværktøj bruger en nøgle til én app i syv dage.",
+        "data": "Færdig HTML, CSS, JavaScript og appens øvrige filer. Offentlig adgang gør alle de uploadede filer tilgængelige for enhver.",
+        "dataFlow": "Filer uploades fra din computer til organisationens appmiljø gennem Komplai. Besøgende henter filerne til deres browser; appens eventuelle eksterne kald skal gennemgås særskilt.",
+        "cost": "Følger organisationens aftale. Aktuelle lager- og trafikrammer vises i Hub.",
+        "itRoute": false,
         "sensitive": false,
         "checkedAt": "2026-10-18"
       }

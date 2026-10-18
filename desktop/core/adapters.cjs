@@ -88,6 +88,7 @@ function readme(library, selected, dirs, skills) {
 }
 
 function layoutFor(library, ids, { skills: names } = {}) {
+  if (typeof library.license !== 'string' || !library.license.trim()) throw new Error('Bibliotekets licenstekst mangler. Pakken kan ikke installeres uden licensmeddelelser.');
   const selected = tools(library, ids);
   const skills = selectSkills(library, names);
   const dirs = skills.length ? chooseSkillDirs(library, selected) : [];
@@ -106,6 +107,8 @@ function layoutFor(library, ids, { skills: names } = {}) {
   }
   for (const dir of dirs) for (const skill of skills) for (const file of skill.files) add({ kind: 'fil', path: `${dir}/${skill.name}/${file.path}`, content: file.content, group: `${dir}/${skill.name}` });
   add({ kind: 'blok', path: '.gitignore', content: library.gitignore.trim() });
+  add({ kind: 'fil', path: '.harness/LICENSE', content: library.license });
+  add({ kind: 'fil', path: '.harness/NOTICE.md', content: 'Aura Harness · AI Alliancen\n\nDistribueres under EUPL-1.2. Licensteksten findes i LICENSE i denne mappe.\nKildekode: https://github.com/ai-alliancen-org/ai-harness\nBevar ophavs- og licensmeddelelser ved videre distribution.\n' });
   add({ kind: 'fil', path: '.harness/LAES-MIG.md', content: readme(library, selected, dirs, skills) });
   const seen = tool => dirs.filter(dir => tool.skills.dirs.includes(dir));
   const warnings = selected.filter(tool => tool.skills && seen(tool).length > 1)

@@ -1,0 +1,49 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /desktop
+    schedule:
+      interval: weekly
+      day: monday
+      time: '10:00'
+      timezone: Europe/Copenhagen
+    open-pull-requests-limit: 5
+    groups:
+      desktop-sikkerhed:
+        applies-to: security-updates
+        patterns: ['*']
+      desktop-mindre-opdateringer:
+        applies-to: version-updates
+        patterns: ['*']
+        update-types: [minor, patch]
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '10:00'
+      timezone: Europe/Copenhagen
+    open-pull-requests-limit: 3
+    groups:
+      terminal-sikkerhed:
+        applies-to: security-updates
+        patterns: ['*']
+      opencode-platforme:
+        applies-to: version-updates
+        patterns: ['opencode-*']
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '10:00'
+      timezone: Europe/Copenhagen
+    open-pull-requests-limit: 5
+    groups:
+      actions-sikkerhed:
+        applies-to: security-updates
+        patterns: ['*']
+      actions-mindre-opdateringer:
+        applies-to: version-updates
+        patterns: ['*']
+        update-types: [minor, patch]

@@ -32,11 +32,11 @@ class KomplaiLiveBudget {
   summary() { return { calls: this.calls, maximumDkk: Number(this.maxMicros) / 1e6, reservedUpperBoundDkk: Number(this.reservedMicros) / 1e6 }; }
 }
 function budgetedFetch(original, budget) {
-  const apiRoutes = new Set(['GET /v1/aura/config', 'GET /v1/aura/organisations', 'POST /v1/aura/connect', 'GET /v1/aura/account', 'GET /v1/aura/v1/models', 'POST /v1/aura/v1/chat/completions', 'DELETE /v1/aura/session']);
+  const apiRoutes = new Set(['GET /v1/aura/config', 'GET /v1/aura/organisations', 'GET /v1/aura/organisations?include=publishing', 'POST /v1/aura/connect', 'GET /v1/aura/account', 'GET /v1/aura/v1/models', 'POST /v1/aura/v1/chat/completions', 'DELETE /v1/aura/session']);
   return async (url, init = {}) => {
     const address = new URL(String(url)), method = (init.method || 'GET').toUpperCase();
     const local = address.protocol === 'http:' && address.hostname === '127.0.0.1';
-    const api = address.origin === 'https://api.komplai.dk' && !address.search && apiRoutes.has(`${method} ${address.pathname}`);
+    const api = address.origin === 'https://api.komplai.dk' && apiRoutes.has(`${method} ${address.pathname}${address.search}`);
     const login = address.href === 'https://auth.komplai.dk/oauth/v2/token' && method === 'POST';
     if (address.username || address.password || address.hash || (!local && !api && !login)) throw new Error('Liveprøven tillader kun Komplai-login, Komplais API og Auras lokale tjenester.');
     if (api && address.pathname === '/v1/aura/v1/chat/completions') budget.reserve(JSON.parse(init.body), init.headers);

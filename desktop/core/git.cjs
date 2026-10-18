@@ -35,7 +35,7 @@ function protectedPath(file) {
   return file.split('/').some(part => /^(\.git|\.env(?:\..*)?|\.npmrc|\.pypirc|references|secrets|\.secrets|node_modules)$/i.test(part)) || /(?:credentials|\.(?:pem|key|p12|pfx)$)/i.test(file);
 }
 function secretContent(text) {
-  return /-----BEGIN (?:[A-Z ]+ )?PRIVATE KEY-----|\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-(?:ant-|or-v1-)?[A-Za-z0-9_-]{20,}|AKIA[A-Z0-9]{16})\b/i.test(text) || /(?:api[_-]?key|secret|password|access[_-]?token)\s*["']?\s*[:=]\s*["'][^"'\r\n]{12,}["']/i.test(text);
+  return /-----BEGIN (?:[A-Z ]+ )?PRIVATE KEY-----|\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-(?:ant-|or-v1-)?[A-Za-z0-9_-]{20,}|AKIA[A-Z0-9]{16}|kp_live_[A-Za-z0-9_-]{43}|komp_publish_(?:grant_)?[a-f0-9]{64})\b/i.test(text) || /(?:api[_-]?key|secret|password|access[_-]?token)\s*["']?\s*[:=]\s*["'][^"'\r\n]{12,}["']/i.test(text);
 }
 async function content(root, file) {
   if (!file || path.isAbsolute(file) || file.split('/').some(p => p === '..' || p === '.git') || file.includes('\0')) throw new Error('Ugyldig Git-filsti.');

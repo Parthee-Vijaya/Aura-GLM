@@ -12,7 +12,9 @@ async function temp(t, prefix) { const root = await fs.mkdtemp(path.join(os.tmpd
 const skill = { name: 'harness-a', title: 'A', summary: 'Gør A.', faq: { hvad: 'a', hvornaar: 'b', resultat: 'c', ikke: 'd' }, sources: [] };
 const tool = { id: 'codex', name: 'Codex', vendor: 'OpenAI', category: 'agent', status: 'dokumenteret', summary: 's', verification: 'v', caveat: 'c', sources: [{ title: 'Kilde', url: 'https://example.org' }], rules: { file: 'AGENTS.md', mode: 'blok' }, skills: { dirs: ['.agents/skills'] } };
 async function fixture(t, change = {}) {
-  const root = await temp(t, 'harness-bibliotek-');
+  const parent = await temp(t, 'harness-bibliotek-'), root = path.join(parent, 'profiles');
+  await fs.mkdir(root);
+  await fs.copyFile(path.join(profiles, '../LICENSE'), path.join(parent, 'LICENSE'));
   const catalog = { schemaVersion: 2, version: '0.2.0', checkedAt: '2026-09-29', controlWord: 'PRØVE-02', skillDirs: ['.agents/skills', '.claude/skills'], neutralSkillDir: '.agents/skills', featuredTools: ['codex'], categories: [{ id: 'alt', title: 'Alt', summary: 'Alle skills.', skills: ['harness-a'] }], features: [{ id: 'alt', title: 'Alt', summary: 'Alle skills.', skills: ['harness-a'] }], questions: [{ q: 'Spørgsmål?', a: 'Svar.' }], skills: [skill], tools: [tool], ...change.catalog };
   await fs.writeFile(path.join(root, 'catalog.json'), JSON.stringify(catalog));
   await fs.writeFile(path.join(root, 'grundregler.md'), change.rules ?? 'Version: 0.2.0\nKontrolord: PRØVE-02\n');
@@ -26,7 +28,7 @@ async function fixture(t, change = {}) {
 
 test('det rigtige bibliotek er gyldigt, og hvert værktøj kan installeres og fjernes igen', async t => {
   const library = await loadLibrary(profiles);
-  assert.equal(library.skills.length, 15);
+  assert.equal(library.skills.length, 16);
   assert.ok(library.tools.length >= 20, `${library.tools.length} værktøjer`);
   assert.ok(library.rules.includes(library.controlWord));
   for (const item of library.tools.filter(entry => entry.rules)) {
@@ -55,9 +57,35 @@ test('et samlet valg af alle værktøjer giver én installation uden modstridend
   assert.equal(new Set(layout.entries.map(entry => entry.path)).size, layout.entries.length);
 });
 
+test('Komplai Run vælges til særskilt og installeres med hele referencen til hvert kodeværktøj', async t => {
+  const library = await loadLibrary(profiles), name = 'harness-integration-komplai-run';
+  const skill = library.skills.find(item => item.name === name);
+  assert.deepEqual(skill.files.map(file => file.path).sort(), ['SKILL.md', 'references/run.md']);
+  for (const tool of library.tools.filter(item => item.rules)) {
+    assert.ok(!layoutFor(library, [tool.id]).skills.includes(name), `${tool.id}: ikke med som standard`);
+    const layout = layoutFor(library, [tool.id], { skills: [name] });
+    assert.deepEqual(layout.skills, [name]);
+    const root = await temp(t, `harness-run-${tool.id}-`);
+    const settings = { version: library.version, tools: layout.tools, skills: layout.skills };
+    const plan = await installer.plan(root, layout.entries, settings);
+    await installer.apply(root, layout.entries, settings, plan.token);
+    for (const dir of layout.dirs) for (const file of skill.files) {
+      assert.equal(await fs.readFile(path.join(root, dir, name, file.path), 'utf8'), file.content, `${tool.id}: ${file.path}`);
+    }
+    const manifest = JSON.parse(await fs.readFile(path.join(root, '.harness/installation.json'), 'utf8'));
+    assert.deepEqual(manifest.skills, [name]);
+    const again = await installer.plan(root, layout.entries, settings);
+    assert.ok(again.operations.every(operation => operation.action === 'uaendret'), tool.id);
+    const removal = await installer.planRemoval(root);
+    await installer.remove(root, removal.token);
+    assert.deepEqual(await fs.readdir(root), [], tool.id);
+  }
+});
+
 test('det rigtige bibliotek kan indlæses og installeres med Windows-linjeskift', async t => {
   const source = await loadLibrary(profiles);
-  const copy = await temp(t, 'harness-windows-linjer-');
+  const parent = await temp(t, 'harness-windows-linjer-'), copy = path.join(parent, 'profiles');
+  await fs.copyFile(path.join(profiles, '../LICENSE'), path.join(parent, 'LICENSE'));
   await fs.cp(profiles, copy, { recursive: true });
   for (const skill of source.skills) for (const file of skill.files) {
     await fs.writeFile(path.join(copy, 'skills', skill.name, file.path), file.content.replace(/\r?\n/g, '\r\n'));
@@ -140,7 +168,7 @@ test('integrationer skal beskrive system, ejer, adgang og dataflow og stå for s
 test('funktionerne i appen dækker hele biblioteket og bygger kun på kendte funktioner', async () => {
   const library = await loadLibrary(profiles);
   assert.deepEqual(library.features.filter(feature => !feature.group).map(feature => feature.id), ['versioner', 'planlaegning', 'design', 'sikkerhed', 'kvalitet', 'deling']);
-  assert.deepEqual(library.features.filter(feature => feature.group === 'integrationer').map(feature => feature.id), ['integration-adresser', 'integration-cvr', 'integration-promte']);
+  assert.deepEqual(library.features.filter(feature => feature.group === 'integrationer').map(feature => feature.id), ['integration-adresser', 'integration-cvr', 'integration-promte', 'integration-komplai-run']);
   assert.deepEqual(library.features.flatMap(feature => feature.skills).sort(), library.skills.map(skill => skill.name).sort());
   assert.deepEqual(library.features.find(feature => feature.id === 'deling').requires, ['versioner'], 'Del og sikkerhedskopi udgiver fra en gemt version');
   assert.deepEqual(library.features.filter(feature => !feature.group && feature.default === false).map(feature => feature.id), ['deling'], 'Del er ikke med i den anbefalede pakke, så længe den kræver udviklerværktøjer');

@@ -23,9 +23,9 @@ const {run}=require('../core/git.cjs');
    assert.equal(await page.locator('#hosting-other').evaluate(el => el.open), false);
    await capture('hostingvalg');
    await page.click('#hosting-other > summary');
-   assert.deepEqual(await page.locator('#hosting-guide-choice option').evaluateAll(items => items.map(item => item.value)), ['cloudflare','netlify','github-pages','komplai','promte']);
+   assert.deepEqual(await page.locator('#hosting-guide-choice option').evaluateAll(items => items.map(item => item.value)), ['cloudflare','netlify','github-pages','promte']);
    await app.evaluate(({shell}) => { global.hostingLinks=[]; shell.openExternal=async url=>{global.hostingLinks.push(url);}; });
-   for (const id of ['cloudflare','netlify','github-pages','komplai','promte']) {
+   for (const id of ['cloudflare','netlify','github-pages','promte']) {
     await page.selectOption('#hosting-guide-choice',id);
     assert.match(await page.locator('#hosting-guide-other').innerText(), /Aura uploader ikke herfra/);
     await page.click('#hosting-guide-other details > summary');
@@ -34,9 +34,9 @@ const {run}=require('../core/git.cjs');
     assert.notEqual(await page.locator('#deployment-feedback').textContent(), 'Arbejder …');
     assert.equal(await app.evaluate(()=>global.deploymentUploads),0);
    }
-   assert.equal((await app.evaluate(()=>global.hostingLinks)).length,5);
+   assert.equal((await app.evaluate(()=>global.hostingLinks)).length,4);
    const invalid=await page.evaluate(()=>window.harness.deploymentGuideOpen({id:'https://example.invalid',kind:'guide'}));
-   assert.equal(invalid.ok,false);assert.equal((await app.evaluate(()=>global.hostingLinks)).length,5);
+   assert.equal(invalid.ok,false);assert.equal((await app.evaluate(()=>global.hostingLinks)).length,4);
    await page.selectOption('#hosting-guide-choice','cloudflare');await page.click('#hosting-guide-other details > summary');
    await capture('hostingvejledning');await page.click('#hosting-other > summary');
    await page.selectOption('#deploy-provider','azure');assert.match(await page.locator('#hosting-guide-current').innerText(),/Microsoft/);

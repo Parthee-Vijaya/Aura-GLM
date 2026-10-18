@@ -1,6 +1,6 @@
 const path = require('node:path');
 const { Arch } = require('builder-util');
-const profileResources = [{ from: '../profiles', to: 'profiles', filter: ['grundregler.md','gitignore.txt','catalog.json','skills/**/*'] }];
+const profileResources = [{ from: '../LICENSE', to: 'LICENSE' }, { from: '../profiles', to: 'profiles', filter: ['grundregler.md','gitignore.txt','catalog.json','skills/**/*'] }];
 module.exports = {
   appId: 'org.ai-alliancen.harness', productName: 'Aura',
   directories: { output: 'release', buildResources: 'packaging' },

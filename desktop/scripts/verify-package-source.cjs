@@ -27,10 +27,11 @@ async function verify(resources, target) {
   assert.equal(updateConfig.provider, 'generic');
   assert.equal(updateConfig.url, 'https://ai-alliancen-org.github.io/ai-harness/updates/');
   const names = ['main.cjs', 'preload.cjs', ...await files(path.join(root, 'core'), 'core/'), ...await files(path.join(root, 'ui'), 'ui/')];
+  assert.deepEqual(await fs.readFile(path.join(resources, 'LICENSE')), await fs.readFile(path.join(root, '../LICENSE')), 'Pakken skal bevare bibliotekets licens');
   const profileRoot = path.join(root, '../profiles');
   const profiles = ['grundregler.md', 'gitignore.txt', 'catalog.json', ...await files(path.join(profileRoot, 'skills'), 'skills/')];
   // En fil, som kun findes lokalt, er ikke med ved en senere Git-baseret bygning.
-  execFileSync('git', ['ls-files', '--error-unmatch', '--', 'package.json', ...names, ...profiles.map(f => '../profiles/' + f)], { cwd: root, stdio: 'pipe' });
+  execFileSync('git', ['ls-files', '--error-unmatch', '--', 'package.json', '../LICENSE', ...names, ...profiles.map(f => '../profiles/' + f)], { cwd: root, stdio: 'pipe' });
   for (const name of names) assert.deepEqual(asar.extractFile(archive, name), await fs.readFile(path.join(root, name)), `Pakken afviger fra kildekoden: ${name}`);
   for (const name of profiles) assert.deepEqual(await fs.readFile(path.join(resources, 'profiles', name)), await fs.readFile(path.join(profileRoot, name)), `Pakken afviger fra profilen: ${name}`);
   const lock = require('../runtime-lock.json'), manifest = JSON.parse(await fs.readFile(path.join(resources, 'runtime/manifest.json'), 'utf8'));

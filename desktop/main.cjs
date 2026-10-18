@@ -495,6 +495,11 @@ handle('deployment:review', input => exclusive(async () => ({ ...await deploymen
 handle('deployment:send', token => exclusive(() => deployments.deploy(requireIdleProject(), token)));
 handle('deployment:check', () => exclusive(() => deployments.check(requireIdleProject())));
 handle('deployment:open', async kind => {
+  if (kind?.komplaiApp) {
+    const app = (await deployments.providers.komplai.overview()).apps.find(app => app.id === kind.komplaiApp);
+    if (!app) throw new Error('Vælg en af dine apps hos komplai.');
+    return shell.openExternal(`${require('./core/komplai-publish.cjs').HUB}/publish?app=${encodeURIComponent(app.id)}`);
+  }
   const state = await deployments.state(requireIdleProject());
   if(kind==='settings') return shell.openExternal(await deployments.settings(requireIdleProject()));
   if (!state.last) throw new Error('Ingen udgivelse registreret.');
@@ -535,10 +540,19 @@ handle('komplai:token-connect', value => exclusive(async () => {
   if (workbench.running) throw new Error('Stop opgaverne først.');
   await komplaiToken.connect(value, workbench.store); return workbench.state();
 }));
+// Ét login kan give AI gennem organisationen, komplai Publish eller begge. Publish forbindes først, fordi AI-forbindelsen afslutter loginnet.
 handle('komplai:connect', value => exclusive(async () => {
   if (workbench.running) throw new Error('Stop opgaverne først.');
-  await komplaiLogin.connect(value, workbench.store); return workbench.state();
+  const choice = typeof value === 'string' ? { organisationId: value, coding: true, publishing: false } : value;
+  if (!choice || typeof choice.organisationId !== 'string' || (!choice.coding && !choice.publishing)) throw new Error('Vælg, hvad komplai skal bruges til.');
+  if (choice.publishing) await komplaiLogin.connectPublishing(choice.organisationId, workbench.store);
+  if (choice.coding) await komplaiLogin.connect(choice.organisationId, workbench.store); else komplaiLogin.cancel();
+  return workbench.state();
 }));
+handle('komplai:publish-state', () => require('./core/komplai.cjs').publishingState(workbench.store));
+handle('komplai:publish-overview', () => deployments.providers.komplai.overview());
+handle('komplai:publish-address', value => deployments.providers.komplai.address(value?.slug, value?.appId));
+handle('komplai:publish-disconnect', () => exclusive(() => require('./core/komplai.cjs').disconnectPublishing(workbench.store)));
 handle('komplai:account', id => workbench.komplaiAccount(id));
 handle('connections:state', () => workbench.state());
 handle('connections:save', value => exclusive(() => workbench.saveConnection(value)));

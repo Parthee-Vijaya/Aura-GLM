@@ -42,12 +42,12 @@ const options = [
     links: { guide: 'https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages', data: 'https://github.com/customer-terms/github-data-protection-agreement' }
   },
   {
-    id: 'komplai', name: 'Komplai Publish', integrated: false,
-    summary: 'Organisationens Komplai-miljø. Region og adgang følger den konkrete hostingaftale.',
-    scope: 'Komplai har en særskilt udgivelsesadgang til færdige HTML/ZIP-apps. Den er ikke tilsluttet Auras udgivelsesknap endnu.',
-    data: 'Komplai-login til AI giver ikke automatisk ret til hosting. Kontrollér miljøets databehandleraftale og underleverandører hos jeres administrator. Aktuel hosting og adgang er ikke kontrolleret af Aura.',
-    steps: ['Bed administratoren om adgang til Komplai Publish. Opret eller vælg en app under Jeres apps.', 'Aftal om appen skal være offentlig eller kun synlig for organisationen. Brug Komplais egen udgivelsesvejledning og en særskilt adgang til netop appen.', 'Den undersøgte uploadvej modtager færdig HTML eller ZIP med index.html. Den kører ikke Python/Node-backends; afklar sådanne behov særskilt.'],
-    links: { guide: 'https://app.komplai.dk/' }
+    id: 'komplai', name: 'komplai Publish', integrated: true,
+    summary: 'Apps på komplai.run, fx budget.komplai.run. Kræver kun login med komplai.',
+    scope: 'Aura udgiver færdige filer (en mappe med index.html) direkte efter login med komplai. Der kræves ingen CLI. Ved en ny app vælger du adresse og adgang. En eksisterende apps adgang ændres i komplai.',
+    data: 'Filerne gemmes i organisationens appmiljø hos komplai (Hetzner, Tyskland). Appen kører i den besøgendes browser; serverkode køres ikke. Adgang er enten organisationens medlemmer efter login med komplai eller alle med linket.',
+    steps: ['Log ind med komplai i Del, og vælg organisationen. Organisationen skal have komplai Publish.', 'Vælg en ny app med navn, adresse og adgang, eller en af dine eksisterende apps. Eksisterende adgang bevares og kan ændres i komplai.', 'Gennemgå versionen, og udgiv. Ældre versioner, tilbagerulning og sletning håndteres i komplai under Publish.'],
+    links: { guide: 'https://komplai.dk/publish' }
   },
   {
     id: 'promte', name: 'Promte Apps', integrated: false,
@@ -66,6 +66,6 @@ function link(id, kind) {
 }
 function guidance(enabled) {
   const entry = enabled ? 'Auras knap Del står øverst i projektet og åbner Udgiv til test. Den findes; bed ikke brugeren undersøge, om appen har en Del-knap.' : 'Deling er slået fra. Brugeren kan slå den til under Indstillinger → Funktioner. Forklar gerne mulighederne, men udgiv ikke.';
-  return `${entry}\nIndbygget upload: Vercel og Azure Static Web Apps. Begge kræver eksisterende konto, projekt og lokalt login i deres CLI. Vercel kræver en startversion; Aura opretter ikke ressourcer eller konti. Sikkerhedskopi til GitHub deler kode, ikke et kørende testlink.\nUnder Andre steder at udgive findes vejledninger til Cloudflare Pages, Netlify Drop, GitHub Pages, Komplai Publish og Promte Apps. De vejledninger er ikke uploadintegrationer. Afklar frontend, backend, database, AI-modtagere og adgang før valg. Almindelige Python/Node-servere kan ikke udgives som statiske filer.\n${options.filter(o => !o.integrated).map(o => `${o.name}: ${o.scope}`).join('\n')}\nOplys ikke, at hosting er gratis eller udelukkende i EU uden at kontrollere de aktuelle vilkår og den konkrete opsætning. Region, leverandørens hjemland, CDN, logs og databehandleraftale er forskellige forhold. Brugeren godkender upload, adgang og omkostninger; du må ikke udgive fra agentens kommandoværktøj.`;
+  return `${entry}\nIndbygget upload: komplai Publish, Vercel og Azure Static Web Apps. komplai Publish kræver kun login med komplai og en organisation med Publish; Aura opretter appen og giver den en adresse som budget.komplai.run. Vercel og Azure kræver eksisterende konto, projekt og lokalt login i deres CLI. Vercel kræver en startversion; Aura opretter ikke ressourcer eller konti der. Sikkerhedskopi til GitHub deler kode, ikke et kørende testlink.\nUnder Andre steder at udgive findes vejledninger til Cloudflare Pages, Netlify Drop, GitHub Pages og Promte Apps. De vejledninger er ikke uploadintegrationer. Afklar frontend, backend, database, AI-modtagere og adgang før valg. Almindelige Python/Node-servere kan ikke udgives som statiske filer.\n${options.filter(o => !o.integrated).map(o => `${o.name}: ${o.scope}`).join('\n')}\nOplys ikke, at hosting er gratis eller udelukkende i EU uden at kontrollere de aktuelle vilkår og den konkrete opsætning. Region, leverandørens hjemland, CDN, logs og databehandleraftale er forskellige forhold. Brugeren godkender upload, adgang og omkostninger; du må ikke udgive fra agentens kommandoværktøj.`;
 }
 module.exports = { catalog, link, guidance };

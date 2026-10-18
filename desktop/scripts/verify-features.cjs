@@ -90,7 +90,7 @@ const helpers = require('./ui-test-helpers.cjs');
     await page.click('#features-continue'); await page.waitForSelector('#create-form');
     const chosen = await features();
     assert.equal(chosen.chosen, 'valgt');
-    assert.deepEqual(chosen.defaults, { versioner: true, planlaegning: false, design: false, sikkerhed: false, kvalitet: false, deling: false, 'integration-adresser': false, 'integration-cvr': false, 'integration-promte': false });
+    assert.deepEqual(chosen.defaults, { versioner: true, planlaegning: false, design: false, sikkerhed: false, kvalitet: false, deling: false, 'integration-adresser': false, 'integration-cvr': false, 'integration-promte': false, 'integration-komplai-run': false });
     assert.equal(await page.locator('#setup-features-list .feature-row').count(), 6, 'integrationer vælges ikke ved første start');
     // 2. Startsiden viser ikke design og hostingønske, når funktionerne er slået fra.
     await helpers.projectOptions(page);
@@ -128,7 +128,7 @@ const helpers = require('./ui-test-helpers.cjs');
     assert.match((await log())[0], /^AI-opgave: /);
     // 4. Indstillinger › Funktioner: en undtagelse for projektet og en ændring for alle projekter.
     await helpers.menuClick(page, '#features-button'); await page.waitForSelector('#features-dialog[open]');
-    assert.equal(await page.isVisible('#features-scope'), true); assert.equal(await page.locator('#features-list .feature-row').count(), 8);
+    assert.equal(await page.isVisible('#features-scope'), true); assert.equal(await page.locator('#features-list .feature-row').count(), 10);
     assert.equal(await page.textContent('#features-list .features-group'), 'Integrationer');
     // Projektvalgets skjulte radioknapper fik før den generelle input-bredde og gav dialogen en vandret rullebjælke.
     assert.deepEqual(await page.locator('#features-dialog').evaluate(el => el.scrollWidth <= el.clientWidth), true, 'dialogen har ingen vandret rullebjælke');

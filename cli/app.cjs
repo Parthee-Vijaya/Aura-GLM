@@ -17,7 +17,7 @@ class Application {
     Object.assign(this, { directory, vault, ui, profiles, loginFactory, openBrowser });
     this.queue = Promise.resolve(); this.parts = new Map(); this.tools = new Map(); this.references = [];
     this.mode = 'plan'; this.selection = null; this.closing = false; this.answering = false; this.operation = 0; this.includeHistory = false;
-    this.bench = new Workbench({ directory, safeStorage: vault, profiles, engineFactory: engineFactory || (options => new OpenCodeEngine({ ...options, detached: true })), emit: event => this.event(event) });
+    this.bench = new Workbench({ surface: 'cli', directory, safeStorage: vault, profiles, engineFactory: engineFactory || (options => new OpenCodeEngine({ ...options, detached: true })), emit: event => this.event(event) });
     this.bench.restoration = new Restoration(this.bench.git, this.bench.store);
     this.deployments = new Deployments(this.bench.store);
     this.dev = new DevServer();
@@ -29,7 +29,7 @@ class Application {
     const state = await this.bench.state();
     if (!this.bench.chat) throw new Error(state.historyWarning || 'Samtalen kunne ikke åbnes. Eksisterende filer er bevaret.');
     this.selection = state.projectSettings.selection || null;
-    this.mode = state.workspace.mode || 'plan';
+    this.mode = (Object.hasOwn(modes, state.workspace.mode) ? state.workspace.mode : 'plan');
     this.ui.line(`\nAura · ${project.name}\n${project.root}`);
     if (state.historyWarning) this.ui.line(state.historyWarning);
     if (state.workspace.messages.length) this.ui.line('Samtalen er genåbnet. /history viser tidligere beskeder.');
@@ -154,7 +154,7 @@ class Application {
       case '/login': { const id = await login(this, argument || undefined); if (id) this.selection = await selectModel(this, id) || this.selection; break; }
       case '/history': for (const m of this.bench.workspace.messages) this.ui.line(`\n${m.role === 'user' ? 'Dig' : m.role === 'assistant' ? 'AI' : 'Aura'}:\n${m.text}`); break;
       case '/new': await this.bench.newChat(); this.mode = 'plan'; this.references = []; this.includeHistory = false; this.ui.line('Ny samtale. Projektfilerne er uændrede.'); break;
-      case '/chats': { const id = await this.ui.choose('Vælg samtale', (await this.bench.chatList()).map(c => ({ value: c.id, label: c.title || 'Ny samtale' }))); if (id) { await this.bench.openChat(id); this.mode = this.bench.workspace.mode || 'plan'; this.references = []; this.includeHistory = false; } break; }
+      case '/chats': { const id = await this.ui.choose('Vælg samtale', (await this.bench.chatList()).map(c => ({ value: c.id, label: c.title || 'Ny samtale' }))); if (id) { await this.bench.openChat(id); this.mode = (Object.hasOwn(modes, this.bench.workspace.mode) ? this.bench.workspace.mode : 'plan'); this.references = []; this.includeHistory = false; } break; }
       case '/context': this.ui.line('De seneste beskeder sendes som ekstra kontekst, også efter modelskift. De kan indeholde tidligere valgte referencer. /history viser teksten.'); this.includeHistory = await this.ui.confirm('Medtag denne samtales tekst i kommende opgaver, indtil du skifter samtale eller lukker?'); break;
       case '/draft': { const text = this.bench.workspace.draft; this.ui.line(text || 'Ingen kladde.'); if (text && await this.ui.confirm('Send kladden?')) await this.submit(text); break; }
       case '/references': await actions.references(this); break;

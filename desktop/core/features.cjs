@@ -1,6 +1,7 @@
 // Funktioner, som brugeren selv slår til og fra. Standarden gælder alle projekter, og et projekt kan have undtagelser.
 // Hver funktion har sine skills i det fælles bibliotek. Uden et valg gælder appens anbefalede pakke fra kataloget:
-// alle funktioner undtagen dem med "default": false, fx Deling og udgivelse, så længe Del kræver udviklerværktøjer.
+// alle funktioner undtagen dem med "default": false. Deling og udgivelse kræver ellers udviklerværktøjer og er
+// derfor kun med i pakken, når en komplai Publish-adgang er forbundet: så kan Del udgive uden ekstra værktøjer.
 const CHOICES = ['alle', 'valgt'];
 
 // En funktion, der bygger på en anden, er kun slået til sammen med den, fx Deling og udgivelse med Versioner og fortryd.
@@ -19,11 +20,16 @@ function couple(definitions, values) {
   return result;
 }
 
+function recommended(definitions, state) {
+  const publishing = Boolean(state.hosting?.komplai?.secret);
+  return publishing ? definitions.map(feature => feature.id === 'deling' ? { ...feature, default: true } : feature) : definitions;
+}
 class Features {
   constructor(store, library) { this.store = store; this.library = library; }
   async definitions() { return (await this.library()).features; }
   async get(root) {
-    const library = await this.library(), definitions = library.features, state = await this.store.read();
+    const library = await this.library(), state = await this.store.read();
+    const definitions = recommended(library.features, state);
     const defaults = state.features?.on || {};
     const saved = root ? state.projects[this.store.projectKey(root)]?.features || {} : {};
     const exceptions = Object.fromEntries(Object.entries(saved).filter(([id, value]) => definitions.some(feature => feature.id === id) && typeof value === 'boolean'));
@@ -38,7 +44,7 @@ class Features {
   }
   // scope "alle" ændrer standarden for alle projekter. scope "projekt" gemmer undtagelser; null fjerner en undtagelse.
   async save(root, input) {
-    const definitions = await this.definitions();
+    const definitions = recommended(await this.definitions(), await this.store.read());
     if (!input || !['alle', 'projekt'].includes(input.scope) || !input.values || typeof input.values !== 'object' || Array.isArray(input.values)) throw new Error('Ugyldigt valg af funktioner.');
     const nullable = input.scope === 'projekt';
     for (const [id, value] of Object.entries(input.values)) {
@@ -65,4 +71,4 @@ class Features {
     return this.get(root);
   }
 }
-module.exports = { Features, resolve, couple };
+module.exports = { Features, resolve, couple, recommended };

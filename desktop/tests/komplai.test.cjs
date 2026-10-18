@@ -2,7 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
 const { createHash } = require('node:crypto');
-const { KomplaiLogin } = require('../core/komplai.cjs');
+const { KomplaiLogin, organisation: organisationOf, publishingState, disconnectPublishing } = require('../core/komplai.cjs');
 const { Store } = require('../core/store.cjs');
 const { startGateway } = require('../core/gateway.cjs');
 const connections = require('../core/connections.cjs');
@@ -19,7 +19,7 @@ test('Komplai: PKCE, forkert state, organisationsvalg og beskyttet nøgle', asyn
     requests.push({ url, options });
     if (url.endsWith('/config')) return Response.json({ issuer: 'https://auth.komplai.dk', clientId: 'test-client', scopes: ['openid'], authorizationEndpoint: 'https://auth.komplai.dk/oauth/v2/authorize', tokenEndpoint: 'https://auth.komplai.dk/oauth/v2/token' });
     if (url.endsWith('/token')) { const values = options.body; assert.equal(values.get('client_secret'), null); assert.equal(createHash('sha256').update(values.get('code_verifier')).digest('base64url'), authURL.searchParams.get('code_challenge')); return Response.json({ access_token: 'hemmeligt-login', token_type: 'Bearer' }); }
-    if (url.endsWith('/organisations')) { assert.equal(options.headers.Authorization, 'Bearer hemmeligt-login'); return Response.json({ organisations: [organisation] }); }
+    if (url.endsWith('/organisations?include=publishing')) { assert.equal(options.headers.Authorization, 'Bearer hemmeligt-login'); return Response.json({ organisations: [organisation] }); }
     assert.equal(url.endsWith('/connect'), true); assert.deepEqual(JSON.parse(options.body), { organisationId: organisation.id, contract: 'vilkaar1', acceptSharedCredits: true });
     return Response.json({ id: 'key-id', secret: key, expiresAt: new Date(Date.now() + 60000).toISOString() });
   } });
@@ -31,7 +31,8 @@ test('Komplai: PKCE, forkert state, organisationsvalg og beskyttet nøgle', asyn
     callback.searchParams.set('state', authURL.searchParams.get('state'));
     assert.equal((await fetch(callback)).status, 200);
   });
-  assert.deepEqual(result, { organisations: [organisation] });
+  // Et ældre API uden oplysning om Publish tolkes som en ren AI-organisation.
+  assert.deepEqual(result, { organisations: [{ ...organisation, coding: true, publishing: null }] });
   await assert.rejects(login.connect('anden-organisation', store), /vælg din organisation/);
   const publicData = await login.connect(organisation.id, store);
   assert.equal(publicData.account.organisationId, organisation.id);
@@ -83,14 +84,14 @@ test('Komplai: rigtig loopback-gateway videresender valgt kontrakt og selvstænd
   assert.deepEqual(sent[0].body.stream_options, { include_usage: true });
 });
 
-test('Komplai: opbrugte fælleskreditter giver en konkret besked og ingen automatiske genforsøg', async t => {
+test('Komplai: nået månedsloft for AI giver en konkret besked og ingen automatiske genforsøg', async t => {
   let calls = 0; const failures = [];
   const server = http.createServer((req, res) => { calls++; req.resume(); res.writeHead(429, { 'content-type': 'application/json' }); res.end(JSON.stringify({ error: 'ai_credit_exhausted', detail: 'må ikke vises' })); });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const gateway = await startGateway({ kind: 'komplai', baseURL: `http://127.0.0.1:${server.address().port}/v1` }, { id: 'kode', komplai: { contract: '1' } }, 'syntetisk', null, (message, reason) => failures.push({ message, reason }));
   t.after(async () => { await gateway.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); });
   const send = () => fetch(gateway.url + '/chat/completions', { method: 'POST', headers: { authorization: `Bearer ${gateway.token}` }, body: JSON.stringify({ model: 'kode' }) });
-  const first = await send(); assert.equal(first.status, 429); assert.match(await first.text(), /Organisationens AI-kreditter/);
+  const first = await send(); assert.equal(first.status, 429); assert.match(await first.text(), /loft for AI-forbrug er nået/);
   const retry = await send(); assert.equal(retry.status, 409); await retry.text(); assert.equal(calls, 1);
   assert.equal(failures[0].reason.kind, 'quota'); assert.doesNotMatch(failures[0].message, /må ikke vises/);
 });
@@ -119,4 +120,47 @@ test('Komplai: loginrespons har en øvre grænse og tilbagekaldelse skjuler ikke
     globalThis.fetch = async () => { throw new Error('hemmelig intern fejl'); };
     await assert.rejects(disconnect({ baseURL: 'https://api.komplai.dk/v1/aura/v1' }, 'syntetisk'), /komplai kunne ikke kontaktes/);
   } finally { globalThis.fetch = original; }
+});
+
+test('Komplai: ét login giver Publish og AI hver for sig; Publish gemmes krypteret og tilbagekaldes ved log ud', async t => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'aura-komplai-publish-'));
+  const store = new Store(directory, { isEncryptionAvailable: () => true, encryptString: value => Buffer.from('krypteret:' + Buffer.from(value).toString('base64')), decryptString: buffer => Buffer.from(buffer.toString().slice(10), 'base64').toString() });
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const grant = n => 'komp_publish_grant_' + String(n).repeat(64);
+  const both = { id: 'org-begge', name: 'Gentofte Kommune', coding: { contract: 'v1', balance: { availableMicros: 2000000 }, data: {} }, publishing: { address: 'komplai.run', tier: 'shared_free' } };
+  const publishOnly = { id: 'org-publish', name: 'Kun Publish', coding: null, publishing: { address: 'kun.komplai.run', tier: 'dedicated' } };
+  assert.deepEqual(organisationOf(publishOnly), { id: 'org-publish', name: 'Kun Publish', coding: false, publishing: { address: 'kun.komplai.run', tier: 'dedicated' } });
+  assert.equal(organisationOf({ ...publishOnly, publishing: { address: 'ugyldig adresse!' } }).publishing, null);
+  assert.equal(organisationOf(both).contract, 'v1');
+  const calls = []; let issued = 0;
+  const login = new KomplaiLogin({ fetcher: async (url, options) => {
+    calls.push({ url, method: options.method, auth: options.headers.Authorization, body: options.body && JSON.parse(options.body) });
+    if (url.endsWith('/publishing/connect')) { issued++; return Response.json({ id: 'grant-' + issued, secret: grant(issued), expiresAt: new Date(Date.now() + 86400000).toISOString(), address: JSON.parse(options.body).organisationId === both.id ? both.publishing.address : publishOnly.publishing.address }); }
+    if (url.endsWith('/publishing/session')) return Response.json({ revoked: true });
+    if (url.endsWith('/connect')) return Response.json({ id: 'key-id', secret: 'kp_live_' + 'k'.repeat(43), expiresAt: new Date(Date.now() + 60000).toISOString() });
+    throw Error('Uventet adresse ' + url);
+  } });
+  login.pending = { token: 'hemmeligt-login', controller: new AbortController(), organisations: [both, publishOnly].map(organisationOf) };
+  await assert.rejects(login.connect(publishOnly.id, store), /ikke åbnet for kodeværktøjer/);
+  const state = await login.connectPublishing(both.id, store);
+  assert.deepEqual({ ...state, expiresAt: undefined }, { connected: true, organisationId: both.id, organisationName: both.name, address: 'komplai.run', expiresAt: undefined, expired: false });
+  assert.deepEqual(calls.at(-1).body, { organisationId: both.id, acceptPublishing: true });
+  assert.equal(calls.at(-1).auth, 'Bearer hemmeligt-login');
+  const raw = await fs.readFile(path.join(directory, 'settings.json'), 'utf8');
+  assert.equal(raw.includes(grant(1)), false, 'Udgivelsesadgangen gemmes krypteret');
+  assert.equal(store.decrypt((await store.read()).hosting.komplai), grant(1));
+  await login.connect(both.id, store);
+  assert.equal((await store.read()).connections.length, 1, 'AI-forbindelsen er en særskilt nøgle');
+  // Et nyt login erstatter adgangen og tilbagekalder den gamle på serveren.
+  login.pending = { token: 'hemmeligt-login', controller: new AbortController(), organisations: [both, publishOnly].map(organisationOf) };
+  await login.connectPublishing(publishOnly.id, store);
+  assert.deepEqual(calls.filter(c => c.url.endsWith('/publishing/session')).map(c => c.auth), ['Bearer ' + grant(1)]);
+  assert.equal((await publishingState(store)).address, 'kun.komplai.run');
+  login.cancel();
+  // Log ud tilbagekalder før lokal sletning; ved netværksfejl bevares adgangen, så det kan prøves igen.
+  await assert.rejects(disconnectPublishing(store, undefined, async () => { throw Error('offline'); }), /kunne ikke kontaktes/);
+  assert.equal((await publishingState(store)).connected, true);
+  const revoked = [];
+  assert.deepEqual(await disconnectPublishing(store, undefined, async (url, options) => { revoked.push(options.headers.Authorization); return Response.json({ revoked: true }); }), { connected: false });
+  assert.deepEqual(revoked, ['Bearer ' + grant(2)]);
 });

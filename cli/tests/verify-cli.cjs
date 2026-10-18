@@ -11,6 +11,7 @@ const { spawn } = require('node:child_process');
   const project = path.join(root, 'projekt med mellemrum'), state = path.join(root, 'state');
   await fs.mkdir(path.join(project, 'public'), { recursive: true });
   await fs.writeFile(path.join(project, 'public/index.html'), '<h1>Før</h1>');
+  await fs.writeFile(path.join(project, 'AGENTS.md'), '# Projektregler\nCLI-PROJEKTREGEL: Bevar projektets eksisterende filer.\n');
   const calls = [], modes = new Set();
   const server = http.createServer(async (req, res) => {
     if (req.headers.authorization !== 'Bearer aura_cli_synthetic_secret_12345') { res.writeHead(401); return res.end('{}'); }
@@ -28,7 +29,7 @@ const { spawn } = require('node:child_process');
     const hasResult = body.messages.slice(lastUser + 1).some(m => m.role === 'tool');
     const canWrite = body.tools?.some(t => t.function.name === 'write');
     const tool = canWrite && !hasResult ? { id: 'call_cli_' + calls.length, type: 'function', function: { name: 'write', arguments: JSON.stringify({ filePath: path.join(project, 'public/index.html'), content: mode === 'reject' ? '<h1>Må ikke skrives</h1>' : '<h1>Bygget i terminalen</h1>' }) } } : null;
-    const content = tool ? 'Jeg ændrer startsiden.\n' : canWrite ? 'Opgaven er behandlet.\nSe resultatet i browseren.' : 'Plan: Lav en enkel startside.\nVis derefter resultatet i browseren.';
+    const content = tool ? 'Jeg ændrer startsiden.\n' : canWrite ? 'Opgaven er behandlet.\nSe resultatet i browseren.' : '## Det bygger vi\nEn enkel startside.\n## Sådan skal det se ud\nEn tydelig overskrift.\n## Teknik og data\nHTML med syntetiske data.\n## Det skal du prøve\nSe resultatet i browseren.';
     if (body.stream) {
       res.setHeader('content-type', 'text/event-stream');
       const chunk = { id: 'cli-test', object: 'chat.completion.chunk', model: body.model, choices: [{ index: 0, delta: { role: 'assistant', content, ...(tool ? { tool_calls: [{ index: 0, ...tool }] } : {}) }, finish_reason: null }] };
@@ -46,6 +47,11 @@ const { spawn } = require('node:child_process');
     assert.equal(await fs.readFile(path.join(project, 'public/index.html'), 'utf8'), '<h1>Bygget i terminalen</h1>');
     const settings = await fs.readFile(path.join(state, 'settings.json'), 'utf8'); assert.doesNotMatch(settings, /aura_cli_synthetic_secret_12345/);
     assert.ok(calls.some(body => JSON.stringify(body).includes('FÆLLES-GRUNDLAG-02')), 'De fælles regler skal nå modelserveren');
+    const system = calls.flatMap(body => body.messages.filter(message => message.role === 'system')).map(message => JSON.stringify(message.content)).join('\n');
+    assert.match(system, /CLI-PROJEKTREGEL/, 'Projektets egne regler når den faktiske modelserver');
+    assert.match(system, /Kilde: AGENTS.md/, 'Reglernes oprindelse følger med');
+    assert.match(system, /\/save/); assert.match(system, /\/deploy/);
+    assert.doesNotMatch(system, /appens Del-knap|Auras knap Del|Start forhåndsvisning/);
     assert.ok(modes.has('reject') && modes.has('error'), 'Afvisning og forbindelsesfejl skal nå serveren');
     await assert.rejects(fs.stat(path.join(state, 'cli.lock')), { code: 'ENOENT' });
     console.log(output.trim()); console.log(JSON.stringify({ root, entry, platform: process.platform, arch: process.arch, motor: 'rigtig OpenCode', model: 'kontrolleret lokal server', betalteKald: 0 }));

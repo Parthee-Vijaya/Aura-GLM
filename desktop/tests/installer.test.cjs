@@ -9,6 +9,7 @@ const installer = require('../core/installer.cjs');
 const skill = (name, extra = '') => ({ name, title: name, summary: `Arbejdsgang ${name}.`, files: [{ path: 'SKILL.md', content: `---\nname: ${name}\ndescription: Prøve.\n---\n# ${name}\nSe references/detaljer.md.${extra}\n` }, { path: 'references/detaljer.md', content: `Detaljer til ${name}.\n` }] });
 function library(version = '0.2.0', extra = '') {
   return {
+    license: 'Syntetisk licenstekst til installationsprøven.\n',
     version, checkedAt: '2026-09-29', controlWord: 'PRØVE-01', skillDirs: ['.agents/skills', '.claude/skills', '.opencode/skills'], neutralSkillDir: '.agents/skills',
     rules: `# Grundregler\n\nVersion: ${version}\n`, gitignore: '.env\n*.key\n', skills: [skill('harness-a', extra), skill('harness-b')],
     tools: [

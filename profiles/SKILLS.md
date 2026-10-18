@@ -2,7 +2,7 @@
 
 Genereret fra `profiles/catalog.json` af `scripts/build-packages.cjs`. Ret kataloget eller skillfilerne, ikke denne fil.
 
-Aura Harness indeholder fælles grundregler og 12 skills samt tre integrationer. Grundreglerne gælder altid. En skill er en kort vejledning til kodeagenten om én arbejdsopgave, som bruges, når opgaven passer. En integration er en skill om ét bestemt system, fx et offentligt register. Integrationerne følger ikke med pakkerne til kodeværktøjerne; de vælges til for de systemer, man bruger. I Aura-appen kan kategorier, enkelte skills og integrationer slås til og fra.
+Aura Harness indeholder fælles grundregler og 12 skills samt fire integrationer. Grundreglerne gælder altid. En skill er en kort vejledning til kodeagenten om én arbejdsopgave, som bruges, når opgaven passer. En integration er en skill om ét bestemt system, fx et offentligt register. Integrationerne følger ikke med pakkerne til kodeværktøjerne; de vælges til for de systemer, man bruger. I Aura-appen kan kategorier, enkelte skills og integrationer slås til og fra.
 
 ## Grundregler · altid med
 
@@ -188,7 +188,7 @@ Kilder: [GitHub om udgivelsesmiljøer](https://docs.github.com/en/actions/refere
 
 ## Integrationer
 
-Hent data fra offentlige registre. Vælges til for de systemer, du bruger.
+Vejledning til registre og tjenester. Vælges til for de systemer, du bruger.
 
 ### Adresser
 
@@ -262,6 +262,30 @@ Skillen vedligeholdes af Promte og er kontrolleret mod kilderne 2026-10-18.
 
 Kilder: [Udvikl apps med kodeagenter (Promte)](https://app.promte.dk/docs/admin/udvikl-apps-med-kodeagenter), [Byg og udgiv AI-apps (Promte)](https://app.promte.dk/docs/admin/ai-apps), [@promte/app-library (npm)](https://www.npmjs.com/package/@promte/app-library), [@promte/app-upload (npm)](https://www.npmjs.com/package/@promte/app-upload)
 
+### Komplai Run
+
+`harness-integration-komplai-run` · [SKILL.md](skills/harness-integration-komplai-run/SKILL.md)
+
+**Hvad gør den?** Hjælper med at bygge og gennemgå de filer, Run kan vise, vælge adgang og kontrollere den udgivne app. I Auras desktopapp bruges Del; fra Aura-terminalen henvises til manuel upload i Hub. Andre kodeværktøjer kan bruge Komplais terminalværktøj.
+
+**Hvornår bruges den?** Når du har valgt Komplai Run til en browserapp eller vil opdatere en app der.
+
+**Hvad får du?** En gennemgået browserapp med alle nødvendige filer, en vej til udgivelse og en tydelig beskrivelse af, hvad der er afprøvet.
+
+**Hvad gør den ikke?** Giver ingen adgang og udgiver ikke uden dit valg. Agentens kommandoværktøj må ikke publicere i Aura. Run stiller ikke serverkode, database eller en AI-proxy til rådighed gennem denne udgivelsesvej.
+
+- **System:** Komplai Run
+- **Ejer:** Komplai
+- **Adgang:** Kræver en Komplai-organisation med Run. Aura bruger login og en udgivelsesadgang til dine egne apps i 30 dage. Eget kodeværktøj bruger en nøgle til én app i syv dage.
+- **Data:** Færdig HTML, CSS, JavaScript og appens øvrige filer. Offentlig adgang gør alle de uploadede filer tilgængelige for enhver.
+- **Dataflow:** Filer uploades fra din computer til organisationens appmiljø gennem Komplai. Besøgende henter filerne til deres browser; appens eventuelle eksterne kald skal gennemgås særskilt.
+- **Pris:** Følger organisationens aftale. Aktuelle lager- og trafikrammer vises i Hub.
+- **IT-afdelingen:** Kræver ikke hjælp fra IT-afdelingen.
+
+Skillen vedligeholdes af Aura Harness og er kontrolleret mod kilderne 2026-10-18.
+
+Kilder: [Komplai Run · vejledning i Hub](https://hub.komplai.dk/publish?guide=1), [Komplais offentlige udgivelseskit · API, skill og CLI 0.1.0](https://hub.komplai.dk/komplai-publish/komplai-publish.zip)
+
 ## Spørgsmål og svar
 
 ### Hvad er en skill?
@@ -278,7 +302,7 @@ Grundreglerne gælder altid: nøgler, Git, afprøvning og ærlig rapportering. D
 
 ### Hvad er en integration?
 
-En integration er en skill om ét bestemt system, fx adresser eller CVR. Den forklarer, hvordan man får adgang, hvor nøgler skal ligge, hvilke data systemet giver, og hvilke regler der gælder. Integrationerne følger ikke med pakkerne. Du vælger dem til i Aura-appen for de systemer, dit projekt bruger.
+En integration er en skill om ét bestemt system, fx adresser, CVR eller udgivelse med Komplai Run. Den forklarer adgang, nøgler, data og regler for systemet. Integrationerne følger ikke med pakkerne. Du vælger dem til i Aura-appen for de systemer, dit projekt bruger.
 
 ### Kan jeg ændre en skill?
 

@@ -1,5 +1,5 @@
 // Kører imod Komplais isolerede HTTP-fixture med rigtig JWT, PostgreSQL og OpenFGA.
-// Identitetsudsteder og Scaleway er kontrollerede stand-ins. Der bruges ingen rigtige konti eller kreditter.
+// Identitetsudsteder og Scaleway er kontrollerede stand-ins. Der bruges ingen rigtige konti eller rigtigt AI-forbrug.
 const { _electron: electron } = require('playwright');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
@@ -47,7 +47,7 @@ async function main() {
     assert.equal(await page.locator('#setup-title').textContent(), 'Log ind med komplai');
     await page.click('#komplai-login'); await page.waitForSelector('#komplai-organisations:not([hidden])');
     assert(await page.locator('#komplai-connect :is(button, select, summary):visible').count() <= 4);
-    assert.match(await page.locator('#komplai-credit-summary').textContent(), /Syntetisk prøvekommune.*fælles AI-kreditter/);
+    assert.match(await page.locator('#komplai-credit-summary').textContent(), /Syntetisk prøvekommune.*denne måned/);
     assert.doesNotMatch(await page.locator('#komplai-connect').innerText(), /Scaleway|Hetzner/);
     await page.locator('#komplai-connect summary').click();
     assert.match(await page.locator('#komplai-connect').innerText(), /Scaleway/);

@@ -8,6 +8,7 @@ const { Features, resolve, couple } = require('../core/features.cjs');
 const { loadLibrary } = require('../core/library.cjs');
 const { permissions, writeSkills } = require('../core/engine.cjs');
 const { appRules } = require('../core/project-guidance.cjs');
+const { Skills } = require('../core/skills.cjs');
 const profiles = path.join(__dirname, '../../profiles');
 async function temp(t) { const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'harness-funktioner-'))); t.after(() => fs.rm(root, { recursive: true, force: true })); return root; }
 const definitions = [{ id: 'versioner' }, { id: 'design' }, { id: 'deling', requires: ['versioner'], default: false }];
@@ -25,14 +26,14 @@ test('standarden gælder alle projekter; undtagelser gemmes kun, når de afviger
   const store = new Store(await temp(t)), features = new Features(store, () => loadLibrary(profiles));
   const first = await features.get();
   assert.equal(first.chosen, ''); assert.equal(first.list.filter(feature => !feature.group).length, 6);
-  assert.deepEqual(first.list.filter(feature => feature.group === 'integrationer').map(feature => feature.id), ['integration-adresser', 'integration-cvr', 'integration-promte']);
+  assert.deepEqual(first.list.filter(feature => feature.group === 'integrationer').map(feature => feature.id), ['integration-adresser', 'integration-cvr', 'integration-promte', 'integration-komplai-run']);
   assert.equal(first.list.find(feature => feature.id === 'integration-cvr').skills[0].integration.owner, 'Erhvervsstyrelsen');
-  assert.deepEqual(Object.keys(first.effective).filter(id => !first.effective[id]), ['deling', 'integration-adresser', 'integration-cvr', 'integration-promte'], 'uden et valg er alt undtagen deling og integrationer slået til');
+  assert.deepEqual(Object.keys(first.effective).filter(id => !first.effective[id]), ['deling', 'integration-adresser', 'integration-cvr', 'integration-promte', 'integration-komplai-run'], 'uden et valg er alt undtagen deling og integrationer slået til');
   assert.equal(first.list.find(feature => feature.id === 'kvalitet').skills[0].title, 'Kodestil og vedligeholdelse');
   // Vælg selv ved første start: kun versioner.
   const picked = await features.save(null, { scope: 'alle', chosen: 'valgt', values: { versioner: true, planlaegning: false, design: false, sikkerhed: false, kvalitet: false, deling: false } });
   assert.equal(picked.chosen, 'valgt');
-  assert.deepEqual(picked.defaults, { versioner: true, planlaegning: false, design: false, sikkerhed: false, kvalitet: false, deling: false, 'integration-adresser': false, 'integration-cvr': false, 'integration-promte': false });
+  assert.deepEqual(picked.defaults, { versioner: true, planlaegning: false, design: false, sikkerhed: false, kvalitet: false, deling: false, 'integration-adresser': false, 'integration-cvr': false, 'integration-promte': false, 'integration-komplai-run': false });
   // Et projekt får design som undtagelse. Deling slår også versionerne til, som allerede er standard, så kun deling gemmes.
   const project = await features.save('/projekt', { scope: 'projekt', values: { design: true } });
   assert.deepEqual(project.exceptions, { design: true });
@@ -52,6 +53,29 @@ test('standarden gælder alle projekter; undtagelser gemmes kun, når de afviger
   for (const input of [null, { scope: 'alle', values: { ukendt: true } }, { scope: 'alle', values: { design: 'ja' } }, { scope: 'alle', values: { design: null } }, { scope: 'projekt', values: {}, chosen: 'alle' }, { scope: 'alle', values: {}, chosen: 'nogle' }])
     await assert.rejects(features.save('/projekt', input), /Ugyldigt valg|Ukendt funktion/);
   await assert.rejects(features.save(null, { scope: 'projekt', values: { design: true } }), /Åbn et projekt/);
+});
+
+test('Komplai Run når kun motoren efter tilvalg og fjernes igen ved fravalg', async t => {
+  const root = await temp(t), project = path.join(root, 'projekt'), runtime = path.join(root, 'runtime');
+  const library = await loadLibrary(profiles), store = new Store(path.join(root, 'appdata'));
+  const features = new Features(store, async () => library), skills = new Skills(async () => library, store, features);
+  const name = 'harness-integration-komplai-run', id = 'integration-komplai-run';
+  assert.ok(!(await skills.context(project)).skills.some(skill => skill.name === name));
+  await features.save(project, { scope: 'projekt', values: { [id]: true } });
+  const context = await skills.context(project);
+  assert.deepEqual(context.integrations, ['Komplai Run']);
+  assert.equal(context.features.deling, false, 'en vejledning giver ikke i sig selv adgang til at udgive');
+  assert.ok(!(await skills.context(path.join(root, 'andet'))).skills.some(skill => skill.name === name));
+  await writeSkills(runtime, context.skills);
+  const actual = library.skills.find(skill => skill.name === name);
+  const directory = path.join(runtime, 'config/skills', name);
+  const entrypoint = await fs.readFile(path.join(directory, 'SKILL.md'), 'utf8');
+  assert.ok(entrypoint.startsWith(actual.files.find(file => file.path === 'SKILL.md').content));
+  assert.ok(entrypoint.includes(JSON.stringify(path.join(directory, 'references/run.md'))), 'motoren viser den præcise vej til referencen');
+  assert.equal(await fs.readFile(path.join(directory, 'references/run.md'), 'utf8'), actual.files.find(file => file.path === 'references/run.md').content);
+  await features.save(project, { scope: 'projekt', values: { [id]: false } });
+  await writeSkills(runtime, (await skills.context(project)).skills);
+  await assert.rejects(fs.access(path.join(runtime, 'config/skills', name)), { code: 'ENOENT' });
 });
 
 // Samme regler som OpenCodes tilladelser: * rammer alt, også skråstreger, og den sidste regel, der passer, gælder.

@@ -54,7 +54,18 @@ const toolNames = request => (request.tools || []).map(tool => tool.function?.na
   await fs.mkdir(project); await fs.mkdir(home);
   await fs.writeFile(path.join(project, 'README.md'), '# Mødelokaler\n\nEn opdigtet app til at finde mødelokaler.\n');
   execFileSync('git', ['init', '-q'], { cwd: project });
-  execFileSync(process.execPath, [path.join(__dirname, '..', '..', 'scripts', 'harness.cjs'), 'install', '--tools', 'opencode', '--project', project, '--yes']);
+  const site = path.join(__dirname, '../../site/dist');
+  const catalog = JSON.parse(await fs.readFile(path.join(site, 'catalog.json'), 'utf8'));
+  const archive = catalog.tools.find(tool => tool.id === 'opencode').archive;
+  const files = require('../../scripts/zip.cjs').unzip(await fs.readFile(path.join(site, archive)));
+  for (const [name, content] of files) {
+    if (name === 'LAES-MIG.md') continue;
+    assert.ok(name.startsWith('projekt/') && !name.split('/').some(part => part === '..' || part === '.'), name);
+    const target = path.join(project, name.slice('projekt/'.length));
+    await fs.mkdir(path.dirname(target), { recursive: true }); await fs.writeFile(target, content);
+  }
+  assert.equal(await fs.readFile(path.join(project, '.harness/LICENSE'), 'utf8'), await fs.readFile(path.join(__dirname, '../../LICENSE'), 'utf8'));
+  assert.match(await fs.readFile(path.join(project, '.harness/NOTICE.md'), 'utf8'), /AI Alliancen/);
   const version = execFileSync(opencode, ['--version']).toString().trim();
 
   const fake = await server((request, count) => {
@@ -84,6 +95,6 @@ const toolNames = request => (request.tools || []).map(tool => tool.function?.na
     assert.ok(events.some(event => event.type === 'tool_use' && event.part?.tool === 'skill'), 'OpenCode registrerer skill-kaldet');
     assert.match(events.filter(event => event.type === 'text').map(event => event.part?.text).join(''), /FÆLLES-GRUNDLAG-02/);
     assert.equal(await fs.readFile(path.join(project, 'README.md'), 'utf8'), '# Mødelokaler\n\nEn opdigtet app til at finde mødelokaler.\n', 'projektets egne filer er uændrede');
-    console.log(JSON.stringify({ status: 'bestået', opencode: version, root, forespoergsler: fake.requests.length, checks: ['installation med scripts/harness.cjs', 'grundregler og kontrolord fra AGENTS.md sendes til modellen', 'alle Harness-skills vises for modellen', 'skillens indhold sendes, når modellen kalder den', 'ingen ekstern model eller nøgle'] }, null, 2));
+    console.log(JSON.stringify({ status: 'bestået', opencode: version, root, forespoergsler: fake.requests.length, checks: ['installation fra den faktiske eksport-ZIP med licens og meddelelser', 'grundregler og kontrolord fra AGENTS.md sendes til modellen', 'alle Harness-skills vises for modellen', 'skillens indhold sendes, når modellen kalder den', 'ingen ekstern model eller nøgle'] }, null, 2));
   } finally { fake.instance.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

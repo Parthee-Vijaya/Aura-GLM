@@ -1,4 +1,4 @@
-const { validateSkillText } = require('./library.cjs');
+const { validateSkillFiles, validateSkillLinks } = require('./library.cjs');
 // Appens AI bruger det fælles skillbibliotek. Funktionerne afgør, hvilke skills AI’en kan hente, og grundreglerne gælder altid.
 // Teksten kan tilpasses pr. projekt; tilpasningen gemmes i appens datamappe og ændrer ikke biblioteket.
 const RULES = 'faelles-grundregler';
@@ -23,7 +23,12 @@ class Skills {
     if (!entry || typeof input.content !== 'string' || input.content.length > 24000) throw new Error('Instruktionerne er ugyldige eller for lange.');
     if (!input.reset) {
       if (entry.id === RULES) { if (!input.content.trim()) throw new Error('Grundreglerne kan ikke være tomme.'); }
-      else validateSkillText(entry.id, input.content, 'Instruktionerne');
+      else {
+        const library = await this.library();
+        const files = [{ path: 'SKILL.md', content: input.content }, ...library.skills.find(skill => skill.name === entry.id).files.filter(file => file.path !== 'SKILL.md')];
+        validateSkillFiles(entry.id, files, 'Instruktionerne');
+        validateSkillLinks([{ name: entry.id, files }], new Set(library.skills.map(skill => skill.name)));
+      }
     }
     const settings = await this.store.project(projectRoot);
     const skills = { ...settings.skills };
@@ -36,6 +41,8 @@ class Skills {
     const library = await this.library(), list = await this.list(projectRoot), features = (await this.features.get(projectRoot)).effective;
     const enabled = list.filter(skill => skill.id !== RULES && skill.enabled);
     const skills = enabled.map(skill => ({ name: skill.id, files: [{ path: 'SKILL.md', content: skill.content }, ...library.skills.find(item => item.name === skill.id).files.filter(file => file.path !== 'SKILL.md')] }));
+    for (const skill of skills) validateSkillFiles(skill.name, skill.files);
+    validateSkillLinks(skills, new Set(library.skills.map(skill => skill.name)));
     const integrations = library.features.filter(feature => feature.group === 'integrationer' && features[feature.id]).map(feature => feature.title);
     return { rules: list.find(skill => skill.id === RULES).content, skills, titles: enabled.map(skill => skill.title), features, integrations };
   }

@@ -32,7 +32,10 @@ async function main() {
     await page.click('#setup-add-provider'); await page.click('#provider-cards [data-kind="komplai"]');
     console.log('Log ind i den browser, Aura åbner. Prøven bruger kun den valgte organisation og højst 10 kr.');
     await page.click('#komplai-login'); await page.waitForSelector('#komplai-organisations:not([hidden])', { timeout: 300000 });
-    await page.selectOption('#komplai-organisation', organisationId);
+    if (await page.locator('#komplai-organisation').isVisible()) await page.selectOption('#komplai-organisation', organisationId);
+    else assert.equal(await page.inputValue('#komplai-organisation'), organisationId, 'Login gav ikke den aftalte testorganisation.');
+    // Denne prøve gælder AI. Publish-login og udgivelse afprøves særskilt.
+    if (await page.locator('#komplai-publish-also').isVisible()) await page.uncheck('#komplai-publish-also');
     await page.click('#komplai-confirm'); await page.waitForSelector('#setup-continue:not([disabled])', { timeout: 60000 });
     const state = (await page.evaluate(() => window.harness.connectionState())).value;
     const connection = state.connections.find(c => c.kind === 'komplai' && c.account.organisationId === organisationId);

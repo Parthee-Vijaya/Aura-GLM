@@ -55,7 +55,7 @@ async function startGateway(connection, model, key, route, onFailure = () => {},
         let specific;
         if (connection.kind === 'komplai') {
           let code; try { code = JSON.parse(await require('./komplai.cjs').readBounded(response, 8192)).error; } catch {}
-          specific = code === 'ai_credit_exhausted' ? ['Organisationens AI-kreditter er brugt eller reserveret til igangværende opgaver. Kontakt jeres administrator, hvis der skal tilføjes kreditter.', 'quota']
+          specific = code === 'ai_credit_exhausted' ? ['Organisationens loft for AI-forbrug er nået for denne måned, eller resten er reserveret til igangværende opgaver. Kontakt jeres administrator, hvis loftet skal ændres.', 'quota']
             : response.status === 401 ? ['komplai-adgangen er udløbet eller tilbagekaldt. Log ind med komplai igen under AI-forbindelser.', 'key']
             : code === 'terms_changed' ? ['komplais priser eller datavilkår er ændret. Hent modellerne igen og gennemgå oplysningerne.', 'rejected'] : null;
         } else await response.body?.cancel();

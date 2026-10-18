@@ -348,6 +348,7 @@ Brugeren besluttede tre ting:
 
   Deling bygger på versionerne, fordi Del og Sikkerhedskopi udgiver fra en gemt version. Slås den ene til, følger den anden med, og omvendt.
 - **Anbefalet pakke:** Hele pakken er alle funktioner undtagen Deling og udgivelse. Brugeren besluttede, at testere ikke skal møde Del, så længe den kræver Vercel CLI eller Azure CLI. Deling kan slås til under Indstillinger › Funktioner.
+- **Deling med komplai Publish (17. oktober, opdateret 18. oktober 2026):** Når en komplai Publish-adgang er forbundet, er Deling og udgivelse med i Hele pakken, fordi Del så kan udgive uden CLI. Brugerens eget valg under Funktioner går forud. Ét login med komplai giver organisationens AI og komplai Publish som to særskilte adgange; i AI-opsætningen er Publish valgt på forhånd, i Del er AI fravalgt på forhånd. Ved en ny app vælges synlighed (organisationen eller alle med linket) uden forvalg. Eksisterende adgang vises og bevares; ændringer sker i Hub, fordi API'et ikke kan binde adgangsændring atomisk til den uploadede version. Kontrollen viser aktuel adgang og en eventuel afvigelse fra brugerens valg. Apps får adresser som budget.komplai.run.
   - Kataloget markerer det med `"default": false`.
   - Hele pakken gemmer ingen enkeltvalg, så en senere ændring af anbefalingen også gælder dem, der valgte den.
 - **Altid slået til:** Disse kan ikke slås fra:

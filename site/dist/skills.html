@@ -15,7 +15,7 @@
   <main class="tool-index">
     <p class="eyebrow">DET FØLGER MED</p>
     <h1>Skills i Aura Harness.</h1>
-    <p class="lead">Aura Harness 0.2.1 indeholder fælles grundregler og 12 skills samt tre integrationer. Grundreglerne gælder altid. En skill er en kort vejledning til kodeagenten om én arbejdsopgave, som bruges, når opgaven passer.</p>
+    <p class="lead">Aura Harness 0.2.1 indeholder fælles grundregler og 12 skills samt fire integrationer. Grundreglerne gælder altid. En skill er en kort vejledning til kodeagenten om én arbejdsopgave, som bruges, når opgaven passer.</p>
     <p>Skillsene er delt i fire kategorier. Pakkerne til kodeværktøjerne indeholder dem alle. En integration er en skill om ét bestemt system, fx et offentligt register. Integrationerne følger ikke med pakkerne; du vælger dem til for de systemer, dit projekt bruger. I Aura-appen kan du slå kategorier, enkelte skills og integrationer til og fra, ligesom i en cookie-dialog; grundreglerne er altid med. Filerne er almindelige tekstfiler på dansk, som du kan læse og tilpasse.</p>
     <nav class="tool-nav" aria-label="Skills"><a href="#planlaegning">Planlægning og design</a><a href="#kode">Kode og kvalitet</a><a href="#sikkerhed">Sikkerhed og data</a><a href="#drift">Udgivelse og drift</a><a href="#integrationer">Integrationer</a></nav>
     <section id="skills" aria-label="Skills">
@@ -1177,7 +1177,7 @@ Brug de afsnit, der passer til appen. Skriv &quot;ikke relevant&quot; med en kor
       </section>
       <section class="note" id="integrationer" aria-labelledby="integrationer-title">
         <h2 id="integrationer-title">Integrationer</h2>
-        <p>Hent data fra offentlige registre. Vælges til for de systemer, du bruger.</p>
+        <p>Vejledning til registre og tjenester. Vælges til for de systemer, du bruger.</p>
         <p>Integrationerne følger ikke med pakkerne til kodeværktøjerne. Vælg dem til i Aura-appen: under Indstillinger › Funktioner eller under Tilpas, når du bruger Aura Harness i dit eget kodeværktøj.</p>
       <article class="tool-entry skill-entry" id="harness-integration-adresser">
         <p class="tool-type">13 · <code>harness-integration-adresser</code></p>
@@ -1618,6 +1618,124 @@ Hver funktion er en mappe `functions/&lt;navn&gt;/` med `function.json`, `index.
 </pre></details>
         <p class="sources">Kilder: <a href="https://app.promte.dk/docs/admin/udvikl-apps-med-kodeagenter">Udvikl apps med kodeagenter (Promte) ↗</a> · <a href="https://app.promte.dk/docs/admin/ai-apps">Byg og udgiv AI-apps (Promte) ↗</a> · <a href="https://www.npmjs.com/package/@promte/app-library">@promte/app-library (npm) ↗</a> · <a href="https://www.npmjs.com/package/@promte/app-upload">@promte/app-upload (npm) ↗</a></p>
       </article>
+      <article class="tool-entry skill-entry" id="harness-integration-komplai-run">
+        <p class="tool-type">16 · <code>harness-integration-komplai-run</code></p>
+        <h3>Komplai Run</h3>
+        <p>Forbereder statiske browserapps og vejleder om udgivelse fra Aura eller andre kodeværktøjer.</p>
+        <dl class="faq">
+          <dt>Hvad gør den?</dt><dd>Hjælper med at bygge og gennemgå de filer, Run kan vise, vælge adgang og kontrollere den udgivne app. I Auras desktopapp bruges Del; fra Aura-terminalen henvises til manuel upload i Hub. Andre kodeværktøjer kan bruge Komplais terminalværktøj.</dd>
+          <dt>Hvornår bruges den?</dt><dd>Når du har valgt Komplai Run til en browserapp eller vil opdatere en app der.</dd>
+          <dt>Hvad får du?</dt><dd>En gennemgået browserapp med alle nødvendige filer, en vej til udgivelse og en tydelig beskrivelse af, hvad der er afprøvet.</dd>
+          <dt>Hvad gør den ikke?</dt><dd>Giver ingen adgang og udgiver ikke uden dit valg. Agentens kommandoværktøj må ikke publicere i Aura. Run stiller ikke serverkode, database eller en AI-proxy til rådighed gennem denne udgivelsesvej.</dd>
+        </dl>
+        <dl class="faq integration-facts">
+          <dt>System</dt><dd>Komplai Run</dd>
+          <dt>Ejer</dt><dd>Komplai</dd>
+          <dt>Adgang</dt><dd>Kræver en Komplai-organisation med Run. Aura bruger login og en udgivelsesadgang til dine egne apps i 30 dage. Eget kodeværktøj bruger en nøgle til én app i syv dage.</dd>
+          <dt>Data</dt><dd>Færdig HTML, CSS, JavaScript og appens øvrige filer. Offentlig adgang gør alle de uploadede filer tilgængelige for enhver.</dd>
+          <dt>Dataflow</dt><dd>Filer uploades fra din computer til organisationens appmiljø gennem Komplai. Besøgende henter filerne til deres browser; appens eventuelle eksterne kald skal gennemgås særskilt.</dd>
+          <dt>Pris</dt><dd>Følger organisationens aftale. Aktuelle lager- og trafikrammer vises i Hub.</dd>
+          <dt>IT-afdelingen</dt><dd>Kræver ikke hjælp fra IT-afdelingen.</dd>
+        </dl>
+        <p class="review-date">Skillen vedligeholdes af Aura Harness og er kontrolleret mod kilderne 2026-10-18.</p>
+        <details><summary>Se instruktionen til agenten</summary><pre>---
+name: harness-integration-komplai-run
+description: Forbereder statiske browserapps til Komplai Run og vejleder om udgivelse, adgang og kontrol af den udgivne version. Brug den, når brugeren har valgt Run til en ny app eller vil opdatere en app der. Skelner mellem Auras desktopapp, Aura-terminalen og andre kodeværktøjer.
+---
+
+# Komplai Run
+
+Run viser færdige browserapps på adresser som `budget.komplai.run`. Brug denne skill, når brugeren har valgt Run. Den opretter ikke i sig selv adgang eller giver tilladelse til at udgive.
+
+## Forbered appen
+
+- Læs projektets eksisterende byggeopsætning. Byg React, Vite eller andre frameworks lokalt, og find den faktiske outputmappe med `index.html`. Upload ikke kildeprojektet.
+- Lever enten én HTML-fil med alt indhold indlejret eller en ZIP med `index.html` og alle nødvendige billeder, skrifttyper, CSS- og JavaScript-filer. Hver udgivelse erstatter hele versionen; filer fra den forrige version følger ikke med.
+- Brug relative filadresser eller stier fra appens egen rod. Kontrollér den færdige outputmappe i en browser, herunder navigation, indlæste filer og eksterne kald.
+- Run kører ingen serverkode og stiller ikke database, fælles fillager, AI-proxy eller funktioner til rådighed gennem denne udgivelsesvej. Kræver løsningen det, skal den del afklares særskilt. Browserens lokale lager er hverken fælles data eller en sikkerhedskopi.
+- Hold `.env`, nøgler, private data, kildekort og `node_modules` ude af udgivelsen. En browserapp kan ikke holde en API-nøgle hemmelig, heller ikke bag login.
+
+## I Auras desktopapp
+
+Brugeren udgiver gennem **Del** og Komplai-login. I nogle versioner hedder valget **komplai Publish**. Er deling slået fra, kan brugeren slå den til under **Indstillinger → Funktioner**.
+
+Agentens kommandoværktøj må ikke publicere. Brug hverken CLI, direkte API-kald eller en anden vej som omgåelse af Del. Forbered filerne og forklar det næste trin i appen; bed ikke om en udgivelsesnøgle i samtalen.
+
+Aura bruger en særskilt udgivelsesadgang, der gælder i 30 dage for personens egne apps i den valgte organisation. AI-adgang og udgivelsesadgang er forskellige. Lad brugeren vælge app i Del og gennemgå filerne før upload. Ved en ny app vælges adresse og adgang uden forvalg. En eksisterende app beholder sin adgang; ændringer af adgang, tilbagerulning, afpublicering og sletning håndteres i Hub under Run.
+
+## I Aura-terminalen
+
+`/deploy` understøtter Vercel og Azure Static Web Apps, ikke Komplai Run. Forbered filerne og henvis brugeren til manuel upload i Hub. Omgå ikke Auras udgivelsesforløb eller godkendelser med CLI eller direkte API-kald fra agentens kommandoværktøj.
+
+## I andre kodeværktøjer
+
+Læs [references/run.md](references/run.md) for terminalforløbet, uploadformatet og fejlhåndtering. Brug den versionsfaste kommando fra appens vejledning i Hub. Antag ikke, at pakken findes i npm-registret.
+
+Terminalforløbet bruger en nøgle til én eksisterende app, som udløber efter syv dage. Brugeren sætter den i værktøjets private miljø eller CLI&#39;ens skjulte nøglefelt. Læg den aldrig i chat, kommandoargumenter, projektfiler, versionshistorik eller logs. Udgiv kun, når brugeren har godkendt målappen, filerne og adgangen; en eksisterende godkendelse af samme handling skal ikke indhentes igen. Følg fortsat projektets regler for udgivelse og CI/CD.
+
+## Adgang og resultat
+
+En offentlig app udleverer HTML og alle medsendte filer til enhver. En organisationsintern app kræver Komplai-login; en udgivelsesnøgle giver ikke læseadgang. Kontrollér den konkrete organisations aftale og rammer, hvis omkostninger eller databehandling er uafklaret. Lov ikke gratis drift eller en bestemt behandlingsregion ud fra produktnavnet.
+
+Efter upload: åbn den faktiske appadresse, afprøv den vigtigste handling og kontrollér den valgte adgang. Ved afbrudt forbindelse eller ukendt udfald skal den aktive version kontrolleres i Hub før et nyt forsøg. Gentag ikke automatisk.
+
+Rapportér den observerede version og de kontroller, der faktisk er gennemført. En lokal prøve, et godkendt upload og en afprøvet app på dens rigtige adresse er forskellige resultater.
+</pre><p class="tool-type"><code>references/run.md</code></p><pre># Komplai Run i andre kodeværktøjer
+
+Kontrolleret 18. oktober 2026 mod det offentligt hentede udgivelseskit, version 0.1.0, og Komplais dokumentation om Aura-login og appadresser. Kittets CLI er MIT-licenseret og kræver Node 22.15 eller nyere. Denne reference medtager ingen af dets scripts.
+
+Dette terminalforløb gælder kodeværktøjer uden for Aura. I Auras desktopapp bruges **Del**; agentens kommandoværktøj må ikke stå for upload. Aura-terminalens `/deploy` understøtter kun Vercel og Azure Static Web Apps. Forbered Run-filerne til brugerens manuelle upload i Hub, og omgå ikke Auras godkendelser med kommandoerne her.
+
+## Adgang til en eksisterende app
+
+Åbn [Run i Hub](https://hub.komplai.dk/publish?guide=1), vælg appen og kontrollér dens adgang. Hub giver den præcise uploadadresse og en appnøgle. Nøglen vises én gang, gælder i syv dage og må kun uploade versioner til den app. Den kan ikke oprette apps, ændre adgang, læse private apps eller kalde AI.
+
+Kun appens ejer og organisationens administratorer kan administrere den i Hub. Det er anderledes end Auras native adgang, som kun omfatter personens egne apps, også når personen er administrator. Auras adgang udløber efter 30 dage og må ikke kopieres til CLI&#39;ens appnøglefelt.
+
+Brugeren sætter `KOMPLAI_PUBLISH_TOKEN` i værktøjets private miljø eller indtaster nøglen i CLI&#39;ens skjulte felt. CLI&#39;en indlæser ikke automatisk en `.env`-fil. Bed aldrig brugeren sende nøglen i chatten, og vis ikke miljøets indhold i en log. En udløbet eller tilbagekaldt nøgle erstattes gennem Hub, uden at adgangskontrollen omgås.
+
+## Kommando og gennemgang
+
+Brug den versionsfaste kommando, Hub viser for appen. Det offentlige kit beskriver denne form; erstat uploadadressen med appens faktiske adresse fra Hub:
+
+```sh
+npx --package=https://hub.komplai.dk/komplai-publish/komplai-publish-0.1.0.tgz komplai-publish ./dist --endpoint https://hub.komplai.dk/api/publish/APP_UUID/releases --dry-run
+```
+
+`./dist` skal være den færdigbyggede mappe, ikke en antagelse om projektets mappestruktur. `--dry-run` uploader intet. Kontrollér de faktiske filer og deres henvisninger i browseren; et filantal eller et vellykket pakkecheck beviser ikke, at appen virker. npm-registrering af `@komplai/publish` er ikke verificeret her, så brug ikke den kortere registreringsbaserede kommando som forudsætning.
+
+Når udgivelsen til den konkrete app er godkendt, fjernes `--dry-run`. CLI&#39;en viser målet og spørger før upload. `--yes` må kun bruges, når denne udgivelse allerede er godkendt og projektets regler tillader den. Kommandoen kan også modtage en færdig HTML-fil eller ZIP.
+
+Til manuel upload kan samme versionsfaste CLI bruges med `pack ./dist --out app.zip`. Det pakker kun lokalt; brugeren uploader derefter ZIP-filen i Hub. `init --endpoint …` gemmer kun uploadadresse og outputmappe i `.komplai-publish.json`, aldrig nøglen. Læs en eksisterende konfiguration før ændringer.
+
+## Filer og grænser
+
+- En enkelt HTML-fil skal indeholde sine egne scripts og styles. En ZIP skal indeholde hele den færdige app med `index.html` i roden; upload-API&#39;et accepterer også én omsluttende byggemappe.
+- Grænser i den kontrollerede kontrakt: 10 MiB upload, 50 MiB udpakket, 10 MiB pr. fil og 2.000 arkivposter. Højst fem versioner bevares. Organisationens aktuelle lager- og trafikrammer står i Hub og kan være anderledes end andre organisationers.
+- ZIP bruger almindelig lagring eller deflate og ASCII-filstier. Skjulte stier, links, dubletter, stier uden for arkivet, `_komplai` og kildekort accepteres ikke. CLI&#39;ens mappepakning udelader skjulte filer, afhængigheder og kildekort, men det erstatter ikke gennemgang af de resterende filer.
+- Browserfiler som HTML, CSS, JavaScript, JSON, billeder, skrifttyper og mediefiler understøttes. Kildeprojekter, serverkode, containere og databaser kan ikke udgives ad denne vej. Den fulde liste over filtyper står i kittets `API.md`.
+- En ny version suppleres aldrig med den gamle versions filer. Kontrollér derfor alle refererede assets i netop det indhold, der uploades, også når kun én kildefil er ændret.
+
+## Uploadsvar og fejl
+
+Upload-API&#39;et modtager filens bytes med `POST /api/publish/APP_UUID/releases`, `Content-Type: application/zip` eller `text/html` og appnøglen som bearer-token. Brug CLI&#39;en frem for at bygge et nyt uploadscript. Uploadruten afviser `Origin`-headeren og skal ikke kaldes fra browserappen. Sæt ikke en ny tilladt destination for at omgå en afvisning; kundemiljøer skal følge den udtrykkeligt aftalte adresse.
+
+HTTP 200 indeholder appens `id` og `activeRelease`. Kontrollér, at app-id&#39;et svarer til den valgte app. Åbn derefter dens stabile adresse fra Hub og kontrollér funktion, indlæste filer og adgang. Organisationsintern visning kræver en bruger med adgang, ikke appnøglen.
+
+- Ved ugyldigt format eller overskredet grænse rettes den færdige pakke lokalt.
+- Ved 401 eller 403 kontrolleres nøglens gyldighed, medlemskab, app og tilladelser gennem Hub.
+- Ved `publication_uncertain`, netværksafbrydelse eller uventet svar: stop og kontrollér den aktive version i Hub. Upload kan være gennemført trods det tabte svar; gentag ikke automatisk.
+- Ved mangel på plads, begrænset trafik eller utilgængeligt miljø: beskriv fejlen og afklar den i Hub. Opret ikke en ny app eller skift organisation som omvej.
+
+## Kilder og afprøvningsstatus
+
+- [Komplais offentlige udgivelseskit](https://hub.komplai.dk/komplai-publish/komplai-publish.zip): `SKILL.md`, `API.md`, README og CLI 0.1.0.
+- [Run og terminalvejledning i Hub](https://hub.komplai.dk/publish?guide=1).
+
+Kilderne beskriver kontrakten. At kittet kan hentes, eller at skillen installeres korrekt, dokumenterer ikke et gennemført login, native upload eller adgangskontrol i produktion. Angiv disse som uafprøvede, indtil der er konkret evidens for det relevante miljø.
+</pre></details>
+        <p class="sources">Kilder: <a href="https://hub.komplai.dk/publish?guide=1">Komplai Run · vejledning i Hub ↗</a> · <a href="https://hub.komplai.dk/komplai-publish/komplai-publish.zip">Komplais offentlige udgivelseskit · API, skill og CLI 0.1.0 ↗</a></p>
+      </article>
       </section>
     </section>
     <section class="note" aria-labelledby="spoergsmaal">
@@ -1626,7 +1744,7 @@ Hver funktion er en mappe `functions/&lt;navn&gt;/` med `function.json`, `index.
         <details><summary>Hvad er en skill?</summary><p>En skill er en kort vejledning til kodeagenten om én bestemt arbejdsopgave, fx en sikkerhedsgennemgang eller en udgivelse. Den ligger som en almindelig tekstfil, SKILL.md, i projektet. Agenten læser først kun navn og beskrivelse og henter resten, når opgaven passer. Det holder instruktionerne korte i det daglige arbejde.</p></details>
         <details><summary>Bruges alle skills hver gang?</summary><p>Nej. Mange værktøjer vælger selv en skill, når opgaven passer til beskrivelsen, og du kan også bede om en bestemt skill. En tekstændring skal fx ikke udløse en sikkerhedsgennemgang. Hvordan skills startes, afhænger af værktøjet; se værktøjets vejledning i webguiden.</p></details>
         <details><summary>Hvad er forskellen på grundregler og skills?</summary><p>Grundreglerne gælder altid: nøgler, Git, afprøvning og ærlig rapportering. De står i fx AGENTS.md eller CLAUDE.md. Skills er de længere arbejdsgange, der kun bruges, når opgaven kræver dem.</p></details>
-        <details><summary>Hvad er en integration?</summary><p>En integration er en skill om ét bestemt system, fx adresser eller CVR. Den forklarer, hvordan man får adgang, hvor nøgler skal ligge, hvilke data systemet giver, og hvilke regler der gælder. Integrationerne følger ikke med pakkerne. Du vælger dem til i Aura-appen for de systemer, dit projekt bruger.</p></details>
+        <details><summary>Hvad er en integration?</summary><p>En integration er en skill om ét bestemt system, fx adresser, CVR eller udgivelse med Komplai Run. Den forklarer adgang, nøgler, data og regler for systemet. Integrationerne følger ikke med pakkerne. Du vælger dem til i Aura-appen for de systemer, dit projekt bruger.</p></details>
         <details><summary>Kan jeg ændre en skill?</summary><p>Ja. Filerne er dine. Hvis du ændrer en installeret fil, springer en senere opdatering netop den fil over og fortæller dig det. Projektets egne regler skrives uden for Aura Harness-afsnittet i AGENTS.md eller CLAUDE.md, så de aldrig overskrives.</p></details>
         <details><summary>Sender Aura Harness mine data nogen steder hen?</summary><p>Nej. Installationen kopierer tekstfiler til dit projekt. Dit kodeværktøj og den model, du har valgt, læser filerne som en del af dit arbejde. Hvor de data behandles, afhænger af værktøjet og modellen.</p></details>
         <details><summary>Gør skillsene min app sikker eller lovlig?</summary><p>Nej. Skills er vejledning til agenten. De er ikke adgangskontrol, en sikkerhedsgodkendelse eller en vurdering efter databeskyttelsesreglerne. De hjælper med at stille de rigtige spørgsmål og inddrage de rigtige fagpersoner, men ansvaret for løsningen ligger fortsat hos organisationen.</p></details>

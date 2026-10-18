@@ -36,18 +36,37 @@ function validateSkillText(name, content, where = `Skill ${name}`) {
   return { fields, body };
 }
 
+// Brug samme kontrol ved kildeindlæsning, tilpasning og før en modelsession.
+function validateSkillFiles(name, files, where = `Skill ${name}`) {
+  const main = files.find(file => file.path === 'SKILL.md');
+  if (!main) throw new Error(`${where}: SKILL.md mangler.`);
+  const result = validateSkillText(name, main.content, where);
+  const paths = new Set();
+  for (const file of files) {
+    if (!SKILL_FILE.test(file.path) || typeof file.content !== 'string' || paths.has(file.path)) throw new Error(`${where}: Ugyldig eller gentaget referencefil ${file.path}.`);
+    paths.add(file.path);
+    if (file.path !== 'SKILL.md' && !result.body.includes(file.path)) throw new Error(`${where}: ${file.path} bruges ikke fra SKILL.md. Bevar henvisningen, eller gendan skillen.`);
+  }
+  for (const raw of result.body.match(/references\/[^\s)\]\x60"<>]+/g) || []) {
+    const reference = raw.replace(/[.,;:]+$/, '');
+    if (!paths.has(reference)) throw new Error(`${where}: Referencefilen ${reference} findes ikke. Brug en af skillens medfølgende referencefiler.`);
+  }
+  return result;
+}
+function validateSkillLinks(skills, names) {
+  for (const skill of skills) for (const file of skill.files) for (const line of file.content.split('\n')) for (const [, name] of line.matchAll(/`(harness-[a-z0-9-]+)`/g)) {
+    if (!names.has(name)) throw new Error(`Skill ${skill.name}: ${file.path} henviser til en ukendt skill, ${name}.`);
+    if (!/hvis (den|de) er installeret/.test(line)) throw new Error(`Skill ${skill.name}: Henvisningen til ${name} skal tåle, at skillen er fravalgt. Skriv fx "hvis den er installeret".`);
+  }
+}
+
 function validateSkill(entry, files) {
   const where = `Skill ${entry.name}`;
   if (!NAME.test(entry.name) || entry.name.length > 64) throw new Error(`${where}: Navnet skal bestå af små bogstaver, tal og bindestreger og højst have 64 tegn.`);
   if (!entry.name.startsWith('harness-')) throw new Error(`${where}: Navnet skal begynde med harness-, så det ikke forveksles med projektets egne skills.`);
   const skill = files.find(file => file.path === 'SKILL.md');
   if (!skill) throw new Error(`${where}: SKILL.md mangler.`);
-  const { fields, body } = validateSkillText(entry.name, skill.content, where);
-  for (const file of files) {
-    if (!SKILL_FILE.test(file.path)) throw new Error(`${where}: ${file.path} er ikke tilladt. Biblioteket indeholder kun Markdown og ingen scripts.`);
-    if (file.path !== 'SKILL.md' && !body.includes(file.path)) throw new Error(`${where}: ${file.path} bruges ikke fra SKILL.md.`);
-  }
-  for (const reference of body.match(/references\/[a-z0-9-]+\.md/g) || []) if (!files.some(file => file.path === reference)) throw new Error(`${where}: ${reference} nævnes, men findes ikke.`);
+  const { fields } = validateSkillFiles(entry.name, files, where);
   if (typeof entry.title !== 'string' || !entry.title || typeof entry.summary !== 'string' || !entry.summary) throw new Error(`${where}: Titel og kort beskrivelse mangler i kataloget.`);
   for (const field of FAQ_FIELDS) if (typeof entry.faq?.[field] !== 'string' || !entry.faq[field].trim()) throw new Error(`${where}: FAQ-feltet ${field} mangler i kataloget.`);
   if (!Array.isArray(entry.sources)) throw new Error(`${where}: Kilder skal være en liste.`);
@@ -113,6 +132,7 @@ async function loadLibrary(profileRoot) {
   if (!catalog.skillDirs.includes(catalog.neutralSkillDir)) throw new Error('Den neutrale skillmappe skal være en af de kendte mapper.');
   const rules = await fs.readFile(path.join(profileRoot, 'grundregler.md'), 'utf8');
   if (!rules.includes(catalog.controlWord) || !rules.includes(`Version: ${catalog.version}`)) throw new Error('Grundreglerne skal have samme version og kontrolord som kataloget.');
+  const license = await fs.readFile(path.join(profileRoot, '..', 'LICENSE'), 'utf8');
   const gitignore = await fs.readFile(path.join(profileRoot, 'gitignore.txt'), 'utf8');
   const names = new Set();
   const skills = [];
@@ -123,10 +143,7 @@ async function loadLibrary(profileRoot) {
     skills.push({ ...entry, ...validateSkill(entry, files), files });
   }
   // En skill kan fravælges. Henvisninger til andre skills skal derfor pege på en kendt skill og tåle, at den mangler.
-  for (const skill of skills) for (const file of skill.files) for (const line of file.content.split('\n')) for (const [, name] of line.matchAll(/`(harness-[a-z0-9-]+)`/g)) {
-    if (!names.has(name)) throw new Error(`Skill ${skill.name}: ${file.path} henviser til en ukendt skill, ${name}.`);
-    if (!/hvis (den|de) er installeret/.test(line)) throw new Error(`Skill ${skill.name}: Henvisningen til ${name} skal tåle, at skillen er fravalgt. Skriv fx "hvis den er installeret".`);
-  }
+  validateSkillLinks(skills, names);
   const onDisk = (await fs.readdir(path.join(profileRoot, 'skills'))).filter(name => !name.startsWith('.'));
   for (const name of onDisk) if (!names.has(name)) throw new Error(`Mappen profiles/skills/${name} står ikke i kataloget.`);
   const ids = new Set();
@@ -145,7 +162,7 @@ async function loadLibrary(profileRoot) {
   if (new Set(catalog.categories.map(category => category.id)).size !== catalog.categories.length || placed.length !== names.size || placed.some(name => !names.has(name)) || new Set(placed).size !== placed.length) throw new Error('Hver skill skal stå i præcis én kategori.');
   if (!Array.isArray(catalog.questions) || catalog.questions.some(item => typeof item.q !== 'string' || !item.q || typeof item.a !== 'string' || !item.a)) throw new Error('Spørgsmål og svar i kataloget skal have tekst.');
   validateFeatures(catalog.features, names);
-  return { version: catalog.version, checkedAt: catalog.checkedAt, controlWord: catalog.controlWord, skillDirs: catalog.skillDirs, neutralSkillDir: catalog.neutralSkillDir, rules, gitignore, questions: catalog.questions, featuredTools: catalog.featuredTools, categories: catalog.categories, features: catalog.features, skills, tools: catalog.tools };
+  return { version: catalog.version, checkedAt: catalog.checkedAt, controlWord: catalog.controlWord, skillDirs: catalog.skillDirs, neutralSkillDir: catalog.neutralSkillDir, rules, license, gitignore, questions: catalog.questions, featuredTools: catalog.featuredTools, categories: catalog.categories, features: catalog.features, skills, tools: catalog.tools };
 }
 
 // Funktionerne i appen. Hver skill hører til præcis én funktion, så et fravalg altid fjerner hele skillen.
@@ -167,4 +184,4 @@ function validateFeatures(features, names) {
   if (placed.length !== names.size || placed.some(name => !names.has(name)) || new Set(placed).size !== placed.length) throw new Error('Hver skill skal høre til præcis én funktion.');
 }
 
-module.exports = { loadLibrary, parseFrontmatter, validateSkillText, safeRelative };
+module.exports = { loadLibrary, parseFrontmatter, validateSkillText, validateSkillFiles, validateSkillLinks, safeRelative };

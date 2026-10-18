@@ -18,7 +18,9 @@ const { capture } = require('./changes.cjs');
 // og projektets samtaler. Hver samtale er en ChatSession med sin egen motor og opgave. Kun én samtale ad gangen kan
 // arbejde i den samme mappe; den, der arbejder, har "krav" på mappen, indtil opgaven er færdig.
 class Workbench {
-  constructor({ directory, safeStorage, profiles, emit, engineFactory = options => new OpenCodeEngine(options) }) {
+  constructor({ directory, safeStorage, profiles, emit, surface = 'desktop', engineFactory = options => new OpenCodeEngine(options) }) {
+    if (!['desktop', 'cli'].includes(surface)) throw new Error('Ukendt Aura-brugerflade.');
+    this.surface = surface;
     this.store = new Store(directory, safeStorage); this.history = new WorkspaceHistory(this.store);
     // Biblioteket indlæses én gang. Funktionerne afgør, hvilke af dets skills appens AI kan hente.
     let library = null;
