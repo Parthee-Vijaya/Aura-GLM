@@ -4,6 +4,18 @@ Senest kontrolleret 18. oktober 2026. Afsnittene er daterede, så tidligere begr
 
 [Gennemgangen før offentlig beta](offentliggoerelse.md) samler historik- og logkontrol samt de lokale prøver af README, hjemmeside og udgivelseskontrol. Den offentliggør ikke appen og ændrer ikke installationsstatus nedenfor.
 
+## Offentlig desktopbeta 0.4.0-beta.1 · 18. oktober 2026
+
+**Udgivet og observeret:** [Aura 0.4.0-beta.1](https://github.com/ai-alliancen-org/ai-harness/releases/tag/v0.4.0-beta.1) og [downloadsiden](https://ai-alliancen-org.github.io/ai-harness/desktop.html) er offentligt tilgængelige uden GitHub-login. Tagget `v0.4.0-beta.1` peger på brugerens commit `113102939b74a61b28177e06d6ac4f555475449a` (`v0.4.0-beta.1`), som også var `main`, da kørslerne startede.
+
+- **Før upload:** Alle tre pakker består `verify-package-source.cjs` mod det taggede commit: 89 appfiler, 32 profilfiler og de fastlåste værktøjer. Kontrollen er gentaget efter brugerens commit, så den gælder netop den kildeversion, tagget peger på.
+- **Kladde og offentliggørelse:** Kladden `416741062` fik præcis de syv filer, alle med status `uploaded` og størrelser, der matcher filoversigten. Kun de to godkendte kørsler er startet: [Offentliggør gennemgået desktopbeta 39171207063](https://github.com/ai-alliancen-org/ai-harness/actions/runs/39171207063) med `komplai_afproevet` slået fra, så Komplai-trinnet blev sprunget over, og [Udgiv downloadside 39171333464](https://github.com/ai-alliancen-org/ai-harness/actions/runs/39171333464). Begge bestod. Tagget udløste ingen andre kørsler; kun CodeQL og Dependabot kørte på den forudgående push, hvilket er den godkendte undtagelse.
+- **Offentlig download:** Downloadsiden viser v0.4.0-beta.1 med knapper til Mac · Apple-chip, Mac · Intel og Windows · x64 og nævner ikke længere 0.3.0-beta.1. Alle fem programfiler samt `SHA256SUMS.txt` og `release.json` er hentet fra de offentlige adresser uden token eller cookies; alle fem SHA-256 matcher. Beta-opdateringsfeeds for `darwin-arm64`, `darwin-x64` og `win32-x64` svarer HTTP 200 og peger på de rigtige filer med samme størrelse og SHA-512 som filoversigten.
+- **Den offentlige fil er den notariserede:** Appen inde i den offentligt hentede `Aura-0.4.0-beta.1-mac-arm64.dmg` består `stapler validate`, viser `Developer ID Application: mekbas IVS (2UX98897JW)` og `syspolicy_check distribution`, og dens `CFBundleShortVersionString` er `0.4.0-beta.1`.
+- **Platforme:** Offentlig download er ikke en ny platformsprøve. Windows-installation og -opdatering, fysisk Intel-hardware, automatisk genåbning efter Mac-opdatering og Komplai som AI-forbindelse er fortsat ikke afprøvet; se kandidatafsnittet nedenfor.
+
+Tagget `v0.4.0-beta.1` er oprettet og pushet på brugerens udtrykkelige anmodning om netop den handling. Der er ikke oprettet commits, branches eller pull requests herfra, og Git-identiteten er uændret.
+
 ## Aktuel kandidat til 0.4.0-beta.1 · 18. oktober 2026
 
 **Skrevet, enhedstestet, signeret, notariseret og afprøvet som pakket Apple Silicon-app med faktiske lokale filer. Windows- og Intel-filernes indhold er kontrolleret. Ikke offentliggjort.** Kandidaten bygger på brugerens commit `3775e7f` plus den versionsopdatering og de to testrettelser, der er beskrevet nedenfor. Kildekontrollen skal gentages mod det commit, der senere får tagget.

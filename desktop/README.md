@@ -488,9 +488,9 @@ Afslutningen viser ændrede tekstfiler registreret i den enkelte opgave og **Kon
 
 ## Installationspakker · beta
 
-### Aktuel udgivelse · 15. oktober 2026
+### Aktuel udgivelse · 18. oktober 2026
 
-`0.2.0-beta.6` er offentliggjort og kan hentes fra [downloadsiden](https://ai-alliancen-org.github.io/ai-harness/desktop.html) uden login. Begge Mac-pakker er signerede og notariserede; Windows-pakken er usigneret og indholdskontrolleret. [Teststatus](../docs/teststatus.md) beskriver den faktiske afprøvning, herunder de platformsprøver, der mangler. [Udgivelsesvejledningen](../docs/udgivelse.md) beskriver pakning, kildekontrol og de særskilte manuelle Releases- og Pages-kørsler. Den separate terminaludgivelse `cli-v0.2.0-beta.6` er også offentlig.
+`0.4.0-beta.1` er offentliggjort og kan hentes fra [downloadsiden](https://ai-alliancen-org.github.io/ai-harness/desktop.html) uden login. Begge Mac-pakker er signerede og notariserede; Windows-pakken er usigneret og indholdskontrolleret. [Teststatus](../docs/teststatus.md) beskriver den faktiske afprøvning, herunder de platformsprøver, der mangler. [Udgivelsesvejledningen](../docs/udgivelse.md) beskriver pakning, kildekontrol og de særskilte manuelle Releases- og Pages-kørsler. Den separate terminaludgivelse `cli-v0.2.0-beta.6` er også offentlig.
 
 ### Demogennemgang · 7. oktober 2026
 

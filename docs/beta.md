@@ -10,7 +10,7 @@ Aura Harness samler instruktioner og værktøjer til at bygge med AI. Du kan bru
 
 ## Før du installerer
 
-[Hent Aura til Mac eller Windows](https://ai-alliancen-org.github.io/ai-harness/desktop.html). Download kræver ikke en GitHub-konto. Læs [udgivelsesnoterne](https://github.com/ai-alliancen-org/ai-harness/releases/tag/v0.2.0-beta.6) for den konkrete version.
+[Hent Aura til Mac eller Windows](https://ai-alliancen-org.github.io/ai-harness/desktop.html). Download kræver ikke en GitHub-konto. Læs [udgivelsesnoterne](https://github.com/ai-alliancen-org/ai-harness/releases/tag/v0.4.0-beta.1) for den konkrete version.
 
 **Status 15. oktober 2026:** beta.6 er offentliggjort til Mac med Apple-chip, Intel-Mac og Windows x64. Alle tre installationsfiler er hentet uden login og kontrolleret mod udgivelsens filstørrelser og SHA-256. Downloadsiden er åbnet og gennemgået på den offentlige adresse.
 
