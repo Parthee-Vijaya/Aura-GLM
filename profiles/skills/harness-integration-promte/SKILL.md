@@ -17,7 +17,7 @@ En Promte-app er en React-app, der kører i en iframe i et arbejdsområde i Prom
 
 Promte bygger med en fast React- og Vite-opsætning. Detaljer og fejlbeskeder står i `references/promte.md`.
 
-- Pak appen ind i `PromteAppProvider`, og vent på `ready` fra `usePromte()`, før du kalder `usePromteClient()`.
+- Pak appen ind i `PromteAppProvider`. Kald `usePromte()` og `usePromteClient()` ubetinget øverst i komponenten, og vent på `ready`, før du kalder klientens API.
 - Vælg model fra `client.models()`. Skriv aldrig model-id'er fast i koden.
 - Læg `react`, `react-dom` og `@promte/app-library` under `devDependencies`. Promte leverer selv de versioner, appen bygges med.
 - Upload ikke byggekonfiguration som `vite.config.js`, `tailwind.config.js` eller `postcss.config.js`. Brug almindelig CSS.
@@ -34,7 +34,7 @@ Login til upload gemmes af kommandolinjeværktøjet i brugerens egen mappe, `~/.
 Kommandoerne henter en pakke fra npm. Kør dem kun, når brugeren har sagt ja til det.
 
 1. `npx @promte/app-upload login`. Brugeren godkender i browseren. Brug `--host` med organisationens Promte-adresse, hvis den ikke er `https://app.promte.dk`.
-2. `npx @promte/app-upload config --workspaceId <id>`. Id'et står i adressen på appens arbejdsområde.
+2. `npx @promte/app-upload config --host <adresse> --workspaceId <id>`. Brug samme Promte-adresse som ved login. Id'et står i adressen på appens arbejdsområde.
 3. `npx @promte/app-upload push`. Fejl i byggeriet vises i terminalen. Ret dem, og upload igen.
 4. `npx @promte/app-upload status`. Står versionen til gennemgang, er den nuværende version online, indtil den nye er godkendt.
 
