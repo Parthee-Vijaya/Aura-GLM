@@ -12,7 +12,9 @@ const helpers = require('./ui-test-helpers.cjs');
   console.log('Testmateriale: ' + root);
   const file = randomBytes(2 * 1024 * 1024), hash = createHash('sha512').update(file).digest('base64');
   let app, page, downloads = 0, corrupt = false;
-  const info = { version: '0.3.0-beta.2', critical: true, message: 'En rettelse til filadgang er klar.', files: [{ url: 'https://github.com/ai-alliancen-org/ai-harness/releases/download/v0.3.0-beta.2/Aura-0.3.0-beta.2-mac-arm64.zip', sha512: hash, size: file.length }] };
+  // Den tilbudte version udledes af appens egen, så prøven ikke forældes ved en udgivelse.
+  const next = require('../package.json').version.replace(/(\d+)$/, (_, n) => Number(n) + 1);
+  const info = { version: next, critical: true, message: 'En rettelse til filadgang er klar.', files: [{ url: `https://github.com/ai-alliancen-org/ai-harness/releases/download/v${next}/Aura-${next}-mac-arm64.zip`, sha512: hash, size: file.length }] };
   const server = http.createServer(async (req, res) => {
     if (req.url.startsWith('/feed')) { res.setHeader('content-type', 'application/json'); return res.end(JSON.stringify(info)); }
     downloads++; res.setHeader('content-length', file.length);

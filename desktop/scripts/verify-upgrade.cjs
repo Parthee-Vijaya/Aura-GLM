@@ -93,9 +93,14 @@ const helpers = require('./ui-test-helpers.cjs');
       }, { source: path.resolve(__dirname, '..'), root, serverURL });
       assert.equal(downloadCount, 1);
       console.log('Den signerede ZIP er hentet. Starter native installation.');
-      const closed = app.waitForEvent('close', { timeout: 180000 });
+      // Squirrel henter hele arkivet gennem sin lokale proxy og kontrollerer signaturen, før appen lukkes.
+      // Store arkiver på en travl maskine kan overskride standardgrænsen; hæv den med HARNESS_INSTALL_TIMEOUT.
+      const installTimeout = Number(process.env.HARNESS_INSTALL_TIMEOUT || 180000);
+      const closed = app.waitForEvent('close', { timeout: installTimeout });
+      const installStarted = Date.now();
       await app.evaluate(() => { void global.nativeTest.restart().then(state => global.recordNativeEvent('restart-result', state)).catch(error => { global.nativeFailure = error.message; global.recordNativeEvent('restart-error', error.message); }); });
       await closed; app = null;
+      console.log(`Appen lukkede efter ${Math.round((Date.now() - installStarted) / 1000)} sekunder; Squirrel installerer.`);
       const deadline = Date.now() + 120000;
       while (true) {
         let version; try { version = bundleVersion(installed); } catch {}

@@ -36,7 +36,7 @@ node scripts/release-site.cjs release/udgivelseskandidat
 
 Erstat mappen med den faktiske mappe. Scriptet danner `release.json`, `SHA256SUMS.txt` og en lokal downloadside. Det læser versionen fra filnavnene og afviser blandede versioner. En Mac-kvittering tæller kun, hvis den har status Accepted, et indsendelses-id, en kontroldato og samme SHA-256 som filen. En kvittering er lokal dokumentation; Linux-kontrollen hos GitHub foretager ikke selv Apples signatur- eller billetkontrol.
 
-Afprøv download med `node scripts/verify-download.cjs release/udgivelseskandidat`. Installationsfiler, Apple-kvitteringer og lokale rapporter skal ikke committes. Udgivelsesnoterne skal beskrive faktisk signering og afprøvning samt kendte begrænsninger. Se [udgivelsesnoterne for 0.3.0-beta.1](releases/0.3.0-beta.1.md).
+Afprøv download med `node scripts/verify-download.cjs release/udgivelseskandidat`. Installationsfiler, Apple-kvitteringer og lokale rapporter skal ikke committes. Udgivelsesnoterne skal beskrive faktisk signering og afprøvning samt kendte begrænsninger. Se [udgivelsesnoterne for 0.4.0-beta.1](releases/0.4.0-beta.1.md).
 
 ## Særskilt prøve af Komplai
 
