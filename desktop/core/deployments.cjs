@@ -7,7 +7,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 const { defaultName } = require('./history.cjs');
 const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 function relative(value) { if(typeof value!=='string'||!value||value.includes('\\')||value.includes(':')||value.startsWith('/')||value.split('/').some(p=>p==='..')||path.posix.normalize(value)!==value) throw Error('Angiv en relativ mappe uden ..'); return value; }
-// komplai Publish: én app pr. projekt, valgt eller ny. Synlighed vælges hver gang og har ingen standard.
+// komplai Run: én app pr. projekt, valgt eller ny. Synlighed vælges hver gang og har ingen standard.
 function komplaiConfiguration(input) {
   if(!['public','private'].includes(input.visibility)) throw Error('Vælg, hvem der kan åbne appen.');
   const c={provider:'komplai',mode:'static',directory:relative(input.directory||'public'),visibility:input.visibility,frontend:'.',api:''};
@@ -48,7 +48,7 @@ class Deployments {
   async state(root) { const p=await this.store.project(root); return {config:p.deploymentConfig||null,preference:p.startup?.hosting||'',last:p.deploymentLast||null}; }
   async review(root,input) {
     const config=configuration(input), artifact=await this.artifact(root,config.directory); validateArtifact(config,artifact);
-    if(config.provider==='komplai') { const refused=refusedFiles(artifact.files); if(refused.length) throw Error(`komplai Publish kan ikke modtage ${refused.length===1?'denne fil':'disse filer'}: ${refused.slice(0,5).join(', ')}${refused.length>5?' …':''}. Filnavne må kun have a-z, tal, bindestreg og punktum, og filtypen skal være en webside, et billede, en skrifttype eller lignende.`); }
+    if(config.provider==='komplai') { const refused=refusedFiles(artifact.files); if(refused.length) throw Error(`komplai Run kan ikke modtage ${refused.length===1?'denne fil':'disse filer'}: ${refused.slice(0,5).join(', ')}${refused.length>5?' …':''}. Filnavne må kun have a-z, tal, bindestreg og punktum, og filtypen skal være en webside, et billede, en skrifttype eller lignende.`); }
     const target=await this.providers[config.provider].inspect(config);
     const token=randomUUID(); this.reviews.clear(); this.reviews.set(token,{root,config,head:artifact.head,hash:artifact.hash,targetHash:hash(target),expires:Date.now()+300000});
     const project = await this.store.project(root);

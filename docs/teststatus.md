@@ -4,6 +4,27 @@ Senest kontrolleret 18. oktober 2026. Afsnittene er daterede, så tidligere begr
 
 [Gennemgangen før offentlig beta](offentliggoerelse.md) samler historik- og logkontrol samt de lokale prøver af README, hjemmeside og udgivelseskontrol. Den offentliggør ikke appen og ændrer ikke installationsstatus nedenfor.
 
+## Del-guide og rigtig Komplai Run-prøve · 18. oktober 2026
+
+Dette afsnit følger efter brugerens commit `72bd6f8` og opdaterer produktionsgrænsen i afsnittet om Komplai-login nedenfor.
+
+**Udgivet og observeret på Komplai Run:** Brugeren gennemførte Komplais browserlogin og gav den særskilte Run-adgang til sin egen organisation. Den aktuelle Aura-kildekode blev kørt på macOS arm64 med en isoleret datamappe, rigtig kryptering og uændret netværkstransport. Ingen AI-forbindelse eller modelkald indgik. Efter fuld genstart var forbindelse, projekt og udgivelseskvittering bevaret, og en ny statuskontrol lykkedes.
+
+- En offentlig syntetisk HTML-side blev udgivet gennem Auras normale Del-forløb. Den anonyme kontrol gav HTTP 200 og præcis samme SHA-256 som den godkendte fil.
+- En separat privat app blev oprettet og udgivet gennem den nye guide. Komplai rapporterede privat adgang, og anonyme kald fik HTTP 403 uden testindholdet. Browseren viste først login; efter **Log ind med komplai** åbnede den den rigtige testside som organisationsmedlem.
+- Begge udgivelser brugte det faktiske Git-udtræk fra den eksisterende syntetiske version `07b7121`, der kun indeholder `public/index.html`. Projektet blev kopieret uændret til prøven; der blev ikke oprettet eller ændret commits. Den offentlige og den private testapp er bevaret.
+- Prøven blev afsluttet med **Log ud af komplai Run** i appen. Tilbagekaldelsen lykkedes, Aura viste udlogningskvitteringen, og den isolerede datamappe indeholdt derefter ingen gemt Run-adgang.
+
+**Skrevet og gennemgået i den lokale app:** Del stiller ét spørgsmål ad gangen og bevarer valg ved Tilbage. En enkelt organisation kræver ingen rullemenu. App, navn, adresse og adgang er adskilt; **Skift app** går direkte til appvalget. Gennemgang og kvittering har appnavn og adresse øverst, separate oplysninger om udgivelse og adgang samt strukturerede tekniske detaljer. Run-navnet er opdateret i brugerfladen; eksisterende API-identifikatorer er bevaret. Browserens callback lover ikke længere et unødvendigt organisationsvalg eller et fuldført login, før tokenudvekslingen er afsluttet.
+
+**Enhedstestet og afprøvet med faktisk projektmateriale i Electron:** 27 målrettede enhedstests og tre appprøver består. Komplai-/cloudprøverne registrerer 56 skærme uden vandret overløb; første lag har højst fire kontroller. Otte forbindelsesskærme omfatter én organisation, procesgenstart og en ny app uden nyt login eller forvalgt adgang. Udfoldede detaljer, 980 × 720 ved 150 procent zoom, tastaturfokus, synlige handlinger og status uden overlap er kontrolleret. Den aktuelle private produktionskvittering er også åbnet i den nye visning efter genstart.
+
+Konkrete fund fra prøverne er rettet: samme valg efter Tilbage, tilbagevenden til et allerede forbrugt login, manglende vej til cloudopsætning efter en fejl og en statuslinje dækket af handlingsrækken. Azure viser ikke længere produktionsadressen som testadresse. Privat metadata kombineret med faktisk anonym filadgang udløser en tydelig uoverensstemmelse; denne vagt er afprøvet mod en lokal server, der leverer den godkendte fil uden login. Gennemgangens engangsgodkendelse og ukendt upload uden gentagelse er bevaret. Det afsluttende uafhængige review har ingen åbne fund.
+
+**Afgrænsning:** Produktionsprøven dækker enkelt-HTML og den anvendte medlemskonto. ZIP, afbrudt/afvist upload, modstridende adgang og øvrige fejlforløb dækkes af lokale prøver med kontrollerede svar. Der er ingen ny Windows-prøve, test med en særskilt ikke-medlemskonto eller produktionsprøve af en backend. Den nye Aura-brugerflade er ikke pakket eller offentliggjort som en ny beta.
+
+Lokal produktionsevidens ligger i `aura-komplai-produktion-xvhbq0h4` under systemets midlertidige mappe: godkendt materiale, kvitteringer, anonym filkontrol og observationer fra browser og genstart. De afsluttende appprøver ligger i `aura-komplai-udgivelse-O9kkQO`, `aura-del-cloud-Wjw55g` og `aura-komplai-forbindelser-DB8EzD`; logfilerne hedder `/tmp/aura-del-final-*.log`. Adgange og appdata skal ikke committes. Ingen Git-skrivning, GitHub Actions eller Aura-udgivelse er startet i denne milepæl.
+
 ## Sikkerhedsopsætning og Promte · 18. oktober 2026
 
 **Aktiveret og observeret på GitHub:** CodeQL analyserer nu JavaScript/TypeScript, Python og Actions. Den [automatiske analyse efter fletningen](https://github.com/ai-alliancen-org/ai-harness/actions/runs/39152400655) består på `aa6714a`; alle tre analyser er afleveret uden analysefejl. To eksisterende JavaScript-fund og to Dependabot-alarmer står fortsat åbne. Se [sikkerhedskontrollen](sikkerhedskontrol.md) for dækning og begrænsninger.

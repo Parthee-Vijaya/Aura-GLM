@@ -1,7 +1,7 @@
 const zlib = require('node:zlib');
 const { json } = require('./komplai.cjs');
 
-// komplai Publish: organisationens apps på {app}.komplai.run.
+// komplai Run: organisationens apps på {app}.komplai.run.
 // Aura uploader en gemt Git-version med den udgivelsesadgang, der blev givet ved login.
 const HUB = 'https://hub.komplai.dk';
 const SUFFIX = '.komplai.run';
@@ -12,11 +12,11 @@ const EXTENSIONS = new Set(['html', 'htm', 'css', 'js', 'mjs', 'json', 'txt', 'c
 const messages = {
   invalid_slug: 'Adressen kan ikke bruges. Brug 3 til 40 små bogstaver, tal og bindestreger. Ord som admin og www er reserveret.',
   slug_taken: 'Adressen er allerede i brug. Vælg en anden.',
-  publishing_inactive: 'Organisationens komplai Publish er ikke åben lige nu. Kontakt jeres administrator.',
+  publishing_inactive: 'Organisationens komplai Run er ikke åben lige nu. Kontakt jeres administrator.',
   unauthorised: 'Udgivelsesadgangen er udløbet eller tilbagekaldt. Log ind med komplai igen.',
   forbidden: 'Du kan kun udgive til apps, du selv har oprettet. Vælg en anden app, eller opret en ny.',
   not_found: 'Appen findes ikke længere hos komplai. Vælg en anden app, eller opret en ny.',
-  upload_limit: 'Udgivelsen er for stor til komplai Publish (højst 10 MB pakket).',
+  upload_limit: 'Udgivelsen er for stor til komplai Run (højst 10 MB pakket).',
   invalid_archive: 'komplai kunne ikke læse pakken. Kontrollér filerne, og prøv igen.',
   missing_index: 'Mappen skal have en index.html.',
   storage_limit: 'Organisationens plads til apps er brugt. Slet gamle versioner eller apps i komplai.',
@@ -68,7 +68,7 @@ class KomplaiDeployment {
   constructor(store, { hub = HUB, fetcher = (...args) => fetch(...args), now = () => Date.now() } = {}) { this.store = store; this.hub = hub; this.fetcher = fetcher; this.now = now; this.id = 'komplai'; }
   async account() {
     const saved = (await this.store.read()).hosting?.komplai;
-    if (!saved?.secret) throw Error('Log ind med komplai for at udgive til komplai Publish.');
+    if (!saved?.secret) throw Error('Log ind med komplai for at udgive til komplai Run.');
     if (Date.parse(saved.expiresAt) <= this.now()) throw Error('Udgivelsesadgangen er udløbet. Log ind med komplai igen.');
     return { ...saved, key: this.store.decrypt(saved) };
   }
@@ -108,7 +108,7 @@ class KomplaiDeployment {
     // derfor aldrig en eksisterende apps adgang som led i uploaden.
     if (target.id && target.currentVisibility !== config.visibility) throw Error(messages.visibility_changed);
     const refused = refusedFiles(artifact.files);
-    if (refused.length) throw Error(`komplai Publish kan ikke modtage ${refused.length === 1 ? 'denne fil' : 'disse filer'}: ${refused.slice(0, 5).join(', ')}${refused.length > 5 ? ' …' : ''}. Filnavne må kun have a-z, tal, bindestreg og punktum, og filtypen skal være en webside, et billede, en skrifttype eller lignende.`);
+    if (refused.length) throw Error(`komplai Run kan ikke modtage ${refused.length === 1 ? 'denne fil' : 'disse filer'}: ${refused.slice(0, 5).join(', ')}${refused.length > 5 ? ' …' : ''}. Filnavne må kun have a-z, tal, bindestreg og punktum, og filtypen skal være en webside, et billede, en skrifttype eller lignende.`);
     const single = artifact.files.length === 1 && artifact.files[0].file === 'index.html';
     const body = single ? artifact.files[0].data : zip(artifact.files);
     if (body.length > 10 * 1024 * 1024) throw Error(messages.upload_limit);

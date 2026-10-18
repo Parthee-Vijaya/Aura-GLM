@@ -17,7 +17,7 @@ async function connectedStore(t) {
   return store;
 }
 
-test('komplai Publish: adresser, filregler og en ZIP med korrekte kontrolsummer', () => {
+test('komplai Run: adresser, filregler og en ZIP med korrekte kontrolsummer', () => {
   assert.equal(crc32(Buffer.from('123456789')).toString(16), 'cbf43926');
   assert.equal(suggestLabel('Mødelokaler på Rådhuset'), 'moedelokaler-paa-raadhuset');
   assert.equal(suggestLabel('ab'), '');
@@ -34,7 +34,7 @@ test('komplai Publish: adresser, filregler og en ZIP med korrekte kontrolsummer'
   assert.equal(appURL('https://budget.komplai.run/'), 'https://budget.komplai.run');
 });
 
-test('komplai Publish: synlighed vælges altid, og adresse og app kontrolleres før gennemgang', () => {
+test('komplai Run: synlighed vælges altid, og adresse og app kontrolleres før gennemgang', () => {
   assert.throws(() => configuration({ provider: 'komplai', name: 'Budget' }), /hvem der kan åbne/);
   assert.throws(() => configuration({ provider: 'komplai', name: 'Budget', visibility: 'private', slug: 'admin' }), /Adressen kan ikke bruges/);
   assert.throws(() => configuration({ provider: 'komplai', appId: 'ikke-et-id', visibility: 'public' }), /Vælg en af dine apps/);
@@ -43,7 +43,7 @@ test('komplai Publish: synlighed vælges altid, og adresse og app kontrolleres f
   assert.deepEqual(configuration({ provider: 'komplai', appId, visibility: 'private', directory: 'dist' }), { provider: 'komplai', mode: 'static', directory: 'dist', visibility: 'private', frontend: '.', api: '', appId });
 });
 
-test('komplai Publish: ny app gemmes før upload, ZIP eller HTML, bevaret deling og status', async t => {
+test('komplai Run: ny app gemmes før upload, ZIP eller HTML, bevaret deling og status', async t => {
   const store = await connectedStore(t), calls = [];
   let active = null;
   const app = { id: appId, name: 'Budget', slug: 'budget', url: 'https://budget.komplai.run', visibility: 'private', releases: [] };
@@ -85,7 +85,7 @@ test('komplai Publish: ny app gemmes før upload, ZIP eller HTML, bevaret deling
   await assert.rejects(provider.inspect({ appId, visibility: 'public' }), /udløbet/);
 });
 
-test('komplai Publish: kontrollen genkender en privat app bag login', async t => {
+test('komplai Run: kontrollen genkender en privat app bag login', async t => {
   const store = await connectedStore(t);
   const receipt = { id: 'r1', appId, url: 'https://budget.komplai.run', config: { provider: 'komplai', visibility: 'private', appId }, target: { owner: 'Gentofte Kommune' }, state: 'READY' };
   await store.saveProject('/projekt', { deploymentLast: receipt });
@@ -95,7 +95,7 @@ test('komplai Publish: kontrollen genkender en privat app bag login', async t =>
   assert.match(checked.verification, /kræver login med komplai/);
 });
 
-test('komplai Publish: en upload ændrer aldrig eksisterende adgang, og en afvigelse stopper før upload', async t => {
+test('komplai Run: en upload ændrer aldrig eksisterende adgang, og en afvigelse stopper før upload', async t => {
   const store = await connectedStore(t);
   for (const outcome of ['afvist', 'ukendt', 'godkendt']) {
     const calls = [], app = { id: appId, visibility: 'private', activeRelease: 'gammel', name: 'Budget', slug: 'budget', url: 'https://budget.komplai.run', releases: [] };
@@ -125,7 +125,7 @@ test('komplai Publish: en upload ændrer aldrig eksisterende adgang, og en afvig
   }
 });
 
-test('komplai Publish: bekræftet release bevares, når den efterfølgende oversigt fejler', async t => {
+test('komplai Run: bekræftet release bevares, når den efterfølgende oversigt fejler', async t => {
   const store = await connectedStore(t); let fail = false, uploads = 0;
   const app = { id: appId, name: 'Budget', slug: 'budget', url: 'https://budget.komplai.run', visibility: 'private', activeRelease: 'gammel', releases: [] };
   const provider = new KomplaiDeployment(store, { fetcher: async (url, options) => {
@@ -142,7 +142,7 @@ test('komplai Publish: bekræftet release bevares, når den efterfølgende overs
   fail = false; const checked = await deployments.check('/projekt'); assert.equal(checked.state, 'READY'); assert.equal(uploads, 1);
 });
 
-test('komplai Publish: frisk adgang i Hub erstatter godkendelsens gamle adgang i kontrollen', async t => {
+test('komplai Run: frisk adgang i Hub erstatter godkendelsens gamle adgang i kontrollen', async t => {
   const store = await connectedStore(t), data = Buffer.from('<h1>Budget</h1>');
   const app = { id: appId, name: 'Budget', slug: 'budget', url: 'https://budget.komplai.run', visibility: 'public', activeRelease: 'r1', releases: [] };
   const provider = new KomplaiDeployment(store, { fetcher: async () => Response.json({ address: 'komplai.run', apps: [app] }) });
@@ -157,7 +157,7 @@ test('komplai Publish: frisk adgang i Hub erstatter godkendelsens gamle adgang i
   assert.match(Object.fromEntries(require('../ui/share-view.js').checks(failed))['Aktuel adgang'], /Ikke kontrolleret/);
 });
 
-test('Hele pakken: Deling og udgivelse er med, når komplai Publish er forbundet', () => {
+test('Hele pakken: Deling og udgivelse er med, når komplai Run er forbundet', () => {
   const definitions = [{ id: 'versioner' }, { id: 'deling', requires: ['versioner'], default: false }];
   assert.equal(recommended(definitions, {}).find(f => f.id === 'deling').default, false);
   assert.equal(recommended(definitions, { hosting: { komplai: { secret: 'x' } } }).find(f => f.id === 'deling').default, true);

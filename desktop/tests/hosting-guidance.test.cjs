@@ -19,8 +19,8 @@ test('hostingvejledninger åbner kun kendte kilder og skelner fra upload', () =>
 test('agentens faktiske appregler beskriver Del og de tilgængelige udgivelsesveje', () => {
   const enabled = appRules({ deling: true });
   assert.match(enabled, /knap Del står øverst/);
-  assert.match(enabled, /Indbygget upload: komplai Publish, Vercel og Azure Static Web Apps/);
-  assert.match(enabled, /komplai Publish kræver kun login med komplai/);
+  assert.match(enabled, /Indbygget upload: komplai Run, Vercel og Azure Static Web Apps/);
+  assert.match(enabled, /komplai Run kræver kun login med komplai/);
   assert.match(enabled, /Cloudflare Pages, Netlify Drop, GitHub Pages og Promte Apps/);
   assert.match(enabled, /ikke uploadintegrationer/);
   assert.match(enabled, /Python\/Node-servere kan ikke udgives som statiske filer/);

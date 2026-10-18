@@ -12,7 +12,7 @@ const messages = {
   api_key_required: 'Brug et komplai API-token til kodeværktøjer.',
   terms_changed: 'Organisationens priser eller datavilkår har ændret sig. Hent modellerne igen og gennemgå oplysningerne.',
   ai_credit_exhausted: 'Organisationens loft for AI-forbrug er nået for denne måned. Kontakt jeres administrator.',
-  publishing_not_enabled: 'Din organisation har ikke komplai Publish. Bed jeres administrator kontakte komplai.',
+  publishing_not_enabled: 'Din organisation har ikke komplai Run. Bed jeres administrator kontakte komplai.',
   key_limit: 'Du har for mange aktive udgivelsesadgange. Log ud på en anden computer, eller vent til en adgang udløber.',
 };
 const PUBLISH_GRANT = /^komp_publish_grant_[a-f0-9]{64}$/;
@@ -67,7 +67,7 @@ class KomplaiLogin {
           current.received = true;
           res.setHeader('Content-Type', 'text/plain; charset=utf-8');
           if (url.searchParams.has('error') || url.searchParams.getAll('code').length !== 1 || !value || value.length > 4096) { res.writeHead(400).end('Login blev ikke gennemført. Gå tilbage til Aura.'); reject(new Error('Login blev ikke gennemført.')); }
-          else { res.end('Du er logget ind. Gå tilbage til Aura og vælg organisation.'); resolve(value); }
+          else { res.end('Gå tilbage til Aura for at fortsætte.'); resolve(value); }
           current.server.close();
         });
         current.server.on('error', () => reject(new Error('Aura kunne ikke åbne den lokale loginforbindelse.')));
@@ -94,7 +94,7 @@ class KomplaiLogin {
       return { organisations: current.organisations };
     } catch (error) { if (this.pending === current) this.cancel(); throw error; }
   }
-  /** komplai Publish for samme login: en særskilt adgang, der kun kan oprette og opdatere personens egne apps. */
+  /** komplai Run for samme login: en særskilt adgang, der kun kan oprette og opdatere personens egne apps. */
   async connectPublishing(organisationID, store) {
     const current = this.pending, organisation = current?.organisations.find(o => o.id === organisationID);
     if (!current?.token || !organisation) throw new Error('Log ind igen, og vælg din organisation.');

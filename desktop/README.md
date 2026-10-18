@@ -381,11 +381,11 @@ Hostingønsket vises i projektoplysninger og medsendes som kontekst efter datage
 
 ## Udgiv til test
 
-**Udgiv til test** er valgfri og kræver ingen GitHub-forbindelse. Vælg et eksisterende hostingprojekt, gennemgå filerne og bekræft upload. Destinationen huskes pr. projekt uden for repositoryet. Avancerede valg er foldet sammen. Produktion, branches og projektets lokale filer ændres ikke.
+**Del** er valgfri og kræver ingen GitHub-forbindelse. Guiden viser ét spørgsmål ad gangen. Vælg komplai Run eller et eksisterende Vercel-/Azure-projekt, gennemgå den gemte version og vælg **Udgiv**. Destinationen huskes pr. projekt uden for repositoryet. Projektets lokale filer og Git-historik ændres ikke. En ny version af en eksisterende Run-app erstatter dens udgivne indhold; Vercel og Azure bruger de testmiljøer, der beskrives nedenfor.
 
 Pakken læses fra den gemte Git-version i den valgte mappe, som bliver uploadens rod. Arbejdsområdet skal være rent. Ignorerede buildfiler på disken medtages ikke: ved færdigbygget frontend skal det faktiske output være gemt i Git; ved Vercel-kildekode bygger udbyderen i stedet. Grænserne er 2.000 filer, 2 MB pr. fil og 20 MB samlet. Kendte hemmelighedsfiler, private referencer, links, undermoduler og LFS-pointere afvises. Indholdskontrollen er heuristisk.
 
-Gennemgangen viser først den gemte versions navn og tidspunkt, destination med konto/abonnement og testmiljø, rapporteret adgang og mulige omkostninger. Under **Se detaljer** findes versionens ID, filer, fingeraftryk, placering, miljøvariabelnavne og build. **Ret destination** bringer formularen tilbage og kræver en ny gennemgang. Version og destination genkontrolleres før upload. Godkendelsen er engangsbrug og udløber. Projekt-/appindstillinger gemmes, men godkendelsen huskes ikke til næste udgivelse.
+Gennemgangen viser appnavn, adresse, den gemte version, konto, adgang og mulige omkostninger. Under **Se detaljer** findes versionens ID, filer, fingeraftryk, placering, miljøvariabelnavne og build. **Ret** vender tilbage til opsætningen og kræver en ny gennemgang. Version og destination genkontrolleres før upload. Godkendelsen er engangsbrug og udløber. Projekt-/appindstillinger gemmes, men godkendelsen huskes ikke til næste udgivelse.
 
 Deling bruger altid hovedprojektets gemte version. Dialogen viser, når der findes uflettede samtalekopier: deres rettelser kommer ikke med, før brugeren vælger **Flet ind i projektet** og gemmer resultatet. Aktive opgaver blokerer deling. Ingen kopi flettes eller udgives automatisk.
 
@@ -393,11 +393,19 @@ GitHub-forløbet viser også versionsnavn, destination, synlighed rapporteret af
 
 ### Vejledninger og dataplacering
 
-**Del → Andre steder at udgive** indeholder vejledninger til Cloudflare Pages, Netlify Drop, GitHub Pages, Komplai Publish og Promte Apps. Det er vejledninger til udgivelse hos tjenesterne, ikke nye uploadadaptere i Aura. Vercel og Azure Static Web Apps er fortsat de to indbyggede uploadmuligheder.
+**Del → Andre steder at udgive** indeholder vejledninger til Cloudflare Pages, Netlify Drop, GitHub Pages, komplai Run og Promte Apps. Vejledningerne åbner ingen upload i sig selv. De indbyggede uploadmuligheder er komplai Run, Vercel og Azure Static Web Apps.
 
 Hvert valg har en kort beskrivelse af leverandør og dataplacering. **Opsætning, data og aftaler** viser trin, anvendelsesområde, adgangsforhold, kilder og kontroldato. En leverandørs hjemland, en API-region, global levering og databehandleraftalen beskrives særskilt. Aura kender ikke automatisk organisationens aftale eller godkendelse. Katalog og faste links ligger i `core/hosting-guidance.cjs`; samme fil beskriver appens reelle muligheder for agenten, så den kan henvise til Del uden at gætte.
 
-Cloudflare Pages, Netlify Drop og GitHub Pages er her beskrevet til færdige frontendfiler. En almindelig Python- eller Node-server kræver en anden driftsopsætning. Komplais undersøgte Publish-API er til færdig HTML/ZIP med særskilt appadgang. Promte beskriver upload af egne apps, men importformat og backendkrav skal afklares med leverandøren. Ingen konti oprettes, og ingen filer uploades ved at åbne en vejledning.
+Cloudflare Pages, Netlify Drop og GitHub Pages er her beskrevet til færdige frontendfiler. En almindelig Python- eller Node-server kræver en anden driftsopsætning. Komplais Run-API er til færdig HTML/ZIP med særskilt appadgang. Promte beskriver upload af egne apps, men importformat og backendkrav skal afklares med leverandøren. Ingen konti oprettes, og ingen filer uploades ved at åbne en vejledning.
+
+### komplai Run
+
+Log ind i Komplais egen browserformular, og forbind organisationens udgivelsesadgang. Har kontoen én organisation, vises den direkte; flere organisationer får et særskilt valg. Udgivelsesadgangen er adskilt fra AI-forbindelsen og lagres krypteret. En genstart bevarer forbindelsen. **Konto og adgang → Log ud af komplai Run** tilbagekalder den på serveren, før den fjernes lokalt.
+
+Vælg **Ny app** eller **Eksisterende app**. Nye apps får navn, adresse og et udtrykkeligt valg mellem **Organisationen** og **Alle med linket**, uden forvalg. Eksisterende apps beholder deres adgang; ændringer foretages i Komplai. Navn, adgang og filer kan rettes inden den endelige gennemgang. **Udgiv en ny version** genbruger den seneste app, mens **Skift app** åbner appvalget direkte.
+
+Den faktiske prøve 18. oktober 2026 gennemførte browserlogin, forbindelse, genstart og offentlige/private HTML-udgivelser fra en gemt syntetisk Git-version. Den offentlige fil matchede byte for byte. Den private app afviste anonyme besøg og viste indholdet efter medlemslogin. ZIP-forløbet er separat afprøvet mod Run-arkivlæseren lokalt. Se [teststatus](../docs/teststatus.md) for præcist omfang og begrænsninger.
 
 ### Vercel
 

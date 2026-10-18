@@ -1,7 +1,7 @@
 // Funktioner, som brugeren selv slår til og fra. Standarden gælder alle projekter, og et projekt kan have undtagelser.
 // Hver funktion har sine skills i det fælles bibliotek. Uden et valg gælder appens anbefalede pakke fra kataloget:
 // alle funktioner undtagen dem med "default": false. Deling og udgivelse kræver ellers udviklerværktøjer og er
-// derfor kun med i pakken, når en komplai Publish-adgang er forbundet: så kan Del udgive uden ekstra værktøjer.
+// derfor kun med i pakken, når en komplai Run-adgang er forbundet: så kan Del udgive uden ekstra værktøjer.
 const CHOICES = ['alle', 'valgt'];
 
 // En funktion, der bygger på en anden, er kun slået til sammen med den, fx Deling og udgivelse med Versioner og fortryd.

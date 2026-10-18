@@ -903,7 +903,7 @@ function showKomplaiOrganisation() {
     const avatar = node('span', initials, 'komplai-avatar'); avatar.setAttribute('aria-hidden', 'true');
     const name = node('span', selected.name, 'komplai-account-name'); name.append(node('span', ': ', 'visually-hidden'));
     const balance = node('span', undefined, 'komplai-balance');
-    // Et login kan give AI gennem organisationen, komplai Publish eller begge.
+    // Et login kan give AI gennem organisationen, komplai Run eller begge.
     if (selected.coding !== false) { const [amount, rest] = aiUsage(selected.balance); balance.append(node('strong', amount), rest); }
     else balance.append('Udgiver til ', node('strong', selected.publishing.address), '. Ingen AI gennem komplai.');
     if (komplaiTokenReview) balance.append(node('span', ` Tokenet udløber ${new Date(selected.credential.expiresAt).toLocaleDateString('da-DK')}.`, 'komplai-expiry'));
@@ -912,7 +912,7 @@ function showKomplaiOrganisation() {
   const both = Boolean(selected?.publishing && selected.coding !== false);
   $('#komplai-publish-row').hidden = !both;
   if (both) $('#komplai-publish-label').textContent = `Udgiv også apps til ${selected.publishing.address}`;
-  $('#komplai-confirm').textContent = selected && selected.coding === false ? 'Forbind komplai Publish' : 'Brug organisationens AI';
+  $('#komplai-confirm').textContent = selected && selected.coding === false ? 'Forbind komplai Run' : 'Brug organisationens AI';
   $('#komplai-terms').closest('details').hidden = Boolean(selected && selected.coding === false);
   $('#komplai-terms').textContent = selected && selected.coding !== false ? `${selected.data.recipients}. ${selected.data.region} ${selected.data.training} ${selected.data.retention} ${selected.data.platformStorage} ${selected.data.accounting} Kilde: ${selected.data.source}. Kontrolleret ${selected.data.checkedAt}.` : '';
 }
@@ -946,12 +946,12 @@ $('#komplai-login').onclick = () => action(async () => {
   try {
     const result = await call('komplaiLogin'); if (generation !== komplaiGeneration) return; komplaiOrganisations = result.organisations;
     $('#komplai-organisation').replaceChildren(...komplaiOrganisations.map(o => option(o.id, o.name)));
-    if (!komplaiOrganisations.length) { restart(); komplaiNotice('Din konto har ingen organisation med AI eller komplai Publish gennem komplai. Kontakt jeres administrator.', 'error'); return; }
+    if (!komplaiOrganisations.length) { restart(); komplaiNotice('Din konto har ingen organisation med AI eller komplai Run gennem komplai. Kontakt jeres administrator.', 'error'); return; }
     // Én organisation er et ja/nej-spørgsmål; flere er et valg.
     const single = komplaiOrganisations.length === 1;
     $('#komplai-organisations').hidden = false; $('#komplai-organisation').hidden = single; $('#komplai-organisation').previousElementSibling.hidden = single;
     hideProviderChoice(); komplaiStage('organisation'); komplaiNotice(); showKomplaiOrganisation();
-    if (single && komplaiOrganisations[0].coding === false) komplaiSetupHeading('Vil du forbinde komplai Publish?', 'Organisationen har komplai Publish, men ikke AI gennem komplai.');
+    if (single && komplaiOrganisations[0].coding === false) komplaiSetupHeading('Vil du forbinde komplai Run?', 'Organisationen har komplai Run, men ikke AI gennem komplai.');
     else if (single) komplaiSetupHeading('Vil du bruge organisationens AI?', 'Forbruget betales af organisationen til udbyderens pris og tæller med i dens månedlige loft.');
     else komplaiSetupHeading('Vælg din organisation', 'Dit AI-forbrug betales af den organisation, du vælger.');
     $(single ? '#komplai-confirm' : '#komplai-organisation').focus();
@@ -967,8 +967,8 @@ $('#komplai-confirm').onclick = () => action(async () => {
     state = komplaiTokenReview ? await call('komplaiTokenConnect', komplaiTokenReview.reviewID) : await call('komplaiConnect', { organisationId: chosen.id, coding: chosen.coding !== false, publishing }); renderConnections(); applyFeatures();
     const selected = state.connections.find(c => !previous.has(c.id));
     resetKomplaiLogin();
-    if (chosen && chosen.coding === false) { updateProvider(); komplaiStage('connected'); komplaiNotice(`komplai Publish er forbundet til ${chosen.name}. Du kan udgive med Del. Vælg en AI-udbyder for at bygge.`, 'success'); return; }
-    if (publishing) komplaiNotice(`komplai Publish er også forbundet til ${chosen.name}.`, 'success');
+    if (chosen && chosen.coding === false) { updateProvider(); komplaiStage('connected'); komplaiNotice(`komplai Run er forbundet til ${chosen.name}. Du kan udgive med Del. Vælg en AI-udbyder for at bygge.`, 'success'); return; }
+    if (publishing) komplaiNotice(`komplai Run er også forbundet til ${chosen.name}.`, 'success');
     if (setupActive && selected) { $('#setup-connection').value = selected.id; setupPage('saved'); await testSetupConnection(); } else connectionView('list');
   } catch (error) { komplaiNotice(error.message, 'error'); } finally { $('#komplai-confirm').disabled = false; }
 });
