@@ -1,81 +1,108 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises'), path = require('node:path'), os = require('node:os');
-const { KomplaiToken } = require('../core/komplai-token.cjs');
 const { Store } = require('../core/store.cjs');
-const { Vault, privateDirectory } = require('../../cli/storage.cjs');
 const { Workbench } = require('../core/workbench.cjs');
+const connections = require('../core/connections.cjs');
+const { startGateway } = require('../core/gateway.cjs');
 
 const key = 'kp_live_' + 'a'.repeat(43);
-function account() { return { id: 'org-test', name: 'Prøvekommune', contract: 'kontrakt-1', balance: { availableMicros: 10000000 },
-  credential: { id: 'token-test', scopes: ['coding:read', 'coding:complete'], expiresAt: new Date(Date.now() + 86400000).toISOString() },
-  data: { recipients: 'Komplai', region: 'EU', training: 'Ingen', retention: 'Prøvevilkår', source: 'https://app.komplai.dk', checkedAt: '2026-10-13', version: '1', mode: 'syntetisk', accounting: 'Organisationens kreditter', platformStorage: 'Forbrugsmetadata' } }; }
+const old = { id: 'tidligere-ai', name: 'Min gamle AI-forbindelse', kind: 'komplai', baseURL: 'https://api.komplai.dk/v1/aura/v1', account: { organisationId: 'org-test', organisationName: 'Prøvekommune', authMethod: 'token' } };
+const safeStorage = { isEncryptionAvailable: () => true, encryptString: value => Buffer.from('krypteret:' + Buffer.from(value).toString('base64')), decryptString: value => Buffer.from(value.toString().slice(10), 'base64').toString() };
 async function fixture(t) {
-  const directory = await privateDirectory(await fs.mkdtemp(path.join(os.tmpdir(), 'aura-token-'))), vault = new Vault(directory);
-  const password = 'syntetisk adgangssætning';
-  await vault.unlock({ line() {}, protect() {}, ask: async () => password });
-  const store = new Store(directory, vault);
-  t.after(async () => { vault.close(); await fs.rm(directory, { recursive: true, force: true }); });
-  return { directory, vault, store };
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'aura-tidligere-komplai-'));
+  const bench = new Workbench({ directory, safeStorage, profiles: path.join(__dirname, '../../profiles'), emit() {} });
+  t.after(async () => { await bench.close(); await fs.rm(directory, { recursive: true, force: true }); });
+  const store = new Store(directory, safeStorage);
+  await store.update(state => {
+    state.connections.push({ ...old, secret: store.encrypt(key), account: { ...old.account, privateMetadata: 'må-ikke-vises' } });
+    state.connections.push({ id: 'anden-ai', name: 'Egen model', kind: 'ollama', baseURL: 'http://127.0.0.1:11434' });
+    state.hosting = { komplai: { secret: store.encrypt('komp_publish_grant_' + 'b'.repeat(64)), grantId: 'run-id', organisationId: 'org-test', organisationName: 'Prøvekommune', address: 'komplai.run', expiresAt: '2099-01-01' } };
+  });
+  return { bench, store };
 }
-test('tokenkontrol bekræfter organisation og rettigheder uden modelkald; gemning krypteres først efter ja', async t => {
-  const { store, directory } = await fixture(t), value = account(), calls = [];
-  const flow = new KomplaiToken({ fetcher: async (url, options) => {
-    calls.push(url); assert.equal(url, 'https://api.komplai.dk/v1/aura/account'); assert.equal(options.headers.Authorization, `Bearer ${key}`); assert.equal(options.redirect, 'error');
-    return Response.json({ ...value, secret: key });
-  } }); t.after(() => flow.cancel());
-  const review = await flow.check(key);
-  assert.equal((await store.read()).connections.length, 0); assert.equal(JSON.stringify(review).includes(key), false);
-  await assert.rejects(flow.connect('forkert', store), /Kontrollér tokenet/);
-  const saved = await flow.connect(review.reviewID, store);
-  assert.equal(saved.account.authMethod, 'token'); assert.equal(saved.account.organisationId, value.id); assert.equal(saved.secret, undefined);
-  assert.equal(store.decrypt((await store.read()).connections[0]), key);
-  assert.equal((await fs.readFile(path.join(directory, 'settings.json'), 'utf8')).includes(key), false);
-  assert.equal(calls.length, 2); assert.equal(flow.pending, null);
-});
-test('ukendt metadata, manglende skrivetilladelse, udløb og HTTP 401 bliver afvist', async t => {
-  const { store } = await fixture(t);
-  for (const mutate of [a => delete a.credential, a => a.credential.scopes.pop(), a => a.credential.expiresAt = '2020-01-01', a => delete a.data.region]) {
-    const value = account(); mutate(value); const flow = new KomplaiToken({ fetcher: async () => Response.json(value) });
-    await assert.rejects(flow.check(key)); assert.equal(flow.pending, null);
-  }
-  const flow = new KomplaiToken({ fetcher: async () => Response.json({ error: 'invalid_api_key', detail: key }, { status: 401 }) });
-  await assert.rejects(flow.check(key), error => /API-token/.test(error.message) && !error.message.includes(key));
-  assert.equal((await store.read()).connections.length, 0);
-});
-test('annullering og forkert tokenformat giver ingen gemt forbindelse eller tilbagekaldelse', async t => {
-  const { store } = await fixture(t); let release, calls = 0;
-  const flow = new KomplaiToken({ fetcher: () => { calls++; return new Promise(resolve => release = resolve); } });
-  await assert.rejects(flow.check('ingen-nøgle'), /kp_live_/); assert.equal(calls, 0);
-  const pending = flow.check(key); flow.cancel(); release(Response.json(account()));
-  await assert.rejects(pending, /afbrudt/); assert.equal((await store.read()).connections.length, 0);
-});
-test('ændret organisation, kontrakt eller token kan ikke gemmes med gammel godkendelse', async t => {
-  const { store } = await fixture(t);
-  for (const mutate of [a => a.id = 'anden', a => a.contract = 'anden', a => a.data.region = 'Andet sted', a => a.credential.id = 'anden', a => a.credential.scopes.push('anden:adgang')]) {
-    const value = account(), flow = new KomplaiToken({ fetcher: async () => Response.json(value) });
-    const review = await flow.check(key); mutate(value);
-    await assert.rejects(flow.connect(review.reviewID, store), /ændret/); assert.equal(flow.pending, null);
-  }
-  assert.equal((await store.read()).connections.length, 0);
-});
-test('forbrug fra andre brugere kræver ikke nyt samtykke; låst lager bevarer tokenet hos Komplai', async t => {
-  const { store, vault } = await fixture(t), value = account(); let calls = 0;
-  const flow = new KomplaiToken({ fetcher: async () => { calls++; return Response.json(value); } }); t.after(() => flow.cancel());
-  const review = await flow.check(key); value.balance.availableMicros -= 1;
-  vault.close(); await assert.rejects(flow.connect(review.reviewID, store), /ikke tilgængelig/); assert.equal(calls, 1);
-  await vault.unlock({ ask: async () => 'syntetisk adgangssætning', protect() {} });
-  await flow.connect(review.reviewID, store); assert.equal(calls, 2);
-});
-test('fjernelse af et indsat token er lokal; browserlogin tilbagekaldes stadig på serveren', async t => {
-  const { store, directory, vault } = await fixture(t);
-  await store.update(state => { state.connections.push({ id: 'test', kind: 'komplai', secret: store.encrypt(key), baseURL: 'https://api.komplai.dk/v1/aura/v1', account: { authMethod: 'token' } }); });
-  const bench = new Workbench({ directory, safeStorage: vault, profiles: path.join(__dirname, '../../profiles'), emit() {} });
-  const fetcher = globalThis.fetch; let calls = 0;
-  globalThis.fetch = async () => { calls++; return Response.json({ revoked: true }); };
+
+test('Tidligere Komplai AI: alle inferensindgange afvises før netkald', async t => {
+  const { bench } = await fixture(t), original = globalThis.fetch; const calls = [];
+  globalThis.fetch = async (...args) => { calls.push(args); throw Error('Der må ikke sendes noget.'); };
   try {
-    await bench.removeConnection('test'); assert.equal(calls, 0);
-    await store.update(state => { state.connections.push({ id: 'browser', kind: 'komplai', secret: store.encrypt(key), baseURL: 'https://api.komplai.dk/v1/aura/v1', account: {} }); });
-    await bench.removeConnection('browser'); assert.equal(calls, 1);
-  } finally { globalThis.fetch = fetcher; await bench.close(); }
+    assert.equal(connections.definitions.komplai, undefined);
+    assert.throws(() => connections.normalize({ ...old, apiKey: key }), /kun.*udgivelse|anden AI-forbindelse/);
+    assert.throws(() => connections.disclosure(old, { id: 'tidligere-model' }), /kun.*udgivelse|anden AI-forbindelse/);
+    assert.throws(() => connections.engineProvider(old, { id: 'tidligere-model' }, 'http://127.0.0.1', 'syntetisk'), /kun.*udgivelse|anden AI-forbindelse/);
+    await assert.rejects(connections.listModels(old, key), /kun.*udgivelse|anden AI-forbindelse/);
+    await assert.rejects(connections.routes(old, key, 'tidligere-model'), /kun.*udgivelse|anden AI-forbindelse/);
+    await assert.rejects(startGateway(old, { id: 'tidligere-model' }, key, null), /kun.*udgivelse|anden AI-forbindelse/);
+    await assert.rejects(bench.models(old.id), /kun.*udgivelse|anden AI-forbindelse/);
+    await assert.rejects(bench.routes(old.id, 'tidligere-model'), /kun.*udgivelse|anden AI-forbindelse/);
+    assert.deepEqual(calls, [], 'Hverken modelkatalog, inference eller kontooplysninger må hentes.');
+  } finally { globalThis.fetch = original; }
+});
+
+test('Tidligere Komplai AI: gemt forbindelse bliver inaktiv og viser ingen nøgle eller kontometadata', async t => {
+  const { bench, store } = await fixture(t), before = await store.read();
+  const state = await bench.state();
+  assert.deepEqual(state.connections.map(c => c.id), ['anden-ai']);
+  assert.equal(state.retiredConnections.length, 1); assert.equal(state.retiredConnections[0].id, old.id);
+  assert.equal(state.retiredConnections[0].name, old.name);
+  assert.equal(state.retiredConnections[0].secret, undefined); assert.deepEqual(state.retiredConnections[0].account, { authMethod: 'token' });
+  assert.doesNotMatch(JSON.stringify(state), /kp_live_|komp_publish_grant_|må-ikke-vises/);
+  assert.deepEqual(await store.read(), before, 'Visning skal bevare de gamle oplysninger på disken til brugerens oprydning.');
+});
+
+test('Tidligere Komplai AI: forberedt afsendelse afvises før historik, dekryptering og genbrug af en aktiv motor', async t => {
+  const { bench, store } = await fixture(t), project = path.join(store.root, 'projekt');
+  await fs.mkdir(project); await bench.activate({ root: project, name: 'Tidligere samtale' });
+  const chat = bench.chat, saved = await store.read(), data = structuredClone(chat.data), effects = [];
+  const stop = name => () => { effects.push(name); throw Error('Uventet sideeffekt: ' + name); };
+  bench.store.decrypt = stop('dekryptering'); bench.engineFactory = stop('ny motor'); bench.chatsChanged = stop('ændret samtale');
+  chat.saveHistory = stop('historik');
+  for (const cached of [false, true]) {
+    chat.prepared = { root: project, connection: old, model: { id: 'tidligere-model' }, mode: 'chat', context: {}, disclosure: { fingerprint: 'tidligere-godkendelse' } };
+    chat.engineIdentity = cached ? 'tidligere-godkendelse' : null;
+    chat.engine = cached ? { active: true, send: stop('eksisterende motor'), close: stop('lukning af motor') } : null;
+    await assert.rejects(chat.send({ text: 'Fortsæt den tidligere samtale.', fingerprint: 'tidligere-godkendelse' }), /kun.*udgivelse|anden AI-forbindelse/);
+    assert.equal(chat.running, false); assert.equal(chat.sending, false); assert.equal(chat.runUser, null); assert.equal(chat.generation, 0);
+    assert.deepEqual(chat.data, data); assert.deepEqual(await store.read(), saved);
+  }
+  chat.engine = null;
+  assert.deepEqual(effects, []);
+});
+
+test('Tidligere Komplai AI: fjernelse af eget token er lokal, browseradgang tilbagekaldes, og Run bevares', async t => {
+  const { bench, store } = await fixture(t), original = globalThis.fetch; const calls = [];
+  const runBefore = (await store.read()).hosting.komplai;
+  globalThis.fetch = async (url, options) => { calls.push({ url, method: options.method }); return Response.json({ revoked: true }); };
+  try {
+    await bench.removeConnection(old.id); assert.deepEqual(calls, []);
+    await store.update(state => state.connections.push({ ...old, id: 'browser', secret: store.encrypt(key), account: {} }));
+    await bench.removeConnection('browser');
+    assert.deepEqual(calls, [{ url: 'https://api.komplai.dk/v1/aura/session', method: 'DELETE' }]);
+    const after = await store.read(); assert.deepEqual(after.hosting.komplai, runBefore);
+    assert.deepEqual(after.connections.map(c => c.id), ['anden-ai']);
+  } finally { globalThis.fetch = original; }
+});
+
+test('Tidligere Komplai AI: fejlet tilbagekaldelse bevarer både den gamle forbindelse og Run', async t => {
+  const { bench, store } = await fixture(t), original = globalThis.fetch;
+  await store.update(state => { state.connections[0].account.authMethod = 'browser'; });
+  const before = await store.read();
+  globalThis.fetch = async () => { throw Error('offline'); };
+  try { await assert.rejects(bench.removeConnection(old.id), /kunne ikke kontaktes/); assert.deepEqual(await store.read(), before); }
+  finally { globalThis.fetch = original; }
+});
+
+test('Historisk forbrug i DKK bevares og blandes ikke med USD efter genåbning', async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'aura-historisk-pris-'));
+  const bench = new Workbench({ directory: path.join(root, 'state'), profiles: path.join(__dirname, '../../profiles'), emit() {}, safeStorage: {} });
+  t.after(async () => { await bench.close(); await fs.rm(root, { recursive: true, force: true }); });
+  const project = path.join(root, 'project'); await fs.mkdir(project); await bench.activate({ root: project, name: 'Prøve' });
+  const chat = bench.chat; chat.usageBase = { ...chat.usageBase, calls: 1, cost: 0.02 };
+  chat.runPrice = { currency: 'DKK', input: 2, output: 5, cacheRead: 0.5, cacheWrite: 2 };
+  chat.runSteps.set('1', { input: 60, output: 40, reasoning: 10, cache: { read: 40 } });
+  const first = chat.currentUsage(); assert.equal(first.cost, 0.02); assert.equal(first.otherCosts.DKK, 0.00039);
+  assert.deepEqual(chat.currentUsage(), first, 'Visning må ikke tælle samme kald flere gange.');
+  chat.runUser = { id: 'u', role: 'user', text: 'Prøve' }; chat.running = true; await chat.saveHistory('idle'); chat.running = false;
+  await bench.activate({ root: project, name: 'Prøve' });
+  assert.equal(bench.chat.currentUsage().cost, 0.02); assert.equal(bench.chat.currentUsage().otherCosts.DKK, 0.00039);
 });

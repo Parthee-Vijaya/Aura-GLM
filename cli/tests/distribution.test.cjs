@@ -28,7 +28,7 @@ function archive(extra = []) {
 }
 test('CLI-arkivet afviser private filer, traversal, symlinks, dubletter og ødelagte arkiver', () => {
   assert.equal(unpack(archive()).get('cli/aura.cjs').toString(), 'test');
-  for (const e of [{ name: 'package/.env' }, { name: 'package/profiles/../secret.md' }, { name: 'package/cli/aura.cjs', type: 50 }, { name: 'package/cli/aura.cjs' }, { name: '../package.json' }]) assert.throws(() => unpack(archive([e])));
+  for (const e of [{ name: 'package/.env' }, { name: 'package/docs/komplai-api-token.md' }, { name: 'package/profiles/../secret.md' }, { name: 'package/cli/aura.cjs', type: 50 }, { name: 'package/cli/aura.cjs' }, { name: '../package.json' }]) assert.throws(() => unpack(archive([e])));
   assert.throws(() => unpack(Buffer.from('ikke gzip')));
 });
 test('CLI-udgivelsen kræver alle seks filer, betakladde, samme version, størrelse og faktiske hash', () => {

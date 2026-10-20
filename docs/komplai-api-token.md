@@ -1,6 +1,8 @@
-# Komplai: API-token til Aura
+# Historisk: Komplai som AI-forbindelse i Aura
 
-Status: klienten er skrevet. Produktions-API'en er under udvikling hos Komplai. Dette er kontrakten, som app og CLI bruger; ingen ændringer i Komplais backend er foretaget her.
+**Udfaset 20. oktober 2026.** Komplai er fjernet som AI-forbindelse i den aktuelle kildekode. Dette dokument bevarer den tidligere kontrakt som historik og følger ikke med terminalpakken. Beskrivelserne nedenfor er ikke gældende vejledning til tilslutning. Komplai Run til udgivelse bevares og bruger en særskilt adgang.
+
+Tidligere status: klienten var skrevet, og produktions-API'en var under udvikling hos Komplai. Ingen ændringer i Komplais backend blev foretaget i dette repository.
 
 ## Det skal Komplai-processen levere
 

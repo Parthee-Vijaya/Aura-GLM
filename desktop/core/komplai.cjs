@@ -1,27 +1,21 @@
 const http = require('node:http');
-const { randomBytes, createHash, randomUUID, timingSafeEqual } = require('node:crypto');
+const { randomBytes, createHash, timingSafeEqual } = require('node:crypto');
 
 const API = 'https://api.komplai.dk/v1/aura';
 const ISSUER = 'https://auth.komplai.dk';
 const messages = {
   aura_not_configured: 'komplai-login er ikke åbnet endnu. Kontakt komplai, eller vælg en anden forbindelse.',
-  coding_not_enabled: 'Din organisation har ikke åbnet for kodeværktøjer. Bed jeres administrator kontakte komplai.',
-  insufficient_scope: 'Denne konto har ikke adgang til kodeværktøjer.',
-  invalid_token: 'Adgangen blev afvist. Log ind med komplai igen, eller kontrollér dit API-token.',
-  invalid_api_key: 'Adgangen er udløbet eller tilbagekaldt. Log ind med komplai igen, eller indsæt et nyt API-token.',
-  api_key_required: 'Brug et komplai API-token til kodeværktøjer.',
-  terms_changed: 'Organisationens priser eller datavilkår har ændret sig. Hent modellerne igen og gennemgå oplysningerne.',
-  ai_credit_exhausted: 'Organisationens loft for AI-forbrug er nået for denne måned. Kontakt jeres administrator.',
+  insufficient_scope: 'Denne konto har ikke adgang til komplai Run.',
+  invalid_token: 'Adgangen blev afvist. Log ind med komplai igen.',
   publishing_not_enabled: 'Din organisation har ikke komplai Run. Bed jeres administrator kontakte komplai.',
   key_limit: 'Du har for mange aktive udgivelsesadgange. Log ud på en anden computer, eller vent til en adgang udløber.',
 };
 const PUBLISH_GRANT = /^komp_publish_grant_[a-f0-9]{64}$/;
-// Nyere API'er oplyser, hvad hver organisation giver adgang til. Ældre svar er kun AI.
+// Kun oplysninger om organisationens udgivelsesadgang bruges i Aura.
 function organisation(entry) {
   if (!entry || typeof entry.id !== 'string' || typeof entry.name !== 'string') throw new Error('komplais organisationer kunne ikke læses.');
-  if (!Object.hasOwn(entry, 'coding')) return { ...entry, coding: true, publishing: null };
   const publishing = entry.publishing && typeof entry.publishing.address === 'string' && /^[a-z0-9.-]{3,253}$/.test(entry.publishing.address) ? { address: entry.publishing.address, tier: String(entry.publishing.tier || '') } : null;
-  return { ...(entry.coding || {}), id: entry.id, name: entry.name, coding: Boolean(entry.coding), publishing };
+  return { id: entry.id, name: entry.name, publishing };
 }
 async function json(url, { key, body, method = body ? 'POST' : 'GET', signal, fetcher = fetch } = {}) {
   let response;
@@ -90,7 +84,7 @@ class KomplaiLogin {
       current.token = tokens.access_token;
       const result = await json(`${this.baseURL}/organisations?include=publishing`, { key: current.token, fetcher: this.fetcher, signal: current.controller.signal });
       if (!Array.isArray(result.organisations)) throw new Error('komplais organisationer kunne ikke læses.');
-      current.organisations = result.organisations.map(organisation);
+      current.organisations = result.organisations.map(organisation).filter(entry => entry.publishing);
       return { organisations: current.organisations };
     } catch (error) { if (this.pending === current) this.cancel(); throw error; }
   }
@@ -110,20 +104,7 @@ class KomplaiLogin {
     } catch (error) { await revokePublishing(result.secret, this.baseURL, this.fetcher).catch(() => {}); throw error; }
     return publishingState(store);
   }
-  async connect(organisationID, store) {
-    const current = this.pending, organisation = current?.organisations.find(o => o.id === organisationID);
-    if (!current?.token || !organisation) throw new Error('Log ind igen, og vælg din organisation.');
-    if (!organisation.coding) throw new Error(messages.coding_not_enabled);
-    // Kontroller nøglelageret før udstedelse, så en låst nøglering ikke skaber glemte adgange.
-    store.encrypt('kontrol');
-    const result = await json(`${this.baseURL}/connect`, { key: current.token, fetcher: this.fetcher, signal: current.controller.signal, body: { organisationId: organisation.id, contract: organisation.contract, acceptSharedCredits: true } });
-    if (typeof result.secret !== 'string' || !/^kp_live_[a-zA-Z0-9_-]{43}$/.test(result.secret) || typeof result.id !== 'string' || !Number.isFinite(Date.parse(result.expiresAt))) throw new Error('komplai returnerede ikke en gyldig adgang.');
-    try {
-      const connection = { id: randomUUID(), kind: 'komplai', name: `komplai · ${organisation.name}`.slice(0, 100), baseURL: `${this.baseURL}/v1`, secret: store.encrypt(result.secret), account: { organisationId: organisation.id, organisationName: organisation.name, keyId: result.id, expiresAt: result.expiresAt } };
-      await store.update(state => { state.connections.push(connection); });
-      this.cancel(); return store.publicConnection(connection);
-    } catch (error) { await json(`${this.baseURL}/session`, { key: result.secret, method: 'DELETE', fetcher: this.fetcher }).catch(() => {}); throw error; }
-  }
+
 }
 async function revokePublishing(secret, baseURL = API, fetcher = fetch) {
   return json(`${baseURL}/publishing/session`, { method: 'DELETE', key: secret, fetcher });
@@ -143,5 +124,4 @@ async function disconnectPublishing(store, baseURL = API, fetcher = fetch) {
 async function disconnect(connection, key) {
   return json(`${connection.baseURL.replace(/\/v1$/, '')}/session`, { method: 'DELETE', key });
 }
-async function account(connection, key) { return json(`${connection.baseURL.replace(/\/v1$/, '')}/account`, { key }); }
-module.exports = { API, ISSUER, KomplaiLogin, json, readBounded, disconnect, account, organisation, publishingState, disconnectPublishing, revokePublishing };
+module.exports = { API, ISSUER, KomplaiLogin, json, readBounded, disconnect, organisation, publishingState, disconnectPublishing, revokePublishing };

@@ -43,7 +43,7 @@ $env:AURA_HOME = "$env:LOCALAPPDATA\AuraCLI-WindowsTest"
 
 Kald projektet `Aura Windows prøve`, og beskriv en kalender med opdigtede aktiviteter. Bekræft placeringen. Der oprettes en ny undermappe. Notér stien, hvis du senere vil åbne den direkte.
 
-Ved valg af AI kan du bruge en forbindelse, du allerede har adgang til. Komplai giver valget mellem browserlogin og API-token. Tokenforløbet kan først godkendes mod den rigtige tjeneste, når Komplais metadataudvidelse er klar. API-nøgler og adgangssætningen til Auras lager indtastes skjult, aldrig som del af kommandoen. Brug ikke rigtige borgerdata i prøven.
+Ved valg af AI kan du bruge en forbindelse, du allerede har adgang til. API-nøgler og adgangssætningen til Auras lager indtastes skjult, aldrig som del af kommandoen. Brug ikke rigtige borgerdata i prøven.
 
 Gennemfør følgende og notér resultatet af hvert punkt:
 

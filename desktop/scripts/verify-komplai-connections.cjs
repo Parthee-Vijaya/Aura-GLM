@@ -1,5 +1,5 @@
 // Rigtig Electron, PKCE-callback, IPC og nøglelager med syntetiske konti og serversvar.
-// Ingen ekstern forbindelse, modelkald eller udgivelse. Den rigtige nøglering bruges ikke.
+// Ingen ekstern forbindelse, modelkald, udgivelse eller Git-skrivninger. Nøgleringen simuleres.
 const { _electron: electron } = require('playwright');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
@@ -11,35 +11,29 @@ async function installFixture(app, mode, project) {
   await app.evaluate(({ safeStorage, shell, dialog, session }, { mode, project }) => {
     const original = globalThis.fetch;
     session.defaultSession.webRequest.onBeforeRequest((details, callback) => { const address = new URL(details.url); callback({ cancel: ['http:', 'https:'].includes(address.protocol) && !['127.0.0.1', 'localhost'].includes(address.hostname) }); });
-    if (project) dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [project] });
+    dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [project] });
     globalThis.komplaiFixtureCalls = [];
-    const data = { recipients: 'Syntetisk modtager', region: 'Lokal prøve.', training: 'Ingen.', retention: 'Prøvedata.', platformStorage: 'Prøvemetadata.', accounting: 'Månedligt loft.', source: 'https://example.invalid', checkedAt: '2026-10-18', version: '1' };
-    const coding = { contract: 'syntetisk-kontrakt', balance: { limitMicros: 10000000, spentMicros: 1000000 }, data };
+    const coding = { contract: 'må-ikke-vises', balance: { limitMicros: 10000000 }, data: { recipients: 'Må ikke vises som AI-vilkår' } };
     const organisation = { id: 'syntetisk-org', name: 'Prøveorganisation', coding: mode === 'publish' ? null : coding, publishing: mode === 'ai' ? null : { address: 'komplai.run', tier: 'shared_free' } };
-    const account = { ...coding, id: organisation.id, name: organisation.name };
     globalThis.fetch = async (url, options = {}) => {
       const address = new URL(String(url));
       if (address.protocol === 'http:' && address.hostname === '127.0.0.1') return original(url, options);
       const route = address.pathname + address.search, method = options.method || 'GET';
       globalThis.komplaiFixtureCalls.push({ route, method });
       if (address.origin === 'https://auth.komplai.dk' && route === '/oauth/v2/token') return Response.json({ access_token: 'syntetisk-login', token_type: 'Bearer' });
+      if (address.origin === 'https://syntetisk.invalid' && route === '/v1/models') return Response.json({ data: [{ id: 'anden-model', name: 'Anden model' }] });
       if (address.origin === 'https://hub.komplai.dk' && route === '/api/publish/native' && method === 'GET') {
         if (new Headers(options.headers).get('authorization') !== 'Bearer komp_publish_grant_' + 'a'.repeat(64)) throw Error('Den gemte Run-adgang blev ikke dekrypteret korrekt.');
         return Response.json({ address: 'komplai.run', slugs: true, apps: [] });
       }
       if (address.origin !== 'https://api.komplai.dk') throw Error('Prøven må ikke kontakte eksterne tjenester.');
       if (route === '/v1/aura/config') return Response.json({ issuer: 'https://auth.komplai.dk', clientId: 'syntetisk-klient', scopes: ['openid'], authorizationEndpoint: 'https://auth.komplai.dk/oauth/v2/authorize', tokenEndpoint: 'https://auth.komplai.dk/oauth/v2/token' });
-      if (route === '/v1/aura/organisations?include=publishing') return Response.json({ organisations: [organisation] });
+      if (route === '/v1/aura/organisations?include=publishing') return Response.json({ organisations: [organisation, { id: 'gammel-ai', name: 'Ældre AI-organisation', contract: '1' }] });
       if (route === '/v1/aura/publishing/connect') {
-        if (!organisation.publishing || JSON.parse(options.body).acceptPublishing !== true) throw Error('Uventet Publish-adgang.');
+        const input = JSON.parse(options.body);
+        if (!organisation.publishing || input.organisationId !== organisation.id || input.acceptPublishing !== true || Object.keys(input).length !== 2) throw Error('Uventet udgivelsesadgang.');
         return Response.json({ id: 'syntetisk-grant', secret: 'komp_publish_grant_' + 'a'.repeat(64), address: 'komplai.run', expiresAt: '2099-01-01T00:00:00Z' });
       }
-      if (route === '/v1/aura/connect') {
-        if (!organisation.coding) throw Error('En Publish-organisation må ikke få AI-adgang.');
-        return Response.json({ id: 'syntetisk-key', secret: 'kp_live_' + 'a'.repeat(43), expiresAt: '2099-01-01T00:00:00Z' });
-      }
-      if (route === '/v1/aura/v1/models') return Response.json({ account, data: [{ id: 'syntetisk-model', name: 'Syntetisk model', context_length: 32000, max_output_tokens: 4000, capabilities: { function_calling: true }, pricing: { currency: 'DKK', prompt: '0.000001', completion: '0.000002' } }] });
-      if (route === '/v1/aura/account') return Response.json(account);
       if (method === 'DELETE' && ['/v1/aura/session', '/v1/aura/publishing/session'].includes(route)) return Response.json({ revoked: true });
       throw Error('Uventet testkald: ' + method + ' ' + route);
     };
@@ -58,124 +52,163 @@ async function installFixture(app, mode, project) {
 
 (async () => {
   const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'aura-komplai-forbindelser-')));
-  const screens = [];
-  for (const mode of ['publish', 'ai', 'begge', 'ai-fra-begge']) {
-    let app;
-    const errors = [], appdata = path.join(root, mode);
-    try {
+  const project = path.join(root, 'projekt'), screens = [];
+  await fs.mkdir(path.join(project, 'public'), { recursive: true });
+  const material = '<!doctype html><html lang="da"><title>Lokal forbindelsesprøve</title><h1>Kun syntetisk prøvemateriale</h1></html>';
+  await fs.writeFile(path.join(project, 'public/index.html'), material);
+  const capture = async (page, mode) => {
+    await page.mouse.move(0, 0);
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    if (await page.locator('#deployment-dialog').evaluate(el => el.open)) {
+      const choices = await page.locator('#deployment-dialog :is(button,select,summary,input[type=checkbox],input[type=radio]):visible').count();
+      const providers = await page.locator('[data-deploy-step="providers"]').isVisible();
+      if (providers) assert.deepEqual(await page.locator('#deployment-dialog button:visible').evaluateAll(items => items.map(item => item.dataset.provider || item.id || 'luk').sort()), ['azure', 'deployment-back', 'komplai', 'luk', 'vercel']);
+      assert(providers ? choices === 5 : choices <= 4, `${mode}: ${choices} synlige kontroller`); screens.push({ mode, choices, providers });
+    } else screens.push({ mode });
+    await page.screenshot({ path: path.join(root, mode + '.png') });
+  };
+  const noInference = calls => assert.equal(calls.some(c => /\/aura\/(?:connect|account|v1\/models)$|chat\/completions|\/releases/.test(c.route)), false, 'Ingen tidligere AI-kald, modelkald eller udgivelse er tilladt.');
+  const chooseRun = async (page, app, captureName) => {
+    const calls = await app.evaluate(() => globalThis.komplaiFixtureCalls.length);
+    await page.click('#deploy-button');
+    await page.waitForSelector('[data-deploy-step="destination"]:not([hidden])');
+    assert.equal(await page.locator('#deployment-dialog [data-provider]:visible').count(), 0);
+    assert.equal(await page.inputValue('#deploy-provider'), '', 'En ny udgivelse må ikke have en forudvalgt udbyder.');
+    assert.equal(await page.locator('#deployment-other strong').textContent(), 'Udgiv fra Aura');
+    assert.equal(await page.locator('#deployment-guides strong').textContent(), 'Se udgivelsesvejledning');
+    if (captureName) await capture(page, captureName + '-del');
+    await page.click('#deployment-other');
+    const cards = page.locator('[data-deploy-step="providers"] [data-provider]:visible');
+    assert.deepEqual(await cards.evaluateAll(items => items.map(item => item.dataset.provider)), ['azure', 'komplai', 'vercel']);
+    assert.equal(await cards.evaluateAll(items => items.some(item => item.matches('.primary, [aria-pressed="true"]') || /anbefalet/i.test(item.innerText))), false);
+    assert.equal(await app.evaluate(() => globalThis.komplaiFixtureCalls.length), calls, 'Indgangen og udbydervalget må ikke kontakte en tjeneste.');
+    if (captureName) await capture(page, captureName + '-udbydere');
+    await page.click('[data-provider="komplai"]');
+  };
+  for (const mode of ['publish', 'begge', 'ai']) {
+    const appdata = path.join(root, mode), errors = []; let app;
+    const launch = async () => {
       app = await electron.launch({ executablePath: require('electron'), args: [path.join(__dirname, '..'), '--user-data-dir=' + appdata], env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined } });
-      await installFixture(app, mode);
-      if (mode === 'ai-fra-begge') await app.evaluate((_, modulePath) => {
-        const { KomplaiLiveBudget, budgetedFetch } = process.getBuiltinModule('module').createRequire(modulePath)(modulePath);
-        globalThis.fetch = budgetedFetch(globalThis.fetch, new KomplaiLiveBudget({ organisationId: 'syntetisk-org', modelId: 'syntetisk-model' }));
-      }, path.join(__dirname, 'komplai-live-budget.cjs'));
+      await installFixture(app, mode, project);
       const page = await app.firstWindow(); page.on('pageerror', error => errors.push(error.message));
-      await page.emulateMedia({ reducedMotion: 'reduce' });
-      await helpers.skipIntroduction(page); await helpers.openSetup(page);
-      await page.click('#setup-add-provider'); await page.click('#provider-cards [data-kind="komplai"]');
-      const login = async () => {
-        await page.click('#komplai-login');
-        await page.waitForSelector('#komplai-connect[data-stage="organisation"]');
-        await page.waitForFunction(() => !document.querySelector('#komplai-confirm').disabled);
-      };
-      await login();
-      assert.equal(await page.locator('#komplai-organisation').isVisible(), false);
-      assert.equal(await page.locator('#komplai-terms').evaluate(el => el.closest('details').hidden), mode === 'publish');
-      assert.equal(await page.locator('#komplai-publish-row').isVisible(), ['begge', 'ai-fra-begge'].includes(mode));
-      if (mode === 'publish') {
-        assert.equal(await page.locator('#komplai-terms').textContent(), '');
-        assert.equal(await page.locator('#komplai-confirm').textContent(), 'Forbind komplai Run');
-        await page.click('#komplai-cancel');
+      await page.emulateMedia({ reducedMotion: 'reduce' }); await helpers.skipIntroduction(page);
+      return page;
+    };
+    try {
+      let page = await launch(); await helpers.enableSharing(page);
+      if (mode === 'begge') {
+        await app.evaluate(async ({ app, safeStorage }, { modulePath, project }) => {
+          const require = process.getBuiltinModule('module').createRequire(modulePath), { Store } = require(modulePath);
+          const store = new Store(require('node:path').join(app.getPath('userData'), 'harness'), safeStorage);
+          await store.update(state => { state.connections = [
+            { id: 'tidligere-ai', name: 'Tidligere komplai', kind: 'komplai', baseURL: 'https://api.komplai.dk/v1/aura/v1', secret: store.encrypt('kp_live_' + 'b'.repeat(43)), account: { authMethod: 'token', organisationName: 'Prøveorganisation' } },
+            { id: 'anden-ai', name: 'Anden forbindelse', kind: 'compatible', baseURL: 'https://syntetisk.invalid/v1' }
+          ]; });
+          await store.saveProject(project, { selection: { connectionID: 'tidligere-ai', modelID: 'tidligere-model', routeID: '' } });
+        }, { modulePath: path.join(__dirname, '../core/store.cjs'), project });
+        await page.reload(); await helpers.skipIntroduction(page);
+      }
+      await helpers.openSetup(page); await page.click('#setup-add-provider');
+      assert.equal(await page.locator('#provider-cards [data-kind="komplai"], #provider-kind option[value="komplai"]').count(), 0);
+      assert.equal(await page.locator('#komplai-connect, #komplai-token').count(), 0);
+      assert.equal(await page.evaluate(() => ['komplaiAccount', 'komplaiTokenCheck', 'komplaiTokenConnect', 'komplaiTokenCancel'].some(name => typeof window.harness[name] === 'function')), false);
+      await capture(page, mode + '-ai-udbydere');
+      await page.click('#setup-back');
+      if (mode === 'begge') {
+        await page.click('#setup-use-saved'); await page.selectOption('#setup-connection', 'anden-ai'); await page.click('#setup-test');
+        await page.locator('#setup-ai').filter({ hasText: 'Forbindelsen svarer.' }).waitFor();
+        await page.click('#setup-continue');
+      } else await page.click('#setup-local');
+      const beforeOpenCalls = await app.evaluate(() => globalThis.komplaiFixtureCalls.length);
+      await page.click('#open'); await page.waitForSelector('#workspace:not([hidden])');
+      if (mode === 'begge') {
+        await page.waitForSelector('#connection-warning:not([hidden])');
+        assert.match(await page.locator('#connection-warning-text').innerText(), /kun til udgivelse/);
+        assert.equal(await page.inputValue('#connection-select'), '', 'En gammel komplai-selection må ikke falde tilbage til en anden udbyder.');
+        assert.equal(await app.evaluate(() => globalThis.komplaiFixtureCalls.length), beforeOpenCalls);
+        await page.fill('#prompt', 'Bevar denne kladde ved skift fra den tidligere AI.');
+        await page.click('#new'); await page.waitForSelector('#onboarding:not([hidden])'); await page.click('#open'); await page.waitForSelector('#workspace:not([hidden])');
+        assert.equal(await page.inputValue('#prompt'), 'Bevar denne kladde ved skift fra den tidligere AI.');
+        assert.equal(await page.inputValue('#connection-select'), '');
+        assert.equal(await fs.readFile(path.join(project, 'public/index.html'), 'utf8'), material);
+        await capture(page, 'tidligere-ai-valg-og-kladde');
+      }
+      await chooseRun(page, app, mode === 'publish' ? 'neutralt' : '');
+      await page.click('#komplai-publish-login');
+      if (mode === 'ai') {
+        await page.locator('#komplai-publish-feedback').filter({ hasText: 'Ingen af dine organisationer har komplai Run' }).waitFor();
+        await capture(page, 'ingen-run-adgang');
         assert.equal((await page.evaluate(() => window.harness.komplaiPublishState())).value.connected, false);
-        await login();
-      } else assert.match(await page.locator('#komplai-terms').textContent(), /Syntetisk modtager/);
-      const choices = await page.locator('#komplai-connect :is(button, select, summary, input[type=checkbox]):visible').count();
-      assert(choices <= 4, `${mode}: ${choices} synlige valg`);
-      screens.push({ mode, choices });
-      await page.screenshot({ path: path.join(root, mode + '-organisation.png') });
-      if (mode === 'ai-fra-begge') await page.uncheck('#komplai-publish-also');
-      await page.click('#komplai-confirm');
-      if (mode === 'publish') await page.waitForFunction(() => document.querySelector('#komplai-feedback').textContent.includes('er forbundet'));
-      else await page.waitForSelector('#setup-continue:not([disabled])');
-      const state = (await page.evaluate(() => window.harness.connectionState())).value;
-      const publishing = (await page.evaluate(() => window.harness.komplaiPublishState())).value;
-      assert.equal(state.connections.length, mode === 'publish' ? 0 : 1);
-      assert.equal(publishing.connected, ['publish', 'begge'].includes(mode));
-      assert.equal(JSON.stringify({ state, publishing }).includes('komp_publish_grant_'), false);
-      const calls = await app.evaluate(() => globalThis.komplaiFixtureCalls);
-      assert.deepEqual(calls.filter(c => ['/v1/aura/connect', '/v1/aura/publishing/connect'].includes(c.route)).map(c => c.route), mode === 'publish' ? ['/v1/aura/publishing/connect'] : mode === 'begge' ? ['/v1/aura/publishing/connect', '/v1/aura/connect'] : ['/v1/aura/connect']);
-      assert.equal(calls.some(c => c.route.includes('chat/completions') || c.route.includes('/releases')), false);
-      await page.screenshot({ path: path.join(root, mode + '-forbundet.png') });
+        noInference(await app.evaluate(() => globalThis.komplaiFixtureCalls));
+        assert.deepEqual(errors, []); continue;
+      }
+      await page.waitForSelector('[data-deploy-step="connect"]:not([hidden])');
+      assert.equal(await page.locator('#komplai-publish-org').isVisible(), false);
+      assert.match(await page.locator('#komplai-publish-tile').innerText(), /Prøveorganisation/);
+      assert.equal(await page.locator('#komplai-publish-ai-row').count(), 0);
+      assert.doesNotMatch(await page.locator('#deployment-dialog').innerText(), /må-ikke-vises|Må ikke vises som AI-vilkår/);
+      await capture(page, mode + '-run-organisation');
+      const invalid = await page.evaluate(() => window.harness.komplaiConnect({ organisationId: 'syntetisk-org', coding: true, publishing: true }));
+      assert.equal(invalid.ok, false); assert.match(invalid.error, /Run/);
+      assert.equal((await app.evaluate(() => globalThis.komplaiFixtureCalls)).some(c => c.route.endsWith('/connect')), false);
+      // Afbryd uden at udstede adgang, og log ind igen fra Del.
+      await page.keyboard.press('Escape');
+      assert.equal((await page.evaluate(() => window.harness.komplaiPublishState())).value.connected, false);
+      await chooseRun(page, app); await page.click('#komplai-publish-login');
+      await page.waitForSelector('[data-deploy-step="connect"]:not([hidden])'); await page.click('#komplai-publish-confirm');
+      await page.waitForSelector('[data-deploy-step="app"]:not([hidden])');
+      const before = (await page.evaluate(() => window.harness.komplaiPublishState())).value;
+      assert.equal(before.connected, true); assert.equal(before.organisationId, 'syntetisk-org');
+      assert.equal((await app.evaluate(() => globalThis.komplaiFixtureCalls)).filter(c => c.route === '/v1/aura/publishing/connect').length, 1);
+      await capture(page, mode + '-run-forbundet');
+      if (mode === 'begge') {
+        await page.keyboard.press('Escape'); await helpers.menuClick(page, '#connections-button');
+        await page.waitForSelector('#retired-connections-notice:not([hidden])');
+        const retired = page.locator('#saved-connections .saved-connection').filter({ hasText: 'Tidligere komplai' });
+        assert.equal(await retired.locator('button').count(), 1); assert.match(await retired.innerText(), /Fjern fra Aura/);
+        await capture(page, 'tidligere-ai-oprydning');
+        const callCount = await app.evaluate(() => globalThis.komplaiFixtureCalls.length);
+        await retired.getByRole('button', { name: 'Fjern fra Aura: Tidligere komplai', exact: true }).click();
+        await page.waitForFunction(() => document.querySelector('#retired-connections-notice').hidden);
+        assert.equal(await app.evaluate(() => globalThis.komplaiFixtureCalls.length), callCount, 'Indsat token fjernes kun lokalt.');
+        assert.deepEqual((await page.evaluate(() => window.harness.komplaiPublishState())).value, before);
+        await page.click('[data-close="connections-dialog"]');
+        await page.click('#new'); await page.waitForSelector('#onboarding:not([hidden])'); await page.click('#open'); await page.waitForSelector('#workspace:not([hidden])');
+        await page.waitForSelector('#connection-warning:not([hidden])');
+        assert.match(await page.locator('#connection-warning-text').innerText(), /gemte AI-forbindelse er ikke tilgængelig/);
+        assert.equal(await page.inputValue('#connection-select'), '', 'En fjernet tidligere forbindelse må heller ikke udløse automatisk udbyderskift.');
+        assert.equal(await page.inputValue('#prompt'), 'Bevar denne kladde ved skift fra den tidligere AI.');
+        assert.equal(await app.evaluate(() => globalThis.komplaiFixtureCalls.length), callCount);
+        await capture(page, 'fjernet-ai-valg-og-kladde');
+      }
       const settings = await fs.readFile(path.join(appdata, 'harness/settings.json'), 'utf8');
       assert.doesNotMatch(settings, /komp_publish_grant_|kp_live_|syntetisk-login/);
-      for (const connection of state.connections) assert.equal((await page.evaluate(id => window.harness.removeConnection(id), connection.id)).ok, true);
-      if (publishing.connected) assert.equal((await page.evaluate(() => window.harness.komplaiPublishDisconnect())).ok, true);
+      noInference(await app.evaluate(() => globalThis.komplaiFixtureCalls));
+      await app.close(); app = null;
+      page = await launch(); await page.waitForSelector('#workspace:not([hidden])');
+      assert.deepEqual((await page.evaluate(() => window.harness.komplaiPublishState())).value, before);
+      await chooseRun(page, app); await page.waitForSelector('[data-deploy-step="app"]:not([hidden])');
+      await capture(page, mode + '-run-genstart');
+      await page.click('#deploy-komplai-create'); await page.fill('#deploy-komplai-name', 'Ny app efter genstart'); await page.click('#deployment-next');
+      assert.equal(await page.locator('[name="komplai-visibility"]:checked').count(), 0);
+      await page.check('[name="komplai-visibility"][value="private"]');
+      await page.click('#deployment-file-options'); await page.click('#deployment-change-destination');
+      await page.locator('#deployment-account-options > summary').click(); await page.click('#deployment-account'); await page.click('#komplai-publish-logout');
+      await page.locator('#komplai-publish-feedback').filter({ hasText: 'Du er logget ud' }).waitFor();
+      await capture(page, mode + '-run-logget-ud');
       assert.equal((await page.evaluate(() => window.harness.komplaiPublishState())).value.connected, false);
+      const restartedCalls = await app.evaluate(() => globalThis.komplaiFixtureCalls);
+      assert.equal(restartedCalls.filter(c => c.route === '/api/publish/native').length, 1);
+      assert.equal(restartedCalls.filter(c => c.route === '/v1/aura/publishing/session' && c.method === 'DELETE').length, 1);
+      assert.equal(restartedCalls.some(c => /oauth|\/connect$|\/models|\/releases/.test(c.route)), false);
+      const state = (await page.evaluate(() => window.harness.connectionState())).value;
+      assert.equal(state.connections.some(c => c.kind === 'komplai'), false);
+      assert.equal(state.retiredConnections.length, 0);
       assert.deepEqual(errors, []);
     } catch (error) {
       if (app) await (await app.firstWindow()).screenshot({ path: path.join(root, mode + '-fejl.png') }).catch(() => {});
       console.error('Prøvemappe:', root); throw error;
     } finally { await app?.close(); }
   }
-  // Del med én organisation springer organisationsvælgeren over. Adgangen skal
-  // derefter kunne bruges af en ny Electron-proces uden et nyt login eller grant.
-  const project = path.join(root, 'del-projekt'), appdata = path.join(root, 'del-genstart');
-  await fs.mkdir(path.join(project, 'public'), { recursive: true });
-  await fs.writeFile(path.join(project, 'public/index.html'), '<!doctype html><html lang="da"><title>Lokal forbindelsesprøve</title><h1>Kun syntetisk prøvemateriale</h1></html>');
-  let app;
-  const errors = [];
-  const launch = async () => {
-    app = await electron.launch({ executablePath: require('electron'), args: [path.join(__dirname, '..'), '--user-data-dir=' + appdata], env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined } });
-    await installFixture(app, 'publish', project);
-    const page = await app.firstWindow(); page.on('pageerror', error => errors.push(error.message));
-    await page.emulateMedia({ reducedMotion: 'reduce' }); await helpers.skipIntroduction(page);
-    return page;
-  };
-  const capture = async (page, mode) => {
-    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-    const choices = await page.locator('#deployment-dialog :is(button,select,summary,input[type=checkbox],input[type=radio]):visible').count();
-    assert(choices <= 4, `${mode}: ${choices} synlige valg`); screens.push({ mode, choices });
-    await page.screenshot({ path: path.join(root, mode + '.png') });
-  };
-  try {
-    let page = await launch(); await helpers.enableSharing(page);
-    await page.click('#open'); await page.waitForSelector('#workspace:not([hidden])');
-    await page.click('#deploy-button'); await page.click('[data-provider="komplai"]');
-    await page.click('#komplai-publish-login'); await page.waitForSelector('[data-deploy-step="connect"]:not([hidden])');
-    assert.equal(await page.locator('#komplai-publish-org').isVisible(), false);
-    assert.match(await page.locator('#komplai-publish-tile').innerText(), /Prøveorganisation/);
-    assert.equal(await page.locator('#komplai-publish-ai-row').isVisible(), false);
-    assert.equal((await page.evaluate(() => window.harness.komplaiPublishState())).value.connected, false);
-    await capture(page, 'del-en-organisation');
-    await page.click('#komplai-publish-confirm'); await page.waitForSelector('[data-deploy-step="app"]:not([hidden])');
-    const before = (await page.evaluate(() => window.harness.komplaiPublishState())).value;
-    assert.equal(before.connected, true); assert.equal(before.organisationId, 'syntetisk-org');
-    const firstCalls = await app.evaluate(() => globalThis.komplaiFixtureCalls);
-    assert.equal(firstCalls.filter(call => call.route === '/v1/aura/publishing/connect').length, 1);
-    assert.equal(firstCalls.some(call => call.route === '/v1/aura/connect' || call.route.includes('/releases')), false);
-    await capture(page, 'del-forbundet');
-    const settingsBefore = await fs.readFile(path.join(appdata, 'harness/settings.json'), 'utf8');
-    assert.doesNotMatch(settingsBefore, /komp_publish_grant_|kp_live_|syntetisk-login/);
-    await app.close(); app = null;
-    page = await launch(); await page.waitForSelector('#workspace:not([hidden])');
-    assert.deepEqual((await page.evaluate(() => window.harness.komplaiPublishState())).value, before);
-    await page.click('#deploy-button'); await page.click('[data-provider="komplai"]');
-    await page.waitForSelector('[data-deploy-step="app"]:not([hidden])');
-    assert.match(await page.locator('#komplai-publish-org-name').innerText(), /Prøveorganisation/);
-    await capture(page, 'del-efter-genstart');
-    await page.click('#deploy-komplai-create'); await page.fill('#deploy-komplai-name', 'Ny app efter genstart'); await page.click('#deployment-next');
-    assert.equal(await page.locator('[name="komplai-visibility"]:checked').count(), 0);
-    await capture(page, 'del-ny-app-efter-genstart');
-    const restartedCalls = await app.evaluate(() => globalThis.komplaiFixtureCalls);
-    assert.equal(restartedCalls.filter(call => call.route === '/api/publish/native').length, 1);
-    assert.equal(restartedCalls.some(call => /oauth|\/connect$|\/models|\/releases/.test(call.route)), false);
-    assert.equal((await page.evaluate(() => window.harness.connectionState())).value.connections.length, 0);
-    assert.equal((await page.evaluate(() => window.harness.komplaiPublishDisconnect())).ok, true);
-    assert.equal((await page.evaluate(() => window.harness.komplaiPublishState())).value.connected, false);
-    assert.deepEqual(errors, []);
-  } catch (error) {
-    if (app) await (await app.firstWindow()).screenshot({ path: path.join(root, 'del-genstart-fejl.png') }).catch(() => {});
-    console.error('Prøvemappe:', root); throw error;
-  } finally { await app?.close(); }
-  console.log(JSON.stringify({ status: 'bestået', root, screens, checks: ['AI, Publish og begge via PKCE og IPC', 'Publish uden AI-datavilkår', 'annullering før adgang', 'separate krypterede adgange og tilbagekaldelse', 'liveprøvens transport med Publish fravalgt', 'Del med én organisation', 'bevaret Run-adgang efter rigtig Electron-genstart', 'ny app efter genstart uden nyt login eller forvalgt adgang', 'ingen modelkald eller udgivelse'], limitations: ['syntetisk identitetsudsteder og API', 'nøglering simuleret', 'ingen Windows-prøve'] }));
+  console.log(JSON.stringify({ status: 'bestået', root, screens, checks: ['AI-udbydere og IPC uden komplai-inferens', 'Run via PKCE og IPC, også når organisationen tilbyder AI', 'AI-only organisation giver ingen Run-adgang', 'ingen AI-vilkår eller samtidig AI-tilslutning', 'tidligere modelvalg skifter ikke automatisk udbyder', 'projekt og kladde bevares', 'oprydning af tidligere AI-token bevarer Run', 'Run bevares efter rigtig Electron-genstart', 'logout tilbagekalder Run-adgang', 'ingen modelkald eller udgivelse'], limitations: ['syntetisk identitetsudsteder og API', 'nøglering simuleret', 'ingen Windows-prøve'] }));
 })().catch(error => { console.error(error); process.exitCode = 1; });

@@ -38,23 +38,18 @@ Erstat mappen med den faktiske mappe. Scriptet danner `release.json`, `SHA256SUM
 
 Afprøv download med `node scripts/verify-download.cjs release/udgivelseskandidat`. Installationsfiler, Apple-kvitteringer og lokale rapporter skal ikke committes. Udgivelsesnoterne skal beskrive faktisk signering og afprøvning samt kendte begrænsninger. Se [udgivelsesnoterne for 0.4.0-beta.1](releases/0.4.0-beta.1.md).
 
-## Særskilt prøve af Komplai
+## Kontrol af Komplai Run
 
-Den generelle desktopbeta kan udgives med de øvrige AI-forbindelser, uafhængigt af Komplai. Det er godkendt af vedligeholderen 15. oktober 2026. Udgivelsesnoterne skal fortsat angive, at Komplai ikke er liveafprøvet, indtil følgende er gennemført:
+Komplai bruges kun til udgivelse via Del. Før en version med ændringer i Run-forløbet offentliggøres, skal login, organisationsvalg, udgivelsesadgang, offentlig og privat udgivelse samt tilbagekaldelse kontrolleres efter ændringernes omfang. Brug syntetisk indhold og isolerede testdata. Skeln mellem kontrollerede serversvar, rigtig tjeneste og pakket app i teststatus.
 
-- Produktionsklienten til OAuth og API'et er tilgængelige.
-- En almindelig bruger har accepteret sin invitation til den valgte organisation og fået den nødvendige adgang. En mailadresse på organisationens domæne giver ikke i sig selv medlemskab.
-- Organisationen har aktiveret kodning, valgt modeller og godkendt datavilkår og forbrug.
-- Login fra den pakkede app, en reel kodeændring, kreditregistrering og logout er afprøvet. API-nøgler og tokens må ikke indgå i noter eller rapporter.
-
-Den hidtil aftalte automatiserede modelprøve har et loft på **10 kr.** Det er ikke en tildeling af et personligt budget til testeren. Modellen og organisationens faktiske kreditregnskab skal kontrolleres særskilt.
+En gammel Komplai-AI-forbindelse må ikke kunne hente modeller eller sende opgaver. Den skal kunne fjernes uden at påvirke Run-adgangen. Ingen modelkald, kreditregnskab eller Komplai-specifik AI-kontrol indgår i releaseworkflowet. Tokens og lokale appdata må ikke indgå i udgivelsen.
 
 ## Fra gennemgang til offentlig download
 
 1. Brugeren gennemgår, committer og pusher kildekoden og opretter et versionstag, fx `v0.3.0-beta.1`, på det gennemgåede commit. Tagget skal pege på samme commit som den `main`, workflowet startes fra. Ingen tag oprettes af workflowet.
 2. Opret en **kladde** i GitHub Releases med det eksisterende tag og betamarkeringen slået til. Upload præcis de fem programfiler, `release.json` og `SHA256SUMS.txt`. Brug de gennemgåede udgivelsesnoter. Upload ikke lokale logs, Apple-loginoplysninger, builderens foreløbige YAML-filer eller testdata.
-3. Giv udtrykkelig tilladelse til den konkrete kørsel af **Offentliggør gennemgået desktopbeta**. Vælg `main`, angiv tagget og bekræft offentliggørelsen. Lad `komplai_afproevet` være slået fra, indtil den særskilte Komplai-prøve er gennemført. Workflowet bygger ikke nye installationsfiler.
-4. Workflowet kontrollerer tag, version, offentlig adgang, kladdens indhold, størrelser, SHA-256, SHA-512 og Mac-kvitteringer. Det downloader og kontrollerer de faktiske installationsfiler. Manglende eller ændrede oplysninger stopper udgivelsen. Hvis `komplai_afproevet` er slået til, kontrolleres desuden Komplais offentlige loginopsætning; et fejlsvar stopper da udgivelsen. Konfigurationssvaret beviser ikke, at et modelkald virker; det er den særskilte prøve ovenfor.
+3. Giv udtrykkelig tilladelse til den konkrete kørsel af **Offentliggør gennemgået desktopbeta**. Vælg `main`, angiv tagget og bekræft offentliggørelsen. Workflowet bygger ikke nye installationsfiler.
+4. Workflowet kontrollerer tag, version, offentlig adgang, kladdens indhold, størrelser, SHA-256, SHA-512 og Mac-kvitteringer. Det downloader og kontrollerer de faktiske installationsfiler. Manglende eller ændrede oplysninger stopper udgivelsen.
    Kladden og dens syv filer hentes via deres GitHub-ID’er med `scripts/download-desktop-draft.cjs`. Et opslag via `releases/tags/TAG` kan give 404 for en kladde. GitHubs midlertidige `untagged-…`-adresser accepteres kun under kladdekontrollen; den offentlige side kræver adresser med det rigtige versionstag.
 5. Giv derefter særskilt tilladelse til **Udgiv downloadside** med `offentlig_udgivelse` slået til. Der er ingen automatisk Pages-kørsel efter en Release. Pages bygger også opdateringsfeeds fra den offentliggjorte `release.json`, hvis dens SHA-256 matcher GitHubs filoplysninger. Kladders filer og CLI-udgivelser bliver aldrig tilbudt som appopdateringer. Betakanalen og den stabile kanal holdes adskilt.
 6. Åbn Pages uden GitHub-login, hent hver offentlig installationsfil og kontrollér dens kontrolsum. Afprøv installation og opdatering på de maskiner, som betaen beskrives som afprøvet på. Registrér version og resultater i [teststatus](teststatus.md).

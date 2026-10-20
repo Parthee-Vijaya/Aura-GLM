@@ -24,3 +24,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 Komplai: eget favicon fra apps/hub/public/favicon.svg. Corti: https://www.corti.ai/brand. Logoer identificerer udbyderne; varemærker tilhører deres respektive ejere. Egen server bruger Auras serverikon.
+
+Udgivelsesudbydere (hentet 20. oktober 2026):
+- Promte: https://promte.com/favicon.svg
+- Vercel: officielt SVG-logo fra https://vercel.com/geist/brands
+- GitHub Invertocat Black: https://brand.github.com/GitHub_Logos.zip
+- Cloudflare: CF-Logo 1.png fra det officielle logoarkiv på https://www.cloudflare.com/press/
+Logoerne bruges alene til at identificere de ligestillede udgivelsesmuligheder.
+Varemærker og ophavsret tilhører de respektive udbydere.

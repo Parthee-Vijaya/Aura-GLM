@@ -11,8 +11,8 @@ const { Vault, privateDirectory, lock, separateState, dataDirectory } = require(
 const { browserCommand } = require('../browser.cjs');
 const { packageName } = require('../runtime.cjs');
 const { Application } = require('../app.cjs');
-const { parse } = require('../aura.cjs');
-const { disclose, login } = require('../connections.cjs');
+const { parse, HELP, logout } = require('../aura.cjs');
+const { disclose, login, selectModel, unlockConnection } = require('../connections.cjs');
 const actions = require('../actions.cjs');
 const { Store } = require('../../desktop/core/store.cjs');
 
@@ -113,31 +113,55 @@ test('datagennemgang kræver et aktivt ja; ukendte forhold og kilde vises', asyn
   assert.match(ui.output, /Ukendt/); assert.match(ui.output, /Kilde: test/);
   assert.equal(await disclose(new UI(['send']), { accepted: false }), true);
 });
-test('Komplai-token i CLI indtastes skjult, gennemgås og krypteres; nej gemmer intet', async t => {
-  const key = 'kp_live_' + 't'.repeat(43), { app, ui, state } = await fixture(t);
-  const { KomplaiToken } = require('../../desktop/core/komplai-token.cjs');
-  const value = { id: 'org', name: 'Prøvekommune', contract: '1', balance: { availableMicros: 1000000 },
-    credential: { id: 'key', scopes: ['coding:read', 'coding:complete'], expiresAt: '2099-01-01T00:00:00Z' },
-    data: Object.fromEntries(['recipients', 'region', 'training', 'retention', 'source', 'checkedAt', 'version', 'mode', 'accounting', 'platformStorage'].map(k => [k, 'Syntetisk prøve'])) };
-  let calls = 0, hidden = false;
-  app.tokenFactory = () => new KomplaiToken({ fetcher: async () => { calls++; return Response.json(value); } });
-  const ask = ui.ask.bind(ui); ui.ask = async (label, options) => { if (label === 'Komplai API-token') hidden = options.secret; return ask(); };
-  ui.answers = ['token', key, 'nej'];
-  assert.equal(await login(app, 'komplai'), null); assert.equal(hidden, true);
-  assert.equal((await app.bench.store.read()).connections.length, 0); assert.equal(app.pendingLogin, null);
-  ui.answers = ['token', key, 'ja', 'lang adgangssætning', 'lang adgangssætning'];
-  const id = await login(app, 'komplai');
-  assert.equal((await app.bench.connection(id)).account.authMethod, 'token');
-  assert.equal(app.bench.store.decrypt(await app.bench.connection(id)), key);
-  assert.equal(calls, 3); assert.equal(ui.output.includes(key), false); assert.ok(ui.secrets.includes(key));
-  assert.match(ui.output, /Prøvekommune/); assert.match(ui.output, /fælles AI-kreditter/);
-  assert.equal((await fs.readFile(path.join(state, 'settings.json'), 'utf8')).includes(key), false);
+test('CLI viser kun nøgle og lokal AI; Komplai afvises før nøglelager og netkald', async t => {
+  const { app, ui } = await fixture(t);
+  t.mock.method(globalThis, 'fetch', () => { throw new Error('Prøven må ikke sende netkald'); });
+  let unlocked = 0; app.vault.unlock = async () => { unlocked++; };
+  const menus = [], answers = ['key', 'other', null];
+  ui.choose = async (_question, choices) => { menus.push(choices.map(c => c.value)); return answers.shift(); };
+  assert.equal(await login(app), null);
+  assert.deepEqual(menus, [['key', 'ollama'], ['anthropic', 'mistral', 'corti', 'other'], ['openai', 'azure', 'openrouter', 'zen', 'compatible']]);
+  await assert.rejects(login(app, 'komplai'), /kun til udgivelse/);
+  assert.equal(unlocked, 0);
+  assert.equal((await app.bench.store.read()).connections.length, 0);
+  assert.doesNotMatch(HELP, /komplai/i);
 });
-test('Komplai-browserlogin kan stadig vælges uden at åbne tokenforløbet', async t => {
-  const { app, ui } = await fixture(t, ['browser', 'lang adgangssætning', 'lang adgangssætning', null]); let starts = 0, cancels = 0;
-  app.loginFactory = () => ({ start: async () => { starts++; return { organisations: [{ id: 'org', name: 'Prøvekommune' }] }; }, cancel: () => cancels++ });
-  app.tokenFactory = () => { throw Error('Tokenforløbet må ikke åbne'); };
-  assert.equal(await login(app, 'komplai'), null); assert.equal(starts, 1); assert.equal(cancels, 1); assert.equal(app.pendingLogin, null);
+test('CLI afviser en gammel Komplai-forbindelse uden dekryptering eller automatisk modelskift', async t => {
+  const { app, ui } = await fixture(t);
+  const legacy = { id: 'gammel', kind: 'komplai', name: 'Gammel konto', secret: 'bevaret-krypteret-vaerdi', account: { authMethod: 'token' } };
+  const current = { id: 'aktuel', kind: 'compatible', name: 'Egen server' };
+  await app.bench.store.update(state => { state.connections = [legacy, current]; });
+  let unlocked = 0, catalogs = 0;
+  app.vault.unlock = async () => { unlocked++; };
+  app.bench.models = async () => { catalogs++; throw Error('Ingen model må vælges automatisk'); };
+  await assert.rejects(unlockConnection(app, legacy.id), /kun til udgivelse/);
+  await assert.rejects(selectModel(app, legacy.id), /kun til udgivelse/);
+  let choices; ui.choose = async (_question, values) => { choices = values.map(v => v.value); return null; };
+  assert.equal(await selectModel(app), null);
+  assert.deepEqual(choices, ['aktuel', 'new']);
+  assert.match(ui.output, /aura logout/);
+  await app.bench.store.update(state => { state.connections = [legacy]; });
+  assert.equal(await selectModel(app), null);
+  assert.deepEqual(choices, ['key', 'ollama']);
+  assert.equal(unlocked, 0); assert.equal(catalogs, 0);
+  assert.deepEqual((await app.bench.store.read()).connections, [legacy]);
+});
+test('CLI kan fjerne et gammelt Komplai-token uden at røre Run-adgang eller andre forbindelser', async t => {
+  const { app, ui } = await fixture(t);
+  const legacy = { id: 'gammel', kind: 'komplai', name: 'Gammel konto', secret: 'bevaret-krypteret-vaerdi', account: { authMethod: 'token' } };
+  const current = { id: 'aktuel', kind: 'compatible', name: 'Egen server' };
+  const hosting = { komplai: { secret: 'saerskilt-krypteret-run-adgang', organisationId: 'org' } };
+  await app.bench.store.update(state => { state.connections = [legacy, current]; state.hosting = hosting; });
+  t.mock.method(globalThis, 'fetch', () => { throw new Error('Et indsat token må ikke tilbagekaldes automatisk'); });
+  app.vault.unlock = async () => { throw Error('Fjernelse af indsat token kræver ikke dekryptering'); };
+  let choices; ui.choose = async (_question, values) => { choices = values; return legacy.id; };
+  ui.answers = ['nej']; await logout(app);
+  assert.deepEqual((await app.bench.store.read()).connections, [legacy, current]);
+  assert.match(choices[0].label, /udgået AI-forbindelse/);
+  ui.answers = ['ja']; await logout(app);
+  const after = await app.bench.store.read();
+  assert.deepEqual(after.connections, [current]); assert.deepEqual(after.hosting, hosting);
+  assert.match(ui.output, /Forbindelsen er fjernet/);
 });
 test('nye projekter og browserpreview bruger faktiske filer uden Git-commit', async t => {
   const { root, project, app, ui } = await fixture(t, ['Kalender', 'Vis aktiviteter', 'ja', 'nej']);
@@ -150,7 +174,7 @@ test('nye projekter og browserpreview bruger faktiske filer uden Git-commit', as
   assert.ok(created.root.startsWith(await fs.realpath(root)));
   assert.ok(ui.output.includes('Forhåndsvisning'));
 });
-test('Komplai-forbrug vises i DKK, ikke som nul USD', async t => {
+test('Historisk forbrug vises i DKK, ikke som nul USD', async t => {
   const { project, app, ui } = await fixture(t);
   await app.open(project);
   app.bench.chat.usageBase = { input: 20, output: 10, calls: 1, otherCalls: 1, cost: 0, otherCosts: { DKK: 0.025 } };
@@ -193,7 +217,7 @@ test('udgivelse viser version, destination og adgang og sender intet ved nej', a
 test('stop under katalogkontrol forhindrer en efterfølgende modelafsendelse', async t => {
   const { app, project } = await fixture(t); await app.open(project);
   app.selection = { connectionID: 'test', modelID: 'test' };
-  app.bench.connection = async () => ({});
+  app.bench.connection = async () => ({ kind: 'compatible' });
   let release, started, sent = 0;
   const begun = new Promise(resolve => started = resolve);
   app.bench.prepare = () => { started(); return new Promise(resolve => release = resolve); };

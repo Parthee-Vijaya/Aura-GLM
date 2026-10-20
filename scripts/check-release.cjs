@@ -19,17 +19,10 @@ async function check(directory, release, metadata, version) {
   }
   return result;
 }
-async function checkKomplaiConfig(fetcher = fetch) {
-  // En konfigurationskontrol erstatter ikke vedligeholderens rigtige login- og modelprøve.
-  const response = await fetcher('https://api.komplai.dk/v1/aura/config', { redirect: 'error', signal: AbortSignal.timeout(15000) });
-  if (!response.ok) throw new Error(`Komplai-login er ikke klar: HTTP ${response.status}.`);
-  const config = await response.json();
-  if (config.issuer !== 'https://auth.komplai.dk' || !/^[a-zA-Z0-9@._-]{1,200}$/.test(config.clientId || '') || config.authorizationEndpoint !== 'https://auth.komplai.dk/oauth/v2/authorize' || config.tokenEndpoint !== 'https://auth.komplai.dk/oauth/v2/token' || !Array.isArray(config.scopes) || !config.scopes.includes('openid') || !config.scopes.some(s => /^urn:zitadel:iam:org:project:id:\d+:aud$/.test(s))) throw new Error('Komplais offentlige loginopsætning er ufuldstændig.');
-}
 if (require.main === module) (async () => {
   const [directory, releaseFile, repositoryFile] = process.argv.slice(2);
   if (!directory || !releaseFile || !repositoryFile) throw new Error('Angiv downloadmappe, release-JSON og repository-JSON.');
   const result = await check(path.resolve(directory), JSON.parse(await fs.readFile(releaseFile, 'utf8')), JSON.parse(await fs.readFile(repositoryFile, 'utf8')), require('../desktop/package.json').version);
   console.log(`Version ${result.version}: ${result.files.length} faktiske filer, kontrolsummer og Mac-kvitteringer er kontrolleret. Ingen udgivelse foretaget.`);
 })().catch(error => { console.error(error.message); process.exitCode = 1; });
-module.exports = { check, checkKomplaiConfig };
+module.exports = { check };

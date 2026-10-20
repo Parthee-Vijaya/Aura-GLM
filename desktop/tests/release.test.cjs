@@ -5,7 +5,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { expectedFiles, assetURL, validateRelease, releaseSnapshot } = require('../../scripts/release-contract.cjs');
-const { check, checkKomplaiConfig } = require('../../scripts/check-release.cjs');
+const { check } = require('../../scripts/check-release.cjs');
 const { selectDraft, validateAssetIDs } = require('../../scripts/download-desktop-draft.cjs');
 const version = '0.2.0-beta.6';
 function fixture() {
@@ -59,10 +59,12 @@ test('Udgivelseskontrollen læser de faktiske bytes uden at kræve en AI-udbyder
   await assert.rejects(check(root,f.release,metadata,version),/SHA-256/);
   await assert.rejects(check(root,f.release,{...metadata,private:true},version),/offentligt/);
 });
-test('Den særskilte Komplai-kontrol afviser manglende eller ufuldstændigt login', async () => {
-  let calls=0;const unavailable=async()=>{calls++;return new Response('',{status:404});};
-  await assert.rejects(checkKomplaiConfig(unavailable),/HTTP 404/);assert.equal(calls,1);
-  const ready=async()=>Response.json({issuer:'https://auth.komplai.dk',clientId:'12345',authorizationEndpoint:'https://auth.komplai.dk/oauth/v2/authorize',tokenEndpoint:'https://auth.komplai.dk/oauth/v2/token',scopes:['openid','urn:zitadel:iam:org:project:id:123:aud']});
-  await assert.doesNotReject(checkKomplaiConfig(ready));
-  await assert.rejects(checkKomplaiConfig(async()=>Response.json({issuer:'https://auth.komplai.dk',clientId:'123'})),/ufuldstændig/);
+test('Desktopudgivelse er fortsat manuel og har ingen særskilt AI-login-kontrol', async () => {
+  const workflow = await fs.readFile(path.join(__dirname, '../../.github/workflows/desktop-release.yml'), 'utf8');
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.match(workflow, /godkend_udgivelse:/);
+  assert.doesNotMatch(workflow, /komplai_afproevet|checkKomplaiConfig/);
+  assert.doesNotMatch(workflow, /^  (?:push|pull_request|release|schedule):/m);
+  assert.match(workflow, /node scripts\/check-release\.cjs/);
+  assert.match(workflow, /releaseSnapshot/);
 });

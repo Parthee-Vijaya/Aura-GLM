@@ -31,7 +31,7 @@ export AURA_HOME="$HOME/Library/Application Support/AuraCLI-MacTest"
 ./node_modules/.bin/aura init "$HOME/Documents"
 ```
 
-Opret et nyt projekt med opdigtede data. Tilslut en AI, du har adgang til, og gennemgå data og pris. Nøgle og adgangssætning indtastes skjult. Komplai kan bruge browserlogin eller API-token, når backend og organisationsadgang er klar; [API-kontrakten](https://github.com/ai-alliancen-org/ai-harness/blob/main/docs/komplai-api-token.md) beskriver de nødvendige metadata.
+Opret et nyt projekt med opdigtede data. Tilslut en AI, du har adgang til, og gennemgå data og pris. Nøgle og adgangssætning indtastes skjult.
 
 Gennemgå en plan, vælg `/build`, godkend en faktisk filændring og åbn `/preview`. Afvis derefter en ændring, og kontroller `/diff`. Prøv Ctrl+C under en opgave og start en ny. Afslut med `/exit` og genåbn:
 

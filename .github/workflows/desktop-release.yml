@@ -11,11 +11,6 @@ on:
         type: boolean
         default: false
         required: true
-      komplai_afproevet:
-        description: 'Valgfrit: Komplai-login, modelkald og kreditregnskab er liveafprøvet; kontrollér også loginopsætningen'
-        type: boolean
-        default: false
-        required: false
 permissions:
   contents: read
 concurrency:
@@ -51,9 +46,6 @@ jobs:
           node scripts/download-desktop-draft.cjs "$RELEASE_TAG" "$RUNNER_TEMP/aura-release" "$RUNNER_TEMP/release.json"
       - name: Kontrollér alle downloads
         run: node scripts/check-release.cjs "$RUNNER_TEMP/aura-release" "$RUNNER_TEMP/release.json" "$RUNNER_TEMP/repository.json"
-      - name: Kontrollér Komplais loginopsætning efter den særskilte liveprøve
-        if: inputs.komplai_afproevet == true
-        run: node -e 'require("./scripts/check-release.cjs").checkKomplaiConfig().catch(error => { console.error(error.message); process.exitCode = 1; })'
       - name: Kontrollér kladden igen og offentliggør den
         shell: bash
         run: |

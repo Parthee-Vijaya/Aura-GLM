@@ -1,5 +1,37 @@
 # Produktretning og beslutninger
 
+## komplai kun til udgivelse · 20. oktober 2026
+
+Brugeren har besluttet at fjerne komplai som AI-udbyder i Aura og terminalværktøjet. komplai Run bevares under Del, inklusive browserlogin og særskilt udgivelsesadgang. Dette erstatter det tidligere fælles AI-/Publish-forløb beskrevet nedenfor.
+
+Eksisterende AI-forbindelser bruges ikke længere til kataloger eller modelkald. Brugeren kan fjerne dem; projekter, samtaler, historisk forbrug og Run-adgang bevares. Et tidligere gemt modelvalg må ikke automatisk skifte til en anden udbyder.
+
+komplai må heller ikke fremhæves i Del. Indgangen skelner mellem udgivelse fra Aura og vejledninger. Udbydere vises alfabetisk på lige fod, uden anbefaling eller forvalg; brugerens tidligere valgte destination kan genbruges.
+
+## Systemkort og dataflow · 20. oktober 2026
+
+Brugeren ønsker et løbende opdateret systemkort, som kan læses uden kendskab til kode. Det skal vise frontend, eksterne API'er, lokal lagring og eventuelle backends og databaser samt hosting, herunder komplai Run, Vercel og andre destinationer. Forbindelserne skal forklare, hvilke data der flyttes og hvor de gemmes, med relevante opmærksomhedspunkter om sikkerhed.
+
+Hosting og dataflow skal med på kortet; de skal ikke fjernes fra Del. Dette er aftalt produktretning, ikke en implementeret fane eller en compliancegodkendelse.
+
+## Flere udgivelsesformer · 20. oktober 2026
+
+Brugeren ønsker en fælles guide til komplai Run, Promte Apps, Vercel, GitHub Pages, Cloudflare Pages, andre europæiske og amerikanske udbydere samt organisationens eget Azure-miljø. Guiden skal hjælpe med forbindelse, projektvalg og udgivelse. Udbyderens hjemland og de konkrete dataplaceringer skal holdes adskilt, og understøttelsen af frontend, backend og database skal fremgå af den valgte vej.
+
+Brugeren ønsker også udgivelse som desktopapp, eksempelvis Electron med Windows-installation og Mac-DMG. Det er et særskilt forløb fra webhosting, hvor pakning, signering og opdateringer skal indgå. Desktop-pakning er fortsat produktretning. Den efterfølgende udgivelsesmilepæl tilføjer de webforløb, der er beskrevet nedenfor; den indeholder ingen pakning af brugerprojekter som EXE eller DMG.
+
+## Fælles udgivelsesforløb · 20. oktober 2026
+
+Promte Apps, GitHub Pages og Cloudflare Pages føjes til Del. Azure får guidet browserlogin og valg af abonnement og eksisterende app. De seks udbydere vises som en alfabetisk liste med logo og kontokrav, tre ad gangen. Promte og komplai kræver konto og betalt aftale. Ingen udbyder er anbefalet eller forvalgt.
+
+Udbyderne bruger deres egne nødvendige trin inden for en fælles struktur. Browserlogin foretrækkes, når det understøttes. Komplai beholder OAuth uden at få særstatus. GitHub kan bruge browserlogin, når klienten er konfigureret, eller brugerens eksisterende CLI-login; adgangsnøgle ligger under hjælpen. Promte, Azure og Vercel bruger deres egne værktøjers browserlogin. Cloudflare-token til manuel CI gemmes i GitHubs hemmelighedslager.
+
+Vercel får en særskilt vej til sin Git-integration. Brugeren forbinder sit repository hos Vercel og bekræfter projektet i Aura. Vercels produktionsbranch og preview-udgivelser vises særskilt. Den fælles status ved Del gælder alle udbydere; udgivelsesstatus må ikke forveksles med kontrolleret indhold eller adgang.
+
+GitHub Pages og Cloudflare Pages får versionerede opsætningsfiler og manuelle workflows. Brugeren gennemgår filerne, gemmer og sender dem med sit Git-værktøj og godkender derefter én konkret udgivelse i Aura. En ændret Git-version eller ændret destination kræver ny gennemgang. Der aktiveres ingen automatiske Actions-workflows af dette valg. Vercels automatiske Git-builds aktiveres særskilt hos Vercel.
+
+Omfang og udført verifikation står i [teststatus](teststatus.md). De nye flows udgiver ikke selve Aura og ændrer ikke de allerede offentliggjorte installationspakker.
+
 ## Fælles Harness og to brugsveje
 
 Retning afklaret i projektsamtalen 28. september 2026. Dette er ikke en formel vedtagelse på vegne af deltagende kommuner.

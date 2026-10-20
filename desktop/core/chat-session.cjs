@@ -221,6 +221,7 @@ class ChatSession {
     if (this.running) throw new Error('Der er allerede en opgave i gang i denne samtale.');
     const bench = this.bench, prepared = this.prepared, projectRoot = this.project.root;
     if (!prepared || prepared.root !== this.root || input.fingerprint !== prepared.disclosure.fingerprint) throw new Error('Gennemgå de aktuelle dataoplysninger før afsendelse.');
+    connections.assertSupported(prepared.connection);
     if (typeof input.text !== 'string' || !input.text.trim() || input.text.length > 30000) throw new Error('Skriv en besked på højst 30.000 tegn.');
     if (prepared.mode === 'build' && prepared.disclosure.planID !== this.plan?.id) throw new Error('Planen har ændret sig. Gennemgå den igen.');
     if (Object.hasOwn(prepared.context, 'projectInstructions') && JSON.stringify(await projectInstructions(this.root)) !== JSON.stringify(prepared.context.projectInstructions)) throw new Error('Projektets AGENTS.md har ændret sig. Gennemgå oplysningerne igen før afsendelse.');

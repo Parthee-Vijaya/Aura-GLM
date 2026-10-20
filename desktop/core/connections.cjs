@@ -8,7 +8,6 @@ const definitions = {
     training: 'Microsoft oplyser, at prompts og svar ikke bruges til at træne grundmodeller uden tilladelse eller instruktion.', trainingShort: 'Grundmodeller trænes ikke uden tilladelse',
     region: 'Afhænger af jeres deployment. Global kan behandle data på tværs af geografier, DataZone inden for sin zone. Serveradressen alene dokumenterer ikke regionen.', regionShort: 'Afhænger af jeres Azure-deployment',
     retention: 'Afhænger af jeres aftale og misbrugsovervågning. Aura slår lagring af Responses-svar fra; det slår ikke Microsofts misbrugsovervågning fra.', retentionShort: 'Afhænger af aftale og misbrugsovervågning' },
-  komplai: { name: 'komplai', provider: 'komplai', baseURL: 'https://api.komplai.dk/v1/aura/v1', protocol: 'openai', keyRequired: true, source: 'https://app.komplai.dk', training: 'Organisationens gældende vilkår hentes fra komplai.' },
   // Vilkår for de tre udbydere i opsætningen er kontrolleret hos udbyderne 29. september 2026. De korte tekster vises i resuméet før afsendelse.
   corti: { name: 'Corti S1 · EU', provider: 'Corti', baseURL: 'https://ai.eu.corti.app/v1', protocol: 'openai', keyRequired: true, source: 'https://docs.corti.ai/models/regions', checkedAt: '2026-09-29',
     training: 'Corti oplyser, at data i EU-projekter aldrig bruges til træning. Kontrollér aftalen for jeres projekt.', trainingShort: 'Bruges ikke til træning, ifølge Corti',
@@ -80,8 +79,12 @@ function cortiEndpoint(key) {
   if (CORTI[environment]) return CORTI[environment];
   throw new Error(environment === 'us' ? 'Nøglen hører til Cortis amerikanske miljø. Aura bruger kun Corti i EU og Frankrig.' : `Nøglen hører til Cortis miljø "${environment}", som Aura endnu ikke bruger. Brug en nøgle fra et projekt i EU eller Frankrig.`);
 }
+function assertSupported(connection) {
+  if (connection?.kind === 'komplai') throw new Error('komplai bruges nu kun til udgivelse via Del. Vælg en anden AI-forbindelse.');
+  if (!connection || !Object.hasOwn(definitions, connection.kind)) throw new Error('Vælg en understøttet forbindelsestype.');
+}
 function normalize(input) {
-  if (!input || !definitions[input.kind]) throw new Error('Vælg en understøttet forbindelsestype.');
+  assertSupported(input);
   const def = definitions[input.kind];
   const baseURL = input.kind === 'azure' ? azureEndpoint(input.baseURL) : endpoint(['compatible', 'ollama'].includes(input.kind) ? input.baseURL : input.kind === 'corti' && input.apiKey ? cortiEndpoint(input.apiKey) : def.baseURL);
   if (typeof input.name !== 'string' || !input.name.trim() || input.name.length > 100) throw new Error('Angiv et forbindelsesnavn på højst 100 tegn.');
@@ -120,6 +123,7 @@ async function requestJSON(url, { key = '', kind, method = 'GET', body, signal }
   try { return JSON.parse(text); } catch { throw new Error('Serveren returnerede ikke gyldige modeloplysninger.'); }
 }
 async function listModels(connection, key) {
+  assertSupported(connection);
   if (definitions[connection.kind].keyRequired && !key) throw new Error('Denne forbindelse kræver en API-nøgle.');
   const ollama = connection.kind === 'ollama';
   const response = await requestJSON(`${connection.baseURL}${ollama ? '/api/tags' : '/models'}`, { key, kind: connection.kind });
@@ -129,18 +133,19 @@ async function listModels(connection, key) {
   if (connection.kind === 'azure') return [{ id: connection.deployment, name: connection.deployment, price: null, capabilities: { tools: null }, configuredDeployment: true }];
   return models.slice(0, 5000).filter(model => model && model.capabilities?.completion_chat !== false && !(connection.kind === 'corti' && /embedding/.test(model.id)) && (connection.kind !== 'openai' || /^(gpt-|chatgpt-|codex-|o\d)/.test(model.id) && !/audio|realtime|transcribe|image|tts|search|deep-research/.test(model.id))).map(model => ({
     id: ollama ? model.name : model.id, name: model.name || model.display_name || model.id,
-    ...(connection.kind === 'komplai' ? { komplai: response.account, reasoningEfforts: model.reasoning_efforts || [] } : {}),
     price: model.pricing || null, capabilities: { tools: model.capabilities?.function_calling ?? model.supported_parameters?.includes('tools') ?? null },
     limits: { context: tokenCount(model.context_length ?? model.max_context_length ?? model.context_window ?? model.max_input_tokens), output: tokenCount(model.top_provider?.max_completion_tokens ?? model.max_output_tokens ?? model.max_tokens) },
     local: ollama && !model.remote_host && !/:.*cloud/.test(model.name) ? 'Ikke verificeret' : null
   })).filter(model => typeof model.id === 'string');
 }
 async function routes(connection, key, model) {
+  assertSupported(connection);
   if (connection.kind !== 'openrouter') return [];
   const data = await requestJSON(`${connection.baseURL}/models/${model.split('/').map(encodeURIComponent).join('/')}/endpoints`, { key });
   return (data.data?.endpoints || []).map(item => ({ id: item.tag || item.provider_name, name: item.provider_name, price: item.pricing || null, policy: item.data_policy || null })).filter(route => route.id);
 }
 function disclosure(connection, model, route = null) {
+  assertSupported(connection);
   const def = definitions[connection.kind];
   const url = new URL(connection.baseURL);
   const loopback = ['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname);
@@ -162,11 +167,6 @@ function disclosure(connection, model, route = null) {
     security: url.protocol === 'http:' && !loopback ? 'HTTP uden TLS. Tailscale-kryptering er kun gældende, hvis forbindelsen faktisk går gennem Tailscale; det er ikke verificeret her.' : 'Forbindelsesadressen er kontrolleret. Det er ikke en sikkerhedsgodkendelse af tjenesten.',
     source: site.source || def.source || 'Ingen leverandørkilde registreret; oplysninger skal kontrolleres hos serverens ejer.', checkedAt: def.checkedAt || '2026-09-22', evidence: 'Leverandørdokumentation og modelkatalog; ikke uafhængig revision.', route: route?.id || null
   };
-  if (connection.kind === 'komplai') {
-    const account = model.komplai;
-    if (!account?.contract || !account.data || account.id !== connection.account?.organisationId) throw new Error('Hent organisationens modeller igen, før du sender.');
-    Object.assign(data, { recipients: account.data.recipients, region: account.data.region, retention: `${account.data.retention} ${account.data.platformStorage}`, training: account.data.training, source: account.data.source, checkedAt: account.data.checkedAt, security: `Vilkår ${account.data.version}. Kontrakt ${account.contract}. Datatilstand: ${account.data.mode}.`, price: `${account.data.accounting} ${Number(price.prompt) * 1e6} DKK ind og ${Number(price.completion) * 1e6} DKK ud pr. million tokens.`, priceShort: `Gennem organisationen · ${account.name}`, regionShort: 'Via komplai. Se behandlingssteder under alle oplysninger.', trainingShort: account.data.training, retentionShort: account.data.retention, evidence: 'Organisationens opsætning og aftale hos komplai; ikke en selvstændig sikkerhedsgodkendelse.' });
-  }
   return { ...data, fingerprint: createHash('sha256').update(JSON.stringify(data)).digest('hex') };
 }
 // Tal fra et modelkatalog bruges kun, når de ligner rigtige tokengrænser.
@@ -195,10 +195,11 @@ function modelLimits(connection, model) {
   return { context, output };
 }
 function engineProvider(connection, model, gatewayURL, token) {
+  assertSupported(connection);
   const anthropic = connection.kind === 'anthropic' || (connection.kind === 'zen' && /^claude-/.test(model.id));
   // Mistral sender både tekst og strukturerede tænkeafsnit. Dets adapter bevarer disse gennem streaming og værktøjssvar.
   return { npm: anthropic ? '@ai-sdk/anthropic' : connection.kind === 'mistral' ? '@ai-sdk/mistral' : usesResponses(connection) ? '@ai-sdk/openai' : '@ai-sdk/openai-compatible', name: connection.name,
     options: { baseURL: gatewayURL, apiKey: token },
     models: { [model.id]: { name: model.name, tool_call: true, limit: modelLimits(connection, model), ...(usesResponses(connection) ? { options: { store: false, include: ['reasoning.encrypted_content'] } } : {}) } } };
 }
-module.exports = { definitions, endpoint, normalize, requestJSON, listModels, routes, disclosure, engineProvider, modelLimits, priceFor, usesResponses };
+module.exports = { definitions, assertSupported, endpoint, normalize, requestJSON, listModels, routes, disclosure, engineProvider, modelLimits, priceFor, usesResponses };

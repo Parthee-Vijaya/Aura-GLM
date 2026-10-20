@@ -20,7 +20,8 @@ Udgivelsen indeholder instruktionspakke 0.2.1 med udvidet pakkekontrol, adgangsp
 - Appen til Apple-chip er kørt fra den pakkede installation med isolerede brugerdata. Projekt, preview, lokale versioner, plan, filændring, godkendelser, stop og genåbning er afprøvet med medfølgende værktøjer og en kontrolleret modelserver. Installation på en anden Mac mangler.
 - Intel-appens grundforløb og samtale er kørt under Rosetta. Pakken er ikke afprøvet på en Intel-Mac.
 - Windows-pakken er usigneret. Indholdet er kontrolleret fra det faktiske installationsprogram på Mac; installation, første start og opdatering på Windows mangler.
-- Komplai-login med en almindelig brugers rigtige konto, model og fælles budget mangler endnu en samlet prøve i produktionsmiljøet.
+
+**Ændring til næste version:** Komplai udgår som AI-forbindelse. Komplai Run bevares til udgivelse gennem Del. Det ændrer ikke indholdet af tidligere offentliggjorte installationsfiler.
 
 Vi har enhedstests og lokale appprøver med rigtige filer og kontrollerede modelservere. Det erstatter ikke afprøvning af den aktuelle pakke med brugerens rigtige model og computer. Se [teststatus](teststatus.md) for detaljer og tidligere forsøg.
 

@@ -1,8 +1,41 @@
 # Teststatus før invitation
 
-Senest kontrolleret 18. oktober 2026. Afsnittene er daterede, så tidligere begrænsninger kan læses i deres sammenhæng. Dette er status for den aktuelle arbejdsmappe, ikke en erklæring om, at alle installationsfiler eller modeller er klar. Særskilt godkendte Git-handlinger, udgivelser og GitHub-kørsler fremgår af de enkelte afsnit.
+Senest kontrolleret 20. oktober 2026. Afsnittene er daterede, så tidligere begrænsninger kan læses i deres sammenhæng. Dette er status for den aktuelle arbejdsmappe, ikke en erklæring om, at alle installationsfiler eller modeller er klar. Særskilt godkendte Git-handlinger, udgivelser og GitHub-kørsler fremgår af de enkelte afsnit.
 
 [Gennemgangen før offentlig beta](offentliggoerelse.md) samler historik- og logkontrol samt de lokale prøver af README, hjemmeside og udgivelseskontrol. Den offentliggør ikke appen og ændrer ikke installationsstatus nedenfor.
+
+## Fælles Del-forløb og flere udgivelsessteder · 20. oktober 2026
+
+**Skrevet og enhedstestet:** Del har seks ligestillede udbydere med logo, kontokrav og tre synlige udbydere ad gangen. Promte Apps, GitHub Pages og Cloudflare Pages er tilsluttet den fælles gennemgang og kvittering. Azure guider gennem browserlogin, abonnement og eksisterende app. Vercel kan følge projektets Git-udgivelser med særskilt produktions- og teststatus. Komplais OAuth-forløb bevares uden særplacering. Fælles status ved Del følger det åbne projekt.
+
+- **74 målrettede enhedstests består:** Loginopsætning, udbyderadaptere, konfigurationsfiler, udgivelsesgennemgang, status, kvittering og hostingvejledning. Prøverne afviser bl.a. ændrede filer efter gennemgang, udskiftede mapper, symlinks, forkert Git-version, ændret udgivelsesdestination, interne netadresser og ukendte udgivelseslinks. Samtidig statuskontrol kan ikke overskrive en nyere kvittering.
+- **Versioneret opsætning:** GitHub Pages og Cloudflare Pages får manuelle workflows og projektkonfiguration. Vercels Git-forbindelse kan også gemmes i projektet. Filerne vises før skrivning; brugeren gemmer og sender dem selv med Git. Ingen hemmeligheder gemmes i projektet. Cloudflares token hører til i GitHubs Actions-hemmeligheder.
+- **Afprøvet med faktiske projektfiler:** Den nye Electron-prøve består med 47 skærmbilleder uden rendererfejl eller vandret overløb. Den bruger webfiler fra repositoryets gemte version og projektmateriale fra Promte-skillen. Opsætningsfiler skrives i isolerede mapper, og gennemgang, uploadpakning, status og kvittering følger produktets kode. Udbydernes API'er, CLI-login og grænsen til versionsudtrækning er kontrollerede testafhængigheder. Der oprettes ingen commits i prøveprojekterne.
+- **Rettelser fra slutgennemgangen:** Tilbage genskaber Azure-abonnement og Vercel-team med det tidligere valg. GitHub-fejl 401/403 åbner genforbindelse uden automatisk at slette eksisterende adgang. Vercels statusklik henter den aktuelle udgivelse, og projektknappen åbner det validerede projekt. Afsluttet kontrol rydder venteteksten. Alle disse forløb er afprøvet i Electron; Pages-fejl og annullering er desuden ført gennem den faktiske kvitteringsvisning i enhedsprøverne.
+- **Eksisterende Del-forløb:** Vercel/Azure-prøven består med 21 skærmbilleder, og Komplai-prøven med 36. De dækker bl.a. ændret indhold efter godkendelse, ændret adgang, ukendt og fejlet upload, tastaturbetjening og 980 × 720 ved 150 procent zoom uden vandret overløb.
+- **Læsende kontrol mod konti:** Vercels eksisterende teams, projekter og en faktisk Git-udgivelse med status `READY` er hentet. Azure returnerede abonnementerne; appoversigten krævede fornyet Microsoft-login, og SWA CLI manglede på maskinen. Det er adgangs- og kontraktkontrol, ikke en ny udgivelse.
+
+**Ikke udgivet eller observeret i produktion:** De nye Promte-, Pages- og Cloudflare-forløb har endnu ingen ekstern udgivelsesprøve. Browserlogin i de nye appprøver er simuleret; der er ikke gennemført nye login på brugerens vegne. Windows, nye installationspakker og CI/CD er ikke afprøvet i denne milepæl. Promte-kvitteringen åbner arbejdsområdet hos Promte; adapteren gætter ikke en offentlig appadresse.
+
+Lokal evidens: `/tmp/aura-publishing-final-unit-tests.log` samt `aura-udgivelsesvalg-lkGsci`, `aura-del-cloud-YLjc3Y` og `aura-komplai-udgivelse-49t5IW` under `/private/var/folders/q9/914lvw356897pk8pb_29flv00000gn/T/`. Ingen eksterne uploads, Git-skrivninger eller GitHub Actions-kørsler indgår i denne milepæl.
+
+## komplai kun til udgivelse og neutrale udbydervalg · 20. oktober 2026
+
+**Skrevet:** komplai er fjernet fra AI-opsætningen i app og terminal. Tidligere gemte forbindelser kan kun fjernes; kataloger, modelkald og allerede forberedte afsendelser afvises. Et utilgængeligt projektvalg udløser ikke automatisk en anden AI, heller ikke efter sletning af den gamle forbindelse. Run-login, gemt Run-adgang, projekter, kladder, samtaler og historiske priser bevares. De gamle AI-login-/tokenprøver og det særskilte AI-input i releaseworkflowet er fjernet. Manuel udgivelse og kontrollen af installationsfiler er bevaret.
+
+Del begynder med **Udgiv fra Aura** og **Se udgivelsesvejledning**. Direkte udbydere har ens kort i alfabetisk rækkefølge uden forvalg. Aura kontakter ingen udbyder, før brugeren vælger den. En tidligere gemt destination kan genbruges. Vejledningerne har også alfabetisk rækkefølge og et tomt startvalg.
+
+**Enhedstestet:** 58 målrettede tests består: 30 om modeludbydere, gateway, Run-upload og visning; 10 om Run-login og tidligere AI-forbindelser; 16 om terminal, distribution og releasekontrol; to om hostingvejledning. Kontrollen af tidligere AI-afsendelser er prøvet både med en aktiv, genbrugt motor og en ny motor og afviser før dekryptering, historikændring og netkald. Syntaks og diff-kontrol består.
+
+**Afprøvet i appen:** Opsætning og almindelige gemte AI-forbindelser er gennemført i Electron på macOS med isolerede datamapper og lokale katalogservere. Kladder og projektfiler bevares ved fejl og genstart. Terminalens faktiske `aura login komplai` er også kørt i en interaktiv terminal og afvises med forklaringen om at vælge en anden AI.
+
+Del og Run er afprøvet i tre yderligere Electron-forløb med 74 skærmbilleder: 17 for forbindelser og oprydning, 36 for Run-udgivelse og 21 for Vercel/Azure. Run-prøven bruger faktiske webfiler fra repositoryets gemte version og seks lokale uploads gennem Run-tjenestens arkivlæser. Login, genstart, logout, navigation, fejltilstande og visning ved 150 procent zoom består. Første skærm har to hovedvalg; udbyderskærmen har tre ens udbydervalg samt Tilbage og Luk. Ingen udbyder er forvalgt, og disse to trin foretager ingen udbyderkald. Skærmene er visuelt gennemgået uden vandret overløb. OAuth, nøglering og eksterne hostingtjenester bruger kontrollerede lokale svar; dette er ikke en ny produktionsprøve.
+
+Lokal evidens: `harness-setup-224pkv`, `aura-connections-2VjcYV`, `aura-komplai-forbindelser-zdHQNv`, `aura-komplai-udgivelse-K3EfPF` og `aura-del-cloud-9P9vF6` under `/private/var/folders/q9/914lvw356897pk8pb_29flv00000gn/T/`. `aura-del-cloud-9P9vF6/udbyder.png` viser det første udbydervalg uden musemarkering.
+
+**Afgrænsning:** Ingen nye eksterne modelkald, produktionslogin eller uploads er udført. Ingen Windows-installation, nye installationspakker eller offentliggørelse indgår. Systemkort, flere hostingintegrationer og desktop-pakning af brugerprojekter er fortsat produktretning, dokumenteret i [beslutningerne](decisions.md).
+
+En indledende CLI-testkørsel brugte ved en fejl et testfilter, som lod en eksisterende versionsgemningstest oprette commits i sin isolerede, midlertidige prøve. Repositoryets Git-historik blev ikke ændret. Den afsluttende CLI-kørsel brugte en eksplicit positiv testliste uden den prøve. Der er ikke committet eller pushet projektændringer og ikke startet GitHub Actions.
 
 ## Offentlig desktopbeta 0.4.0-beta.1 · 18. oktober 2026
 

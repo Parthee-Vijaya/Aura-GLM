@@ -5,10 +5,13 @@
 })(typeof globalThis === 'object' ? globalThis : this, () => {
   const time = at => at && Number.isFinite(Date.parse(at)) ? new Date(at).toLocaleString('da-DK', { dateStyle: 'short', timeStyle: 'short' }) : 'tidspunkt ikke registreret';
   const version = r => `${r.version?.name || 'Gemt version'} · ${time(r.version?.at)}`;
-  const provider = name => name === 'komplai' ? 'komplai Run' : name === 'azure' ? 'Azure Static Web Apps' : 'Vercel';
-  const states = { SUBMITTING: 'Upload påbegyndt; udfald endnu ikke bekræftet', UNKNOWN: 'Upload ikke bekræftet', QUEUED: 'I kø', BUILDING: 'Bygger', INITIALIZING: 'Forbereder', UPLOADED: 'Uploadsvaret er modtaget', READY: 'Udgivet ifølge udbyderen', ERROR: 'Fejl hos udbyderen', CANCELED: 'Annulleret hos udbyderen', AWAITING_UPDATE: 'Den nye version er endnu ikke bekræftet', REPLACED: 'En nyere version er udgivet siden', UNPUBLISHED: 'Appen er ikke udgivet lige nu', REMOVED: 'Appen er slettet hos komplai' };
+  const provider = name => ({ komplai: 'komplai Run', azure: 'Azure Static Web Apps', vercel: 'Vercel', promte: 'Promte Apps', 'github-pages': 'GitHub Pages', cloudflare: 'Cloudflare Pages' })[name] || 'Udbyder';
+  const states = { PREPARED: 'Version oprettet; upload ikke bekræftet', REVIEWING: 'Gennemgås hos udbyderen', BLOCKED: 'Kræver handling hos udbyderen', REJECTED: 'Afvist hos udbyderen', SUBMITTING: 'Upload påbegyndt; udfald endnu ikke bekræftet', UNKNOWN: 'Upload ikke bekræftet', QUEUED: 'I kø', BUILDING: 'Bygger', INITIALIZING: 'Forbereder', UPLOADED: 'Uploadsvaret er modtaget', READY: 'Udgivet ifølge udbyderen', ERROR: 'Fejl hos udbyderen', CANCELED: 'Annulleret hos udbyderen', AWAITING_UPDATE: 'Den nye version er endnu ikke bekræftet', REPLACED: 'En nyere version er udgivet siden', UNPUBLISHED: 'Appen er ikke udgivet lige nu', REMOVED: 'Appen er slettet hos komplai' };
+  const address = value => { try { const u = new URL(value); return u.hostname + (u.pathname === '/' ? '' : u.pathname); } catch { return ''; } };
   const host = value => { try { return new URL(value).hostname; } catch { return ''; } };
   function destination(r) {
+    if (r.config.provider === 'promte') return `Promte Apps · ${r.target.owner || r.config.workspaceId} · ${r.target.name || 'App-arbejdsområde'}`;
+    if (['github-pages', 'cloudflare'].includes(r.config.provider)) return `${provider(r.config.provider)} · ${r.config.repository} · ${r.config.branch} · offentlig hjemmeside`;
     if (r.config.provider === 'komplai') return `komplai Run · ${r.target.owner || 'organisation'} · ${host(r.url) || host(r.target.url) || r.target.host}`;
     return `${provider(r.config.provider)} · ${r.config.provider === 'azure' ? `${r.config.subscription || 'abonnement ikke registreret'} / ${r.config.group || 'ressourcegruppe ikke registreret'}` : r.config.scope || r.target.owner || 'konto fra login'} · ${r.target.name || r.config.project} · ${r.config.provider === 'azure' ? 'harness-test' : 'preview'}`; }
   function checks(r) {
@@ -35,7 +38,7 @@
     return {
       name: r.target.name || r.config.name || r.config.project || 'Din app',
       // Azure-inspektionens host er produktionsadressen, aldrig testmiljøet.
-      address: r.config.provider === 'azure' ? host(r.url) || 'Testadresse afventer udgivelse' : host(r.url) || host(r.target.url) || r.target.host || 'Adresse afventer udgivelse',
+      address: r.config.provider === 'promte' ? 'Åbnes i Promte' : ['github-pages', 'cloudflare'].includes(r.config.provider) ? address(r.url) || address(r.target.url) || 'Adresse afventer udgivelse' : r.config.provider === 'azure' ? host(r.url) || 'Testadresse afventer udgivelse' : host(r.url) || host(r.target.url) || r.target.host || 'Adresse afventer udgivelse',
       account: [provider(r.config.provider), r.target.owner || r.config.scope].filter(Boolean).join(' · ')
     };
   }
@@ -44,15 +47,15 @@
   function receiptSummary(r) {
     const c = r.checks, known = c?.provider?.status === 'checked', failed = c?.provider?.status === 'unknown';
     const pending = !r.id || ['SUBMITTING', 'UNKNOWN'].includes(r.state), legacy = r.checkedAt && !c;
-    const titles = { READY: 'Udgivet', UPLOADED: 'Upload modtaget', QUEUED: 'I kø', BUILDING: 'Bygger appen', INITIALIZING: 'Forbereder appen', ERROR: 'Udgivelsen fejlede', CANCELED: 'Udgivelsen blev annulleret', REPLACED: 'En nyere version er udgivet', UNPUBLISHED: 'Appen er ikke udgivet', REMOVED: 'Appen er slettet', AWAITING_UPDATE: 'Afventer den nye version' };
+    const titles = { PREPARED: 'Upload afventer', REVIEWING: 'Under gennemgang', BLOCKED: 'Kræver handling', REJECTED: 'Udgivelsen blev afvist', READY: 'Udgivet', UPLOADED: 'Upload modtaget', QUEUED: 'I kø', BUILDING: 'Bygger appen', INITIALIZING: 'Forbereder appen', ERROR: 'Udgivelsen fejlede', CANCELED: 'Udgivelsen blev annulleret', REPLACED: 'En nyere version er udgivet', UNPUBLISHED: 'Appen er ikke udgivet', REMOVED: 'Appen er slettet', AWAITING_UPDATE: 'Afventer den nye version' };
     const publication = pending ? { title: 'Upload ikke bekræftet', detail: 'Åbn udbyderens oversigt, før du prøver en ny upload.', tone: 'warning' }
       : failed ? { title: 'Status kunne ikke hentes', detail: 'Uploadsvaret er gemt. Prøv statuskontrollen igen.', tone: 'warning' }
       : legacy ? { title: 'Tidligere status: ' + (titles[r.state] || 'ukendt'), detail: 'Ældre kvittering. Kontrollér status igen.', tone: 'neutral' }
-      : { title: titles[r.state] || 'Status er ukendt', detail: known ? 'Bekræftet af ' + provider(r.config.provider) + '.' : r.state === 'UPLOADED' ? 'Den aktive version er endnu ikke bekræftet.' : 'Fra udbyderens uploadsvar. Status kan kontrolleres igen.', tone: known && r.state === 'READY' ? 'positive' : ['ERROR', 'CANCELED', 'REMOVED'].includes(r.state) ? 'warning' : 'neutral' };
+      : { title: titles[r.state] || 'Status er ukendt', detail: r.state === 'PREPARED' ? 'Versionen er oprettet. Kontrollér status, før du uploader igen.' : known ? 'Bekræftet af ' + provider(r.config.provider) + '.' : r.state === 'UPLOADED' ? 'Den aktive version er endnu ikke bekræftet.' : 'Fra udbyderens uploadsvar. Status kan kontrolleres igen.', tone: known && r.state === 'READY' ? 'positive' : ['ERROR', 'CANCELED', 'REMOVED', 'BLOCKED', 'REJECTED'].includes(r.state) ? 'warning' : 'neutral' };
     const visibility = known ? c.provider.visibility : null;
     const changed = visibility && visibility !== r.config.visibility;
     const exposed = visibility === 'private' && c?.site?.status === 'answered' && c.site.http >= 200 && c.site.http < 300 && c?.content?.status === 'matched';
-    const access = r.config.provider !== 'komplai' ? { title: 'Adgang skal afprøves', detail: 'Åbn linket som den person, der skal bruge appen.', tone: 'neutral' }
+    const access = r.config.provider === 'promte' ? { title: 'Adgang via Promte', detail: 'Åbn arbejdsområdet i Promte for at afprøve appen og dens adgang.', tone: 'neutral' } : r.config.provider !== 'komplai' ? { title: 'Adgang skal afprøves', detail: 'Åbn linket som den person, der skal bruge appen.', tone: 'neutral' }
       : exposed ? { title: 'Startsiden er åben', detail: 'komplai angiver privat adgang, men startsiden kunne hentes uden login.', tone: 'warning' }
       : visibility === 'private' ? { title: 'Kun organisationen', detail: 'Log ind med komplai for at åbne appen.', tone: changed ? 'warning' : 'neutral' }
       : visibility === 'public' ? { title: 'Alle med linket', detail: 'Appen er offentlig.', tone: changed ? 'warning' : 'neutral' }

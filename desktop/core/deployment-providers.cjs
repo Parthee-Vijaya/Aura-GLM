@@ -16,6 +16,8 @@ function command(executable, args, { cwd = os.tmpdir(), input, extra = {}, timeo
   });
 }
 const identifier = value => { if(typeof value!=='string'||! /^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,199}$/.test(value)) throw Error('Angiv et gyldigt navn eller ID.'); return value; };
+const azureResourceGroup = value => { if(typeof value!=='string'||!/^[\p{L}\p{N}_.()-]{1,90}$/u.test(value)||value.endsWith('.')) throw Error('Vælg en gyldig Azure-ressourcegruppe.'); return value; };
+const azureAppName = value => identifier(value);
 function publicURL(value, suffix) { const u=new URL(value.startsWith('https://')?value:'https://'+value); if(u.protocol!=='https:'||u.username||u.password||u.port||!u.hostname.endsWith(suffix)||u.pathname!=='/'||u.search||u.hash) throw Error('Udbyderen returnerede en ukendt adresse.'); return u.origin; }
 class VercelDeployment {
   constructor(run=command) { this.run=run; this.id='vercel'; }
@@ -49,7 +51,7 @@ class VercelDeployment {
 }
 class AzureDeployment {
   constructor(run=command) { this.run=run; this.id='azure'; }
-  args(c) { return ['--name',identifier(c.project),'--resource-group',identifier(c.group),'--subscription',identifier(c.subscription),'--only-show-errors','--output','json']; }
+  args(c) { return ['--name',azureAppName(c.project),'--resource-group='+azureResourceGroup(c.group),'--subscription',identifier(c.subscription),'--only-show-errors','--output','json']; }
   async az(args) { try { return JSON.parse(await this.run(process.env.HARNESS_AZ_PATH||'az',['staticwebapp',...args])); } catch { throw Error('Azure kunne ikke læses. Kontrollér Azure CLI-login, abonnement og Static Web App.'); } }
   async inspect(c) {
     const p=await this.az(['show',...this.args(c)]);
@@ -77,4 +79,4 @@ class AzureDeployment {
     return {state:e.status==='Ready'?'READY':e.status||'UNKNOWN',url:e.hostname?publicURL(e.hostname,'.azurestaticapps.net'):null};
   }
 }
-module.exports={VercelDeployment,AzureDeployment,command,publicURL};
+module.exports={VercelDeployment,AzureDeployment,command,publicURL,azureResourceGroup,azureAppName};

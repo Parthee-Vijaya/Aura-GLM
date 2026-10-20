@@ -27,7 +27,7 @@ En udgivelse indeholder præcis:
 
 Installér pakken i en separat mappe med `npm install --include=optional --ignore-scripts --no-audit --no-fund --no-save /absolut/sti/til/pakken.tgz`. Kør den installerede `aura doctor`, og afprøv login, plan, ændring, afvisning, stop, preview og genåbning. Kontrollér på hver platform, at dens egen motor starter. Notér kildecommit, kontrolsum og faktisk afprøvning i [teststatus](teststatus.md). Opdater [udgivelsesnoterne](releases/cli-beta.md), hvis status ændres.
 
-Ingen kørsel med en kontrolleret lokal model dokumenterer Komplais produktionslogin. Det testes særskilt, når API'en er klar. Terminalpakken kan installeres og bruges med andre forbindelser imens.
+Kontrollér, at Komplai ikke tilbydes som AI-forbindelse, heller ikke efter genåbning af et lager fra en tidligere version. Gemte Komplai-forbindelser må kun kunne fjernes; der vælges ikke automatisk en anden AI. Run-login og udgivelse afprøves separat i desktopappen.
 
 ## Fra gennemgang til GitHub
 

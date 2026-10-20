@@ -59,33 +59,15 @@ Logoets original er `docs/images/aura-icon.png`. `npm run icons` kopierer den u�
 
 ## Opstart og forbindelser
 
-**Komplai** har sit eget kort i udbyderoversigten. Brugeren logger ind med sin Komplai-konto og vælger den organisation, hvis fælles AI-kreditter skal bruges. Login, modelvalg og det korte resumé før afsendelse bruger navnet Komplai. **Se datavilkår** ved organisationsvalget og **Se alle oplysninger** før afsendelse viser de faktiske modtagere og behandlingssteder, herunder Scaleway og Hetzner, som oplyst af Komplais API. Ændringer i de oplysninger kræver ny godkendelse, selv om det korte resumé er uændret.
+komplai findes kun som udgivelsesdestination under **Del → komplai Run**. Der oprettes ingen AI-forbindelse gennem dette login.
 
-En e-mailadresse med organisationens domæne giver ikke automatisk medlemskab eller adgang til fælles kreditter. Organisationen skal tilknytte brugeren, tildele den nødvendige appadgang og aktivere kodeværktøjer. Brugeren skal have gennemført Komplais eget login, så kontoen er knyttet til organisationen, før Aura forbindes. Aktiveringen gælder organisationen; der er ikke et separat godkendelsestrin for hvert modelkald eller et personligt beløbsloft i Aura.
-
-### Afgrænset prøve med Komplai
-
-`scripts/verify-komplai-live.cjs` er en særskilt prøve, som aldrig starter med enhedstests eller CI. Uden `--live` læser den kun den offentlige loginopsætning:
-
-```sh
-node scripts/verify-komplai-live.cjs
-```
-
-Efter godkendelse af en rigtig prøve angives organisationens id og den valgte model, aldrig nøgler eller adgangskoder:
-
-```sh
-node scripts/verify-komplai-live.cjs --live --organisation ORGANISATIONS_ID --model MODEL_ID
-```
-
-Prøven åbner et rigtigt browserlogin og bruger en isoleret mappe med opdigtet indhold. Modellen skal ændre én HTML-fil to gange, og resultatet kontrolleres i preview. Kontoens faktiske DKK-takster bruges til at beregne en konservativ maksimal pris før hvert kald. Når den samlede øvre pris ville overstige 10 kr., bliver kaldet afvist før afsendelse. Også fejlede og afbrudte kald tælles med. Der er ingen automatisk gentagelse eller anden model.
-
-Loftet gælder denne prøve, ikke almindelig brug af appen eller andre medarbejderes forbrug. Der er ingen omregning, hvor 1.000 kreditter er lig med 10 kr.; Komplais regnskab bruger DKK. Ved afslutning forsøger prøven at tilbagekalde adgangen og slette sit lokale nøglelager. Hvis tilbagekaldelsen fejler, bevares det krypterede lager til et nyt forsøg. Rapporten indeholder forbrug, model og resultat, men ingen adgangsnøgler. Se [teststatus](../docs/teststatus.md) for faktisk gennemførte prøver og udgivelsesstatus.
+Tidligere gemte komplai-AI-forbindelser vises under **AI-forbindelser** med en besked om at vælge en anden AI. De kan fjernes, men bruges ikke til modelkataloger eller beskeder. Et projekt med en tidligere komplai-forbindelse vælger ikke automatisk en anden udbyder. Fjernelse af en gammel AI-forbindelse berører ikke Run-adgangen; historiske samtaler og forbrug bevares.
 
 ### Den guidede opstart
 
 Ved første start vælger brugeren mellem **Byg i Aura-appen** og **Brug Aura Harness i mit kodeværktøj**. Den første vej viser **Hvordan vil du starte?** med Start et projekt, Prøv et eksempel og Åbn et projekt. **Spring introduktionen over** går direkte til projektoprettelsen og huskes på denne computer. Introduktionen kan åbnes igen fra sidepanelet. Den guidede vej tilbyder AI-forbindelse eller fortsættelse uden AI; derefter beskriver brugeren sin idé og får et kort, redigerbart navneforslag, fx **Oversigt over tre fiktive mødelokaler**. Projektet lægges i **Dokumenter › Aura** uden mappedialog; **Vælg en anden placering** åbner dialogen. Mappenavnet skriver æ, ø og å om til ae, oe og aa, og et projekt med samme navn får et nummer, så en eksisterende mappe aldrig genbruges. Designmateriale og avancerede projektvalg er foldet sammen. Brugeren kan oprette eller åbne et lokalt projekt uden AI- eller GitHub-konto. Velkomst og demonstration kontakter ingen modelserver. Når AI-opsætningen åbnes, henter appen automatisk Ollamas modelliste fra http://127.0.0.1:11434/api/tags med en kort timeout. Ingen modelnøgle dekrypteres under søgningen.
 
-AI-opsætningen viser to store valg: **Jeg har en adgangsnøgle** og **AI på min computer**. En gemt forbindelse vises som et tredje valg. Udbyderoversigten viser ti ligeværdige kort med logo: Azure, Claude, Corti, Egen server, Komplai, Mistral, Ollama, OpenAI, OpenCode Zen og OpenRouter. Først efter valget vises formularen. **Har du ikke en nøgle? Sådan får du en** åbner vejledning og faste sider hos udbyderen. Den guidede introduktion skjuler sidepanelet og viser ét trin ad gangen. **Vælg senere** går videre uden AI og bevarer idéen. Tilbage vender til valgene uden at sende en besked; et indtastet nøglefelt tømmes.
+AI-opsætningen viser to store valg: **Jeg har en adgangsnøgle** og **AI på min computer**. En gemt forbindelse vises som et tredje valg. Udbyderoversigten viser ni ligeværdige kort med logo: Azure, Claude, Corti, Egen server, Mistral, Ollama, OpenAI, OpenCode Zen og OpenRouter. Først efter valget vises formularen. **Har du ikke en nøgle? Sådan får du en** åbner vejledning og faste sider hos udbyderen. Den guidede introduktion skjuler sidepanelet og viser ét trin ad gangen. **Vælg senere** går videre uden AI og bevarer idéen. Tilbage vender til valgene uden at sende en besked; et indtastet nøglefelt tømmes.
 
 Der kan gemmes flere forbindelser til samme udbyder, fx to Azure-miljøer med hvert sit navn, endpoint og nøgle. Efter tilslutning tilbyder **Tilføj en AI mere** at gentage forløbet. Oversigten under Indstillinger har søgning, fire forbindelser pr. side og **Kontrollér alle**. Status viser **Ikke kontrolleret**, **Forbundet** med tidspunkt, **Ingen modeller** eller **Ikke forbundet**. Kontrollen henter kun modelkataloget og sender ingen AI-opgave. **Gennemgå opsætningen** bevarer eksisterende forbindelser, projekt og kladde.
 
@@ -208,7 +190,7 @@ Versionsgemning pusher eller deployer ikke. Kodepublicering er en særskilt, eks
 
 Browserlogin bruger GitHubs Device Flow. En vedligeholder skal registrere en OAuth-app, aktivere Device Flow og angive dens offentlige Client ID i `HARNESS_GITHUB_CLIENT_ID` ved start. Ingen client secret skal indbygges eller deles. OAuth beder om `repo read:org`; dette er bred adgang. Organisationen kan kræve egen godkendelse eller SSO. En GitHub App med finere rettigheder er ikke implementeret her. Alternativt kan brugeren indtaste et GitHub-token i appens skjulte felt. Et afgrænset token skal have relevante repositories og Contents read/write; oprettelse og workflows kan kræve yderligere rettigheder. Browserlogin uden Client ID er tydeligt deaktiveret.
 
-Adgangstokens valideres mod GitHubs bruger-API og gemmes med Electron safeStorage adskilt fra modelnøgler. Renderer og projektfiler får ikke tokenet retur. Annullering og udløb kræver nyt login; refresh-tokens bruges ikke. **Fjern adgang fra appen** sletter kun den lokale adgang, ikke GitHubs autorisation. Appen overtager ikke `gh`-login eller brugerens Git-identitet.
+Adgangstokens valideres mod GitHubs bruger-API og gemmes med Electron safeStorage adskilt fra modelnøgler. Renderer og projektfiler får ikke tokenet retur. Annullering og udløb kræver nyt login; refresh-tokens bruges ikke. **Fjern adgang fra appen** sletter kun den lokale adgang, ikke GitHubs autorisation. I Pages-guiden kan brugeren udtrykkeligt vælge at genbruge et eksisterende `gh`-login. Intet login overtages automatisk, og brugerens Git-identitet ændres ikke.
 
 Efter kontrol af kontoen kan brugeren vælge egen konto eller en organisation, inklusive AI Alliancen ved tilstrækkelige rettigheder. Repositorylisten viser adgang, ikke en garanti for at organisations- og branchregler tillader handlingen. Oprettelse kræver særskilt bekræftelse af ejer, navn og privat/offentlig synlighed. Et nyt repository oprettes tomt uden commit; det tilsluttes derefter aktivt. Eksisterende repositories kan vælges fra listen eller angives som `ejer/navn`.
 
@@ -381,44 +363,65 @@ Hostingønsket vises i projektoplysninger og medsendes som kontekst efter datage
 
 ## Udgiv til test
 
-**Del** er valgfri og kræver ingen GitHub-forbindelse. Guiden viser ét spørgsmål ad gangen. Vælg komplai Run eller et eksisterende Vercel-/Azure-projekt, gennemgå den gemte version og vælg **Udgiv**. Destinationen huskes pr. projekt uden for repositoryet. Projektets lokale filer og Git-historik ændres ikke. En ny version af en eksisterende Run-app erstatter dens udgivne indhold; Vercel og Azure bruger de testmiljøer, der beskrives nedenfor.
+**Del** er valgfri. Guiden viser udbydere alfabetisk uden anbefaling eller forvalg: Azure Static Web Apps, Cloudflare Pages, GitHub Pages, komplai Run, Promte Apps og Vercel. Derudover findes en vejledning til Netlify Drop. GitHub-forbindelse kræves til Pages; Vercel bruger sit projekts Git-integration. Azure, komplai og Promte har deres egne loginforløb.
 
-Pakken læses fra den gemte Git-version i den valgte mappe, som bliver uploadens rod. Arbejdsområdet skal være rent. Ignorerede buildfiler på disken medtages ikke: ved færdigbygget frontend skal det faktiske output være gemt i Git; ved Vercel-kildekode bygger udbyderen i stedet. Grænserne er 2.000 filer, 2 MB pr. fil og 20 MB samlet. Kendte hemmelighedsfiler, private referencer, links, undermoduler og LFS-pointere afvises. Indholdskontrollen er heuristisk.
+Opsætningen gemmes efter særskilt gennemgang i `.aura/publishing/<udbyder>.json`. Pages får desuden et manuelt workflow i `.github/workflows/`. Eksisterende indhold vises før skrivning og kontrolleres igen; ændringer, links og usikre filstier afvises. Tokens og nøgler medtages ikke. Brugeren håndterer selv commit og push. Appen opretter eller ændrer ikke Git-historik som en del af opsætningen. Den lokale destination og seneste kvittering huskes desuden i appdata.
 
-Gennemgangen viser appnavn, adresse, den gemte version, konto, adgang og mulige omkostninger. Under **Se detaljer** findes versionens ID, filer, fingeraftryk, placering, miljøvariabelnavne og build. **Ret** vender tilbage til opsætningen og kræver en ny gennemgang. Version og destination genkontrolleres før upload. Godkendelsen er engangsbrug og udløber. Projekt-/appindstillinger gemmes, men godkendelsen huskes ikke til næste udgivelse.
+Manuelle udgivelser læses fra den gemte Git-version i den valgte mappe, som bliver uploadens rod. Arbejdsområdet skal være rent. Ignorerede buildfiler på disken medtages ikke: ved færdigbygget frontend skal det faktiske output være gemt i Git. Promte modtager kildekode og bygger selv; Vercel bygger det, der kommer gennem Git-forbindelsen. Auras manuelle filkontrol har grænser på 2.000 filer, 2 MB pr. fil og 20 MB samlet. Kendte hemmelighedsfiler, private referencer, links, undermoduler og LFS-pointere afvises før udbyderens filudvalg. Indholdskontrollen er heuristisk.
+
+Gennemgangen viser destination, den gemte version, adgang og mulige omkostninger. Under **Se detaljer** findes versionens ID, filer, eventuelle udeladte filer, fingeraftryk, placering, miljøvariabelnavne og build. **Ret** vender tilbage til opsætningen og kræver en ny gennemgang. Version og destination genkontrolleres før upload eller manuel workflowstart. Godkendelsen er engangsbrug og udløber. En gemt opsætning er ikke godkendelse af næste udgivelse.
 
 Deling bruger altid hovedprojektets gemte version. Dialogen viser, når der findes uflettede samtalekopier: deres rettelser kommer ikke med, før brugeren vælger **Flet ind i projektet** og gemmer resultatet. Aktive opgaver blokerer deling. Ingen kopi flettes eller udgives automatisk.
 
-GitHub-forløbet viser også versionsnavn, destination, synlighed rapporteret af GitHub og tidspunktet for serverkontrollen. Konti, destination og filhistorik ligger bag deres egne fold, når en destination er valgt. Efter et bekræftet push eller en kontrol med samme serverversion står det tydeligt, at kode og historik findes på serveren, og at appen ikke er udgivet. “Privat” fra repository-API'et beviser ikke en bestemt testpersons læseadgang. Skift af destination kræver ny gennemgang og nyt samtykke.
+GitHubs særskilte sikkerhedskopiering viser versionsnavn, destination, synlighed og tidspunkt for serverkontrollen. Et bekræftet push viser, at kode og historik findes på serveren; det er ikke i sig selv bevis for en fungerende app. Hvis repositoryet er forbundet til Vercel eller anden automatisk hosting, kan push udløse udgivelse efter den opsætning. “Privat” fra repository-API'et beviser ikke en bestemt testpersons adgang til appen.
 
 ### Vejledninger og dataplacering
 
-**Del → Andre steder at udgive** indeholder vejledninger til Cloudflare Pages, Netlify Drop, GitHub Pages, komplai Run og Promte Apps. Vejledningerne åbner ingen upload i sig selv. De indbyggede uploadmuligheder er komplai Run, Vercel og Azure Static Web Apps.
+**Del** starter med **Udgiv fra Aura** og **Se udgivelsesvejledning**. De seks integrerede udbydere vises som ligeværdige valg; Netlify Drop ligger blandt vejledningerne. En tidligere valgt destination kan genbruges. Kontooprettelse, installation af manglende værktøjer og oprettelse af cloudressourcer foregår hos udbyderen. Åbning af en vejledning udgiver intet.
 
 Hvert valg har en kort beskrivelse af leverandør og dataplacering. **Opsætning, data og aftaler** viser trin, anvendelsesområde, adgangsforhold, kilder og kontroldato. En leverandørs hjemland, en API-region, global levering og databehandleraftalen beskrives særskilt. Aura kender ikke automatisk organisationens aftale eller godkendelse. Katalog og faste links ligger i `core/hosting-guidance.cjs`; samme fil beskriver appens reelle muligheder for agenten, så den kan henvise til Del uden at gætte.
 
-Cloudflare Pages, Netlify Drop og GitHub Pages er her beskrevet til færdige frontendfiler. En almindelig Python- eller Node-server kræver en anden driftsopsætning. Komplais Run-API er til færdig HTML/ZIP med særskilt appadgang. Promte beskriver upload af egne apps, men importformat og backendkrav skal afklares med leverandøren. Ingen konti oprettes, og ingen filer uploades ved at åbne en vejledning.
+Cloudflare Pages, Netlify Drop og GitHub Pages er her til færdige frontendfiler. En almindelig Python- eller Node-server kræver en anden driftsopsætning. Komplais Run-API modtager færdig HTML/ZIP med særskilt appadgang. Promte modtager en React-kildepakke efter sine byggeregler. Promte Apps og komplai Run kræver konto og betalt aftale.
+
+### Cloudflare Pages og GitHub Pages
+
+Forbind GitHub via browserlogin, hvis en OAuth-app er konfigureret, eller genbrug efter eget valg et eksisterende `gh`-login. Et token kan også forbindes i appens GitHub-opsætning. Vælg repository, branch og en mappe med den færdige frontend. Aura skriver kun konfigurationen lokalt efter gennemgang; brugeren committer og pusher selv. Workflowet skal findes på standardbranchen, og den valgte branches version og workflowindhold skal matche den gennemgåede lokale version.
+
+GitHub Pages skal være sat til **GitHub Actions** under **Settings → Pages**. Workflowet har begrænsede jobrettigheder, fastlåste Actions og kun `workflow_dispatch`. **Udgiv** starter én kørsel med præcis Git-version, filfingeraftryk og forespørgsels-ID. Kørslen genkontrollerer version, filstier, hemmelighedsmønstre og alle bytes før upload; ingen projektkode eller buildkommando køres. Skjulte webfiler som `.well-known/security.txt` bevares. Basisstien kan være `/repository-navn/`; billeder og navigation skal afprøves på den faktiske adresse.
+
+Cloudflare bruger samme manuelle GitHub-forløb med et eksisterende Pages-projekt, konto-ID og projektnavn. Brugeren gemmer `CLOUDFLARE_API_TOKEN` i repositoryets **Actions secrets** med adgang til Cloudflare Pages for den valgte konto. Aura kontrollerer kun hemmelighedens navn, aldrig dens værdi. Konto, projekt, produktionsbranch og fravær af serverfunktioner kontrolleres af workflowet før upload. Et Git-forbundet Cloudflare-projekt skal have automatiske produktions- og previewudgivelser slået fra. Opsætningen opretter hverken projekt, token eller hemmelighed.
+
+GitHub-tokenet skal kunne læse repository og workflow og starte Actions. GitHub Pages kræver også læseadgang til Pages; Cloudflare-forløbet læser navnet i Actions secrets og GitHub-deploymentstatus. Organisationens regler kan kræve yderligere godkendelse. Workflowet har ingen automatisk start ved push eller tidsplan. Begge Pages-forløb opdaterer den valgte hjemmeside; en privat GitHub-kodemappe gør ikke automatisk siden privat.
 
 ### komplai Run
 
-Log ind i Komplais egen browserformular, og forbind organisationens udgivelsesadgang. Har kontoen én organisation, vises den direkte; flere organisationer får et særskilt valg. Udgivelsesadgangen er adskilt fra AI-forbindelsen og lagres krypteret. En genstart bevarer forbindelsen. **Konto og adgang → Log ud af komplai Run** tilbagekalder den på serveren, før den fjernes lokalt.
+Brug en organisation med konto og betalt aftale om komplai Run. Log ind i Komplais egen browserformular, og forbind organisationens udgivelsesadgang. Har kontoen én organisation, vises den direkte; flere organisationer får et særskilt valg. Login bruges kun til udgivelse, og adgangen lagres krypteret. En genstart bevarer forbindelsen. **Konto og adgang → Log ud af komplai Run** tilbagekalder den på serveren, før den fjernes lokalt.
 
 Vælg **Ny app** eller **Eksisterende app**. Nye apps får navn, adresse og et udtrykkeligt valg mellem **Organisationen** og **Alle med linket**, uden forvalg. Eksisterende apps beholder deres adgang; ændringer foretages i Komplai. Navn, adgang og filer kan rettes inden den endelige gennemgang. **Udgiv en ny version** genbruger den seneste app, mens **Skift app** åbner appvalget direkte.
 
 Den faktiske prøve 18. oktober 2026 gennemførte browserlogin, forbindelse, genstart og offentlige/private HTML-udgivelser fra en gemt syntetisk Git-version. Den offentlige fil matchede byte for byte. Den private app afviste anonyme besøg og viste indholdet efter medlemslogin. ZIP-forløbet er separat afprøvet mod Run-arkivlæseren lokalt. Se [teststatus](../docs/teststatus.md) for præcist omfang og begrænsninger.
 
-### Vercel
+### Promte Apps
 
-Kræver eksisterende login i Vercel CLI og et eksisterende projekt i det angivne team. Adapteren bruger CLI'ens API-adgang og opretter **preview** uden Git-push, produktionsflag eller ændrede projektindstillinger. Adapteren afviser projekter uden en eksisterende klar produktionsversion, før der uploades. Vercel promoverede første udgivelse til produktion i liveafprøvningen, både med udeladt target og eksplicit staging. Derfor skal en startversion oprettes særskilt hos Vercel, helst i et dedikeret testprojekt. Kontrollen gentages før upload; undgå samtidige sletninger af udgivelser fra andre værktøjer. Vercel CLI 59.25.2 er brugt i afprøvningen. Et andet program kan angives med `HARNESS_VERCEL_PATH`.
+Kræver konto, betalt aftale, administratoradgang til app-arbejdsområdet og Promtes officielle `@promte/app-upload`-værktøj. Aura starter værktøjets browserlogin for den valgte Promte-installation. Appen læser kun værktøjets login for den præcise vært; tokens sendes ikke til brugerfladen eller projektfiler. Arbejdsområdets ID angives fra Promte, fordi CLI-kontrakten ikke stiller en dokumenteret liste til rådighed.
 
-- **Færdigbygget frontend:** vælg fx `public`. Projektet skal have standardindstillinger uden framework, egne build-/installationskommandoer, outputmappe eller særskilt rodmappe. Appen overskriver ikke disse indstillinger.
-- **Kildekode:** vælg fx `.` med `package.json` og lockfil. Projektets Vercel-indstillinger styrer framework og build. En særskilt Vercel-rodmappe afvises, fordi pakken allerede er afgrænset til den valgte mappe. Understøttelse af serverkode afhænger af Vercels runtime og frameworkadapter.
+Efter den fælles Git- og hemmelighedskontrol anvendes Promtes filudvalg. Lokale værktøjer, byggeoutput og `vite.config.*` udelades; en lockfil udelades også, når der kun findes udviklingsafhængigheder. Gennemgangen viser de faktiske uploadfiler, udeladelser og et nyt fingeraftryk. Det samme valg og fingeraftryk genberegnes før upload. Projektets egne filer ændres ikke.
 
-Preview-miljøvariabler opsættes i Vercel. Appen viser variabelnavne, aldrig værdier, og opretter ingen hemmeligheder. Installations- og buildscripts fra kildekoden kører hos Vercel og kan læse disse værdier. Et preview kan være offentligt eller kræve login afhængigt af kontoens adgangsindstillinger.
+Kildepakken følger Promte-skillens byggeregler og sendes til den valgte installation eller den dokumenterede fælles uploadtjeneste på `app.promte.dk`. Versionsnummeret gemmes før upload, modtagelse gemmes før afslutning, og status følger præcis denne version. Bygning, gennemgang og afvisning vises særskilt. `published` er Promtes egen status; Aura gætter ikke en appadresse, som API-kontrakten ikke lover. Se [Promte-udgivelsesvejledningen](../docs/promte-udgivelse.md) for filkrav, modtagere og afprøvning.
+
+### Vercel via Git
+
+Det nye forløb bruger Vercels eksisterende GitHub-integration. Installér Vercel CLI, og vælg browserlogin i Aura. Vælg team og et Git-forbundet projekt fra listerne. Hvis forbindelsen mangler, åbnes Vercels importforløb; Aura opretter eller ændrer ikke Vercel-projektet. Repositoryforbindelsen kontrolleres igen, før valget gemmes.
+
+Aura gemmer forbindelsen som ikke-hemmelig projektkonfiguration. Brugeren committer og pusher med sit Git-værktøj. Vercel bygger derefter efter projektets Git-regler. Push til produktionsbranchen kan opdatere produktion; øvrige grene kan få previews. Aura kører ingen manuel Vercel-upload eller promovering i dette forløb og ændrer ikke fjernopsætningen. Et andet CLI-program kan angives med `HARNESS_VERCEL_PATH`.
+
+Status læses fra Vercel og knyttes til projekt, repository, branch, Git-version og udgivelsens kilde. En manuel upload med lignende Git-metadata tæller ikke som en Git-udgivelse. Buildindstillinger, miljøvariabler, region og adgang administreres i Vercel. Projektets buildkode kan læse de miljøværdier, der er tilgængelige dér. En klar udgivelse er ikke dokumentation for afprøvede brugerrejser.
 
 ### Azure Static Web Apps
 
-Kræver Azure CLI-login, SWA CLI og en eksisterende Static Web App. Angiv abonnement-ID, ressourcegruppe og navn. Programstier kan angives med `HARNESS_AZ_PATH` og `HARNESS_SWA_PATH`. SWA CLI kan hente sit deploymentværktøj ved første brug. Der installeres ingen npm-afhængigheder eller startes projektkommandoer lokalt.
+Kræver Azure CLI, SWA CLI og en eksisterende Static Web App i Azure Public Cloud. Guiden kontrollerer de lokale værktøjer, åbner Microsoft-login gennem Azure CLI og viser de tilgængelige abonnementer og apps. Ressourcegruppe og navn kommer fra den valgte app. Hvis en ressource eller et værktøj mangler, åbnes den relevante vejledning eller Azure-portalen; Aura opretter intet automatisk.
+
+Opsætningen kan gennemgås og gemmes i projektet før versionsgemning og udgivelse. Programstier kan angives med `HARNESS_AZ_PATH` og `HARNESS_SWA_PATH`. SWA CLI kan hente sit deploymentværktøj ved første brug. Projektets afhængigheder installeres ikke, og der startes ingen projektkommandoer lokalt.
 
 Adapteren bruger det navngivne **harness-test**-miljø; næste upload erstatter dets indhold. Produktion er ikke destination. Azure-kontoen skal have rettighed til at læse ressourcen og hente deploymentnøglen. Nøglen gives kortvarigt til SWA-processens miljø, aldrig argumenter, renderer, projektfiler eller appens kvittering. CLI'ernes eksisterende kontologin administreres af deres egne værktøjer.
 
@@ -426,25 +429,29 @@ Færdigbygget frontend skal have `index.html`. Frontend med Functions kræver ad
 
 ### Status og kontrol
 
-**Kontrollér status og startside** følger den registrerede udgivelse. Resultatet viser separat udbyderens status, startsidens svar uden login, filmatch og testpersonens endnu ikke afprøvede adgang. Tidspunktet gælder den seneste kontrol, også når den mislykkes; gammel succes bliver ikke vist som aktuel evidens. Kvitteringen med version og destination bevares ved genåbning. Formularændringer ændrer ikke den tidligere udgivelses kvittering. Appen kontrollerer kun kendte HTTPS-testadresser hos udbyderen og følger ikke redirects ved indholdskontrollen. Ved statiske sider sammenlignes startsideindholdet med den godkendte fil. Udbyderindsatte scripts kan give forskelligt fingeraftryk; appen beder da om manuel gennemgang frem for at erklære fuld overensstemmelse. Ved kildekode beviser et HTTP-svar kun, at adressen svarer. Backend, login og brugerrejser kræver yderligere afprøvning. En loginbeskyttet side bliver ikke meldt som verificeret.
+**Kontrollér status og startside** følger den registrerede manuelle udgivelse. Resultatet viser separat udbyderens status, startsidens svar uden login, filmatch og testpersonens endnu ikke afprøvede adgang. Tidspunktet gælder den seneste kontrol, også når den mislykkes; gammel succes bliver ikke vist som aktuel evidens. Kvitteringen med version og destination bevares ved genåbning. Et forsinket statuscheck kan ikke overskrive en nyere udgivelse eller kontrol. Formularændringer ændrer ikke den tidligere kvittering.
+
+Pages-status kræver samme forespørgsels-ID, workflow og Git-version samt et fuldført uploadtrin. Cloudflare-adressen hentes fra samme kørsels deploymentstatus; den udledes ikke af projektnavnet. GitHub Pages kan have et eget domæne. Automatisk indholdskontrol af Pages afviser private eller reserverede DNS-adresser, fastholder den kontrollerede IP under HTTPS-forbindelsen og følger ingen redirects. Øvrige uploadadaptere kontrollerer kendte HTTPS-adresser hos udbyderen. Ingen loginoplysninger sendes med sidekontrollen.
+
+Ved statiske sider sammenlignes startsideindholdet med den godkendte fil. Udbyderindsatte scripts kan give forskelligt fingeraftryk; appen beder da om manuel gennemgang frem for at erklære fuld overensstemmelse. Promte og Vercel har deres særskilte statusforløb ovenfor. Backend, login og brugerrejser kræver yderligere afprøvning. En loginbeskyttet side bliver ikke meldt som verificeret.
 
 Azure-status skal have et opdateringstidspunkt efter uploadstart, før en gammel testversion kan tælle som klar. Dette er ikke en lås mod andre, der samtidig udgiver til samme miljø. Uploadfejl kan have ukendt udfald: kontrollér udbyderens oversigt før nyt forsøg. Appen gentager ikke automatisk. Lukning af dialogen annullerer ikke en allerede igangsat cloududgivelse.
 
 ### Verifikation og kilder
 
-Se [teststatus](../docs/teststatus.md) for den aktuelle samlede suite; de oprindelige udgivelsesprøver omfattede 39 tests. `test:deployment` og `test:desktop` består i Electron på macOS. Testene omfatter snapshots fra rigtige isolerede Git-repositories, engangsgodkendelser, ændret version/destination, fejlstatus, indholdskontrol og leverandørkontrakter. `npm run test:deployment` afprøver Electron-dialog og IPC med rigtige filer og simulerede hostingsvar. `node scripts/verify-deployment.cjs --live-vercel` uploader syntetisk materiale til det konkret godkendte `progressify/ai-harness-test`; kommandoen skal kun bruges med ejerens tilladelse.
+Se [teststatus](../docs/teststatus.md) for den aktuelle samlede suite og appens visuelle afprøvning. De nye Pages- og Promte-adaptere er skrevet og enhedstestet med kontrollerede API-svar. Pages-workflowets faktiske filkontrol er også kørt på HTML og CSS fra Auras eksisterende gemte hjemmeside. Integrationstestene bruger de rigtige providermoduler til gennemgang, uploadudvalg, afbrudt dispatch, status og DNS-beskyttet sidekontrol, men netværk og cloudkørsler er simuleret. De opretter ingen commits eller eksterne udgivelser. Rigtigt login og udgivelse til Pages, Promte, Azure og det nye Vercel-Git-forløb er ikke dermed verificeret.
 
-Vercel-forløbet er afprøvet gennem Electron med en syntetisk HTML-side i `progressify/ai-harness-test`; Vercel bekræftede `target: null` og `READY`. Den anonyme kontrol registrerer korrekt viderestilling til login. En særskilt autentificeret CLI-kontrol hentede den godkendte HTML-side; Vercel havde tilføjet sit feedback-script, så hele HTTP-svaret var ikke byteidentisk. De to syntetiske udgivelser, som Vercel klassificerede som produktion under fejlsøgningen, er fjernet. Kontrollen før upload blev derefter afprøvet mod det rigtige projekt og afviste korrekt manglende startversion. Kun preview-testudgivelsen er efterladt.
+**Historisk Vercel-prøve, 24. september 2026:** Det daværende manuelle uploadforløb blev afprøvet gennem Electron med en syntetisk HTML-side i `progressify/ai-harness-test`; Vercel bekræftede `target: null` og `READY`. Den anonyme kontrol registrerede viderestilling til login. En særskilt autentificeret CLI-kontrol hentede den godkendte HTML-side; Vercel havde tilføjet sit feedback-script, så hele HTTP-svaret var ikke byteidentisk. De to syntetiske udgivelser, som Vercel klassificerede som produktion under fejlsøgningen, blev fjernet. Kontrollen før upload afviste derefter korrekt manglende startversion. Kun preview-testudgivelsen blev efterladt. Denne prøve dokumenterer ikke det nye Git-forløb.
 
-Azure er ikke liveafprøvet; der er endnu ingen testressource. Windows og framework-/Functions-apps er ikke afprøvet live i denne milepæl. CLI-installation/login kræver stadig ekstern opsætning; dette er endnu ikke et fuldt guidet hostinglogin for nye brugere.
+Azure er ikke liveafprøvet; der er endnu ingen testressource. Windows og framework-/Functions-apps er ikke afprøvet live i denne milepæl. Browserlogin og ressourcevalg er nu en del af guiden, mens installation af værktøjer og oprettelse af manglende ressourcer fortsat sker uden for Aura.
 
-Kilder kontrolleret 24. september 2026: [Vercel deployments API](https://vercel.com/docs/rest-api/deployments/create-a-new-deployment), [SWA deploy](https://azure.github.io/static-web-apps-cli/docs/cli/swa-deploy/), [Azure-miljøer](https://learn.microsoft.com/en-us/azure/static-web-apps/preview-environments) og [Azure buildstatus](https://learn.microsoft.com/en-us/rest/api/appservice/static-sites/get-static-site-builds?view=rest-appservice-2024-11-01).
+Integrationskilder kontrolleret 20. oktober 2026: [GitHub Pages-workflows](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages), [GitHub workflow dispatch](https://docs.github.com/en/rest/actions/workflows#create-a-workflow-dispatch-event), [Cloudflare Pages fra CI](https://developers.cloudflare.com/pages/how-to/use-direct-upload-with-continuous-integration/), [Vercel for GitHub](https://vercel.com/docs/git/vercel-for-github), [Azure browserlogin](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli-interactively), [SWA deploy](https://azure.github.io/static-web-apps-cli/docs/cli/swa-deploy/) og [Promtes officielle uploadværktøj](https://www.npmjs.com/package/@promte/app-upload). Daterede historiske prøver erstatter ikke en kontrol af den aktuelle konto og opsætning.
 
 ## Flere hostingmuligheder
 
-Dialogen viser også mulige kommende adaptere, tydeligt adskilt fra de aktive destinationer. Der er endnu ingen upload til disse fra appen:
+Netlify Drop har en vejledning i Del, men ingen uploadadapter. Andre mulige destinationer er ikke aktive integrationer i appen:
 
-- [Cloudflare Pages](https://developers.cloudflare.com/pages/configuration/preview-deployments/) og [Workers](https://developers.cloudflare.com/workers/versions-and-deployments/version-urls/): preview-/versionsadresser. Workers kræver en kompatibel runtime; det er ikke en vilkårlig Node-server.
+- [Cloudflare Workers](https://developers.cloudflare.com/workers/versions-and-deployments/version-urls/): kræver en kompatibel runtime; den eksisterende Pages-adapter udgiver kun frontend.
 - [Netlify](https://cli.netlify.com/commands/deploy/): CLI'en opretter som standard draft-deploys. Funktioner og build skal håndteres efter Netlifys format.
 - [Render](https://render.com/docs/preview-environments): preview-miljøer til flere tjenester og datalagre.
 - [Railway](https://docs.railway.com/environments): særskilte vedvarende miljøer og PR-miljøer.

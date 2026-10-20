@@ -29,7 +29,7 @@ app.setPath('sessionData', identity.sessionData);
 protocol.registerSchemesAsPrivileged([{ scheme: 'harness', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 let window, preview, project, busy = false, chosenParent = null;
 let assets = [];
-let github, publishing, deployments, restoration;
+let github, publishing, deployments, deploymentSetup, restoration;
 let workbench, externalPreview = null, history, images;
 let ownTools, updates, updating = false;
 let devServer, detectedRuntime, forceStatic = false;
@@ -491,6 +491,13 @@ handle('hosting:open', async () => { const root = requireIdleProject(); const se
 handle('deployment:guides', () => require('./core/hosting-guidance.cjs').catalog());
 handle('deployment:guide-open', input => shell.openExternal(require('./core/hosting-guidance.cjs').link(input?.id, input?.kind)));
 handle('deployment:state', async () => ({ ...await deployments.state(requireIdleProject()), context: await sharingContext() }));
+handle('deployment:setup', input => exclusive(() => deploymentSetup.act(requireIdleProject(), input)));
+handle('deployment:setup-open', async input => shell.openExternal(await deploymentSetup.open(requireIdleProject(), input)));
+handle('deployment:tracking', async input => {
+  if (!project) return null;
+  const root = project.root;
+  return { root, ...await deploymentSetup.tracking(root, input?.refresh === true) };
+});
 handle('deployment:review', input => exclusive(async () => ({ ...await deployments.review(requireIdleProject(), input), context: await sharingContext() })));
 handle('deployment:send', token => exclusive(() => deployments.deploy(requireIdleProject(), token)));
 handle('deployment:check', () => exclusive(() => deployments.check(requireIdleProject())));
@@ -532,28 +539,20 @@ handle('setup:status', async () => {
 });
 handle('connections:discover', () => require('./core/local-discovery.cjs').discoverLocalModels());
 const komplaiLogin = new (require('./core/komplai.cjs').KomplaiLogin)();
-const komplaiToken = new (require('./core/komplai-token.cjs').KomplaiToken)();
-handle('komplai:login', () => { komplaiToken.cancel(); return komplaiLogin.start(url => shell.openExternal(url)); });
-handle('komplai:cancel', () => { komplaiLogin.cancel(); komplaiToken.cancel(); });
-handle('komplai:token-check', value => { komplaiLogin.cancel(); return komplaiToken.check(value); });
-handle('komplai:token-connect', value => exclusive(async () => {
-  if (workbench.running) throw new Error('Stop opgaverne først.');
-  await komplaiToken.connect(value, workbench.store); return workbench.state();
-}));
-// Ét login kan give AI gennem organisationen, komplai Publish eller begge. Publish forbindes først, fordi AI-forbindelsen afslutter loginnet.
+handle('komplai:login', () => komplaiLogin.start(url => shell.openExternal(url)));
+handle('komplai:cancel', () => komplaiLogin.cancel());
+// Login giver kun en særskilt udgivelsesadgang. Tidligere AI-handlinger accepteres ikke.
 handle('komplai:connect', value => exclusive(async () => {
   if (workbench.running) throw new Error('Stop opgaverne først.');
-  const choice = typeof value === 'string' ? { organisationId: value, coding: true, publishing: false } : value;
-  if (!choice || typeof choice.organisationId !== 'string' || (!choice.coding && !choice.publishing)) throw new Error('Vælg, hvad komplai skal bruges til.');
-  if (choice.publishing) await komplaiLogin.connectPublishing(choice.organisationId, workbench.store);
-  if (choice.coding) await komplaiLogin.connect(choice.organisationId, workbench.store); else komplaiLogin.cancel();
+  if (!value || typeof value.organisationId !== 'string' || value.publishing !== true || value.coding) throw new Error('Vælg komplai Run til udgivelse.');
+  await komplaiLogin.connectPublishing(value.organisationId, workbench.store);
+  komplaiLogin.cancel();
   return workbench.state();
 }));
 handle('komplai:publish-state', () => require('./core/komplai.cjs').publishingState(workbench.store));
 handle('komplai:publish-overview', () => deployments.providers.komplai.overview());
 handle('komplai:publish-address', value => deployments.providers.komplai.address(value?.slug, value?.appId));
 handle('komplai:publish-disconnect', () => exclusive(() => require('./core/komplai.cjs').disconnectPublishing(workbench.store)));
-handle('komplai:account', id => workbench.komplaiAccount(id));
 handle('connections:state', () => workbench.state());
 handle('connections:save', value => exclusive(() => workbench.saveConnection(value)));
 handle('connections:remove', value => exclusive(() => workbench.removeConnection(value)));
@@ -835,8 +834,9 @@ app.whenReady().then(async () => {
   };
   workbench.releaseWorkspace = async root => { const ctx = spaceFor(root); if (!ctx) return; await ctx.devServer.stop(); await ctx.preview?.close(); spaces.delete(root); sendEvent({ type: 'chat.copy-removed', workspaceRoot: root }); if (selectedRoot === root) selectedRoot = null; };
   await workbench.copies.cleanup();
-  deployments = new Deployments(workbench.store);
   github = new GitHub(workbench.store); publishing = new Publishing({ store: workbench.store, git: workbench.git, provider: github });
+  deployments = new Deployments(workbench.store, { github });
+  deploymentSetup = new (require('./core/deployment-setup.cjs').DeploymentSetup)(workbench.store, github, deployments);
   updates = new (require('./core/updates.cjs').Updates)({
     updater: app.isPackaged && ['darwin', 'win32'].includes(process.platform) ? require('electron-updater').autoUpdater : null,
     store: workbench.store, version: app.getVersion(), enabled: app.isPackaged,
@@ -853,8 +853,8 @@ app.whenReady().then(async () => {
   protocol.handle('harness', async request => {
     const url = new URL(request.url);
     const name = url.pathname.slice(1);
-    const providerAsset = /^provider-(anthropic|azure|compatible|corti|komplai|mistral|ollama|openai|openrouter|zen)\.svg$/.test(name);
-    if (url.host !== 'app' || (!providerAsset && !['index.html', 'aura-icon.png', 'app.js', 'updates.js', 'workspace.js', 'plan-view.js', 'planning.js', 'approval-view.js', 'approvals.js', 'preview-edit.js', 'history.js', 'chats.js', 'palette.js', 'model-advice.js', 'connection-overview.js', 'chat-display.js', 'conversation-mode.js', 'live-work.js', 'server.js', 'viewport.js', 'share-view.js', 'hosting.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name))) return new Response('Ikke fundet', { status: 404 });
+    const providerAsset = /^provider-(anthropic|azure|compatible|corti|komplai|mistral|ollama|openai|openrouter|zen|promte|github-pages|cloudflare|vercel)\.svg$/.test(name);
+    if (url.host !== 'app' || (!providerAsset && name !== 'provider-cloudflare.png' && !['index.html', 'aura-icon.png', 'app.js', 'updates.js', 'workspace.js', 'plan-view.js', 'planning.js', 'approval-view.js', 'approvals.js', 'preview-edit.js', 'history.js', 'chats.js', 'palette.js', 'model-advice.js', 'connection-overview.js', 'chat-display.js', 'conversation-mode.js', 'live-work.js', 'server.js', 'viewport.js', 'share-view.js', 'hosting.js', 'deployment-setup.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name))) return new Response('Ikke fundet', { status: 404 });
     return new Response(await fs.readFile(path.join(__dirname, 'ui', name)), { headers: { 'Content-Type': name === 'aura-icon.png' ? 'image/png' : providerAsset ? 'image/svg+xml' : name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : 'text/html; charset=utf-8' } });
   });
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
@@ -898,4 +898,4 @@ app.whenReady().then(async () => {
   app.on('activate', () => { if (!window) createWindow(); });
 });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
-app.on('before-quit', event => { komplaiLogin.cancel(); komplaiToken.cancel(); if (quitReady) return; event.preventDefault(); shutdown().finally(() => { quitReady = true; app.quit(); }); });
+app.on('before-quit', event => { komplaiLogin.cancel(); if (quitReady) return; event.preventDefault(); shutdown().finally(() => { quitReady = true; app.quit(); }); });

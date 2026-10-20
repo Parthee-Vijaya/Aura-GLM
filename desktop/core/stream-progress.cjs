@@ -96,7 +96,7 @@ class StreamProgress {
   }
   event(event) {
     if (!event || typeof event !== 'object') return;
-    // OpenAI Chat Completions: også Corti, Komplai, Mistral, Ollama og kompatible forbindelser.
+    // OpenAI Chat Completions: også Corti, Mistral, Ollama og kompatible forbindelser.
     for (const choice of (Array.isArray(event.choices) ? event.choices : []).slice(0, 1)) {
       if (!choice || typeof choice !== 'object') continue;
       const d = choice.delta || choice.message || {};

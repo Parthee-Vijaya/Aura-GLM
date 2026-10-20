@@ -5,8 +5,8 @@ const { appRules } = require('../core/project-guidance.cjs');
 
 test('hostingvejledninger åbner kun kendte kilder og skelner fra upload', () => {
   const entries = catalog();
-  assert.deepEqual(entries.filter(item => item.integrated).map(item => item.id), ['vercel', 'azure', 'komplai']);
-  assert.deepEqual(entries.filter(item => !item.integrated).map(item => item.id), ['cloudflare', 'netlify', 'github-pages', 'promte']);
+  assert.deepEqual(entries.filter(item => item.integrated).map(item => item.id), ['azure', 'cloudflare', 'github-pages', 'komplai', 'promte', 'vercel']);
+  assert.deepEqual(entries.filter(item => !item.integrated).map(item => item.id), ['netlify']);
   for (const entry of entries) {
     assert.ok(entry.summary && entry.scope && entry.data && entry.checkedAt);
     for (const kind of Object.keys(entry.links)) assert.equal(new URL(link(entry.id, kind)).protocol, 'https:');
@@ -19,12 +19,26 @@ test('hostingvejledninger åbner kun kendte kilder og skelner fra upload', () =>
 test('agentens faktiske appregler beskriver Del og de tilgængelige udgivelsesveje', () => {
   const enabled = appRules({ deling: true });
   assert.match(enabled, /knap Del står øverst/);
-  assert.match(enabled, /Indbygget upload: komplai Run, Vercel og Azure Static Web Apps/);
-  assert.match(enabled, /komplai Run kræver kun login med komplai/);
-  assert.match(enabled, /Cloudflare Pages, Netlify Drop, GitHub Pages og Promte Apps/);
-  assert.match(enabled, /ikke uploadintegrationer/);
+  assert.match(enabled, /Azure Static Web Apps, Cloudflare Pages, GitHub Pages, komplai Run, Promte Apps og Vercel/);
+  assert.match(enabled, /komplai Run og Promte Apps kræver konto og betalt aftale/);
+  assert.match(enabled, /Netlify Drop har vejledning, men ingen uploadintegration/);
+  assert.match(enabled, /Brugeren committer og pusher selv/);
+  assert.match(enabled, /Vercel bruger projektets eksisterende Git-integration/);
+  assert.match(enabled, /Udgiv starter én konkret kørsel/);
   assert.match(enabled, /Python\/Node-servere kan ikke udgives som statiske filer/);
   const disabled = appRules({ deling: false });
   assert.match(disabled, /Indstillinger → Funktioner/);
   assert.doesNotMatch(disabled, /knap Del står øverst/);
+});
+
+test('vejledninger beskriver de faktiske login- og udgivelseskrav uden at anbefale en udbyder', () => {
+  const entries = Object.fromEntries(catalog().map(item => [item.id, item]));
+  assert.match(entries.azure.steps.join(' '), /Log ind i browseren.*Microsoft-konto.*eksisterende Static Web App/);
+  assert.match(entries.vercel.steps.join(' '), /Vercel bygger efter sine Git-regler/);
+  assert.match(entries.cloudflare.steps.join(' '), /CLOUDFLARE_API_TOKEN.*Actions secrets/);
+  assert.match(entries['github-pages'].steps.join(' '), /standardbranch/);
+  assert.match(entries.promte.scope, /React-kildepakke/);
+  assert.match(entries.promte.summary, /betalt aftale/);
+  assert.match(entries.komplai.summary, /betalt aftale/);
+  assert.ok(catalog().every(item => !item.recommended && !item.default));
 });

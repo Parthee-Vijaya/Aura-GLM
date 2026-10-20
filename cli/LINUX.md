@@ -49,7 +49,7 @@ Prøv både en grafisk terminal og en session uden nøgletjeneste. Test æ/ø/å
 
 ## SSH og servere uden skærm
 
-Du kan bruge CLI'en i en interaktiv SSH-terminal med et API-token eller en API-nøgle. Komplais browserlogin er ikke device flow og kræver callback til den maskine, hvor Aura kører. Komplais tokenforløb kræver den metadataudvidelse, der er beskrevet i [API-kontrakten](https://github.com/ai-alliancen-org/ai-harness/blob/main/docs/komplai-api-token.md).
+Du kan bruge CLI'en i en interaktiv SSH-terminal med en API-nøgle eller en lokal AI. Nøglen indtastes skjult i terminalen og gemmes i Auras krypterede lager.
 
 Preview-adressen lytter på serverens loopback, ikke på dit lokale skrivebord. Hvis du kender SSH, kan du videresende den viste port med SSH's port forwarding. Aura åbner ingen firewall eller offentlig port automatisk. Tailscale er et separat valg og sættes ikke op af pakken.
 

@@ -1,11 +1,9 @@
-const { definitions } = require('../desktop/core/connections.cjs');
+const { definitions, assertSupported } = require('../desktop/core/connections.cjs');
 const { discoverLocalModels } = require('../desktop/core/local-discovery.cjs');
-const { KomplaiLogin } = require('../desktop/core/komplai.cjs');
-const { KomplaiToken } = require('../desktop/core/komplai-token.cjs');
-const { openBrowser } = require('./browser.cjs');
 
 async function unlockConnection(app, id) {
   const connection = await app.bench.connection(id);
+  assertSupported(connection);
   if (connection.secret) { await app.vault.unlock(app.ui); app.ui.protect(app.bench.store.decrypt(connection)); }
   return connection;
 }
@@ -13,49 +11,16 @@ async function login(app, kind) {
   const { ui, bench, vault } = app;
   if (!kind) {
     kind = await ui.choose('Hvordan vil du forbinde din AI?', [
-      { label: 'Jeg har en adgangsnøgle', value: 'key' }, { label: 'AI på min computer', value: 'ollama' }, { label: 'Log ind med Komplai', value: 'komplai' }
+      { label: 'Jeg har en adgangsnøgle', value: 'key' }, { label: 'AI på min computer', value: 'ollama' }
     ]);
     if (!kind) return null;
   }
   if (kind === 'key') {
     kind = await ui.choose('Vælg udbyder', [{ label: 'Claude', value: 'anthropic' }, { label: 'Mistral', value: 'mistral' }, { label: 'Corti', value: 'corti' }, { label: 'Vælg en anden', value: 'other' }]);
-    if (kind === 'other') kind = await ui.choose('Vælg en anden udbyder', ['openai', 'azure', 'openrouter', 'zen', 'compatible', 'komplai'].map(value => ({ value, label: definitions[value].name })));
+    if (kind === 'other') kind = await ui.choose('Vælg en anden udbyder', ['openai', 'azure', 'openrouter', 'zen', 'compatible'].map(value => ({ value, label: definitions[value].name })));
     if (!kind) return null;
   }
-  if (!Object.hasOwn(definitions, kind)) throw new Error('Ukendt udbyder. Brug aura login uden udbydernavn.');
-  if (kind === 'komplai') {
-    const method = await ui.choose('Hvordan vil du forbinde Komplai?', [{ label: 'Log ind i browseren', value: 'browser' }, { label: 'Brug API-token', value: 'token' }]);
-    if (!method) return null;
-    if (method === 'token') {
-      const flow = app.tokenFactory?.() || new KomplaiToken(); app.pendingLogin = flow;
-      try {
-        const token = await ui.ask('Komplai API-token', { secret: true, required: true }); ui.protect(token);
-        ui.line('Kontrollerer organisation, rettigheder og udløb. Ingen modelopgave eller projektfiler sendes.');
-        const review = await flow.check(token), account = review.account;
-        ui.line(`${account.name} · ${(account.balance.availableMicros / 1e6).toLocaleString('da-DK')} kr. i fælles AI-kreditter · token udløber ${new Date(account.credential.expiresAt).toLocaleDateString('da-DK')}`);
-        ui.line(JSON.stringify(account.data, null, 2));
-        if (!await ui.confirm('Tilslut tokenet og brug organisationens fælles kreditter til kommende AI-opgaver?')) return null;
-        await vault.unlock(ui);
-        const connection = await flow.connect(review.reviewID, bench.store);
-        ui.line('Komplai er tilsluttet med API-token. Modellen vælges separat.'); return connection.id;
-      } finally { flow.cancel(); app.pendingLogin = null; }
-    }
-    await vault.unlock(ui);
-    const flow = app.loginFactory?.() || new KomplaiLogin(); app.pendingLogin = flow;
-    try {
-      ui.line('Login åbnes i browseren på denne computer. Adgang til en organisation kræver medlemskab og aktiverede kodeværktøjer.');
-      const result = await flow.start(url => (app.openBrowser || openBrowser)(url, ui));
-      const id = await ui.choose('Hvilken organisations fælles kreditter vil du bruge?', result.organisations.map(o => ({ value: o.id, label: o.name })));
-      if (!id) return null;
-      const org = result.organisations.find(o => o.id === id);
-      ui.line(JSON.stringify({ organisation: org.name, data: org.data, contract: org.contract }, null, 2));
-      if (!await ui.confirm('Forbind kontoen og tillad brug af organisationens fælles kreditter?')) return null;
-      const connection = await flow.connect(id, bench.store);
-      ui.protect(bench.store.decrypt(await bench.connection(connection.id)));
-      ui.line('Komplai er tilsluttet. Modellen vælges separat.');
-      return connection.id;
-    } finally { flow.cancel(); app.pendingLogin = null; }
-  }
+  assertSupported({ kind });
   const definition = definitions[kind]; let baseURL = definition.baseURL;
   if (kind === 'ollama') {
     const discovery = await discoverLocalModels();
@@ -83,7 +48,9 @@ async function login(app, kind) {
 async function selectModel(app, connectionID) {
   const { bench, ui } = app;
   if (!connectionID) {
-    const saved = (await bench.store.read()).connections;
+    const connections = (await bench.store.read()).connections;
+    const saved = connections.filter(c => Object.hasOwn(definitions, c.kind));
+    if (connections.some(c => c.kind === 'komplai')) ui.line('Komplai kan ikke længere bruges som AI. Vælg en anden forbindelse. Den gamle forbindelse kan fjernes med aura logout.');
     if (!saved.length) connectionID = await login(app);
     else {
       connectionID = await ui.choose('Vælg AI-forbindelse', [...saved.map(c => ({ value: c.id, label: c.name })), { value: 'new', label: 'Tilføj en forbindelse' }]);

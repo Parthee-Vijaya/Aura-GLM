@@ -14,7 +14,7 @@ aura                         Åbn samtalen i den aktuelle mappe
 aura chat [mappe]             Åbn et eksisterende projekt uden filændringer
 aura init [overmappe]         Opret et nyt projekt efter gennemgang
 aura resume                  Vælg et tidligere åbnet projekt
-aura login [udbyder]          Forbind din AI, fx komplai eller ollama
+aura login [udbyder]          Forbind din AI, fx mistral eller ollama
 aura logout                  Fjern en forbindelse efter gennemgang
 aura doctor                  Kontrollér Node, Git og OpenCode uden modelkald
 aura preview [mappe]         Start preview; hold terminalen åben
@@ -49,6 +49,19 @@ function parse(args) {
   if (project && positional) throw new Error('Angiv kun én projektmappe.');
   return { command, project: project || (command !== 'login' ? positional : undefined), provider: command === 'login' ? positional : undefined };
 }
+async function logout(app) {
+  const { ui, vault } = app;
+  const connections = (await app.bench.store.read()).connections;
+  if (!connections.length) { ui.line('Ingen gemte forbindelser.'); return; }
+  const id = await ui.choose('Hvilken forbindelse skal fjernes?', connections.map(c => ({ label: c.kind === 'komplai' ? `${c.name} · udgået AI-forbindelse` : c.name, value: c.id })));
+  const connection = connections.find(c => c.id === id);
+  const revoke = connection?.kind === 'komplai' && connection.account?.authMethod !== 'token';
+  const question = revoke ? 'Fjern forbindelsen og tilbagekald denne loginadgang hos Komplai?' : connection?.kind === 'komplai' ? 'Fjern tokenet fra Aura? Det virker fortsat andre steder og kan tilbagekaldes i Komplai.' : 'Fjern forbindelsen?';
+  if (id && await ui.confirm(question)) {
+    if (revoke) await vault.unlock(ui);
+    await app.bench.removeConnection(id); ui.line('Forbindelsen er fjernet.');
+  }
+}
 async function main(argv = process.argv.slice(2), ui = new Terminal()) {
   const options = parse([...argv]);
   if (options.command === 'help') { ui.line(HELP); return; }
@@ -76,19 +89,7 @@ async function main(argv = process.argv.slice(2), ui = new Terminal()) {
   process.on('SIGINT', interrupt); process.on('SIGTERM', terminate);
   try {
     if (options.command === 'login') { await login(app, options.provider); return; }
-    if (options.command === 'logout') {
-      const connections = (await app.bench.store.read()).connections;
-      if (!connections.length) { ui.line('Ingen gemte forbindelser.'); return; }
-      const id = await ui.choose('Hvilken forbindelse skal fjernes?', connections.map(c => ({ label: c.name, value: c.id })));
-      const connection = connections.find(c => c.id === id);
-      const revoke = connection?.kind === 'komplai' && connection.account?.authMethod !== 'token';
-      const question = revoke ? 'Fjern forbindelsen og tilbagekald denne loginadgang hos Komplai?' : connection?.kind === 'komplai' ? 'Fjern tokenet fra Aura? Det virker fortsat andre steder og kan tilbagekaldes i Komplai.' : 'Fjern forbindelsen?';
-      if (id && await ui.confirm(question)) {
-        if (revoke) await vault.unlock(ui);
-        await app.bench.removeConnection(id); ui.line('Forbindelsen er fjernet.');
-      }
-      return;
-    }
+    if (options.command === 'logout') { await logout(app); return; }
     if (options.command === 'init') { if (!await init(app, path.resolve(options.project || '.'))) return; }
     else if (options.command === 'resume') {
       const recent = await app.bench.history.recent();
@@ -105,4 +106,4 @@ if (require.main === module) {
   const ui = new Terminal();
   main(process.argv.slice(2), ui).catch(error => { ui.line(error.code === 'CANCELLED' ? 'Afbrudt.' : `Aura: ${error.message}`); process.exitCode = error.code === 'CANCELLED' ? 130 : 1; });
 }
-module.exports = { main, parse, HELP };
+module.exports = { main, parse, HELP, logout };

@@ -94,7 +94,7 @@ class Workbench {
   // ---------- Projekt og samtaler ----------
   async state() {
     const state = await this.store.read(), chat = this.chat;
-    return { connections: state.connections.map(c => this.store.publicConnection(c)), definitions: connections.definitions, engineVersion: VERSION, projectSettings: this.project ? await this.store.project(this.project.root) : {}, running: this.running, workspace: chat?.data || null, historyWarning: this.historyWarning || chat?.historyWarning || '', usage: chat ? chat.currentUsage() : null, features: await this.features.get(this.project?.root), brief: this.project ? this.brief : null, plan: chat?.plan || null, lastPlan: chat?.lastPlan || null, chat: chat?.id || null, chatRunning: Boolean(chat?.running), workspaceRoot: chat?.root || this.project?.root, isolated: Boolean(chat?.copy), copy: chat?.copy ? { id: chat.copy.id, omissions: chat.copy.omissions } : null, chats: this.project ? await this.chatList() : [] };
+    return { connections: state.connections.filter(c => Object.hasOwn(connections.definitions, c.kind)).map(c => this.store.publicConnection(c)), retiredConnections: state.connections.filter(c => c.kind === 'komplai').map(c => ({ id: c.id, kind: c.kind, name: c.name, hasKey: Boolean(c.secret), account: { authMethod: c.account?.authMethod === 'token' ? 'token' : 'oauth' } })), definitions: connections.definitions, engineVersion: VERSION, projectSettings: this.project ? await this.store.project(this.project.root) : {}, running: this.running, workspace: chat?.data || null, historyWarning: this.historyWarning || chat?.historyWarning || '', usage: chat ? chat.currentUsage() : null, features: await this.features.get(this.project?.root), brief: this.project ? this.brief : null, plan: chat?.plan || null, lastPlan: chat?.lastPlan || null, chat: chat?.id || null, chatRunning: Boolean(chat?.running), workspaceRoot: chat?.root || this.project?.root, isolated: Boolean(chat?.copy), copy: chat?.copy ? { id: chat.copy.id, omissions: chat.copy.omissions } : null, chats: this.project ? await this.chatList() : [] };
   }
   async activate(project) {
     await this.close();
@@ -197,7 +197,7 @@ class Workbench {
 
   // ---------- Forbindelser og modeller ----------
   async saveConnection(input) {
-    if (input?.kind === 'komplai' || (input?.id && (await this.connection(input.id)).kind === 'komplai')) throw new Error('Brug Log ind med komplai til denne forbindelse.');
+    if (input?.kind === 'komplai' || (input?.id && (await this.connection(input.id)).kind === 'komplai')) throw new Error('komplai bruges nu kun til udgivelse via Del. Vælg en anden AI-forbindelse.');
     if (this.running) throw new Error('Stop opgaverne, før du ændrer forbindelser.');
     const connection = connections.normalize(input);
     await this.closeEngines();
@@ -226,13 +226,13 @@ class Workbench {
   async models(id) {
     const request = Symbol(); this.catalogRequests.set(id, request); this.catalogs.delete(id);
     const connection = await this.connection(id);
+    connections.assertSupported(connection);
     const models = await connections.listModels(connection, this.store.decrypt(connection));
     // Et sent katalogsvar må ikke genindføre adgang efter redigering, fjernelse eller en nyere kontrol.
     if (this.catalogRequests.get(id) !== request) throw new Error('Forbindelsen blev ændret eller kontrolleret igen. Hent modellerne på ny.');
     this.catalogs.set(id, models); return models;
   }
-  async komplaiAccount(id) { const connection = await this.connection(id); if (connection.kind !== 'komplai') throw new Error('Vælg en komplai-forbindelse.'); return require('./komplai.cjs').account(connection, this.store.decrypt(connection)); }
-  async routes(id, modelID) { const connection = await this.connection(id); return connections.routes(connection, this.store.decrypt(connection), modelID); }
+  async routes(id, modelID) { const connection = await this.connection(id); connections.assertSupported(connection); return connections.routes(connection, this.store.decrypt(connection), modelID); }
   async selection(input) {
     if (!this.project) throw new Error('Åbn et projekt først.');
     if (typeof input.modelID !== 'string' || !/^[a-zA-Z0-9_./:@+-]{1,200}$/.test(input.modelID)) throw new Error('Vælg en gyldig model.');

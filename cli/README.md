@@ -43,17 +43,13 @@ Samtaler, kladder, planer og modelvalg gemmes uden for projektet. `/history` vis
 
 ## AI og nøgler
 
-`aura login` viser de tre indgange: API-nøgle, lokal AI og Komplai. API-forløbet viser Claude, Mistral og Corti som ligeværdige valg. Andre forbindelser findes under **Vælg en anden**. Aura vælger ikke en model eller en betalingsform for dig.
+`aura login` viser to indgange: **Jeg har en adgangsnøgle** og **AI på min computer**. API-forløbet viser Claude, Mistral og Corti som ligeværdige valg. Andre forbindelser findes under **Vælg en anden**. Aura vælger ikke en model eller en betalingsform for dig.
 
 Ollama kan findes på standardadressen. En anden Ollama-server eller en kompatibel API kan angives manuelt, også en DGX Spark på en adresse, du har adgang til gennem Tailscale. Aura opsætter ikke Tailscale og ændrer ikke serveren. Et svar fra `/models` beviser hverken kodeevner, kvote eller faktisk behandlingssted.
 
-`aura login komplai` giver to valg: **Log ind i browseren** og **Brug API-token**. Begge bruger organisationens fælles kreditter. Komplais backend og organisationens adgang skal være aktiveret.
+Komplai bruges kun til udgivelse gennem **Del → komplai Run** i desktopappen. Terminalens AI-valg omfatter ikke Komplai. En tidligere gemt Komplai-forbindelse kan ikke hente modeller eller sende opgaver; vælg selv en anden AI med `/model`. Samtaler og tidligere forbrug bevares.
 
-Browserlogin bruger PKCE, organisationsvalg og bekræftelse af fælles kreditter. Browseren skal kunne nå callback på **samme maskine**, hvor CLI'en kører. Login fra en SSH-server via en browser på en anden maskine er ikke understøttet som device flow.
-
-Et personligt API-token indtastes skjult. Aura kontrollerer organisation, rettigheder og udløb uden et modelkald. Du ser organisation, fælles saldo og vilkår, før tokenet gemmes krypteret. Tokenet skal have `coding:read` og `coding:complete`. Forløbet kræver den metadataudvidelse, der er beskrevet i [Komplai-kontrakten](../docs/komplai-api-token.md); uden den afvises tilslutning med en forklaring. Der kan derfor ikke loves adgang med et produktions-token, før Komplai har indført kontrakten.
-
-`aura logout` fjerner forbindelsen. Ved browserlogin tilbagekaldes Auras token først hos Komplai. Et manuelt indsat token fjernes kun fra Aura, fordi det kan være i brug andre steder. Det kan tilbagekaldes i Komplai.
+`aura logout` fjerner en valgt forbindelse. For en gammel Komplai-browserforbindelse tilbagekaldes Auras adgang først; fejler tilbagekaldelsen, bevares forbindelsen til et nyt forsøg. Et manuelt indsat token fjernes kun lokalt og kan tilbagekaldes i Komplai. Run-adgangen i desktopappen berøres ikke.
 
 Terminalversionen bruger **et separat lager krypteret med AES-256-GCM**, med nøgle afledt af din adgangssætning gennem scrypt. Nøgler og adgangssætning indtastes skjult. De skal ikke skrives i kommandoer, miljøfiler eller shellhistorik. Adgangssætningen gemmes ikke og kan ikke gendannes. Ved forkert adgangssætning bevares lageret. Taber du adgangssætningen, må forbindelserne oprettes igen i et nyt lager og gamle nøgler tilbagekaldes hos udbyderne.
 
@@ -97,6 +93,6 @@ Enhedstestene omfatter faktiske projektfiler, kryptering, afviste handlinger og 
 
 Pakkescriptet kontrollerer arkivets faktiske filer mod kilderne og danner tre platformsguides, `CLI-RELEASE.json` og `SHA256SUMS.txt`. `--local` tillader endnu ikke committede ændringer og markerer pakken som uegnet til offentliggørelse. En release kræver en ren, fulgt kildeversion. Se [udgivelsesforløbet](../docs/udgivelse-cli.md). Kontrollér tarballens indhold og kontrolsum. Installér den i en separat mappe, og afprøv `aura doctor`, oprettelse/åbning, login, plan, kodeændring, afvisning, stop, preview og genåbning. En lokal arbejdsmappeprøve validerer ikke en offentliggjort pakke. Publicering, Git-ændringer og GitHub Actions udføres ikke af disse kommandoer.
 
-På Windows køres samme brugerforløb i både CMD og PowerShell. Kontrollér stier med mellemrum, skjult nøgleindtastning, Ctrl+C, genåbning af nøglelageret og browserlogin. På Linux prøves både en grafisk session og terminal uden nøgletjeneste. Registrér system, arkitektur, Node-version, pakkens kontrolsum og faktiske resultater i teststatus. Platformene skal markeres som uprøvede, indtil kontrollen er udført dér.
+På Windows køres samme brugerforløb i både CMD og PowerShell. Kontrollér stier med mellemrum, skjult nøgleindtastning, Ctrl+C, genåbning af nøglelageret og modelvalg. På Linux prøves både en grafisk session og terminal uden nøgletjeneste. Registrér system, arkitektur, Node-version, pakkens kontrolsum og faktiske resultater i teststatus. Platformene skal markeres som uprøvede, indtil kontrollen er udført dér.
 
 Konkrete installations- og testvejledninger findes til [Windows](WINDOWS.md), [Linux](LINUX.md) og [macOS](MACOS.md).

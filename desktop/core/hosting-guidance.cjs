@@ -1,29 +1,29 @@
-// Dokumentation kontrolleret 15. oktober 2026. Oplysninger om en tjeneste er ikke en vurdering af kundens aftale.
-const checkedAt = '2026-10-15';
+// Integrationskrav kontrolleret 20. oktober 2026. Kundens aftale og opsætning vurderes særskilt.
+const checkedAt = '2026-10-20';
 const options = [
   {
     id: 'vercel', name: 'Vercel', integrated: true,
     summary: 'Amerikansk leverandør. Global levering af frontend; backendens region vælges i projektet.',
-    scope: 'Aura kan udgive færdige filer eller kildekode til et eksisterende Vercel-testprojekt.',
+    scope: 'Aura forbinder til et eksisterende Vercel-projekts GitHub-integration og viser dets udgivelsesstatus. Vercel bygger de versioner, du pusher.',
     data: 'En EU-region for funktioner omfatter ikke automatisk CDN, logs, support og andre tjenester. Kontrollér projektets databehandleraftale, underleverandører og adgangsbeskyttelse.',
-    steps: ['Log ind i Vercel, og vælg et særskilt testprojekt med en eksisterende startversion.', 'Installér Vercel CLI, og log ind på denne computer. Find projektets navn og team.', 'Gem en version i Aura. Udfyld destinationen, gennemgå filerne og godkend udgivelsen. Kontrollér bagefter linket med testpersonen.'],
-    links: { guide: 'https://vercel.com/docs', data: 'https://vercel.com/legal/dpa', region: 'https://vercel.com/docs/regions' }
+    steps: ['Installér Vercel CLI, og vælg Log ind i browseren under Vercel i Aura.', 'Vælg team og et projekt med GitHub-forbindelse. Hvis forbindelsen mangler, åbner guiden Vercels importforløb, hvor du vælger repository og byggeopsætning.', 'Gennemgå og gem forbindelsen i projektet. Commit og push selv med dit Git-værktøj. Vercel bygger efter sine Git-regler; et push til produktionsbranchen kan opdatere den offentlige app. Kontrollér status og adgang bagefter.'],
+    links: { guide: 'https://vercel.com/docs/git/vercel-for-github', data: 'https://vercel.com/legal/dpa', region: 'https://vercel.com/docs/regions' }
   },
   {
     id: 'azure', name: 'Azure Static Web Apps', integrated: true,
     summary: 'Microsoft. Frontend leveres globalt; en EU-region til API’et er ikke det samme som udelukkende EU-behandling.',
     scope: 'Aura kan udgive en frontend og eventuelt et færdigbygget Node.js Functions-API til et eksisterende testmiljø.',
     data: 'Kontrollér Microsofts databehandleraftale, abonnementets konfiguration, logs og eventuelle tilknyttede tjenester. Et testmiljø er ikke automatisk adgangsbeskyttet.',
-    steps: ['Opret eller vælg en Static Web App i jeres Azure-abonnement. Aftal region og adgang med den ansvarlige.', 'Installér Azure CLI og SWA CLI, og log ind. Find appnavn, abonnements-id og ressourcegruppe.', 'Gem en version i Aura. Gennemgå og udgiv til harness-test. Det erstatter tidligere indhold i det testmiljø.'],
+    steps: ['Installér Azure CLI og SWA CLI. Vælg Log ind i browseren under Azure i Aura, og log ind med din Microsoft-konto.', 'Vælg dit abonnement og en eksisterende Static Web App fra listerne. Hvis der ingen app er, åbner guiden Azure-portalen. Aftal region og adgang med den ansvarlige.', 'Gennemgå opsætningen, og gem den i projektet. Gem derefter en version og udgiv til harness-test. Det erstatter tidligere indhold i dette testmiljø.'],
     links: { guide: 'https://learn.microsoft.com/en-us/azure/static-web-apps/getting-started', data: 'https://www.microsoft.com/licensing/docs/view/Microsoft-Products-and-Services-Data-Protection-Addendum-DPA', region: 'https://learn.microsoft.com/en-us/azure/static-web-apps/faq' }
   },
   {
-    id: 'cloudflare', name: 'Cloudflare Pages', integrated: false,
+    id: 'cloudflare', name: 'Cloudflare Pages', integrated: true,
     summary: 'Amerikansk leverandør. Statiske sider distribueres på et globalt netværk.',
-    scope: 'Upload af en færdigbygget hjemmeside hos Cloudflare. Denne vej kører ikke en almindelig Python- eller Node-server.',
+    scope: 'Aura starter et gennemgået manuelt GitHub-workflow, som udgiver færdige frontendfiler til dit eksisterende Cloudflare Pages-projekt.',
     data: 'EU-behandling er ikke garanteret af Pages-navnet eller en gratis konto. Gennemgå databehandleraftale, besøgslogs og adgang til siden.',
-    steps: ['Byg hjemmesiden lokalt. Find outputmappen med index.html, fx dist. Brug kun public, hvis den indeholder hele den færdige side.', 'Log ind hos Cloudflare. Vælg Workers & Pages og opret et Pages-projekt med Direct Upload.', 'Upload kun de færdige offentlige filer. Følg guiden, og afprøv det viste link. Direct Upload kan ikke senere skiftes til Git-integration i samme projekt.'],
-    links: { guide: 'https://developers.cloudflare.com/pages/get-started/direct-upload/', data: 'https://www.cloudflare.com/cloudflare-customer-dpa/' }
+    steps: ['Forbind GitHub i Aura, og vælg repository, branch og mappe med den færdige hjemmeside. Vælg eller opret selv et Pages-projekt hos Cloudflare; angiv kontoens ID og projektnavn.', 'Gem et Cloudflare-token med Account → Cloudflare Pages → Edit for den valgte konto som CLOUDFLARE_API_TOKEN i GitHubs Actions secrets. Projektets produktionsbranch skal matche valget. Automatiske Cloudflare-udgivelser skal være slået fra.', 'Gennemgå og gem opsætningen i projektet, og commit og push selv. Kontrollér opsætningen igen. Udgiv starter én GitHub-kørsel for den gennemgåede version; den kontrollerer filer og destination før upload.'],
+    links: { guide: 'https://developers.cloudflare.com/pages/how-to/use-direct-upload-with-continuous-integration/', data: 'https://www.cloudflare.com/cloudflare-customer-dpa/' }
   },
   {
     id: 'netlify', name: 'Netlify Drop', integrated: false,
@@ -34,38 +34,38 @@ const options = [
     links: { guide: 'https://docs.netlify.com/deploy/create-deploys/', data: 'https://www.netlify.com/trust-center/' }
   },
   {
-    id: 'github-pages', name: 'GitHub Pages', integrated: false,
+    id: 'github-pages', name: 'GitHub Pages', integrated: true,
     summary: 'GitHub / Microsoft. Til statiske hjemmesider; ingen Python- eller Node-backend.',
-    scope: 'Opsættes i GitHub. Auras sikkerhedskopi af kode udgiver ikke i sig selv en hjemmeside.',
+    scope: 'Aura gennemgår og starter et manuelt GitHub-workflow for den gemte frontend. Der køres ingen projektkommandoer eller backend.',
     data: 'Et privat repository gør ikke nødvendigvis Pages-siden privat. EU-behandling er ikke verificeret her. Gennemgå den aftale og de adgangsmuligheder, der gælder for jeres konto.',
-    steps: ['Gem koden i det repository, der skal eje siden. Gennemgå indholdet før upload.', 'Vælg Settings → Pages på GitHub, og følg guiden til den relevante branch eller buildopsætning. GitHub Actions må kun aktiveres med din godkendelse.', 'Afprøv det udgivne link, billeder og navigation. Kontrollér adgangen særskilt fra repositoryets adgang.'],
-    links: { guide: 'https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages', data: 'https://github.com/customer-terms/github-data-protection-agreement' }
+    steps: ['Forbind GitHub i Aura, og vælg repository, branch og mappe med den færdige hjemmeside. Vælg GitHub Actions som kilde under Settings → Pages.', 'Gennemgå og gem opsætningen i projektet. Commit og push selv med dit Git-værktøj. Det manuelle workflow skal også findes på repositoryets standardbranch.', 'Kontrollér opsætningen igen, gennemgå versionen og vælg Udgiv. Det starter én GitHub-kørsel. Afprøv den viste adresse, billeder og navigation, også hvis siden ligger under /repository-navn/.'],
+    links: { guide: 'https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages', data: 'https://github.com/customer-terms/github-data-protection-agreement' }
   },
   {
     id: 'komplai', name: 'komplai Run', integrated: true,
-    summary: 'Apps på komplai.run, fx budget.komplai.run. Kræver kun login med komplai.',
+    summary: 'Færdige hjemmesider på komplai.run. Kræver konto og betalt aftale med komplai Run.',
     scope: 'Aura udgiver færdige filer (en mappe med index.html) direkte efter login med komplai. Der kræves ingen CLI. Ved en ny app vælger du adresse og adgang. En eksisterende apps adgang ændres i komplai.',
     data: 'Filerne gemmes i organisationens appmiljø hos komplai (Hetzner, Tyskland). Appen kører i den besøgendes browser; serverkode køres ikke. Adgang er enten organisationens medlemmer efter login med komplai eller alle med linket.',
-    steps: ['Log ind med komplai i Del, og vælg organisationen. Organisationen skal have komplai Run.', 'Vælg en ny app med navn, adresse og adgang, eller en af dine eksisterende apps. Eksisterende adgang bevares og kan ændres i komplai.', 'Gennemgå versionen, og udgiv. Ældre versioner, tilbagerulning og sletning håndteres i komplai under Run.'],
+    steps: ['Brug en organisation med en betalt aftale om komplai Run. Log ind med komplai i Del, og forbind organisationen.', 'Vælg en ny app med navn, adresse og adgang, eller en af dine eksisterende apps. Eksisterende adgang bevares og kan ændres i komplai.', 'Gennemgå versionen, og udgiv. Ældre versioner, tilbagerulning og sletning håndteres i komplai under Run.'],
     links: { guide: 'https://komplai.dk/publish' }
   },
   {
-    id: 'promte', name: 'Promte Apps', integrated: false,
-    summary: 'Promte oplyser EU-hosting eller eget miljø. Den konkrete opsætning skal bekræftes af organisationen.',
-    scope: 'Promte beskriver upload af egne AI-apps. Aura har endnu ingen uploadintegration til Promte.',
+    id: 'promte', name: 'Promte Apps', integrated: true,
+    summary: 'Apps i jeres Promte-arbejdsområde. Kræver konto, betalt aftale og administratoradgang.',
+    scope: 'Aura uploader en gennemgået React-kildepakke. Promte bygger og gennemgår den efter sin faste byggeopsætning. Den valgte Promte-installation skal understøtte kildekodeupload.',
     data: 'Aftal databehandling, AI-modtagere, adgang og drift med Promte og jeres administrator. Produktets sikkerhedsbeskrivelse er ikke en godkendelse af den app, I bygger.',
-    steps: ['Kontrollér, at jeres Promte-aftale omfatter egne apps, og få adgang til den relevante opsætning.', 'Læs Promtes krav til appen og dens AI-forbindelser, før koden tilpasses. Importformat og understøttelse af egen backend skal afklares.', 'Upload gennem Promtes forløb, og kontrollér det delte link med en bruger, der har den tilsigtede adgang.'],
+    steps: ['Installér Promtes officielle app-upload-værktøj. Vælg organisationens Promte-adresse i Aura, og log ind gennem værktøjets browserforløb.', 'Angiv app-arbejdsområdets ID fra Promte og mappen med kildekoden. Følg Promte-skillens byggeregler. Gem opsætningen og koden som en version.', 'Gennemgå filerne og de udeladte bygge- og værktøjsfiler. Udgiv til Promtes bygning og gennemgang. Følg den konkrete versions status, og afprøv appen i Promte med den tilsigtede bruger.'],
     links: { guide: 'https://promte.com/blog/byg-dine-egne-ai-apps-vi-hoster-dem', data: 'https://docs.promte.com/GDPR-hosting-og-databehandling-1a79a6ea8b0a80e2bc04f4e2b41bab42' }
   }
 ];
-function catalog() { return options.map(option => ({ ...option, checkedAt })); }
+function catalog() { return options.map(option => ({ ...option, checkedAt })).sort((a, b) => a.name.localeCompare(b.name, 'da')); }
 function link(id, kind) {
   const option = options.find(item => item.id === id);
   if (!option || !['guide', 'data', 'region'].includes(kind) || !option.links[kind]) throw Error('Denne hostingvejledning findes ikke.');
   return option.links[kind];
 }
 function guidance(enabled) {
-  const entry = enabled ? 'Auras knap Del står øverst i projektet og åbner Udgiv til test. Den findes; bed ikke brugeren undersøge, om appen har en Del-knap.' : 'Deling er slået fra. Brugeren kan slå den til under Indstillinger → Funktioner. Forklar gerne mulighederne, men udgiv ikke.';
-  return `${entry}\nIndbygget upload: komplai Run, Vercel og Azure Static Web Apps. komplai Run kræver kun login med komplai og en organisation med Run; Aura opretter appen og giver den en adresse som budget.komplai.run. Vercel og Azure kræver eksisterende konto, projekt og lokalt login i deres CLI. Vercel kræver en startversion; Aura opretter ikke ressourcer eller konti der. Sikkerhedskopi til GitHub deler kode, ikke et kørende testlink.\nUnder Andre steder at udgive findes vejledninger til Cloudflare Pages, Netlify Drop, GitHub Pages og Promte Apps. De vejledninger er ikke uploadintegrationer. Afklar frontend, backend, database, AI-modtagere og adgang før valg. Almindelige Python/Node-servere kan ikke udgives som statiske filer.\n${options.filter(o => !o.integrated).map(o => `${o.name}: ${o.scope}`).join('\n')}\nOplys ikke, at hosting er gratis eller udelukkende i EU uden at kontrollere de aktuelle vilkår og den konkrete opsætning. Region, leverandørens hjemland, CDN, logs og databehandleraftale er forskellige forhold. Brugeren godkender upload, adgang og omkostninger; du må ikke udgive fra agentens kommandoværktøj.`;
+  const entry = enabled ? 'Auras knap Del står øverst i projektet og åbner valget mellem Udgiv fra Aura og Se udgivelsesvejledning. Ingen udbyder anbefales eller vælges på forhånd. Den findes; bed ikke brugeren undersøge, om appen har en Del-knap.' : 'Deling er slået fra. Brugeren kan slå den til under Indstillinger → Funktioner. Forklar gerne mulighederne, men udgiv ikke.';
+  return `${entry}\nIntegrerede udgivelsesveje, alfabetisk: Azure Static Web Apps, Cloudflare Pages, GitHub Pages, komplai Run, Promte Apps og Vercel. Netlify Drop har vejledning, men ingen uploadintegration.\nAzure bruger browserlogin gennem Azure CLI og viser abonnementer og eksisterende Static Web Apps; SWA CLI udgiver efter gennemgang til harness-test. komplai Run og Promte Apps kræver konto og betalt aftale. komplai modtager færdige frontendfiler. Promte modtager kildekode gennem den officielle app-upload-kontrakt og kræver administratoradgang til app-arbejdsområdet.\nCloudflare Pages og GitHub Pages bruger manuelle GitHub-workflows. Aura kan efter særskilt gennemgang skrive opsætningen lokalt. Brugeren committer og pusher selv. Før Udgiv skal workflow og gemt Git-version matche GitHub; Udgiv starter én konkret kørsel. Cloudflares token gemmes i GitHubs Actions secrets, aldrig i projektet. Vercel bruger projektets eksisterende Git-integration, hvor push kan udgive automatisk; Aura viser status og starter ikke en manuel Vercel-upload.\nAfklar frontend, backend, database, AI-modtagere og adgang før valg. Almindelige Python/Node-servere kan ikke udgives som statiske filer. Sikkerhedskopi til GitHub udgiver ikke i sig selv et applink; et repository med tilsluttet hosting kan dog udløse udgivelse ved push.\nOplys ikke, at hosting er gratis eller udelukkende i EU uden at kontrollere de aktuelle vilkår og den konkrete opsætning. Region, leverandørens hjemland, CDN, logs og databehandleraftale er forskellige forhold. Brugeren godkender upload, adgang og omkostninger; du må ikke udgive fra agentens kommandoværktøj.`;
 }
 module.exports = { catalog, link, guidance };

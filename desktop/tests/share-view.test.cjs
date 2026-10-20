@@ -62,3 +62,14 @@ test('privat metadata modsagt af anonymt filmatch giver tydelig adgangsadvarsel'
  assert.match(summary.access.detail, /privat adgang.*uden login/); assert.equal(summary.verification.tone, 'warning');
  assert.doesNotMatch(summary.access.title, /Kun organisationen/);
 });
+
+test('Pages bevarer repository-stien, og Promte får ikke en opdigtet appadresse', () => {
+ const pages = { ...receipt, config: { provider: 'github-pages', repository: 'forening/side', branch: 'main' }, target: { name: 'side' }, url: 'https://forening.github.io/side/' };
+ assert.equal(view.identity(pages).address, 'forening.github.io/side/');
+ assert.match(view.destination(pages), /forening\/side.*main.*offentlig hjemmeside/);
+ const promte = { ...receipt, id: 'version:1', config: { provider: 'promte', workspaceId: 'workspace-1' }, target: { name: 'App', host: 'app.promte.dk' }, url: null, state: 'PREPARED' };
+ assert.equal(view.identity(promte).address, 'Åbnes i Promte');
+ assert.equal(view.receiptSummary(promte).publication.title, 'Upload afventer');
+ assert.notEqual(view.receiptSummary(promte).publication.tone, 'positive');
+ for (const state of ['BLOCKED', 'REJECTED']) assert.equal(view.receiptSummary({ ...promte, state }).publication.tone, 'warning');
+});
