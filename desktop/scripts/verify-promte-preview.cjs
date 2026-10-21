@@ -1,5 +1,5 @@
-// Forhåndsvisningen af en Promte-app i den rigtige app: Aura svarer appens init, beder om login,
-// opretter appen og sender appens kald videre. Promtes netværk er erstattet af lokale adaptere.
+// Forhåndsvisningen af en Promte-app i den rigtige app: Aura svarer kun appens init med integrationen slået til,
+// beder om login, opretter appen efter brugerens klik og sender appens kald videre. Promtes netværk er erstattet af lokale adaptere.
 const { _electron: electron } = require('playwright');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
@@ -32,35 +32,50 @@ addEventListener('message', event => {
     app = await electron.launch({ executablePath: require('electron'), args: [path.join(__dirname, '..'), '--user-data-dir=' + path.join(root, 'appdata')], env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined } });
     const window = await app.firstWindow(), errors = [];
     window.on('pageerror', error => errors.push(error.message));
-    await app.evaluate(({ dialog }, { project, modulePath }) => {
-      const require = process.getBuiltinModule('module').createRequire(modulePath), { PromtePreview } = require(modulePath);
+    await app.evaluate(({ dialog }, { project, modulePath, setupPath }) => {
+      const require = process.getBuiltinModule('module').createRequire(modulePath), { PromtePreview } = require(modulePath), { PromteSetup } = require(setupPath);
       dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [project] });
-      const calls = globalThis.promtePreviewCalls = []; let connected = false, linked = false;
-      PromtePreview.prototype.connect = async root => {
-        calls.push(['connect', root]);
-        if (!connected) return { active: true, connected: false, host: 'https://kodning.promte.dk' };
-        const created = !linked; linked = true;
-        return { active: true, connected: true, created, host: 'https://kodning.promte.dk', workspaceId: 'ws-ny', name: 'Moedereferat', settings: { workspaceId: 'ws-ny', version: 0, backendUrl: 'https://kodning.promte.dk/api', fetchProxy: true, user: { email: 'test@example.invalid' } } };
-      };
-      PromtePreview.prototype.login = async function (root) { calls.push(['login', root]); connected = true; return this.connect(root); };
+      // Promtes netværk er erstattet; Auras egen kobling, funktionsvalg og oprettelse kører uændret.
+      const calls = globalThis.promtePreviewCalls = []; let connected = false;
+      PromteSetup.prototype.state = async ({ host }) => { calls.push(['state', host]); return { host, connected, loginSource: connected ? 'aura' : null, email: connected ? 'test@example.invalid' : '' }; };
+      PromteSetup.prototype.login = async ({ host }) => { calls.push(['login', host]); connected = true; };
+      PromteSetup.prototype.createWorkspace = async ({ host, name }) => { calls.push(['create', host, name]); return { id: 'ws-ny', name, activeAppVersion: null }; };
+      const connect = PromtePreview.prototype.connect;
+      PromtePreview.prototype.connect = async function (root, options) { calls.push(['connect', root]); return connect.call(this, root, options); };
       PromtePreview.prototype.fetch = async (root, request) => { calls.push(['fetch', request.path, request.method]); return { status: 200, statusText: 'OK', headers: [['content-type', 'application/json']], body: new TextEncoder().encode(JSON.stringify({ models: [{ label: 'GPT test' }, { label: 'Claude test' }] })).buffer }; };
-    }, { project, modulePath: path.resolve(__dirname, '../core/promte-preview.cjs') });
+    }, { project, modulePath: path.resolve(__dirname, '../core/promte-preview.cjs'), setupPath: path.resolve(__dirname, '../core/provider-promte.cjs') });
+    const calls = () => app.evaluate(() => globalThis.promtePreviewCalls);
+    const capture = async name => { const png = await app.evaluate(async ({ BrowserWindow }) => (await BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).webContents.capturePage()).toPNG().toString('base64')); await fs.writeFile(path.join(root, name), Buffer.from(png, 'base64')); };
     await helpers.skipIntroduction(window); await window.click('#open'); await window.waitForSelector('#workspace:not([hidden])');
     await helpers.menuClick(window, '#attach-preview'); await window.fill('#preview-url', `http://127.0.0.1:${server.address().port}/`); await window.click('#preview-form button[type="submit"]');
-    // 1. Uden login: appen venter, og Aura tilbyder login i forhåndsvisningen.
+    // 1. Promte-integrationen er slået fra som standard: Aura svarer ikke appen og kontakter ikke Promte.
+    for (let i = 0; i < 50 && !(await calls()).some(c => c[0] === 'connect'); i++) await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    assert.ok((await calls()).some(c => c[0] === 'connect'), 'appen spurgte om forbindelse');
+    assert.deepEqual((await calls()).filter(c => c[0] !== 'connect'), [], 'ingen kontakt til Promte, før integrationen er slået til');
+    assert.equal(await window.locator('#promte-preview').isHidden(), true);
+    assert.equal(await window.frameLocator('#preview').locator('#status').textContent(), 'Venter på Promte');
+    // 2. Med integrationen slået til tilbyder Aura login i forhåndsvisningen.
+    const saved = await window.evaluate(() => window.harness.featuresSave({ scope: 'alle', values: { 'integration-promte': true } }));
+    assert.equal(saved.ok, true, saved.error);
     await window.locator('#promte-preview').filter({ hasText: 'Log ind med Promte' }).waitFor();
     assert.equal(await window.frameLocator('#preview').locator('#status').textContent(), 'Venter på Promte');
-    // 2. Efter login opretter Aura appen, og appen får forbindelse og data gennem Aura.
+    // 3. Login opretter ingen app. Aura spørger først, og appen oprettes med ét klik.
+    await window.click('#promte-preview');
+    await window.locator('#promte-preview').filter({ hasText: 'Opret appen Moedereferat i Promte' }).waitFor();
+    assert.equal((await calls()).some(c => c[0] === 'create'), false, 'login opretter ingen app');
+    await capture('promte-opret.png');
     await window.click('#promte-preview');
     await window.frameLocator('#preview').locator('#status').filter({ hasText: 'Forbundet' }).waitFor();
-    assert.equal(await window.frameLocator('#preview').locator('#status').textContent(), 'Forbundet · ws-ny · https://kodning.promte.dk/api · GPT test, Claude test');
+    assert.equal(await window.frameLocator('#preview').locator('#status').textContent(), 'Forbundet · ws-ny · https://app.promte.dk/api · GPT test, Claude test');
     assert.equal(await window.textContent('#promte-preview'), 'Promte · Moedereferat (ny app oprettet)');
-    const calls = await app.evaluate(() => globalThis.promtePreviewCalls);
-    assert.deepEqual(calls.filter(c => c[0] !== 'connect'), [['login', project], ['fetch', 'app-api/models?type=llm', 'GET']]);
-    assert.ok(calls.filter(c => c[0] === 'connect').every(c => c[1] === project));
+    const log = await calls();
+    assert.deepEqual(log.filter(c => ['login', 'create', 'fetch'].includes(c[0])), [['login', 'https://app.promte.dk'], ['create', 'https://app.promte.dk', 'Moedereferat'], ['fetch', 'app-api/models?type=llm', 'GET']]);
+    assert.ok(log.filter(c => c[0] === 'connect').every(c => c[1] === project));
+    // Projektet husker appen, så Del forvælger den samme.
+    assert.deepEqual((await window.evaluate(() => window.harness.deploymentSetup({ action: 'promte-link', config: {} }))).value.link, { host: 'https://app.promte.dk', workspaceId: 'ws-ny', name: 'Moedereferat' });
     assert.deepEqual(errors, []);
-    const png = await app.evaluate(async ({ BrowserWindow }) => (await BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).webContents.capturePage()).toPNG().toString('base64'));
-    await fs.writeFile(path.join(root, 'promte-forhaandsvisning.png'), Buffer.from(png, 'base64'));
-    console.log(JSON.stringify({ status: 'bestået', root, calls: calls.map(c => c[0]), limitations: ['lokale Promte-adaptere', 'testside i stedet for app-biblioteket'] }, null, 2));
+    await capture('promte-forhaandsvisning.png');
+    console.log(JSON.stringify({ status: 'bestået', root, calls: log.map(c => c[0]), limitations: ['lokale Promte-adaptere', 'testside i stedet for app-biblioteket'] }, null, 2));
   } finally { await app?.close(); server?.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

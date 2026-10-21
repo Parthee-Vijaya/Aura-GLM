@@ -1,5 +1,11 @@
 # Produktretning og beslutninger
 
+## Promte i forhåndsvisningen · komplai Run efter beta.1 · 21. oktober 2026
+
+Brugeren har flettet PR 12 med Promte-login, appvalg og forhåndsvisning med rigtige data ind i 0.5.0-beta.1. Forhåndsvisningen svarer kun en Promte-app, når Promte-integrationen er slået til. Aura opretter først en app i Promte, når brugeren vælger **Opret appen … i Promte**. Del er forudfyldt med Promtes standardadresse `https://app.promte.dk`; en anden installation angives af brugeren. Forhåndsvisningen bruger projektets koblede app eller den Promte, brugeren er logget ind på i Aura.
+
+komplai Run skal have en tilsvarende opbygning efter beta.1. Arbejdet begynder med at afklare, hvilke app-API'er komplai stiller til rådighed; Run er i dag statisk hosting uden data eller AI-proxy. Det er ikke implementeret.
+
 ## Del er altid synlig · aftalt til 0.5.0-beta.2 · 20. oktober 2026
 
 Brugeren har valgt, at Del-knappen altid skal være synlig, også når der endnu ikke er en app at dele. Et klik uden en app skal vise et kort, tydeligt næste trin. Den eksisterende udgivelsesgennemgang og brugerens godkendelse bevares.

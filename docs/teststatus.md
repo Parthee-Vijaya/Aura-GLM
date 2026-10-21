@@ -1,10 +1,33 @@
 # Teststatus før invitation
 
-Senest kontrolleret 20. oktober 2026. Afsnittene er daterede, så tidligere begrænsninger kan læses i deres sammenhæng. Dette er status for den aktuelle arbejdsmappe, ikke en erklæring om, at alle installationsfiler eller modeller er klar. Særskilt godkendte Git-handlinger, udgivelser og GitHub-kørsler fremgår af de enkelte afsnit.
+Senest kontrolleret 21. oktober 2026. Afsnittene er daterede, så tidligere begrænsninger kan læses i deres sammenhæng. Dette er status for den aktuelle arbejdsmappe, ikke en erklæring om, at alle installationsfiler eller modeller er klar. Særskilt godkendte Git-handlinger, udgivelser og GitHub-kørsler fremgår af de enkelte afsnit.
 
 [Gennemgangen før offentlig beta](offentliggoerelse.md) samler historik- og logkontrol samt de lokale prøver af README, hjemmeside og udgivelseskontrol. Den offentliggør ikke appen og ændrer ikke installationsstatus nedenfor.
 
+## Kandidat til 0.5.0-beta.1 efter PR 12 · 21. oktober 2026
+
+**Klar til brugerens releasegennemgang: skrevet, enhedstestet, afprøvet som pakket Apple Silicon-app og med native opgradering fra 0.4.0-beta.1. Alle tre pakker er bygget igen efter PR 12. De endelige Mac-filer til Apple Silicon og Intel er godkendt af Apple og består slutkontrollen. Windows-installationsfilens indhold samt lokale downloads, hjemmeside og opdateringsfeeds er kontrolleret. Ikke offentliggjort.** Kandidaten bygger på merge commit `a28e368` (PR 12) plus rettelserne nedenfor i arbejdsmappen. Kildekontrollen gentages mod det endelige releasecommit.
+
+- **PR 12 gennemgået og flettet:** Promte-login i Aura uden CLI, appliste og oprettelse af app i Del samt forhåndsvisning med rigtige data gennem en bro i hovedprocessen. Tokens bliver i hovedprocessen og gemmes krypteret; broen tillader kun Promtes app-API og chatkald til den koblede Promte-adresse.
+- **Rettelser efter gennemgangen:** Forhåndsvisningen svarer kun en Promte-app, når Promte-integrationen er slået til, og opretter først en app i Promte efter brugerens klik. Del er forudfyldt med `https://app.promte.dk`. Uden koblet app bruger forhåndsvisningen den Promte, brugeren er logget ind på i Aura. Log ud fjerner fortsat kun den lokale adgang.
+- **360 enhedsprøver består** på Node 22.23.3: samme udvalg som før plus `promte-preview.test.cjs`. De samme 27 Git-skrivende cases er bevidst udeladt; det er ikke den ufiltrerede testsuite.
+- **Electron:** `test:promte-preview`, `test:promte-share` og `test:deployment` består efter rettelserne; `test:tools` bestod på den flettede kode. Promte-prøven kører Auras egen kobling, funktionsvalg og oprettelse med lokale Promte-adaptere og viser, at Aura ikke kontakter Promte, før integrationen er slået til. Promte er ikke kørt i den pakkede app mod en rigtig server her; bidragyderen beskriver kørsler af kernemodulerne mod Promtes testservere.
+- **Pakkeindhold:** Kildekontrollen består på Apple Silicon, Intel og Windows: 101 appfiler, 32 profilfiler og de fastlåste OpenCode 1.18.33, Git 2.53.0 og Node 22.23.3. Runtime er genforberedt med kontrol mod låsefilen, og `npm ci` er kørt før pakningen.
+- **Pakket Apple Silicon-app:** Signatur og `test:package` består med isolerede brugerdata og begrænset PATH. Medfølgende værktøjer, pakkens projektfunktion, profiler og preview er afprøvet. Skærmen er visuelt gennemgået. Prøven opretter ingen commits.
+- **Mac-filer:** Seks nye Apple-indsendelser er Accepted: de to første DMG-filer og de endelige DMG- og ZIP-filer til Apple Silicon og Intel. Slutkontrollen består for begge arkitekturer: signaturer, vedhæftede appbilletter, distributionskontrol, kvitteringer, der matcher filerne, og 5.540 identiske poster i appen i DMG og ZIP. Intel er ikke afprøvet på fysisk hardware.
+- **Native opgradering fra 0.4.0-beta.1:** Den signerede 0.4-apps egen opdateringscontroller hentede den nye notariserede ZIP, og Squirrel.Mac installerede den. Projektfiler, forbindelse, krypteret testnøgle, designpakke og kladde er bevaret uden automatisk modelsendelse eller Git-skrivninger. Isolerede brugerdata og kontrolleret manuel genåbning; automatisk genstart er ikke afprøvet.
+- **Windows-installationsfil:** Den faktiske NSIS-fil er udpakket. Alle 2.534 payloadfiler og 2.426 runtimefiler matcher byggeoutput og runtime. Filen er 251.526.351 bytes med SHA-256 `c03b4c672a27a1c57aa8a85111e0e6b5f7e43d6fffad6f92a5201a67dfdf60a8`. Opdateringsmetadata matcher størrelse og SHA-512. Installationsfilen er usigneret.
+- **Downloads, side og feeds:** Alle tre installationsfiler er hentet gennem den lokale downloadside, og filnavne, størrelser og SHA-256 matcher. Repositoryets releasekontrol består mod en simuleret kladde med de faktiske filer og kvitteringer. Den samlede hjemmeside består med 12 skærmbilleder, 88 lokale links og ingen fejl eller vandret overløb, og alle tre genererede opdateringsfeeds matcher filernes størrelse og SHA-512. Det er lokal kontrol, ikke offentlig HTTP-adgang.
+
+**Releasefiler:** De fem programfiler, `release.json` og `SHA256SUMS.txt` ligger i `desktop/release/0.5.0-beta.1/r2-downloads/`. Kun disse syv filer skal uploades. Kvitteringer og slutkontrol ligger i `r2-final-arm64/` og `r2-final-intel/`, Windows-kontrollen i `r2-windows/installer-check.json`. Filerne i `downloads/` fra kandidaten 20. oktober indeholder ikke PR 12 og udgives ikke.
+
+**Ikke afprøvet på målplatform:** Fysisk Intel-Mac samt Windows-installation, første start, opdatering, afinstallation og SmartScreen. Promte i den pakkede app mod en rigtig Promte-server og nye eksterne Promte-, GitHub Pages- og Cloudflare Pages-udgivelser er ikke afprøvet.
+
+Lokal evidens: logs og rapporter i `/private/tmp/claude-501/-Users-bjornskalkam-GitHub-os-harness/8f624b89-9f41-4c8d-93d3-a9b418bb254c/scratchpad/` (bl.a. `fixed-unit.log`, `fix-promte-preview.log`, `r2-test-package-arm64.log`, `r2-native-upgrade.log`, `r2-download-check.log` og `r2-web/`). Der er ikke oprettet commits, tags, releases eller GitHub Actions-kørsler herfra; PR 12 er flettet efter brugerens godkendelse.
+
 ## Kandidat til 0.5.0-beta.1 · 20. oktober 2026
+
+Erstattet af kandidaten efter PR 12 ovenfor.
 
 **Klar til brugerens releasegennemgang: skrevet, enhedstestet og afprøvet som pakket Apple Silicon-app, inklusive native opgradering fra 0.4.0-beta.1. De endelige Mac-filer til både Apple Silicon og Intel er godkendt af Apple og består slutkontrollen. Windows-installationsfilens indhold samt lokale downloads, hjemmeside og opdateringsfeeds er kontrolleret. Ikke offentliggjort.** Kandidaten bygger på brugerens commit `5ab58c0` plus versionsopdatering, Windows-rettelsen og test-/dokumentationsændringerne beskrevet her. Kildekontrollen skal gentages mod det endelige releasecommit.
 

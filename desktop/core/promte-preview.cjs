@@ -1,12 +1,13 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const dns = require('node:dns/promises');
-const { PromteSetup, promteHost, addressFor } = require('./provider-promte.cjs');
+const { PromteSetup, promteHost, addressFor, DEFAULT_HOST } = require('./provider-promte.cjs');
 
 // En Promte-app venter på, at siden omkring den svarer på dens init. Inde i Promte gør Promte det.
-// I Auras forhåndsvisning svarer Aura: projektet kobles til en Promte-app, som oprettes første gang,
-// og appens kald sendes videre til Promte med et app-token, der bliver i hovedprocessen.
-const PREVIEW_HOST = 'https://kodning.promte.dk';
+// I Auras forhåndsvisning svarer Aura, når Promte-integrationen er slået til: projektet kobles til en Promte-app,
+// som brugeren opretter med ét klik første gang, og appens kald sendes videre til Promte med et app-token,
+// der bliver i hovedprocessen.
+const PREVIEW_HOST = DEFAULT_HOST;
 const TOKEN_LIFETIME = 10 * 60 * 1000;
 const MAX_BODY = 20 * 1024 * 1024;
 const ALLOWED_PATH = /^(?:app-api\/[A-Za-z0-9/_.-]*|openai\/chat\/completions)(?:\?[^#\s]*)?$/;
@@ -43,18 +44,26 @@ function body(input) {
 }
 
 class PromtePreview {
-  constructor(store, { setup, fetcher = (...args) => fetch(...args), lookup = dns.lookup, now = Date.now } = {}) {
-    this.store = store; this.setup = setup || new PromteSetup(store); this.fetcher = fetcher; this.lookup = lookup; this.now = now; this.tokens = new Map();
+  constructor(store, { setup, enabled = async () => true, fetcher = (...args) => fetch(...args), lookup = dns.lookup, now = Date.now } = {}) {
+    this.store = store; this.setup = setup || new PromteSetup(store); this.enabled = enabled; this.fetcher = fetcher; this.lookup = lookup; this.now = now; this.tokens = new Map();
   }
   async link(root) { return (await this.store.project(root)).promteApp || null; }
-  /** Svar på appens init. Opretter Promte-appen første gang, så brugeren ikke skal gøre det i Promte. */
-  async connect(root) {
-    if (!await isPromteProject(root)) return { active: false };
+  // Uden koblet app bruges den Promte, brugeren er logget ind på i Aura, ellers Promtes standardadresse.
+  async host(link) {
+    if (link?.host) return promteHost(link.host);
+    const logins = Object.entries((await this.store.read?.())?.hosting?.promte || {}).filter(([, login]) => Date.parse(login?.expiresAt) > this.now());
+    logins.sort((a, b) => Date.parse(b[1].expiresAt) - Date.parse(a[1].expiresAt));
+    return promteHost(logins[0]?.[0] || PREVIEW_HOST);
+  }
+  /** Svar på appens init. En ny Promte-app oprettes kun, når brugeren har valgt det (create). */
+  async connect(root, { create = false } = {}) {
+    if (!await isPromteProject(root) || !await this.enabled(root)) return { active: false };
     let link = await this.link(root);
-    const host = promteHost(link?.host || PREVIEW_HOST);
+    const host = await this.host(link);
     const state = await this.setup.state({ host });
     // Oprettelse kræver Auras eget login. En koblet app kan også bruge et login fra Promtes CLI.
     if (!state.connected || (!link && state.loginSource !== 'aura')) return { active: true, connected: false, host };
+    if (!link && !create) return { active: true, connected: true, linked: false, host, name: appName(root) };
     let created = false;
     if (!link) {
       const app = await this.setup.createWorkspace({ host, name: appName(root) });
@@ -65,10 +74,11 @@ class PromtePreview {
     return { active: true, connected: true, created, host, workspaceId: link.workspaceId, name: link.name, settings: { workspaceId: link.workspaceId, version: 0, backendUrl: host + '/api', fetchProxy: true, user: { email: state.email } } };
   }
   async login(root) {
-    const host = promteHost((await this.link(root))?.host || PREVIEW_HOST);
+    const host = await this.host(await this.link(root));
     await this.setup.login({ host });
     return this.connect(root);
   }
+  async create(root) { return this.connect(root, { create: true }); }
   async appToken(link, fresh = false) {
     const key = link.host + '|' + link.workspaceId, cached = this.tokens.get(key);
     if (!fresh && cached && this.now() - cached.at < TOKEN_LIFETIME) return cached.token;
@@ -79,6 +89,7 @@ class PromtePreview {
   }
   /** Sender ét kald fra appen videre til Promte. Kun appens egne API-stier og kun til den koblede Promte. */
   async fetch(root, request) {
+    if (!await this.enabled(root)) throw Error('Promte-integrationen er slået fra.');
     const link = await this.link(root);
     if (!link) throw Error('Projektet er ikke koblet til en Promte-app endnu.');
     const host = promteHost(link.host);

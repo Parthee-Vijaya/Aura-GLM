@@ -48,7 +48,7 @@ Login til udgivelse gemmes krypteret af Aura eller af kommandolinjeværktøjet i
 
 Kontrollér først, at `npx vite build` lykkes. Appen taler kun med Promte, når en Promte-side omkring den svarer. Åbnet direkte i en almindelig browser venter den på `ready`.
 
-- **I Aura:** Start forhåndsvisningen som for andre projekter. Aura svarer som Promte, så appen får rigtige modeller og data. Første gang beder Aura brugeren logge ind med Promte og opretter en app med projektets navn. Del bruger samme app senere.
+- **I Aura:** Start forhåndsvisningen som for andre projekter. Aura svarer som Promte, så appen får rigtige modeller og data. Når Promte-integrationen er slået til, beder Aura første gang brugeren logge ind med Promte og oprette en app med projektets navn. Del bruger samme app senere.
 - **I andre værktøjer:** Kør `npm run dev`, åbn appens arbejdsområde i Promte, vælg **Lokal forhåndsvisning til udvikling** under **Forhåndsvisning**, og indtast `http://localhost:5173`. Det kræver administratoradgang til arbejdsområdet.
 
 Appen skal vise, at den er forbundet, og en liste over modeller. Brug opdigtede data, aldrig rigtige borgeres oplysninger.

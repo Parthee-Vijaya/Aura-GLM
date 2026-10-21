@@ -44,8 +44,8 @@ const helpers = require('./ui-test-helpers.cjs');
     await page.click('#deploy-button'); await idle(); await page.click('#deployment-other');
     if (!await page.locator('[data-provider="promte"]').isVisible()) await page.click('#deployment-more-providers');
     await page.click('[data-provider="promte"]'); await idle();
-    // 1. Adressen er forudfyldt med hackathonens Promte, og der kræves ingen CLI.
-    assert.equal(await page.inputValue('#deploy-promte-host'), 'https://kodning.promte.dk');
+    // 1. Adressen er forudfyldt med Promtes standardadresse og kan ændres. Der kræves ingen CLI.
+    assert.equal(await page.inputValue('#deploy-promte-host'), 'https://app.promte.dk');
     await page.fill('#deploy-promte-host', 'https://staging.promte.dk'); await page.click('#deployment-promte-host-next'); await idle();
     assert.equal(await page.locator('[data-deploy-step="setupConnection"]').isVisible(), true);
     assert.equal(await page.locator('#deployment-connect').isVisible(), true);
@@ -70,7 +70,7 @@ const helpers = require('./ui-test-helpers.cjs');
     assert.deepEqual(log.filter(c => c[0] === 'login'), [['login', 'https://staging.promte.dk']]);
     assert.deepEqual(log.filter(c => c[0] === 'create'), [['create', 'https://staging.promte.dk', 'Mødebooking']]);
     assert.deepEqual(log.find(c => c[0] === 'deploy'), ['deploy', 'ws-ny', ['index.html', 'package.json', 'src/main.jsx']]);
-    assert.ok(log.every(c => c[1] !== 'https://kodning.promte.dk' || c[0] === 'state'), 'Den valgte adresse bruges hele vejen.');
+    assert.ok(log.every(c => c[1] !== 'https://app.promte.dk' || c[0] === 'state'), 'Den valgte adresse bruges hele vejen.');
     const receipt = (await page.evaluate(() => window.harness.deploymentState())).value.last;
     // Projektet husker appen, så forhåndsvisning og næste udgivelse bruger den samme.
     assert.deepEqual((await page.evaluate(() => window.harness.deploymentSetup({ action: 'promte-link', config: {} }))).value.link, { host: 'https://staging.promte.dk', workspaceId: 'ws-ny', name: 'Mødebooking' });

@@ -628,6 +628,7 @@ handle('preview:attach', value => exclusive(async () => {
 // Forhåndsvisningen af en Promte-app: Aura svarer som Promte og sender appens kald videre.
 handle('promte:preview-connect', async () => project ? promtePreview.connect(project.root) : { active: false });
 handle('promte:preview-login', async () => { if (!project) throw new Error('Åbn et projekt først.'); return promtePreview.login(project.root); });
+handle('promte:preview-create', async () => { if (!project) throw new Error('Åbn et projekt først.'); return promtePreview.create(project.root); });
 handle('promte:preview-fetch', async input => { if (!project) throw new Error('Åbn et projekt først.'); return promtePreview.fetch(project.root, input); });
 handle('preview:runtime', async () => ({ ...await devServer.status(), root: project?.root, workspaceRoot: selectedRoot }));
 // Kontrol af forhåndsvisningen efter en opgave: blev siden vist, og skrev den fejl i konsollen? Aura klikker ikke i siden.
@@ -841,7 +842,7 @@ app.whenReady().then(async () => {
   github = new GitHub(workbench.store); publishing = new Publishing({ store: workbench.store, git: workbench.git, provider: github });
   deployments = new Deployments(workbench.store, { github });
   deploymentSetup = new (require('./core/deployment-setup.cjs').DeploymentSetup)(workbench.store, github, deployments);
-  promtePreview = new (require('./core/promte-preview.cjs').PromtePreview)(workbench.store, { setup: deploymentSetup.promte });
+  promtePreview = new (require('./core/promte-preview.cjs').PromtePreview)(workbench.store, { setup: deploymentSetup.promte, enabled: async root => (await workbench.features.get(root)).effective['integration-promte'] === true });
   updates = new (require('./core/updates.cjs').Updates)({
     updater: app.isPackaged && ['darwin', 'win32'].includes(process.platform) ? require('electron-updater').autoUpdater : null,
     store: workbench.store, version: app.getVersion(), enabled: app.isPackaged,

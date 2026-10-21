@@ -21,8 +21,18 @@
         show('Godkend Aura i browseren …');
         const login = await window.harness.promtePreviewLogin();
         if (!login.ok) throw Error(login.error);
-        if (login.value?.created) createdApp = login.value.workspaceId;
         // Appen er holdt op med at spørge, mens brugeren loggede ind. En genindlæsning starter forbindelsen igen.
+        frame.src = frame.src;
+      });
+      return null;
+    }
+    // Aura opretter først en app i Promte, når brugeren vælger det.
+    if (!value.settings) {
+      show(`Opret appen ${value.name} i Promte`, async () => {
+        show('Opretter appen i Promte …');
+        const created = await window.harness.promtePreviewCreate();
+        if (!created.ok) throw Error(created.error);
+        if (created.value?.created) createdApp = created.value.workspaceId;
         frame.src = frame.src;
       });
       return null;
