@@ -237,4 +237,4 @@ class PromteSetup {
 }
 const RELEASE_STATES = new Map(Object.entries({ published: 'READY', reviewing: 'REVIEWING', pending: 'REVIEWING', building: 'BUILDING', blocked: 'BLOCKED', rejected: 'REJECTED', failed: 'ERROR' }));
 function releaseState(status) { return RELEASE_STATES.get(status) || 'UNKNOWN'; }
-module.exports = { PromteDeployment, PromteSetup, promteConfiguration, preparePromteArtifact, validatePromteArtifact, promteHost, publicAddress, releaseState, DEFAULT_HOST };
+module.exports = { PromteDeployment, PromteSetup, promteConfiguration, preparePromteArtifact, validatePromteArtifact, promteHost, publicAddress, addressFor, releaseState, DEFAULT_HOST };

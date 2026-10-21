@@ -34,6 +34,7 @@
     "test:preferences": "node scripts/verify-preferences.cjs",
     "test:deployment": "node scripts/verify-deployment.cjs",
     "test:promte-share": "node scripts/verify-promte-share.cjs",
+    "test:promte-preview": "node scripts/verify-promte-preview.cjs",
     "test:publishing-options": "node scripts/verify-publishing-options.cjs",
     "test:introduction": "node scripts/verify-introduction.cjs",
     "runtime:prepare": "node scripts/prepare-runtime.cjs",

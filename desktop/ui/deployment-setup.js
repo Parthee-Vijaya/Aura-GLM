@@ -51,14 +51,20 @@
     function promteWorkspaceId() { const value = $('#deploy-promte-workspace').value; return value === '__id__' ? $('#deploy-promte-workspace-id').value.trim() : value === '__new__' ? '' : value; }
     function promteFields() { const value = $('#deploy-promte-workspace').value; $('#deploy-promte-new').hidden = value !== '__new__'; $('#deploy-promte-manual').hidden = value !== '__id__'; }
     $('#deploy-promte-workspace').onchange = promteFields;
+    let promteNames = new Map();
     async function promteWorkspaces(state) {
       $('#deploy-promte-account').textContent = state.email ? `Logget ind som ${state.email}.` : state.loginSource === 'cli' ? 'Logget ind med Promtes kommandolinjeværktøj.' : '';
-      let items = [], note = '';
-      try { items = await act('promte-workspaces'); note = items.length ? 'Den nye version erstatter appens udgivne version, når den er godkendt.' : 'Du har endnu ingen apps, du kan udgive til. Opret en ny app.'; }
+      let items = [], note = '', linked = null, suggested = '';
+      try { ({ link: linked, suggestedName: suggested } = await act('promte-link')); } catch {}
+      try { items = await act('promte-workspaces'); note = items.length ? 'Den nye version erstatter appens udgivne version, når den er godkendt.' : 'Du har endnu ingen apps. Aura opretter en ny app til projektet.'; }
       catch (error) { note = `${error.message} Du kan indtaste arbejdsområdets ID i stedet.`; }
-      const keep = promteWorkspaceId() || promteSaved;
+      // Projektets app fra forhåndsvisningen eller en tidligere udgivelse vælges, også når den ikke står på listen.
+      if (linked?.workspaceId && !items.some(item => item.id === linked.workspaceId)) items.unshift({ id: linked.workspaceId, name: linked.name, activeAppVersion: null });
+      promteNames = new Map(items.map(item => [item.id, item.name]));
+      const keep = promteWorkspaceId() || promteSaved || linked?.workspaceId;
       $('#deploy-promte-workspace').replaceChildren(...items.map(item => new Option(item.activeAppVersion ? `${item.name} · version ${item.activeAppVersion}` : item.name, item.id)), new Option('Ny app …', '__new__'), new Option('Indtast ID …', '__id__'));
-      $('#deploy-promte-workspace').value = items.some(item => item.id === keep) ? keep : items.length ? items[0].id : note.includes('ID') ? '__id__' : '__new__';
+      $('#deploy-promte-workspace').value = items.some(item => item.id === keep) ? keep : linked ? '__new__' : note.includes('ID') ? '__id__' : '__new__';
+      if (!$('#deploy-promte-name').value) $('#deploy-promte-name').value = suggested || '';
       $('#deploy-promte-workspace-note').textContent = note; promteFields();
       go('promteWorkspace');
     }
@@ -171,10 +177,13 @@
     bind('#deployment-promte-workspace-next', async () => {
       if ($('#deploy-promte-workspace').value === '__new__') {
         const created = await act('promte-create', input(), { name: $('#deploy-promte-name').value });
-        $('#deploy-promte-workspace').add(new Option(created.name, created.id), 0); $('#deploy-promte-workspace').value = created.id; $('#deploy-promte-name').value = ''; promteFields();
+        $('#deploy-promte-workspace').add(new Option(created.name, created.id), 0); $('#deploy-promte-workspace').value = created.id; promteNames.set(created.id, created.name); $('#deploy-promte-name').value = ''; promteFields();
       }
       if (!promteWorkspaceId()) throw Error('Vælg en app, eller indtast arbejdsområdets ID.');
-      promteSaved = promteWorkspaceId(); go('files');
+      promteSaved = promteWorkspaceId();
+      const name = promteNames.get(promteSaved) || $('#deploy-promte-workspace').selectedOptions[0]?.textContent || promteSaved;
+      await act('promte-link-set', input(), { workspaceId: promteSaved, name: name === 'Indtast ID …' ? promteSaved : name });
+      go('files');
     });
     bind('#deployment-promte-logout', async () => { await act('promte-logout'); await loadConnection(); });
     bind('#deployment-repository-next', () => { if (!/^[\w.-]+\/[\w.-]+$/.test($('#deploy-repository').value.trim())) throw Error('Skriv repositoryet som organisation/projekt.'); go('pagesBranch'); });
@@ -226,7 +235,12 @@
     async function choose(id) {
       ++epoch; choice = null; choices.clear(); connection = null; gitProject = null;
       if (id === 'komplai') return false;
-      if (id === 'promte') { $('#deploy-directory').value = '.'; go('promteHost'); }
+      if (id === 'promte') {
+        $('#deploy-directory').value = '.';
+        // Brug samme Promte som projektets forhåndsvisning.
+        try { const { link } = await act('promte-link'); if (link?.host) $('#deploy-promte-host').value = link.host; } catch {}
+        go('promteHost');
+      }
       else if (id === 'vercel') go('vercelMethod');
       else await loadConnection();
       return true;

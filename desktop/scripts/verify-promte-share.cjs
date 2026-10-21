@@ -55,11 +55,11 @@ const helpers = require('./ui-test-helpers.cjs');
     await page.waitForSelector('[data-deploy-step="promteWorkspace"]:not([hidden])');
     assert.equal(await page.textContent('#deploy-promte-account'), 'Logget ind som test@example.invalid.');
     assert.deepEqual(await page.locator('#deploy-promte-workspace option').evaluateAll(items => items.map(item => [item.value, item.textContent])), [['ws-budget', 'Budget · version 2'], ['__new__', 'Ny app …'], ['__id__', 'Indtast ID …']]);
-    assert.equal(await page.inputValue('#deploy-promte-workspace'), 'ws-budget');
-    // 3. En ny app oprettes med det indtastede navn og bliver destinationen.
-    await page.selectOption('#deploy-promte-workspace', '__new__');
+    // 3. Et projekt uden Promte-app får en ny app med projektets navn som forslag.
+    assert.equal(await page.inputValue('#deploy-promte-workspace'), '__new__');
     assert.equal(await page.locator('#deploy-promte-new').isVisible(), true);
-    await page.click('#deployment-promte-workspace-next'); await idle();
+    assert.equal(await page.inputValue('#deploy-promte-name'), 'Projekt');
+    await page.fill('#deploy-promte-name', ''); await page.click('#deployment-promte-workspace-next'); await idle();
     assert.match(await page.textContent('#deployment-feedback'), /navn|ID/);
     await page.fill('#deploy-promte-name', 'Mødebooking'); await page.click('#deployment-promte-workspace-next'); await idle();
     await page.waitForSelector('[data-deploy-step="files"]:not([hidden])');
@@ -72,6 +72,8 @@ const helpers = require('./ui-test-helpers.cjs');
     assert.deepEqual(log.find(c => c[0] === 'deploy'), ['deploy', 'ws-ny', ['index.html', 'package.json', 'src/main.jsx']]);
     assert.ok(log.every(c => c[1] !== 'https://kodning.promte.dk' || c[0] === 'state'), 'Den valgte adresse bruges hele vejen.');
     const receipt = (await page.evaluate(() => window.harness.deploymentState())).value.last;
+    // Projektet husker appen, så forhåndsvisning og næste udgivelse bruger den samme.
+    assert.deepEqual((await page.evaluate(() => window.harness.deploymentSetup({ action: 'promte-link', config: {} }))).value.link, { host: 'https://staging.promte.dk', workspaceId: 'ws-ny', name: 'Mødebooking' });
     assert.equal(receipt.config.workspaceId, 'ws-ny'); assert.equal(receipt.state, 'REVIEWING');
     assert.match(await page.locator('#deployment-result').innerText(), /Mødebooking/, 'Resultatet viser appens navn.');
     assert.deepEqual(errors, []);
