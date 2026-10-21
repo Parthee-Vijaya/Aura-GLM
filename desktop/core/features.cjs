@@ -21,7 +21,8 @@ function couple(definitions, values) {
 }
 
 function recommended(definitions, state) {
-  const publishing = Boolean(state.hosting?.komplai?.secret);
+  // Et login til udgivelse hos komplai eller Promte gør Del til en anbefalet funktion.
+  const publishing = Boolean(state.hosting?.komplai?.secret) || Object.values(state.hosting?.promte || {}).some(login => login?.secret);
   return publishing ? definitions.map(feature => feature.id === 'deling' ? { ...feature, default: true } : feature) : definitions;
 }
 class Features {

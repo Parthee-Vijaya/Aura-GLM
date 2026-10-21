@@ -42,7 +42,8 @@ addEventListener('message', event => {
         const created = !linked; linked = true;
         return { active: true, connected: true, created, host: 'https://kodning.promte.dk', workspaceId: 'ws-ny', name: 'Moedereferat', settings: { workspaceId: 'ws-ny', version: 0, backendUrl: 'https://kodning.promte.dk/api', fetchProxy: true, user: { email: 'test@example.invalid' } } };
       };
-      PromtePreview.prototype.login = async function (root) { calls.push(['login', root]); connected = true; return this.connect(root); };
+      // Som det rigtige login gemmes en krypteret Promte-adgang, så Del bliver anbefalet.
+      PromtePreview.prototype.login = async function (root) { calls.push(['login', root]); connected = true; await this.store.update(state => { state.hosting = { ...state.hosting, promte: { 'https://kodning.promte.dk': { secret: 'krypteret', email: 'test@example.invalid', expiresAt: '2099-01-01T00:00:00.000Z' } } }; }); return this.connect(root); };
       PromtePreview.prototype.fetch = async (root, request) => { calls.push(['fetch', request.path, request.method]); return { status: 200, statusText: 'OK', headers: [['content-type', 'application/json']], body: new TextEncoder().encode(JSON.stringify({ models: [{ label: 'GPT test' }, { label: 'Claude test' }] })).buffer }; };
     }, { project, modulePath: path.resolve(__dirname, '../core/promte-preview.cjs') });
     await helpers.skipIntroduction(window); await window.click('#open'); await window.waitForSelector('#workspace:not([hidden])');
@@ -50,11 +51,13 @@ addEventListener('message', event => {
     // 1. Uden login: appen venter, og Aura tilbyder login i forhåndsvisningen.
     await window.locator('#promte-preview').filter({ hasText: 'Log ind med Promte' }).waitFor();
     assert.equal(await window.frameLocator('#preview').locator('#status').textContent(), 'Venter på Promte');
+    assert.equal(await window.locator('#deploy-button').isHidden(), true, 'Del er skjult før login');
     // 2. Efter login opretter Aura appen, og appen får forbindelse og data gennem Aura.
     await window.click('#promte-preview');
     await window.frameLocator('#preview').locator('#status').filter({ hasText: 'Forbundet' }).waitFor();
     assert.equal(await window.frameLocator('#preview').locator('#status').textContent(), 'Forbundet · ws-ny · https://kodning.promte.dk/api · GPT test, Claude test');
     assert.equal(await window.textContent('#promte-preview'), 'Promte · Moedereferat (ny app oprettet)');
+    await window.locator('#deploy-button').waitFor({ state: 'visible', timeout: 10000 });
     const calls = await app.evaluate(() => globalThis.promtePreviewCalls);
     assert.deepEqual(calls.filter(c => c[0] !== 'connect'), [['login', project], ['fetch', 'app-api/models?type=llm', 'GET']]);
     assert.ok(calls.filter(c => c[0] === 'connect').every(c => c[1] === project));

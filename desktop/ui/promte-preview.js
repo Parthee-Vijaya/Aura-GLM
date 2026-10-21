@@ -22,6 +22,8 @@
         const login = await window.harness.promtePreviewLogin();
         if (!login.ok) throw Error(login.error);
         if (login.value?.created) createdApp = login.value.workspaceId;
+        // Promte-login gør Del anbefalet, så knappen til at udgive vises med det samme.
+        await window.refreshFeatures?.();
         // Appen er holdt op med at spørge, mens brugeren loggede ind. En genindlæsning starter forbindelsen igen.
         frame.src = frame.src;
       });

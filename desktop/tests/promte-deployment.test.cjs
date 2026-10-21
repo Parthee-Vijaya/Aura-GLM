@@ -118,6 +118,7 @@ test('Promte kræver dokumenteret source-capability og adgang uden at udlevere t
   const target = await provider.inspect(config);
   assert.equal(target.id, config.workspaceId);
   assert.deepEqual(target.uploadDestinations, [HOST, 'https://app.promte.dk']);
+  assert.equal(target.portal, HOST + '/workspaces/workspace-123', 'Åbn appen i Promte fører direkte til appen');
   // Kapabiliteter og appens navn hentes begge fra den valgte vært.
   assert.deepEqual(reads, [HOST, HOST]);
   assert.equal(target.name, config.workspaceId, 'uden appliste vises ID\'et');

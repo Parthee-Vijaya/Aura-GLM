@@ -196,7 +196,7 @@
     rows('#deployment-receipt', [['Gemt version', view.version(r)], ['Upload påbegyndt', view.time(r.startedAt)], ['Versionens ID', r.head], ['Indholdets fingeraftryk', r.hash], ['Senest registrerede udbyderstatuskode', r.state], ['Adresse', r.url], ['Adgang rapporteret ved upload', r.target.access], ['Seneste kontrol', r.checkedAt ? view.time(r.checkedAt) : 'Ingen kontrol registreret']]);
     const primary = $('#deployment-main-actions'), secondary = $('#deployment-extra-actions');
     for (const id of ['check', 'open', 'portal', 'new']) { const button = $('#deployment-' + id); button.classList.remove('primary'); secondary.append(button); }
-    $('#deployment-open').textContent = ['komplai', 'promte', 'github-pages', 'cloudflare'].includes(r.config.provider) ? 'Åbn appen' : 'Åbn testlink'; $('#deployment-portal').textContent = isKomplai ? 'Åbn i komplai' : isPromte ? 'Åbn Promte' : 'Åbn hos udbyderen';
+    $('#deployment-open').textContent = ['komplai', 'promte', 'github-pages', 'cloudflare'].includes(r.config.provider) ? 'Åbn appen' : 'Åbn testlink'; $('#deployment-portal').textContent = isKomplai ? 'Åbn i komplai' : isPromte ? 'Åbn appen i Promte' : 'Åbn hos udbyderen';
     $('#deployment-check').textContent = isPromte ? 'Kontrollér status' : 'Kontrollér status og startside';
     $('#deployment-check').hidden = !r.id; $('#deployment-open').hidden = !r.url; $('#deployment-portal').hidden = !r.target.portal;
     const problem = !r.id || ['UNKNOWN', 'ERROR'].includes(r.state) || r.checks?.provider.status === 'unknown';

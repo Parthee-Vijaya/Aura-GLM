@@ -998,6 +998,8 @@ $('#model-done').onclick = () => { if (!$('#connection-select').value || !$('#mo
 // Funktioner: brugeren slår dem til og fra under Indstillinger › Funktioner. Et fravalg skjuler handlingen; filer og historik bevares.
 const featureOn = id => state?.features?.effective?.[id] !== false;
 const defaultMode = () => 'chat';
+// Et login uden for funktionsdialogen, fx Promte i forhåndsvisningen, kan ændre de anbefalede funktioner.
+window.refreshFeatures = async () => { state.features = await call('featuresGet'); applyFeatures(); };
 function applyFeatures() {
   $('#git-button').hidden = !featureOn('versioner');
   for (const id of ['#deploy-button', '#publish-button', '#setup-hosting', '#startup-hosting-row']) $(id).hidden = !featureOn('deling');

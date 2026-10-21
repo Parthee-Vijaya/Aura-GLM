@@ -136,7 +136,7 @@ class PromteDeployment {
     // Appens navn vises, hvor Promte kan oplyse det. Ældre installationer viser ID'et.
     let name = c.workspaceId;
     try { const found = (await this.call(c.host, '/api/app-upload/workspaces')).workspaces?.find(w => w?.id === c.workspaceId); if (typeof found?.name === 'string' && found.name.trim()) name = found.name.slice(0, 200); } catch {}
-    return { id: c.workspaceId, name, owner: new URL(c.host).hostname, host: new URL(c.host).hostname, portal: c.host, region: 'Afhænger af jeres Promte-installation og dens tjenester.', settings: { uploadMode: 'source' }, environmentKeys: [], access: 'Adgang styres i Promte-arbejdsområdet. Kontrollér den med den tilsigtede bruger.', accountRequired: ACCOUNT_REQUIRED, uploadDestinations: [...new Set([c.host, DEFAULT_HOST])], materialNote: 'Kildekoden sendes til den valgte Promte-installation eller Promtes fælles uploadtjeneste på app.promte.dk. Promte bygger og gennemgår versionen.' };
+    return { id: c.workspaceId, name, owner: new URL(c.host).hostname, host: new URL(c.host).hostname, portal: `${c.host}/workspaces/${encodeURIComponent(c.workspaceId)}`, region: 'Afhænger af jeres Promte-installation og dens tjenester.', settings: { uploadMode: 'source' }, environmentKeys: [], access: 'Adgang styres i Promte-arbejdsområdet. Kontrollér den med den tilsigtede bruger.', accountRequired: ACCOUNT_REQUIRED, uploadDestinations: [...new Set([c.host, DEFAULT_HOST])], materialNote: 'Kildekoden sendes til den valgte Promte-installation eller Promtes fælles uploadtjeneste på app.promte.dk. Promte bygger og gennemgår versionen.' };
   }
   async deploy(input, artifact, target, { onUploaded = async () => {} } = {}) {
     const c = promteConfiguration(input); validatePromteArtifact(artifact);

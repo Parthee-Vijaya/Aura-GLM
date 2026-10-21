@@ -137,3 +137,16 @@ test('appens regler følger funktionerne', () => {
   assert.doesNotMatch(full, /integrationer til/);
   assert.match(appRules(all, { integrations: ['Adresser', 'CVR'] }), /slået disse integrationer til: Adresser, CVR\. .*\.env/);
 });
+
+// Et Promte-login gør Del anbefalet, så brugeren kan udgive den app, Aura har forbundet til Promte.
+test('et Promte-login slår Deling og udgivelse til som standard, men respekterer et eget valg', async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'harness-promte-deling-')); t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const library = await loadLibrary(profiles), store = new Store(path.join(root, 'appdata'));
+  const features = new Features(store, async () => library);
+  assert.equal((await features.get(null)).effective.deling, false);
+  await store.update(state => { state.hosting = { ...state.hosting, promte: { 'https://kodning.promte.dk': { secret: 'krypteret', email: 'test@example.invalid', expiresAt: '2099-01-01T00:00:00.000Z' } } }; });
+  const after = await features.get(null);
+  assert.equal(after.effective.deling, true); assert.equal(after.effective.versioner, true, 'Del kræver versioner');
+  await features.save(null, { scope: 'alle', chosen: 'valgt', values: { versioner: true, planlaegning: false, design: false, sikkerhed: false, kvalitet: false, deling: false } });
+  assert.equal((await features.get(null)).effective.deling, false, 'brugerens eget fravalg gælder');
+});
