@@ -1,6 +1,6 @@
 ---
 name: harness-integration-promte
-description: Bygger en app, der kører i et Promte-arbejdsområde og bruger Promtes modeller, vidensbaser og data via app-biblioteket, og uploader kildekoden med Promtes kommandolinjeværktøj. Forklarer byggeregler, login, nøgler og godkendelse. Brug den, når projektet skal blive en Promte-app.
+description: Bygger en app, der kører i et Promte-arbejdsområde og bruger Promtes modeller, vidensbaser og data via app-biblioteket, og udgiver kildekoden fra Auras Del eller med Promtes kommandolinjeværktøj. Forklarer byggeregler, login, nøgler og godkendelse. Brug den, når projektet skal blive en Promte-app.
 ---
 
 # Promte
@@ -15,23 +15,28 @@ En Promte-app er en React-app, der kører i en iframe i et arbejdsområde i Prom
 
 ## Projektet
 
-Promte bygger med en fast React- og Vite-opsætning. Detaljer og fejlbeskeder står i `references/promte.md`.
+Promte bygger med en fast React- og Vite-opsætning. Detaljer, skabelon og fejlbeskeder står i `references/promte.md`.
 
-- Pak appen ind i `PromteAppProvider`. Kald `usePromte()` og `usePromteClient()` ubetinget øverst i komponenten, og vent på `ready`, før du kalder klientens API.
-- Vælg model fra `client.models()`. Skriv aldrig model-id'er fast i koden.
-- Læg `react`, `react-dom` og `@promte/app-library` under `devDependencies`. Promte leverer selv de versioner, appen bygges med.
-- Upload ikke byggekonfiguration som `vite.config.js`, `tailwind.config.js` eller `postcss.config.js`. Brug almindelig CSS.
+- Pak appen ind i `PromteAppProvider`. Kald `usePromte()` og `usePromteClient()` ubetinget øverst i komponenten, og vent på `ready`, før du kalder klientens API. Vis `error`, hvis forbindelsen fejler.
+- Hent modeller med `usePromteModels({ type: "llm", configuredOnly: true })` eller `client.models(...)`, og lad brugeren vælge. Skriv aldrig model-id'er fast i koden.
+- Tekst fra en model: `await client.chatText({ model, messages })` giver svaret som tekst. En besked er `{ role: "system" | "user" | "assistant", content }`.
+- Gem appens data med `client.data("private").ref("sti")`, som tilhører den enkelte bruger. `"public"` deles i arbejdsområdet, og kun administratorer kan skrive der. `get()` giver `null`, når intet er gemt. Gem kun det nødvendige, og begræns lister, fx til de seneste 20.
+- Læg `react`, `react-dom` og `@promte/app-library` under `devDependencies`. Promte leverer selv de versioner, appen bygges med. Installér med `npm install --legacy-peer-deps`, fordi app-biblioteket endnu angiver React 18.
+- Lav ingen `vite.config.js`, `tailwind.config.js` eller `postcss.config.js`. Promte bygger med sin egen opsætning, og JSX virker uden. Brug almindelig CSS.
 - Andre npm-pakker skal have en fast version eller være låst i `package-lock.json`. Højst 20 pakker.
+- Tekst, brugeren skriver, sendes gennem Promte til organisationens modeller. Kan brugeren skrive personoplysninger, fx navne i mødenoter, så sig det i appen, og bed om at udelade det, der ikke er nødvendigt.
 
 ## Nøgler
 
 Læg aldrig nøgler, adgangskoder eller tokens i browserkode, chat, logs eller versioner, og læg dem heller ikke i projektets `.env`. Skal appen kalde en anden tjeneste med en nøgle, så brug en backend-funktion i appen og en forbindelse, som en administrator har oprettet i Promte. Nøglen bliver på Promtes server.
 
-Login til upload gemmes af kommandolinjeværktøjet i brugerens egen mappe, `~/.config/promte/credentials.json`, ikke i projektet. Bed aldrig brugeren indsætte et token i chatten.
+Login til udgivelse gemmes krypteret af Aura eller af kommandolinjeværktøjet i brugerens egen mappe, `~/.config/promte/credentials.json`, aldrig i projektet. Bed aldrig brugeren indsætte et token i chatten.
 
-## Upload
+## Udgivelse
 
-Kommandoerne henter en pakke fra npm. Kør dem kun, når brugeren har sagt ja til det.
+**I Aura** udgiver brugeren selv med **Del → Promte**. Aura logger ind i browseren, viser brugerens apps eller opretter en ny og sender den gemte version. Kør ikke upload-kommandoer fra Aura. Når appen bygger lokalt, så foreslå, at brugeren gemmer en version og bruger Del. Fejl fra Promtes bygning vises i Del, så ret dem og gem en ny version.
+
+**I andre kodeværktøjer** bruges Promtes kommandolinjeværktøj. Kommandoerne henter en pakke fra npm. Kør dem kun, når brugeren har sagt ja til det.
 
 1. `npx @promte/app-upload login`. Brugeren godkender i browseren. Brug `--host` med organisationens Promte-adresse, hvis den ikke er `https://app.promte.dk`.
 2. `npx @promte/app-upload config --host <adresse> --workspaceId <id>`. Brug samme Promte-adresse som ved login. Id'et står i adressen på appens arbejdsområde.
@@ -40,7 +45,12 @@ Kommandoerne henter en pakke fra npm. Kør dem kun, når brugeren har sagt ja ti
 
 ## Afprøvning
 
-Kør `npm run dev`, og åbn appens arbejdsområde i Promte. Vælg **Lokal forhåndsvisning til udvikling** under **Forhåndsvisning**, og indtast `http://localhost:5173`. Appen skal vise, at `ready` er sand, og en liste over modeller fra `client.models()`. Brug opdigtede data, aldrig rigtige borgeres oplysninger.
+Kontrollér først, at `npx vite build` lykkes. Appen kan kun tale med Promte inde i Promte. Åbnet direkte i browseren venter den på `ready`.
+
+- **Med administratoradgang til arbejdsområdet:** Kør `npm run dev`, åbn arbejdsområdet i Promte, vælg **Lokal forhåndsvisning til udvikling** under **Forhåndsvisning**, og indtast `http://localhost:5173`.
+- **Ellers:** Brugeren kan oprette sin egen app i Del og afprøve den udgivne version i Promte.
+
+Appen skal vise, at den er forbundet, og en liste over modeller. Brug opdigtede data, aldrig rigtige borgeres oplysninger.
 
 ## Bestilling til IT
 
