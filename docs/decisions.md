@@ -1,5 +1,11 @@
 # Produktretning og beslutninger
 
+## Del er altid synlig · aftalt til 0.5.0-beta.2 · 20. oktober 2026
+
+Brugeren har valgt, at Del-knappen altid skal være synlig, også når der endnu ikke er en app at dele. Et klik uden en app skal vise et kort, tydeligt næste trin. Den eksisterende udgivelsesgennemgang og brugerens godkendelse bevares.
+
+Ændringen hører til beta.2 og er endnu ikke implementeret. Den allerede pakkede 0.5.0-beta.1 færdiggøres med den nuværende brugerflade.
+
 ## komplai kun til udgivelse · 20. oktober 2026
 
 Brugeren har besluttet at fjerne komplai som AI-udbyder i Aura og terminalværktøjet. komplai Run bevares under Del, inklusive browserlogin og særskilt udgivelsesadgang. Dette erstatter det tidligere fælles AI-/Publish-forløb beskrevet nedenfor.

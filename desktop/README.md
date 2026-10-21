@@ -495,9 +495,9 @@ Afslutningen viser ændrede tekstfiler registreret i den enkelte opgave og **Kon
 
 ## Installationspakker · beta
 
-### Aktuel udgivelse · 18. oktober 2026
+### Udgivelser
 
-`0.4.0-beta.1` er offentliggjort og kan hentes fra [downloadsiden](https://ai-alliancen-org.github.io/ai-harness/desktop.html) uden login. Begge Mac-pakker er signerede og notariserede; Windows-pakken er usigneret og indholdskontrolleret. [Teststatus](../docs/teststatus.md) beskriver den faktiske afprøvning, herunder de platformsprøver, der mangler. [Udgivelsesvejledningen](../docs/udgivelse.md) beskriver pakning, kildekontrol og de særskilte manuelle Releases- og Pages-kørsler. Den separate terminaludgivelse `cli-v0.2.0-beta.6` er også offentlig.
+[Downloadsiden](https://ai-alliancen-org.github.io/ai-harness/desktop.html) viser den seneste offentliggjorte desktopbeta og dens udgivelsesnoter. En lokal kandidat vises først efter offentliggørelse i GitHub Releases og den særskilte Pages-kørsel. [Noterne til 0.5.0-beta.1](../docs/releases/0.5.0-beta.1.md) og [teststatus](../docs/teststatus.md) beskriver kandidatens faktiske afprøvning. [Udgivelsesvejledningen](../docs/udgivelse.md) beskriver pakning, kildekontrol og de manuelle udgivelsestrin. Terminalpakken har sit eget versionsnummer og udgivelsesforløb.
 
 ### Demogennemgang · 7. oktober 2026
 
@@ -524,7 +524,7 @@ npm run test:package -- "release/mac-arm64/Aura.app"
 npm run release:site
 ```
 
-`test:package` starter den pakkede app med isoleret brugerdata og begrænset PATH, kontrollerer medfølgende værktøjer, opretter et syntetisk projekt og viser preview. Den nulstiller aldrig macOS-nøgleringen. Downloadfiler og den genererede downloadside ligger i `desktop/release/` og skal distribueres separat, ikke committes som binære filer. Bygning uploader ikke noget. Downloadsiden viser kun faktiske filer og SHA-256; den opfinder ikke publicerede links.
+`test:package` starter den pakkede app med isoleret brugerdata og begrænset PATH, kontrollerer medfølgende værktøjer og åbner syntetiske projektfiler fra pakkens projektfunktion i preview. Prøven foretager ingen Git-skrivninger og dækker derfor ikke automatisk versionsgemning ved projektoprettelse eller knappen Gem version. Den nulstiller aldrig macOS-nøgleringen. Downloadfiler og den genererede downloadside ligger i `desktop/release/` og skal distribueres separat, ikke committes som binære filer. Bygning uploader ikke noget. Downloadsiden viser kun faktiske filer og SHA-256; den opfinder ikke publicerede links.
 
 Workflowet **Byg testpakker** har kun manuel start. Fra 10. oktober 2026 kræver hver konkret kørsel brugerens udtrykkelige tilladelse, også efter commit/push. Byg lokalt som udgangspunkt; et ønske om installationsfiler er ikke tilladelse til at bruge GitHub-minutter. Workflowet uploader byggeartefakter til den konkrete GitHub Actions-kørsel, ikke en offentlig Release. Mac-pakker fra workflowet er usignerede, medmindre en særskilt godkendt signeringsopsætning tilføjes. Kildearkiver og tredjepartslicenser følger med runtime; projektets egen kode er under EUPL-1.2; se LICENSE.
 

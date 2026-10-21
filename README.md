@@ -83,7 +83,7 @@ Når du har en Aura-installation, kan du vælge **Prøv et eksempel** ved opstar
 
 *Et lokalt eksempel, der viser samspillet mellem besked og forhåndsvisning. Der foretages ingen modelkald.*
 
-[Hent Aura til Mac eller Windows](https://ai-alliancen-org.github.io/ai-harness/desktop.html). Beta 0.2.0-beta.6 er offentliggjort 15. oktober 2026 og kan hentes uden GitHub-login. Begge Mac-pakker er signerede og notariserede; Windows-pakken er usigneret. Se [udgivelsesnoter](https://github.com/ai-alliancen-org/ai-harness/releases/tag/v0.2.0-beta.6) og [platformsafprøvning](docs/teststatus.md).
+[Hent Aura til Mac eller Windows](https://ai-alliancen-org.github.io/ai-harness/desktop.html) uden GitHub-login. Downloadsiden viser den seneste offentliggjorte beta og dens udgivelsesnoter. Mac-pakkerne er signerede og notariserede; Windows-pakken er usigneret. Se [platformsafprøvning](docs/teststatus.md) for den konkrete version.
 
 ### Start fra kildekoden
 

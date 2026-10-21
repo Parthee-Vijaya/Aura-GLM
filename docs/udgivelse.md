@@ -36,7 +36,7 @@ node scripts/release-site.cjs release/udgivelseskandidat
 
 Erstat mappen med den faktiske mappe. Scriptet danner `release.json`, `SHA256SUMS.txt` og en lokal downloadside. Det læser versionen fra filnavnene og afviser blandede versioner. En Mac-kvittering tæller kun, hvis den har status Accepted, et indsendelses-id, en kontroldato og samme SHA-256 som filen. En kvittering er lokal dokumentation; Linux-kontrollen hos GitHub foretager ikke selv Apples signatur- eller billetkontrol.
 
-Afprøv download med `node scripts/verify-download.cjs release/udgivelseskandidat`. Installationsfiler, Apple-kvitteringer og lokale rapporter skal ikke committes. Udgivelsesnoterne skal beskrive faktisk signering og afprøvning samt kendte begrænsninger. Se [udgivelsesnoterne for 0.4.0-beta.1](releases/0.4.0-beta.1.md).
+Afprøv download med `node scripts/verify-download.cjs release/udgivelseskandidat`. Installationsfiler, Apple-kvitteringer og lokale rapporter skal ikke committes. Udgivelsesnoterne skal beskrive faktisk signering og afprøvning samt kendte begrænsninger. Se [udgivelsesnoterne for 0.5.0-beta.1](releases/0.5.0-beta.1.md).
 
 ## Kontrol af Komplai Run
 
@@ -46,7 +46,7 @@ En gammel Komplai-AI-forbindelse må ikke kunne hente modeller eller sende opgav
 
 ## Fra gennemgang til offentlig download
 
-1. Brugeren gennemgår, committer og pusher kildekoden og opretter et versionstag, fx `v0.3.0-beta.1`, på det gennemgåede commit. Tagget skal pege på samme commit som den `main`, workflowet startes fra. Ingen tag oprettes af workflowet.
+1. Brugeren gennemgår, committer og pusher kildekoden og opretter et versionstag, fx `v0.5.0-beta.1`, på det gennemgåede commit. Tagget skal pege på samme commit som den `main`, workflowet startes fra. Ingen tag oprettes af workflowet.
 2. Opret en **kladde** i GitHub Releases med det eksisterende tag og betamarkeringen slået til. Upload præcis de fem programfiler, `release.json` og `SHA256SUMS.txt`. Brug de gennemgåede udgivelsesnoter. Upload ikke lokale logs, Apple-loginoplysninger, builderens foreløbige YAML-filer eller testdata.
 3. Giv udtrykkelig tilladelse til den konkrete kørsel af **Offentliggør gennemgået desktopbeta**. Vælg `main`, angiv tagget og bekræft offentliggørelsen. Workflowet bygger ikke nye installationsfiler.
 4. Workflowet kontrollerer tag, version, offentlig adgang, kladdens indhold, størrelser, SHA-256, SHA-512 og Mac-kvitteringer. Det downloader og kontrollerer de faktiske installationsfiler. Manglende eller ændrede oplysninger stopper udgivelsen.

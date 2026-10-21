@@ -39,7 +39,7 @@ test('ændrede projektregler stopper afsendelse før motorstart, også når file
   const bench = new Workbench({ directory: await temp(t), profiles, emit: () => {}, safeStorage: {}, engineFactory: () => { starts++; throw Error('Må ikke starte'); } });
   await bench.activate({ root, name: 'Prøve' });
   const context = { rules: '', skills: [], titles: [], features: {}, projectInstructions: null };
-  bench.chat.prepared = { root, context, disclosure: { fingerprint: 'prøve' } };
+  bench.chat.prepared = { root, context, connection: { kind: 'compatible', name: 'Lokal prøve', baseURL: 'http://127.0.0.1:1/v1' }, disclosure: { fingerprint: 'prøve' } };
   await fs.writeFile(path.join(root, 'AGENTS.md'), 'Ny regel');
   await assert.rejects(bench.send({ text: 'Byg', fingerprint: 'prøve' }), /har ændret sig/);
   assert.equal(starts, 0); assert.equal(bench.running, false);
