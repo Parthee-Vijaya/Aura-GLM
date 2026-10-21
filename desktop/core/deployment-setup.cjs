@@ -9,7 +9,7 @@ const { command, publicURL } = require('./deployment-providers.cjs');
 class DeploymentSetup {
   constructor(store, github, deployments, dependencies = {}) {
     this.store = store; this.github = github; this.deployments = deployments;
-    this.azure = dependencies.azure || new AzureSetup(); this.promte = dependencies.promte || new PromteSetup();
+    this.azure = dependencies.azure || new AzureSetup(); this.promte = dependencies.promte || new PromteSetup(store);
     this.vercel = dependencies.vercel || new VercelSetup(store); this.files = dependencies.files || new DeploymentConfiguration();
     this.run = dependencies.command || command; this.vercelReviews = new Map();
   }
@@ -21,6 +21,9 @@ class DeploymentSetup {
       case 'azure-apps': return this.azure.apps(config.subscription);
       case 'promte-state': return this.promte.state({ host: config.host });
       case 'promte-login': return this.promte.login({ host: config.host });
+      case 'promte-logout': return this.promte.logout({ host: config.host });
+      case 'promte-workspaces': return this.promte.workspaces({ host: config.host });
+      case 'promte-create': return this.promte.createWorkspace({ host: config.host, name: input.name });
       case 'github-state': {
         const state = await this.github.state();
         let localLogin = false;
