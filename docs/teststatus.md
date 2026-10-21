@@ -1,8 +1,16 @@
 # Teststatus før invitation
 
-Senest kontrolleret 20. oktober 2026. Afsnittene er daterede, så tidligere begrænsninger kan læses i deres sammenhæng. Dette er status for den aktuelle arbejdsmappe, ikke en erklæring om, at alle installationsfiler eller modeller er klar. Særskilt godkendte Git-handlinger, udgivelser og GitHub-kørsler fremgår af de enkelte afsnit.
+Senest kontrolleret 21. oktober 2026. Afsnittene er daterede, så tidligere begrænsninger kan læses i deres sammenhæng. Dette er status for den aktuelle arbejdsmappe, ikke en erklæring om, at alle installationsfiler eller modeller er klar. Særskilt godkendte Git-handlinger, udgivelser og GitHub-kørsler fremgår af de enkelte afsnit.
 
 [Gennemgangen før offentlig beta](offentliggoerelse.md) samler historik- og logkontrol samt de lokale prøver af README, hjemmeside og udgivelseskontrol. Den offentliggør ikke appen og ændrer ikke installationsstatus nedenfor.
+
+## Alexandra med rigtig model · 21. oktober 2026
+
+**Afprøvet på Linux med OpenCode 1.18.33 og `npm run test:live-app`:** `glm-5.3-flash` gennem appen med brugerens nøgle indtastet direkte i det isolerede Aura-vindue. Prøven bestod alle fem checks: planen ændrede ingen filer, den byggede side filtrerede korrekt ved 1, 5, 9 og 99 deltagere også i mobilvisning, AI-rettelsen ændrede overskriften og bevarede funktionen, Fortryd genskabte projektfilerne byteidentiske, og preview virkede igen bagefter. Ingen rendererfejl. Hele samtalen kostede ca. 1,1 DKK (12 kald, 42.872 input- og 10.518 svartokens, 179.008 cache-læsninger).
+
+- **Rettet undervejs — første afsendelse i Samtale:** `showData` manglede `chat` i oversigten over arbejdsmåden, så den første besked i standardtilstanden fejlede med en uforståelig besked, før datavisningen åbnede. Ingen prøver fangede det, fordi alle skifter til Planlæg før afsendelsen. Fejlen er fra samtaletilstandens indførelse 15. oktober og rammer alle udbydere; nu vises »Samtale« korrekt.
+- **Prøvens egen robusthed:** `test:live-app` stiller nu eksplicit på Planlæg før første send, skelner AI'ens midlertidige fejl i egne preview-filer fra appfejl, og tæller prøvens egen policy-afvisning af værktøjer uden for `public/` som det forløb, den er, når modellen kommer videre.
+- **Modelbemærkning:** ét byggekald endte i gentagelse uden indhold til grænsen på 16.384 svartokens og gav ingen filændringer. Genkørslen byggede korrekt. Appens fejlvejledning viste vejen videre, som designet.
 
 ## Fælles Del-forløb og flere udgivelsessteder · 20. oktober 2026
 

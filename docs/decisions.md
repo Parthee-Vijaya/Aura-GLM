@@ -1,5 +1,15 @@
 # Produktretning og beslutninger
 
+## Alexandra som udbyder · 21. oktober 2026
+
+Brugeren har bedt om at tilføje Alexandra Instituttets AI-platform som udbyder. Platformen er Chat Completions-kompatibel på `https://inference.alexandra.dk/v1` med Bearer-nøgle og understøtter streaming, værktøjskald og billedinput; Responses, embeddings, billede- og lydgenerering fravælges. Adapteren bruger derfor `@ai-sdk/openai-compatible` og platformens egen adresse uden alternativ.
+
+Vilkår kontrolleret på platformens dokumentation 21. oktober 2026: hele behandlingen foregår på danske lokationer hos ScanNet (team.blue Denmark), ISO 27001-certificeret, uden overførsel uden for EU/EØS. Prompts og svar slettes, når svaret er færdigt, og logges ikke; indhold bruges ikke til træning. Databehandleraftale foreligger.
+
+Priser og grænser hentes fra modelkortene: GLM 5.3 Flash 6/3/30 og Qwen 3.8 Flash Next 1/0,2/5 DKK pr. million tokens. Alexandras priser er i DKK, så `priceFor` bærer valutaen videre, og forbruget føres i en særskilt DKK-post, så USD og DKK ikke blandes. Kontekstvinduerne er modellernes; svargrænsen er platformens eget tal fra vejledningen til kodeagenter, fordi et unødigt højt `max_tokens` reserverer flere penge, før svaret skrives.
+
+Alexandra føjes til de fire fremhævede udbyderkort og til forvalgt model, hvor udbyderens egen vejledning til kodeagenter bruger `glm-5.3-flash`. Qwen er markeret eksperimentel hos udbyderen og overtager aldrig standardvalget. Ikonet er et bogstavmærke tegnet af Aura, da instituttet kun udgiver et vandret logo; kilden står i `desktop/ui/provider-icons-LICENSE.txt`. Adgangen til den enkelte model styres af organisationen, så et katalogsvar beviser fortsat ikke modeladgang.
+
 ## komplai kun til udgivelse · 20. oktober 2026
 
 Brugeren har besluttet at fjerne komplai som AI-udbyder i Aura og terminalværktøjet. komplai Run bevares under Del, inklusive browserlogin og særskilt udgivelsesadgang. Dette erstatter det tidligere fælles AI-/Publish-forløb beskrevet nedenfor.

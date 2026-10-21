@@ -9,6 +9,8 @@
     // Large 4 er en offentlig prøveversion fra 6. oktober 2026. Medium bevares som Mistrals hidtidige udgangspunkt til kode.
     mistral: [[/^mistral-medium-(latest|3-5)/i, 'Mistrals model til agenter og kode'], [/^mistral-large-4(?:-0)?$/i, 'Mistral Large 4 · offentlig prøveversion'], [/^mistral-large-(latest|2512)$/i, 'Mistrals øvrige Large-model']],
     corti: [[/^corti-s1$/i, 'Cortis hovedmodel'], [/^corti-s1-mini$/i, 'Mindre og billigere'], [/s1/i, 'Cortis model i EU']],
+    // Alexandras vejledning til kodeagenter bruger selv glm-5.3-flash som udgangspunkt. Qwen er markeret eksperimentel hos udbyderen.
+    alexandra: [[/^glm-5\.3-flash$/i, 'Alexandras udgangspunkt til kodeagenter'], [/^qwen3\.8-flash-next$/i, 'Eksperimentel model'], [/^glm-/i, 'Alexandras GLM-model']],
     openrouter: [[/claude.*(opus|sonnet)/i, 'Claude gennem OpenRouter'], [/devstral|codestral|mistral-medium/i, 'Mistral gennem OpenRouter'], [/qwen.*coder/i, 'Åben kodemodel gennem OpenRouter']],
     // Zens gratis modeller virker kun fra OpenCodes egne programmer.
     zen: [[/^claude-opus/i, 'Claude gennem OpenCode Zen'], [/^claude-sonnet/i, 'Claude gennem OpenCode Zen']]

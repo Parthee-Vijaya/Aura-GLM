@@ -522,6 +522,7 @@ const accountPages = {
   anthropic: { start: 'https://platform.claude.com/', billing: 'https://platform.claude.com/settings/billing', keys: 'https://platform.claude.com/settings/keys' },
   mistral: { start: 'https://console.mistral.ai/', billing: 'https://admin.mistral.ai/organization/billing', privacy: 'https://admin.mistral.ai/plateforme/privacy', keys: 'https://console.mistral.ai/api-keys' },
   corti: { start: 'https://console.corti.app/signup', console: 'https://console.corti.app/', keys: 'https://console.corti.app/corti-models' },
+  alexandra: { start: 'https://platform.alexandra.dk/platform-ui/register', keys: 'https://platform.alexandra.dk/platform-ui/keys', billing: 'https://platform.alexandra.dk/platform-ui/billing', usage: 'https://platform.alexandra.dk/platform-ui/usage' },
   openrouter: { start: 'https://openrouter.ai/settings/keys' }, zen: { start: 'https://opencode.ai/auth' }
 };
 handle('connections:account', value => {

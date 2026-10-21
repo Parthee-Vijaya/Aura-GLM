@@ -23,7 +23,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-Komplai: eget favicon fra apps/hub/public/favicon.svg. Corti: https://www.corti.ai/brand. Logoer identificerer udbyderne; varemærker tilhører deres respektive ejere. Egen server bruger Auras serverikon.
+Komplai: eget favicon fra apps/hub/public/favicon.svg. Corti: https://www.corti.ai/brand. Logoer identificerer udbyderne; varemærker tilhører deres respektive ejere. Egen server bruger Auras serverikon. Alexandra: Auras eget bogstavmærke; instituttet udgiver ikke et firkantet ikon, kun et vandret logo (https://platform.alexandra.dk/assets/logo.png). Farven #001B4F er hentet fra platformens egen stylesheet.
 
 Udgivelsesudbydere (hentet 20. oktober 2026):
 - Promte: https://promte.com/favicon.svg

@@ -183,8 +183,9 @@ function setupPage(step) {
   $('#setup-title').focus(); window.scrollTo(0, 0); setupControls();
 }
 // Udbyderne vises på lige vilkår. Et valg åbner kun den valgte forbindelses opsætning.
-const featuredProviders = [{ kind: 'anthropic' }, { kind: 'mistral' }, { kind: 'corti' }];
+const featuredProviders = [{ kind: 'anthropic' }, { kind: 'mistral' }, { kind: 'corti' }, { kind: 'alexandra' }];
 const providerCards = [
+  { kind: 'alexandra', name: 'Alexandra', text: 'Alexandra AI Platform.' },
   { kind: 'azure', name: 'Azure', text: 'OpenAI og Microsoft Foundry.' },
   { kind: 'anthropic', name: 'Claude', text: 'Anthropic API.' },
   { kind: 'corti', name: 'Corti', text: 'Corti API.' },
@@ -606,6 +607,13 @@ const keyGuides = {
       ['Hent en API-nøgle under Corti Models, og kopiér den.', 'keys', 'Åbn'],
       ['Indsæt den herunder.']],
     cost: 'Du betaler, når prøvekreditten er brugt. Du ser modtager og pris for modellen, før noget sendes, og forbruget under skrivefeltet.'
+  },
+  alexandra: {
+    steps: [['Opret en konto på Alexandra AI Platform.', 'start', 'Åbn', 'Alexandra Instituttets AI-platform med behandling i Danmark.'],
+      ['Opret en API-nøgle under API-nøgler, og kopiér den.', 'keys', 'Åbn', 'Selve nøglen vises kun, når du opretter den. Der findes personlige og organisationsejede nøgler.'],
+      ['Sæt en månedlig forbrugsgrænse under Fakturering.', 'billing', 'Åbn', 'Grænsen gælder også beløb, der er reserveret til igangværende kald.'],
+      ['Indsæt nøglen herunder.']],
+    cost: 'Platformen kræver saldo eller kredit hos Alexandra. Priserne er i DKK pr. million tokens. Du ser modtager og pris for modellen, før noget sendes, og forbruget under skrivefeltet.'
   }
 };
 // Trin i almindeligt dansk: én kort linje, en knap til udbyderens side og uddybning bag ⓘ.
@@ -624,7 +632,7 @@ function renderKeyGuide(kind) {
 }
 function updateProvider() {
   const definition = state?.definitions[$('#provider-kind').value]; if (!definition) return;
-  const help = { openai: 'Brug en OpenAI API-nøgle. Den afregnes separat fra dit ChatGPT-abonnement.', azure: 'Brug API-nøglen og deployment-navnet fra din Azure OpenAI- eller Foundry-ressource.', corti: 'Du skal bruge en API-nøgle fra et Corti-projekt i EU. Appen skifter aldrig automatisk til USA eller en anden model.', mistral: 'Du skal bruge en API-nøgle fra Mistral.', anthropic: 'Du skal bruge en API-nøgle fra Anthropic. Et Claude Pro- eller Max-abonnement kan ikke bruges her.', openrouter: 'Brug din OpenRouter-nøgle. Du vælger selv model og den udbyder, der modtager dine data. Gratis modeller er markeret i listen.', zen: 'Brug en nøgle fra OpenCode Zen. Zens gratis modeller virker ikke i Aura, fordi Zen kun giver gratis adgang fra OpenCodes egne programmer. Zens modeller kører i USA.', ollama: 'Forbind til en Ollama-server, som allerede kører. Kontrollér adressen nedenfor; appen installerer ikke modeller.', compatible: 'Brug adressen fra din organisation eller egen modelserver. Serveren kan køre lokalt eller på jeres netværk.' };
+  const help = { openai: 'Brug en OpenAI API-nøgle. Den afregnes separat fra dit ChatGPT-abonnement.', azure: 'Brug API-nøglen og deployment-navnet fra din Azure OpenAI- eller Foundry-ressource.', corti: 'Du skal bruge en API-nøgle fra et Corti-projekt i EU. Appen skifter aldrig automatisk til USA eller en anden model.', alexandra: 'Du skal bruge en API-nøgle fra Alexandra AI Platform. Appen bruger kun platformens egen adresse i Danmark. Adgangen til den enkelte model styres af din organisation.', mistral: 'Du skal bruge en API-nøgle fra Mistral.', anthropic: 'Du skal bruge en API-nøgle fra Anthropic. Et Claude Pro- eller Max-abonnement kan ikke bruges her.', openrouter: 'Brug din OpenRouter-nøgle. Du vælger selv model og den udbyder, der modtager dine data. Gratis modeller er markeret i listen.', zen: 'Brug en nøgle fra OpenCode Zen. Zens gratis modeller virker ikke i Aura, fordi Zen kun giver gratis adgang fra OpenCodes egne programmer. Zens modeller kører i USA.', ollama: 'Forbind til en Ollama-server, som allerede kører. Kontrollér adressen nedenfor; appen installerer ikke modeller.', compatible: 'Brug adressen fra din organisation eller egen modelserver. Serveren kan køre lokalt eller på jeres netværk.' };
   $('#provider-info').dataset.info = help[$('#provider-kind').value]; renderKeyGuide($('#provider-kind').value);
   $('.key-guide').hidden = ['ollama', 'compatible'].includes($('#provider-kind').value);
   const isAzure = $('#provider-kind').value === 'azure';
@@ -1618,7 +1626,7 @@ function renderRunReview(result, v = view) {
     if (result.files.length) { box.append(node('p', filesText(result.files.length, 'AI’en nåede at ændre'))); reviewFiles(box, result); }
     const actions = node('div', undefined, 'review-actions');
     const kind = state?.connections.find(c => c.id === $('#connection-select').value)?.kind;
-    const pages = { anthropic: 'billing', mistral: 'billing', corti: 'console', openrouter: 'start', zen: 'start' };
+    const pages = { anthropic: 'billing', mistral: 'billing', corti: 'console', alexandra: 'billing', openrouter: 'start', zen: 'start' };
     if (info.action === 'connection') actions.append(reviewButton('Gennemgå AI-forbindelse', () => showSetup(info.title), true));
     if (info.action === 'account' && pages[kind]) actions.append(reviewButton('Åbn kontoen hos udbyderen', () => action(() => call('providerAccount', { kind, page: pages[kind] })), true));
     else if (info.action === 'account') actions.append(reviewButton('Gennemgå AI-forbindelse', () => showSetup(info.title), true));

@@ -44,11 +44,11 @@ const http = require('node:http');
     assert.equal(await page.locator('#connection-advanced').evaluate(el=>el.open),false);
     assert.equal(await page.locator('.key-guide').evaluate(el=>el.open),false);
     await page.screenshot({path:path.join(root,'forbind-din-ai.png'),animations:'disabled'});
-    assert.equal(await page.locator('#provider-cards button').count(), 9, 'De ni AI-udbydere vises på lige vilkår.');
+    assert.equal(await page.locator('#provider-cards button').count(), 10, 'De ti AI-udbydere vises på lige vilkår.');
     assert.equal(await page.locator('#provider-cards [data-kind=komplai], #provider-kind option[value=komplai]').count(), 0, 'komplai Run hører kun til i Del.');
     assert.equal(await page.isVisible('#provider-kind'), false, 'formularen vises først efter valg');
     assert.equal(await page.isVisible('#api-key'), false, 'nøglefeltet vises først efter valg af udbyder');
-    for (const [kind, address] of [['corti', 'https://ai.eu.corti.app/v1'], ['mistral', 'https://api.mistral.ai/v1']]) {
+    for(const [kind, address] of [['corti', 'https://ai.eu.corti.app/v1'], ['mistral', 'https://api.mistral.ai/v1'], ['alexandra', 'https://inference.alexandra.dk/v1']]) {
       await page.click(`#provider-cards [data-kind="${kind}"]`);
       assert.equal(await page.isVisible('#api-key'), true);
       assert.equal(await page.inputValue('#base-url'), address);

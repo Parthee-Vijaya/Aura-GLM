@@ -43,7 +43,7 @@ Samtaler, kladder, planer og modelvalg gemmes uden for projektet. `/history` vis
 
 ## AI og nøgler
 
-`aura login` viser to indgange: **Jeg har en adgangsnøgle** og **AI på min computer**. API-forløbet viser Claude, Mistral og Corti som ligeværdige valg. Andre forbindelser findes under **Vælg en anden**. Aura vælger ikke en model eller en betalingsform for dig.
+`aura login` viser to indgange: **Jeg har en adgangsnøgle** og **AI på min computer**. API-forløbet viser Claude, Mistral, Corti og Alexandra som ligeværdige valg. Andre forbindelser findes under **Vælg en anden**. Aura vælger ikke en model eller en betalingsform for dig.
 
 Ollama kan findes på standardadressen. En anden Ollama-server eller en kompatibel API kan angives manuelt, også en DGX Spark på en adresse, du har adgang til gennem Tailscale. Aura opsætter ikke Tailscale og ændrer ikke serveren. Et svar fra `/models` beviser hverken kodeevner, kvote eller faktisk behandlingssted.
 

@@ -11,10 +11,20 @@ test('Claude: Anthropics eget udgangspunkt først, derefter Sonnet og Haiku, og 
   assert.match(picks[0].text, /Anthropics eget udgangspunkt/);
 });
 test('appen anbefaler aldrig selv en model', () => {
-  for (const kind of ['anthropic', 'mistral', 'corti', 'openrouter', 'zen']) {
-    const catalog = ['claude-opus-5-5', 'claude-sonnet-5-5', 'mistral-medium-latest', 'mistral-large-latest', 'corti-s1', 'corti-s1-mini', 'anthropic/claude-sonnet-4.5'].map(id => model(id));
+  for (const kind of ['anthropic', 'mistral', 'corti', 'alexandra', 'openrouter', 'zen']) {
+    const catalog = ['claude-opus-5-5', 'claude-sonnet-5-5', 'mistral-medium-latest', 'mistral-large-latest', 'corti-s1', 'corti-s1-mini', 'anthropic/claude-sonnet-4.5', 'glm-5.3-flash', 'qwen3.8-flash-next'].map(id => model(id));
     assert.ok(!suggest(catalog, kind).picks.some(pick => /anbefal/i.test(pick.text)), kind);
   }
+});
+test('Alexandra: udbyderens eget udgangspunkt først, eksperimentel model derefter', () => {
+  const catalog = ['glm-5.3-flash', 'qwen3.8-flash-next'].map(id => model(id));
+  const { curated, defaultID, picks } = suggest(catalog, 'alexandra');
+  assert.equal(curated, true);
+  assert.equal(defaultID, 'glm-5.3-flash', 'platformens vejledning til kodeagenter bruger selv glm-5.3-flash');
+  assert.deepEqual(picks.map(pick => pick.model.id), ['glm-5.3-flash', 'qwen3.8-flash-next']);
+  assert.match(picks[1].text, /eksperimentel/i);
+  // Den eksperimentelle model overtager ikke standardvalget, når GLM mangler.
+  assert.equal(suggest([model('qwen3.8-flash-next')], 'alexandra').defaultID, null);
 });
 test('indsats vises kun, hvor udbyderen har en dokumenteret standard', () => {
   const { effort } = require('../ui/model-advice.js');
