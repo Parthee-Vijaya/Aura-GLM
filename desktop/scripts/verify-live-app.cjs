@@ -95,7 +95,8 @@ async function runUntilDone(label, startAction) {
   }
   const result = reviews.at(-1);
   assert.equal(result.status, 'idle', `${label}: opgaven skal afslutte uden fejl eller Stop (${result.failure?.kind || result.status}).`);
-  assert(!result.tools.some(tool => tool.status === 'error'), `${label}: et værktøj fejlede.`);
+  // Et værktøj, prøven selv afviste med sin policy-besked, er ikke en fejl: modellen skal kunne komme videre efter afvisningen.
+  assert(!result.tools.some(tool => tool.status === 'error' && !tool.error.includes('Prøven tillader kun')), `${label}: et værktøj fejlede.`);
   if (label !== 'plan') assert(result.files.length, `${label}: ingen faktisk filændring.`);
   note(`${label}: ${result.status}, ${result.files.length} ændrede filer`);
 }
@@ -128,7 +129,10 @@ async function main() {
     if (controlled) await startControlledServer();
     app = await electron.launch({ executablePath, args: [...(bundle ? [] : [desktop]), '--user-data-dir=' + appdata], env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined, ...(bundle ? { PATH: platformPath, HARNESS_OPENCODE_PATH: '' } : {}) } });
     await helpers.isolateDocuments(app, documents);
-    page = await app.firstWindow(); page.setDefaultTimeout(30000); page.on('pageerror', e => errors.push(e.message));
+    page = await app.firstWindow(); page.setDefaultTimeout(30000);
+    // Fejl fra AI'ens egne projektfiler i forhåndsvisningen (http://127.0.0.1:port) er prøvens emne,
+    // ikke appfejl. De fanges i stedet af funktionstjekket på siden. Appens egne fejl (harness://) tæller med.
+    page.on('pageerror', e => { if (!/\/\/127\.0\.0\.1:\d+\//.test(String(e.stack || ''))) errors.push(e.message); });
     await page.waitForFunction(() => !document.querySelector('#welcome-build').disabled);
     await page.exposeFunction('liveDemoEvent', event => {
       if (event.type === 'run.review') reviews.push(event);
@@ -159,6 +163,8 @@ async function main() {
     await page.waitForFunction(() => document.querySelector('#model-select').value);
     report.model = await page.inputValue('#model-select'); if (wanted) assert.equal(report.model, wanted);
     note(`Model: ${report.model}`);
+    // Standardtilstanden er Samtale; prøvens planforløb kræver Planlæg.
+    await helpers.selectMode(page, 'plan');
     await runUntilDone('plan', () => page.click('#send'));
     await check('Plan uden filændring', async () => { assert.equal(reviews.at(-1).files.length, 0); assert(await page.isVisible('#plan-card')); });
     await fs.writeFile(path.join(out, 'plan.txt'), await page.locator('#plan-text').textContent()); await shot('plan');
