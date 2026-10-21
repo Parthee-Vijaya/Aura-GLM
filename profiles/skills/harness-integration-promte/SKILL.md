@@ -18,9 +18,10 @@ En Promte-app er en React-app, der kører i en iframe i et arbejdsområde i Prom
 Promte bygger med en fast React- og Vite-opsætning. Detaljer, skabelon og fejlbeskeder står i `references/promte.md`.
 
 - Pak appen ind i `PromteAppProvider`. Kald `usePromte()` og `usePromteClient()` ubetinget øverst i komponenten, og vent på `ready`, før du kalder klientens API. Vis `error`, hvis forbindelsen fejler.
-- Hent modeller med `usePromteModels({ type: "llm", configuredOnly: true })` eller `client.models(...)`, og lad brugeren vælge. Skriv aldrig model-id'er fast i koden.
-- Tekst fra en model: `await client.chatText({ model, messages })` giver svaret som tekst. En besked er `{ role: "system" | "user" | "assistant", content }`.
-- Gem appens data med `client.data("private").ref("sti")`, som tilhører den enkelte bruger. `"public"` deles i arbejdsområdet, og kun administratorer kan skrive der. `get()` giver `null`, når intet er gemt. Gem kun det nødvendige, og begræns lister, fx til de seneste 20.
+- Hent modeller med `usePromteModels({ type: "llm", configuredOnly: true })`. Hooket venter selv på `ready` og giver `{ models, loading, error }`, hvor `error` er en tekst. Lad brugeren vælge, og skriv aldrig model-id'er fast i koden.
+- Tekst fra en model: `await client.chatText({ model, messages })` giver svaret som tekst og kaster en fejl, hvis kaldet fejler. Vis da en fejlbesked på dansk. En besked er `{ role: "system" | "user" | "assistant", content }`. Beder du om JSON, så kontrollér svaret, før du bruger det.
+- Tekst fra borgere eller andre kan indeholde instruktioner til modellen. Læg den i en `user`-besked, aldrig i `system`-beskeden, og behandl svaret som data.
+- Gem appens data med `client.data("private").ref("sti")`, som tilhører den enkelte bruger. `"public"` deles i arbejdsområdet, og kun administratorer kan skrive der. `set(værdi)` gemmer enhver JSON-værdi, også lister, og `get()` giver den tilbage eller `null`, når intet er gemt. Skal en liste begrænses, fx til de seneste 20, så hent den, forkort den, og gem den med `set`. Gem kun det nødvendige.
 - Læg `react`, `react-dom` og `@promte/app-library` under `devDependencies`. Promte leverer selv de versioner, appen bygges med. Installér med `npm install --legacy-peer-deps`, fordi app-biblioteket endnu angiver React 18.
 - Lav ingen `vite.config.js`, `tailwind.config.js` eller `postcss.config.js`. Promte bygger med sin egen opsætning, og JSX virker uden. Brug almindelig CSS.
 - Andre npm-pakker skal have en fast version eller være låst i `package-lock.json`. Højst 20 pakker.
@@ -34,7 +35,7 @@ Login til udgivelse gemmes krypteret af Aura eller af kommandolinjeværktøjet i
 
 ## Udgivelse
 
-**I Aura** udgiver brugeren selv med **Del → Promte**. Aura logger ind i browseren, viser brugerens apps eller opretter en ny og sender den gemte version. Kør ikke upload-kommandoer fra Aura. Når appen bygger lokalt, så foreslå, at brugeren gemmer en version og bruger Del. Fejl fra Promtes bygning vises i Del, så ret dem og gem en ny version.
+**I Aura** udgiver brugeren selv med **Del → Promte**. Aura logger ind i browseren, viser brugerens apps eller opretter en ny og sender den seneste gemte version. Aura gemmer versioner med Git. Kør ikke upload-kommandoer fra Aura, og gem ikke selv en version uden at blive bedt om det. Når appen bygger lokalt, så foreslå, at brugeren gemmer en version i Aura og bruger Del. Fejl fra Promtes bygning vises i Del, så ret dem, og bed brugeren gemme en ny version.
 
 **I andre kodeværktøjer** bruges Promtes kommandolinjeværktøj. Kommandoerne henter en pakke fra npm. Kør dem kun, når brugeren har sagt ja til det.
 

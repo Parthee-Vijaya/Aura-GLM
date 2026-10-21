@@ -1,6 +1,6 @@
 # Promte-apps i detaljer
 
-Kontrolleret mod Promte 21. oktober 2026. Den fulde engelske vejledning følger med `@promte/app-upload` og kan lægges i projektet med `npx @promte/app-upload skill`.
+Kontrolleret mod Promte 21. oktober 2026. Den fulde engelske vejledning følger med `@promte/app-upload` og kan uden for Aura lægges i projektet med `npx @promte/app-upload skill`.
 
 ## Mindste projekt
 
@@ -33,7 +33,7 @@ package-lock.json     kun nødvendig, hvis appen har pakker under dependencies
 }
 ```
 
-Installér med `npm install --legacy-peer-deps`, så længe app-biblioteket angiver React 18 som peer. Der skal ingen `vite.config.js` til. Vite bygger JSX uden. Lokalt virker Node 20.18 eller nyere.
+Installér med `npm install --legacy-peer-deps`, så længe app-biblioteket angiver React 18 som peer. Der skal ingen `vite.config.js` til. Vite bygger JSX uden. Promte bygger med Node 22, så brug gerne Node 22 lokalt. Node 20.18 eller nyere virker også.
 
 `src/main.jsx`:
 
