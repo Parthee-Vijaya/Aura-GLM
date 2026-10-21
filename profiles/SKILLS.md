@@ -242,23 +242,23 @@ Kilder: [System-til-system-adgang til CVR-data (Erhvervsstyrelsen)](https://data
 
 `harness-integration-promte` · [SKILL.md](skills/harness-integration-promte/SKILL.md)
 
-**Hvad gør den?** Hjælper agenten med at opsætte et React-projekt efter Promtes byggeregler, bruge app-biblioteket til modeller, vidensbaser og data og uploade kildekoden med Promtes kommandolinjeværktøj.
+**Hvad gør den?** Hjælper agenten med at opsætte et React-projekt efter Promtes byggeregler og bruge app-biblioteket til modeller, vidensbaser og data. I Aura udgiver brugeren med Del, i andre værktøjer med Promtes kommandolinjeværktøj.
 
 **Hvornår bruges den?** Når en løsning skal køre som app i et Promte-arbejdsområde.
 
 **Hvad får du?** Et projekt, som Promte kan bygge, uden nøgler i koden, og en version, der venter på godkendelse eller er udgivet i arbejdsområdet.
 
-**Hvad gør den ikke?** Opretter ikke en Promte-konto, et arbejdsområde eller administratorrettigheder for dig og godkender ikke versioner. Kommandolinjeværktøjet hentes fra npm, når brugeren siger ja.
+**Hvad gør den ikke?** Opretter ikke en Promte-konto eller administratorrettigheder for dig og godkender ikke versioner. Agenten udgiver ikke selv fra Aura. Kommandolinjeværktøjet i andre værktøjer hentes fra npm, når brugeren siger ja.
 
 - **System:** Promte-apps via app-biblioteket og kommandolinjeværktøjet til upload
 - **Ejer:** Promte
-- **Adgang:** Kræver en Promte-installation og administratorrettighed i appens arbejdsområde. Login til upload godkendes i browseren og gælder i 30 dage.
+- **Adgang:** Kræver en Promte-installation og administratorrettighed i appens arbejdsområde. Login til udgivelse godkendes i browseren og gælder i 30 dage. En ny app kan oprettes fra Aura.
 - **Data:** Appens egne data og filer i Promte, privat for hver bruger eller fælles for arbejdsområdet. Om der er persondata, afhænger af appen.
 - **Dataflow:** Appen kalder kun organisationens Promte-server, som sender modelkald videre til de modeller, organisationen har valgt. Kildekoden uploades til samme server, som bygger og gennemgår den.
 - **Pris:** Kræver en aftale med Promte. Prisen er ikke offentliggjort og er ikke verificeret her.
 - **IT-afdelingen:** Adgangen kræver hjælp fra IT-afdelingen.
 
-Skillen vedligeholdes af Promte og er kontrolleret mod kilderne 2026-10-18.
+Skillen vedligeholdes af Promte og er kontrolleret mod kilderne 2026-10-21.
 
 Kilder: [Udvikl apps med kodeagenter (Promte)](https://app.promte.dk/docs/admin/udvikl-apps-med-kodeagenter), [Byg og udgiv AI-apps (Promte)](https://app.promte.dk/docs/admin/ai-apps), [@promte/app-library (npm)](https://www.npmjs.com/package/@promte/app-library), [@promte/app-upload (npm)](https://www.npmjs.com/package/@promte/app-upload)
 

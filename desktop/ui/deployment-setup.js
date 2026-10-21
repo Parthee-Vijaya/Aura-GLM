@@ -17,6 +17,7 @@
     const choiceSteps = { 'azure-subscription': 'azureSubscription', 'azure-app': 'azureApp', 'vercel-team': 'vercelTeam', 'vercel-project': 'vercelProject' };
     const choices = new Map();
     let savedVercel = null;
+    let promteSaved = '';
     let page = 0, choice = null, connection = null, configReview = null, gitProject = null, tracking = null, polling = null, loginID = null, epoch = 0, refreshing = false, trackingRoot = null, trackingError = false;
     const provider = () => $('#deploy-provider').value;
     const pages = () => ['github-pages', 'cloudflare'].includes(provider());
@@ -37,13 +38,35 @@
     }
     $('#deployment-more-providers').onclick = () => { page = page ? 0 : 1; providerList(); $('#deployment-provider-list button').focus(); };
     function config() {
-      if (provider() === 'promte') return { host: $('#deploy-promte-host').value.trim(), workspaceId: $('#deploy-promte-workspace').value.trim(), mode: 'source' };
+      if (provider() === 'promte') return { host: $('#deploy-promte-host').value.trim(), workspaceId: promteWorkspaceId(), mode: 'source' };
       if (pages()) return { repository: $('#deploy-repository').value.trim(), branch: $('#deploy-branch').value.trim(), accountId: $('#deploy-cloudflare-account').value.trim(), project: $('#deploy-cloudflare-project').value.trim(), mode: 'static' };
       return {};
     }
     function restore(c = {}) {
-      for (const [key, id] of Object.entries({ host: 'promte-host', workspaceId: 'promte-workspace', repository: 'repository', branch: 'branch', accountId: 'cloudflare-account' })) if (c[key]) $('#deploy-' + id).value = c[key];
+      for (const [key, id] of Object.entries({ host: 'promte-host', repository: 'repository', branch: 'branch', accountId: 'cloudflare-account' })) if (c[key]) $('#deploy-' + id).value = c[key];
+      if (c.provider === 'promte' && c.workspaceId) { promteSaved = c.workspaceId; $('#deploy-promte-workspace-id').value = c.workspaceId; }
       if (c.provider === 'cloudflare' && c.project) $('#deploy-cloudflare-project').value = c.project;
+    }
+    // Promte: vælg en app fra listen, opret en ny eller indtast ID'et på servere uden listen.
+    function promteWorkspaceId() { const value = $('#deploy-promte-workspace').value; return value === '__id__' ? $('#deploy-promte-workspace-id').value.trim() : value === '__new__' ? '' : value; }
+    function promteFields() { const value = $('#deploy-promte-workspace').value; $('#deploy-promte-new').hidden = value !== '__new__'; $('#deploy-promte-manual').hidden = value !== '__id__'; }
+    $('#deploy-promte-workspace').onchange = promteFields;
+    let promteNames = new Map();
+    async function promteWorkspaces(state) {
+      $('#deploy-promte-account').textContent = state.email ? `Logget ind som ${state.email}.` : state.loginSource === 'cli' ? 'Logget ind med Promtes kommandolinjeværktøj.' : '';
+      let items = [], note = '', linked = null, suggested = '';
+      try { ({ link: linked, suggestedName: suggested } = await act('promte-link')); } catch {}
+      try { items = await act('promte-workspaces'); note = items.length ? 'Den nye version erstatter appens udgivne version, når den er godkendt.' : 'Du har endnu ingen apps. Aura opretter en ny app til projektet.'; }
+      catch (error) { note = `${error.message} Du kan indtaste arbejdsområdets ID i stedet.`; }
+      // Projektets app fra forhåndsvisningen eller en tidligere udgivelse vælges, også når den ikke står på listen.
+      if (linked?.workspaceId && !items.some(item => item.id === linked.workspaceId)) items.unshift({ id: linked.workspaceId, name: linked.name, activeAppVersion: null });
+      promteNames = new Map(items.map(item => [item.id, item.name]));
+      const keep = promteWorkspaceId() || promteSaved || linked?.workspaceId;
+      $('#deploy-promte-workspace').replaceChildren(...items.map(item => new Option(item.activeAppVersion ? `${item.name} · version ${item.activeAppVersion}` : item.name, item.id)), new Option('Ny app …', '__new__'), new Option('Indtast ID …', '__id__'));
+      $('#deploy-promte-workspace').value = items.some(item => item.id === keep) ? keep : linked ? '__new__' : note.includes('ID') ? '__id__' : '__new__';
+      if (!$('#deploy-promte-name').value) $('#deploy-promte-name').value = suggested || '';
+      $('#deploy-promte-workspace-note').textContent = note; promteFields();
+      go('promteWorkspace');
     }
     function showChoice(kind, items, title, note, next, reload) {
       const step = choiceSteps[kind], previous = choices.get(step);
@@ -104,7 +127,7 @@
         catch (error) { connectionError = `${error.message} Log ind igen, eller ret adgangen hos GitHub.`; }
       }
       if (token !== epoch || !dialog.open) return;
-      if (auth === 'promte' && state.connected) { go('promteWorkspace'); return; }
+      if (auth === 'promte' && state.connected) { await promteWorkspaces(state); return; }
       if (auth === 'azure' && state.status === 'ready') {
         showChoice('azure-subscription', state.subscriptions, 'Hvilket Azure-abonnement vil du bruge?', '', item => azureApps(item.id), () => loadConnection()); return;
       }
@@ -117,8 +140,8 @@
       $('#deployment-connect').hidden = toolsMissing || auth === 'github' && !state.browserLogin && !state.localLogin;
       $('#deployment-connect').textContent = auth === 'github' && state.localLogin ? 'Brug dit GitHub-login på computeren' : 'Log ind i browseren';
       $('#deployment-connection-note').textContent = connectionError || (toolsMissing ? 'Installér udbyderens værktøj, og vælg Kontrollér igen.' : auth === 'github' && !state.browserLogin && !state.localLogin ? 'Log ind med GitHub CLI på computeren, eller brug en adgangsnøgle under hjælpen.' : state.status === 'no-subscriptions' ? 'Ingen Azure-abonnementer med adgang. Prøv en anden konto, eller bed jeres administrator om adgang.' : state.status === 'no-teams' ? 'Ingen Vercel-teams med adgang. Kontrollér din konto hos Vercel.' : 'Fortsæt med din konto hos udbyderen.');
-      $('#deployment-install-note').textContent = auth === 'azure' ? 'Azure CLI bruges til login. SWA CLI bruges til udgivelse.' : auth === 'github' ? 'GitHub CLI kan logge ind i browseren. Aura bruger først kontoen, når du vælger det.' : auth === 'promte' ? 'Promtes uploadværktøj åbner login i browseren.' : 'Vercels værktøj åbner login i browseren.';
-      $('#deployment-install').hidden = false;
+      $('#deployment-install-note').textContent = auth === 'azure' ? 'Azure CLI bruges til login. SWA CLI bruges til udgivelse.' : auth === 'github' ? 'GitHub CLI kan logge ind i browseren. Aura bruger først kontoen, når du vælger det.' : auth === 'promte' ? 'Aura åbner Promte i browseren. Log ind, og godkend Aura. Du skal være administrator i appens arbejdsområde for at udgive.' : 'Vercels værktøj åbner login i browseren.';
+      $('#deployment-install').hidden = auth === 'promte';
       $('#deployment-install').textContent = auth === 'azure' && state.tools?.azureCli ? 'Installér SWA CLI' : auth === 'github' ? 'Se login med GitHub CLI' : 'Installér udbyderens værktøj';
       $('#deployment-github-token').hidden = auth !== 'github';
       $('#deployment-connection-help').open = toolsMissing;
@@ -132,7 +155,7 @@
         await api('hostingBrowser');
         polling = setTimeout(() => pollLogin(r.id), Math.max(1000, r.retryAfter)); return;
       }
-      $('#deployment-connection-note').textContent = 'Fortsæt i browseren. Aura venter på dit login.';
+      $('#deployment-connection-note').textContent = provider() === 'promte' ? 'Godkend Aura i browseren. Aura venter på dit svar i op til 10 minutter.' : 'Fortsæt i browseren. Aura venter på dit login.';
       await loadConnection(true);
     });
     async function pollLogin(id) {
@@ -151,7 +174,18 @@
     bind('#komplai-publish-account', () => open('account', 'komplai'));
     bind('#deployment-promte-host-next', () => { if ($('#deploy-promte-host').reportValidity()) return loadConnection(); });
     bind('#deployment-promte-open', () => open('host'));
-    bind('#deployment-promte-workspace-next', () => { if (!$('#deploy-promte-workspace').value.trim()) throw Error('Indtast arbejdsområdets ID.'); go('files'); });
+    bind('#deployment-promte-workspace-next', async () => {
+      if ($('#deploy-promte-workspace').value === '__new__') {
+        const created = await act('promte-create', input(), { name: $('#deploy-promte-name').value });
+        $('#deploy-promte-workspace').add(new Option(created.name, created.id), 0); $('#deploy-promte-workspace').value = created.id; promteNames.set(created.id, created.name); $('#deploy-promte-name').value = ''; promteFields();
+      }
+      if (!promteWorkspaceId()) throw Error('Vælg en app, eller indtast arbejdsområdets ID.');
+      promteSaved = promteWorkspaceId();
+      const name = promteNames.get(promteSaved) || $('#deploy-promte-workspace').selectedOptions[0]?.textContent || promteSaved;
+      await act('promte-link-set', input(), { workspaceId: promteSaved, name: name === 'Indtast ID …' ? promteSaved : name });
+      go('files');
+    });
+    bind('#deployment-promte-logout', async () => { await act('promte-logout'); await loadConnection(); });
     bind('#deployment-repository-next', () => { if (!/^[\w.-]+\/[\w.-]+$/.test($('#deploy-repository').value.trim())) throw Error('Skriv repositoryet som organisation/projekt.'); go('pagesBranch'); });
     bind('#deployment-branch-next', () => { if (!$('#deploy-branch').value.trim()) throw Error('Indtast navnet på branchen.'); go(provider() === 'cloudflare' ? 'cloudflareAccount' : 'directory'); });
     bind('#deployment-cloudflare-open', () => open('portal'));
@@ -201,7 +235,12 @@
     async function choose(id) {
       ++epoch; choice = null; choices.clear(); connection = null; gitProject = null;
       if (id === 'komplai') return false;
-      if (id === 'promte') { $('#deploy-directory').value = '.'; go('promteHost'); }
+      if (id === 'promte') {
+        $('#deploy-directory').value = '.';
+        // Brug samme Promte som projektets forhåndsvisning.
+        try { const { link } = await act('promte-link'); if (link?.host) $('#deploy-promte-host').value = link.host; } catch {}
+        go('promteHost');
+      }
       else if (id === 'vercel') go('vercelMethod');
       else await loadConnection();
       return true;

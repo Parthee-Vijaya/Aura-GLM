@@ -50,7 +50,7 @@ function validateArtifact(c,a) {
   if(c.mode==='functions'&&!names.includes(c.api+'/host.json')) throw Error('Functions-mappen mangler host.json. API’et skal være færdigbygget og selvstændigt; appen kører ingen lokal npm-installation.');
 }
 class Deployments {
-  constructor(store,{providers,github,fetcher,artifact=deploymentArtifact}={}) { this.store=store; this.providers=providers||{komplai:new KomplaiDeployment(store),vercel:new VercelDeployment(),azure:new AzureDeployment(),promte:new PromteDeployment(), 'github-pages':new GitHubPagesDeployment(github), cloudflare:new CloudflarePagesDeployment(github)}; this.fetcher=fetcher||((...args)=>fetch(...args));this.pagesFetcher=fetcher||fetchSite;this.artifact=artifact;this.reviews=new Map(); }
+  constructor(store,{providers,github,fetcher,artifact=deploymentArtifact}={}) { this.store=store; this.providers=providers||{komplai:new KomplaiDeployment(store),vercel:new VercelDeployment(),azure:new AzureDeployment(),promte:new PromteDeployment({store}), 'github-pages':new GitHubPagesDeployment(github), cloudflare:new CloudflarePagesDeployment(github)}; this.fetcher=fetcher||((...args)=>fetch(...args));this.pagesFetcher=fetcher||fetchSite;this.artifact=artifact;this.reviews=new Map(); }
   async state(root) { const p=await this.store.project(root); return {config:p.deploymentConfig||null,preference:p.startup?.hosting||'',last:p.deploymentLast||null}; }
   async material(root,config) {
     // Git-status, private filer og hemmeligheder kontrolleres før udbyderens filudvalg.

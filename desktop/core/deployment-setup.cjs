@@ -1,5 +1,6 @@
 const { AzureSetup } = require('./azure-setup.cjs');
 const { PromteSetup, promteHost } = require('./provider-promte.cjs');
+const { appName } = require('./promte-preview.cjs');
 const { VercelSetup, importURL, checkedConfig } = require('./vercel-setup.cjs');
 const { pagesWorkflow, pagesConfiguration, workflowPath, siteURL } = require('./pages-publishing.cjs');
 const { configuration } = require('./deployments.cjs');
@@ -9,7 +10,7 @@ const { command, publicURL } = require('./deployment-providers.cjs');
 class DeploymentSetup {
   constructor(store, github, deployments, dependencies = {}) {
     this.store = store; this.github = github; this.deployments = deployments;
-    this.azure = dependencies.azure || new AzureSetup(); this.promte = dependencies.promte || new PromteSetup();
+    this.azure = dependencies.azure || new AzureSetup(); this.promte = dependencies.promte || new PromteSetup(store);
     this.vercel = dependencies.vercel || new VercelSetup(store); this.files = dependencies.files || new DeploymentConfiguration();
     this.run = dependencies.command || command; this.vercelReviews = new Map();
   }
@@ -21,6 +22,16 @@ class DeploymentSetup {
       case 'azure-apps': return this.azure.apps(config.subscription);
       case 'promte-state': return this.promte.state({ host: config.host });
       case 'promte-login': return this.promte.login({ host: config.host });
+      case 'promte-logout': return this.promte.logout({ host: config.host });
+      case 'promte-workspaces': return this.promte.workspaces({ host: config.host });
+      case 'promte-create': return this.promte.createWorkspace({ host: config.host, name: input.name });
+      // Forhåndsvisning og Del bruger den samme Promte-app for projektet.
+      case 'promte-link': return { link: (await this.store.project(root)).promteApp || null, suggestedName: appName(root) };
+      case 'promte-link-set': {
+        if (typeof input.workspaceId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,199}$/.test(input.workspaceId)) throw Error('Ugyldig Promte-app.');
+        const promteApp = { host: promteHost(config.host), workspaceId: input.workspaceId, name: typeof input.name === 'string' && input.name.trim() ? input.name.trim().slice(0, 200) : input.workspaceId };
+        await this.store.saveProject(root, { promteApp }); return promteApp;
+      }
       case 'github-state': {
         const state = await this.github.state();
         let localLogin = false;

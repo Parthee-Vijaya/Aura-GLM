@@ -29,7 +29,7 @@ app.setPath('sessionData', identity.sessionData);
 protocol.registerSchemesAsPrivileged([{ scheme: 'harness', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 let window, preview, project, busy = false, chosenParent = null;
 let assets = [];
-let github, publishing, deployments, deploymentSetup, restoration;
+let github, publishing, deployments, deploymentSetup, restoration, promtePreview;
 let workbench, externalPreview = null, history, images;
 let ownTools, updates, updating = false;
 let devServer, detectedRuntime, forceStatic = false;
@@ -625,6 +625,10 @@ handle('preview:attach', value => exclusive(async () => {
   if (preview) await preview.close(); preview = null; externalPreview = url.href;
   return externalPreview;
 }));
+// Forhåndsvisningen af en Promte-app: Aura svarer som Promte og sender appens kald videre.
+handle('promte:preview-connect', async () => project ? promtePreview.connect(project.root) : { active: false });
+handle('promte:preview-login', async () => { if (!project) throw new Error('Åbn et projekt først.'); return promtePreview.login(project.root); });
+handle('promte:preview-fetch', async input => { if (!project) throw new Error('Åbn et projekt først.'); return promtePreview.fetch(project.root, input); });
 handle('preview:runtime', async () => ({ ...await devServer.status(), root: project?.root, workspaceRoot: selectedRoot }));
 // Kontrol af forhåndsvisningen efter en opgave: blev siden vist, og skrev den fejl i konsollen? Aura klikker ikke i siden.
 const previewLog = { documents: [], errors: [] };
@@ -837,6 +841,7 @@ app.whenReady().then(async () => {
   github = new GitHub(workbench.store); publishing = new Publishing({ store: workbench.store, git: workbench.git, provider: github });
   deployments = new Deployments(workbench.store, { github });
   deploymentSetup = new (require('./core/deployment-setup.cjs').DeploymentSetup)(workbench.store, github, deployments);
+  promtePreview = new (require('./core/promte-preview.cjs').PromtePreview)(workbench.store, { setup: deploymentSetup.promte });
   updates = new (require('./core/updates.cjs').Updates)({
     updater: app.isPackaged && ['darwin', 'win32'].includes(process.platform) ? require('electron-updater').autoUpdater : null,
     store: workbench.store, version: app.getVersion(), enabled: app.isPackaged,
@@ -854,7 +859,7 @@ app.whenReady().then(async () => {
     const url = new URL(request.url);
     const name = url.pathname.slice(1);
     const providerAsset = /^provider-(anthropic|azure|compatible|corti|komplai|mistral|ollama|openai|openrouter|zen|promte|github-pages|cloudflare|vercel)\.svg$/.test(name);
-    if (url.host !== 'app' || (!providerAsset && name !== 'provider-cloudflare.png' && !['index.html', 'aura-icon.png', 'app.js', 'updates.js', 'workspace.js', 'plan-view.js', 'planning.js', 'approval-view.js', 'approvals.js', 'preview-edit.js', 'history.js', 'chats.js', 'palette.js', 'model-advice.js', 'connection-overview.js', 'chat-display.js', 'conversation-mode.js', 'live-work.js', 'server.js', 'viewport.js', 'share-view.js', 'hosting.js', 'deployment-setup.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name))) return new Response('Ikke fundet', { status: 404 });
+    if (url.host !== 'app' || (!providerAsset && name !== 'provider-cloudflare.png' && !['index.html', 'aura-icon.png', 'app.js', 'updates.js', 'workspace.js', 'plan-view.js', 'planning.js', 'approval-view.js', 'approvals.js', 'preview-edit.js', 'history.js', 'chats.js', 'palette.js', 'model-advice.js', 'connection-overview.js', 'chat-display.js', 'conversation-mode.js', 'live-work.js', 'server.js', 'viewport.js', 'share-view.js', 'hosting.js', 'deployment-setup.js', 'promte-preview.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name))) return new Response('Ikke fundet', { status: 404 });
     return new Response(await fs.readFile(path.join(__dirname, 'ui', name)), { headers: { 'Content-Type': name === 'aura-icon.png' ? 'image/png' : providerAsset ? 'image/svg+xml' : name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : 'text/html; charset=utf-8' } });
   });
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));

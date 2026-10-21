@@ -1,0 +1,113 @@
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const dns = require('node:dns/promises');
+const { PromteSetup, promteHost, addressFor } = require('./provider-promte.cjs');
+
+// En Promte-app venter på, at siden omkring den svarer på dens init. Inde i Promte gør Promte det.
+// I Auras forhåndsvisning svarer Aura: projektet kobles til en Promte-app, som oprettes første gang,
+// og appens kald sendes videre til Promte med et app-token, der bliver i hovedprocessen.
+const PREVIEW_HOST = 'https://kodning.promte.dk';
+const TOKEN_LIFETIME = 10 * 60 * 1000;
+const MAX_BODY = 20 * 1024 * 1024;
+const ALLOWED_PATH = /^(?:app-api\/[A-Za-z0-9/_.-]*|openai\/chat\/completions)(?:\?[^#\s]*)?$/;
+const METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']);
+const REQUEST_HEADERS = new Set(['content-type', 'accept']);
+const RESPONSE_HEADERS = new Set(['content-type', 'x-promte-governance-warning']);
+
+async function isPromteProject(root) {
+  try {
+    const pkg = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8'));
+    return ['dependencies', 'devDependencies', 'peerDependencies'].some(field => pkg?.[field] && Object.hasOwn(pkg[field], '@promte/app-library'));
+  } catch { return false; }
+}
+// Projektmappens navn bliver appens navn i Promte, fx "moedereferat" → "Moedereferat".
+function appName(root) {
+  const base = path.basename(root).replace(/[-_]+/g, ' ').replace(/[\x00-\x1f]/g, '').trim().slice(0, 100) || 'Ny app';
+  return base.charAt(0).toUpperCase() + base.slice(1);
+}
+function body(input) {
+  if (input == null) return undefined;
+  if (typeof input === 'string') return input;
+  if (input instanceof ArrayBuffer || ArrayBuffer.isView(input)) return Buffer.from(input instanceof ArrayBuffer ? input : input.buffer.slice(input.byteOffset, input.byteOffset + input.byteLength));
+  if (Array.isArray(input?.form)) {
+    const form = new FormData();
+    for (const [name, value] of input.form) {
+      if (typeof name !== 'string') throw Error('Ugyldig formular fra appen.');
+      if (typeof value === 'string') form.append(name, value);
+      else if (value && (value.data instanceof ArrayBuffer || ArrayBuffer.isView(value.data))) form.append(name, new Blob([value.data], { type: typeof value.type === 'string' ? value.type : '' }), typeof value.name === 'string' ? value.name : 'fil');
+      else throw Error('Ugyldig formular fra appen.');
+    }
+    return form;
+  }
+  throw Error('Appen sendte et kald, Aura ikke kan videresende.');
+}
+
+class PromtePreview {
+  constructor(store, { setup, fetcher = (...args) => fetch(...args), lookup = dns.lookup, now = Date.now } = {}) {
+    this.store = store; this.setup = setup || new PromteSetup(store); this.fetcher = fetcher; this.lookup = lookup; this.now = now; this.tokens = new Map();
+  }
+  async link(root) { return (await this.store.project(root)).promteApp || null; }
+  /** Svar på appens init. Opretter Promte-appen første gang, så brugeren ikke skal gøre det i Promte. */
+  async connect(root) {
+    if (!await isPromteProject(root)) return { active: false };
+    let link = await this.link(root);
+    const host = promteHost(link?.host || PREVIEW_HOST);
+    const state = await this.setup.state({ host });
+    // Oprettelse kræver Auras eget login. En koblet app kan også bruge et login fra Promtes CLI.
+    if (!state.connected || (!link && state.loginSource !== 'aura')) return { active: true, connected: false, host };
+    let created = false;
+    if (!link) {
+      const app = await this.setup.createWorkspace({ host, name: appName(root) });
+      link = { host, workspaceId: app.id, name: app.name };
+      await this.store.saveProject(root, { promteApp: link });
+      created = true;
+    }
+    return { active: true, connected: true, created, host, workspaceId: link.workspaceId, name: link.name, settings: { workspaceId: link.workspaceId, version: 0, backendUrl: host + '/api', fetchProxy: true, user: { email: state.email } } };
+  }
+  async login(root) {
+    const host = promteHost((await this.link(root))?.host || PREVIEW_HOST);
+    await this.setup.login({ host });
+    return this.connect(root);
+  }
+  async appToken(link, fresh = false) {
+    const key = link.host + '|' + link.workspaceId, cached = this.tokens.get(key);
+    if (!fresh && cached && this.now() - cached.at < TOKEN_LIFETIME) return cached.token;
+    const value = await this.setup.client.call(link.host, '/api/functions/generateToken', { body: { workspaceId: link.workspaceId, isPublic: false, version: 0, codingPreview: false } });
+    if (typeof value.token !== 'string' || !value.token || /[\r\n]/.test(value.token)) throw Error('Promte gav ikke adgang til appen. Kontrollér, at du har adgang til arbejdsområdet.');
+    this.tokens.set(key, { token: value.token, at: this.now() });
+    return value.token;
+  }
+  /** Sender ét kald fra appen videre til Promte. Kun appens egne API-stier og kun til den koblede Promte. */
+  async fetch(root, request) {
+    const link = await this.link(root);
+    if (!link) throw Error('Projektet er ikke koblet til en Promte-app endnu.');
+    const host = promteHost(link.host);
+    const route = typeof request?.path === 'string' ? request.path.replace(/^\/+/, '') : '';
+    if (!ALLOWED_PATH.test(route) || route.split(/[?/]/).includes('..')) throw Error('Appen må kun kalde Promtes app-API.');
+    const method = String(request.method || 'GET').toUpperCase();
+    if (!METHODS.has(method)) throw Error('Ugyldig metode fra appen.');
+    const headers = {};
+    for (const entry of Array.isArray(request.headers) ? request.headers : []) {
+      if (Array.isArray(entry) && typeof entry[0] === 'string' && typeof entry[1] === 'string' && REQUEST_HEADERS.has(entry[0].toLowerCase()) && !/[\r\n]/.test(entry[1])) headers[entry[0].toLowerCase()] = entry[1];
+    }
+    const payload = ['GET', 'DELETE'].includes(method) && request.body == null ? undefined : body(request.body);
+    if (payload instanceof FormData) delete headers['content-type'];
+    await addressFor(host, this.lookup);
+    const send = async token => this.fetcher(`${host}/api/${route}`, { method, headers: { ...headers, Authorization: `Bearer ${token}` }, body: payload, redirect: 'error', signal: AbortSignal.timeout(120000) });
+    let response = await send(await this.appToken({ ...link, host }));
+    if (response.status === 401) response = await send(await this.appToken({ ...link, host }, true));
+    const data = await response.arrayBuffer();
+    if (data.byteLength > MAX_BODY) throw Error('Svaret fra Promte er for stort til forhåndsvisningen.');
+    const responseHeaders = [];
+    response.headers.forEach((value, name) => { if (RESPONSE_HEADERS.has(name.toLowerCase())) responseHeaders.push([name, value]); });
+    return { status: response.status, statusText: response.statusText || '', headers: responseHeaders, body: data };
+  }
+  /** Del og forhåndsvisning bruger samme app. */
+  async setLink(root, { host, workspaceId, name }) {
+    if (typeof workspaceId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,199}$/.test(workspaceId)) throw Error('Ugyldig Promte-app.');
+    const link = { host: promteHost(host), workspaceId, name: typeof name === 'string' && name.trim() ? name.trim().slice(0, 200) : workspaceId };
+    await this.store.saveProject(root, { promteApp: link });
+    return link;
+  }
+}
+module.exports = { PromtePreview, isPromteProject, appName, PREVIEW_HOST, ALLOWED_PATH };

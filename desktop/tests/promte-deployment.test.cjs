@@ -48,32 +48,83 @@ test('Promtes CLI-filregler anvendes før gennemgang med hash af de faktiske upl
   assert.ok(runtime.files.some(f => f.file === 'package-lock.json'));
   validatePromteArtifact(runtime);
 });
-test('Promte-guiden bruger installeret CLI og isolerer login for den præcise vært', async () => {
-  let signedIn = false; const commands = [], hosts = [];
-  const setup = new PromteSetup({ lookup, readCredentials: async host => { hosts.push(host); return signedIn ? { token: 'never-in-ui' } : null; }, run: async (program, args, options) => {
-    commands.push({ program, args, options });
-    if (args[0] === '--help') return 'promte-app-upload login\npromte-app-upload status';
-    signedIn = args[0] === 'login'; return '';
-  } });
+// Et lille lager med samme kontrakt som Auras: krypteret hemmelighed, read og update.
+function memoryStore() {
+  const state = { hosting: {} };
+  return { state, read: async () => structuredClone(state), update: async change => change(state), encrypt: value => 'enc:' + Buffer.from(value).toString('base64'), decrypt: saved => Buffer.from(saved.secret.slice(4), 'base64').toString('utf8') };
+}
+const jwt = claims => `h.${Buffer.from(JSON.stringify(claims)).toString('base64url')}.s`;
+function promteSetup(handler, extra = {}) {
+  const calls = [], opened = [], store = memoryStore();
+  const setup = new PromteSetup(store, { lookup, readCredentials: async () => null, openBrowser: async url => { opened.push(url); }, sleep: async () => {}, fetcher: async (url, options) => { calls.push({ url, options }); return handler(url, options); }, ...extra });
+  return { setup, calls, opened, store };
+}
+const token = jwt({ uid: 'user-1', exp: Math.floor(Date.now() / 1000) + 30 * 86400 });
+test('Promte-login sker i Aura gennem browsergodkendelse og gemmes krypteret pr. vært', async () => {
+  let polls = 0;
+  const { setup, calls, opened, store } = promteSetup((url, options) => {
+    if (url.endsWith('/api/extension-auth/start')) { assert.deepEqual(JSON.parse(options.body), { client: 'aura' }); assert.equal(options.headers.Authorization, undefined); return response({ flowId: 'flow-1', flowSecret: 'flow-secret', approveUrl: HOST + '/extension-connect?flowId=flow-1', expiresAt: Date.now() + 60000, pollIntervalMs: 10 }); }
+    if (url.includes('/api/extension-auth/status')) return ++polls < 2 ? response({ state: 'pending' }) : response({ state: 'approved', token, email: 'dev@kommune.dk' });
+    throw Error('Uventet kald ' + url);
+  });
   assert.equal((await setup.state({ host: HOST })).connected, false);
   const state = await setup.login({ host: HOST });
-  assert.equal(state.connected, true); assert.equal(state.accountRequired, 'Kræver konto og betalt aftale');
-  assert.ok(!JSON.stringify(state).includes('never-in-ui'));
-  assert.deepEqual(commands.find(c => c.args[0] === 'login').args, ['login', '--host', HOST]);
-  assert.ok(commands.every(c => c.program.endsWith('promte-app-upload')));
-  assert.ok(hosts.every(host => host === HOST));
+  assert.deepEqual(opened, [HOST + '/extension-connect?flowId=flow-1']);
+  assert.equal(state.connected, true); assert.equal(state.email, 'dev@kommune.dk'); assert.equal(state.loginSource, 'aura'); assert.equal(state.installed, true);
+  assert.ok(!JSON.stringify(state).includes(token), 'tokenet når aldrig brugerfladen');
+  assert.ok(!JSON.stringify(store.state).includes(token), 'tokenet gemmes kun krypteret');
+  assert.ok(calls.find(c => c.url.includes('/status')).url.includes('flowSecret=flow-secret'));
+  assert.equal((await setup.state({ host: 'https://anden.promte.dk' })).connected, false, 'login gælder kun den valgte vært');
   assert.equal((await setup.logout({ host: HOST })).connected, false);
-  const missing = new PromteSetup({ lookup, run: async () => { throw Error('ENOENT'); }, readCredentials: async () => null });
-  await assert.rejects(missing.login({ host: HOST }), /Installér/);
+});
+test('Promte-login stopper med en forståelig besked ved afvisning og afviser fremmede godkendelsessider', async () => {
+  const denied = promteSetup(url => url.endsWith('/start') ? response({ flowId: 'f', flowSecret: 's', approveUrl: HOST + '/extension-connect?flowId=f', pollIntervalMs: 10 }) : response({ state: 'denied' }));
+  await assert.rejects(denied.setup.login({ host: HOST }), /afvist/);
+  assert.deepEqual(denied.store.state.hosting, {});
+  const expired = promteSetup(url => url.endsWith('/start') ? response({ flowId: 'f', flowSecret: 's', approveUrl: HOST + '/extension-connect?flowId=f', pollIntervalMs: 10 }) : response({ state: 'not_found' }, 404));
+  await assert.rejects(expired.setup.login({ host: HOST }), /udløb/);
+  for (const approveUrl of ['http://organisation.promte.dk/extension-connect', HOST + '/andet', 'https://127.0.0.1/extension-connect']) {
+    const odd = promteSetup(() => response({ flowId: 'f', flowSecret: 's', approveUrl }));
+    await assert.rejects(odd.setup.login({ host: HOST }), /login|offentlig/i, approveUrl);
+    assert.deepEqual(odd.opened, [], 'en ukendt side åbnes aldrig i browseren');
+  }
+});
+test('Promte viser brugerens apps og opretter en ny app med brugeren som ejer', async () => {
+  const { setup, calls, store } = promteSetup((url, options) => {
+    if (url.endsWith('/start')) return response({ flowId: 'f', flowSecret: 's', approveUrl: HOST + '/extension-connect?flowId=f', pollIntervalMs: 10 });
+    if (url.includes('/status')) return response({ state: 'approved', token, email: 'dev@kommune.dk' });
+    if (url.endsWith('/api/app-upload/workspaces')) { assert.equal(options.headers.Authorization, 'Bearer ' + token); return response({ workspaces: [{ id: 'ws-1', name: 'Budget', activeAppVersion: 2 }, { id: '../ugyldig', name: 'X' }, { id: 'ws-2', name: '' }] }); }
+    if (url.endsWith('/api/addDoc')) return response({ id: 'ws-new', data: JSON.parse(options.body).data });
+    throw Error('Uventet kald ' + url);
+  });
+  await setup.login({ host: HOST });
+  assert.deepEqual(await setup.workspaces({ host: HOST }), [{ id: 'ws-1', name: 'Budget', activeAppVersion: 2 }, { id: 'ws-2', name: 'ws-2', activeAppVersion: null }]);
+  await assert.rejects(setup.createWorkspace({ host: HOST, name: ' ' }), /navn/);
+  assert.deepEqual(await setup.createWorkspace({ host: HOST, name: ' Mødebooking ' }), { id: 'ws-new', name: 'Mødebooking', activeAppVersion: null });
+  const body = JSON.parse(calls.find(c => c.url.endsWith('/api/addDoc')).options.body);
+  assert.deepEqual(body, { path: 'workspaces', data: { name: 'Mødebooking', users: { [Buffer.from('dev@kommune.dk').toString('base64')]: 'owner' }, owner: 'user-1', createdBy: 'dev@kommune.dk', type: 'app', deleted: false, published: false } });
+  // Uploadkald bruger Auras gemte login frem for CLI'ens fil.
+  const provider = new PromteDeployment({ store, lookup, readCredentials: async () => ({ token: 'cli-token' }), fetcher: async (url, options) => { assert.equal(options.headers.Authorization, 'Bearer ' + token); return response({ uploadMode: 'source', available: true }); } });
+  await provider.inspect(config);
+});
+test('Promte bruger et eksisterende CLI-login, når Aura ikke selv er logget ind', async () => {
+  const setup = new PromteSetup(memoryStore(), { lookup, readCredentials: async host => host === HOST ? { token: 'cli-token' } : null });
+  const state = await setup.state({ host: HOST });
+  assert.equal(state.connected, true); assert.equal(state.loginSource, 'cli'); assert.ok(!JSON.stringify(state).includes('cli-token'));
+  await assert.rejects(setup.createWorkspace({ host: HOST, name: 'Ny' }), /Log ind med Promte i Aura/);
 });
 test('Promte kræver dokumenteret source-capability og adgang uden at udlevere token', async () => {
   const { provider, reads, calls } = adapter(() => response({ available: true, uploadMode: 'source' }));
   const target = await provider.inspect(config);
   assert.equal(target.id, config.workspaceId);
   assert.deepEqual(target.uploadDestinations, [HOST, 'https://app.promte.dk']);
-  assert.deepEqual(reads, [HOST]);
+  // Kapabiliteter og appens navn hentes begge fra den valgte vært.
+  assert.deepEqual(reads, [HOST, HOST]);
+  assert.equal(target.name, config.workspaceId, 'uden appliste vises ID\'et');
   assert.equal(calls[0].options.headers.Authorization, 'Bearer secret-for-selected-host');
   assert.ok(!JSON.stringify(target).includes('secret-for-selected-host'));
+  const named = adapter(url => url.includes('/app-upload/workspaces') ? response({ workspaces: [{ id: config.workspaceId, name: 'Budget' }] }) : response({ available: true, uploadMode: 'source' }));
+  assert.equal((await named.provider.inspect(config)).name, 'Budget');
   for (const value of [{ available: true, uploadMode: 'built' }, { available: false, uploadMode: 'source' }, { available: true }]) await assert.rejects(adapter(() => response(value)).provider.inspect(config), /kildekodeupload/);
   await assert.rejects(adapter(() => response({ error: 'secret details' }, 403)).provider.inspect(config), /administrator/);
 });
@@ -112,7 +163,7 @@ test('Promte blokerer udokumenteret uploadvært og efterlader en kontrollerbar v
   const target = await provider.inspect(config);
   await assert.rejects(provider.deploy(config, artifact(), target, { onUploaded: async value => checkpoints.push(value) }), /ikke var med i gennemgangen/);
   assert.deepEqual(checkpoints, [{ id: 'version:9', promteVersion: 9, state: 'PREPARED', url: null }]);
-  assert.equal(calls.length, 2);
+  assert.equal(calls.length, 3, 'kapabiliteter, appens navn og prepare; ingen upload');
 });
 test('Promte bevarer bekræftet upload selv om finalize fejler', async () => {
   const checkpoints = [];

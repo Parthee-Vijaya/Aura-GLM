@@ -4,6 +4,7 @@ const methods = {
   chatMergeReview: 'chat:merge-review', chatMerge: 'chat:merge',
   supportReport: 'support:report', supportSave: 'support:save', supportFeedback: 'support:feedback', supportContact: 'support:contact',
   restoreReview: 'git:restore-review', restoreVersion: 'git:restore', historyVersion: 'history:version', historyRename: 'history:rename', historyImage: 'history:image',
+  promtePreviewConnect: 'promte:preview-connect', promtePreviewLogin: 'promte:preview-login', promtePreviewFetch: 'promte:preview-fetch',
   previewRuntime: 'preview:runtime', previewCheck: 'preview:check', previewPick: 'preview:pick', previewEditText: 'preview:edit-text', previewContains: 'preview:contains', changesUndo: 'changes:undo', previewPrepare: 'preview:prepare', previewExecute: 'preview:execute', previewStop: 'preview:stop',
   newConversation: 'workspace:new-conversation', chatOpen: 'chat:open', chatRename: 'chat:rename', chatDelete: 'chat:delete', projectLocation: 'project:location', chooseProjectLocation: 'project:choose-location', recentProjects: 'project:recent', reopenProject: 'project:reopen', saveDraft: 'workspace:draft',
   deploymentGuides: 'deployment:guides', deploymentGuideOpen: 'deployment:guide-open', deploymentState: 'deployment:state', deploymentReview: 'deployment:review', deploymentSend: 'deployment:send', deploymentCheck: 'deployment:check', deploymentOpen: 'deployment:open', deploymentSetup: 'deployment:setup', deploymentSetupOpen: 'deployment:setup-open', deploymentTracking: 'deployment:tracking',

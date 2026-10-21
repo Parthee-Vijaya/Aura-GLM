@@ -51,11 +51,11 @@ const options = [
   },
   {
     id: 'promte', name: 'Promte Apps', integrated: true,
-    summary: 'Apps i jeres Promte-arbejdsområde. Kræver konto, betalt aftale og administratoradgang.',
-    scope: 'Aura uploader en gennemgået React-kildepakke. Promte bygger og gennemgår den efter sin faste byggeopsætning. Den valgte Promte-installation skal understøtte kildekodeupload.',
+    summary: 'Apps i jeres Promte-arbejdsområde, fx på kodning.promte.dk. Kræver konto, betalt aftale og administratoradgang.',
+    scope: 'Aura logger ind gennem Promte i browseren og uploader en gennemgået React-kildepakke til en app, du vælger eller opretter. Der kræves ingen CLI. Promte bygger og gennemgår den efter sin faste byggeopsætning. Den valgte Promte-installation skal understøtte kildekodeupload.',
     data: 'Aftal databehandling, AI-modtagere, adgang og drift med Promte og jeres administrator. Produktets sikkerhedsbeskrivelse er ikke en godkendelse af den app, I bygger.',
-    steps: ['Installér Promtes officielle app-upload-værktøj. Vælg organisationens Promte-adresse i Aura, og log ind gennem værktøjets browserforløb.', 'Angiv app-arbejdsområdets ID fra Promte og mappen med kildekoden. Følg Promte-skillens byggeregler. Gem opsætningen og koden som en version.', 'Gennemgå filerne og de udeladte bygge- og værktøjsfiler. Udgiv til Promtes bygning og gennemgang. Følg den konkrete versions status, og afprøv appen i Promte med den tilsigtede bruger.'],
-    links: { guide: 'https://promte.com/blog/byg-dine-egne-ai-apps-vi-hoster-dem', data: 'https://docs.promte.com/GDPR-hosting-og-databehandling-1a79a6ea8b0a80e2bc04f4e2b41bab42' }
+    steps: ['Vælg organisationens Promte-adresse i Aura, fx https://kodning.promte.dk. Log ind i browseren, og godkend Aura.', 'Vælg en af dine apps, eller opret en ny. Følg Promte-skillens byggeregler, og gem koden som en version.', 'Gennemgå filerne og de udeladte bygge- og værktøjsfiler. Udgiv til Promtes bygning og gennemgang. Følg den konkrete versions status, og afprøv appen i Promte med den tilsigtede bruger.'],
+    links: { guide: 'https://app.promte.dk/docs/admin/udvikl-apps-med-kodeagenter', data: 'https://docs.promte.com/GDPR-hosting-og-databehandling-1a79a6ea8b0a80e2bc04f4e2b41bab42' }
   }
 ];
 function catalog() { return options.map(option => ({ ...option, checkedAt })).sort((a, b) => a.name.localeCompare(b.name, 'da')); }

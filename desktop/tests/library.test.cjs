@@ -186,5 +186,5 @@ test('integrationsskills holder nøgler på serveren og nævner systemets regler
   assert.match(text('harness-integration-adresser'), /Brug ikke DAWA/);
   assert.match(text('harness-integration-adresser'), /EPSG:25832/);
   for (const rule of [/§ 17/, /reklamebeskyttede/, /CPR-numre må aldrig/, /opdigtede virksomheder/]) assert.match(text('harness-integration-cvr'), rule);
-  for (const rule of [/PromteAppProvider/, /devDependencies/, /Kør dem kun, når brugeren har sagt ja/, /Bed aldrig brugeren indsætte et token/]) assert.match(text('harness-integration-promte'), rule);
+  for (const rule of [/PromteAppProvider/, /devDependencies/, /Kør dem kun, når brugeren har sagt ja/, /Bed aldrig brugeren indsætte et token/, /Del → Promte/, /Kør ikke upload-kommandoer fra Aura/, /Aura svarer som Promte/]) assert.match(text('harness-integration-promte'), rule);
 });

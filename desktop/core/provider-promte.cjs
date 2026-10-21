@@ -5,12 +5,13 @@ const https = require('node:https');
 const dns = require('node:dns/promises');
 const { isIP } = require('node:net');
 const { randomUUID, createHash } = require('node:crypto');
-const { command } = require('./deployment-providers.cjs');
 const { zip } = require('./komplai-publish.cjs');
 
 // Kontrakten følger den publicerede @promte/app-upload 0.2.0.
-// Login tilhører Promtes CLI. Aura læser kun adgang til den valgte HTTPS-vært.
+// Aura logger selv ind gennem Promtes browsergodkendelse og gemmer adgangen krypteret pr. vært.
+// Et login fra Promtes CLI på samme computer bruges, hvis Aura ikke selv er logget ind.
 const DEFAULT_HOST = 'https://app.promte.dk';
+const LOGIN_TIMEOUT = 10 * 60 * 1000;
 const ACCOUNT_REQUIRED = 'Kræver konto og betalt aftale';
 const SKIP_DIRS = new Set(['node_modules', 'bower_components', '.git', '.hg', '.svn', '.promte-source', '.cache', '.yarn', '.npm', '.pnpm-store', '.turbo', '.vite', '.parcel-cache', '.next', '.nuxt', '.output', 'dist', 'build', 'out', 'coverage', '__pycache__', '.pytest_cache', '.mypy_cache', '.venv', 'venv', '.ssh', '.aws', '.azure', '.gcloud', '.kube', '.docker', '__macosx', '.claude', '.agents', '.codex', '.cursor', '.idea', '.vscode']);
 const SKIP_FILE = /^(?:\.env(?:\..*)?|\.npmrc|\.pypirc|\.netrc|\.ds_store|\.yarnrc(?:\.yml)?|\.secrets?|credentials(?:\.[^.]+)?|secrets?\.(?:json|ya?ml|toml)|id_(?:rsa|dsa|ecdsa|ed25519)(?:\.pub)?|promte-app-upload\.config\.json|yarn\.lock|pnpm-lock\.yaml|vite\.config\.[cm]?[jt]s)$|\.(?:pem|key|p12|pfx|keystore|jks|zip|tar|tgz|gz|7z|rar|map|tsbuildinfo|log|pyc|o|so|dll|exe|class)$/i;
@@ -98,38 +99,31 @@ function pinnedRequest(url, options, address) {
     request.on('error', error => { clearTimeout(timer); reject(error); }); request.end(options.body);
   });
 }
-class PromteSetup {
-  constructor({ run = command, readCredentials: reader = readCredentials, lookup = dns.lookup } = {}) { this.run = run; this.reader = reader; this.lookup = lookup; }
-  async state({ host = DEFAULT_HOST } = {}) {
-    host = promteHost(host);
-    let installed = false;
-    try { const help = await this.run(process.env.HARNESS_PROMTE_PATH || 'promte-app-upload', ['--help']); installed = help.includes('promte-app-upload login') && help.includes('promte-app-upload status'); } catch {}
-    return { host, installed, connected: Boolean((await this.reader(host))?.token), accountRequired: ACCOUNT_REQUIRED, loginURL: host, signupURL: 'https://promte.com/kontakt' };
-  }
-  async login({ host = DEFAULT_HOST } = {}) {
-    host = promteHost(host); await addressFor(host, this.lookup);
-    if (!(await this.state({ host })).installed) throw Error('Installér Promtes officielle app-upload-værktøj, og prøv igen. Se opsætningsvejledningen.');
-    await this.run(process.env.HARNESS_PROMTE_PATH || 'promte-app-upload', ['login', '--host', host], { timeout: 660000, extra: process.env.XDG_CONFIG_HOME ? { XDG_CONFIG_HOME: process.env.XDG_CONFIG_HOME } : {} });
-    const state = await this.state({ host });
-    if (!state.connected) throw Error('Login blev ikke gemt af Promte. Prøv at logge ind igen.');
-    return state;
-  }
-  async logout({ host = DEFAULT_HOST } = {}) {
-    host = promteHost(host);
-    await this.run(process.env.HARNESS_PROMTE_PATH || 'promte-app-upload', ['logout', '--host', host], { extra: process.env.XDG_CONFIG_HOME ? { XDG_CONFIG_HOME: process.env.XDG_CONFIG_HOME } : {} });
-    return this.state({ host });
-  }
+// Auras eget login gemmes krypteret under state.hosting.promte[vært].
+async function savedLogin(store, host, now = Date.now()) {
+  const saved = store ? (await store.read()).hosting?.promte?.[host] : null;
+  if (!saved?.secret || !(Date.parse(saved.expiresAt) > now)) return null;
+  return saved;
+}
+function tokenClaims(token) {
+  try { return JSON.parse(Buffer.from(String(token).split('.')[1], 'base64url').toString('utf8')) || {}; } catch { return {}; }
 }
 class PromteDeployment {
-  constructor({ fetcher, readCredentials: reader = readCredentials, lookup = dns.lookup } = {}) { this.id = 'promte'; this.fetcher = fetcher; this.reader = reader; this.lookup = lookup; }
-  async call(host, route, { body, token, upload = false, contentType } = {}) {
+  constructor({ store, fetcher, readCredentials: reader = readCredentials, lookup = dns.lookup } = {}) { this.id = 'promte'; this.store = store; this.fetcher = fetcher; this.reader = reader; this.lookup = lookup; }
+  async token(host) {
+    const saved = await savedLogin(this.store, host);
+    if (saved) return this.store.decrypt(saved);
+    return (await this.reader(host))?.token;
+  }
+  async call(host, route, { body, token, upload = false, contentType, anonymous = false, accept = [] } = {}) {
     host = promteHost(host);
     const address = await addressFor(host, this.lookup);
-    if (!token) token = (await this.reader(host))?.token;
-    if (!token) throw Error('Log ind med Promte til den valgte installation.');
-    const options = { method: body === undefined ? 'GET' : 'POST', redirect: 'error', credentials: 'omit', timeout: upload ? 120000 : 30000, headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', ...(body !== undefined ? { 'Content-Type': contentType || 'application/json' } : {}) }, body: body === undefined ? undefined : Buffer.isBuffer(body) ? body : JSON.stringify(body) };
+    if (!token && !anonymous) token = await this.token(host);
+    if (!token && !anonymous) throw Error('Log ind med Promte til den valgte installation.');
+    const options = { method: body === undefined ? 'GET' : 'POST', redirect: 'error', credentials: 'omit', timeout: upload ? 120000 : 30000, headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), Accept: 'application/json', ...(body !== undefined ? { 'Content-Type': contentType || 'application/json' } : {}) }, body: body === undefined ? undefined : Buffer.isBuffer(body) ? body : JSON.stringify(body) };
     let response, value;
     try { response = await (this.fetcher ? this.fetcher(host + route, { ...options, signal: AbortSignal.timeout(options.timeout) }) : pinnedRequest(host + route, options, address)); const text = await response.text(); if (Buffer.byteLength(text) > 2 * 1024 * 1024) throw Error(); value = JSON.parse(text); } catch { throw Error('Promte-svaret kunne ikke kontrolleres. Se udgivelserne i Promte før et nyt forsøg.'); }
+    if (accept.includes(response.status) && value && typeof value === 'object') return value;
     if (response.status === 401) throw Error('Promte-login er udløbet eller afvist. Log ind igen.');
     if (response.status === 403) throw Error('Du skal være administrator i Promte-arbejdsområdet for at udgive.');
     if (!response.ok || !value || typeof value !== 'object') throw Error('Promte kunne ikke gennemføre handlingen. Kontrollér arbejdsområde og udgivelser i Promte.');
@@ -139,7 +133,10 @@ class PromteDeployment {
     const c = promteConfiguration(input);
     const capabilities = await this.call(c.host, '/api/app-upload/capabilities?workspaceId=' + encodeURIComponent(c.workspaceId));
     if (capabilities.available !== true || capabilities.uploadMode !== 'source') throw Error('Denne Promte-installation skal understøtte kildekodeupload. Kontakt administratoren om appbygning og din adgang.');
-    return { id: c.workspaceId, name: c.workspaceId, owner: new URL(c.host).hostname, host: new URL(c.host).hostname, portal: c.host, region: 'Afhænger af jeres Promte-installation og dens tjenester.', settings: { uploadMode: 'source' }, environmentKeys: [], access: 'Adgang styres i Promte-arbejdsområdet. Kontrollér den med den tilsigtede bruger.', accountRequired: ACCOUNT_REQUIRED, uploadDestinations: [...new Set([c.host, DEFAULT_HOST])], materialNote: 'Kildekoden sendes til den valgte Promte-installation eller Promtes fælles uploadtjeneste på app.promte.dk. Promte bygger og gennemgår versionen.' };
+    // Appens navn vises, hvor Promte kan oplyse det. Ældre installationer viser ID'et.
+    let name = c.workspaceId;
+    try { const found = (await this.call(c.host, '/api/app-upload/workspaces')).workspaces?.find(w => w?.id === c.workspaceId); if (typeof found?.name === 'string' && found.name.trim()) name = found.name.slice(0, 200); } catch {}
+    return { id: c.workspaceId, name, owner: new URL(c.host).hostname, host: new URL(c.host).hostname, portal: c.host, region: 'Afhænger af jeres Promte-installation og dens tjenester.', settings: { uploadMode: 'source' }, environmentKeys: [], access: 'Adgang styres i Promte-arbejdsområdet. Kontrollér den med den tilsigtede bruger.', accountRequired: ACCOUNT_REQUIRED, uploadDestinations: [...new Set([c.host, DEFAULT_HOST])], materialNote: 'Kildekoden sendes til den valgte Promte-installation eller Promtes fælles uploadtjeneste på app.promte.dk. Promte bygger og gennemgår versionen.' };
   }
   async deploy(input, artifact, target, { onUploaded = async () => {} } = {}) {
     const c = promteConfiguration(input); validatePromteArtifact(artifact);
@@ -174,6 +171,70 @@ class PromteDeployment {
     return { id: typeof release.id === 'string' ? identifier(release.id, 'versionens ID') : receipt.id, state: releaseState(release.status), url: null, promteVersion: receipt.promteVersion };
   }
 }
+const LOGIN_ENDED = { denied: 'Login blev afvist i Promte.', expired: 'Login udløb, før det blev godkendt. Prøv igen.', consumed: 'Login er allerede brugt. Prøv igen.', not_found: 'Login udløb, før det blev godkendt. Prøv igen.' };
+class PromteSetup {
+  constructor(store, { fetcher, lookup = dns.lookup, readCredentials: reader = readCredentials, openBrowser = url => require('electron').shell.openExternal(url), sleep = ms => new Promise(resolve => setTimeout(resolve, ms)), now = Date.now } = {}) {
+    this.store = store; this.reader = reader; this.openBrowser = openBrowser; this.sleep = sleep; this.now = now;
+    this.client = new PromteDeployment({ store, fetcher, lookup, readCredentials: reader });
+  }
+  async state({ host = DEFAULT_HOST } = {}) {
+    host = promteHost(host);
+    const saved = await savedLogin(this.store, host, this.now());
+    const cli = saved ? null : await this.reader(host);
+    // Aura logger selv ind, så Promtes CLI er ikke længere et krav.
+    return { host, installed: true, connected: Boolean(saved || cli?.token), email: saved?.email || '', loginSource: saved ? 'aura' : cli?.token ? 'cli' : null, expiresAt: saved?.expiresAt || null, accountRequired: ACCOUNT_REQUIRED, loginURL: host, signupURL: 'https://promte.com/kontakt' };
+  }
+  /** Promte viser en godkendelsesside i browseren. Aura venter på svaret og gemmer adgangen krypteret. */
+  async login({ host = DEFAULT_HOST } = {}) {
+    host = promteHost(host);
+    const started = await this.client.call(host, '/api/extension-auth/start', { body: { client: 'aura' }, anonymous: true });
+    let approve; try { approve = new URL(started.approveUrl); } catch {}
+    if (typeof started.flowId !== 'string' || typeof started.flowSecret !== 'string' || !approve || approve.protocol !== 'https:' || approve.pathname !== '/extension-connect' || approve.username || approve.password) throw Error('Promte startede ikke et gyldigt login. Kontrollér adressen.');
+    promteHost(approve.origin + '/');
+    if (this.store) this.store.encrypt('kontrol');
+    await this.openBrowser(approve.toString());
+    const deadline = Math.min(this.now() + LOGIN_TIMEOUT, Number(started.expiresAt) || Infinity);
+    const route = '/api/extension-auth/status?' + new URLSearchParams({ flowId: started.flowId, flowSecret: started.flowSecret });
+    while (this.now() < deadline) {
+      await this.sleep(Math.max(1000, Number(started.pollIntervalMs) || 1500));
+      let status;
+      try { status = await this.client.call(host, route, { anonymous: true, accept: [404] }); } catch { continue; }
+      if (status.state === 'approved' && typeof status.token === 'string' && status.token && !/[\r\n]/.test(status.token)) {
+        const exp = Number(tokenClaims(status.token).exp);
+        const expiresAt = new Date(Number.isFinite(exp) ? exp * 1000 : this.now() + 30 * 86400000).toISOString();
+        const email = typeof status.email === 'string' ? status.email.slice(0, 320) : '';
+        await this.store.update(state => { state.hosting = { ...state.hosting, promte: { ...state.hosting?.promte, [host]: { secret: this.store.encrypt(status.token), email, expiresAt } } }; });
+        return this.state({ host });
+      }
+      if (LOGIN_ENDED[status.state]) throw Error(LOGIN_ENDED[status.state]);
+    }
+    throw Error(LOGIN_ENDED.expired);
+  }
+  async logout({ host = DEFAULT_HOST } = {}) {
+    host = promteHost(host);
+    await this.store.update(state => { if (state.hosting?.promte) delete state.hosting.promte[host]; });
+    return this.state({ host });
+  }
+  /** App-arbejdsområder, som brugeren må uploade til. Promte bruger samme kontrol som ved upload. */
+  async workspaces({ host = DEFAULT_HOST } = {}) {
+    const value = await this.client.call(host, '/api/app-upload/workspaces');
+    if (!Array.isArray(value.workspaces)) throw Error('Promte sendte ikke en liste over apps. Opdatér Promte, eller indtast arbejdsområdets ID.');
+    return value.workspaces.filter(w => typeof w?.id === 'string' && /^[A-Za-z0-9][A-Za-z0-9_-]{0,199}$/.test(w.id)).slice(0, 500).map(w => ({ id: w.id, name: typeof w.name === 'string' && w.name.trim() ? w.name.slice(0, 200) : w.id, activeAppVersion: Number.isSafeInteger(w.activeAppVersion) ? w.activeAppVersion : null }));
+  }
+  /** Opretter et nyt app-arbejdsområde med brugeren som ejer, ligesom Promtes egen opret-knap. */
+  async createWorkspace({ host = DEFAULT_HOST, name } = {}) {
+    host = promteHost(host);
+    name = typeof name === 'string' ? name.trim() : '';
+    if (!name || name.length > 100 || /[\x00-\x1f]/.test(name)) throw Error('Giv appen et navn på højst 100 tegn.');
+    const saved = await savedLogin(this.store, host, this.now());
+    const token = await this.client.token(host);
+    const uid = tokenClaims(token).uid;
+    const email = saved?.email;
+    if (!token || typeof uid !== 'string' || !uid || !email) throw Error('Log ind med Promte i Aura for at oprette en app.');
+    const created = await this.client.call(host, '/api/addDoc', { body: { path: 'workspaces', data: { name, users: { [Buffer.from(email, 'utf8').toString('base64')]: 'owner' }, owner: uid, createdBy: email, type: 'app', deleted: false, published: false } } });
+    return { id: identifier(created.id), name, activeAppVersion: null };
+  }
+}
 const RELEASE_STATES = new Map(Object.entries({ published: 'READY', reviewing: 'REVIEWING', pending: 'REVIEWING', building: 'BUILDING', blocked: 'BLOCKED', rejected: 'REJECTED', failed: 'ERROR' }));
 function releaseState(status) { return RELEASE_STATES.get(status) || 'UNKNOWN'; }
-module.exports = { PromteDeployment, PromteSetup, promteConfiguration, preparePromteArtifact, validatePromteArtifact, promteHost, publicAddress, releaseState, DEFAULT_HOST };
+module.exports = { PromteDeployment, PromteSetup, promteConfiguration, preparePromteArtifact, validatePromteArtifact, promteHost, publicAddress, addressFor, releaseState, DEFAULT_HOST };

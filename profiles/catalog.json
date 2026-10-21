@@ -628,10 +628,10 @@
       "title": "Promte",
       "summary": "Bygger en app, der kører i et Promte-arbejdsområde, og uploader kildekoden, så Promte tjekker og bygger den.",
       "faq": {
-        "hvad": "Hjælper agenten med at opsætte et React-projekt efter Promtes byggeregler, bruge app-biblioteket til modeller, vidensbaser og data og uploade kildekoden med Promtes kommandolinjeværktøj.",
+        "hvad": "Hjælper agenten med at opsætte et React-projekt efter Promtes byggeregler og bruge app-biblioteket til modeller, vidensbaser og data. I Aura udgiver brugeren med Del, i andre værktøjer med Promtes kommandolinjeværktøj.",
         "hvornaar": "Når en løsning skal køre som app i et Promte-arbejdsområde.",
         "resultat": "Et projekt, som Promte kan bygge, uden nøgler i koden, og en version, der venter på godkendelse eller er udgivet i arbejdsområdet.",
-        "ikke": "Opretter ikke en Promte-konto, et arbejdsområde eller administratorrettigheder for dig og godkender ikke versioner. Kommandolinjeværktøjet hentes fra npm, når brugeren siger ja."
+        "ikke": "Opretter ikke en Promte-konto eller administratorrettigheder for dig og godkender ikke versioner. Agenten udgiver ikke selv fra Aura. Kommandolinjeværktøjet i andre værktøjer hentes fra npm, når brugeren siger ja."
       },
       "sources": [
         {
@@ -655,13 +655,13 @@
         "system": "Promte-apps via app-biblioteket og kommandolinjeværktøjet til upload",
         "owner": "Promte",
         "maintainer": "Promte",
-        "access": "Kræver en Promte-installation og administratorrettighed i appens arbejdsområde. Login til upload godkendes i browseren og gælder i 30 dage.",
+        "access": "Kræver en Promte-installation og administratorrettighed i appens arbejdsområde. Login til udgivelse godkendes i browseren og gælder i 30 dage. En ny app kan oprettes fra Aura.",
         "data": "Appens egne data og filer i Promte, privat for hver bruger eller fælles for arbejdsområdet. Om der er persondata, afhænger af appen.",
         "dataFlow": "Appen kalder kun organisationens Promte-server, som sender modelkald videre til de modeller, organisationen har valgt. Kildekoden uploades til samme server, som bygger og gennemgår den.",
         "cost": "Kræver en aftale med Promte. Prisen er ikke offentliggjort og er ikke verificeret her.",
         "itRoute": true,
         "sensitive": false,
-        "checkedAt": "2026-10-18"
+        "checkedAt": "2026-10-21"
       }
     },
     {
