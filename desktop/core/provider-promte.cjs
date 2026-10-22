@@ -15,6 +15,8 @@ const LOGIN_TIMEOUT = 10 * 60 * 1000;
 const ACCOUNT_REQUIRED = 'Kræver konto og betalt aftale';
 const UNREADABLE = 'Promte-svaret kunne ikke kontrolleres. Se udgivelserne i Promte før et nyt forsøg.';
 const NO_LIST = 'Denne Promte-installation viser ikke en liste over apps.';
+const PROMTE_WEBSITE = 'Promte udgiver kun apps, der er bygget til Promte. Projektet er en almindelig hjemmeside, og den kan Promte ikke tage imod.';
+const PROMTE_SETUP = 'Promte udgiver kun apps, der er bygget til Promte. Projektet er ikke sat op, som Promte kræver.';
 const SKIP_DIRS = new Set(['node_modules', 'bower_components', '.git', '.hg', '.svn', '.promte-source', '.cache', '.yarn', '.npm', '.pnpm-store', '.turbo', '.vite', '.parcel-cache', '.next', '.nuxt', '.output', 'dist', 'build', 'out', 'coverage', '__pycache__', '.pytest_cache', '.mypy_cache', '.venv', 'venv', '.ssh', '.aws', '.azure', '.gcloud', '.kube', '.docker', '__macosx', '.claude', '.agents', '.codex', '.cursor', '.idea', '.vscode']);
 const SKIP_FILE = /^(?:\.env(?:\..*)?|\.npmrc|\.pypirc|\.netrc|\.ds_store|\.yarnrc(?:\.yml)?|\.secrets?|credentials(?:\.[^.]+)?|secrets?\.(?:json|ya?ml|toml)|id_(?:rsa|dsa|ecdsa|ed25519)(?:\.pub)?|promte-app-upload\.config\.json|yarn\.lock|pnpm-lock\.yaml|vite\.config\.[cm]?[jt]s)$|\.(?:pem|key|p12|pfx|keystore|jks|zip|tar|tgz|gz|7z|rar|map|tsbuildinfo|log|pyc|o|so|dll|exe|class)$/i;
 const UNSUPPORTED_BUILD_FILE = /^(?:(?:postcss|tailwind|babel|webpack|rollup)\.config\..+|\.babelrc(?:\..*)?|\.postcssrc(?:\..*)?)$/i;
@@ -58,20 +60,49 @@ function validatePromteArtifact(artifact) {
   for (const { file, data } of artifact.files) {
     if (typeof file !== 'string' || !Buffer.isBuffer(data) || /[\x00-\x1f\\:]/.test(file) || file.startsWith('/') || file.split('/').some(p => !p || p === '.' || p === '..' || /[. ]$/.test(p)) || seen.has(file)) throw Error('Kildepakken indeholder en ugyldig eller gentaget filsti.');
     seen.add(file); bytes += data.length;
-    if (ignoredSource(file) || UNSUPPORTED_BUILD_FILE.test(path.posix.basename(file))) throw Error(`Promte modtager ikke ${file}. Vælg en kildekodemappe uden byggeoutput, nøgler eller særskilt byggekonfiguration.`);
+    if (ignoredSource(file)) throw Error(`Promte modtager ikke ${file}. Vælg en kildekodemappe uden byggeoutput, nøgler eller særskilt byggekonfiguration.`);
   }
   if (bytes > 50 * 1024 * 1024) throw Error('Promte-kildekoden må højst fylde 50 MB udpakket.');
-  const manifest = artifact.files.find(f => f.file === 'package.json');
-  let pkg; try { pkg = JSON.parse(manifest?.data); } catch { throw Error('Promte-kildekoden mangler en gyldig package.json.'); }
-  if (!pkg || typeof pkg !== 'object' || Array.isArray(pkg)) throw Error('package.json skal beskrive et Promte-projekt.');
+  const problem = promteProblem([...seen], artifact.files.find(f => f.file === 'package.json')?.data);
+  if (problem) throw Error(`${problem.kind === 'website' ? PROMTE_WEBSITE : PROMTE_SETUP} ${problem.detail}`);
+}
+// Er kildekoden en Promte-app? Promte bygger selv React-apps med sin faste Vite-opsætning. Reglerne bruges både før
+// login, på projektets filer, og ved gennemgangen af den gemte version. Svaret er null eller { kind, detail }:
+// "website" er et projekt uden package.json, fx en almindelig hjemmeside; "setup" er ikke sat op, som Promte kræver.
+function promteProblem(files, manifest) {
+  if (manifest === undefined) return { kind: 'website', detail: 'Promte-kildekoden mangler en gyldig package.json.' };
+  const problem = detail => ({ kind: 'setup', detail });
+  let pkg; try { pkg = JSON.parse(manifest); } catch { return problem('Promte-kildekoden mangler en gyldig package.json.'); }
+  if (!pkg || typeof pkg !== 'object' || Array.isArray(pkg)) return problem('package.json skal beskrive et Promte-projekt.');
+  const unsupported = files.find(file => UNSUPPORTED_BUILD_FILE.test(path.posix.basename(file)));
+  if (unsupported) return problem(`Promte modtager ikke ${unsupported}. Promte bygger med sin egen opsætning, så filen skal fjernes.`);
   const dependencies = runtimeDependencies(pkg);
-  if (['react', 'react-dom', '@promte/app-library'].some(p => Object.hasOwn(dependencies, p))) throw Error('Flyt react, react-dom og @promte/app-library til devDependencies. Promte leverer dem ved byggeriet.');
-  if (Object.keys(dependencies).length && !seen.has('package-lock.json')) throw Error('Gem package-lock.json sammen med projektets afhængigheder.');
-  if (Object.keys(dependencies).length > 20) throw Error('Promte understøtter højst 20 afhængigheder.');
+  if (['react', 'react-dom', '@promte/app-library'].some(p => Object.hasOwn(dependencies, p))) return problem('Flyt react, react-dom og @promte/app-library til devDependencies. Promte leverer dem ved byggeriet.');
+  if (Object.keys(dependencies).length && !files.includes('package-lock.json')) return problem('Gem package-lock.json sammen med projektets afhængigheder.');
+  if (Object.keys(dependencies).length > 20) return problem('Promte understøtter højst 20 afhængigheder.');
   for (const [name, script] of Object.entries(pkg.scripts || {})) {
-    if (/^(?:preinstall|install|postinstall|prepare|prebuild|postbuild)$/.test(name) || (name === 'build' && !['vite build', 'tsc && vite build'].includes(script))) throw Error('Promte kræver sin faste byggeopsætning. Fjern installationsscripts og brug vite build som build-script.');
+    if (/^(?:preinstall|install|postinstall|prepare|prebuild|postbuild)$/.test(name) || (name === 'build' && !['vite build', 'tsc && vite build'].includes(script))) return problem('Promte kræver sin faste byggeopsætning. Fjern installationsscripts og brug vite build som build-script.');
   }
-  if (!seen.has('index.html') && ![...seen].some(f => /^(?:src\/)?main\.(?:jsx|tsx|js|ts)$/.test(f))) throw Error('Promte-kildekoden mangler index.html eller main.jsx/tsx/js/ts i roden eller src.');
+  if (!files.includes('index.html') && !files.some(f => /^(?:src\/)?main\.(?:jsx|tsx|js|ts)$/.test(f))) return problem('Promte-kildekoden mangler index.html eller main.jsx/tsx/js/ts i roden eller src.');
+  return null;
+}
+// Før login: projektets filer på disken med Promtes egne udeladelsesregler, så Udgiv kan sige det, før brugeren
+// logger ind. Ugemte filer tæller med; selve udgivelsen kontrollerer fortsat den gemte version.
+async function promteSourceProblem(root) {
+  const files = [];
+  async function walk(directory, prefix) {
+    for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
+      const file = prefix + entry.name;
+      if (files.length > 2000 || ignoredSource(file)) continue;
+      if (entry.isDirectory()) await walk(path.join(directory, entry.name), file + '/');
+      else if (entry.isFile()) files.push(file);
+    }
+  }
+  await walk(root, '');
+  // Flere end 2.000 filer afgøres ved gennemgangen, som også kontrollerer grænserne.
+  if (files.length > 2000) return null;
+  let manifest; try { manifest = await fs.readFile(path.join(root, 'package.json')); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+  return promteProblem(files, manifest);
 }
 async function readCredentials(host) {
   const location = path.join(process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config'), 'promte', 'credentials.json');
@@ -242,4 +273,4 @@ class PromteSetup {
 }
 const RELEASE_STATES = new Map(Object.entries({ published: 'READY', reviewing: 'REVIEWING', pending: 'REVIEWING', building: 'BUILDING', blocked: 'BLOCKED', rejected: 'REJECTED', failed: 'ERROR' }));
 function releaseState(status) { return RELEASE_STATES.get(status) || 'UNKNOWN'; }
-module.exports = { PromteDeployment, PromteSetup, promteConfiguration, preparePromteArtifact, validatePromteArtifact, promteHost, publicAddress, addressFor, releaseState, DEFAULT_HOST };
+module.exports = { PromteDeployment, PromteSetup, promteConfiguration, preparePromteArtifact, validatePromteArtifact, promteProblem, promteSourceProblem, PROMTE_WEBSITE, PROMTE_SETUP, promteHost, publicAddress, addressFor, releaseState, DEFAULT_HOST };

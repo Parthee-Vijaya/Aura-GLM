@@ -1,12 +1,18 @@
 # Produktretning og beslutninger
 
-## Alle projekter i sidepanelet · forberedt, ikke udgivet · 22. oktober 2026
+## Promte før login · til 0.5.0-beta.3 · 22. oktober 2026
+
+En tester loggede ind hos Promte, valgte app og fik så "Promte-kildekoden mangler en gyldig package.json." Promte tager kun imod React-apps, som Promte selv bygger med sin faste Vite-opsætning. Aura starter derimod et nyt projekt som en neutral pladsholder i `public/`, og AI'en vælger teknik efter opgaven: HTML/CSS til en enkel side, React med TypeScript til en interaktiv app og Python eller Node.js til en backend. Et almindeligt Aura-projekt er derfor ikke en Promte-app, før det er bygget som en. Promte-integrationen, som giver AI'en Promtes regler, er slået fra som standard.
+
+Brugeren valgte, at Udgiv fanger det før login, forklarer det i almindeligt dansk og tilbyder at gøre projektet klar til Promte eller vælge en anden udbyder. Kontrollen bruger Promtes egne regler fra adapteren på projektets filer på computeren. Gør projektet klar slår Promte-integrationen til for netop dette projekt og lægger en besked i skrivefeltet i Planlæg. Intet sendes automatisk, og en kladde, brugeren selv har skrevet, bevares. Aura omskriver ikke selv projektet og ændrer ikke Promtes byggekontrakt.
+
+## Alle projekter i sidepanelet · til 0.5.0-beta.3 · 22. oktober 2026
 
 Sidepanelet viste højst de 12 senest åbnede projekter, og grænsen sad i kernen (`recent()`). Et 13. projekt forsvandt derfor helt fra sidepanelet og paletten og kunne ikke åbnes fra listen, selv om dets samtaler stadig var gemt. Nu husker kernen alle projekter, appen har åbnet. Sidepanelet viser de 12 senest åbnede og resten bag "Vis alle N projekter", ligesom samtalelisten gør. Paletten søger i alle.
 
 Brugeren valgte ikke at scanne Dokumenter/Aura. Listen viser kun projekter, som netop denne installation har åbnet eller oprettet. Projekter kan ligge andre steder, og en scanning ville vise nogle og skjule andre tilfældigt. Projekter fra en anden installation, en kørsel fra kildekoden eller en prøve med egne appdata åbnes med **Åbn projekt**.
 
-## Svarloft, indsats og komprimering · forberedt, ikke udgivet · 22. oktober 2026
+## Svarloft, indsats og komprimering · til 0.5.0-beta.3 · 22. oktober 2026
 
 En tester fik "AI'en stoppede uden et resultat – Svaret blev for langt" med Cortis corti-s1 (GLM 5.3) efter en lang samtale. Årsagen er, at OpenCode 1.x sender højst 32.000 tokens pr. svar (`Math.min(limit.output, 32000)`). En tænkende model kan bruge hele loftet på at tænke. Det gælder også den nyeste 1.x (1.19.4). OpenCode 2 sætter intet sådant loft, men skiftet til 2 venter til en senere beta og undersøges for sig.
 

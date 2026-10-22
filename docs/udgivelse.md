@@ -10,7 +10,7 @@ Installationsfilerne ligger i GitHub Releases. [GitHub Pages](https://ai-allianc
 2. Byg fra den gennemgåede kode efter [pakkevejledningen](../desktop/README.md#installationspakker--beta). Brug en ny outputmappe for hver platform og bygning. Bevar tidligere testede filer.
 3. Kør `desktop/scripts/verify-package-source.cjs` med pakkens ressourcemappe og målplatform: `darwin-arm64`, `darwin-x64` eller `win32-x64`. Kontrollen sammenligner den faktiske appkode og profiler med arbejdsmappefiler, som er fulgt af Git, og runtime-manifestet med låsefilen. Den kontrollerer ikke alene installation eller signering.
 4. Afprøv den pakkede app og dens medfølgende værktøjer. Notér, om prøven er kørt på den rigtige målplatform. En Windows-pakke bygget på Mac er stadig uprøvet på Windows.
-5. Signér og notariser begge Mac-pakker. Kontrollér både appen og det endelige diskbillede efter [Apple-forløbet](../desktop/README.md#installationspakker--beta). En ny pakning eller signering kræver nye kontrolsummer og relevante kontroller.
+5. Signér og notariser begge Mac-pakker efter [Apple-forløbet](../desktop/README.md#apple-notarisation): de to første DMG'er og derefter den endelige DMG og ZIP til hver arkitektur. Send én fil ad gangen på en fast forbindelse, ikke en mobil hotspot, og hold Mac'en vågen med `caffeinate`. Falder forbindelsen ud, køres samme kommando igen; scriptet genoptager fra det gemte indsendelses-id og sender ikke filen igen. Efter en afbrudt upload sendes filen kun igen med `--send-igen`. Kontrollér både appen og det endelige diskbillede. En ny pakning eller signering kræver nye kontrolsummer og relevante kontroller.
 
 Ved ændringer i appkode eller profiler efter pakningen skal pakken bygges og kontrolleres igen. Et korrekt versionsnummer beviser ikke, at indholdet svarer til kildekoden. `verify-package-source.cjs` skal også bestå mod den kildeversion, der får udgivelsens tag.
 
@@ -24,9 +24,11 @@ Fra 0.3.0 samles tre installationsfiler og to Mac-arkiver til opdateringsfunktio
 - `Aura-VERSION-mac-arm64.zip`
 - `Aura-VERSION-mac-x64.zip`
 
-Mac-arkiverne skal indeholde den samme signerede og staplede app som DMG-filerne. Kontrollér det udpakkede arkiv med `verify-package-source.cjs`, `codesign`, `stapler validate` og `syspolicy_check distribution`. Notariser også den konkrete ZIP og gem en `.notarized.json`-kvittering med dens SHA-256; ZIP-filer kan ikke selv staples.
+Mac-arkiverne skal indeholde den samme signerede og staplede app som DMG-filerne. Kontrollér det udpakkede arkiv med `verify-package-source.cjs`, `codesign`, `stapler validate` og `syspolicy_check distribution`. Notariser også den konkrete ZIP; `notarize.cjs` gemmer en `.notarized.json`-kvittering med dens SHA-256. ZIP-filer kan ikke selv staples.
 
 Opdatér `desktop/packaging/update-notice.json` til versionen. Ved en kritisk rettelse sættes `critical` til `true`, og `message` beskriver rettelsen kort. Det giver en vedvarende advarsel, aldrig en blokering eller tvungen installation.
+
+En `.notarization-pending.json` ved siden af en fil betyder, at Apple-forløbet for filen ikke er afsluttet. Kør `notarize.cjs` igen for filen, før den samles. Ventefiler skal ikke med i udgivelsen.
 
 Læg Mac-filernes `.notarized.json`-kvitteringer ved siden af filerne, og kør fra `desktop/`:
 
@@ -36,7 +38,7 @@ node scripts/release-site.cjs release/udgivelseskandidat
 
 Erstat mappen med den faktiske mappe. Scriptet danner `release.json`, `SHA256SUMS.txt` og en lokal downloadside. Det læser versionen fra filnavnene og afviser blandede versioner. En Mac-kvittering tæller kun, hvis den har status Accepted, et indsendelses-id, en kontroldato og samme SHA-256 som filen. En kvittering er lokal dokumentation; Linux-kontrollen hos GitHub foretager ikke selv Apples signatur- eller billetkontrol.
 
-Afprøv download med `node scripts/verify-download.cjs release/udgivelseskandidat`. Installationsfiler, Apple-kvitteringer og lokale rapporter skal ikke committes. Udgivelsesnoterne skal beskrive faktisk signering og afprøvning samt kendte begrænsninger. Se [udgivelsesnoterne for 0.5.0-beta.2](releases/0.5.0-beta.2.md).
+Afprøv download med `node scripts/verify-download.cjs release/udgivelseskandidat`. Installationsfiler, Apple-kvitteringer, ventefiler og lokale rapporter skal ikke committes. Udgivelsesnoterne skal beskrive faktisk signering og afprøvning samt kendte begrænsninger. Se [udgivelsesnoterne for 0.5.0-beta.3](releases/0.5.0-beta.3.md).
 
 ## Kontrol af Komplai Run
 

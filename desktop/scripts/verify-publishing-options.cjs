@@ -91,6 +91,8 @@ const helpers = require('./ui-test-helpers.cjs');
       DeploymentSetup.prototype.act = async function(selected, value) {
         probe.actions.push(value.action);
         if (value.action === 'github-state') return { connected: probe.githubLogin, expired: false, localLogin: false, account: { login: 'prøvebruger' } };
+        // Promte-appen ligger i prøvens promte/, som udgivelsens rodmappe peger på ovenfor. Den rigtige kontrol læser den.
+        if (value.action === 'promte-check') return originalAct.call(this, path.join(selected, 'promte'), value);
         return originalAct.call(this, selected, value);
       };
       PromteSetup.prototype.state = async ({ host } = {}) => ({ host: host || 'https://app.promte.dk', installed: true, connected: probe.promteLogin, accountRequired: 'Kræver konto og betalt aftale', loginURL: host, signupURL: 'https://promte.com/kontakt' });

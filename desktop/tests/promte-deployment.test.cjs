@@ -1,7 +1,10 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { createHash } = require('node:crypto');
-const { PromteDeployment, PromteSetup, promteConfiguration, preparePromteArtifact, validatePromteArtifact, promteHost, publicAddress } = require('../core/provider-promte.cjs');
+const fs = require('node:fs/promises');
+const os = require('node:os');
+const path = require('node:path');
+const { PromteDeployment, PromteSetup, promteConfiguration, preparePromteArtifact, validatePromteArtifact, promteSourceProblem, PROMTE_WEBSITE, PROMTE_SETUP, promteHost, publicAddress } = require('../core/provider-promte.cjs');
 const HOST = 'https://organisation.promte.dk';
 const config = { provider: 'promte', mode: 'source', host: HOST, workspaceId: 'workspace-123', directory: '.' };
 const lookup = async () => [{ address: '93.184.215.14', family: 4 }];
@@ -206,4 +209,26 @@ test('Promte kontrollerer præcis release og forveksler ikke gennemgang med udgi
   const wrongHost = adapter(() => { throw Error('Må ikke kaldes'); });
   await assert.rejects(wrongHost.provider.status({ ...config, host: 'https://another.promte.dk' }, receipt), /matcher ikke destinationen/);
   assert.equal(wrongHost.calls.length, 0);
+});
+
+test('Promte-kontrollen før login skelner en almindelig hjemmeside fra et projekt, der ikke er sat op til Promte', async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'aura-promte-kontrol-')); t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const write = async (dir, files) => { for (const [file, data] of Object.entries(files)) { await fs.mkdir(path.dirname(path.join(dir, file)), { recursive: true }); await fs.writeFile(path.join(dir, file), data); } return dir; };
+  // Auras startprojekt: hjemmesiden i public/ uden package.json. Det er testerens fejl fra 22. oktober.
+  const site = await write(path.join(root, 'side'), { 'public/index.html': '<h1>Side</h1>', 'public/styles.css': 'body{}', 'README.md': '# Side', 'harness.json': '{}' });
+  assert.deepEqual(await promteSourceProblem(site), { kind: 'website', detail: 'Promte-kildekoden mangler en gyldig package.json.' });
+  // En Promte-app. Byggeoutput, pakker, lokal Vite-opsætning og .env udelades som i Promtes eget værktøj.
+  const ready = await write(path.join(root, 'klar'), { 'package.json': JSON.stringify({ private: true, scripts: { build: 'vite build' }, devDependencies: { react: '19.2.8', '@promte/app-library': '^0.1.6' } }), 'index.html': '<div id="root"></div>', 'src/main.jsx': '', 'vite.config.js': 'export default {}', '.env': 'HEMMELIG=1', 'dist/tailwind.config.js': '', 'node_modules/react/package.json': '{}' });
+  assert.equal(await promteSourceProblem(ready), null);
+  // En React-app, der ikke er sat op til Promte, og en særskilt byggekonfiguration.
+  const react = await write(path.join(root, 'react'), { 'package.json': JSON.stringify({ scripts: { build: 'vite build' }, dependencies: { react: '19.2.8' } }), 'package-lock.json': '{}', 'src/main.jsx': '' });
+  const problem = await promteSourceProblem(react);
+  assert.equal(problem.kind, 'setup'); assert.match(problem.detail, /devDependencies/);
+  await write(ready, { 'tailwind.config.js': 'export default {}' });
+  assert.match((await promteSourceProblem(ready)).detail, /tailwind\.config\.js/);
+  const broken = await write(path.join(root, 'ugyldig'), { 'package.json': '{ ikke json', 'index.html': '' });
+  assert.equal((await promteSourceProblem(broken)).kind, 'setup', 'en ugyldig package.json er ikke en almindelig hjemmeside');
+  // Gennemgangen af den gemte version siger det samme i almindeligt dansk, med den tekniske årsag til sidst.
+  assert.throws(() => validatePromteArtifact(artifact({ 'public/index.html': '<h1>Side</h1>' })), error => error.message.startsWith(PROMTE_WEBSITE) && error.message.endsWith('mangler en gyldig package.json.'));
+  assert.throws(() => validatePromteArtifact(artifact({ 'package.json': '{"dependencies":{"react":"19.2.8"}}', 'src/main.jsx': 'test' })), error => error.message.startsWith(PROMTE_SETUP));
 });

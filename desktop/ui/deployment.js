@@ -181,7 +181,8 @@
   $('#deployment-change-app').onclick = () => busy(async () => { invalidate(); $('#deploy-komplai-search').value = ''; if (await loadPublish()) go('app'); else go('login'); });
   $('#deployment-select-destination').onclick = () => { invalidate(); go('destination'); };
   $('#deployment-account').onclick = () => go('account');
-  $('#deployment-back').onclick = () => { invalidate(); const previous = trail.pop(); if (previous) go(previous, { remember: false }); };
+  function back() { invalidate(); const previous = trail.pop(); if (previous) go(previous, { remember: false }); }
+  $('#deployment-back').onclick = back;
   form.addEventListener('input', event => { if (['hosting-guide-choice', 'komplai-publish-org', 'deploy-komplai-search'].includes(event.target.id)) return; invalidate(); modes(); });
   async function prepareReview() {
     invalidate();
@@ -275,7 +276,7 @@
     if (!window.sharingOn?.()) return;
     const provider = pendingProvider; pendingProvider = null; dialog.close(); openDialog(false, provider);
   };
-  const setup = window.DeploymentSetupUI.mount({ api, go, busy, rows, heading, invalidate, chooseProvider, prepareReview, input, receipt, openDialog });
+  const setup = window.DeploymentSetupUI.mount({ api, go, back, busy, rows, heading, invalidate, chooseProvider, prepareReview, input, receipt, openDialog });
   $('#deploy-button').onclick = () => openDialog();
   dialog.addEventListener('close', () => { invalidate(); ++publish.addressCheck; if (publish.loginPending || ['organisation', 'connect'].includes(step)) cancelLogin(); $('#deploy-button').focus(); });
 })();

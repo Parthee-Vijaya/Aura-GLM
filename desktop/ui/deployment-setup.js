@@ -8,11 +8,11 @@
     ['promte', 'Promte Apps', 'Kræver konto og betalt aftale'],
     ['vercel', 'Vercel', 'Kræver Vercel-konto']
   ];
-  const titles = { setupConnection: 'Forbind din konto', setupChoice: 'Vælg destination', promteHost: 'Hvor logger du ind med Promte?', promteWorkspace: 'Hvilket arbejdsområde skal modtage appen?', pagesRepository: 'Hvor ligger dit projekt på GitHub?', pagesBranch: 'Hvilken branch vil du udgive?', cloudflareAccount: 'Hvilken Cloudflare-konto bruger du?', cloudflareProject: 'Hvilket Pages-projekt vil du opdatere?', setupConfiguration: 'Gør projektet klar til udgivelse', setupConfigReview: 'Gennemgå opsætningsfilerne', vercelMethod: 'Hvordan vil du bruge Vercel?', vercelGit: 'Forbind dit Git-projekt', tracking: 'Udgivelser fra Git' };
+  const titles = { setupConnection: 'Forbind din konto', setupChoice: 'Vælg destination', promteHost: 'Hvor logger du ind med Promte?', promteNotReady: 'Projektet er ikke en Promte-app endnu', promteWorkspace: 'Hvilket arbejdsområde skal modtage appen?', pagesRepository: 'Hvor ligger dit projekt på GitHub?', pagesBranch: 'Hvilken branch vil du udgive?', cloudflareAccount: 'Hvilken Cloudflare-konto bruger du?', cloudflareProject: 'Hvilket Pages-projekt vil du opdatere?', setupConfiguration: 'Gør projektet klar til udgivelse', setupConfigReview: 'Gennemgå opsætningsfilerne', vercelMethod: 'Hvordan vil du bruge Vercel?', vercelGit: 'Forbind dit Git-projekt', tracking: 'Udgivelser fra Git' };
   const names = Object.fromEntries(providers.map(([id, name]) => [id, name]));
   const stateLabels = { READY: 'Udgivet', ERROR: 'Udgivelse fejlede', CANCELED: 'Annulleret', BLOCKED: 'Kræver handling', REJECTED: 'Afvist', QUEUED: 'I kø', BUILDING: 'Bygger', INITIALIZING: 'Forbereder', PREPARED: 'Upload afventer', REVIEWING: 'Under gennemgang', SUBMITTING: 'Udgivelse afventer', UNKNOWN: 'Kontrollér status', AWAITING_UPDATE: 'Afventer udgivelsen', UPLOADED: 'Upload modtaget', REPLACED: 'Nyere version udgivet', UNPUBLISHED: 'Ikke udgivet', REMOVED: 'Fjernet' };
   const logo = id => `provider-${id}.${id === 'cloudflare' ? 'png' : 'svg'}`;
-  window.DeploymentSetupUI = { titles, mount({ api, go, busy, rows, heading, invalidate, chooseProvider, prepareReview, input, receipt, openDialog }) {
+  window.DeploymentSetupUI = { titles, mount({ api, go, back, busy, rows, heading, invalidate, chooseProvider, prepareReview, input, receipt, openDialog }) {
     const dialog = $('#deployment-dialog');
     const choiceSteps = { 'azure-subscription': 'azureSubscription', 'azure-app': 'azureApp', 'vercel-team': 'vercelTeam', 'vercel-project': 'vercelProject' };
     const choices = new Map();
@@ -185,6 +185,14 @@
       go('files');
     });
     bind('#deployment-promte-logout', async () => { await act('promte-logout'); await loadConnection(); });
+    // Gør projektet klar: Promte-integrationen slås til for projektet, og en besked står klar i skrivefeltet. Intet sendes.
+    bind('#deployment-promte-prepare', async () => {
+      await api('featuresSave', { scope: 'projekt', values: { 'integration-promte': true } }); await window.refreshFeatures?.();
+      // Beskeden skrives, når dialogen er lukket, så fokus ender i skrivefeltet og ikke på Udgiv.
+      dialog.addEventListener('close', () => window.draftMessage?.('Gør projektet til en Promte-app efter Promte-reglerne, så det kan udgives med Udgiv. Behold indhold, design og funktioner, og fortæl mig, hvad der ændres.', 'Promte-integrationen er slået til for projektet. Send beskeden, se resultatet, og gem en version. Vælg derefter Udgiv igen.'), { once: true });
+      dialog.close();
+    });
+    bind('#deployment-promte-other', () => back());
     bind('#deployment-repository-next', () => { if (!/^[\w.-]+\/[\w.-]+$/.test($('#deploy-repository').value.trim())) throw Error('Skriv repositoryet som organisation/projekt.'); go('pagesBranch'); });
     bind('#deployment-branch-next', () => { if (!$('#deploy-branch').value.trim()) throw Error('Indtast navnet på branchen.'); go(provider() === 'cloudflare' ? 'cloudflareAccount' : 'directory'); });
     bind('#deployment-cloudflare-open', () => open('portal'));
@@ -236,6 +244,9 @@
       if (id === 'komplai') return false;
       if (id === 'promte') {
         $('#deploy-directory').value = '.';
+        // Promte tager kun Promte-apps. Er projektet ikke en, siger Udgiv det, før brugeren logger ind.
+        const { problem } = await act('promte-check');
+        if (problem) { $('#deploy-promte-problem').textContent = problem.summary; $('#deploy-promte-problem-detail').textContent = problem.detail; go('promteNotReady'); return true; }
         // Brug samme Promte som projektets forhåndsvisning.
         try { const { link } = await act('promte-link'); if (link?.host) $('#deploy-promte-host').value = link.host; } catch {}
         go('promteHost');

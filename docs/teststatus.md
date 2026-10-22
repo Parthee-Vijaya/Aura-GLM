@@ -4,6 +4,23 @@ Senest kontrolleret 22. oktober 2026. Afsnittene er daterede, så tidligere begr
 
 [Gennemgangen før offentlig beta](offentliggoerelse.md) samler historik- og logkontrol samt de lokale prøver af README, hjemmeside og udgivelseskontrol. Den offentliggør ikke appen og ændrer ikke installationsstatus nedenfor.
 
+## Kandidat til 0.5.0-beta.3 · kildekode · 22. oktober 2026
+
+Arbejdsmappens kode kørt fra kilden med Auras egen Node 22. Ikke en pakket app; pakker, Apple-notarisering og platformsprøver er hverken bygget eller kørt.
+
+- **Samlet kørsel:** 401 enhedsprøver og 45 Electron-forløb består efter hinanden. Udeladt er prøverne mod rigtige tjenester (`verify-live-*`) og prøverne, der kræver byggede pakker eller en udgivelsesmappe (`verify-package`, `verify-package-source`, `verify-download`, `verify-upgrade`, `verify-demo-web` og `verify-generated-preview`).
+- **De otte ældre prøver** `agent`, `chat-feedback`, `chat`, `desktop`, `planning`, `recovery`, `resume` og `versions` er tilpasset Samtale som standard, planens fire afsnit og Udgiv-forløbet. De består.
+- **Svarloft:**
+  - `verify-output-limit` med en lokal Corti-lignende server: OpenCode sender `max_tokens` 128.000, der sendes ingen indsats uden brugerens valg, og en ukendt indsats afvises. Fejlkortet viser tre valg, lav indsats sendes som `reasoning_effort`, og samtalen sammenfattes før genforsøget.
+  - Mod rigtigt materiale: ét almindeligt kald gennem Aura til corti-s1 med KL-hackathonens EU-S-nøgle. Alle tre modelkald fik `max_tokens` 128.000 uden indsats, og svaret var rigtigt.
+  - Lav indsats er ikke afprøvet gennem appen mod Corti. Corti tog imod `reasoning_effort: "low"` i et direkte kald samme dag.
+- **Projektlisten:** `verify-project-list` med 14 projekter: de 12 seneste først, **Vis alle 14 projekter**, paletten, åbning af det ældste og genstart. Prøven fejler med den gamle grænse på 12.
+- **Promte før login:**
+  - `verify-promte-ready`: forklaringen og de to valg vises før login, og intet Promte-login røres. **Gør projektet klar** slår integrationen til for projektet alene og lægger beskeden i Planlæg uden at sende den. En egen kladde bevares, og en Promte-app går direkte til login. Prøven fejler uden kontrollen.
+  - Kontrollen er kørt på en kopi af et rigtigt Aura-projekt og fanger det. Gennemgangens fejltekst er nu den samme forklaring med den tekniske årsag til sidst.
+  - Omlægningen af et projekt til en Promte-app og en rigtig upload til kodning.promte.dk er ikke afprøvet.
+- **Notarisering:** `notarize.cjs` gemmer Apples indsendelses-id, før der ventes, genoptager efter netudfald og sender ikke den samme fil igen uden `--send-igen`. Enhedstestet med en falsk `xcrun` i 15 tests. Ikke kørt mod Apple endnu.
+
 ## Offentlig desktopbeta 0.5.0-beta.2 · 22. oktober 2026
 
 **Udgivet og observeret:** [Aura 0.5.0-beta.2](https://github.com/ai-alliancen-org/ai-harness/releases/tag/v0.5.0-beta.2) og [downloadsiden](https://ai-alliancen-org.github.io/ai-harness/desktop.html) er offentligt tilgængelige uden GitHub-login. Letvægtstagget `v0.5.0-beta.2` peger på brugerens commit `ec939fee572d816222775a58f2ec50bb2b98e8ad` (`klargør Aura v0.5.0-beta.2 med Udgiv, Alexandra, Corti EU-S og React til komplai Run`), som også var `main`, da workflowet startede. Udgivelsen er oprettet af bjornSkalkam.

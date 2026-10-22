@@ -24,6 +24,8 @@ Login gemmes af det officielle værktøj i `~/.config/promte/credentials.json`, 
 
 Promte-adapteren modtager en React-app, som følger [Promte-skillens byggeregler](../profiles/skills/harness-integration-promte/references/promte.md). Promte leverer sit eget byggeforløb. En almindelig backendserver eller vilkårligt skrivebordsprogram kan ikke udgives ad denne vej.
 
+Udgiv kontrollerer projektets filer på computeren med de samme regler, før brugeren logger ind hos Promte. Et almindeligt Aura-projekt, hvor hjemmesiden ligger i `public/` uden `package.json`, får en forklaring og to valg: **Gør projektet klar til Promte** eller **Vælg en anden udbyder**. Det første slår Promte-integrationen til for projektet, så AI’en kender reglerne, og lægger en besked i skrivefeltet, som brugeren selv sender. Gennemgangen af den gemte version bruger fortsat reglerne og forklarer en afvisning på samme måde.
+
 Aura kræver, at installationen bekræfter kildekodeupload. Der er ingen automatisk overgang til ældre serveres upload af færdigbyggede filer.
 
 Udgivelsen pakkes direkte fra de gennemgåede filer i den gemte Git-version. Lokale, ugemte filer følger ikke med. Promtes officielle udeladelsesregler anvendes før gennemgangen: blandt andet byggeoutput, lokale værktøjsmapper og `vite.config.*` kommer ikke med. `package-lock.json` udelades, når projektet kun har udviklingsafhængigheder, ligesom i Promtes CLI. Listen og indholdets kontrolsum beregnes derefter, så gennemgangen svarer præcis til den uploadede pakke. Projektets egne filer ændres ikke.

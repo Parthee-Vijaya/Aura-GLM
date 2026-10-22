@@ -1010,6 +1010,14 @@ $('#model-done').onclick = () => { if (!$('#connection-select').value || !$('#mo
 // Funktioner: brugeren slår dem til og fra under Indstillinger › Funktioner. Et fravalg skjuler handlingen; filer og historik bevares.
 const featureOn = id => state?.features?.effective?.[id] !== false;
 const defaultMode = () => 'chat';
+// En færdig besked fra et andet forløb, fx Udgiv: den står i skrivefeltet i Planlæg, og brugeren sender den selv.
+// En kladde, brugeren selv har skrevet, overskrives aldrig.
+window.draftMessage = (text, note) => {
+  if (!current) return;
+  if ($('#prompt').value.trim()) { message(`${note} Din kladde er bevaret, så skriv selv til AI’en, når du er klar.`); $('#prompt').focus(); return; }
+  $('#work-mode').value = 'plan'; updateWorkMode();
+  $('#prompt').value = text; saveChatDraft(); updateStartIdea(); message(note); $('#prompt').focus();
+};
 // Et login uden for funktionsdialogen, fx Promte i forhåndsvisningen, kan ændre de anbefalede funktioner.
 window.refreshFeatures = async () => { state.features = await call('featuresGet'); applyFeatures(); };
 window.sharingOn = () => featureOn('deling');

@@ -534,17 +534,34 @@ Workflowet **Byg testpakker** har kun manuel start. Fra 10. oktober 2026 kræver
 
 Workflowet prøver også plan, filændring, preview og fortrydelse gennem rigtig OpenCode med en lokal testmodel. Det bruger ingen ekstern model eller API-nøgle. Byggearkiver gemmes i syv dage; de er midlertidige prøver og skal ikke bruges som permanente downloadlinks. Den ændring frigør ikke plads fra ældre arkiver. En fuld lagerkvote skal håndteres særskilt, før en ny kørsel kan gemme sine filer.
 
+### Apple-notarisation
 
-Notarisation efter opsætning af lokal `notarytool`-profil:
+Hver udgivelse har seks Apple-indsendelser. Hver indsendelse kræver udtrykkelig godkendelse.
+
+1. Byg og signér appen til Apple Silicon og Intel, og notariser de to første DMG'er.
+2. Vedhæft billetten til hver signerede `.app` med `xcrun stapler staple`, og kontrollér appen igen med `xcrun stapler validate` og `syspolicy_check distribution`. En billet på diskbilledet er ikke en billet på selve appen: kontrollen 10. oktober fandt `Notary Ticket Missing` på appen, selv om Gatekeeper accepterede den som `Notarized Developer ID`.
+3. Pak den samme app med `electron-builder --prepackaged` til en ny outputmappe; se eksemplet nedenfor. Det bevarer den afprøvede kode og signatur og giver den endelige DMG og ZIP. Overskriv ikke en tidligere afprøvet installationsfil undervejs.
+4. Notariser den endelige DMG og ZIP til hver arkitektur. Dan først derefter filoversigt og kontrolsummer efter [udgivelsesvejledningen](../docs/udgivelse.md#saml-filer-og-dokumentation).
+
+Send filerne én ad gangen, og vent, til den ene er færdig, før den næste sendes. Brug en fast forbindelse, helst kabel eller et stabilt wi-fi, ikke en mobil hotspot: ved 0.5.0-beta.2 blev fire uploads afbrudt over en iPhone-hotspot. Hold Mac'en vågen med `caffeinate`, tilsluttet strøm og med låget åbent. Kør fra `desktop/` efter opsætning af en lokal `notarytool`-profil, med den konkrete fil:
 
 ```bash
-node scripts/notarize.cjs release/Aura-0.2.0-beta.5-mac-arm64.dmg ai-harness-notary
-npm run release:site -- release
+caffeinate -is node scripts/notarize.cjs release/Aura-VERSION-mac-arm64.dmg ai-harness-notary
 ```
 
-Scriptet indsender den konkrete DMG til Apple, kræver Accepted, vedhæfter billetten og validerer den. En kvittering bindes til filens SHA-256. Downloadsiden markerer kun en fil som notariseret, hvis kvittering og aktuel kontrolsum matcher. En ny bygning kræver ny notarisation. Profilnavnet er ikke en adgangskode; profilen oprettes lokalt med Apples værktøj. Apple-login og private nøgler må ikke lægges i repositoryet.
+`caffeinate -is` forhindrer dvale, så længe scriptet kører og Mac'en er på strøm. Scriptet sender filen uden at holde forbindelsen åben under Apples behandling. Så snart Apple har givet et indsendelses-id, gemmes id, filnavn og SHA-256 i `FIL.notarization-pending.json` ved siden af filen. Derefter venter scriptet med `notarytool wait`. Før billetten hæftes på, kontrollerer det med `notarytool log`, at Apples SHA-256 er den samme som den sendte fils. Til sidst skrives kvitteringen `FIL.notarized.json` med filnavn, SHA-256, status, id og kontroltidspunkt, og ventefilen slettes. For en DMG gælder kvitteringens SHA-256 filen med billet. En ZIP kan ikke selv staples; scriptet pakker den ud og kontrollerer appens signatur, billet og distributionskontrol.
 
-Kontrollér også appen inde i DMG'en med `syspolicy_check distribution`. En billet på diskbilledet er ikke en billet på selve appen: kontrollen 10. oktober fandt `Notary Ticket Missing` på appen, selv om Gatekeeper accepterede den som `Notarized Developer ID`. Efter Apples første godkendelse vedhæftes billetten derfor til den signerede `.app` med `xcrun stapler staple`, og appen kontrolleres igen. Pak derefter den samme app med `electron-builder --prepackaged` til en ny outputmappe. Det bevarer den afprøvede kode og signatur. Den endelige DMG indsendes og kontrolleres særskilt, før filoversigt og kontrolsummer dannes. Overskriv ikke en tidligere afprøvet installationsfil undervejs.
+Downloadsiden markerer kun en fil som notariseret, hvis kvittering og aktuel kontrolsum matcher. En ny bygning kræver ny notarisation. Profilnavnet er ikke en adgangskode; profilen oprettes lokalt med Apples værktøj. Apple-login og private nøgler må ikke lægges i repositoryet.
+
+Hvis forbindelsen falder ud:
+
+- **Under ventetiden:** Scriptet prøver igen tre gange med stigende pauser og stopper derefter med indsendelsens id. Kør samme kommando igen. Scriptet genoptager fra det gemte id og sender ikke filen igen, også selv om Apple har godkendt den i mellemtiden.
+- **Under uploaden:** Apple har oprettet en indsendelse, men har ikke fået hele filen, og den bliver stående som In Progress. Scriptet sender ikke filen igen af sig selv. Kør samme kommando med `--send-igen` på en fast forbindelse for at sende filen på ny. Uden `--send-igen` kontrollerer scriptet kun, om Apple alligevel har modtaget og godkendt filen.
+- **Efter godkendelsen:** Fejler vedhæftningen eller kontrollen af billetten, genoptager samme kommando uden ny indsendelse og uden at hæfte billetten på igen.
+
+Uden ventefil slår scriptet op i Apples liste over indsendelser, før det sender. En godkendt indsendelse med samme filnavn genbruges, hvis Apples log har samme SHA-256 som filen. Har Apple en uafsluttet indsendelse med samme filnavn, stopper scriptet. Vent, og kør igen; hænger indsendelsen efter en afbrudt upload, så brug `--send-igen`.
+
+Slet ikke ventefilen, før kvitteringen er skrevet. Afviser Apple filen, eller passer Apples SHA-256 ikke, stopper scriptet med indsendelsens id uden at hæfte billetten på. Hent Apples log med `xcrun notarytool log ID --keychain-profile ai-harness-notary`. `--send-igen` sender den samme fil igen; normalt skal der bygges en rettet fil. `tests/notarize.test.cjs` afprøver forløbet med en falsk `xcrun` uden at kontakte Apple.
 
 Eksempel på pakning af en allerede signeret og staplet Apple Silicon-app fra `desktop/`:
 

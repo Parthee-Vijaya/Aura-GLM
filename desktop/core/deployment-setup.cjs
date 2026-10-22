@@ -1,5 +1,5 @@
 const { AzureSetup } = require('./azure-setup.cjs');
-const { PromteSetup, promteHost } = require('./provider-promte.cjs');
+const { PromteSetup, promteHost, promteSourceProblem, PROMTE_WEBSITE, PROMTE_SETUP } = require('./provider-promte.cjs');
 const { appName } = require('./promte-preview.cjs');
 const { VercelSetup, importURL, checkedConfig } = require('./vercel-setup.cjs');
 const { pagesWorkflow, pagesConfiguration, workflowPath, siteURL } = require('./pages-publishing.cjs');
@@ -25,6 +25,8 @@ class DeploymentSetup {
       case 'promte-logout': return this.promte.logout({ host: config.host });
       case 'promte-workspaces': return this.promte.workspaces({ host: config.host });
       case 'promte-create': return this.promte.createWorkspace({ host: config.host, name: input.name });
+      // Promte tager kun Promte-apps. Udgiv spørger, før brugeren logger ind.
+      case 'promte-check': { const problem = await promteSourceProblem(root); return { problem: problem && { ...problem, summary: problem.kind === 'website' ? PROMTE_WEBSITE : PROMTE_SETUP } }; }
       // Forhåndsvisning og Udgiv bruger den samme Promte-app for projektet.
       case 'promte-link': return { link: (await this.store.project(root)).promteApp || null, suggestedName: appName(root) };
       case 'promte-link-set': {
