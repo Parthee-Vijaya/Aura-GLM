@@ -162,7 +162,7 @@ const server = http.createServer(async (req, res) => {
     await helpers.menuClick(win, '#connections-button'); await measure('forbindelser', '#connections-dialog', 'Administrer forbindelser'); await win.click('[data-close="connections-dialog"]');
     await helpers.menuClick(win, '#support-button'); await win.waitForSelector('#support-dialog[open]'); await measure('hjaelp', '#support-dialog', 'Hjælp og feedback'); await win.click('[data-close="support-dialog"]');
     // Samtaler i sidepanelet og kommandopaletten.
-    task = null; await win.click('#new-conversation'); await win.waitForFunction(() => document.querySelectorAll('#project-list .chat-row').length >= 2);
+    task = null; await win.click('#project-list .project-entry.is-current .project-add'); await win.waitForFunction(() => document.querySelectorAll('#project-list .chat-row').length >= 2);
     await measure('sidepanel', '#sidebar', 'Sidepanel: projekter og samtaler');
     await win.keyboard.press(process.platform === 'darwin' ? 'Meta+K' : 'Control+K'); await win.waitForSelector('#palette[open]'); await measure('palet', '#palette', 'Kommandopalet'); await win.keyboard.press('Escape');
     await win.click('#tools-button'); await win.waitForSelector('#tools-dialog[open]'); await measure('kodevaerktoej', '#tools-dialog', 'Aura Harness i dit kodeværktøj'); await win.click('#tools-dialog [data-close]');

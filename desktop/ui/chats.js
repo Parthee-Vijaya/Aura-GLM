@@ -71,7 +71,6 @@
     list.replaceChildren(...items);
     // Fokus bliver på samme knap, når listen tegnes igen, fx når en samtale skifter status.
     if (focused) list.querySelector(`[data-key="${CSS.escape(focused)}"]`)?.focus();
-    $('#new-conversation').hidden = !current;
     const busy = anyRunning();
     for (const button of list.querySelectorAll('.project-entry:not(.is-current) .project-name, .project-entry:not(.is-current) .project-add, .project-entry:not(.is-current) .chat-row')) { button.disabled = busy; button.title = busy ? 'Vent, til AI-opgaverne er færdige, før du skifter projekt' : button.title; }
   }

@@ -86,7 +86,7 @@ const http = require('node:http');
     await page.click('#accept-send'); await page.locator('#run-status').filter({ hasText: 'Klar' }).waitFor({ timeout: 60000 });
     assert.ok(requests.some(r => JSON.stringify(r.messages).includes('Tidligere samtale, som brugeren har valgt') && JSON.stringify(r.messages).includes('violet-cykel')));
     // Ny samtale starter en tom samtale ved siden af den gamle, som bevares i sidepanelet; projektfilerne er uændrede.
-    await page.click('#new-conversation'); await page.waitForFunction(() => document.querySelector('#messages').textContent === '');
+    await page.click('#project-list .project-entry.is-current .project-add'); await page.waitForFunction(() => document.querySelector('#messages').textContent === '');
     assert.equal(await page.inputValue('#prompt'), ''); assert.equal(await page.isVisible('#plan-card'), false);
     const state = await page.evaluate(() => window.harness.connectionState()); assert.equal(state.value.workspace.messages.length, 0);
     const storage = path.join(root, 'appdata', 'harness', 'workspaces');

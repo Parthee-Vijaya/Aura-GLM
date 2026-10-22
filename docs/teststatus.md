@@ -1,8 +1,31 @@
 # Teststatus før invitation
 
-Senest kontrolleret 22. oktober 2026. Afsnittene er daterede, så tidligere begrænsninger kan læses i deres sammenhæng. Dette er status for den aktuelle arbejdsmappe, ikke en erklæring om, at alle installationsfiler eller modeller er klar. Særskilt godkendte Git-handlinger, udgivelser og GitHub-kørsler fremgår af de enkelte afsnit.
+Senest kontrolleret 23. oktober 2026. Afsnittene er daterede, så tidligere begrænsninger kan læses i deres sammenhæng. Dette er status for den aktuelle arbejdsmappe, ikke en erklæring om, at alle installationsfiler eller modeller er klar. Særskilt godkendte Git-handlinger, udgivelser og GitHub-kørsler fremgår af de enkelte afsnit.
 
 [Gennemgangen før offentlig beta](offentliggoerelse.md) samler historik- og logkontrol samt de lokale prøver af README, hjemmeside og udgivelseskontrol. Den offentliggør ikke appen og ændrer ikke installationsstatus nedenfor.
+
+## Offentlig desktopbeta 0.5.0-beta.3 · 23. oktober 2026
+
+**Udgivet og observeret:** [Aura 0.5.0-beta.3](https://github.com/ai-alliancen-org/ai-harness/releases/tag/v0.5.0-beta.3) og [downloadsiden](https://ai-alliancen-org.github.io/ai-harness/desktop.html) er offentligt tilgængelige uden GitHub-login. Letvægtstagget `v0.5.0-beta.3` peger på brugerens commit `4a265745e40dfe98c4ce267e69f5d88b3dea479a` (`klargør Aura v0.5.0-beta.3 med Promte før login, robust notarisering og opdaterede prøver`), som også var `main`, da workflowet startede. Udgivelsen er oprettet af bjornSkalkam.
+
+- **Før upload:**
+  - Alle tre pakker består `verify-package-source.cjs` mod commit `4a26574`: 105 appfiler, 32 profilfiler og de fastlåste værktøjer.
+  - Windows-installationsfilens indhold er identisk med `win-unpacked` (2534 filer, samme SHA-256).
+  - `test:package` består for den pakkede Apple Silicon-app.
+- **Apple:**
+  - Seks indsendelser blev sendt én ad gangen over wi-fi med den nye `notarize.cjs`. Alle blev godkendt uden netudfald eller gentagelse: første DMG arm64 `47b4c016…` og Intel `8c17a1c4…`, derefter endelig arm64-DMG `d3aaf0e0…`, arm64-ZIP `4e6a1b0b…`, Intel-DMG `14ff8e27…` og Intel-ZIP `a978ad68…`.
+  - Slutkontrollen bekræfter signaturer, billetter på appen, distributionskontrol, kvitteringer og samme app i DMG og ZIP (5540 filer) for begge Mac-typer.
+  - Intel-slutkontrollen fejlede første gang. Kontrollen sammenligner med arbejdsmappen, og den havde allerede ændringer til næste version. Begge slutkontroller er derfor kørt igen mod en ren kopi af `4a26574` og består. Pakkerne var uændrede.
+- **Installation:** Den notariserede arm64-DMG er installeret i Programmer på en Mac med en eksisterende datamappe. Gatekeeper godkender den som "Notarized Developer ID", og appen startede med det eksisterende projekt og den gemte forbindelse.
+- **Kladde og offentliggørelse:**
+  - Kladden fik præcis de syv filer fra `desktop/release/0.5.0-beta.3/downloads/`, alle med status `uploaded` og samme størrelse som de lokale filer.
+  - Kun de to godkendte kørsler er startet: [Offentliggør gennemgået desktopbeta 39863366719](https://github.com/ai-alliancen-org/ai-harness/actions/runs/39863366719) og [Udgiv downloadside 39863559002](https://github.com/ai-alliancen-org/ai-harness/actions/runs/39863559002). Begge er gennemført.
+- **Efter offentliggørelse:**
+  - Downloadsiden viser v0.5.0-beta.3.
+  - Opdateringsfeeds for darwin-arm64, darwin-x64 og win32-x64 viser 0.5.0-beta.3 med `critical: false`.
+  - Alle fem filer er hentet uden login. SHA-256 matcher `SHA256SUMS.txt`, feedenes SHA-512 matcher de hentede filer, og den hentede arm64-DMG består `stapler validate`.
+- **Kendt begrænsning fundet efter udgivelsen:** Forhåndsvisningen af `public/` henter intet fra internettet. AI'en får det ikke at vide og kan derfor skrive en side, der henter React fra et CDN. Siden viser så kun sin egen reservetekst. Det rettes i 0.6.0-beta.1.
+- **Ikke afprøvet:** Opdatering fra 0.5.0-beta.2 gennem appens opdateringsfunktion, Windows-installation, fysisk Intel-Mac og installation på en separat, ren computer.
 
 ## Kandidat til 0.5.0-beta.3 · kildekode · 22. oktober 2026
 

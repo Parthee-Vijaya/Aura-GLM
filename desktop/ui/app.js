@@ -759,7 +759,6 @@ function applyRunning() {
   // En samtale, der ikke arbejder, viser sin egen seneste status, fx Stoppet eller Fejl. Linjen over skrivefeltet siger, hvis en anden arbejder.
   if (!running) $('#run-status').textContent = view.runLabel || 'Klar';
   $('#send').disabled = projectLoading || running; $('#stop').hidden = !running;
-  $('#new-conversation').disabled = projectLoading;
   $('#send').title = ''; $('#composer-wait').hidden = true;
   const mainRunning = window.chats?.projects().find(item => item.root === current?.root)?.chats?.some(chat => chat.running && !chat.isolated);
   $('#merge-copy').disabled = projectLoading || running || Boolean(mainRunning);
@@ -1760,7 +1759,6 @@ $('#setup-add-provider').onclick = () => setupProvider();
 // Ny samtale i det åbne projekt. Den forrige står i sidepanelet og kan åbnes igen; en opgave i den fortsætter.
 async function newChat() { if (!current) return; await saveChatDraft(); const next = await call('newConversation'); if (!next) return; current.workbench = next; await showChat(next); $('#prompt').focus(); }
 $('#merge-copy').onclick = () => action(() => reviewRestoration({ merge: true, chat: view.id }, { title: 'Flet samtalens ændringer ind?', confirm: 'Flet ind i projektet', label: `Flettet ind: ${chatTitle(view.id)}` }));
-$('#new-conversation').onclick = () => action(newChat);
 
 function openTaskSettings() {
   if (!state?.connections?.length) { showSetup('Tilslut en AI for at bygge videre. Din kladde er bevaret.'); return; }

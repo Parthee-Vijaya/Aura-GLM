@@ -7,7 +7,7 @@
   let items = [], active = 0, returnFocus = null;
   // Appens egne knapper. Kun knapper, der er synlige i deres sammenhæng og ikke er låst, kan bruges.
   const actions = [
-    { label: 'Ny samtale', target: '#new-conversation', words: ['chat', 'session', 'plus', 'start'], first: true },
+    { label: 'Ny samtale', target: '#project-list .project-entry.is-current .project-add', words: ['chat', 'session', 'plus', 'start'], first: true },
     { label: 'Skriv til AI’en', target: '#prompt', focus: true, words: ['besked', 'skrivefelt', 'prompt'], first: true },
     { label: 'Ret i siden', target: '#preview-pick', words: ['vælg element', 'tekst', 'rediger'], first: true },
     { label: 'Vis forhåndsvisningen', target: '#tab-preview', words: ['preview', 'fane', 'side'] },

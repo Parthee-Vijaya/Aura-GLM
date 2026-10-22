@@ -105,7 +105,7 @@ const helpers = require('./ui-test-helpers.cjs');
     await page.locator('#approvals button').filter({ hasText: 'Kun denne fil' }).waitFor({ timeout: 60000 });
     const titleA = 'Byg en forside med en stor overskrift';
     await row(titleA).waitFor(); assert.equal(await openTitle(), titleA);
-    await page.click('#new-conversation');
+    await page.click('#project-list .project-entry.is-current .project-add');
     await page.waitForFunction(() => document.querySelector('#messages').textContent === '' && document.querySelector('#prompt').value === '');
     await row(titleA).locator('.chat-meta.is-waiting').filter({ hasText: 'venter på dig' }).waitFor();
     assert.equal(await page.isVisible('#approvals button'), false, 'godkendelsen hører til samtale A');
