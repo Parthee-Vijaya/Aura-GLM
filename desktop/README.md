@@ -501,7 +501,7 @@ Afslutningen viser ændrede tekstfiler registreret i den enkelte opgave og **Kon
 
 ### Udgivelser
 
-[Downloadsiden](https://ai-alliancen-org.github.io/ai-harness/desktop.html) viser den seneste offentliggjorte desktopbeta og dens udgivelsesnoter. `0.5.0-beta.1` er offentliggjort og kan hentes uden login. Begge Mac-pakker er signerede og notariserede; Windows-pakken er usigneret og indholdskontrolleret. En lokal kandidat vises først efter offentliggørelse i GitHub Releases og den særskilte Pages-kørsel. [Noterne til 0.5.0-beta.1](../docs/releases/0.5.0-beta.1.md) og [teststatus](../docs/teststatus.md) beskriver den faktiske afprøvning, herunder de platformsprøver, der mangler. [Udgivelsesvejledningen](../docs/udgivelse.md) beskriver pakning, kildekontrol og de manuelle udgivelsestrin. Terminalpakken har sit eget versionsnummer og udgivelsesforløb.
+[Downloadsiden](https://ai-alliancen-org.github.io/ai-harness/desktop.html) viser den seneste offentliggjorte desktopbeta og dens udgivelsesnoter. `0.5.0-beta.2` er offentliggjort og kan hentes uden login. Begge Mac-pakker er signerede og notariserede; Windows-pakken er usigneret og indholdskontrolleret. En lokal kandidat vises først efter offentliggørelse i GitHub Releases og den særskilte Pages-kørsel. [Noterne til 0.5.0-beta.2](../docs/releases/0.5.0-beta.2.md) og [teststatus](../docs/teststatus.md) beskriver den faktiske afprøvning, herunder de platformsprøver, der mangler. [Udgivelsesvejledningen](../docs/udgivelse.md) beskriver pakning, kildekontrol og de manuelle udgivelsestrin. Terminalpakken har sit eget versionsnummer og udgivelsesforløb.
 
 ### Demogennemgang · 7. oktober 2026
 

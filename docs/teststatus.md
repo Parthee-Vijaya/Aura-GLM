@@ -4,6 +4,29 @@ Senest kontrolleret 22. oktober 2026. Afsnittene er daterede, så tidligere begr
 
 [Gennemgangen før offentlig beta](offentliggoerelse.md) samler historik- og logkontrol samt de lokale prøver af README, hjemmeside og udgivelseskontrol. Den offentliggør ikke appen og ændrer ikke installationsstatus nedenfor.
 
+## Offentlig desktopbeta 0.5.0-beta.2 · 22. oktober 2026
+
+**Udgivet og observeret:** [Aura 0.5.0-beta.2](https://github.com/ai-alliancen-org/ai-harness/releases/tag/v0.5.0-beta.2) og [downloadsiden](https://ai-alliancen-org.github.io/ai-harness/desktop.html) er offentligt tilgængelige uden GitHub-login. Letvægtstagget `v0.5.0-beta.2` peger på brugerens commit `ec939fee572d816222775a58f2ec50bb2b98e8ad` (`klargør Aura v0.5.0-beta.2 med Udgiv, Alexandra, Corti EU-S og React til komplai Run`), som også var `main`, da workflowet startede. Udgivelsen er oprettet af bjornSkalkam.
+
+- **Før upload:**
+  - Alle tre pakker består `verify-package-source.cjs` mod commit `ec939fe`: 105 appfiler, 32 profilfiler og de fastlåste værktøjer.
+  - Windows-installationsfilens payload er identisk med `win-unpacked` (2534 filer, samme SHA-256).
+  - `test:package` består for den pakkede Apple Silicon-app.
+- **Apple:**
+  - De første DMG'er (`2c5b8908…` og `62f7699a…`) blev godkendt, mens netværket faldt ud under ventetiden. Godkendelserne blev hentet med indsendelsernes id. Apples SHA-256 matchede de lokale filer, så de blev ikke sendt igen.
+  - De fire endelige uploads blev først afbrudt over en iPhone-hotspot, og Apple modtog dem aldrig. På wi-fi blev de sendt igen og godkendt: arm64-ZIP `70e0f26e…`, arm64-DMG `e29ba39d…`, Intel-ZIP `df9296ff…` og Intel-DMG `dcbcba01…`.
+  - Alle har de samme to advarsler som 0.5.0-beta.1: en tom test-zip i Git's kildearkiver.
+  - Slutkontrollen bekræfter signaturer, billetter på appen, distributionskontrol, kvitteringer og samme app i DMG og ZIP (5540 filer) for begge Mac-typer.
+- **Opdatering:** Den offentliggjorte 0.5.0-beta.1 opdaterede sig selv til den notariserede beta.2-ZIP med Squirrel.Mac. Projektfiler, forbindelse, krypteret testnøgle, design og kladde er bevaret, og ingen model blev kaldt automatisk. Automatisk genstart er ikke afprøvet.
+- **Kladde og offentliggørelse:**
+  - Kladden `420974119` fik præcis de syv filer fra `desktop/release/0.5.0-beta.2/downloads/`, alle med status `uploaded` og samme størrelse og SHA-256 som de lokale filer.
+  - Kun de to godkendte kørsler er startet: [Offentliggør gennemgået desktopbeta 39818270165](https://github.com/ai-alliancen-org/ai-harness/actions/runs/39818270165) og [Udgiv downloadside 39818421341](https://github.com/ai-alliancen-org/ai-harness/actions/runs/39818421341). Begge er gennemført.
+- **Efter offentliggørelse:**
+  - Downloadsiden linker til de tre installationsfiler for v0.5.0-beta.2.
+  - Opdateringsfeeds for darwin-arm64, darwin-x64 og win32-x64 viser 0.5.0-beta.2 med `critical: false`.
+  - Alle fem filer er hentet uden login. SHA-256 matcher `SHA256SUMS.txt`, feedenes SHA-512 matcher de hentede filer, og den hentede arm64-DMG består `stapler validate`.
+- **Ikke afprøvet:** Windows-installation og -opdatering, fysisk Intel-Mac og installation på en separat, ren computer.
+
 ## Kandidat til 0.5.0-beta.2 · rigtige tjenester · 22. oktober 2026
 
 Arbejdsmappens kode kørt fra kilden i Electron med isolerede appdata og brugerens egne logins. Ikke en pakket app; pakker og platformsprøver står i kandidatens næste afsnit, når de er bygget.
