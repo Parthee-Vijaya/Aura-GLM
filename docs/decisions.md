@@ -1,16 +1,48 @@
 # Produktretning og beslutninger
 
+## Alexandra som fjerde ligestillede udbyder · til 0.5.0-beta.2 · 22. oktober 2026
+
+Brugeren har valgt at vise Alexandra Instituttets AI-platform som fjerde fremhævede udbyderkort ved siden af Claude, Mistral og Corti, både i appen og i Aura-terminalen. Reglen i `AGENTS.md` er ændret til fire ligestillede valg; øvrige udbydere ligger fortsat bag "Vælg en anden". Ingen udbyder anbefales.
+
+Ændringen er porteret fra Lasse Borlys PR #13. Platformen er Chat Completions-kompatibel på `https://inference.alexandra.dk/v1` med Bearer-nøgle. Vilkårene er kontrolleret på platformens egen dokumentation 21. oktober 2026: behandling på danske lokationer hos ScanNet (team.blue Denmark), ingen overførsel uden for EU/EØS, prompts og svar slettes efter svaret og logges ikke, og indhold bruges ikke til træning. Priserne er i DKK pr. million tokens og føres i en særskilt DKK-post. Standardmodellen `glm-5.3-flash` står som Alexandras eget udgangspunkt til kodeagenter; den eksperimentelle Qwen-model bliver aldrig standard. Ikonet er et bogstavmærke tegnet til Aura.
+
+PR'en fandt også, at den første besked i Samtale, som er standardtilstanden, fejlede, før visningen "Før du sender" åbnede, fordi arbejdsmåden manglede i oversigten. Fejlen rammer alle udbydere i 0.4.0-beta.1 og 0.5.0-beta.1 og rettes i beta.2. Under porteringen er Alexandras ikon desuden tilføjet appens liste over tilladte udbyderikoner.
+
+## Udgiv i stedet for Del, Corti EU-S og Promte-installationer · til 0.5.0-beta.2 · 22. oktober 2026
+
+Brugeren har valgt ét ord for at lægge en app ud til andre: **Udgiv**. Knappen, funktionen (Udgivelse), forløbet, fejlbeskeder, agentens vejledning og skills bruger det. Interne id'er som `deling` er uændrede, så gemte indstillinger bevares. komplais og Promtes forløb forbliver forskellige, så længe de ligner hinanden; kun ordene er ensrettet.
+
+Corti-nøgler fra projekter i EU-S (Sovereign), som KL-hackathonens, begynder med `eu-s:` og bruger `https://ai.eu-s.corti.app/v1`. EU-S står i Cortis konsol, ikke i dokumentationen; adressen er slået op 22. oktober og drives hos Scaleway i Frankrig ifølge IP-registeret. Afprøvet live med hackathonens nøgle: modelliste, Samtale, Planlæg og Byg.
+
+Promte-integrationen fra PR 12 er lavet til installationer, der selv bygger kildekoden, fx kodning.promte.dk. En installation, der kun tager imod færdigbyggede apps (`uploadMode: built`, fx promte.kalundborg.dk), får nu en klar besked, og en installation uden appliste beder om arbejdsområdets ID med en forklaring. Aura tilføjer ikke færdigbyggede uploads til Promte.
+
+## React-apps til komplai Run · lokal bygning · til 0.5.0-beta.2 · 22. oktober 2026
+
+Brugeren har valgt, at Aura og ikke komplai bygger apps med et byggetrin, og at begge veje findes: Udgiv bruger en gemt byggemappe med `index.html`, ellers tilbyder Aura at bygge appen lokalt i en isoleret kopi af den gemte version efter brugerens ja, og uploader det byggede. komplai bygger intet, så fremmed kode køres aldrig på komplais servere.
+
+Kravene: ingen nye installationer og ingen administratorrettigheder. Bygningen bruger Auras medfølgende Node og npm, kører i en midlertidig mappe under brugerens konto og uden pakkernes installationsscripts. Det, der virkede før, virker uændret: statiske apps udgives som hidtil, gemte opsætninger beholder deres mappe, og **Vælg en mappe i stedet** står altid ved bygningen. Promte (kodning.promte.dk) er uændret; dér bygger Promte selv. Afprøvet live 22. oktober med en React-app med Vite, bygget af Aura og udgivet til en eksisterende privat testapp i komplai Run.
+
+## komplai Run i forhåndsvisningen og offentlige apps · til 0.5.0-beta.2 · 22. oktober 2026
+
+Brugeren har valgt, at komplai Run får samme opbygning som Promte i forhåndsvisningen, med Hub som den, der svarer. Aura kopierer ikke komplais kode: forhåndsvisningen henter komplais officielle app-SDK fra Hub og sender SDK'ets kald gennem Aura. Hub giver en forhåndsvisning af personens egen app, også før udgivelse, med rigtig identitet, AI som personens egen Chat og Redact og gemte data i en særskilt, krypteret tabel. Brugeren har udtrykkeligt godkendt, at den native udgivelsesadgang må starte en sådan forhåndsvisning. Integrationen er slået fra som standard, og en app oprettes først efter brugerens klik.
+
+Del beholder valget **Alle med linket** for nye apps med bekræftelse ved appens navn. komplai afviser at oprette offentlige apps direkte, så Aura opretter appen for organisationen og gør den offentlig med bekræftelsen før første upload.
+
+komplai-loginet i Del viser kun **Log ind med komplai**. Brugeren har fravalgt "Kræver konto og betalt aftale" og linket "Få adgang til komplai", fordi det lød som salg. Udbyderlisten skriver "Kræver komplai-konto" som de andre udbydere, og fejlbeskeder beder om adgang hos jeres administrator i stedet for at kontakte komplai. Promtes tekster er uændrede.
+
+Ændringerne hører til beta.2 sammen med den altid synlige Del-knap. komplai-delen releases af komplai og afprøves derefter mod den rigtige tjeneste.
+
 ## Promte i forhåndsvisningen · komplai Run efter beta.1 · 21. oktober 2026
 
-Brugeren har flettet PR 12 med Promte-login, appvalg og forhåndsvisning med rigtige data ind i 0.5.0-beta.1. Forhåndsvisningen svarer kun en Promte-app, når Promte-integrationen er slået til. Aura opretter først en app i Promte, når brugeren vælger **Opret appen … i Promte**. Del er forudfyldt med Promtes standardadresse `https://app.promte.dk`; en anden installation angives af brugeren. Forhåndsvisningen bruger projektets koblede app eller den Promte, brugeren er logget ind på i Aura.
+Brugeren har flettet PR 12 med Promte-login, appvalg og forhåndsvisning med rigtige data ind i 0.5.0-beta.1. Forhåndsvisningen svarer kun en Promte-app, når Promte-integrationen er slået til. Aura opretter først en app i Promte, når brugeren vælger **Opret appen … i Promte**. Del er forudfyldt med `https://kodning.promte.dk`, som Promte selv foreslog i PR 12 (valgt 22. oktober til beta.2; i beta.1 var det `https://app.promte.dk`); en anden installation angives af brugeren. Forhåndsvisningen bruger projektets koblede app, den Promte, brugeren er logget ind på i Aura, ellers samme adresse.
 
 komplai Run skal have en tilsvarende opbygning efter beta.1. Arbejdet begynder med at afklare, hvilke app-API'er komplai stiller til rådighed; Run er i dag statisk hosting uden data eller AI-proxy. Det er ikke implementeret.
 
 ## Del er altid synlig · aftalt til 0.5.0-beta.2 · 20. oktober 2026
 
-Brugeren har valgt, at Del-knappen altid skal være synlig, også når der endnu ikke er en app at dele. Et klik uden en app skal vise et kort, tydeligt næste trin. Den eksisterende udgivelsesgennemgang og brugerens godkendelse bevares.
+Brugeren har valgt, at Del-knappen altid skal være synlig, også når der endnu ikke er en app at dele. Den eksisterende udgivelsesgennemgang og brugerens godkendelse bevares.
 
-Ændringen hører til beta.2 og er endnu ikke implementeret. Den allerede pakkede 0.5.0-beta.1 færdiggøres med den nuværende brugerflade.
+Implementeret i beta.2 22. oktober 2026: Er deling slået fra, viser Del ét trin, **Slå deling til**. Derefter starter det almindelige Del-forløb, også før appen har en gemt version, så login, app og adgang kan gøres klar, mens appen bygges. Brugeren fravalgte et særskilt trin "Der er endnu intet at dele". Først ved udgivelse kræves en gemt version, og Aura siger det med én sætning.
 
 ## komplai kun til udgivelse · 20. oktober 2026
 

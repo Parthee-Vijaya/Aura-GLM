@@ -13,6 +13,8 @@ const { zip } = require('./komplai-publish.cjs');
 const DEFAULT_HOST = 'https://app.promte.dk';
 const LOGIN_TIMEOUT = 10 * 60 * 1000;
 const ACCOUNT_REQUIRED = 'Kræver konto og betalt aftale';
+const UNREADABLE = 'Promte-svaret kunne ikke kontrolleres. Se udgivelserne i Promte før et nyt forsøg.';
+const NO_LIST = 'Denne Promte-installation viser ikke en liste over apps.';
 const SKIP_DIRS = new Set(['node_modules', 'bower_components', '.git', '.hg', '.svn', '.promte-source', '.cache', '.yarn', '.npm', '.pnpm-store', '.turbo', '.vite', '.parcel-cache', '.next', '.nuxt', '.output', 'dist', 'build', 'out', 'coverage', '__pycache__', '.pytest_cache', '.mypy_cache', '.venv', 'venv', '.ssh', '.aws', '.azure', '.gcloud', '.kube', '.docker', '__macosx', '.claude', '.agents', '.codex', '.cursor', '.idea', '.vscode']);
 const SKIP_FILE = /^(?:\.env(?:\..*)?|\.npmrc|\.pypirc|\.netrc|\.ds_store|\.yarnrc(?:\.yml)?|\.secrets?|credentials(?:\.[^.]+)?|secrets?\.(?:json|ya?ml|toml)|id_(?:rsa|dsa|ecdsa|ed25519)(?:\.pub)?|promte-app-upload\.config\.json|yarn\.lock|pnpm-lock\.yaml|vite\.config\.[cm]?[jt]s)$|\.(?:pem|key|p12|pfx|keystore|jks|zip|tar|tgz|gz|7z|rar|map|tsbuildinfo|log|pyc|o|so|dll|exe|class)$/i;
 const UNSUPPORTED_BUILD_FILE = /^(?:(?:postcss|tailwind|babel|webpack|rollup)\.config\..+|\.babelrc(?:\..*)?|\.postcssrc(?:\..*)?)$/i;
@@ -122,7 +124,7 @@ class PromteDeployment {
     if (!token && !anonymous) throw Error('Log ind med Promte til den valgte installation.');
     const options = { method: body === undefined ? 'GET' : 'POST', redirect: 'error', credentials: 'omit', timeout: upload ? 120000 : 30000, headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), Accept: 'application/json', ...(body !== undefined ? { 'Content-Type': contentType || 'application/json' } : {}) }, body: body === undefined ? undefined : Buffer.isBuffer(body) ? body : JSON.stringify(body) };
     let response, value;
-    try { response = await (this.fetcher ? this.fetcher(host + route, { ...options, signal: AbortSignal.timeout(options.timeout) }) : pinnedRequest(host + route, options, address)); const text = await response.text(); if (Buffer.byteLength(text) > 2 * 1024 * 1024) throw Error(); value = JSON.parse(text); } catch { throw Error('Promte-svaret kunne ikke kontrolleres. Se udgivelserne i Promte før et nyt forsøg.'); }
+    try { response = await (this.fetcher ? this.fetcher(host + route, { ...options, signal: AbortSignal.timeout(options.timeout) }) : pinnedRequest(host + route, options, address)); const text = await response.text(); if (Buffer.byteLength(text) > 2 * 1024 * 1024) throw Error(); value = JSON.parse(text); } catch { throw Error(UNREADABLE); }
     if (accept.includes(response.status) && value && typeof value === 'object') return value;
     if (response.status === 401) throw Error('Promte-login er udløbet eller afvist. Log ind igen.');
     if (response.status === 403) throw Error('Du skal være administrator i Promte-arbejdsområdet for at udgive.');
@@ -132,11 +134,13 @@ class PromteDeployment {
   async inspect(input) {
     const c = promteConfiguration(input);
     const capabilities = await this.call(c.host, '/api/app-upload/capabilities?workspaceId=' + encodeURIComponent(c.workspaceId));
+    // Aura sender kildekode, som Promte selv bygger (PR 12). Installationer, der kun tager færdigbyggede apps, får en klar besked.
+    if (capabilities.available === true && capabilities.uploadMode === 'built') throw Error('Denne Promte-installation tager kun imod færdigbyggede apps. Aura sender kildekode, som Promte selv bygger, fx på https://kodning.promte.dk. Brug Promtes eget uploadværktøj her, eller vælg en anden Promte-adresse.');
     if (capabilities.available !== true || capabilities.uploadMode !== 'source') throw Error('Denne Promte-installation skal understøtte kildekodeupload. Kontakt administratoren om appbygning og din adgang.');
     // Appens navn vises, hvor Promte kan oplyse det. Ældre installationer viser ID'et.
     let name = c.workspaceId;
     try { const found = (await this.call(c.host, '/api/app-upload/workspaces')).workspaces?.find(w => w?.id === c.workspaceId); if (typeof found?.name === 'string' && found.name.trim()) name = found.name.slice(0, 200); } catch {}
-    return { id: c.workspaceId, name, owner: new URL(c.host).hostname, host: new URL(c.host).hostname, portal: c.host, region: 'Afhænger af jeres Promte-installation og dens tjenester.', settings: { uploadMode: 'source' }, environmentKeys: [], access: 'Adgang styres i Promte-arbejdsområdet. Kontrollér den med den tilsigtede bruger.', accountRequired: ACCOUNT_REQUIRED, uploadDestinations: [...new Set([c.host, DEFAULT_HOST])], materialNote: 'Kildekoden sendes til den valgte Promte-installation eller Promtes fælles uploadtjeneste på app.promte.dk. Promte bygger og gennemgår versionen.' };
+    return { id: c.workspaceId, name, owner: new URL(c.host).hostname, host: new URL(c.host).hostname, portal: `${c.host}/workspaces/${encodeURIComponent(c.workspaceId)}`, region: 'Afhænger af jeres Promte-installation og dens tjenester.', settings: { uploadMode: 'source' }, environmentKeys: [], access: 'Adgang styres i Promte-arbejdsområdet. Kontrollér den med den tilsigtede bruger.', accountRequired: ACCOUNT_REQUIRED, uploadDestinations: [...new Set([c.host, DEFAULT_HOST])], materialNote: 'Kildekoden sendes til den valgte Promte-installation eller Promtes fælles uploadtjeneste på app.promte.dk. Promte bygger og gennemgår versionen.' };
   }
   async deploy(input, artifact, target, { onUploaded = async () => {} } = {}) {
     const c = promteConfiguration(input); validatePromteArtifact(artifact);
@@ -217,8 +221,9 @@ class PromteSetup {
   }
   /** App-arbejdsområder, som brugeren må uploade til. Promte bruger samme kontrol som ved upload. */
   async workspaces({ host = DEFAULT_HOST } = {}) {
-    const value = await this.client.call(host, '/api/app-upload/workspaces');
-    if (!Array.isArray(value.workspaces)) throw Error('Promte sendte ikke en liste over apps. Opdatér Promte, eller indtast arbejdsområdets ID.');
+    // Ældre installationer har ingen appliste og svarer med en almindelig side. Brugeren indtaster da ID'et.
+    const value = await this.client.call(host, '/api/app-upload/workspaces').catch(error => { throw error.message === UNREADABLE ? Error(NO_LIST) : error; });
+    if (!Array.isArray(value.workspaces)) throw Error(NO_LIST);
     return value.workspaces.filter(w => typeof w?.id === 'string' && /^[A-Za-z0-9][A-Za-z0-9_-]{0,199}$/.test(w.id)).slice(0, 500).map(w => ({ id: w.id, name: typeof w.name === 'string' && w.name.trim() ? w.name.slice(0, 200) : w.id, activeAppVersion: Number.isSafeInteger(w.activeAppVersion) ? w.activeAppVersion : null }));
   }
   /** Opretter et nyt app-arbejdsområde med brugeren som ejer, ligesom Promtes egen opret-knap. */

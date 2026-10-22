@@ -25,7 +25,7 @@ class DeploymentSetup {
       case 'promte-logout': return this.promte.logout({ host: config.host });
       case 'promte-workspaces': return this.promte.workspaces({ host: config.host });
       case 'promte-create': return this.promte.createWorkspace({ host: config.host, name: input.name });
-      // Forhåndsvisning og Del bruger den samme Promte-app for projektet.
+      // Forhåndsvisning og Udgiv bruger den samme Promte-app for projektet.
       case 'promte-link': return { link: (await this.store.project(root)).promteApp || null, suggestedName: appName(root) };
       case 'promte-link-set': {
         if (typeof input.workspaceId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,199}$/.test(input.workspaceId)) throw Error('Ugyldig Promte-app.');
@@ -96,7 +96,7 @@ class DeploymentSetup {
     const links = {
       azure: { account: 'https://azure.microsoft.com/free/', install: 'https://learn.microsoft.com/en-us/cli/azure/install-azure-cli', swa: 'https://azure.github.io/static-web-apps-cli/docs/use/install/', portal: 'https://portal.azure.com/#browse/Microsoft.Web%2FStaticSites' },
       promte: { account: 'https://promte.com/kontakt', install: 'https://www.npmjs.com/package/@promte/app-upload' },
-      komplai: { account: 'https://komplai.dk', portal: 'https://app.komplai.dk' },
+      komplai: { portal: 'https://app.komplai.dk' },
       vercel: { account: 'https://vercel.com/signup', portal: 'https://vercel.com/dashboard', install: 'https://vercel.com/docs/cli', guide: 'https://vercel.com/docs/git/vercel-for-github' },
       'github-pages': { account: 'https://github.com/signup', login: 'https://cli.github.com/manual/gh_auth_login', token: 'https://github.com/settings/personal-access-tokens/new', portal: 'https://github.com' },
       cloudflare: { account: 'https://dash.cloudflare.com/sign-up', portal: 'https://dash.cloudflare.com/', token: 'https://dash.cloudflare.com/profile/api-tokens' }

@@ -13,6 +13,11 @@ const definitions = {
     training: 'Corti oplyser, at data i EU-projekter aldrig bruges til træning. Kontrollér aftalen for jeres projekt.', trainingShort: 'Bruges ikke til træning, ifølge Corti',
     region: 'EU ifølge Cortis dokumentation: EU-projekter kører på Cortis egen klynge i EU. Denne adapter bruger kun EU-endpointet; den konkrete installation er ikke uafhængigt verificeret.', regionShort: 'EU, på Cortis egne servere',
     retention: 'Corti oplyser, at prompts og svar i EU-projekter aldrig gemmes eller logges.', retentionShort: 'Gemmes ikke, ifølge Corti' },
+  // Vilkårene for Alexandra er kontrolleret på platformens egen dokumentation 21. oktober 2026.
+  alexandra: { name: 'Alexandra AI Platform', provider: 'Alexandra Instituttet', baseURL: 'https://inference.alexandra.dk/v1', protocol: 'openai', keyRequired: true, source: 'https://platform.alexandra.dk/privacy/', checkedAt: '2026-10-21',
+    training: 'Alexandra oplyser, at indhold fra API-kald ikke bruges til træning. Data behandles kun for at producere svaret. Kontrollér databehandleraftalen for jeres organisation.', trainingShort: 'Bruges ikke til træning, ifølge Alexandra',
+    region: 'Danmark ifølge Alexandras dokumentation: hele behandlingen foregår på danske lokationer, og hardware lejes hos ScanNet (team.blue Denmark), der er ISO 27001-certificeret. Der sker ingen overførsel uden for EU/EØS. Denne adapter bruger kun platformens egen adresse; den konkrete installation er ikke uafhængigt verificeret.', regionShort: 'Danmark, hos Alexandra Instituttet',
+    retention: 'Alexandra oplyser, at prompts og svar slettes, når modellen er færdig med at svare, og at indholdet ikke logges. Tekniske data kan midlertidigt ligge i hukommelsen, men gemmes ikke permanent.' },
   mistral: { name: 'Mistral API', provider: 'Mistral', baseURL: 'https://api.mistral.ai/v1', protocol: 'openai', keyRequired: true, source: 'https://help.mistral.ai/en/articles/347617-do-you-use-my-user-data-to-train-your-artificial-intelligence-models', checkedAt: '2026-09-29',
     training: 'På Mistrals gratis plan kan input og svar bruges til træning. Med betalt forbrug kan du fravælge det under Privacy i Mistral Admin. Appen kontrollerer ikke kontoens valg.', trainingShort: 'Kan bruges til træning på gratisplanen',
     region: 'Mistral hoster data i EU, men det globale endpoint api.mistral.ai lover ikke, hvor selve behandlingen sker. Garanteret EU-behandling kræver Mistrals EU-endpoint, som appen ikke bruger endnu.', regionShort: 'Hostes i EU, behandlingssted ikke garanteret',
@@ -42,9 +47,11 @@ const knownPrices = [
   ['mistral', /^mistral-large-4(?:-0)?$/, 1.36, 4.18, { cacheRead: 0.14, checkedAt: '2026-10-07', note: 'Overslaget bruger normal listepris. Mistrals midlertidige lanceringsrabat er ikke trukket fra.' }],
   // Et bevægeligt "latest"-alias må ikke få den gamle Large 3-pris uden dokumentation for, hvad det peger på.
   ['mistral', /^mistral-medium-(3-5|latest)/, 1.5, 7.5], ['mistral', /^mistral-large-2512$/, 0.5, 1.5], ['mistral', /^codestral-(2508|latest)/, 0.3, 0.9],
-  ['corti', /^corti-s1-mini/, 1, 4], ['corti', /^corti-s1/, 2, 8]
+  ['corti', /^corti-s1-mini/, 1, 4], ['corti', /^corti-s1/, 2, 8],
+  // Alexandras priser er i DKK pr. million tokens og er kontrolleret på platform.alexandra.dk/platform-ui/docs/models 21. oktober 2026.
+  ['alexandra', /^glm-5\.3-flash$/, 6, 30, { currency: 'DKK', cacheRead: 3 }], ['alexandra', /^qwen3\.8-flash-next$/, 1, 5, { currency: 'DKK', cacheRead: 0.2 }]
 ];
-const priceSources = { anthropic: 'https://platform.claude.com/docs/en/about-claude/pricing', mistral: 'https://docs.mistral.ai/inference/pricing', corti: 'https://docs.corti.ai/models/models' };
+const priceSources = { anthropic: 'https://platform.claude.com/docs/en/about-claude/pricing', mistral: 'https://docs.mistral.ai/inference/pricing', corti: 'https://docs.corti.ai/models/models', alexandra: 'https://platform.alexandra.dk/platform-ui/docs/models' };
 // Pris i USD pr. million tokens til et anslået forbrug. Cachelæsning og -skrivning følger udbydernes prislister;
 // kendes cacheprisen ikke, regnes den som almindeligt input.
 function priceFor(connection, model, route = null) {
@@ -57,7 +64,8 @@ function priceFor(connection, model, route = null) {
   const known = knownPrice(connection.kind, model.id);
   if (!known) return null;
   const read = connection.kind === 'anthropic' ? (/^claude-fable-5/.test(model.id) ? 0.025 : /^claude-opus-5-5/.test(model.id) ? 0.05 : 0.1) : connection.kind === 'corti' ? 0.1 : 1;
-  return { input: known.input, output: known.output, cacheRead: known.cacheRead ?? known.input * read, cacheWrite: connection.kind === 'anthropic' ? known.input * 1.25 : known.input };
+  // Alexandras prisliste er i DKK; forbruget føres derfor i en særskilt post, så USD og DKK ikke blandes.
+  return { ...(known.currency === 'DKK' ? { currency: 'DKK' } : {}), input: known.input, output: known.output, cacheRead: known.cacheRead ?? known.input * read, cacheWrite: connection.kind === 'anthropic' ? known.input * 1.25 : known.input };
 }
 function knownPrice(kind, id) { const found = knownPrices.find(([provider, pattern]) => provider === kind && pattern.test(id)); return found ? { input: found[2], output: found[3], source: priceSources[kind], checkedAt: definitions[kind].checkedAt, ...found[4] } : null; }
 const usd = value => value.toLocaleString('da-DK', { maximumFractionDigits: 2 });
@@ -66,21 +74,26 @@ function endpoint(value) {
   if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) throw new Error('Serveradressen må ikke indeholde login, parametre eller fragmenter.');
   return url.href.replace(/\/$/, '');
 }
-// Cortis nøgler bærer deres miljø først, fx "fr:" i base64, og virker kun i deres eget miljø. Appen vælger derfor adressen
-// ud fra nøglen. Kun EU og Frankrig bruges; appen skifter aldrig til USA.
-const CORTI = { eu: 'https://ai.eu.corti.app/v1', fr: 'https://ai.fr.corti.app/v1' };
+// Cortis nøgler bærer deres miljø først, fx "fr:" eller "eu-s:" i base64, og virker kun i deres eget miljø. Appen vælger derfor
+// adressen ud fra nøglen. Kun EU, EU-S og Frankrig bruges; appen skifter aldrig til USA.
+const CORTI = { eu: 'https://ai.eu.corti.app/v1', 'eu-s': 'https://ai.eu-s.corti.app/v1', fr: 'https://ai.fr.corti.app/v1' };
 const cortiFrance = {
   region: 'Frankrig ifølge Corti: miljøet fr kører hos Scaleway i Paris, og adgang kræver aftale med Corti. Appen bruger kun Cortis adresser i EU og Frankrig og skifter aldrig til USA.',
   regionShort: 'Frankrig, hos Scaleway i Paris ifølge Corti', source: 'https://docs.corti.ai/authentication/environments_tenants'
 };
+// EU-S står i Cortis konsol, ikke i dokumentationen. Adressen er slået op 22. oktober 2026: Scaleway i Frankrig ifølge IP-registeret.
+const cortiSovereign = {
+  region: 'EU-S (Sovereign) ifølge Cortis konsol. Adressen ai.eu-s.corti.app drives hos Scaleway i Frankrig ifølge IP-registeret. Appen bruger kun Cortis adresser i EU og skifter aldrig til USA.',
+  regionShort: 'EU-S (Sovereign), hos Scaleway i Frankrig', source: 'https://console.corti.app/'
+};
 function cortiEndpoint(key) {
-  const environment = /^([a-z]{2}):/.exec(Buffer.from(String(key), 'base64').toString('utf8'))?.[1];
+  const environment = /^([a-z]{2}(?:-[a-z]+)?):/.exec(Buffer.from(String(key), 'base64').toString('utf8'))?.[1];
   if (!environment) return CORTI.eu;
   if (CORTI[environment]) return CORTI[environment];
-  throw new Error(environment === 'us' ? 'Nøglen hører til Cortis amerikanske miljø. Aura bruger kun Corti i EU og Frankrig.' : `Nøglen hører til Cortis miljø "${environment}", som Aura endnu ikke bruger. Brug en nøgle fra et projekt i EU eller Frankrig.`);
+  throw new Error(environment === 'us' ? 'Nøglen hører til Cortis amerikanske miljø. Aura bruger kun Corti i EU og Frankrig.' : `Nøglen hører til Cortis miljø "${environment}", som Aura endnu ikke bruger. Brug en nøgle fra et projekt i EU, EU-S eller Frankrig.`);
 }
 function assertSupported(connection) {
-  if (connection?.kind === 'komplai') throw new Error('komplai bruges nu kun til udgivelse via Del. Vælg en anden AI-forbindelse.');
+  if (connection?.kind === 'komplai') throw new Error('komplai bruges nu kun til udgivelse via Udgiv. Vælg en anden AI-forbindelse.');
   if (!connection || !Object.hasOwn(definitions, connection.kind)) throw new Error('Vælg en understøttet forbindelsestype.');
 }
 function normalize(input) {
@@ -111,7 +124,7 @@ async function requestJSON(url, { key = '', kind, method = 'GET', body, signal }
   try { response = await fetch(url, { method, headers, body: body && JSON.stringify(body), signal: signal || AbortSignal.timeout(15000), redirect: 'error' }); }
   catch { throw new Error('Serveren svarer ikke. Kontrollér adresse, port, netværk og eventuelt Tailscale.'); }
   // En Corti-nøgle virker kun i sit eget miljø. Beskeden siger, hvilken adresse appen prøvede, så testeren ved, hvad der skal tjekkes.
-  if (!response.ok && kind === 'corti' && (response.status === 401 || response.status === 403)) throw new Error(`Corti afviste nøglen på ${url.startsWith(CORTI.fr) ? 'adressen i Frankrig' : 'adressen i EU'}. Brug en nøgle fra Corti Models i et projekt i EU eller Frankrig; en nøgle virker kun i sit eget miljø.`);
+  if (!response.ok && kind === 'corti' && (response.status === 401 || response.status === 403)) throw new Error(`Corti afviste nøglen på ${url.startsWith(CORTI.fr) ? 'adressen i Frankrig' : url.startsWith(CORTI['eu-s']) ? 'adressen i EU-S (Sovereign)' : 'adressen i EU'}. Brug en nøgle fra Corti Models i et projekt i EU, EU-S eller Frankrig; en nøgle virker kun i sit eget miljø.`);
   if (!response.ok) throw new Error(response.status === 401 || response.status === 403 ? 'Serveren afviste adgangen. Kontrollér API-nøglen og tilladelserne.' : `Serveren svarede med HTTP ${response.status}. Ingen anden forbindelse blev valgt.`);
   const chunks = []; let size = 0;
   for await (const chunk of response.body) {
@@ -149,7 +162,7 @@ function disclosure(connection, model, route = null) {
   const def = definitions[connection.kind];
   const url = new URL(connection.baseURL);
   const loopback = ['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname);
-  const site = connection.kind === 'corti' && `${url.origin}/v1` === CORTI.fr ? cortiFrance : {};
+  const site = connection.kind !== 'corti' ? {} : `${url.origin}/v1` === CORTI.fr ? cortiFrance : `${url.origin}/v1` === CORTI['eu-s'] ? cortiSovereign : {};
   const price = route?.price || model.price;
   const free = price && Number(price.prompt) === 0 && Number(price.completion) === 0;
   const known = knownPrice(connection.kind, model.id);
@@ -159,9 +172,9 @@ function disclosure(connection, model, route = null) {
     recipients: connection.kind === 'openrouter' ? `OpenRouter → ${route?.name || 'Ukendt modeludbyder'}` : `${def.name} · ${url.hostname}`,
     region: site.region || def.region || (loopback ? 'Forbindelsen går til denne computer. Selve modellens behandlingssted er endnu ikke verificeret.' : 'Ukendt; serveradressen dokumenterer ikke behandlingsstedet.'),
     retention: def.retention || 'Ikke verificeret for denne forbindelse. Konto-, model- og servervilkår kan variere.',
-    training: zen ? zen[2] : def.training, price: free ? '0 i oplyst pris for input/output. Kvoter, øvrige gebyrer og senere prisændringer kan gælde.' : price ? `Oplyst API-pris: ${JSON.stringify(price)}` : known ? `${usd(known.input)} USD pr. million tokens, du sender, og ${usd(known.output)} USD pr. million tokens i svar, ifølge ${def.provider}s prisliste (kontrolleret ${known.checkedAt}). ${known.note ? known.note + ' ' : ''}Prisen kan ændre sig; se dit forbrug hos udbyderen. Kilde: ${known.source}` : 'Ukendt pris eller egen drift. Ingen garanti om gratis brug.',
+    training: zen ? zen[2] : def.training, price: free ? '0 i oplyst pris for input/output. Kvoter, øvrige gebyrer og senere prisændringer kan gælde.' : price ? `Oplyst API-pris: ${JSON.stringify(price)}` : known ? `${usd(known.input)} ${known.currency || 'USD'} pr. million tokens, du sender, og ${usd(known.output)} ${known.currency || 'USD'} pr. million tokens i svar, ifølge ${def.provider}s prisliste (kontrolleret ${known.checkedAt}). ${known.note ? known.note + ' ' : ''}Prisen kan ændre sig; se dit forbrug hos udbyderen. Kilde: ${known.source}` : 'Ukendt pris eller egen drift. Ingen garanti om gratis brug.',
     provider: def.provider || def.name, regionShort: site.regionShort || def.regionShort || null, trainingShort: zen?.[1] || def.trainingShort || null, retentionShort: def.retentionShort || null,
-    priceShort: free ? 'Gratis ifølge kataloget. Kvoter kan gælde.' : known && !price ? `${usd(known.input)} USD ind og ${usd(known.output)} USD ud pr. million tokens${known.note ? ' · normal listepris' : ''}` : null,
+    priceShort: free ? 'Gratis ifølge kataloget. Kvoter kan gælde.' : known && !price ? `${usd(known.input)} ${known.currency || 'USD'} ind og ${usd(known.output)} ${known.currency || 'USD'} ud pr. million tokens${known.note ? ' · normal listepris' : ''}` : null,
     capabilities: model.capabilities?.tools === true ? 'Kataloget angiver værktøjskald; faktisk kodearbejde er ikke verificeret for denne model.' : model.capabilities?.tools === false ? 'Kataloget angiver ikke værktøjsunderstøttelse. Modellen kan være uegnet som kodeagent.' : 'Værktøjsunderstøttelse er ukendt. Modelkataloget er ikke et kompatibilitetsbevis.',
     material: 'Beskeder, samtalehistorik, fælles regler, projektkontekst og de filer/værktøjsresultater agenten læser. Referencefiler kræver særskilt tilvalg. Modelskift starter en ny session.',
     security: url.protocol === 'http:' && !loopback ? 'HTTP uden TLS. Tailscale-kryptering er kun gældende, hvis forbindelsen faktisk går gennem Tailscale; det er ikke verificeret her.' : 'Forbindelsesadressen er kontrolleret. Det er ikke en sikkerhedsgodkendelse af tjenesten.',
@@ -185,7 +198,12 @@ const knownLimits = [
   ['mistral', /codestral|devstral/, { context: 128000, output: 16384 }],
   // Cortis katalog oplyser 262.144 tokens kontekst, men ingen grænse for svarlængden. Corti S1 tænker, før den svarer, og
   // tankerne tæller med i svaret. Med appens forsigtige standard på 4.096 blev svaret skåret af, før en fil blev skrevet.
-  ['corti', /^corti-s1/, { context: 262144, output: 32000 }]
+  ['corti', /^corti-s1/, { context: 262144, output: 32000 }],
+  // Alexandras modelside oplyser kontekstvinduerne. Grænsen for svar er platformens eget tal fra vejledningen til
+  // kodeagenter: et unødigt højt max_tokens reserverer flere penge, før svaret skrives, og kan afvises for saldo eller
+  // månedsbudget. Tænkning tæller med i svaret, så grænsen sættes ikke lavere end vejledningens 16.384.
+  ['alexandra', /^glm-5\.3-flash$/, { context: 1048576, output: 16384 }],
+  ['alexandra', /^qwen3\.8-flash-next$/, { context: 262144, output: 16384 }]
 ];
 function modelLimits(connection, model) {
   const known = knownLimits.find(([kind, pattern]) => kind === connection.kind && pattern.test(model.id))?.[2];

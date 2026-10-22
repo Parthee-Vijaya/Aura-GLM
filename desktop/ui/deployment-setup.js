@@ -4,7 +4,7 @@
     ['azure', 'Azure Static Web Apps', 'Kræver Microsoft-konto og Azure-abonnement'],
     ['cloudflare', 'Cloudflare Pages', 'Kræver Cloudflare-konto og GitHub-konto'],
     ['github-pages', 'GitHub Pages', 'Kræver GitHub-konto'],
-    ['komplai', 'komplai Run', 'Kræver konto og betalt aftale'],
+    ['komplai', 'komplai Run', 'Kræver komplai-konto'],
     ['promte', 'Promte Apps', 'Kræver konto og betalt aftale'],
     ['vercel', 'Vercel', 'Kræver Vercel-konto']
   ];
@@ -171,7 +171,6 @@
     bind('#deployment-account-link', () => open('account'));
     bind('#deployment-token-guide', () => open('token', 'github-pages'));
     bind('#deployment-token-save', async () => { const token = $('#deployment-token').value; $('#deployment-token').value = ''; await api('hostingToken', token); await loadConnection(); });
-    bind('#komplai-publish-account', () => open('account', 'komplai'));
     bind('#deployment-promte-host-next', () => { if ($('#deploy-promte-host').reportValidity()) return loadConnection(); });
     bind('#deployment-promte-open', () => open('host'));
     bind('#deployment-promte-workspace-next', async () => {
@@ -251,7 +250,7 @@
     }
     function renderHeader(error = trackingError) {
       const button = $('#deployment-status'), has = Boolean(tracking?.automatic || tracking?.last);
-      button.hidden = !has || $('#deploy-button').hidden || !trackingRoot;
+      button.hidden = !has || !window.sharingOn?.() || !trackingRoot;
       button.disabled = $('#deploy-button').disabled;
       button.textContent = error ? 'Udgivelse · Status kunne ikke hentes' : statusText(tracking);
       button.dataset.state = error || tracking?.last?.checks?.provider?.status === 'unknown' ? 'UNKNOWN' : tracking?.latest?.state || tracking?.last?.state || '';
@@ -291,7 +290,8 @@
     function projectChanged(root) { trackingRoot = root || null; tracking = null; trackingError = false; renderHeader(); if (root) refresh(false); }
     window.addEventListener('aura:project', event => projectChanged(event.detail?.root));
     new MutationObserver(() => renderHeader()).observe($('#deploy-button'), { attributes: true, attributeFilter: ['hidden', 'disabled'] });
-    setInterval(() => { if (trackingRoot && !document.hidden && !$('#workspace').hidden && !$('#deploy-button').hidden && (tracking?.automatic || tracking?.last?.id)) refresh(true).catch(() => {}); }, 30000);
+    window.addEventListener('aura:features', () => renderHeader());
+    setInterval(() => { if (trackingRoot && !document.hidden && !$('#workspace').hidden && window.sharingOn?.() && (tracking?.automatic || tracking?.last?.id)) refresh(true).catch(() => {}); }, 30000);
     dialog.addEventListener('close', () => { ++epoch; clearTimeout(polling); if (loginID) api('hostingCancel').catch(() => {}); loginID = null; $('#deployment-token').value = ''; configReview = null; });
     providerList();
     return { choose, config, restore, opened, refresh, configurationStep, pages, panel: step => choices.has(step) ? 'setupChoice' : step, render(step) { if (step !== 'setupConnection' && loginID) { clearTimeout(polling); loginID = null; api('hostingCancel').catch(() => {}); } if (step === 'options') $('#deployment-save-settings').hidden = provider() === 'komplai'; if (step === 'providers') providerList(); if (choices.has(step)) renderChoice(choices.get(step)); }, title: step => choices.get(step)?.title || titles[step], reset() { page = 0; choices.clear(); choice = null; providerList(); } };

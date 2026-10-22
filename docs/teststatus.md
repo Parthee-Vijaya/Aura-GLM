@@ -1,8 +1,36 @@
 # Teststatus før invitation
 
-Senest kontrolleret 21. oktober 2026. Afsnittene er daterede, så tidligere begrænsninger kan læses i deres sammenhæng. Dette er status for den aktuelle arbejdsmappe, ikke en erklæring om, at alle installationsfiler eller modeller er klar. Særskilt godkendte Git-handlinger, udgivelser og GitHub-kørsler fremgår af de enkelte afsnit.
+Senest kontrolleret 22. oktober 2026. Afsnittene er daterede, så tidligere begrænsninger kan læses i deres sammenhæng. Dette er status for den aktuelle arbejdsmappe, ikke en erklæring om, at alle installationsfiler eller modeller er klar. Særskilt godkendte Git-handlinger, udgivelser og GitHub-kørsler fremgår af de enkelte afsnit.
 
 [Gennemgangen før offentlig beta](offentliggoerelse.md) samler historik- og logkontrol samt de lokale prøver af README, hjemmeside og udgivelseskontrol. Den offentliggør ikke appen og ændrer ikke installationsstatus nedenfor.
+
+## Kandidat til 0.5.0-beta.2 · rigtige tjenester · 22. oktober 2026
+
+Arbejdsmappens kode kørt fra kilden i Electron med isolerede appdata og brugerens egne logins. Ikke en pakket app; pakker og platformsprøver står i kandidatens næste afsnit, når de er bygget.
+
+- **Ollama lokalt:** Ollama 0.40.8 installeret med Homebrew, modellerne qwen3:4b og qwen3:8b. Aura fandt Ollama under **AI på din computer**. Samtale svarede, og begge modeller ændrede filer med godkendte værktøjskald. qwen3 følger ikke Auras planformat: Planlæg gav et spørgsmål eller en tom afslutning efter tænkning, som Aura viste som "AI'en stoppede uden et resultat". Med qwen3's egen `/no_think` skrev qwen3:8b appens filer.
+- **Corti EU-S med KL-hackathonens nøgle:** Brugeren indtastede selv nøglen. Før rettelsen ville Aura have sendt en `eu-s:`-nøgle til EU-adressen. Efter rettelsen hentede forbindelsen modellerne fra `ai.eu-s.corti.app`. **Før du sender** viste "EU-S (Sovereign), hos Scaleway i Frankrig". Samtale (34 s), Planlæg med de fire afsnit (30 s) og Byg med to godkendte filændringer lykkedes med corti-s1.
+- **komplai Run i prod:**
+  - Login med PKCE og forbindelse til organisationen "Komplai" lykkedes.
+  - Ny privat app "Find et mødelokale" blev oprettet og udgivet. Statuskontrollen viste "Bekræftet af komplai Run" og "Kun organisationen", og adressen svarer 403 uden login.
+  - Brugeren så appen efter login.
+  - To nye versioner er udgivet til samme app: Corti-versionen og en React-app med Vite, som Aura byggede lokalt. Den lokale bygning hentede pakker fra npm, byggede med `vite build` på 5,6 s og uploadede `index.html` og én JavaScript-fil.
+  - **Vælg en mappe i stedet** førte tilbage til den gamle vej uden upload.
+  - Callback-siden efter login er set i Electron med den rigtige sikkerhedspolitik i lyst og mørkt tema.
+- **Promte:** Login med bjas@kalundborg.dk på `promte.kalundborg.dk` lykkedes. Installationen har ingen appliste og melder `uploadMode: built`, så Aura udgiver ikke dertil. Den viser nu en klar besked om begge forhold. Upload til `kodning.promte.dk` er ikke afprøvet af os; Christian Vingborg kørte forløbet dér 21. oktober (PR 12).
+- **Ikke afprøvet:** pakkede apps, Windows, Intel-Mac og lokal bygning bag en kommunes netværk med blokeret npm.
+
+## Offentlig desktopbeta 0.5.0-beta.1 · 22. oktober 2026
+
+**Udgivet og observeret:** [Aura 0.5.0-beta.1](https://github.com/ai-alliancen-org/ai-harness/releases/tag/v0.5.0-beta.1) og [downloadsiden](https://ai-alliancen-org.github.io/ai-harness/desktop.html) er offentligt tilgængelige uden GitHub-login. Tagget `v0.5.0-beta.1` peger på brugerens commit `f9f5e04eaa6bf22de8ad745f9c6f60032d86f5a6` (`klargør Aura v0.5.0-beta.1 med Promte fra PR 12`), som også var `main`, da kørslerne startede. Udgivelsen indeholder PR 12 og rettelserne fra gennemgangen.
+
+- **Før upload:** Alle tre pakker består `verify-package-source.cjs` mod det taggede commit: 101 appfiler, 32 profilfiler og de fastlåste værktøjer. Mac-apps er kontrolleret udpakket fra de endelige ZIP-filer og Windows fra `win-unpacked`, hvis indhold matcher installationsfilens payload. Kontrollen er gentaget efter brugerens commit med ren arbejdsmappe.
+- **Kladde og offentliggørelse:** Kladden `420101646` fik præcis de syv filer fra `desktop/release/0.5.0-beta.1/r2-downloads/`, alle med status `uploaded` og samme størrelse og SHA-256 som de lokale filer. Kun de to godkendte kørsler er startet: [Offentliggør gennemgået desktopbeta 39684143118](https://github.com/ai-alliancen-org/ai-harness/actions/runs/39684143118) og [Udgiv downloadside 39684274484](https://github.com/ai-alliancen-org/ai-harness/actions/runs/39684274484). Begge bestod. Tagget udløste ingen andre kørsler; kun CodeQL kørte på den forudgående push, hvilket er den godkendte undtagelse.
+- **Offentlig download:** Downloadsiden viser v0.5.0-beta.1 med knapper til Mac · Apple-chip, Mac · Intel og Windows · x64. Alle fem programfiler samt `SHA256SUMS.txt` og `release.json` er hentet fra de offentlige adresser uden token eller cookies; alle fem SHA-256 matcher, og `release.json` og `SHA256SUMS.txt` er identiske med de lokalt kontrollerede. Beta-opdateringsfeeds for `darwin-arm64`, `darwin-x64` og `win32-x64` svarer HTTP 200 og peger på de rigtige filer med samme størrelse og SHA-512 som de offentligt hentede filer. De er ikke markeret kritiske. Den stabile kanal har fortsat ingen feed.
+- **Den offentlige fil er den notariserede:** Begge offentligt hentede DMG-filer består `stapler validate`; selve diskbilledet er ikke kodesigneret, som i 0.4. Appen inde i den offentlige `Aura-0.5.0-beta.1-mac-arm64.dmg` består `codesign --verify --deep --strict`, `stapler validate` og `syspolicy_check distribution`, viser `Developer ID Application: mekbas IVS (2UX98897JW)`, og dens `CFBundleShortVersionString` er `0.5.0-beta.1`.
+- **Platforme:** Offentlig download er ikke en ny platformsprøve. Windows-installation og -opdatering, SmartScreen, fysisk Intel-hardware, automatisk genstart efter Mac-opdatering og Promte i den pakkede app mod en rigtig Promte-server er fortsat ikke afprøvet; se kandidatafsnittet nedenfor.
+
+PR 12 er flettet, og tagget `v0.5.0-beta.1` er oprettet og pushet, begge på brugerens udtrykkelige godkendelse af netop de handlinger. Releasekladden og de to kørsler er ligeledes godkendt særskilt. Der er ikke oprettet commits, branches eller pull requests herfra, og Git-identiteten er uændret.
 
 ## Kandidat til 0.5.0-beta.1 efter PR 12 · 21. oktober 2026
 

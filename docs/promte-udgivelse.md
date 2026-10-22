@@ -4,7 +4,7 @@ Promte Apps kræver konto, betalt aftale og administratoradgang i det valgte app
 
 ## Forbindelse og destination
 
-1. Vælg **Promte Apps** i Del, og angiv organisationens Promte-adresse. Standardadressen er `https://app.promte.dk`.
+1. Vælg **Promte Apps** i Udgiv, og angiv organisationens Promte-adresse. Standardadressen er `https://kodning.promte.dk`.
 2. Installér Promtes officielle uploadværktøj, hvis det ikke allerede findes. Aura installerer ikke pakker automatisk.
 3. Vælg login i Aura. Promtes værktøj åbner browseren, hvor brugeren godkender CLI-adgangen.
 4. Kopiér app-arbejdsområdets ID fra dets adresse i Promte. Aura bruger ingen udokumenteret søgning efter arbejdsområder.

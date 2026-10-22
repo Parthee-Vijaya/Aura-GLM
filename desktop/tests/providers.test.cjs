@@ -26,15 +26,15 @@ test('Large 4 bruger Mistrals adapter, kataloggrænser og listepris uden en perm
  assert.notEqual(disclosure(connection,priced).fingerprint,disclosure(connection,{id:priced.id}).fingerprint);
  assert.equal(engineProvider({kind:'compatible'}, {id:'mistral-large-4'}, 'http://127.0.0.1:1/v1','t').npm,'@ai-sdk/openai-compatible','egne servere beholder deres valgte protokol');
 });
-test('Corti og Mistral fastholder destination; ukendte udbydere afvises',()=>{
- for(const [kind,host] of [['corti','ai.eu.corti.app'],['mistral','api.mistral.ai']]) {
+test('Corti, Mistral og Alexandra fastholder destination; ukendte udbydere afvises',()=>{
+ for(const [kind,host] of [['corti','ai.eu.corti.app'],['mistral','api.mistral.ai'],['alexandra','inference.alexandra.dk']]) {
   const c=normalize({kind,name:kind,baseURL:'https://example.invalid'});assert.equal(new URL(c.baseURL).hostname,host);
   assert.match(disclosure(c,{id:'test'}).price,/Ukendt/);
   assert.equal(engineProvider(c,{id:'test'},'http://127.0.0.1:1/v1','midlertidig').options.apiKey,'midlertidig');
  }
  assert.throws(()=>normalize({kind:'promte',name:'Promte',baseURL:'https://example.invalid'}),/understøttet/);
 });
-for(const kind of ['corti','mistral']) test(`${kind}: katalog, streaming, værktøjskald og fejl gennem rigtig HTTP-gateway`,async t=>{
+for(const kind of ['corti','mistral','alexandra']) test(`${kind}: katalog, streaming, værktøjskald og fejl gennem rigtig HTTP-gateway`,async t=>{
  const received=[];let fail=false;
  const server=http.createServer(async(req,res)=>{
   assert.equal(req.headers.authorization,'Bearer test-noegle');
@@ -96,6 +96,9 @@ test('Corti-forbindelsen bruger adressen fra nøglens miljø og aldrig USA', () 
   const key = environment => Buffer.from(`${environment}:password:testklient:testbruger:hemmelighed`).toString('base64');
   assert.equal(normalize({ kind: 'corti', name: 'Corti', apiKey: key('fr') }).baseURL, 'https://ai.fr.corti.app/v1');
   assert.equal(normalize({ kind: 'corti', name: 'Corti', apiKey: key('eu') }).baseURL, 'https://ai.eu.corti.app/v1');
+  // KL-hackathonens projekter ligger i EU-S (Sovereign); nøglen begynder med "eu-s:".
+  assert.equal(normalize({ kind: 'corti', name: 'Corti', apiKey: key('eu-s') }).baseURL, 'https://ai.eu-s.corti.app/v1');
+  assert.throws(() => normalize({ kind: 'corti', name: 'Corti', apiKey: key('us-x') }), /endnu ikke bruger/);
   assert.equal(normalize({ kind: 'corti', name: 'Corti', apiKey: 'en-nøgle-i-et-andet-format' }).baseURL, 'https://ai.eu.corti.app/v1');
   assert.equal(normalize({ kind: 'corti', name: 'Corti' }).baseURL, 'https://ai.eu.corti.app/v1');
   assert.throws(() => normalize({ kind: 'corti', name: 'Corti', apiKey: key('us') }), /amerikanske miljø/);
@@ -106,6 +109,35 @@ test('Corti-forbindelsen bruger adressen fra nøglens miljø og aldrig USA', () 
   assert.equal(france.source, 'https://docs.corti.ai/authentication/environments_tenants');
   assert.match(france.recipients, /ai\.fr\.corti\.app/);
   assert.doesNotMatch(disclosure({ kind: 'corti', name: 'Corti', baseURL: 'https://ai.eu.corti.app/v1' }, { id: 'corti-s1' }).regionShort, /Paris/);
+  const sovereign = disclosure({ kind: 'corti', name: 'Corti', baseURL: 'https://ai.eu-s.corti.app/v1' }, { id: 'corti-s1' });
+  assert.match(sovereign.regionShort, /EU-S \(Sovereign\), hos Scaleway i Frankrig/);
+  assert.match(sovereign.recipients, /ai\.eu-s\.corti\.app/);
+});
+
+test('Alexandra: DKK-priser, dokumenterede grænser og danske vilkår', () => {
+  const { modelLimits, priceFor } = require('../core/connections.cjs');
+  const connection = normalize({ kind: 'alexandra', name: 'Min Alexandra' });
+  assert.equal(engineProvider(connection, { id: 'glm-5.3-flash' }, 'http://127.0.0.1:1/v1', 'midlertidig').npm, '@ai-sdk/openai-compatible');
+  // Modelkortet oplyser kontekstvinduerne; svargrænsen er platformens eget tal fra vejledningen til kodeagenter.
+  assert.deepEqual(modelLimits(connection, { id: 'glm-5.3-flash' }), { context: 1048576, output: 16384 });
+  assert.deepEqual(modelLimits(connection, { id: 'qwen3.8-flash-next' }), { context: 262144, output: 16384 });
+  assert.deepEqual(priceFor(connection, { id: 'glm-5.3-flash' }), { currency: 'DKK', input: 6, output: 30, cacheRead: 3, cacheWrite: 6 });
+  assert.deepEqual(priceFor(connection, { id: 'qwen3.8-flash-next' }), { currency: 'DKK', input: 1, output: 5, cacheRead: 0.2, cacheWrite: 1 });
+  assert.equal(priceFor(connection, { id: 'ukendt-model' }), null, 'en ukendt model får ingen opdigtet pris');
+  const data = disclosure(connection, { id: 'glm-5.3-flash' });
+  assert.match(data.price, /6 DKK pr\. million tokens, du sender, og 30 DKK pr\. million tokens i svar/);
+  assert.match(data.price, /DKK/);
+  assert.match(data.priceShort, /DKK ind og 30 DKK ud/);
+  assert.match(data.price, /kontrolleret 2026-10-21/);
+  assert.match(data.price, /platform\.alexandra\.dk\/platform-ui\/docs\/models/);
+  assert.equal(data.checkedAt, '2026-10-21');
+  assert.match(data.regionShort, /Danmark/);
+  assert.match(data.retention, /slettes, når modellen er færdig med at svare/);
+  assert.match(data.trainingShort, /ikke til træning/);
+  assert.match(data.recipients, /inference\.alexandra\.dk/);
+  // Et katalogsvar med pris har forrang og skal beholde sin valuta.
+  const priced = { id: 'glm-5.3-flash', price: { currency: 'DKK', prompt: '0.000003', completion: '0.000015', input_cache_read: '0.0000015' } };
+  assert.deepEqual(priceFor(connection, priced), { currency: 'DKK', input: 3, output: 15, cacheRead: 1.5, cacheWrite: 3 });
 });
 
 test('når Corti afviser nøglen, siger beskeden hvilken adresse appen prøvede', async t => {

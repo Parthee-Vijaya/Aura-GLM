@@ -44,3 +44,10 @@ test('versionens navn følger godkendelsen og ændrer ikke uploadens indhold', a
  const r=await f.deployments.review('/test',config);assert.equal(r.version.name,'Klar til tester');f.state.versionNames[artifact.head]='Et nyt lokalt navn';
  const receipt=await f.deployments.deploy('/test',r.token);assert.equal(receipt.version.name,'Klar til tester');assert.equal(receipt.head,artifact.head);assert.equal(receipt.hash,artifact.hash);
 });
+
+test('udgivelse uden en gemt version siger, hvad der mangler', async t => {
+  const { deploymentArtifact } = require('../core/deployment-artifact.cjs');
+  const root = await require('node:fs/promises').mkdtemp(require('node:path').join(require('node:os').tmpdir(), 'aura-uden-version-'));
+  t.after(() => require('node:fs/promises').rm(root, { recursive: true, force: true }));
+  await assert.rejects(deploymentArtifact(root, 'public'), /Gem en version af appen, før du udgiver/);
+});

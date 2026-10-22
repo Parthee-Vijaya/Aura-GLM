@@ -183,8 +183,9 @@ function setupPage(step) {
   $('#setup-title').focus(); window.scrollTo(0, 0); setupControls();
 }
 // Udbyderne vises på lige vilkår. Et valg åbner kun den valgte forbindelses opsætning.
-const featuredProviders = [{ kind: 'anthropic' }, { kind: 'mistral' }, { kind: 'corti' }];
+const featuredProviders = [{ kind: 'anthropic' }, { kind: 'mistral' }, { kind: 'corti' }, { kind: 'alexandra' }];
 const providerCards = [
+  { kind: 'alexandra', name: 'Alexandra', text: 'Alexandra AI Platform.' },
   { kind: 'azure', name: 'Azure', text: 'OpenAI og Microsoft Foundry.' },
   { kind: 'anthropic', name: 'Claude', text: 'Anthropic API.' },
   { kind: 'corti', name: 'Corti', text: 'Corti API.' },
@@ -606,6 +607,13 @@ const keyGuides = {
       ['Hent en API-nøgle under Corti Models, og kopiér den.', 'keys', 'Åbn'],
       ['Indsæt den herunder.']],
     cost: 'Du betaler, når prøvekreditten er brugt. Du ser modtager og pris for modellen, før noget sendes, og forbruget under skrivefeltet.'
+  },
+  alexandra: {
+    steps: [['Opret en konto på Alexandra AI Platform.', 'start', 'Åbn', 'Alexandra Instituttets AI-platform med behandling i Danmark.'],
+      ['Opret en API-nøgle under API-nøgler, og kopiér den.', 'keys', 'Åbn', 'Selve nøglen vises kun, når du opretter den. Der findes personlige og organisationsejede nøgler.'],
+      ['Sæt en månedlig forbrugsgrænse under Fakturering.', 'billing', 'Åbn', 'Grænsen gælder også beløb, der er reserveret til igangværende kald.'],
+      ['Indsæt nøglen herunder.']],
+    cost: 'Platformen kræver saldo eller kredit hos Alexandra. Priserne er i DKK pr. million tokens. Du ser modtager og pris for modellen, før noget sendes, og forbruget under skrivefeltet.'
   }
 };
 // Trin i almindeligt dansk: én kort linje, en knap til udbyderens side og uddybning bag ⓘ.
@@ -624,7 +632,7 @@ function renderKeyGuide(kind) {
 }
 function updateProvider() {
   const definition = state?.definitions[$('#provider-kind').value]; if (!definition) return;
-  const help = { openai: 'Brug en OpenAI API-nøgle. Den afregnes separat fra dit ChatGPT-abonnement.', azure: 'Brug API-nøglen og deployment-navnet fra din Azure OpenAI- eller Foundry-ressource.', corti: 'Du skal bruge en API-nøgle fra et Corti-projekt i EU. Appen skifter aldrig automatisk til USA eller en anden model.', mistral: 'Du skal bruge en API-nøgle fra Mistral.', anthropic: 'Du skal bruge en API-nøgle fra Anthropic. Et Claude Pro- eller Max-abonnement kan ikke bruges her.', openrouter: 'Brug din OpenRouter-nøgle. Du vælger selv model og den udbyder, der modtager dine data. Gratis modeller er markeret i listen.', zen: 'Brug en nøgle fra OpenCode Zen. Zens gratis modeller virker ikke i Aura, fordi Zen kun giver gratis adgang fra OpenCodes egne programmer. Zens modeller kører i USA.', ollama: 'Forbind til en Ollama-server, som allerede kører. Kontrollér adressen nedenfor; appen installerer ikke modeller.', compatible: 'Brug adressen fra din organisation eller egen modelserver. Serveren kan køre lokalt eller på jeres netværk.' };
+  const help = { openai: 'Brug en OpenAI API-nøgle. Den afregnes separat fra dit ChatGPT-abonnement.', azure: 'Brug API-nøglen og deployment-navnet fra din Azure OpenAI- eller Foundry-ressource.', corti: 'Du skal bruge en nøgle fra Corti Models i et projekt i EU, EU-S eller Frankrig. Appen skifter aldrig automatisk til USA eller en anden model.', alexandra: 'Du skal bruge en API-nøgle fra Alexandra AI Platform. Appen bruger kun platformens egen adresse i Danmark. Adgangen til den enkelte model styres af din organisation.', mistral: 'Du skal bruge en API-nøgle fra Mistral.', anthropic: 'Du skal bruge en API-nøgle fra Anthropic. Et Claude Pro- eller Max-abonnement kan ikke bruges her.', openrouter: 'Brug din OpenRouter-nøgle. Du vælger selv model og den udbyder, der modtager dine data. Gratis modeller er markeret i listen.', zen: 'Brug en nøgle fra OpenCode Zen. Zens gratis modeller virker ikke i Aura, fordi Zen kun giver gratis adgang fra OpenCodes egne programmer. Zens modeller kører i USA.', ollama: 'Forbind til en Ollama-server, som allerede kører. Kontrollér adressen nedenfor; appen installerer ikke modeller.', compatible: 'Brug adressen fra din organisation eller egen modelserver. Serveren kan køre lokalt eller på jeres netværk.' };
   $('#provider-info').dataset.info = help[$('#provider-kind').value]; renderKeyGuide($('#provider-kind').value);
   $('.key-guide').hidden = ['ollama', 'compatible'].includes($('#provider-kind').value);
   const isAzure = $('#provider-kind').value === 'azure';
@@ -692,7 +700,7 @@ function showData(data, canSend) {
     const value = data[key];
     if (key === 'projectInstructions' && !value) continue;
     if (['fileReferences', 'brief', 'previewReferenceText'].includes(key) && !value?.length) continue;
-    const text = key === 'mode' ? ({ plan: 'Afklar og planlæg', build: 'Byg den valgte plan', free: 'Arbejd direkte' }[value]) : key === 'conversation' && !value ? 'Medsendes ikke. Den aktive samtale og en valgt plan indgår stadig.' : Array.isArray(value) ? value.join(', ') || 'Ingen' : value && typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value || 'Ingen');
+    const text = key === 'mode' ? ({ chat: 'Samtale', plan: 'Afklar og planlæg', build: 'Byg den valgte plan', free: 'Arbejd direkte' }[value]) : key === 'conversation' && !value ? 'Medsendes ikke. Den aktive samtale og en valgt plan indgår stadig.' : Array.isArray(value) ? value.join(', ') || 'Ingen' : value && typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value || 'Ingen');
     const dd = node('dd');
     if (text.length > 160) { const fold = node('details'); fold.append(node('summary', `Vis (${text.split(/\s+/).length} ord)`), node('pre', text)); dd.append(fold); }
     else dd.textContent = text;
@@ -998,9 +1006,14 @@ $('#model-done').onclick = () => { if (!$('#connection-select').value || !$('#mo
 // Funktioner: brugeren slår dem til og fra under Indstillinger › Funktioner. Et fravalg skjuler handlingen; filer og historik bevares.
 const featureOn = id => state?.features?.effective?.[id] !== false;
 const defaultMode = () => 'chat';
+// Et login uden for funktionsdialogen, fx Promte i forhåndsvisningen, kan ændre de anbefalede funktioner.
+window.refreshFeatures = async () => { state.features = await call('featuresGet'); applyFeatures(); };
+window.sharingOn = () => featureOn('deling');
 function applyFeatures() {
   $('#git-button').hidden = !featureOn('versioner');
-  for (const id of ['#deploy-button', '#publish-button', '#setup-hosting', '#startup-hosting-row']) $(id).hidden = !featureOn('deling');
+  // Udgiv er altid synlig; uden udgivelse eller en gemt version viser Udgiv det næste trin.
+  for (const id of ['#publish-button', '#setup-hosting', '#startup-hosting-row']) $(id).hidden = !featureOn('deling');
+  window.dispatchEvent(new Event('aura:features'));
   for (const id of ['#design-options', '#design-row']) $(id).hidden = !featureOn('design');
   const remembered = ['AI-forbindelse', featureOn('deling') && 'udgivelsesønske', featureOn('design') && 'designpakke'].filter(Boolean);
   $('#remember-info').dataset.info = `Husker ${remembered.join(', ')} og teststrategi fra det seneste projekt. Godkendelser og private referencer huskes ikke.`;
@@ -1618,7 +1631,7 @@ function renderRunReview(result, v = view) {
     if (result.files.length) { box.append(node('p', filesText(result.files.length, 'AI’en nåede at ændre'))); reviewFiles(box, result); }
     const actions = node('div', undefined, 'review-actions');
     const kind = state?.connections.find(c => c.id === $('#connection-select').value)?.kind;
-    const pages = { anthropic: 'billing', mistral: 'billing', corti: 'console', openrouter: 'start', zen: 'start' };
+    const pages = { anthropic: 'billing', mistral: 'billing', corti: 'console', alexandra: 'billing', openrouter: 'start', zen: 'start' };
     if (info.action === 'connection') actions.append(reviewButton('Gennemgå AI-forbindelse', () => showSetup(info.title), true));
     if (info.action === 'account' && pages[kind]) actions.append(reviewButton('Åbn kontoen hos udbyderen', () => action(() => call('providerAccount', { kind, page: pages[kind] })), true));
     else if (info.action === 'account') actions.append(reviewButton('Gennemgå AI-forbindelse', () => showSetup(info.title), true));
@@ -1751,5 +1764,5 @@ $('#support-button').onclick = () => action(async () => {
 $('#support-save').onclick = () => action(async () => { $('#support-status').textContent = await call('supportSave') ? 'Rapporten er gemt på din computer. Du vælger selv, om du vil dele den.' : 'Rapporten blev ikke gemt.'; });
 $('#support-feedback').onclick = () => action(() => call('supportFeedback'));
 
-// Del forbinder komplai Run fra sin egen dialog; appens funktioner følger med.
+// Udgiv forbinder komplai Run fra sin egen dialog; appens funktioner følger med.
 window.addEventListener('harness:komplai-connected', () => action(async () => { state = await call('connectionState'); renderConnections(); applyFeatures(); }));

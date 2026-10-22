@@ -197,7 +197,7 @@ class Workbench {
 
   // ---------- Forbindelser og modeller ----------
   async saveConnection(input) {
-    if (input?.kind === 'komplai' || (input?.id && (await this.connection(input.id)).kind === 'komplai')) throw new Error('komplai bruges nu kun til udgivelse via Del. Vælg en anden AI-forbindelse.');
+    if (input?.kind === 'komplai' || (input?.id && (await this.connection(input.id)).kind === 'komplai')) throw new Error('komplai bruges nu kun til udgivelse via Udgiv. Vælg en anden AI-forbindelse.');
     if (this.running) throw new Error('Stop opgaverne, før du ændrer forbindelser.');
     const connection = connections.normalize(input);
     await this.closeEngines();

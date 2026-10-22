@@ -89,7 +89,7 @@ async function assertNoGitWrites(app) {
   const blocked = await app.evaluate(() => globalThis.releaseGitWrites);
   if (!Array.isArray(blocked) || blocked.length) throw Error('Appen forsøgte en Git-skrivning under releaseprøven: ' + JSON.stringify(blocked));
 }
-// Deling og udgivelse er ikke med i den anbefalede pakke. Prøver af Del og Sikkerhedskopi slår den til og genindlæser siden.
+// Udgivelse er ikke med i den anbefalede pakke. Prøver af Udgiv og Sikkerhedskopi slår den til og genindlæser siden.
 async function enableSharing(page) {
   const result = await page.evaluate(() => window.harness.featuresSave({ scope: 'alle', values: { deling: true } }));
   if (!result.ok) throw new Error(result.error);

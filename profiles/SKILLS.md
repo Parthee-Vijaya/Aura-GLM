@@ -242,7 +242,7 @@ Kilder: [System-til-system-adgang til CVR-data (Erhvervsstyrelsen)](https://data
 
 `harness-integration-promte` · [SKILL.md](skills/harness-integration-promte/SKILL.md)
 
-**Hvad gør den?** Hjælper agenten med at opsætte et React-projekt efter Promtes byggeregler og bruge app-biblioteket til modeller, vidensbaser og data. I Aura udgiver brugeren med Del, i andre værktøjer med Promtes kommandolinjeværktøj.
+**Hvad gør den?** Hjælper agenten med at opsætte et React-projekt efter Promtes byggeregler og bruge app-biblioteket til modeller, vidensbaser og data. I Aura udgiver brugeren med Udgiv, i andre værktøjer med Promtes kommandolinjeværktøj.
 
 **Hvornår bruges den?** Når en løsning skal køre som app i et Promte-arbejdsområde.
 
@@ -266,25 +266,25 @@ Kilder: [Udvikl apps med kodeagenter (Promte)](https://app.promte.dk/docs/admin/
 
 `harness-integration-komplai-run` · [SKILL.md](skills/harness-integration-komplai-run/SKILL.md)
 
-**Hvad gør den?** Hjælper med at bygge og gennemgå de filer, Run kan vise, vælge adgang og kontrollere den udgivne app. I Auras desktopapp bruges Del; fra Aura-terminalen henvises til manuel upload i Hub. Andre kodeværktøjer kan bruge Komplais terminalværktøj.
+**Hvad gør den?** Hjælper med at bygge og gennemgå de filer, Run kan vise, bruge komplais app-SDK til login, AI, Redact, gemte data og hændelseslog, vælge adgang og kontrollere den udgivne app. I Auras desktopapp bruges Udgiv; fra Aura-terminalen henvises til manuel upload i Run. Andre kodeværktøjer kan bruge komplais terminalværktøj.
 
 **Hvornår bruges den?** Når du har valgt Komplai Run til en browserapp eller vil opdatere en app der.
 
 **Hvad får du?** En gennemgået browserapp med alle nødvendige filer, en vej til udgivelse og en tydelig beskrivelse af, hvad der er afprøvet.
 
-**Hvad gør den ikke?** Giver ingen adgang og udgiver ikke uden dit valg. Agentens kommandoværktøj må ikke publicere i Aura. Run stiller ikke serverkode, database eller en AI-proxy til rådighed gennem denne udgivelsesvej.
+**Hvad gør den ikke?** Giver ingen adgang, godkender ikke appens brug af komplai og udgiver ikke uden dit valg. Agentens kommandoværktøj må ikke publicere i Aura. Run kører ingen serverkode; login, AI, Redact og gemte data fås kun gennem app-SDK'et efter en administrators godkendelse.
 
 - **System:** Komplai Run
 - **Ejer:** Komplai
-- **Adgang:** Kræver en Komplai-organisation med Run. Aura bruger login og en udgivelsesadgang til dine egne apps i 30 dage. Eget kodeværktøj bruger en nøgle til én app i syv dage.
-- **Data:** Færdig HTML, CSS, JavaScript og appens øvrige filer. Offentlig adgang gør alle de uploadede filer tilgængelige for enhver.
-- **Dataflow:** Filer uploades fra din computer til organisationens appmiljø gennem Komplai. Besøgende henter filerne til deres browser; appens eventuelle eksterne kald skal gennemgås særskilt.
+- **Adgang:** Kræver en komplai-organisation med Run. Aura bruger login og en udgivelsesadgang til dine egne apps i 30 dage. Eget kodeværktøj bruger en nøgle til én app i syv dage. En administrator godkender appens brug af login, AI, Redact og gemte data i Run.
+- **Data:** Færdig HTML, CSS, JavaScript og appens øvrige filer. Offentlig adgang gør alle de uploadede filer tilgængelige for enhver. Apps for organisationen kan gemme data og sende tekst til AI og Redact gennem app-SDK'et; om der er persondata, afhænger af appen.
+- **Dataflow:** Filer uploades fra din computer til organisationens appmiljø gennem komplai. Besøgende henter filerne til deres browser. Appens SDK-kald går til appens egen adresse og derfra til komplai med den indloggede persons egen adgang; appens eventuelle eksterne kald skal gennemgås særskilt.
 - **Pris:** Følger organisationens aftale. Aktuelle lager- og trafikrammer vises i Hub.
-- **IT-afdelingen:** Kræver ikke hjælp fra IT-afdelingen.
+- **IT-afdelingen:** Adgangen kræver hjælp fra IT-afdelingen.
 
-Skillen vedligeholdes af Aura Harness og er kontrolleret mod kilderne 2026-10-18.
+Skillen vedligeholdes af Aura Harness og er kontrolleret mod kilderne 2026-10-22.
 
-Kilder: [Komplai Run · vejledning i Hub](https://hub.komplai.dk/publish?guide=1), [Komplais offentlige udgivelseskit · API, skill og CLI 0.1.0](https://hub.komplai.dk/komplai-publish/komplai-publish.zip)
+Kilder: [komplai Run · vejledning i Hub](https://hub.komplai.dk/publish?guide=1), [komplais udgivelseskit · API med app-SDK, skill og CLI 0.2.1](https://hub.komplai.dk/komplai-publish/komplai-publish.zip)
 
 ## Spørgsmål og svar
 

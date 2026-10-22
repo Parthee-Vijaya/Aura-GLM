@@ -18,7 +18,7 @@
     { label: 'Genindlæs forhåndsvisningen', target: '#refresh', words: ['opdater', 'reload'] },
     { label: 'Gem version', target: '#git-button', words: ['versioner', 'git', 'fortryd', 'historik'], first: true },
     { label: 'Sikkerhedskopi', target: '#publish-button', words: ['github', 'backup', 'upload'] },
-    { label: 'Del', target: '#deploy-button', words: ['udgiv', 'deploy', 'vercel', 'azure'] },
+    { label: 'Udgiv', target: '#deploy-button', words: ['del', 'deling', 'publicer', 'deploy', 'vercel', 'azure'] },
     { label: 'Vælg AI-model', target: '#model-chip', words: ['model', 'indsats', 'skift'] },
     { label: 'Flet ind i projektet', target: '#merge-copy', words: ['kopi', 'indflet', 'samtale'], first: true },
     { label: 'Stop opgaven', target: '#stop', words: ['afbryd', 'stop'], first: true },

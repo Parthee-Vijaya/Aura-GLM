@@ -16,7 +16,7 @@ Installationsfilerne findes til Mac med Apple-chip, Intel-Mac og Windows x64. Ma
 
 Afprøvningen varierer mellem versionerne. En Windows-fil bygget og indholdskontrolleret på Mac er ikke en Windows-installationsprøve, og Rosetta erstatter ikke en Intel-Mac. Udgivelsesnoterne og teststatus angiver, hvilke konkrete installationer og opgraderinger der er kørt.
 
-Fra 0.5.0-beta.1 udgår komplai som AI-forbindelse. komplai Run bevares til udgivelse gennem Del. Det ændrer ikke indholdet af tidligere offentliggjorte installationsfiler.
+Fra 0.5.0-beta.1 udgår komplai som AI-forbindelse. komplai Run bevares til udgivelse gennem Udgiv. Det ændrer ikke indholdet af tidligere offentliggjorte installationsfiler.
 
 Vi har enhedstests og lokale appprøver med rigtige filer og kontrollerede modelservere. Det erstatter ikke afprøvning af den aktuelle pakke med brugerens rigtige model og computer. Se [teststatus](teststatus.md) for detaljer og tidligere forsøg.
 

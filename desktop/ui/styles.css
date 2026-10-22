@@ -976,16 +976,14 @@ kbd { font: 600 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
 @media (prefers-reduced-motion: reduce) { .komplai[data-stage="waiting"] .komplai-bridge i { opacity: 1; } }
 @media (max-width: 560px) { .komplai { padding: 24px 18px 18px; } .komplai-bridge { padding: 0 10px; gap: 5px; } }
 
-/* komplai Run i Del: samme kort i kompakt udgave, og appens adresse med organisationens faste suffiks. */
+/* komplai Run i Udgiv: samme kort i kompakt udgave, og appens adresse med organisationens faste suffiks. */
 #deploy-komplai { margin: 14px 0 6px; }
 .komplai-compact { padding: 24px 22px 18px; box-shadow: none; }
 .komplai-compact .komplai-pair { margin-bottom: 14px; }
 .komplai-compact .komplai-tile { width: 46px; height: 46px; border-radius: 13px; }
 .komplai-compact .komplai-tile img { width: 26px; height: 26px; }
 .komplai-compact .komplai-mark { font-size: 22px; }
-.komplai-lead { margin: 0 0 18px; text-align: center; color: var(--muted); font-size: 13px; }
 .komplai-compact #komplai-publish-confirm { display: flex; justify-content: center; width: 100%; margin-top: 16px; padding: 13px 20px; border-radius: 11px; font-size: 14px; font-weight: 600; }
-.komplai-compact[data-stage="organisation"] .komplai-lead { display: none; }
 .komplai-compact #komplai-publish-feedback:not(:empty) { margin: 14px 0 0; }
 .komplai-compact .komplai-actions { margin-top: 14px; }
 .komplai-compact #komplai-publish-login { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 13px 20px; border-radius: 11px; font-size: 14px; font-weight: 600; }
@@ -1011,7 +1009,7 @@ kbd { font: 600 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
 .visibility-card:has(input:focus-visible) { outline: 3px solid #0052cc; outline-offset: 2px; }
 @media (max-width: 560px) { .visibility-choice { grid-template-columns: 1fr; } }
 
-/* Del viser kun det aktuelle spørgsmål. */
+/* Udgiv viser kun det aktuelle spørgsmål. */
 #deployment-dialog { width: min(640px, 92vw); }
 #deployment-dialog > .dialog-heading { align-items: flex-start; gap: 20px; margin-bottom: 24px; }
 #deployment-heading { font-size: 22px; line-height: 1.3; letter-spacing: -.025em; }
@@ -1088,7 +1086,7 @@ kbd { font: 600 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
   #deployment-dialog .deployment-details-grid dd { padding: 3px 0 8px; }
 }
 
-/* Fælles udbyderliste og opsætning i Del. */
+/* Fælles udbyderliste og opsætning i Udgiv. */
 .deployment-provider-list { display: grid; gap: 10px; margin: 12px 0; }
 .deployment-provider-row { display: flex; align-items: center; width: 100%; gap: 16px; padding: 17px 18px; text-align: left; background: #fff; }
 .deployment-provider-row:hover { background: var(--surface-alt, #f6f8fc); }

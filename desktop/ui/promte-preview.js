@@ -21,6 +21,8 @@
         show('Godkend Aura i browseren …');
         const login = await window.harness.promtePreviewLogin();
         if (!login.ok) throw Error(login.error);
+        // Et Promte-login gør Udgivelse anbefalet, så Udgiv kan bruges med det samme (PR 14).
+        await window.refreshFeatures?.();
         // Appen er holdt op med at spørge, mens brugeren loggede ind. En genindlæsning starter forbindelsen igen.
         frame.src = frame.src;
       });

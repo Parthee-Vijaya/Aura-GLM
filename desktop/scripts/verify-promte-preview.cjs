@@ -38,7 +38,8 @@ addEventListener('message', event => {
       // Promtes netværk er erstattet; Auras egen kobling, funktionsvalg og oprettelse kører uændret.
       const calls = globalThis.promtePreviewCalls = []; let connected = false;
       PromteSetup.prototype.state = async ({ host }) => { calls.push(['state', host]); return { host, connected, loginSource: connected ? 'aura' : null, email: connected ? 'test@example.invalid' : '' }; };
-      PromteSetup.prototype.login = async ({ host }) => { calls.push(['login', host]); connected = true; };
+      // Som det rigtige login gemmes en Promte-adgang, så Udgivelse bliver anbefalet (PR 14).
+      PromteSetup.prototype.login = async function ({ host }) { calls.push(['login', host]); connected = true; await this.store.update(state => { state.hosting = { ...state.hosting, promte: { [host]: { secret: 'krypteret', email: 'test@example.invalid', expiresAt: '2099-01-01T00:00:00.000Z' } } }; }); };
       PromteSetup.prototype.createWorkspace = async ({ host, name }) => { calls.push(['create', host, name]); return { id: 'ws-ny', name, activeAppVersion: null }; };
       const connect = PromtePreview.prototype.connect;
       PromtePreview.prototype.connect = async function (root, options) { calls.push(['connect', root]); return connect.call(this, root, options); };
@@ -59,21 +60,25 @@ addEventListener('message', event => {
     const saved = await window.evaluate(() => window.harness.featuresSave({ scope: 'alle', values: { 'integration-promte': true } }));
     assert.equal(saved.ok, true, saved.error);
     await window.locator('#promte-preview').filter({ hasText: 'Log ind med Promte' }).waitFor();
+    // Udgiv er altid synlig; udgivelse er endnu ikke slået til.
+    assert.equal(await window.locator('#deploy-button').isVisible(), true); assert.equal(await window.evaluate(() => window.sharingOn()), false);
     assert.equal(await window.frameLocator('#preview').locator('#status').textContent(), 'Venter på Promte');
     // 3. Login opretter ingen app. Aura spørger først, og appen oprettes med ét klik.
     await window.click('#promte-preview');
     await window.locator('#promte-preview').filter({ hasText: 'Opret appen Moedereferat i Promte' }).waitFor();
+    // Integrationen er slået til i Funktioner, så udgivelse følger brugerens eget valg; Udgiv er fortsat synlig (PR 14).
+    assert.equal(await window.locator('#deploy-button').isVisible(), true);
     assert.equal((await calls()).some(c => c[0] === 'create'), false, 'login opretter ingen app');
     await capture('promte-opret.png');
     await window.click('#promte-preview');
     await window.frameLocator('#preview').locator('#status').filter({ hasText: 'Forbundet' }).waitFor();
-    assert.equal(await window.frameLocator('#preview').locator('#status').textContent(), 'Forbundet · ws-ny · https://app.promte.dk/api · GPT test, Claude test');
+    assert.equal(await window.frameLocator('#preview').locator('#status').textContent(), 'Forbundet · ws-ny · https://kodning.promte.dk/api · GPT test, Claude test');
     assert.equal(await window.textContent('#promte-preview'), 'Promte · Moedereferat (ny app oprettet)');
     const log = await calls();
-    assert.deepEqual(log.filter(c => ['login', 'create', 'fetch'].includes(c[0])), [['login', 'https://app.promte.dk'], ['create', 'https://app.promte.dk', 'Moedereferat'], ['fetch', 'app-api/models?type=llm', 'GET']]);
+    assert.deepEqual(log.filter(c => ['login', 'create', 'fetch'].includes(c[0])), [['login', 'https://kodning.promte.dk'], ['create', 'https://kodning.promte.dk', 'Moedereferat'], ['fetch', 'app-api/models?type=llm', 'GET']]);
     assert.ok(log.filter(c => c[0] === 'connect').every(c => c[1] === project));
-    // Projektet husker appen, så Del forvælger den samme.
-    assert.deepEqual((await window.evaluate(() => window.harness.deploymentSetup({ action: 'promte-link', config: {} }))).value.link, { host: 'https://app.promte.dk', workspaceId: 'ws-ny', name: 'Moedereferat' });
+    // Projektet husker appen, så Udgiv forvælger den samme.
+    assert.deepEqual((await window.evaluate(() => window.harness.deploymentSetup({ action: 'promte-link', config: {} }))).value.link, { host: 'https://kodning.promte.dk', workspaceId: 'ws-ny', name: 'Moedereferat' });
     assert.deepEqual(errors, []);
     await capture('promte-forhaandsvisning.png');
     console.log(JSON.stringify({ status: 'bestået', root, calls: log.map(c => c[0]), limitations: ['lokale Promte-adaptere', 'testside i stedet for app-biblioteket'] }, null, 2));

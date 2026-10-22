@@ -89,7 +89,7 @@ const helpers = require('./ui-test-helpers.cjs');
     await page.fill('#purpose', ''); await page.locator('#idea-examples-toggle').waitFor();
     checks.push('eksempler på idéer udfylder idé og navn og skjules, når feltet har tekst');
 
-    // Paletten respekterer valgte funktioner: Del er ikke slået til, så den kan ikke findes.
+    // Paletten respekterer valgte funktioner: Udgiv er ikke slået til, så den kan ikke findes.
     let options = await palette('udgiv');
     assert.equal(await options.count(), 0); await page.locator('#palette-empty:not([hidden])').waitFor();
     await page.keyboard.press('Escape'); await page.locator('#palette:not([open])').waitFor({ state: 'attached' });

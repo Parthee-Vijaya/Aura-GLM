@@ -107,6 +107,16 @@ test('Promte viser brugerens apps og opretter en ny app med brugeren som ejer', 
   const provider = new PromteDeployment({ store, lookup, readCredentials: async () => ({ token: 'cli-token' }), fetcher: async (url, options) => { assert.equal(options.headers.Authorization, 'Bearer ' + token); return response({ uploadMode: 'source', available: true }); } });
   await provider.inspect(config);
 });
+test('en Promte uden appliste svarer med en side; Aura siger det og lader brugeren indtaste ID', async () => {
+  const { setup } = promteSetup(url => {
+    if (url.endsWith('/start')) return response({ flowId: 'f', flowSecret: 's', approveUrl: HOST + '/extension-connect?flowId=f', pollIntervalMs: 10 });
+    if (url.includes('/status')) return response({ state: 'approved', token, email: 'dev@kommune.dk' });
+    if (url.endsWith('/api/app-upload/workspaces')) return new Response('<!doctype html><title>Promte</title>', { status: 200, headers: { 'content-type': 'text/html' } });
+    throw Error('Uventet kald ' + url);
+  });
+  await setup.login({ host: HOST });
+  await assert.rejects(setup.workspaces({ host: HOST }), /^Error: Denne Promte-installation viser ikke en liste over apps\.$/);
+});
 test('Promte bruger et eksisterende CLI-login, når Aura ikke selv er logget ind', async () => {
   const setup = new PromteSetup(memoryStore(), { lookup, readCredentials: async host => host === HOST ? { token: 'cli-token' } : null });
   const state = await setup.state({ host: HOST });
@@ -118,6 +128,7 @@ test('Promte kræver dokumenteret source-capability og adgang uden at udlevere t
   const target = await provider.inspect(config);
   assert.equal(target.id, config.workspaceId);
   assert.deepEqual(target.uploadDestinations, [HOST, 'https://app.promte.dk']);
+  assert.equal(target.portal, HOST + '/workspaces/workspace-123', 'Åbn appen i Promte fører direkte til appen');
   // Kapabiliteter og appens navn hentes begge fra den valgte vært.
   assert.deepEqual(reads, [HOST, HOST]);
   assert.equal(target.name, config.workspaceId, 'uden appliste vises ID\'et');
@@ -125,7 +136,9 @@ test('Promte kræver dokumenteret source-capability og adgang uden at udlevere t
   assert.ok(!JSON.stringify(target).includes('secret-for-selected-host'));
   const named = adapter(url => url.includes('/app-upload/workspaces') ? response({ workspaces: [{ id: config.workspaceId, name: 'Budget' }] }) : response({ available: true, uploadMode: 'source' }));
   assert.equal((await named.provider.inspect(config)).name, 'Budget');
-  for (const value of [{ available: true, uploadMode: 'built' }, { available: false, uploadMode: 'source' }, { available: true }]) await assert.rejects(adapter(() => response(value)).provider.inspect(config), /kildekodeupload/);
+  // Installationer, der kun tager færdigbyggede apps (fx en kommunes egen Promte), får en klar besked i stedet for upload.
+  await assert.rejects(adapter(() => response({ available: true, uploadMode: 'built' })).provider.inspect(config), /kun imod færdigbyggede apps.*kodning\.promte\.dk/);
+  for (const value of [{ available: false, uploadMode: 'source' }, { available: true }]) await assert.rejects(adapter(() => response(value)).provider.inspect(config), /kildekodeupload/);
   await assert.rejects(adapter(() => response({ error: 'secret details' }, 403)).provider.inspect(config), /administrator/);
 });
 test('Promte sender præcis godkendt ZIP, isolerer uploadtoken og gemmer version før upload', async () => {

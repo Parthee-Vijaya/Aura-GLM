@@ -29,7 +29,7 @@ app.setPath('sessionData', identity.sessionData);
 protocol.registerSchemesAsPrivileged([{ scheme: 'harness', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 let window, preview, project, busy = false, chosenParent = null;
 let assets = [];
-let github, publishing, deployments, deploymentSetup, restoration, promtePreview;
+let github, publishing, deployments, deploymentSetup, restoration, promtePreview, komplaiPreview;
 let workbench, externalPreview = null, history, images;
 let ownTools, updates, updating = false;
 let devServer, detectedRuntime, forceStatic = false;
@@ -41,7 +41,7 @@ function saveSpace() {
 }
 function spaceFor(root = selectedRoot) { saveSpace(); return spaces.get(root); }
 function makeServer(ctx) {
-  return new DevServer({ runner: app.isPackaged ? path.join(process.resourcesPath, 'app.asar.unpacked/core/dev-server-runner.cjs') : undefined,
+  return new DevServer({ runner: app.isPackaged ? path.join(process.resourcesPath, 'app.asar.unpacked/core/dev-server-runner.cjs') : undefined, komplaiScript: komplaiScript(ctx.root),
     emit: state => {
       if (state.state === 'error') recordFailure('forhaandsvisning', 'server');
       if (state.state === 'running') { const old = ctx.preview; ctx.preview = null; void old?.close(); ctx.externalPreview = state.url; }
@@ -62,7 +62,7 @@ async function selectSpace(root) {
     ctx = { root, preview: null, externalPreview: null, forceStatic: false };
     ctx.detectedRuntime = await inspectRuntime(root).catch(error => ({ kind: 'unknown', supported: false, reason: error.message }));
     ctx.devServer = makeServer(ctx); spaces.set(root, ctx); await ctx.devServer.activate(root);
-    if (!['vite','astro'].includes(ctx.detectedRuntime.kind) && (await openProject(root)).staticPreview) ctx.preview = await startPreview(root);
+    if (!['vite','astro'].includes(ctx.detectedRuntime.kind) && (await openProject(root)).staticPreview) ctx.preview = await startPreview(root, { sdk: komplaiScript(root) });
   }
   // En kopis opstart kan stadig være i gang, når brugeren allerede har valgt en anden samtale.
   if (workspaceRoot() === root) { selectedRoot = root; ({ preview, externalPreview, forceStatic, detectedRuntime, devServer } = ctx); }
@@ -252,7 +252,7 @@ async function startStatic(root) {
   if (!ctx.staticStart) ctx.staticStart = (async () => {
     const updated = await openProject(root);
     if (!spaces.has(root) || !updated.staticPreview || ctx.externalPreview) return false;
-    ctx.preview = await startPreview(root);
+    ctx.preview = await startPreview(root, { sdk: komplaiScript(root) });
     if (selectedRoot === root) { preview = ctx.preview; sendEvent({ type: 'preview.ready', root: project?.root, workspaceRoot: root, url: preview.url }); }
     return true;
   })().finally(() => { ctx.staticStart = null; });
@@ -491,6 +491,7 @@ handle('hosting:open', async () => { const root = requireIdleProject(); const se
 handle('deployment:guides', () => require('./core/hosting-guidance.cjs').catalog());
 handle('deployment:guide-open', input => shell.openExternal(require('./core/hosting-guidance.cjs').link(input?.id, input?.kind)));
 handle('deployment:state', async () => ({ ...await deployments.state(requireIdleProject()), context: await sharingContext() }));
+handle('deployment:source', async () => deployments.source(requireIdleProject()));
 handle('deployment:setup', input => exclusive(() => deploymentSetup.act(requireIdleProject(), input)));
 handle('deployment:setup-open', async input => shell.openExternal(await deploymentSetup.open(requireIdleProject(), input)));
 handle('deployment:tracking', async input => {
@@ -522,6 +523,7 @@ const accountPages = {
   anthropic: { start: 'https://platform.claude.com/', billing: 'https://platform.claude.com/settings/billing', keys: 'https://platform.claude.com/settings/keys' },
   mistral: { start: 'https://console.mistral.ai/', billing: 'https://admin.mistral.ai/organization/billing', privacy: 'https://admin.mistral.ai/plateforme/privacy', keys: 'https://console.mistral.ai/api-keys' },
   corti: { start: 'https://console.corti.app/signup', console: 'https://console.corti.app/', keys: 'https://console.corti.app/corti-models' },
+  alexandra: { start: 'https://platform.alexandra.dk/platform-ui/register', keys: 'https://platform.alexandra.dk/platform-ui/keys', billing: 'https://platform.alexandra.dk/platform-ui/billing', usage: 'https://platform.alexandra.dk/platform-ui/usage' },
   openrouter: { start: 'https://openrouter.ai/settings/keys' }, zen: { start: 'https://opencode.ai/auth' }
 };
 handle('connections:account', value => {
@@ -614,7 +616,7 @@ handle('features:save', value => exclusive(async () => {
 }));
 handle('preview:attach', value => exclusive(async () => {
   if (!project) throw new Error('Åbn et projekt først.');
-  if (!value) { await devServer.stop(); forceStatic = true; externalPreview = null; if (preview) await preview.close(); const next = await openProject(workspaceRoot()); preview = next.staticPreview ? await startPreview(workspaceRoot()) : null; return preview?.url || null; }
+  if (!value) { await devServer.stop(); forceStatic = true; externalPreview = null; if (preview) await preview.close(); const next = await openProject(workspaceRoot()); preview = next.staticPreview ? await startPreview(workspaceRoot(), { sdk: komplaiScript(workspaceRoot()) }) : null; return preview?.url || null; }
   let url; try { url = new URL(value); } catch { throw new Error('Angiv en lokal serveradresse.'); }
   if (!['http:', 'https:'].includes(url.protocol) || !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) || url.username || url.password || url.search || url.hash) throw new Error('Brug en lokal http- eller https-adresse uden login eller parametre.');
   if (workbench.servers().some(server => server === url.origin || server.startsWith(url.origin + '/'))) throw new Error('Agentens interne server kan ikke bruges som forhåndsvisning.');
@@ -630,6 +632,12 @@ handle('promte:preview-connect', async () => project ? promtePreview.connect(pro
 handle('promte:preview-login', async () => { if (!project) throw new Error('Åbn et projekt først.'); return promtePreview.login(project.root); });
 handle('promte:preview-create', async () => { if (!project) throw new Error('Åbn et projekt først.'); return promtePreview.create(project.root); });
 handle('promte:preview-fetch', async input => { if (!project) throw new Error('Åbn et projekt først.'); return promtePreview.fetch(project.root, input); });
+// Forhåndsvisningen af en komplai Run-app: Aura sender SDK'ets kald til Hubs forhåndsvisning af din egen app.
+// Valg og app følger projektet; manifestet læses fra den viste arbejdsmappe.
+function komplaiScript(root) { return route => project ? komplaiPreview.script(project.root, route).catch(() => null) : Promise.resolve(null); }
+handle('komplai:preview-state', async () => project ? komplaiPreview.state(project.root) : { active: false });
+handle('komplai:preview-create', async () => { if (!project) throw new Error('Åbn et projekt først.'); return komplaiPreview.create(project.root); });
+handle('komplai:preview-call', async input => project ? komplaiPreview.call(project.root, input, workspaceRoot()) : { status: 503, body: { error: 'unavailable' } });
 handle('preview:runtime', async () => ({ ...await devServer.status(), root: project?.root, workspaceRoot: selectedRoot }));
 // Kontrol af forhåndsvisningen efter en opgave: blev siden vist, og skrev den fejl i konsollen? Aura klikker ikke i siden.
 const previewLog = { documents: [], errors: [] };
@@ -843,6 +851,7 @@ app.whenReady().then(async () => {
   deployments = new Deployments(workbench.store, { github });
   deploymentSetup = new (require('./core/deployment-setup.cjs').DeploymentSetup)(workbench.store, github, deployments);
   promtePreview = new (require('./core/promte-preview.cjs').PromtePreview)(workbench.store, { setup: deploymentSetup.promte, enabled: async root => (await workbench.features.get(root)).effective['integration-promte'] === true });
+  komplaiPreview = new (require('./core/komplai-preview.cjs').KomplaiPreview)(workbench.store, { provider: deployments.providers.komplai, enabled: async root => (await workbench.features.get(root)).effective['integration-komplai-run'] === true });
   updates = new (require('./core/updates.cjs').Updates)({
     updater: app.isPackaged && ['darwin', 'win32'].includes(process.platform) ? require('electron-updater').autoUpdater : null,
     store: workbench.store, version: app.getVersion(), enabled: app.isPackaged,
@@ -859,8 +868,8 @@ app.whenReady().then(async () => {
   protocol.handle('harness', async request => {
     const url = new URL(request.url);
     const name = url.pathname.slice(1);
-    const providerAsset = /^provider-(anthropic|azure|compatible|corti|komplai|mistral|ollama|openai|openrouter|zen|promte|github-pages|cloudflare|vercel)\.svg$/.test(name);
-    if (url.host !== 'app' || (!providerAsset && name !== 'provider-cloudflare.png' && !['index.html', 'aura-icon.png', 'app.js', 'updates.js', 'workspace.js', 'plan-view.js', 'planning.js', 'approval-view.js', 'approvals.js', 'preview-edit.js', 'history.js', 'chats.js', 'palette.js', 'model-advice.js', 'connection-overview.js', 'chat-display.js', 'conversation-mode.js', 'live-work.js', 'server.js', 'viewport.js', 'share-view.js', 'hosting.js', 'deployment-setup.js', 'promte-preview.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name))) return new Response('Ikke fundet', { status: 404 });
+    const providerAsset = /^provider-(alexandra|anthropic|azure|compatible|corti|komplai|mistral|ollama|openai|openrouter|zen|promte|github-pages|cloudflare|vercel)\.svg$/.test(name);
+    if (url.host !== 'app' || (!providerAsset && name !== 'provider-cloudflare.png' && !['index.html', 'aura-icon.png', 'app.js', 'updates.js', 'workspace.js', 'plan-view.js', 'planning.js', 'approval-view.js', 'approvals.js', 'preview-edit.js', 'history.js', 'chats.js', 'palette.js', 'model-advice.js', 'connection-overview.js', 'chat-display.js', 'conversation-mode.js', 'live-work.js', 'server.js', 'viewport.js', 'share-view.js', 'hosting.js', 'deployment-setup.js', 'promte-preview.js', 'komplai-preview.js', 'deployment.js', 'styles.css', 'demo.css'].includes(name))) return new Response('Ikke fundet', { status: 404 });
     return new Response(await fs.readFile(path.join(__dirname, 'ui', name)), { headers: { 'Content-Type': name === 'aura-icon.png' ? 'image/png' : providerAsset ? 'image/svg+xml' : name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : 'text/html; charset=utf-8' } });
   });
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));

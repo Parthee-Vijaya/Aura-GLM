@@ -1,4 +1,4 @@
-// Det faktiske Del-forløb med lokale adaptere og filer fra et eksisterende commit.
+// Det faktiske udgivelsesforløb med lokale adaptere og filer fra et eksisterende commit.
 // Standardprøven opretter ingen Git-versioner og foretager ingen udgivelse på nettet.
 const { _electron: electron } = require('playwright');
 const assert = require('node:assert/strict');

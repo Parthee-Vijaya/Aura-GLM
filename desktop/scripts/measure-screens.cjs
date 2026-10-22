@@ -155,7 +155,7 @@ const server = http.createServer(async (req, res) => {
     await helpers.menuClick(win, '#features-button'); await measure('funktioner', '#features-dialog', 'Funktioner');
     await win.locator('#features-list input[data-feature="deling"]').check(); await win.locator('#features-feedback').filter({ hasText: 'Gemt' }).waitFor();
     await win.click('#features-advanced > summary'); await win.click('#skills-button'); await measure('instruktioner', '#skills-dialog', 'Instruktioner i projektet'); await win.click('[data-close="skills-dialog"]'); await win.click('[data-close="features-dialog"]');
-    await win.click('#deploy-button'); await win.waitForSelector('#deployment-dialog[open]'); await measure('del', '#deployment-dialog', 'Del'); await win.click('[data-close="deployment-dialog"]');
+    await win.click('#deploy-button'); await win.waitForSelector('#deployment-dialog[open]'); await measure('udgiv', '#deployment-dialog', 'Udgiv'); await win.click('[data-close="deployment-dialog"]');
     await helpers.menuClick(win, '#publish-button'); await win.waitForSelector('#hosting-dialog[open]');
     // GitHub-status indlæses efter, at dialogen åbner; vent på den, så målingen er den samme fra gang til gang.
     await win.waitForFunction(() => document.querySelector('#hosting-status').textContent.trim()); await measure('sikkerhedskopi', '#hosting-dialog', 'Sikkerhedskopi'); await win.click('[data-close="hosting-dialog"]');

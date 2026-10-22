@@ -17,7 +17,8 @@ async function publicFile(root, relative) {
   if (!stat.isFile() || stat.size > 10 * 1024 * 1024) throw new Error('Filen kan ikke vises.');
   return target;
 }
-async function startPreview(projectRoot) {
+// sdk(route) leverer komplai Run-appens SDK på /_komplai/run/, som Run gør på appens egen adresse.
+async function startPreview(projectRoot, { sdk } = {}) {
   const root = path.join(projectRoot, 'public');
   const token = randomBytes(24).toString('hex');
   let origin;
@@ -28,6 +29,12 @@ async function startPreview(projectRoot) {
     try {
       if (req.headers.host !== new URL(origin).host || !['GET', 'HEAD'].includes(req.method)) throw new Error('Afvist.');
       const pathname = decodeURIComponent(new URL(req.url, origin).pathname);
+      if (sdk && pathname.startsWith('/_komplai/run/')) {
+        const script = await sdk(pathname);
+        if (typeof script !== 'string') throw new Error('Afvist.');
+        res.setHeader('Content-Type', 'text/javascript; charset=utf-8');
+        res.end(req.method === 'HEAD' ? undefined : script); return;
+      }
       if (!pathname.startsWith(`/${token}/`)) throw new Error('Afvist.');
       const relative = pathname.slice(token.length + 2) || 'index.html';
       const file = await publicFile(root, relative);

@@ -23,7 +23,7 @@ Dialogens tilgængelige navn skal bruge den overskrift, der faktisk vises i det 
 ## Det, man møder
 
 - Første skærm spørger, om man vil bygge i appen eller bruge Aura Harness i sit eget kodeværktøj.
-- Den guidede opstart viser ét spørgsmål ad gangen med stor overskrift og to eller tre store valg. Først vælger man adgangsnøgle eller AI på computeren; en gemt forbindelse bliver et tredje valg. Adgangsnøgle fører til tre udbyderkort, Claude, Mistral og Corti, og "Bruger du en anden udbyder? Vælg en anden". Nøglefeltet vises først, når en udbyder er valgt. "Har du ikke en nøgle? Sådan får du en" viser konto, betaling, månedlig grænse og nøgle som nummererede trin med en knap til hver side hos udbyderen. Sidepanelet er skjult under introduktionen.
+- Den guidede opstart viser ét spørgsmål ad gangen med stor overskrift og to eller tre store valg. Først vælger man adgangsnøgle eller AI på computeren; en gemt forbindelse bliver et tredje valg. Adgangsnøgle fører til fire udbyderkort, Claude, Mistral, Corti og Alexandra, og "Bruger du en anden udbyder? Vælg en anden". Nøglefeltet vises først, når en udbyder er valgt. "Har du ikke en nøgle? Sådan får du en" viser konto, betaling, månedlig grænse og nøgle som nummererede trin med en knap til hver side hos udbyderen. Sidepanelet er skjult under introduktionen.
 - Efter AI-trinnet spørger den guidede opstart én gang: "Hvad skal Aura hjælpe med?".
   - Der er to store valg. Hele pakken står først og er markeret Anbefalet; det andet er Vælg selv.
   - Vælg selv viser de seks funktioner som kontakter, der starter slået fra. Knappen siger, hvad der sker, fx "Fortsæt med 2 funktioner".
@@ -31,7 +31,7 @@ Dialogens tilgængelige navn skal bruge den overskrift, der faktisk vises i det 
 - Indstillinger › Funktioner viser én kontakt pr. funktion med én linje forklaring.
   - Skills og "Altid slået til" er foldet sammen.
   - Med et projekt åbent vælger man Alle projekter eller Kun projektet. En undtagelse står under funktionen med Brug standarden.
-  - En slået fra funktion skjuler sine knapper, fx Del, Sikkerhedskopi, Gem version eller designvalgene. Den sletter intet.
+  - En slået fra funktion skjuler sine knapper, fx Sikkerhedskopi, Gem version eller designvalgene. Den sletter intet.
   - Under overskriften Integrationer står én kontakt pr. system, fx CVR. Integrationer er slået fra, til man vælger dem. Deres ⓘ viser system, ejer, adgang, data, dataflow, pris og kontroldato. Ved første start vises kun de almindelige funktioner.
 - "Hvad vil du bygge?" viser idé, projektnavn og Opret og fortsæt. Projektet gemmes i Dokumenter › Aura uden mappedialog; "Vælg en anden placering" er et link.
   - Flere valg er én flad liste med AI, udgivelse, tests og design, hver med ⓘ. Farve, logo og inspiration ligger ét lag længere nede.
@@ -77,7 +77,8 @@ Dialogens tilgængelige navn skal bruge den overskrift, der faktisk vises i det 
 - Korte handlingsbeskeder har deres egen plads i den aktive skærm. De må ikke ligge oven på skrivefeltet, fanerne eller andre knapper.
 - Kommandopaletten (⌘K) er valgfri og har ingen knap; den nævnes i Hjælp. Den viser kun handlinger, der findes og kan bruges lige nu, og uden søgning højst seks handlinger, fem samtaler og tre projekter.
 - Eksempler på idéer ligger bag ét link under idéfeltet og vises kun, når feltet er tomt: tre faste eksempler, der kan bygges uden server.
-- Projektmenuen indeholder versioner og sikkerhedskopi. Del åbner valg af udgivelsessted og viser tydeligt, om destinationen er et testmiljø eller en offentlig hjemmeside. Del og Sikkerhedskopi vises kun, når Deling og udgivelse er slået til. Funktionen er ikke med i den anbefalede pakke, så længe Del kræver udviklerværktøjer.
+- Projektmenuen indeholder versioner og sikkerhedskopi. Udgiv åbner valg af udgivelsessted og viser tydeligt, om destinationen er et testmiljø eller en offentlig hjemmeside. Udgiv er altid synlig; er Udgivelse slået fra, viser den ét trin, Slå udgivelse til. Sikkerhedskopi vises kun, når Udgivelse er slået til. Funktionen er ikke med i den anbefalede pakke, så længe udgivelse kræver udviklerværktøjer.
+- Knappen, funktionen og forløbet hedder Udgiv og Udgivelse overalt. Del og deling bruges ikke om at lægge en app ud.
 - Ret i siden er en frivillig til/fra-knap i forhåndsvisningens værktøjslinje. Kortet for et valgt element har højst to hovedvalg: Ret teksten og Bed AI'en ændre det. Kan Aura ikke rette selv, står grunden på kortet, og AI'en er det fremhævede valg. Tekst rettes i et felt i Aura, aldrig i selve siden, og Fortryd står ved resultatet. Et mål for AI'en står over skrivefeltet og i Før du sender, før det sendes.
 - Preview viser skærmstørrelse og genindlæsning. Server, skalering og egne mål ligger i en menu. Hvis en framework-app mangler sin server, vises én handling i det tomme preview: Start forhåndsvisning. Installation og start gennemgås i en dialog; procesloggen er foldet sammen.
 
@@ -144,8 +145,8 @@ Dialogerne kan rulle ved større tekst; gennemgang og resultat får synligt tast
 
 ## Forbindelser og hosting
 
-- komplai findes kun under Del som komplai Run. Browserlogin giver særskilt udgivelsesadgang. Én organisation vises direkte; flere organisationer giver et valg. Tidligere AI-forbindelser kan fjernes fra AI-oversigten, men ikke vælges eller bruges. Et gemt valg af komplai må aldrig udløse et automatisk skift til en anden AI. Run-adgang og historiske samtaler bevares.
-- Del starter med Udgiv fra Aura og Se udgivelsesvejledning. Udbyderne står på lige fod i alfabetisk rækkefølge, uden anbefaling eller forvalg. En tidligere valgt destination kan genbruges. komplai Run har ingen særplacering.
+- komplai findes kun under Udgiv som komplai Run. Browserlogin giver særskilt udgivelsesadgang. Én organisation vises direkte; flere organisationer giver et valg. Tidligere AI-forbindelser kan fjernes fra AI-oversigten, men ikke vælges eller bruges. Et gemt valg af komplai må aldrig udløse et automatisk skift til en anden AI. Run-adgang og historiske samtaler bevares.
+- Udgiv starter med Udgiv fra Aura og Se udgivelsesvejledning. Udbyderne står på lige fod i alfabetisk rækkefølge, uden anbefaling eller forvalg. En tidligere valgt destination kan genbruges. komplai Run har ingen særplacering.
 - komplai Run kræver ingen CLI. Login og særskilt udgivelsesadgang gennemføres før appvalget. Én organisation kræver ingen rullemenu. Ny app og Eksisterende app er to valg; navn, adresse og adgang har deres egne trin. Ved en ny app har Hvem kan åbne appen to lige store kort uden forvalg. En eksisterende app viser sin aktuelle adgang; upload ændrer den ikke. Konto og adgang samler Log ud og linket Skift adgang i komplai. Gennemgangen henter adgang igen og viser adresse, organisation, adgang, placering og omkostninger. Resultatet kontrollerer udgivelsen hos komplai og startsiden samt fremhæver, hvis observeret adgang afviger fra valget ved upload. En ny version går til den app, der senest blev udgivet til; Skift app åbner appvalget direkte. Filer, komplai ikke modtager, nævnes ved navn før upload.
 - Gemte AI-forbindelser vises fire ad gangen med søgning. Navn og udbyder står hver for sig. Status siger, hvornår kataloget senest svarede; ukontrollerede forbindelser får ingen grøn markering.
 - Efter tilslutning er Fortsæt hovedhandlingen. Tilføj en AI mere er et frivilligt valg. Gentagen opsætning må ikke slette kladder, projekt eller andre forbindelser.
@@ -155,10 +156,10 @@ Dialogerne kan rulle ved større tekst; gennemgang og resultat får synligt tast
 
 ## Udgivelsesvalg og fælles status · 20. oktober 2026
 
-- Del bruger en lodret udbyderliste med logo, navn og kontokrav. Azure Static Web Apps, Cloudflare Pages, GitHub Pages, komplai Run, Promte Apps og Vercel står alfabetisk, tre ad gangen med ét link til resten. Ingen anbefaling eller forhåndsvalgt udbyder. Promte og komplai viser krav om konto og betalt aftale.
+- Udgiv bruger en lodret udbyderliste med logo, navn og kontokrav. Azure Static Web Apps, Cloudflare Pages, GitHub Pages, komplai Run, Promte Apps og Vercel står alfabetisk, tre ad gangen med ét link til resten. Ingen anbefaling eller forhåndsvalgt udbyder. Promte viser krav om konto og betalt aftale. komplai viser kun kravet om en komplai-konto, og komplai-loginet viser kun knappen Log ind med komplai uden salgstekst eller kontaktlink.
 - Forbindelse, destination, filer og gennemgang har fælles opbygning. Browserlogin er førstevalg, hvor integrationen understøtter det. Manglende værktøj, udløbet login og manglende adgang giver et konkret næste trin. API-nøgler vises kun i det nødvendige opsætningsforløb og må ikke ligge i projektfiler.
 - Azure viser abonnementer og eksisterende apps fra brugerens konto. Ressourcegruppen aflæses automatisk. Promte spørger om organisationens adresse og arbejdsområde. Komplais OAuth-forløb bevares uden særplacering.
 - GitHub Pages og Cloudflare Pages viser opsætningsfilerne før skrivning. Brugeren gemmer og sender selv ændringerne til GitHub. Udgiv med GitHub Actions godkender én manuel kørsel; der startes ikke automatisk ved push. Cloudflares token gemmes hos GitHub.
 - Vercel har to valg: automatisk udgivelse fra Git eller én testversion. Git-forbindelsen oprettes hos Vercel. Aura viser repository, produktionsbranch og projektmappe før lokal tilknytning. Gemte projektindstillinger kan genbruges, men aktiverer aldrig sporing eller udgivelse alene.
-- Status ved Del gælder alle udbydere og det aktuelle projekt. Fejlet kontrol viser aldrig gammel grøn status. Vercels status skelner mellem produktion og testudgave. En igangværende kontrol må ikke overskrive en nyere udgivelse eller et andet projekt.
+- Status ved Udgiv gælder alle udbydere og det aktuelle projekt. Fejlet kontrol viser aldrig gammel grøn status. Vercels status skelner mellem produktion og testudgave. En igangværende kontrol må ikke overskrive en nyere udgivelse eller et andet projekt.
 - Promte kan give en udgivet version uden en dokumenteret appadresse. I det tilfælde er Åbn Promte den direkte handling; der opfindes intet link. Tekniske detaljer forbliver foldet sammen.

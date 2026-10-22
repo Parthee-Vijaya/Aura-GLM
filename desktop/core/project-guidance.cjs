@@ -33,8 +33,8 @@ function appRules(features, { surface = 'desktop', skills = [], links = [], mode
       ? `${autoCheckpoint ? (cli ? 'Aura gemmer automatisk en version, hvis brugeren har valgt det; /undo gennemgår fortrydelse.' : 'Appen gemmer selv en version efter hver AI-opgave, og brugeren kan fortryde den.') : (cli ? 'Brugeren gennemgår og gemmer versioner med /save og ser dem med /versions.' : 'Brugeren gemmer versioner i appen.')} Kør ikke Git-kommandoer, der ændrer historik, index, branches eller remotes, og foreslå ikke commit-beskeder.`
       : 'Brugeren har slået versioner fra i appen. Kør ikke Git-kommandoer, der ændrer historik, index, branches eller remotes, og bed ikke brugeren oprette et repository. Sig tydeligt før større ændringer, at de ikke kan fortrydes med en version.',
     features.deling
-      ? `${cli ? 'Testudgivelse sker kun gennem /deploy efter brugerens gennemgang og inden for projektets aftalte udgivelsesproces.' : 'Udgivelse sker kun gennem appens Del-knap efter brugerens gennemgang.'} Udgiv ikke selv, og opret ikke konti eller betalte tjenester.`
-      : 'Deling og udgivelse er slået fra i appen. Udgiv ikke, og opret ikke konti eller tjenester til hosting.'];
+      ? `${cli ? 'Testudgivelse sker kun gennem /deploy efter brugerens gennemgang og inden for projektets aftalte udgivelsesproces.' : 'Udgivelse sker kun gennem appens Udgiv-knap efter brugerens gennemgang.'} Udgiv ikke selv, og opret ikke konti eller betalte tjenester.`
+      : 'Udgivelse er slået fra i appen. Udgiv ikke, og opret ikke konti eller tjenester til hosting.'];
   if (!features.planlaegning && mode === 'free') lines.push('Brugeren har slået planlægning før bygning fra. Byg direkte ud fra beskeden, og stil kun spørgsmål, der ændrer resultatet væsentligt.');
   if (features.design && links.length) lines.push(designResearch);
   if (integrations.length) lines.push(`Brugeren har slået disse integrationer til: ${integrations.join(', ')}. Følg integrationens skill. Læg aldrig nøgler, brugernavne eller adgangskoder til en integration i browserkode, chat, logs eller versioner; de hører til i projektets .env og bruges kun fra en server.`);

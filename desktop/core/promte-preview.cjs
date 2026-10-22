@@ -1,13 +1,14 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const dns = require('node:dns/promises');
-const { PromteSetup, promteHost, addressFor, DEFAULT_HOST } = require('./provider-promte.cjs');
+const { PromteSetup, promteHost, addressFor } = require('./provider-promte.cjs');
 
 // En Promte-app venter på, at siden omkring den svarer på dens init. Inde i Promte gør Promte det.
 // I Auras forhåndsvisning svarer Aura, når Promte-integrationen er slået til: projektet kobles til en Promte-app,
 // som brugeren opretter med ét klik første gang, og appens kald sendes videre til Promte med et app-token,
 // der bliver i hovedprocessen.
-const PREVIEW_HOST = DEFAULT_HOST;
+// Promtes eget forslag til hackathonens installation (PR 12); Udgiv bruger samme adresse som udgangspunkt.
+const PREVIEW_HOST = 'https://kodning.promte.dk';
 const TOKEN_LIFETIME = 10 * 60 * 1000;
 const MAX_BODY = 20 * 1024 * 1024;
 const ALLOWED_PATH = /^(?:app-api\/[A-Za-z0-9/_.-]*|openai\/chat\/completions)(?:\?[^#\s]*)?$/;
@@ -113,7 +114,7 @@ class PromtePreview {
     response.headers.forEach((value, name) => { if (RESPONSE_HEADERS.has(name.toLowerCase())) responseHeaders.push([name, value]); });
     return { status: response.status, statusText: response.statusText || '', headers: responseHeaders, body: data };
   }
-  /** Del og forhåndsvisning bruger samme app. */
+  /** Udgiv og forhåndsvisning bruger samme app. */
   async setLink(root, { host, workspaceId, name }) {
     if (typeof workspaceId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,199}$/.test(workspaceId)) throw Error('Ugyldig Promte-app.');
     const link = { host: promteHost(host), workspaceId, name: typeof name === 'string' && name.trim() ? name.trim().slice(0, 200) : workspaceId };

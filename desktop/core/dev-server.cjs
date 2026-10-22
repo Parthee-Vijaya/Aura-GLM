@@ -85,7 +85,7 @@ async function terminate(child) {
   }
 }
 class DevServer {
-  constructor({ emit = () => {}, runner = path.join(__dirname, 'dev-server-runner.cjs') } = {}) { this.emit = emit; this.runner = runner; this.root = null; this.state = 'idle'; this.output = ''; this.generation = 0; }
+  constructor({ emit = () => {}, runner = path.join(__dirname, 'dev-server-runner.cjs'), komplaiScript = async () => null } = {}) { this.emit = emit; this.runner = runner; this.komplaiScript = komplaiScript; this.root = null; this.state = 'idle'; this.output = ''; this.generation = 0; }
   snapshot() { return { root: this.root, state: this.state, url: this.url || null, output: this.output, message: this.message || '', kind: this.kind }; }
   update(state, message = '') { this.state = state; this.message = message; this.emit(this.snapshot()); }
   async activate(root) { await this.stop(); this.review = null; this.root = root; this.url = null; this.output = ''; this.kind = null; this.update('idle'); }
@@ -146,6 +146,12 @@ class DevServer {
     if (!installing) {
       timer = setTimeout(() => void failure('Serveren blev ikke klar. Se detaljerne, og kontrollér projektets opsætning.'), 45000);
       this.timer = timer;
+      // Runneren beder om komplai Run-appens SDK, når forhåndsvisningen henter /_komplai/run/.
+      child.on('message', async message => {
+        if (message?.type !== 'komplai-sdk' || !Number.isSafeInteger(message.id) || typeof message.route !== 'string') return;
+        const script = await this.komplaiScript(message.route).catch(() => null);
+        if (generation === this.generation && child.connected) child.send({ type: 'komplai-sdk', id: message.id, script: typeof script === 'string' ? script : null });
+      });
       child.on('message', async message => {
         if (generation !== this.generation || this.state !== 'starting' || message?.type !== 'ready') return;
         let url;

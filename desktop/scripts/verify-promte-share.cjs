@@ -1,4 +1,4 @@
-// Del-forløbet til Promte i den rigtige app: login i browseren, valg eller oprettelse af app og gennemgang.
+// Udgivelsesforløbet til Promte i den rigtige app: login i browseren, valg eller oprettelse af app og gennemgang.
 // Promtes netværk erstattes af lokale adaptere. Prøven opretter et isoleret Git-projekt og udgiver intet på nettet.
 const { _electron: electron } = require('playwright');
 const assert = require('node:assert/strict');
@@ -25,7 +25,7 @@ const helpers = require('./ui-test-helpers.cjs');
     await app.evaluate(({ dialog, shell, session }, { project, modulePath }) => {
       const require = process.getBuiltinModule('module').createRequire(modulePath), { PromteSetup, PromteDeployment, promteConfiguration } = require(modulePath);
       dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [project] });
-      shell.openExternal = async () => { throw Error('Prøven må ikke åbne browseren.'); };
+      globalThis.openedLinks = []; shell.openExternal = async url => { globalThis.openedLinks.push(url); };
       session.defaultSession.webRequest.onBeforeRequest((details, callback) => callback({ cancel: /^https?:/.test(details.url) }));
       const calls = globalThis.promteCalls = [];
       let connected = false;
@@ -34,7 +34,7 @@ const helpers = require('./ui-test-helpers.cjs');
       PromteSetup.prototype.logout = async function ({ host }) { calls.push(['logout', host]); connected = false; return this.state({ host }); };
       PromteSetup.prototype.workspaces = async ({ host }) => { calls.push(['workspaces', host]); return [{ id: 'ws-budget', name: 'Budget', activeAppVersion: 2 }]; };
       PromteSetup.prototype.createWorkspace = async ({ host, name }) => { if (!name?.trim()) throw Error('Giv appen et navn på højst 100 tegn.'); calls.push(['create', host, name.trim()]); return { id: 'ws-ny', name: name.trim(), activeAppVersion: null }; };
-      PromteDeployment.prototype.inspect = async input => { const c = promteConfiguration(input); calls.push(['inspect', c.host, c.workspaceId]); return { id: c.workspaceId, name: { 'ws-ny': 'Mødebooking', 'ws-budget': 'Budget' }[c.workspaceId] || c.workspaceId, owner: new URL(c.host).hostname, host: new URL(c.host).hostname, portal: c.host, region: 'Syntetisk', settings: { uploadMode: 'source' }, environmentKeys: [], access: 'Syntetisk adgang', accountRequired: 'Kræver konto og betalt aftale', uploadDestinations: [c.host], materialNote: 'Syntetisk Promte-prøve.' }; };
+      PromteDeployment.prototype.inspect = async input => { const c = promteConfiguration(input); calls.push(['inspect', c.host, c.workspaceId]); return { id: c.workspaceId, name: { 'ws-ny': 'Mødebooking', 'ws-budget': 'Budget' }[c.workspaceId] || c.workspaceId, owner: new URL(c.host).hostname, host: new URL(c.host).hostname, portal: `${c.host}/workspaces/${c.workspaceId}`, region: 'Syntetisk', settings: { uploadMode: 'source' }, environmentKeys: [], access: 'Syntetisk adgang', accountRequired: 'Kræver konto og betalt aftale', uploadDestinations: [c.host], materialNote: 'Syntetisk Promte-prøve.' }; };
       PromteDeployment.prototype.deploy = async (input, artifact) => { calls.push(['deploy', input.workspaceId, artifact.files.map(f => f.file).sort()]); return { id: 'release-1', promteVersion: 1, state: 'REVIEWING', url: null }; };
       PromteDeployment.prototype.status = async () => ({ id: 'release-1', promteVersion: 1, state: 'REVIEWING', url: null });
     }, { project, modulePath: path.resolve(__dirname, '../core/provider-promte.cjs') });
@@ -44,8 +44,8 @@ const helpers = require('./ui-test-helpers.cjs');
     await page.click('#deploy-button'); await idle(); await page.click('#deployment-other');
     if (!await page.locator('[data-provider="promte"]').isVisible()) await page.click('#deployment-more-providers');
     await page.click('[data-provider="promte"]'); await idle();
-    // 1. Adressen er forudfyldt med Promtes standardadresse og kan ændres. Der kræves ingen CLI.
-    assert.equal(await page.inputValue('#deploy-promte-host'), 'https://app.promte.dk');
+    // 1. Adressen er forudfyldt med Promtes forslag til hackathonen og kan ændres. Der kræves ingen CLI.
+    assert.equal(await page.inputValue('#deploy-promte-host'), 'https://kodning.promte.dk');
     await page.fill('#deploy-promte-host', 'https://staging.promte.dk'); await page.click('#deployment-promte-host-next'); await idle();
     assert.equal(await page.locator('[data-deploy-step="setupConnection"]').isVisible(), true);
     assert.equal(await page.locator('#deployment-connect').isVisible(), true);
@@ -70,12 +70,17 @@ const helpers = require('./ui-test-helpers.cjs');
     assert.deepEqual(log.filter(c => c[0] === 'login'), [['login', 'https://staging.promte.dk']]);
     assert.deepEqual(log.filter(c => c[0] === 'create'), [['create', 'https://staging.promte.dk', 'Mødebooking']]);
     assert.deepEqual(log.find(c => c[0] === 'deploy'), ['deploy', 'ws-ny', ['index.html', 'package.json', 'src/main.jsx']]);
-    assert.ok(log.every(c => c[1] !== 'https://app.promte.dk' || c[0] === 'state'), 'Den valgte adresse bruges hele vejen.');
+    assert.ok(log.every(c => c[1] !== 'https://kodning.promte.dk' || c[0] === 'state'), 'Den valgte adresse bruges hele vejen.');
     const receipt = (await page.evaluate(() => window.harness.deploymentState())).value.last;
     // Projektet husker appen, så forhåndsvisning og næste udgivelse bruger den samme.
     assert.deepEqual((await page.evaluate(() => window.harness.deploymentSetup({ action: 'promte-link', config: {} }))).value.link, { host: 'https://staging.promte.dk', workspaceId: 'ws-ny', name: 'Mødebooking' });
     assert.equal(receipt.config.workspaceId, 'ws-ny'); assert.equal(receipt.state, 'REVIEWING');
     assert.match(await page.locator('#deployment-result').innerText(), /Mødebooking/, 'Resultatet viser appens navn.');
+    // Knappen åbner appen i Promte, hvor den kører med login og data (PR 14).
+    assert.equal(await page.textContent('#deployment-portal'), 'Åbn appen i Promte');
+    if (!await page.locator('#deployment-portal').isVisible()) await page.locator('#deployment-receipt-details > summary').click();
+    await page.click('#deployment-portal'); await idle();
+    assert.deepEqual(await app.evaluate(() => globalThis.openedLinks), ['https://staging.promte.dk/workspaces/ws-ny']);
     assert.deepEqual(errors, []);
     const png = await app.evaluate(async ({ BrowserWindow }) => (await BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).webContents.capturePage()).toPNG().toString('base64'));
     await fs.writeFile(path.join(root, 'promte-resultat.png'), Buffer.from(png, 'base64'));

@@ -28,10 +28,10 @@ test('desktop og CLI får kun henvisninger til deres egne forbindelser, versione
   const features = { versioner: true, deling: true };
   const desktop = appRules(features) + guidanceFor();
   const cli = appRules(features, { surface: 'cli' }) + guidanceFor('cli');
-  assert.match(desktop, /Del-knap/); assert.match(desktop, /forbindelsesindstillinger/);
+  assert.match(desktop, /Udgiv-knap/); assert.match(desktop, /forbindelsesindstillinger/);
   for (const command of ['/save', '/versions', '/deploy', '/preview', '/server', 'aura login']) assert.ok(cli.includes(command), command);
-  assert.doesNotMatch(cli, /appens Del-knap|Auras knap Del|Start forhåndsvisning|appens forbindelses/);
-  assert.match(appRules({ versioner: false, deling: false }, { surface: 'cli' }), /Deling og udgivelse er slået fra/);
+  assert.doesNotMatch(cli, /appens Udgiv-knap|Auras knap Udgiv|Start forhåndsvisning|appens forbindelses/);
+  assert.match(appRules({ versioner: false, deling: false }, { surface: 'cli' }), /Udgivelse er slået fra/);
 });
 
 test('ændrede projektregler stopper afsendelse før motorstart, også når filen oprettes efter gennemgangen', async t => {

@@ -5,7 +5,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { PromtePreview, isPromteProject, appName } = require('../core/promte-preview.cjs');
 const lookup = async () => [{ address: '93.184.215.14', family: 4 }];
-const HOST = 'https://app.promte.dk';
+const HOST = 'https://kodning.promte.dk';
 
 async function project(name = 'moedereferat-hjaelper', pkg = { devDependencies: { '@promte/app-library': '^0.1.6' } }) {
   const root = path.join(await fs.mkdtemp(path.join(os.tmpdir(), 'promte-preview-')), name);
@@ -62,9 +62,9 @@ test('med Promte-integrationen slået fra svarer Aura ikke appen og kontakter ik
 
 test('uden koblet app bruger forhåndsvisningen den Promte, brugeren er logget ind på i Aura', async () => {
   const future = new Date(Date.now() + 86400000).toISOString(), past = new Date(Date.now() - 1000).toISOString();
-  const store = memoryStore({ promte: { 'https://staging.promte.dk': { secret: 'x', expiresAt: past }, 'https://kodning.promte.dk': { secret: 'y', expiresAt: future } } });
+  const store = memoryStore({ promte: { 'https://staging.promte.dk': { secret: 'x', expiresAt: past }, 'https://kommune.applai.dk': { secret: 'y', expiresAt: future } } });
   const preview = new PromtePreview(store, { setup: fakeSetup(), lookup });
-  assert.equal((await preview.connect(await project())).host, 'https://kodning.promte.dk');
+  assert.equal((await preview.connect(await project())).host, 'https://kommune.applai.dk');
   assert.equal((await new PromtePreview(memoryStore({ promte: { 'https://staging.promte.dk': { secret: 'x', expiresAt: past } } }), { setup: fakeSetup(), lookup }).connect(await project())).host, HOST);
 });
 
