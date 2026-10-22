@@ -83,6 +83,9 @@ function isolatedEnv(directory, config, password) {
   for (const flag of ['DISABLE_PROJECT_CONFIG', 'DISABLE_DEFAULT_PLUGINS', 'DISABLE_EXTERNAL_SKILLS', 'DISABLE_CLAUDE_CODE', 'DISABLE_AUTOUPDATE', 'DISABLE_MODELS_FETCH', 'DISABLE_LSP_DOWNLOAD', 'DISABLE_SHARE', 'DISABLE_EMBEDDED_WEB_UI']) env[`OPENCODE_${flag}`] = 'true';
   // OpenCode tilbyder kun spørgeværktøjet til sine egne klienter. Aura viser spørgsmålene selv, ét ad gangen med klikbare svar.
   env.OPENCODE_ENABLE_QUESTION_TOOL = 'true';
+  // OpenCode 1.x sender højst 32.000 tokens pr. svar, uanset modellen. En tænkende model kunne bruge hele loftet på at
+  // tænke og stoppe uden svar. Loftet hæves til Auras højeste, så modellens egen grænse i opsætningen bestemmer.
+  env.OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX = String(require('./connections.cjs').OUTPUT_CEILING);
   return require('./runtime.cjs').gitEnvironment(env);
 }
 class OpenCodeEngine {
@@ -170,6 +173,8 @@ class OpenCodeEngine {
   // En afvisning med en besked stopper ikke opgaven: AI'en får beskeden som rettelse og fortsætter.
   async reply(id, allow, message) { if (!this.pending.has(id)) throw new Error('Godkendelsen findes ikke længere.'); await this.request(`/permission/${encodeURIComponent(id)}/reply`, 'POST', { reply: allow ? 'once' : 'reject', ...(!allow && message ? { message } : {}) }); this.pending.delete(id); }
   async messages() { return this.request(`/session/${this.session.id}/message`); }
+  // OpenCode sammenfatter samtalen med samme model og fortsætter fra sammenfatningen. Planen og filerne røres ikke.
+  async summarize() { if (!this.active) throw new Error('Agenten er ikke startet.'); return this.request(`/session/${this.session.id}/summarize`, 'POST', { providerID: 'harness', modelID: this.model.id, auto: false }); }
   async diff() { return this.request(`/session/${this.session.id}/diff`); }
   async close() { this.active = false; this.eventsAbort?.abort(); this.pending.clear(); if (this.child && this.child.exitCode === null) { this.child.kill(); await new Promise(resolve => { const timer = setTimeout(() => { this.child.kill('SIGKILL'); resolve(); }, 3000); this.child.once('exit', () => { clearTimeout(timer); resolve(); }); }); } }
 }

@@ -135,6 +135,15 @@ async function requestJSON(url, { key = '', kind, method = 'GET', body, signal }
   const text = Buffer.concat(chunks).toString('utf8');
   try { return JSON.parse(text); } catch { throw new Error('Serveren returnerede ikke gyldige modeloplysninger.'); }
 }
+// Tænkning og indsatsniveauer fra kataloget: Corti oplyser capabilities.reasoning og effort.levels, OpenRouter supported_parameters.
+function catalogReasoning(model) {
+  const out = {};
+  if (typeof model.capabilities?.reasoning === 'boolean') out.reasoning = model.capabilities.reasoning;
+  else if (Array.isArray(model.supported_parameters)) out.reasoning = model.supported_parameters.includes('reasoning');
+  if (model.effort?.supported === true && Array.isArray(model.effort.levels)) out.effort = model.effort.levels.slice(0, 8);
+  else if (out.reasoning && Array.isArray(model.supported_parameters)) out.effort = ['low', 'medium', 'high'];
+  return out;
+}
 async function listModels(connection, key) {
   assertSupported(connection);
   if (definitions[connection.kind].keyRequired && !key) throw new Error('Denne forbindelse kræver en API-nøgle.');
@@ -146,7 +155,7 @@ async function listModels(connection, key) {
   if (connection.kind === 'azure') return [{ id: connection.deployment, name: connection.deployment, price: null, capabilities: { tools: null }, configuredDeployment: true }];
   return models.slice(0, 5000).filter(model => model && model.capabilities?.completion_chat !== false && !(connection.kind === 'corti' && /embedding/.test(model.id)) && (connection.kind !== 'openai' || /^(gpt-|chatgpt-|codex-|o\d)/.test(model.id) && !/audio|realtime|transcribe|image|tts|search|deep-research/.test(model.id))).map(model => ({
     id: ollama ? model.name : model.id, name: model.name || model.display_name || model.id,
-    price: model.pricing || null, capabilities: { tools: model.capabilities?.function_calling ?? model.supported_parameters?.includes('tools') ?? null },
+    price: model.pricing || null, capabilities: { tools: model.capabilities?.function_calling ?? model.supported_parameters?.includes('tools') ?? null, ...catalogReasoning(model) },
     limits: { context: tokenCount(model.context_length ?? model.max_context_length ?? model.context_window ?? model.max_input_tokens), output: tokenCount(model.top_provider?.max_completion_tokens ?? model.max_output_tokens ?? model.max_tokens) },
     local: ollama && !model.remote_host && !/:.*cloud/.test(model.name) ? 'Ikke verificeret' : null
   })).filter(model => typeof model.id === 'string');
@@ -184,33 +193,65 @@ function disclosure(connection, model, route = null) {
 }
 // Tal fra et modelkatalog bruges kun, når de ligner rigtige tokengrænser.
 function tokenCount(value) { const number = Number(value); return Number.isInteger(number) && number >= 1024 && number <= 10_000_000 ? number : null; }
-// Grænser for kendte modeller. Kataloget har forrang, når det oplyser grænserne.
-// Ukendte modeller beholder de forsigtige standarder, så en lille lokal model ikke får for store kald.
+// Grænser for kendte modeller fra udbydernes dokumentation, kontrolleret 22. oktober 2026. Kataloget har forrang, når det
+// oplyser grænserne, fx Anthropics Models API (max_input_tokens og max_tokens) og OpenRouters max_completion_tokens.
+// reasoning: modellen tænker, før den svarer, og tænkningen tæller med i svarets loft.
+// effort: de indsatsniveauer, udbyderen tager imod. Aura sender kun en indsats, når brugeren selv har valgt en.
+const CLAUDE_EFFORT = ['low', 'medium', 'high', 'xhigh', 'max'];
 const knownLimits = [
   ['anthropic', /^claude-3-haiku/, { context: 200000, output: 4096 }],
   ['anthropic', /^claude-3-5-/, { context: 200000, output: 8192 }],
-  // Claude 5 kan rumme en million tokens. Samtalen komprimeres alligevel ved 200.000, så hvert kald ikke bliver dyrt.
-  ['anthropic', /^claude-/, { context: 200000, output: 32000 }],
-  ['zen', /^claude-/, { context: 200000, output: 32000 }],
-  // Modelkortet oplyser 1M kontekst. De 32.000 svartokens er Auras loft, ikke modellens dokumenterede maksimum.
+  ['anthropic', /^claude-opus-4-(?:2025\d{4}|1)(?:-|$)/, { context: 200000, output: 32000 }],
+  ['anthropic', /^claude-opus-4-5(?:-|$)/, { context: 200000, output: 64000, reasoning: true, effort: ['low', 'medium', 'high'] }],
+  ['anthropic', /^claude-(?:sonnet-4-(?:2025\d{4}|5)|haiku-4-5)(?:-|$)/, { context: 200000, output: 64000 }],
+  // Claude 5-familien og Opus/Sonnet 4.6 og nyere: 1M kontekst og op til 128.000 tokens pr. svar.
+  ['anthropic', /^claude-/, { context: 1000000, output: 128000, reasoning: true, effort: CLAUDE_EFFORT }],
+  ['zen', /^claude-/, { context: 1000000, output: 128000, reasoning: true, effort: CLAUDE_EFFORT }],
+  // OpenAI's modelsider. Azure følger samme grænser, når deployment-navnet er modellens navn.
+  ...['openai', 'azure'].flatMap(kind => [
+    [kind, /^gpt-5/, { context: 400000, output: 128000, reasoning: true, effort: ['minimal', 'low', 'medium', 'high'] }],
+    [kind, /^o\d/, { context: 200000, output: 100000, reasoning: true, effort: ['low', 'medium', 'high'] }],
+    [kind, /^gpt-4\.1/, { context: 1047576, output: 32768 }],
+    [kind, /^gpt-4o/, { context: 128000, output: 16384 }]
+  ]),
+  // Mistrals modelkort oplyser konteksten, men ikke svarlængden. Svarloftet er Auras valg og ikke et dokumenteret maksimum.
   ['mistral', /^mistral-large-4(?:-0)?$/, { context: 1000000, output: 32000 }],
   ['mistral', /^mistral-(large|medium)/, { context: 200000, output: 16384 }],
   ['mistral', /codestral|devstral/, { context: 128000, output: 16384 }],
-  // Cortis katalog oplyser 262.144 tokens kontekst, men ingen grænse for svarlængden. Corti S1 tænker, før den svarer, og
-  // tankerne tæller med i svaret. Med appens forsigtige standard på 4.096 blev svaret skåret af, før en fil blev skrevet.
-  ['corti', /^corti-s1/, { context: 262144, output: 32000 }],
+  // Cortis katalog oplyser konteksten, tænkning og indsatsniveauer, men ingen grænse for svarlængden, og dokumentationen
+  // nævner ingen. Corti tog 22. oktober imod max_tokens op til hele konteksten, så corti-s1 (GLM 5.3) får Auras højeste loft.
+  // Med OpenCodes faste loft på 32.000 kunne tænkningen fylde hele svaret ved store opgaver.
+  ['corti', /^corti-s1(?:-instant)?$/, { context: 1048576, output: 128000 }],
+  ['corti', /^corti-s1-mini/, { context: 262144, output: 32000 }],
   // Alexandras modelside oplyser kontekstvinduerne. Grænsen for svar er platformens eget tal fra vejledningen til
   // kodeagenter: et unødigt højt max_tokens reserverer flere penge, før svaret skrives, og kan afvises for saldo eller
   // månedsbudget. Tænkning tæller med i svaret, så grænsen sættes ikke lavere end vejledningens 16.384.
   ['alexandra', /^glm-5\.3-flash$/, { context: 1048576, output: 16384 }],
   ['alexandra', /^qwen3\.8-flash-next$/, { context: 262144, output: 16384 }]
 ];
+// Det højeste dokumenterede svarloft (Claude og GPT-5). OpenCode får samme loft, så modellens egen grænse bestemmer.
+const OUTPUT_CEILING = 128000;
+// Samtaler komprimeres, når et kald nærmer sig 200.000 tokens, også for modeller med større kontekst. Hvert kald bliver
+// dermed ikke dyrere og langsommere, og en tænkende model får ikke hele historikken at tænke over.
+const WORKING_WINDOW = 200000;
+const known = (connection, model) => knownLimits.find(([kind, pattern]) => kind === connection.kind && pattern.test(model.id))?.[2];
+/** Om modellen tænker, før den svarer: kataloget først, ellers tabellen. */
+function reasons(connection, model) { return typeof model.capabilities?.reasoning === 'boolean' ? model.capabilities.reasoning : known(connection, model)?.reasoning === true; }
+/** De indsatsniveauer, udbyderen tager imod for modellen, eller en tom liste. */
+function effortLevels(connection, model) {
+  const levels = Array.isArray(model.capabilities?.effort) ? model.capabilities.effort : known(connection, model)?.effort || [];
+  return levels.filter(level => typeof level === 'string' && /^[a-z]{2,10}$/.test(level));
+}
 function modelLimits(connection, model) {
-  const known = knownLimits.find(([kind, pattern]) => kind === connection.kind && pattern.test(model.id))?.[2];
-  const context = model.limits?.context || known?.context || 32768;
-  // OpenCode sender højst 32.000 svartokens pr. kald. Et svar må aldrig kunne fylde hele konteksten.
-  const output = Math.min(model.limits?.output || known?.output || 4096, 32000, Math.floor(context / 2));
-  return { context, output };
+  const k = known(connection, model);
+  const context = model.limits?.context || k?.context || 32768;
+  // Ukendte modeller får et forsigtigt loft. En tænkende model har brug for plads til både tanker og svar, og en lokal
+  // Ollama-model kan bruge op til halvdelen af sin kontekst.
+  const fallback = connection.kind === 'ollama' ? Math.floor(context / 2) : reasons(connection, model) ? 32000 : 4096;
+  // Et svar må aldrig kunne fylde hele konteksten.
+  const output = Math.min(model.limits?.output || k?.output || fallback, OUTPUT_CEILING, Math.floor(context / 2));
+  // OpenCode komprimerer ved limit.input minus en reserve; uden den ved konteksten minus svarloftet.
+  return context > WORKING_WINDOW ? { context, output, input: Math.min(WORKING_WINDOW, context - output) } : { context, output };
 }
 function engineProvider(connection, model, gatewayURL, token) {
   assertSupported(connection);
@@ -220,4 +261,4 @@ function engineProvider(connection, model, gatewayURL, token) {
     options: { baseURL: gatewayURL, apiKey: token },
     models: { [model.id]: { name: model.name, tool_call: true, limit: modelLimits(connection, model), ...(usesResponses(connection) ? { options: { store: false, include: ['reasoning.encrypted_content'] } } : {}) } } };
 }
-module.exports = { definitions, assertSupported, endpoint, normalize, requestJSON, listModels, routes, disclosure, engineProvider, modelLimits, priceFor, usesResponses };
+module.exports = { definitions, assertSupported, endpoint, normalize, requestJSON, listModels, routes, disclosure, engineProvider, modelLimits, effortLevels, reasons, priceFor, usesResponses, OUTPUT_CEILING, WORKING_WINDOW };

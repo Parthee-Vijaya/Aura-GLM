@@ -50,6 +50,8 @@ Dialogens tilgængelige navn skal bruge den overskrift, der faktisk vises i det 
   - Aktivitet viser kun faktiske hændelser med klokkeslæt og status i ord. Ingen simuleret terminal og ingen opdigtede testresultater.
   - Sidepanelet kan foldes sammen til ikoner. Ved 980 × 720 står fanerne på én linje; med større tekst må de bryde, men aldrig forsvinde. Et mærke på en fane ligger oven på hjørnet, så fanerne ikke flytter sig.
 - Skrivefeltet er den vigtigste handling. Under det står den aktive model, udbyder og indsats og samtalens tokens ind og ud med en anslået pris. Modelknappen åbner Din AI. Den viser højst tre modeller: for kendte udbydere udbyderens eget udgangspunkt og to alternativer med faktuelle forklaringer, ellers et udvalg. Et klik på et modelkort vælger og lukker. Alle modeller og forbindelser ligger under Avanceret. Referencer vises kun, når projektet har referencefiler.
+- Indsatsen er udbyderens standard, indtil brugeren selv vælger en, fx "Prøv igen med lav indsats" på fejlkortet. En valgt indsats står under skrivefeltet og nulstilles under Din AI med "Brug udbyderens standard" eller ved skift af model.
+- Når et svar stopper ved loftet uden tekst, forklarer fejlkortet det i én sætning og viser højst tre valg: lav indsats (når modellen tager imod den), "Gør samtalen kortere og prøv igen" (når samtalen har mere end én besked) og "Prøv igen". Intet sendes uden et klik.
 - Før første afsendelse viser "Før du sender" fire linjer: AI, hvor, træning og pris.
   - Under dem står én linje om pris og data med ⓘ. Tidligere samtale nævnes kun, når den sendes med.
   - "Se alle oplysninger" er korte rækker, og lange tekster som appens vejledning og planen har hver sin fold.

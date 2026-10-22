@@ -1,5 +1,34 @@
 # Produktretning og beslutninger
 
+## Svarloft, indsats og komprimering · forberedt, ikke udgivet · 22. oktober 2026
+
+En tester fik "AI'en stoppede uden et resultat – Svaret blev for langt" med Cortis corti-s1 (GLM 5.3) efter en lang samtale. Årsagen er, at OpenCode 1.x sender højst 32.000 tokens pr. svar (`Math.min(limit.output, 32000)`). En tænkende model kan bruge hele loftet på at tænke. Det gælder også den nyeste 1.x (1.19.4). OpenCode 2 sætter intet sådant loft, men skiftet til 2 venter til en senere beta og undersøges for sig.
+
+Brugeren har valgt:
+- **Grænser:** Loftet pr. svar følger modellens dokumenterede maksimum. Kataloget har forrang, og ellers bruges udbydernes dokumentation med kilde og dato i `core/connections.cjs`. Ukendte modeller beholder et forsigtigt loft.
+- **Fejlvalg:** Fejlkortet viser valg, og intet sendes uden et klik.
+- **Omfang:** Det gælder alle udbydere.
+
+Det betyder:
+- **OpenCodes loft** hæves med `OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX` til Auras højeste svarloft, 128.000 (Claude og GPT-5). Modellens egen grænse i opsætningen bestemmer.
+- **Grænser pr. model:**
+  - Claude 5-familien og Opus/Sonnet 4.6+ får 128.000 (Anthropics Models API oplyser selv `max_tokens`).
+  - GPT-5 får 128.000, og o-modellerne får 100.000.
+  - corti-s1 får 128.000. Corti dokumenterer intet loft, men tog imod `max_tokens` op til hele konteksten 22. oktober.
+  - Alexandra beholder sit anbefalede 16.384, og Mistral beholder Auras 32.000.
+  - Lokale Ollama-modeller får halvdelen af konteksten.
+  - Ukendte tænkende modeller får 32.000, og øvrige ukendte 4.096.
+- **Komprimering:** Samtaler komprimeres ved 200.000 tokens (`limit.input`), også for modeller med 1M kontekst. Kald bliver ikke dyrere og langsommere, og en tænkende model får mindre at tænke over. Claude havde allerede dette valg.
+- **Fejlkortet** tilbyder højst tre valg, når svaret stopper ved loftet:
+  - "Prøv igen med lav indsats", når modellen tager imod `low`.
+  - "Gør samtalen kortere og prøv igen", når samtalen har mere end én besked.
+  - "Prøv igen".
+- **Indsatsen:** En valgt indsats står under skrivefeltet og kan nulstilles under modellen. Den sendes som udbyderen forventer, kun når brugeren har valgt den, og den starter ikke en ny modelsession.
+- **Ny samtale med planen blev til komprimering:** Brugeren valgte "Ny samtale med planen" i forslaget. Den er bygget som "Gør samtalen kortere" (OpenCodes `summarize`), fordi planen bor i samtalen. Komprimeringen bevarer plan, historik og filer uden at flytte noget.
+- **Tænkende modeller markeres ikke for OpenCode.** I 1.18 styrer markeringen kun OpenCodes egne indsatsvarianter, som Aura ikke bruger. Aura bruger selv oplysningen om tænkning og indsats fra Cortis og OpenRouters kataloger og fra tabellen.
+
+Afvejning: Et svar, der rammer det højere loft, koster mere end før. For corti-s1 er det omkring 1 USD ved 128.000 tokens mod omkring 0,26 USD ved 32.000. Til gengæld får modellen plads til at blive færdig. Lav indsats er den billige vej. Den 22. oktober tænkte corti-s1 ikke med `reasoning_effort: "low"` og svarede stadig rigtigt.
+
 ## Alexandra som fjerde ligestillede udbyder · til 0.5.0-beta.2 · 22. oktober 2026
 
 Brugeren har valgt at vise Alexandra Instituttets AI-platform som fjerde fremhævede udbyderkort ved siden af Claude, Mistral og Corti, både i appen og i Aura-terminalen. Reglen i `AGENTS.md` er ændret til fire ligestillede valg; øvrige udbydere ligger fortsat bag "Vælg en anden". Ingen udbyder anbefales.

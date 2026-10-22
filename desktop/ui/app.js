@@ -672,7 +672,7 @@ async function loadRoutes(saved = '') {
   for (const route of routes) $('#route-select').append(option(route.id, route.name));
   if (routes.some(route => route.id === saved)) $('#route-select').value = saved;
 }
-function selection() { return { includeHistory: $('#include-history').checked, mode: $('#work-mode').value, planID: activePlan?.id, connectionID: $('#connection-select').value, modelID: $('#model-select').value, routeID: $('#route-select').value, references: [...document.querySelectorAll('#reference-choices input:checked')].map(el => el.value), fileRefs: window.workspace?.references() || [], previewTarget: window.workspace?.target()?.id || null, view: window.previewViewSize?.() || null, chat: view.id }; }
+function selection() { return { effort: view?.effort || null, includeHistory: $('#include-history').checked, mode: $('#work-mode').value, planID: activePlan?.id, connectionID: $('#connection-select').value, modelID: $('#model-select').value, routeID: $('#route-select').value, references: [...document.querySelectorAll('#reference-choices input:checked')].map(el => el.value), fileRefs: window.workspace?.references() || [], previewTarget: window.workspace?.target()?.id || null, view: window.previewViewSize?.() || null, chat: view.id }; }
 const detailLabels = { projectInstructions: 'Projektets egne regler, der sendes', workspace: 'Arbejdsmappe', mode: 'Arbejdsmåde', brief: 'Projektbrief, der sendes', previewReferenceText: 'Valgt element, der sendes', conversation: 'Tidligere samtale, der sendes', projectGuidance: 'Appens vejledning om projektvalg og design', planContext: 'Plan og afklaring, der sendes', projectChoices: 'Projektets opstartsvalg', projectDesign: 'Projektets designvalg', fileReferences: 'Filhenvisninger i beskeden', connection: 'Forbindelse', model: 'Model', endpoint: 'Serveradresse', recipients: 'Modtagere', region: 'Behandlingssted', retention: 'Opbevaring', training: 'Brug til træning', price: 'Pris og gratisbegrænsninger', capabilities: 'Modelmuligheder', material: 'Hvad sendes?', references: 'Udvalgte private referencer', skills: 'Skills, AI’en kan hente', localStorage: 'Lokal historik og yderligere netværk', security: 'Forbindelsens sikkerhed', source: 'Kilde', checkedAt: 'Dokumentation kontrolleret', evidence: 'Grundlag' };
 // Kort resumé i almindeligt dansk. Alle oplysninger ligger under "Se alle oplysninger".
 function showData(data, canSend) {
@@ -715,7 +715,8 @@ async function sendNow(data, text) {
   $('#run-review').hidden = true; if ($('#work-mode').value === 'build') $('#plan-card').hidden = true; if ($('#work-mode').value === 'plan') { activePlan = null; $('#plan-card').hidden = true; }
   Object.assign(v, { lastSentText: text, lastTarget: data.previewReference || '', lastTargetRef: window.workspace?.target() || null, lastCheckpoint: null, rejectedThisRun: false, lastRejection: null });
   appendMessage(text + (data.fileReferenceText || '') + (v.lastTarget ? `\n\nMål i forhåndsvisningen: ${v.lastTarget}` : ''), 'user', v); $('#prompt').value = ''; await saveChatDraft();
-  try { await call('send', { text, fingerprint: data.fingerprint, chat: v.id }); acceptedFingerprint = reviewKey(data); if (view === v) window.workspace?.clearReferences(); }
+  const compact = v.compactNext === true; v.compactNext = false; v.effortLevels = data.effortLevels || [];
+  try { await call('send', { text, fingerprint: data.fingerprint, chat: v.id, compact }); acceptedFingerprint = reviewKey(data); if (view === v) window.workspace?.clearReferences(); }
   catch (error) { if (error.message === 'Opgaven blev stoppet før afsendelse.') { setRunning(false, 'Stoppet', v); return; } if (view === v) { $('#prompt').value = text; await saveChatDraft(); } setRunning(false, 'Fejl', v); renderRunReview({ status: 'error', files: [], tools: [], failure: { kind: 'start', message: error.message } }, v); }
 }
 // Under en opgave viser statusfeltet, hvor længe den har kørt, så en lang tænkepause ikke ligner, at appen er gået i stå.
@@ -951,16 +952,19 @@ function versionTime(at) {
 
 // Enkel adgang uden at skjule datagodkendelse eller ændre model automatisk.
 // Under skrivefeltet står altid den aktive model, udbyderen og indsatsen, ligesom i Claude Code.
+const effortNames = { minimal: 'minimal', low: 'lav', medium: 'middel', high: 'høj', xhigh: 'meget høj', max: 'maksimal' };
 function updateModelSummary() {
   const model = $('#model-select');
   const connection = state?.connections.find(c => c.id === $('#connection-select').value);
   const provider = state?.definitions?.[connection?.kind]?.provider || connection?.name || '';
+  const chosen = model.value && view?.effort ? effortNames[view.effort] || view.effort : null;
   const effort = model.value && window.ModelAdvice.effort(connection?.kind, model.value);
-  const effortLabel = effort ? `${effort} indsats` : connection?.kind === 'mistral' ? 'standardindsats' : '';
+  const effortLabel = chosen ? `${chosen} indsats` : effort ? `${effort} indsats` : connection?.kind === 'mistral' ? 'standardindsats' : '';
+  $('#model-effort').hidden = !chosen; $('#model-effort-text').textContent = chosen ? `Du har valgt ${chosen} indsats i denne samtale.` : '';
   const label = model.value ? [model.selectedOptions[0].textContent, provider, effortLabel].filter(Boolean).join(' · ') : 'Vælg AI';
   $('#model-summary').textContent = model.value ? model.selectedOptions[0].textContent : 'Vælg din AI';
   $('#model-chip').textContent = label;
-  $('#model-chip').title = effort ? `${effort[0].toUpperCase()}${effort.slice(1)} indsats er udbyderens standard for modellen. Klik for at skifte model.` : connection?.kind === 'mistral' ? 'Aura sender ikke et valg af indsats. Mistrals standard gælder; niveauet er ikke verificeret. Klik for at skifte model eller forbindelse.' : 'Klik for at skifte model eller forbindelse.';
+  $('#model-chip').title = chosen ? `Du har valgt ${chosen} indsats i denne samtale. Klik for at skifte model eller indsats.` : effort ? `${effort[0].toUpperCase()}${effort.slice(1)} indsats er udbyderens standard for modellen. Klik for at skifte model.` : connection?.kind === 'mistral' ? 'Aura sender ikke et valg af indsats. Mistrals standard gælder; niveauet er ikke verificeret. Klik for at skifte model eller forbindelse.' : 'Klik for at skifte model eller forbindelse.';
   $('#connection-status').textContent = model.value ? (state?.connections.find(c => c.id === $('#connection-select').value)?.name || 'Valgt forbindelse') + ' · ' + model.value : 'Ingen model valgt';
 }
 // Forbruget i samtalen: tokens ind og ud og en anslået pris ud fra udbyderens prisliste. Det faktiske forbrug står hos udbyderen.
@@ -1665,10 +1669,18 @@ function renderRunReview(result, v = view) {
   }
   // En opgave, der slutter uden svar og uden ændringer, må ikke ligne et resultat.
   if (!result.files.length && result.answered === false) {
-    show(); box.append(node('h3', 'AI’en stoppede uden et resultat'), node('p', result.finish === 'length'
-      ? 'Svaret blev for langt, så AI’en nåede ikke at skrive noget. Prøv igen. Virker det stadig ikke, så del opgaven op, eller vælg en anden model.'
+    const long = result.finish === 'length';
+    show(); box.append(node('h3', 'AI’en stoppede uden et resultat'), node('p', long
+      ? 'Modellen brugte hele svaret på at tænke og nåede ikke at skrive noget. Det sker oftest ved store opgaver og lange samtaler.'
       : 'AI’en stoppede uden at svare eller ændre filer. Prøv igen. Virker det stadig ikke, så vælg en anden model.'));
-    box.append(reviewButton('Prøv igen', () => { $('#prompt').value = lastSentText; retrySend(); }, true)); return;
+    const actions = node('div', undefined, 'review-actions'), again = () => { $('#prompt').value = lastSentText; retrySend(); };
+    // Lav indsats får modellen til at tænke kortere. Den vises kun, når modellen tager imod den og ikke allerede bruger den.
+    const lower = long && v.effort !== 'low' && (v.effortLevels || []).includes('low');
+    if (lower) actions.append(reviewButton('Prøv igen med lav indsats', () => { v.effort = 'low'; updateModelSummary(); again(); }, true));
+    // En lang samtale gøres kortere, før beskeden sendes igen. Planen og filerne bevares.
+    if (long && v.log.querySelectorAll('.chat-message.user').length > 1) actions.append(reviewButton('Gør samtalen kortere og prøv igen', () => { v.compactNext = true; again(); }, !lower));
+    actions.append(reviewButton('Prøv igen', again, !actions.children.length));
+    box.append(actions); return;
   }
   if (['chat', 'plan'].includes(result.mode) && !result.files.length) { box.hidden = true; return; }
   show();
@@ -1747,6 +1759,10 @@ function openTaskSettings() {
   $('#model-options').open = true; if (!$('#task-dialog').open) $('#task-dialog').showModal();
 }
 $('#model-chip').onclick = openTaskSettings;
+// En valgt indsats hører til modellen. Et skift af model eller forbindelse vender tilbage til udbyderens standard.
+const resetEffort = () => { if (view) view.effort = null; updateModelSummary(); };
+$('#model-effort-reset').onclick = resetEffort;
+for (const id of ['#connection-select', '#model-select']) $(id).addEventListener('change', () => { if (view?.effort) resetEffort(); });
 for (const id of ['settings-menu', 'project-menu', 'preview-menu']) {
   document.getElementById(id).addEventListener('click', event => { if (event.target.closest('button') && (id !== 'preview-menu' || event.target.closest('#attach-preview'))) document.getElementById(id).hidePopover(); });
 }

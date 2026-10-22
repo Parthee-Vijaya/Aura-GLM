@@ -260,10 +260,10 @@ test('en Corti-forbindelse beholder miljø og nøgle, når den redigeres uden ny
 // En falsk motor og et færdigt "Før du sender", så samtalernes regler kan prøves uden en rigtig AI.
 function fakeSend(bench, engines) {
  bench.engineFactory = options => { const engine = { options, active: false, resumed: Boolean(options.resume), session: { id: options.resume || `ses-${engines.length + 1}` }, pending: new Map(), sent: [], start: async () => { engine.active = true; }, send: async text => { engine.sent.push(text); }, request: async () => true, reply: async () => {}, abort: async () => {}, close: async () => { engine.active = false; } }; engines.push(engine); return engine; };
- return async (chat, text, fingerprint = 'regler-1') => {
+ return async (chat, text, fingerprint = 'regler-1', extra = {}) => {
   chat.prepared = { mode: 'free', root: chat.root, connection: { id: 'c', kind: 'compatible', name: 'Prøve', baseURL: 'http://127.0.0.1:1/v1' }, model: { id: 'test' }, route: null, references: [], fileRefs: [], view: null, autoCheckpoint: false, startup: null,
    disclosure: { fingerprint, consentKey: 'samtykke', modelName: 'test', provider: 'Prøve' }, context: { rules: '', skills: [], titles: [], features: { versioner: false }, integrations: [] } };
-  return bench.send({ chat: chat.id, text, fingerprint });
+  return bench.send({ chat: chat.id, text, fingerprint, ...extra });
  };
 }
 
@@ -409,4 +409,25 @@ test('et forsinket modelkatalog kan ikke genoplive en redigeret forbindelse elle
  assert.equal(bench.catalogs.get(connection.id)[0].id, 'ny');
  const failed = bench.models(connection.id), failure = assert.rejects(failed, /afviste/); await until(4);
  waiting[3].writeHead(401); waiting[3].end('{}'); await failure; assert.equal(bench.catalogs.has(connection.id), false);
+});
+
+test('Gør samtalen kortere sammenfatter samtalen, før beskeden sendes, og springer en tom samtale over', async t => {
+ const engines = [], root = await temp(t);
+ const bench = new Workbench({ directory: await temp(t), profiles, emit: () => {}, safeStorage: {} });
+ const send = fakeSend(bench, engines);
+ await bench.activate({ root, name: 'Prøve' });
+ await send(bench.chat, 'Første besked'); bench.chat.event({ type: 'session.idle' }); await bench.finishing;
+ const engine = engines[0], calls = [];
+ engine.messages = async () => [{ id: 'm1' }, { id: 'm2' }];
+ engine.summarize = async () => { calls.push('sammenfat'); return true; };
+ const plain = engine.send; engine.send = async text => { calls.push('send'); return plain(text); };
+ await send(bench.chat, 'Prøv igen', 'regler-1', { compact: true }); bench.chat.event({ type: 'session.idle' }); await bench.finishing;
+ assert.deepEqual(calls, ['sammenfat', 'send'], 'samtalen gøres kortere før beskeden');
+ assert.equal(bench.chat.activityList().some(entry => entry.title === 'Samtalen er gjort kortere'), true);
+ // Uden ønsket, eller uden noget at sammenfatte, sendes beskeden direkte.
+ calls.length = 0; await send(bench.chat, 'Næste', 'regler-1'); bench.chat.event({ type: 'session.idle' }); await bench.finishing;
+ assert.deepEqual(calls, ['send']);
+ calls.length = 0; engine.messages = async () => []; await send(bench.chat, 'Tom', 'regler-1', { compact: true }); bench.chat.event({ type: 'session.idle' }); await bench.finishing;
+ assert.deepEqual(calls, ['send']);
+ await bench.close();
 });
