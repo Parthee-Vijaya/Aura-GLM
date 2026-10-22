@@ -1,11 +1,12 @@
-// Sidepanelet: de seneste projekter med deres samtaler. Det åbne projekt er foldet ud; et klik på en samtale åbner den,
-// og et klik på et andet projekt åbner det. + ved et projekt starter en ny samtale. En samtale, der arbejder, venter
-// på dig eller er færdig, mens du så en anden, har en markering, så man kan se det uden at åbne den.
+// Sidepanelet: de 12 senest åbnede projekter med deres samtaler; ældre projekter ligger bag "Vis alle". Det åbne
+// projekt er foldet ud; et klik på en samtale åbner den, og et klik på et andet projekt åbner det. + ved et projekt
+// starter en ny samtale. En samtale, der arbejder, venter på dig eller er færdig, mens du så en anden, har en
+// markering, så man kan se det uden at åbne den.
 (() => {
-  let projects = [], expanded = new Set(), showAll = new Set(), menuChat = null;
+  let projects = [], expanded = new Set(), showAll = new Set(), showAllProjects = false, menuChat = null;
   try { expanded = new Set(JSON.parse(localStorage.getItem('aura.projects.open.v1')) || []); } catch { /* Kun visning. */ }
   const remember = () => { try { localStorage.setItem('aura.projects.open.v1', JSON.stringify([...expanded].slice(-20))); } catch { /* Kun visning. */ } };
-  const visible = 6;
+  const visible = 6, visibleProjects = 12;
   // Kort tid: "nu", "i dag 14.32", "i går" eller "3. okt."
   function when(at) {
     const date = new Date(at); if (Number.isNaN(date.getTime())) return '';
@@ -25,7 +26,8 @@
   function render() {
     const list = $('#project-list'); if (!list) return;
     const focused = document.activeElement?.closest?.('#project-list') ? document.activeElement.dataset.key : '';
-    list.replaceChildren(...projects.map(project => {
+    const shownProjects = showAllProjects ? projects : projects.slice(0, visibleProjects);
+    const items = shownProjects.map(project => {
       const open = project.root === current?.root, folded = !(open || expanded.has(project.root));
       const item = node('li', undefined, `project-entry${open ? ' is-current' : ''}`);
       const row = node('div', undefined, 'project-row');
@@ -58,7 +60,15 @@
         item.append(chats);
       }
       return item;
-    }));
+    });
+    // Ældre projekter ligger bag ét link. Fokus flytter til det første projekt, der kommer frem.
+    if (projects.length > shownProjects.length) {
+      const li = node('li', undefined, 'project-more'), button = node('button', `Vis alle ${projects.length} projekter`, 'text-button project-all'); button.type = 'button'; button.dataset.key = 's:projekter';
+      const next = projects[shownProjects.length];
+      button.onclick = () => { showAllProjects = true; render(); list.querySelector(`[data-key="${CSS.escape(`p:${next.root}`)}"]`)?.focus(); };
+      li.append(button); items.push(li);
+    }
+    list.replaceChildren(...items);
     // Fokus bliver på samme knap, når listen tegnes igen, fx når en samtale skifter status.
     if (focused) list.querySelector(`[data-key="${CSS.escape(focused)}"]`)?.focus();
     $('#new-conversation').hidden = !current;

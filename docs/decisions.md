@@ -1,5 +1,11 @@
 # Produktretning og beslutninger
 
+## Alle projekter i sidepanelet · forberedt, ikke udgivet · 22. oktober 2026
+
+Sidepanelet viste højst de 12 senest åbnede projekter, og grænsen sad i kernen (`recent()`). Et 13. projekt forsvandt derfor helt fra sidepanelet og paletten og kunne ikke åbnes fra listen, selv om dets samtaler stadig var gemt. Nu husker kernen alle projekter, appen har åbnet. Sidepanelet viser de 12 senest åbnede og resten bag "Vis alle N projekter", ligesom samtalelisten gør. Paletten søger i alle.
+
+Brugeren valgte ikke at scanne Dokumenter/Aura. Listen viser kun projekter, som netop denne installation har åbnet eller oprettet. Projekter kan ligge andre steder, og en scanning ville vise nogle og skjule andre tilfældigt. Projekter fra en anden installation, en kørsel fra kildekoden eller en prøve med egne appdata åbnes med **Åbn projekt**.
+
 ## Svarloft, indsats og komprimering · forberedt, ikke udgivet · 22. oktober 2026
 
 En tester fik "AI'en stoppede uden et resultat – Svaret blev for langt" med Cortis corti-s1 (GLM 5.3) efter en lang samtale. Årsagen er, at OpenCode 1.x sender højst 32.000 tokens pr. svar (`Math.min(limit.output, 32000)`). En tænkende model kan bruge hele loftet på at tænke. Det gælder også den nyeste 1.x (1.19.4). OpenCode 2 sætter intet sådant loft, men skiftet til 2 venter til en senere beta og undersøges for sig.

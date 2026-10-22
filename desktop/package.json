@@ -63,7 +63,9 @@
     "test:preview-edit": "node scripts/verify-preview-edit.cjs",
     "test:history": "node scripts/verify-history.cjs",
     "test:chats": "node scripts/verify-chats.cjs",
-    "test:concurrent": "node scripts/verify-concurrent.cjs"
+    "test:concurrent": "node scripts/verify-concurrent.cjs",
+    "test:project-list": "node scripts/verify-project-list.cjs",
+    "test:output-limit": "node scripts/verify-output-limit.cjs"
   },
   "engines": {
     "node": ">=22.12.0"

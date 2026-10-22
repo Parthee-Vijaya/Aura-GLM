@@ -161,8 +161,9 @@ class WorkspaceHistory {
     const project = await this.project(root);
     return [...project.chats].filter(item => item.count || item.draft || item.id === project.active).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   }
+  // Alle projekter, appen har åbnet, senest åbnet først. Sidepanelet viser de første og resten bag "Vis alle".
   async recent() {
-    return Object.entries((await this.store.read()).projects).filter(([, p]) => p.recent).map(([id, p]) => ({ id, ...p.recent })).sort((a,b) => b.at.localeCompare(a.at)).slice(0, 12);
+    return Object.entries((await this.store.read()).projects).filter(([, p]) => p.recent).map(([id, p]) => ({ id, ...p.recent })).sort((a,b) => b.at.localeCompare(a.at));
   }
   draft(root, id, input) {
     if (typeof input.text !== 'string' || input.text.length > 30000 || !['chat','plan','build','free'].includes(input.mode)) throw new Error('Ugyldig kladde.');

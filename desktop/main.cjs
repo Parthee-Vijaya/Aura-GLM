@@ -167,7 +167,7 @@ handle('project:open', () => exclusive(async () => {
   if (selection.canceled) return null;
   return activate(await openProject(selection.filePaths[0]));
 }));
-// Seneste projekter med deres samtaler til sidepanelet. Det åbne projekts samtaler har deres status lige nu.
+// Alle åbnede projekter med deres samtaler til sidepanelet og paletten. Det åbne projekts samtaler har deres status lige nu.
 handle('project:recent', async () => Promise.all((await workbench.history.recent()).map(async item => ({ ...item, chats: await workbench.chatList(item.root).catch(() => []) }))));
 handle('project:reopen', id => exclusive(async () => {
   const item = (await workbench.history.recent()).find(p => p.id === id);
