@@ -1,6 +1,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const dns = require('node:dns/promises');
+const { createHash } = require('node:crypto');
 const { PromteSetup, promteHost, addressFor } = require('./provider-promte.cjs');
 
 // En Promte-app venter på, at siden omkring den svarer på dens init. Inde i Promte gør Promte det.
@@ -57,8 +58,8 @@ class PromtePreview {
     return promteHost(logins[0]?.[0] || PREVIEW_HOST);
   }
   /** Svar på appens init. En ny Promte-app oprettes kun, når brugeren har valgt det (create). */
-  async connect(root, { create = false } = {}) {
-    if (!await isPromteProject(root) || !await this.enabled(root)) return { active: false };
+  async connect(root, { create = false, workspaceRoot = root } = {}) {
+    if (!await isPromteProject(workspaceRoot) || !await this.enabled(root)) return { active: false };
     let link = await this.link(root);
     const host = await this.host(link);
     const state = await this.setup.state({ host });
@@ -74,18 +75,36 @@ class PromtePreview {
     }
     return { active: true, connected: true, created, host, workspaceId: link.workspaceId, name: link.name, settings: { workspaceId: link.workspaceId, version: 0, backendUrl: host + '/api', fetchProxy: true, user: { email: state.email } } };
   }
-  async login(root) {
+  async login(root, workspaceRoot = root) {
     const host = await this.host(await this.link(root));
-    await this.setup.login({ host });
-    return this.connect(root);
+    await this.setup.login({ host, owner: root });
+    return this.connect(root, { workspaceRoot });
   }
-  async create(root) { return this.connect(root, { create: true }); }
-  async appToken(link, fresh = false) {
+  async create(root, workspaceRoot = root) { return this.connect(root, { create: true, workspaceRoot }); }
+  clearTokens(host) { for (const key of this.tokens.keys()) if (key.startsWith(host + '|')) this.tokens.delete(key); }
+  async credential(host, expected) {
+    const token = await this.setup.client.token(host);
+    if (typeof token !== 'string' || !token || /[\r\n]/.test(token)) {
+      this.clearTokens(host);
+      throw Error('Log ind med Promte igen for at bruge forhåndsvisningen.');
+    }
+    const identity = createHash('sha256').update(token).digest('hex');
+    if (expected && identity !== expected) {
+      this.clearTokens(host);
+      throw Error('Promte-kontoen er ændret. Genindlæs forhåndsvisningen.');
+    }
+    return { token, identity };
+  }
+  async appToken(link, fresh = false, expected) {
+    const credential = await this.credential(link.host, expected);
     const key = link.host + '|' + link.workspaceId, cached = this.tokens.get(key);
-    if (!fresh && cached && this.now() - cached.at < TOKEN_LIFETIME) return cached.token;
-    const value = await this.setup.client.call(link.host, '/api/functions/generateToken', { body: { workspaceId: link.workspaceId, isPublic: false, version: 0, codingPreview: false } });
+    if (!fresh && cached?.identity === credential.identity && this.now() - cached.at < TOKEN_LIFETIME) return cached.token;
+    this.tokens.delete(key);
+    const value = await this.setup.client.call(link.host, '/api/functions/generateToken', { token: credential.token, body: { workspaceId: link.workspaceId, isPublic: false, version: 0, codingPreview: false } });
+    // Et sent svar fra den tidligere konto må hverken gemmes eller bruges efter kontoskift/logud.
+    await this.credential(link.host, credential.identity);
     if (typeof value.token !== 'string' || !value.token || /[\r\n]/.test(value.token)) throw Error('Promte gav ikke adgang til appen. Kontrollér, at du har adgang til arbejdsområdet.');
-    this.tokens.set(key, { token: value.token, at: this.now() });
+    this.tokens.set(key, { token: value.token, identity: credential.identity, at: this.now() });
     return value.token;
   }
   /** Sender ét kald fra appen videre til Promte. Kun appens egne API-stier og kun til den koblede Promte. */
@@ -104,11 +123,16 @@ class PromtePreview {
     }
     const payload = ['GET', 'DELETE'].includes(method) && request.body == null ? undefined : body(request.body);
     if (payload instanceof FormData) delete headers['content-type'];
+    const { identity } = await this.credential(host);
     await addressFor(host, this.lookup);
-    const send = async token => this.fetcher(`${host}/api/${route}`, { method, headers: { ...headers, Authorization: `Bearer ${token}` }, body: payload, redirect: 'error', signal: AbortSignal.timeout(120000) });
-    let response = await send(await this.appToken({ ...link, host }));
-    if (response.status === 401) response = await send(await this.appToken({ ...link, host }, true));
+    const send = async token => {
+      await this.credential(host, identity);
+      return this.fetcher(`${host}/api/${route}`, { method, headers: { ...headers, Authorization: `Bearer ${token}` }, body: payload, redirect: 'error', signal: AbortSignal.timeout(120000) });
+    };
+    let response = await send(await this.appToken({ ...link, host }, false, identity));
+    if (response.status === 401) response = await send(await this.appToken({ ...link, host }, true, identity));
     const data = await response.arrayBuffer();
+    await this.credential(host, identity);
     if (data.byteLength > MAX_BODY) throw Error('Svaret fra Promte er for stort til forhåndsvisningen.');
     const responseHeaders = [];
     response.headers.forEach((value, name) => { if (RESPONSE_HEADERS.has(name.toLowerCase())) responseHeaders.push([name, value]); });

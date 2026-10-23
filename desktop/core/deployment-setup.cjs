@@ -21,7 +21,7 @@ class DeploymentSetup {
       case 'azure-login': return this.azure.login();
       case 'azure-apps': return this.azure.apps(config.subscription);
       case 'promte-state': return this.promte.state({ host: config.host });
-      case 'promte-login': return this.promte.login({ host: config.host });
+      case 'promte-login': return this.promte.login({ host: config.host, owner: root });
       case 'promte-logout': return this.promte.logout({ host: config.host });
       case 'promte-workspaces': return this.promte.workspaces({ host: config.host });
       case 'promte-create': return this.promte.createWorkspace({ host: config.host, name: input.name });

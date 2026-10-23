@@ -2,6 +2,7 @@
 const path = require('node:path');
 const { createRequire } = require('node:module');
 const { pathToFileURL } = require('node:url');
+const fs = require('node:fs');
 const [root, kind] = process.argv.slice(2);
 let server;
 // komplai Run-appens SDK på /_komplai/run/, som Run serverer det på appens egen adresse. Aura leverer filen.
@@ -22,9 +23,29 @@ process.on('SIGTERM', close);
 process.on('SIGINT', close);
 (async () => {
   const requireProject = createRequire(path.join(root, 'package.json'));
-  const entry = requireProject.resolve(kind);
+  let entry = requireProject.resolve(kind);
+  // require.resolve vælger Vite 5's CJS-wrapper. Dens dynamiske exports bliver
+  // ikke named exports ved import(), så createServer mangler. Vælg pakkens
+  // import-betingelse, som en almindelig ESM-import ville gøre.
+  try {
+    const manifestFile = requireProject.resolve(`${kind}/package.json`), manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
+    const select = value => {
+      if (typeof value === 'string') return value;
+      if (Array.isArray(value)) return value.map(select).find(Boolean);
+      if (value && typeof value === 'object') for (const [condition, target] of Object.entries(value)) if (['node', 'node-addons', 'import', 'default'].includes(condition)) { const found = select(target); if (found) return found; }
+      return null;
+    };
+    const target = select(manifest.exports?.['.'] ?? manifest.exports);
+    if (target?.startsWith('./')) {
+      const folder = path.dirname(manifestFile), candidate = path.resolve(folder, target);
+      if (!candidate.startsWith(folder + path.sep)) throw Error('Frameworkets startfil ligger uden for pakken.');
+      entry = candidate;
+    }
+  } catch (error) { if (error.code !== 'ERR_PACKAGE_PATH_NOT_EXPORTED') throw error; }
   if (!entry.startsWith(path.join(root, 'node_modules') + path.sep)) throw new Error('Projektets egen framework-installation mangler.');
-  const framework = await import(pathToFileURL(entry).href);
+  const imported = await import(pathToFileURL(entry).href);
+  const framework = typeof imported[kind === 'vite' ? 'createServer' : 'dev'] === 'function' ? imported : imported.default;
+  if (typeof framework?.[kind === 'vite' ? 'createServer' : 'dev'] !== 'function') throw Error('Frameworkets lokale startfunktion blev ikke fundet. Kontrollér pakkens version og installation.');
   let port, base = '/';
   if (kind === 'vite') {
     server = await framework.createServer({ root, clearScreen: false, plugins: [komplai], server: { host: '127.0.0.1', port: 0, strictPort: true, open: false } });

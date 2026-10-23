@@ -60,10 +60,9 @@ class KomplaiPreview {
   /** Projektets app: oprettet fra forhåndsvisningen eller senest valgt i Udgiv. */
   async link(root) {
     const project = await this.store.project(root);
-    if (project.komplaiApp?.appId) return project.komplaiApp;
     const last = project.deploymentLast, config = project.deploymentConfig;
     const appId = last?.config?.provider === 'komplai' ? last.appId || last.config.appId : config?.provider === 'komplai' ? config.appId : null;
-    return appId ? { appId, name: last?.target?.name || null } : null;
+    return appId ? { appId, name: last?.config?.provider === 'komplai' ? last.target?.name || null : null } : project.komplaiApp?.appId ? project.komplaiApp : null;
   }
   async state(root) {
     if (!await this.enabled(root)) return { active: false };

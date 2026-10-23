@@ -3,19 +3,17 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
-const { execFileSync } = require('node:child_process');
 const { createHash } = require('node:crypto');
 const { komplaiSource, buildSaved } = require('../core/komplai-build.cjs');
 const { Deployments, configuration } = require('../core/deployments.cjs');
 const sha256 = data => createHash('sha256').update(data).digest('hex');
 
-async function repository(t, files) {
-  const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'aura-byg-kilde-')));
-  t.after(() => fs.rm(root, { recursive: true, force: true }));
-  for (const [file, content] of Object.entries(files)) { await fs.mkdir(path.dirname(path.join(root, file)), { recursive: true }); await fs.writeFile(path.join(root, file), content); }
-  const git = args => execFileSync('git', ['-c', 'user.name=Prøve', '-c', 'user.email=proeve@example.invalid', '-c', 'commit.gpgsign=false', ...args], { cwd: root, stdio: 'ignore' });
-  git(['init', '-q']); git(['add', '-A']); git(['commit', '-q', '-m', 'Prøveversion']);
-  return root;
+function savedFiles(files) {
+  return { read: async (_root, args) => {
+    if (args[0] === 'ls-tree') return Buffer.from(Object.keys(files).join('\0'));
+    assert.deepEqual(args, ['show', 'HEAD:package.json']);
+    return Buffer.from(files['package.json']);
+  } };
 }
 // Opdigtet npm, der opfører sig som npm ci og npm run build i den midlertidige kopi. Ingen netværk.
 async function fakeNpm(t, behaviour) {
@@ -32,7 +30,7 @@ if (args[0] === 'run' && args[1] === 'build') {
   fs.writeFileSync('dist/assets/app.js', 'document.title = "Bygget";');
   fs.writeFileSync('dist/assets/app.js.map', '{"sources":["src/App.jsx"]}');
   if (behaviour.secret) fs.writeFileSync('dist/assets/secret.js', 'const key = "ghp_' + 'a'.repeat(36) + '";');
-} else if (behaviour.install === 'fail') { console.error('npm ERR! network request failed'); process.exit(1); }
+} else if (behaviour.install === 'fail') { console.error(behaviour.installError || 'npm ERR! network request failed'); process.exit(1); }
 `);
   return { runtime: async () => ({ node: process.execPath, npm }), calls: async () => (await fs.readFile(path.join(dir, 'kald.log'), 'utf8').catch(() => '')).trim().split('\n').filter(Boolean).map(JSON.parse) };
 }
@@ -42,11 +40,11 @@ function source(files) {
 }
 const vite = { 'package.json': JSON.stringify({ private: true, scripts: { build: 'vite build' }, devDependencies: { vite: '5.4.10' } }), 'package-lock.json': '{}', 'index.html': '<div id="root"></div>', 'src/main.jsx': 'console.log(1)' };
 
-test('komplai bruger en gemt byggemappe, tilbyder bygning ved et byggescript og ellers public som hidtil', async t => {
-  assert.deepEqual(await komplaiSource(await repository(t, { ...vite, 'dist/index.html': '<h1>Bygget</h1>' })), { directory: 'dist', build: false });
-  assert.deepEqual(await komplaiSource(await repository(t, vite)), { directory: 'dist', build: true, script: 'vite build' });
-  assert.deepEqual(await komplaiSource(await repository(t, { 'public/index.html': '<h1>Statisk</h1>' })), { directory: 'public', build: false });
-  assert.deepEqual(await komplaiSource(await repository(t, { 'README.md': 'x' })), { directory: 'public', build: false });
+test('komplai bruger en gemt byggemappe, tilbyder bygning ved et byggescript og ellers public som hidtil', async () => {
+  assert.deepEqual(await komplaiSource('/projekt', savedFiles({ ...vite, 'dist/index.html': '<h1>Bygget</h1>' })), { directory: 'dist', build: false });
+  assert.deepEqual(await komplaiSource('/projekt', savedFiles(vite)), { directory: 'dist', build: true, script: 'vite build' });
+  assert.deepEqual(await komplaiSource('/projekt', savedFiles({ 'public/index.html': '<h1>Statisk</h1>' })), { directory: 'public', build: false });
+  assert.deepEqual(await komplaiSource('/projekt', savedFiles({ 'README.md': 'x' })), { directory: 'public', build: false });
 });
 
 test('den lokale bygning sker i en midlertidig kopi med medfølgende npm og uden installationsscripts', async t => {
@@ -66,7 +64,9 @@ test('den lokale bygning sker i en midlertidig kopi med medfølgende npm og uden
 });
 
 test('fejl i installation, bygning og indhold stopper med en forståelig besked', async t => {
-  await assert.rejects(buildSaved(source(vite), { runtime: (await fakeNpm(t, { install: 'fail' })).runtime }), /Pakkerne kunne ikke installeres.*netværk.*network request failed/);
+  await assert.rejects(buildSaved(source(vite), { runtime: (await fakeNpm(t, { install: 'fail' })).runtime }), /Pakkerne kunne ikke hentes.*forbindelsen.*network request failed/);
+  await assert.rejects(buildSaved(source(vite), { runtime: (await fakeNpm(t, { install: 'fail', installError: 'npm error code ERESOLVE\nnpm error peer react@^18.2.0 from @promte/app-library@0.1.8' })).runtime }), error => /Pakkeversionerne.*ERESOLVE/.test(error.message) && !/netværk|forbindelse/.test(error.message));
+  await assert.rejects(buildSaved(source(vite), { runtime: (await fakeNpm(t, { install: 'fail', installError: 'npm warn ERESOLVE overriding peer dependency\nnpm warn peer react@^18.2.0 from @promte/app-library@0.1.8\nnpm error code ENOTCACHED\nnpm error cache miss\nnpm error offline request failed' })).runtime }), error => /pakkecache.*ENOTCACHED/.test(error.message) && !/ERESOLVE|peer react/.test(error.message));
   await assert.rejects(buildSaved(source(vite), { runtime: (await fakeNpm(t, { build: 'fail' })).runtime }), /Bygningen fejlede.*Unexpected token/);
   await assert.rejects(buildSaved(source(vite), { runtime: (await fakeNpm(t, { secret: true })).runtime }), /Mulig hemmelighed i den byggede fil assets\/secret\.js/);
   await assert.rejects(buildSaved(source({ ...vite, 'pnpm-lock.yaml': '' }), { runtime: (await fakeNpm(t, {})).runtime }), /kun projekter, der bruger npm/);

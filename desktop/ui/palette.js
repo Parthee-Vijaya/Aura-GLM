@@ -26,6 +26,7 @@
     { label: 'Åbn et projekt fra computeren', target: '#open', words: ['mappe', 'åbn'] },
     { label: 'AI-forbindelser', target: '#connections-button', words: ['udbyder', 'nøgle', 'api'] },
     { label: 'Funktioner', target: '#features-button', words: ['indstillinger', 'slå til', 'slå fra'] },
+    { label: 'Projektets indstillinger', target: '#project-settings-button', words: ['tilladelser', 'godkendelser', 'automatisk', 'opstart', 'server', 'netværk'] },
     { label: 'Hjælp og feedback', target: '#support-button', words: ['support', 'fejlrapport'], first: true },
     { label: 'Aura Harness i dit kodeværktøj', target: '#tools-button', words: ['claude code', 'codex', 'cursor', 'skills'] },
     { label: 'Vis introduktion', target: '#intro-button', words: ['velkomst', 'guide'] },
@@ -54,14 +55,14 @@
       const label = typeof entry.label === 'function' ? entry.label() : entry.label;
       found.push({ group: 'Handlinger', label, words: entry.words, first: entry.first, run: () => { if (entry.focus) element.focus(); else { element.click(); if (element.getAttribute('role') === 'tab') element.focus(); } } });
     }
-    const projects = window.chats?.projects() || [], busy = anyRunning();
+    const projects = window.chats?.projects() || [];
     const open = projects.find(project => project.root === current?.root);
     for (const chat of open?.chats || []) {
-      if (chat.id === view.id) continue;
+      if (chat.id === view.id || chat.archived) continue;
       found.push({ group: 'Samtaler', label: chat.title || 'Ny samtale', meta: window.chats.meta(chat), words: [open.name, 'samtale'], first: true, run: () => window.chats.openChat(open, chat.id) });
     }
     for (const project of projects) {
-      if (project.root === current?.root || !project.id || busy) continue;
+      if (project.root === current?.root || !project.id) continue;
       found.push({ group: 'Projekter', label: project.name, meta: 'Projekt', words: ['projekt', ...(project.chats || []).map(chat => chat.title || '')], first: true, run: () => window.chats.openProject(project) });
     }
     return found;

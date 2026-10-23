@@ -5,6 +5,7 @@ const { spawn } = require('node:child_process');
 const { createHash } = require('node:crypto');
 const { run, secretContent } = require('./git.cjs');
 const { environment, nodeRuntime, cleanOutput, terminate } = require('./dev-server.cjs');
+const { npmInstallPolicy, npmFailure, npmFailureCode } = require('./npm-policy.cjs');
 
 // komplai Run modtager kun færdige filer og bygger intet. En gemt byggemappe med index.html bruges direkte. Ellers kan
 // Aura bygge appen på brugerens egen computer, efter brugerens ja, i en midlertidig kopi af den gemte version og med den
@@ -16,14 +17,14 @@ const STEP_TIMEOUT = 10 * 60 * 1000;
 const sha256 = data => createHash('sha256').update(data).digest('hex');
 
 /** Hvad en ny komplai-udgivelse bruger fra den gemte version: en gemt byggemappe, en lokal bygning eller public. */
-async function komplaiSource(root) {
-  const listing = await run(root, ['ls-tree', '-r', '-z', '--name-only', 'HEAD']).catch(() => Buffer.alloc(0));
+async function komplaiSource(root, { read = run } = {}) {
+  const listing = await read(root, ['ls-tree', '-r', '-z', '--name-only', 'HEAD']).catch(() => Buffer.alloc(0));
   const names = new Set(listing.toString('utf8').split('\0').filter(Boolean));
   const saved = OUTPUTS.find(directory => names.has(directory + '/index.html'));
   if (saved) return { directory: saved, build: false };
   if (names.has('package.json')) {
     try {
-      const script = JSON.parse((await run(root, ['show', 'HEAD:package.json'])).toString('utf8')).scripts?.build;
+      const script = JSON.parse((await read(root, ['show', 'HEAD:package.json'])).toString('utf8')).scripts?.build;
       if (typeof script === 'string' && script.trim()) return { directory: 'dist', build: true, script: script.trim().slice(0, 200) };
     } catch { /* Uden et læsbart byggescript bruges public som hidtil. */ }
   }
@@ -64,8 +65,9 @@ async function buildSaved(source, { runtime = nodeRuntime, timeout = STEP_TIMEOU
   if (pkg.workspaces) throw Error('Projektet har flere arbejdsområder. Byg appen selv, og gem byggemappen med index.html.');
   const executables = await runtime();
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'aura-byg-'));
-  let log = '';
-  const step = (args, failure) => new Promise((resolve, reject) => {
+  const policy = npmInstallPolicy(pkg, Object.fromEntries(source.files.filter(file => ['package-lock.json', 'npm-shrinkwrap.json', '.npmrc'].includes(file.file)).map(file => [file.file, file.data.toString('utf8')])));
+  const step = (args, failure, installing = false) => new Promise((resolve, reject) => {
+    let log = '';
     const env = environment(); env.PATH = [path.dirname(executables.node), env.PATH || ''].join(path.delimiter);
     const child = spawn(executables.node, [executables.npm, ...args], { cwd: directory, env, shell: false, detached: process.platform !== 'win32', windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
     const timer = setTimeout(() => { void terminate(child); reject(Error(`${failure} Det tog over ${Math.round(timeout / 60000)} minutter.`)); }, timeout);
@@ -75,8 +77,10 @@ async function buildSaved(source, { runtime = nodeRuntime, timeout = STEP_TIMEOU
     child.once('exit', code => {
       clearTimeout(timer);
       if (code === 0) return resolve();
-      const tail = log.trim().split('\n').slice(-3).join(' ').slice(-300);
-      reject(Error(`${failure}${tail ? ` Sidste besked: ${tail}` : ''}`));
+      const conflict = installing && npmFailureCode(log) === 'ERESOLVE' ? log.split('\n').filter(line => /Found:|peer .+ from /i.test(line)).slice(0, 3) : [];
+      const tail = (conflict.length ? conflict : log.trim().split('\n').slice(-3)).join(' ').slice(-500);
+      const message = installing ? npmFailure(log) : failure;
+      reject(Error(`${message}${tail ? ` Sidste besked: ${tail}` : ''}`));
     });
   });
   try {
@@ -85,14 +89,14 @@ async function buildSaved(source, { runtime = nodeRuntime, timeout = STEP_TIMEOU
       await fs.mkdir(path.dirname(target), { recursive: true }); await fs.writeFile(target, file.data);
     }
     const install = names.has('package-lock.json') || names.has('npm-shrinkwrap.json') ? 'ci' : 'install';
-    await step([install, '--no-audit', '--no-fund', '--include=dev', '--ignore-scripts'], 'Pakkerne kunne ikke installeres. Kontrollér netværket, og om jeres netværk tillader npm.');
+    await step([install, '--no-audit', '--no-fund', '--include=dev', '--ignore-scripts', ...policy.args], 'Pakkeinstallationen blev ikke færdig.', true);
     await step(['run', 'build'], 'Bygningen fejlede. Ret fejlen i projektet, og gem en ny version.');
     let output = null;
     for (const candidate of OUTPUTS) { try { await fs.access(path.join(directory, candidate, 'index.html')); output = candidate; break; } catch {} }
     if (!output) throw Error('Bygningen gav ingen mappe med index.html. Aura leder i dist, build og out.');
     const built = await collect(path.join(directory, output));
     const hash = sha256(JSON.stringify(built.files.map(f => [f.file, f.sha256])));
-    return { root: source.root, directory: output, head: source.head, hash, bytes: built.bytes, files: built.files, version: source.version, excludedFiles: built.excluded, built: { script: script.slice(0, 200), install: `npm ${install}`, output } };
+    return { root: source.root, directory: output, head: source.head, hash, bytes: built.bytes, files: built.files, version: source.version, excludedFiles: built.excluded, built: { script: script.slice(0, 200), install: [`npm ${install}`, ...policy.args].join(' '), output, ...(policy.reason ? { installNote: policy.reason } : {}) } };
   } finally { await fs.rm(directory, { recursive: true, force: true }).catch(() => {}); }
 }
 

@@ -209,7 +209,7 @@ class PromteDeployment {
 const LOGIN_ENDED = { denied: 'Login blev afvist i Promte.', expired: 'Login udløb, før det blev godkendt. Prøv igen.', consumed: 'Login er allerede brugt. Prøv igen.', not_found: 'Login udløb, før det blev godkendt. Prøv igen.' };
 class PromteSetup {
   constructor(store, { fetcher, lookup = dns.lookup, readCredentials: reader = readCredentials, openBrowser = url => require('electron').shell.openExternal(url), sleep = ms => new Promise(resolve => setTimeout(resolve, ms)), now = Date.now } = {}) {
-    this.store = store; this.reader = reader; this.openBrowser = openBrowser; this.sleep = sleep; this.now = now;
+    this.store = store; this.reader = reader; this.openBrowser = openBrowser; this.sleep = sleep; this.now = now; this.logins = new Map();
     this.client = new PromteDeployment({ store, fetcher, lookup, readCredentials: reader });
   }
   async state({ host = DEFAULT_HOST } = {}) {
@@ -220,33 +220,59 @@ class PromteSetup {
     return { host, installed: true, connected: Boolean(saved || cli?.token), email: saved?.email || '', loginSource: saved ? 'aura' : cli?.token ? 'cli' : null, expiresAt: saved?.expiresAt || null, accountRequired: ACCOUNT_REQUIRED, loginURL: host, signupURL: 'https://promte.com/kontakt' };
   }
   /** Promte viser en godkendelsesside i browseren. Aura venter på svaret og gemmer adgangen krypteret. */
-  async login({ host = DEFAULT_HOST } = {}) {
+  cancel({ host, owner = '' } = {}) {
+    if (host) host = promteHost(host);
+    for (const pending of this.logins.values()) if (pending.owner === owner && (!host || pending.host === host)) pending.controller.abort();
+    return true;
+  }
+  cancelAll() { for (const pending of this.logins.values()) pending.controller.abort(); }
+  async login({ host = DEFAULT_HOST, owner = '' } = {}) {
     host = promteHost(host);
-    const started = await this.client.call(host, '/api/extension-auth/start', { body: { client: 'aura' }, anonymous: true });
+    const key = JSON.stringify([owner, host]);
+    if (this.logins.has(key)) throw Error('Et login er allerede i gang. Afbryd det for at starte igen.');
+    // Kontoen deles af projekterne. Et nyt login til samme vært erstatter et ældre
+    // forsøg, så en sen browsergodkendelse ikke kan skifte kontoen tilbage.
+    for (const earlier of this.logins.values()) if (earlier.host === host) earlier.controller.abort();
+    const pending = { host, owner, controller: new AbortController() }; this.logins.set(key, pending);
+    const { signal } = pending.controller;
+    const check = () => { if (signal.aborted) throw Error('Login blev afbrudt.'); };
+    const wait = promise => new Promise((resolve, reject) => {
+      const abort = () => reject(Error('Login blev afbrudt.'));
+      signal.addEventListener('abort', abort, { once: true });
+      Promise.resolve(promise).then(value => { signal.removeEventListener('abort', abort); if (signal.aborted) abort(); else resolve(value); }, error => { signal.removeEventListener('abort', abort); reject(error); });
+      if (signal.aborted) abort();
+    });
+    try {
+    const started = await wait(this.client.call(host, '/api/extension-auth/start', { body: { client: 'aura' }, anonymous: true }));
     let approve; try { approve = new URL(started.approveUrl); } catch {}
     if (typeof started.flowId !== 'string' || typeof started.flowSecret !== 'string' || !approve || approve.protocol !== 'https:' || approve.pathname !== '/extension-connect' || approve.username || approve.password) throw Error('Promte startede ikke et gyldigt login. Kontrollér adressen.');
     promteHost(approve.origin + '/');
     if (this.store) this.store.encrypt('kontrol');
-    await this.openBrowser(approve.toString());
+    check(); await wait(this.openBrowser(approve.toString()));
     const deadline = Math.min(this.now() + LOGIN_TIMEOUT, Number(started.expiresAt) || Infinity);
     const route = '/api/extension-auth/status?' + new URLSearchParams({ flowId: started.flowId, flowSecret: started.flowSecret });
+    let failures = 0;
     while (this.now() < deadline) {
-      await this.sleep(Math.max(1000, Number(started.pollIntervalMs) || 1500));
+      check(); await wait(this.sleep(Math.max(1000, Number(started.pollIntervalMs) || 1500)));
       let status;
-      try { status = await this.client.call(host, route, { anonymous: true, accept: [404] }); } catch { continue; }
+      try { status = await wait(this.client.call(host, route, { anonymous: true, accept: [404] })); failures = 0; }
+      catch { check(); if (++failures >= 3) throw Error('Aura kunne ikke få svar på login fra Promte. Prøv igen, eller kontrollér Promte-adressen.'); continue; }
+      check();
       if (status.state === 'approved' && typeof status.token === 'string' && status.token && !/[\r\n]/.test(status.token)) {
         const exp = Number(tokenClaims(status.token).exp);
         const expiresAt = new Date(Number.isFinite(exp) ? exp * 1000 : this.now() + 30 * 86400000).toISOString();
         const email = typeof status.email === 'string' ? status.email.slice(0, 320) : '';
-        await this.store.update(state => { state.hosting = { ...state.hosting, promte: { ...state.hosting?.promte, [host]: { secret: this.store.encrypt(status.token), email, expiresAt } } }; });
+        await this.store.update(state => { check(); state.hosting = { ...state.hosting, promte: { ...state.hosting?.promte, [host]: { secret: this.store.encrypt(status.token), email, expiresAt } } }; });
         return this.state({ host });
       }
       if (LOGIN_ENDED[status.state]) throw Error(LOGIN_ENDED[status.state]);
     }
     throw Error(LOGIN_ENDED.expired);
+    } finally { if (this.logins.get(key) === pending) this.logins.delete(key); }
   }
   async logout({ host = DEFAULT_HOST } = {}) {
     host = promteHost(host);
+    for (const pending of this.logins.values()) if (pending.host === host) pending.controller.abort();
     await this.store.update(state => { if (state.hosting?.promte) delete state.hosting.promte[host]; });
     return this.state({ host });
   }

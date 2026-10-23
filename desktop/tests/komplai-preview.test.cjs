@@ -64,6 +64,8 @@ test('Udgiv og forhåndsvisning bruger samme app: projektets seneste komplai-udg
   const root = await project(t), store = memoryStore(), preview = new KomplaiPreview(store, { provider: fakeProvider() });
   store.state.projects[root] = { deploymentLast: { config: { provider: 'komplai', appId: APP }, appId: APP, target: { name: 'Budget' } } };
   assert.deepEqual(await preview.link(root), { appId: APP, name: 'Budget' });
+  store.state.projects[root].komplaiApp = { appId: '22222222-2222-4222-8222-222222222222', name: 'Tidligere app' };
+  assert.deepEqual(await preview.link(root), { appId: APP, name: 'Budget' }, 'en senere udgivelse erstatter forbindelsen oprettet i forhåndsvisningen');
   store.state.projects[root] = { deploymentLast: { config: { provider: 'vercel' } } };
   assert.equal(await preview.link(root), null);
 });

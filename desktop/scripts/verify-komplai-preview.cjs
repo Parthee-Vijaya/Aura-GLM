@@ -35,10 +35,10 @@ const manifest = { sdk: 1, uses: { identity: { fields: ['name'], reason: 'Viser,
     app = await electron.launch({ executablePath: require('electron'), args: [path.join(__dirname, '..'), '--user-data-dir=' + path.join(root, 'appdata')], env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined } });
     const window = await app.firstWindow(), errors = [];
     window.on('pageerror', error => errors.push(error.message));
-    await app.evaluate(({ dialog, session }, { project, modulePath, sdk }) => {
+    await helpers.forbidGitWrites(app);
+    await app.evaluate(({ dialog }, { project, modulePath, sdk }) => {
       const require = process.getBuiltinModule('module').createRequire(modulePath), { KomplaiDeployment } = require(modulePath);
       dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [project] });
-      session.defaultSession.webRequest.onBeforeRequest((details, callback) => { const address = new URL(details.url); callback({ cancel: ['http:', 'https:'].includes(address.protocol) && !['127.0.0.1', 'localhost'].includes(address.hostname) }); });
       // Hubs forhåndsvisning er erstattet; Auras bro, IPC, statiske server og projektkobling kører uændret.
       const calls = globalThis.komplaiPreviewCalls = [], id = '11111111-2222-4333-8444-555555555555', docs = [];
       KomplaiDeployment.prototype.sdkScript = async () => { calls.push(['sdk']); return sdk; };
@@ -78,7 +78,7 @@ const manifest = { sdk: 1, uses: { identity: { fields: ['name'], reason: 'Viser,
       const store = new Store(require('node:path').join(app.getPath('userData'), 'harness'), safeStorage);
       await store.update(state => { state.hosting = { ...state.hosting, komplai: { secret: store.encrypt('komp_publish_grant_' + 'a'.repeat(64)), grantId: 'g-1', organisationId: 'o-1', organisationName: 'Syntetisk kommune', address: 'komplai.run', expiresAt: new Date(Date.now() + 86400000).toISOString() } }; });
     }, { storePath: path.resolve(__dirname, '../core/store.cjs') });
-    await reload();
+    await window.evaluate(() => window.dispatchEvent(new Event('harness:komplai-connected')));
     await window.locator('#komplai-preview').filter({ hasText: 'Opret appen Moedebooking i komplai' }).waitFor();
     assert.equal((await calls()).some(c => c[0] === 'create'), false, 'ingen app uden brugerens valg');
     await capture('komplai-opret.png');
@@ -94,6 +94,7 @@ const manifest = { sdk: 1, uses: { identity: { fields: ['name'], reason: 'Viser,
     assert.deepEqual(log.find(c => c[3] === 'add')[6], { collection: 'noter', data: { tekst: 'Fra forhåndsvisningen' } });
     assert.deepEqual((await window.evaluate(() => window.harness.komplaiPreviewState())).value.link, { appId: '11111111-2222-4333-8444-555555555555', name: 'Moedebooking' });
     assert.deepEqual(errors, []);
+    await helpers.assertNoGitWrites(app);
     await capture('komplai-forhaandsvisning.png');
     console.log(JSON.stringify({ status: 'bestået', root, calls: log.map(c => c[0] === 'call' ? `${c[2]}/${c[3]}` : c[0]), limitations: ['Hubs forhåndsvisning erstattet af lokal adapter', 'komplais rigtige SDK fra komplai.dk', 'login lagt ind i lageret, ikke gennem browseren'] }, null, 2));
   } finally { await app?.close(); }

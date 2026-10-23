@@ -92,6 +92,77 @@ test('Promte-login stopper med en forståelig besked ved afvisning og afviser fr
     assert.deepEqual(odd.opened, [], 'en ukendt side åbnes aldrig i browseren');
   }
 });
+test('Promte-login kan afbrydes under et svar; en sen godkendelse gemmes ikke', async () => {
+  let finishPoll, pollStarted;
+  const started = new Promise(resolve => { pollStarted = resolve; });
+  const { setup, store } = promteSetup(url => url.endsWith('/start')
+    ? response({ flowId: 'f', flowSecret: 's', approveUrl: HOST + '/extension-connect?flowId=f' })
+    : new Promise(resolve => { finishPoll = resolve; pollStarted(); }));
+  const pending = setup.login({ host: HOST, owner: '/projekt-a' });
+  const rejected = assert.rejects(pending, /afbrudt/);
+  await started;
+  setup.cancel({ host: HOST, owner: '/projekt-b' });
+  assert.equal(setup.logins.size, 1, 'et andet projekt kan ikke afbryde login');
+  setup.cancel({ host: HOST, owner: '/projekt-a' });
+  await rejected;
+  assert.equal(setup.logins.size, 0);
+  finishPoll(response({ state: 'approved', token, email: 'dev@kommune.dk' }));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(store.state.hosting, {});
+  setup.client.call = async (_host, route) => route.endsWith('/start') ? { flowId: 'new', flowSecret: 's', approveUrl: HOST + '/extension-connect' } : { state: 'approved', token };
+  assert.equal((await setup.login({ host: HOST, owner: '/projekt-a' })).connected, true, 'brugeren kan prøve igen');
+});
+test('Promte-login stopper ved gentagne statusfejl og frigiver forsøget', async () => {
+  let failures = 0;
+  const { setup } = promteSetup(url => {
+    if (url.endsWith('/start')) return response({ flowId: 'f', flowSecret: 's', approveUrl: HOST + '/extension-connect' });
+    failures++; throw Error('Forbindelsen fejlede');
+  });
+  await assert.rejects(setup.login({ host: HOST }), /kunne ikke få svar på login/);
+  assert.equal(failures, 3); assert.equal(setup.logins.size, 0);
+});
+test('sen Promte-godkendelse fra et andet projekt kan ikke erstatte det seneste login', async () => {
+  let finishFirst, firstStarted;
+  const started = new Promise(resolve => { firstStarted = resolve; });
+  let count = 0;
+  const { setup, store } = promteSetup(url => {
+    if (url.endsWith('/start')) return response({ flowId: String(++count), flowSecret: 's', approveUrl: HOST + '/extension-connect' });
+    if (new URL(url).searchParams.get('flowId') === '1') return new Promise(resolve => { finishFirst = resolve; firstStarted(); });
+    return response({ state: 'approved', token, email: 'ny@kommune.dk' });
+  });
+  const first = setup.login({ host: HOST, owner: '/projekt-a' });
+  const rejected = assert.rejects(first, /afbrudt/);
+  await started;
+  assert.equal((await setup.login({ host: HOST, owner: '/projekt-b' })).email, 'ny@kommune.dk');
+  await rejected;
+  finishFirst(response({ state: 'approved', token: jwt({ uid: 'old-user' }), email: 'gammel@kommune.dk' }));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(store.state.hosting.promte[HOST].email, 'ny@kommune.dk');
+  assert.equal(setup.logins.size, 0);
+});
+test('Promte-logud afbryder et ventende login uden at afbryde en anden vært', async () => {
+  const pendingPolls = new Map();
+  let pollsStarted;
+  const started = new Promise(resolve => { pollsStarted = resolve; });
+  const otherHost = 'https://anden.promte.dk';
+  const { setup, store } = promteSetup(url => {
+    const host = new URL(url).origin;
+    if (url.endsWith('/start')) return response({ flowId: host, flowSecret: 's', approveUrl: host + '/extension-connect' });
+    return new Promise(resolve => { pendingPolls.set(host, resolve); if (pendingPolls.size === 2) pollsStarted(); });
+  });
+  const first = setup.login({ host: HOST, owner: '/projekt-a' });
+  const rejected = assert.rejects(first, /afbrudt/);
+  const other = setup.login({ host: otherHost, owner: '/projekt-b' });
+  await started;
+  assert.equal((await setup.logout({ host: HOST })).connected, false);
+  await rejected;
+  pendingPolls.get(HOST)(response({ state: 'approved', token, email: 'gammel@kommune.dk' }));
+  pendingPolls.get(otherHost)(response({ state: 'approved', token, email: 'anden@kommune.dk' }));
+  assert.equal((await other).email, 'anden@kommune.dk');
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(store.state.hosting.promte[HOST], undefined);
+  assert.equal(store.state.hosting.promte[otherHost].email, 'anden@kommune.dk');
+});
 test('Promte viser brugerens apps og opretter en ny app med brugeren som ejer', async () => {
   const { setup, calls, store } = promteSetup((url, options) => {
     if (url.endsWith('/start')) return response({ flowId: 'f', flowSecret: 's', approveUrl: HOST + '/extension-connect?flowId=f', pollIntervalMs: 10 });

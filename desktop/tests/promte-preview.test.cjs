@@ -4,6 +4,7 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 const { PromtePreview, isPromteProject, appName } = require('../core/promte-preview.cjs');
+const { PromteSetup } = require('../core/provider-promte.cjs');
 const lookup = async () => [{ address: '93.184.215.14', family: 4 }];
 const HOST = 'https://kodning.promte.dk';
 
@@ -23,7 +24,7 @@ function fakeSetup({ connected = true, loginSource = 'aura' } = {}) {
     state: async ({ host }) => ({ host, connected, loginSource: connected ? loginSource : null, email: 'dev@kommune.dk' }),
     login: async ({ host }) => { calls.push(['login', host]); connected = true; },
     createWorkspace: async ({ host, name }) => { calls.push(['create', host, name]); return { id: 'ws-new', name, activeAppVersion: null }; },
-    client: { call: async (host, route, { body }) => { calls.push(['token', host, route, body.workspaceId, body.version]); return { token: 'app-token-' + calls.filter(c => c[0] === 'token').length }; } }
+    client: { token: async () => connected ? 'syntetisk-login-token' : null, call: async (host, route, { body }) => { calls.push(['token', host, route, body.workspaceId, body.version]); return { token: 'app-token-' + calls.filter(c => c[0] === 'token').length }; } }
   };
 }
 
@@ -32,6 +33,16 @@ test('Promte-projekter genkendes på app-biblioteket, og projektets navn bliver 
   assert.equal(await isPromteProject(await project('andet', { dependencies: { react: '19.2.8' } })), false);
   assert.equal(await isPromteProject(await project('uden', null)), false);
   assert.equal(appName('/x/moedereferat-hjaelper'), 'Moedereferat hjaelper');
+});
+
+test('en isoleret kopis bibliotek genkendes, mens valg og forbindelse bliver hos projektet', async t => {
+  const root = await project('oprindeligt', { dependencies: {} }), copy = await project('kopi'), store = memoryStore(), setup = fakeSetup(), enabledRoots = [];
+  t.after(() => Promise.all([root, copy].map(folder => fs.rm(path.dirname(folder), { recursive: true, force: true }))));
+  const preview = new PromtePreview(store, { setup, enabled: async owner => { enabledRoots.push(owner); return true; } });
+  assert.equal((await preview.connect(root)).active, false);
+  const state = await preview.connect(root, { workspaceRoot: copy }); assert.equal(state.active, true); assert.equal(state.linked, false);
+  await preview.create(root, copy);
+  assert.equal(store.projects[root].promteApp.workspaceId, 'ws-new'); assert.equal(store.projects[copy], undefined); assert.ok(enabledRoots.every(owner => owner === root));
 });
 
 test('forhåndsvisningen opretter først Promte-appen, når brugeren vælger det, og genbruger den derefter', async () => {
@@ -115,4 +126,62 @@ test('filer i en formular sendes videre som rigtige filer', async () => {
 test('uden koblet app videresendes intet', async () => {
   const preview = new PromtePreview(memoryStore(), { setup: fakeSetup(), lookup, fetcher: async () => { throw Error('må ikke kaldes'); } });
   await assert.rejects(preview.fetch(await project(), { path: 'app-api/models', method: 'GET' }), /ikke koblet/);
+});
+
+function signedInPreview() {
+  const state = { hosting: { promte: {} }, projects: { '/projekt': { promteApp: { host: HOST, workspaceId: 'ws-1' } } } };
+  const store = { read: async () => structuredClone(state), project: async root => state.projects[root], decrypt: value => value.secret, update: async change => change(state) };
+  const login = token => { state.hosting.promte[HOST] = { secret: token, expiresAt: '2099-01-01T00:00:00.000Z', email: token + '@example.invalid' }; };
+  login('konto-a');
+  const calls = [];
+  const setup = new PromteSetup(store, { readCredentials: async () => null, lookup, fetcher: async (url, options) => {
+    calls.push({ url, authorization: options.headers.Authorization });
+    return new Response(JSON.stringify({ token: 'app-' + options.headers.Authorization }), { status: 200 });
+  } });
+  const sent = [];
+  const preview = new PromtePreview(store, { setup, lookup, fetcher: async (url, options) => { sent.push(options.headers.Authorization); return new Response('{}'); } });
+  return { preview, setup, calls, sent, login };
+}
+const modelRequest = { path: 'app-api/models', method: 'GET' };
+
+test('Promte-app-token følger den aktuelle loginidentitet og afvises efter logud', async () => {
+  const { preview, setup, calls, sent, login } = signedInPreview();
+  await preview.fetch('/projekt', modelRequest); await preview.fetch('/projekt', modelRequest);
+  assert.equal(calls.length, 1, 'samme konto genbruger app-tokenet');
+  login('konto-b'); await preview.fetch('/projekt', modelRequest);
+  assert.deepEqual(calls.map(call => call.authorization), ['Bearer konto-a', 'Bearer konto-b']);
+  assert.deepEqual(sent, ['Bearer app-Bearer konto-a', 'Bearer app-Bearer konto-a', 'Bearer app-Bearer konto-b']);
+  await setup.logout({ host: HOST });
+  await assert.rejects(preview.fetch('/projekt', modelRequest), /Log ind med Promte igen/);
+  assert.equal(sent.length, 3, 'intet cached app-token sendes efter logud');
+  assert.equal(preview.tokens.size, 0);
+});
+
+test('et sent generateToken-svar fra tidligere konto afvises efter kontoskift eller logud', async () => {
+  for (const action of ['kontoskift', 'logud']) {
+    const { preview, setup, sent, login } = signedInPreview();
+    let started, finish;
+    const waiting = new Promise(resolve => { started = resolve; });
+    setup.client.fetcher = async (_url, options) => { assert.equal(options.headers.Authorization, 'Bearer konto-a'); started(); return new Promise(resolve => { finish = () => resolve(new Response('{"token":"sent-app-token"}')); }); };
+    const result = preview.fetch('/projekt', modelRequest);
+    const rejected = assert.rejects(result, /kontoen er ændret|Log ind med Promte igen/);
+    await waiting;
+    if (action === 'kontoskift') login('konto-b'); else await setup.logout({ host: HOST });
+    finish(); await rejected;
+    assert.equal(sent.length, 0); assert.equal(preview.tokens.size, 0);
+  }
+});
+
+test('et allerede afsendt app-svar leveres ikke efter kontoskift eller logud', async () => {
+  for (const action of ['kontoskift', 'logud']) {
+    const { preview, setup, login } = signedInPreview();
+    let started, finish;
+    const waiting = new Promise(resolve => { started = resolve; });
+    preview.fetcher = async () => { started(); return new Promise(resolve => { finish = () => resolve(new Response('{"privat":"fra konto a"}')); }); };
+    const result = preview.fetch('/projekt', modelRequest);
+    const rejected = assert.rejects(result, /kontoen er ændret|Log ind med Promte igen/);
+    await waiting;
+    if (action === 'kontoskift') login('konto-b'); else await setup.logout({ host: HOST });
+    finish(); await rejected;
+  }
 });

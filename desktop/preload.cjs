@@ -1,5 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 const methods = {
+  deploymentCancelSetup: 'deployment:setup-cancel',
+  projectSettings: 'project:settings', saveProjectSettings: 'project:settings-save', chatArchive: 'chat:archive',
   updatesState: 'updates:state', updatesCheck: 'updates:check', updatesDownload: 'updates:download', updatesRestart: 'updates:restart', updatesAutomatic: 'updates:automatic', updatesWebsite: 'updates:website', updatesNotes: 'updates:notes',
   chatMergeReview: 'chat:merge-review', chatMerge: 'chat:merge',
   supportReport: 'support:report', supportSave: 'support:save', supportFeedback: 'support:feedback', supportContact: 'support:contact',
@@ -19,6 +21,8 @@ const methods = {
   toolsCatalog: 'tools:catalog', toolsFolder: 'tools:folder', toolsReview: 'tools:review', toolsInstall: 'tools:install', toolsRemoval: 'tools:removal', toolsRemove: 'tools:remove', toolsReveal: 'tools:reveal',
   prepare: 'agent:prepare', send: 'agent:send', stop: 'agent:stop', reply: 'agent:reply', question: 'agent:question', briefSave: 'plan:brief', briefWishes: 'plan:wishes', planEdit: 'plan:edit', planRestore: 'plan:restore', changesOverview: 'changes:overview', changesFile: 'changes:file', codeList: 'code:list', codeRead: 'code:read', activityList: 'activity:list', skills: 'skills:list', saveSkill: 'skills:save', featuresGet: 'features:get', featuresSave: 'features:save'
 };
-const api = Object.fromEntries(Object.entries(methods).map(([name, channel]) => [name, value => ipcRenderer.invoke(channel, value)]));
+let selection = null;
+const api = Object.fromEntries(Object.entries(methods).map(([name, channel]) => [name, (value, owner = selection) => ipcRenderer.invoke(channel, value, owner)]));
+api.selectContext = value => { selection = value && typeof value.root === 'string' ? { root: value.root, chat: typeof value.chat === 'string' ? value.chat : null } : null; };
 api.onEvent = callback => { const listener = (_event, value) => callback(value); ipcRenderer.on('harness:event', listener); return () => ipcRenderer.removeListener('harness:event', listener); };
 contextBridge.exposeInMainWorld('harness', api);
