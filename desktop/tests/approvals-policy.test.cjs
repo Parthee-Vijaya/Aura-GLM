@@ -39,6 +39,18 @@ test('projektets filregel omfatter aldrig søskendemapper, hemmeligheder, links 
   assert.equal((await policy.allowed(context, edit(path.join(root, 'ny', 'dyb', 'a')))).allowed, true);
 });
 
+test('faktiske mapper med store bogstaver kan ikke få automatisk eller husket filadgang', async t => {
+  const { root, context, policy } = await fixture(t);
+  await policy.setProjectFiles(root, true);
+  for (const name of ['.GIT', 'Secrets', 'REFERENCES']) {
+    const folder = path.join(root, name); await fs.mkdir(folder);
+    const file = path.join(folder, 'syntetisk.txt'); await fs.writeFile(file, 'Syntetisk privat indhold');
+    const result = await policy.allowed(context, edit(file));
+    assert.equal(result.allowed, false, name); assert.equal(result.descriptor.persistable, false, name);
+    await assert.rejects(policy.grant(context, edit(file), { scope: 'project' }), /kun godkendes én gang/);
+  }
+});
+
 test('tilladelse til opgaven deler kun projektfiler og ophører med opgavens Set', async t => {
   const { root, outside, context, policy } = await fixture(t);
   await policy.grant(context, edit(path.join(root, 'første')), { scope: 'task' });

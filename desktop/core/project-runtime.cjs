@@ -26,7 +26,7 @@ function normalizeRuntimeConfig(value = {}) {
       if (!Array.isArray(item.command) || !item.command.length || item.command.length > 64 || item.command.some(arg => !cleanText(arg))) throw Error('En startkommando skal være en liste med program og argumenter.');
       if (!/^[a-zA-Z0-9_.-]+$/.test(item.command[0]) || /^(?:sh|bash|zsh|cmd|powershell|pwsh|npx)(?:\.exe)?$/i.test(item.command[0]) || /\.(?:cmd|bat|ps1)$/i.test(item.command[0])) throw Error('Vælg selve programmet, fx node, npm eller python3; shellkommandoer og npx kan ikke bruges her.');
       const cwd = item.cwd || '.';
-      if (!cleanText(cwd, 500) || path.posix.isAbsolute(cwd) || cwd.includes('\\') || cwd.split('/').includes('..') || path.posix.normalize(cwd) !== cwd) throw Error('Tjenestens mappe skal ligge i projektet.');
+      if (!cleanText(cwd, 500) || path.posix.isAbsolute(cwd) || path.win32.isAbsolute(cwd) || /^[a-z]:/i.test(cwd) || cwd.includes('\\') || cwd.split('/').includes('..') || path.posix.normalize(cwd) !== cwd) throw Error('Tjenestens mappe skal ligge i projektet.');
       if (item.port !== undefined && (!Number.isInteger(item.port) || item.port < 1024 || item.port > 65535 || ports.has(item.port))) throw Error('Brug forskellige lokale porte mellem 1024 og 65535.');
       if (item.port) ports.add(item.port);
       const command = [...item.command]; if (/^(?:node|npm)\.exe$/i.test(command[0])) command[0] = command[0].slice(0, -4).toLowerCase();
@@ -50,7 +50,17 @@ function describeRuntime(config = {}) {
 }
 async function serviceDirectory(root, relative = '.') {
   const base = await fs.realpath(root), directory = await fs.realpath(path.resolve(base, relative));
-  if (directory !== base && !directory.startsWith(base + path.sep)) throw Error('Tjenestens mappe peger uden for projektet.');
+  // Windows kan have case-sensitive mapper: App og APP er da forskellige
+  // projekter, selv om path.relative behandler navnene som ens. Følg de faktiske
+  // overordnede mapper; realpath bevarer almindelige drev- og UNC-aliaser.
+  let ancestor = directory, inside = false;
+  while (true) {
+    if (await fs.realpath(ancestor) === base) { inside = true; break; }
+    const parent = path.dirname(ancestor);
+    if (parent === ancestor) break;
+    ancestor = parent;
+  }
+  if (!inside) throw Error('Tjenestens mappe peger uden for projektet.');
   if (!(await fs.stat(directory)).isDirectory()) throw Error('Tjenestens mappe findes ikke.');
   return directory;
 }

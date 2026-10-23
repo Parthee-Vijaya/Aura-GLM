@@ -4,6 +4,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const os = require('node:os');
 const { randomBytes } = require('node:crypto');
+const { pathToFileURL } = require('node:url');
 const run = promisify(execFile);
 // Skal svare til runtime-lock.json, som ikke kommer med i den pakkede app. En unit-test holder de to ens.
 const VERSION = '1.18.33';
@@ -37,8 +38,10 @@ const everywhere = dir => [`${dir}/*`, `*/${dir}/*`];
 // Aktive skills ligger i motorens egen konfigurationsmappe uden for projektet. Mappens navn er projektets nøgle, så mønsteret kun rammer den.
 const skillPattern = directory => `*/${path.basename(directory)}/config/skills/*`;
 function permissions(root, references, mode = 'free', skills = null) {
-  const read = { '*': 'allow', '*.env': 'deny', '*.env.*': 'deny', '*.key': 'deny', '*.pem': 'deny' };
-  for (const dir of ['.git', 'secrets', 'references']) for (const pattern of everywhere(dir)) read[pattern] = 'deny';
+  const read = { '*': 'allow', '*.env': 'deny', '*.env.*': 'deny', '*.key': 'deny', '*.pem': 'deny', '*.env:*': 'deny', '*.key:*': 'deny', '*.pem:*': 'deny' };
+  // NTFS kan åbne samme fil via fx nøgle.key::$DATA. Et andet navn på dens
+  // datastrøm ophæver ikke beskyttelsen, heller ikke før Auras godkendelseskort.
+  for (const dir of ['.git', 'secrets', 'references']) for (const pattern of [...everywhere(dir), `${dir}:*`, `*/${dir}:*`]) read[pattern] = 'deny';
   // Udvalgte referencer har et unikt filnavn fra appen, så mønsteret kun rammer den valgte fil.
   for (const file of references) for (const pattern of [file, `*/${file}`]) read[pattern] = 'allow';
   const external = { '*': 'ask' };
@@ -50,8 +53,8 @@ function permissions(root, references, mode = 'free', skills = null) {
     skill = { '*': 'deny', ...Object.fromEntries(skills.names.map(name => [name, 'allow'])) };
   }
   if (['chat', 'plan'].includes(mode)) return { '*': 'deny', read, glob: 'allow', list: 'allow', grep: 'ask', webfetch: 'ask', external_directory: external, skill, question: 'allow' };
-  const edit = { '*': 'ask', '*.env*': 'deny', '*.key': 'deny', '*.pem': 'deny' };
-  for (const pattern of everywhere('.git')) edit[pattern] = 'deny';
+  const edit = { '*': 'ask', '*.env*': 'deny', '*.key': 'deny', '*.pem': 'deny', '*.key:*': 'deny', '*.pem:*': 'deny' };
+  for (const pattern of [...everywhere('.git'), '.git:*', '*/.git:*']) edit[pattern] = 'deny';
   if (skills?.names.length) edit[skillPattern(skills.directory)] = 'deny';
   return { '*': 'ask', read, glob: 'allow', grep: 'ask', list: 'allow', edit, bash: 'ask', external_directory: external, webfetch: 'ask', websearch: 'deny', task: 'deny', skill, lsp: 'deny', question: 'allow', todowrite: 'allow', todoread: 'allow' };
 }
@@ -76,7 +79,7 @@ async function writeSkills(directory, skills) {
 function engineConfig(provider, model, permission) {
   return { $schema: 'https://opencode.ai/config.json', model: `harness/${model.id}`, small_model: `harness/${model.id}`, enabled_providers: ['harness'], provider: { harness: provider }, permission, agent: { plan: { permission } }, share: 'disabled', autoupdate: false, snapshot: false, plugin: [], mcp: {}, lsp: false, formatter: false };
 }
-function isolatedEnv(directory, config, password) {
+function isolatedEnv(directory, config, password, { commandIsolation = false } = {}) {
   const env = {};
   for (const key of ['PATH', 'HOME', 'USERPROFILE', 'SystemRoot', 'WINDIR', 'COMSPEC', 'PATHEXT', 'TEMP', 'TMP', 'TMPDIR', 'LANG']) if (process.env[key]) env[key] = process.env[key];
   for (const [key, sub] of Object.entries({ XDG_CONFIG_HOME: 'config', XDG_DATA_HOME: 'data', XDG_CACHE_HOME: 'cache', XDG_STATE_HOME: 'state' })) env[key] = path.join(directory, sub);
@@ -84,7 +87,7 @@ function isolatedEnv(directory, config, password) {
   // Motorens plugins, pakker og hjælpeprocesser må kun bruge Auras egne mapper.
   env.HOME = path.join(directory, 'home'); env.USERPROFILE = env.HOME;
   Object.assign(env, { OPENCODE_CONFIG_CONTENT: JSON.stringify(config), OPENCODE_CONFIG_DIR: path.join(directory, 'config'), OPENCODE_SERVER_PASSWORD: password, OPENCODE_SERVER_USERNAME: 'harness', OPENCODE_CLIENT: 'harness' });
-  if (process.platform !== 'win32' && config.plugin?.length) env.SHELL = '/bin/bash';
+  if (process.platform !== 'win32' && commandIsolation) env.SHELL = '/bin/bash';
   for (const flag of ['DISABLE_PROJECT_CONFIG', 'DISABLE_DEFAULT_PLUGINS', 'DISABLE_EXTERNAL_SKILLS', 'DISABLE_CLAUDE_CODE', 'DISABLE_AUTOUPDATE', 'DISABLE_MODELS_FETCH', 'DISABLE_LSP_DOWNLOAD', 'DISABLE_SHARE', 'DISABLE_EMBEDDED_WEB_UI']) env[`OPENCODE_${flag}`] = 'true';
   // OpenCode tilbyder kun spørgeværktøjet til sine egne klienter. Aura viser spørgsmålene selv, ét ad gangen med klikbare svar.
   env.OPENCODE_ENABLE_QUESTION_TOOL = 'true';
@@ -142,6 +145,36 @@ async function writePluginRuntime(directory) {
     await fs.writeFile(path.join(folder, 'package-lock.json'), JSON.stringify({ name: 'aura-agent-plugins', lockfileVersion: 3, packages: { '': { dependencies }, 'node_modules/@opencode-ai/plugin': { version: VERSION } } }), { mode: 0o600 });
   }
 }
+// Funktionen indlejres i en lokal plugin, så kontrollen sker før OpenCodes read.
+// Den bruger kun Nodes indbyggede moduler og virker også uden kommandosandbox.
+function createReadGuard({ fs, path, root, references = [], selectedFiles = [] }) {
+  const selected = new Set([...references.map(file => path.resolve(root, file)), ...selectedFiles]);
+  const protectedFile = file => file.split(/[\\/]/).some(component => {
+    const name = component.split(':')[0].replace(/[. ]+$/, '').toLowerCase();
+    return ['.git', 'secrets', 'references'].includes(name) || name.startsWith('.env') || /\.(key|pem)$/.test(name);
+  });
+  return async (input, output) => {
+    if (input.tool !== 'read') return;
+    const file = output.args?.filePath;
+    if (typeof file !== 'string' || !file || /[\0\r\n]/.test(file)) throw new Error('Aura beskytter denne fil: stien kan ikke læses sikkert.');
+    const requested = path.resolve(root, file);
+    // En valgt reference må kun åbne præcis den valgte fil, ikke et nyt linkmål.
+    if (protectedFile(requested) && !selected.has(requested)) throw new Error('Aura beskytter denne fil.');
+    const actual = await fs.realpath(requested);
+    if ((protectedFile(requested) || protectedFile(actual)) && !selected.has(actual)) throw new Error('Aura beskytter denne fil.');
+    // OpenCodes egen eksterne-mappekontrol og læsetilladelse ser det faktiske mål.
+    output.args.filePath = actual;
+  };
+}
+async function writeReadGuard(directory, root, references, skills = []) {
+  root = await fs.realpath(root);
+  const pluginPath = path.join(directory, 'read-guard.mjs'), readyPath = path.join(directory, 'read-guard-ready.json'), token = randomBytes(32).toString('hex');
+  const selectedFiles = skills.flatMap(skill => skill.files.map(file => path.join(directory, 'config', 'skills', skill.name, file.path)));
+  await fs.rm(readyPath, { force: true });
+  const source = `import fs from 'node:fs/promises';\nimport path from 'node:path';\nconst guard = (${createReadGuard.toString()})({ fs, path, root: ${JSON.stringify(root)}, references: ${JSON.stringify(references)}, selectedFiles: ${JSON.stringify(selectedFiles)} });\nexport const AuraReadProtection = async () => {\n await fs.writeFile(${JSON.stringify(readyPath)}, ${JSON.stringify(JSON.stringify({ token }))}, { mode: 0o600 });\n return { 'tool.execute.before': guard };\n};\n`;
+  await fs.writeFile(pluginPath, source, { mode: 0o600 });
+  return { pluginURL: pathToFileURL(pluginPath).href, readyPath, token };
+}
 class OpenCodeEngine {
   // resume: en tidligere OpenCode-session for samme samtale. Findes den ikke længere, oprettes en ny.
   constructor({ root, directory, provider, model, references = [], mode = 'free', skills = [], resume = null, sandbox = null, detached = false, onEvent = () => {} }) { Object.assign(this, { root, directory, provider, model, references, mode, skills, resume, sandbox, detached, onEvent }); this.pending = new Map(); this.active = false; this.resumed = false; }
@@ -167,6 +200,7 @@ class OpenCodeEngine {
     await fs.mkdir(path.join(this.directory, 'home'), { recursive: true, mode: 0o700 });
     await writeSkills(this.directory, this.skills);
     await writePluginRuntime(this.directory);
+    const readGuard = await writeReadGuard(this.directory, this.root, this.references, this.skills);
     const password = randomBytes(32).toString('hex');
     this.auth = `Basic ${Buffer.from(`harness:${password}`).toString('base64')}`;
     const permission = permissions(this.root, this.references, this.mode, { directory: this.directory, names: this.skills.map(skill => skill.name) });
@@ -177,10 +211,10 @@ class OpenCodeEngine {
       permission.external_directory[trustedPattern] = 'deny';
     }
     this.config = engineConfig(this.provider, this.model, permission);
-    if (this.sandbox) this.config.plugin = [this.sandbox.pluginURL];
+    this.config.plugin = [readGuard.pluginURL, ...(this.sandbox ? [this.sandbox.pluginURL] : [])];
     if (/\{(?:env|file):/.test(JSON.stringify(this.config))) throw new Error('Konfigurationen indeholder en ikke tilladt variabelhenvisning.');
     // Terminalklienten styrer Stop via API'et; dens Ctrl+C må ikke også ramme motorens procesgruppe.
-    this.child = spawn(executable, ['serve', '--hostname', '127.0.0.1', '--port', '0'], { cwd: this.root, env: isolatedEnv(this.directory, this.config, password), detached: this.detached, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+    this.child = spawn(executable, ['serve', '--hostname', '127.0.0.1', '--port', '0'], { cwd: this.root, env: isolatedEnv(this.directory, this.config, password, { commandIsolation: Boolean(this.sandbox) }), detached: this.detached, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
     // Ingen rå proceslogs sendes til UI; de kan indeholde projektindhold.
     this.child.stderr.resume();
     this.child.on('exit', () => { if (this.active) { this.active = false; this.handleEvent({ type: 'engine.error', message: 'Agentmotoren stoppede. Start opgaven igen for at oprette en ny session.', failure: { kind: 'engine' } }); } });
@@ -197,6 +231,8 @@ class OpenCodeEngine {
       if (health.version !== VERSION) throw new Error('Agentmotorens version matcher ikke den afprøvede version.');
       const effective = await this.request('/config');
       if (effective.small_model !== this.config.small_model || !isDeepStrictEqual(effective.enabled_providers, ['harness']) || effective.provider?.harness?.npm !== this.provider.npm || effective.provider?.harness?.options?.baseURL !== this.provider.options.baseURL || effective.provider?.harness?.options?.apiKey !== this.provider.options.apiKey || effective.model !== this.config.model || effective.share !== 'disabled' || effective.snapshot !== false || !isDeepStrictEqual(effective.permission, permission) || !isDeepStrictEqual(effective.agent?.plan?.permission, permission) || Object.keys(effective.mcp || {}).length || !isDeepStrictEqual(effective.plugin || [], this.config.plugin)) throw new Error('Agentens effektive indstillinger afviger. En lokal eller administreret konfiguration kan være årsagen.');
+      const readReady = await fs.readFile(readGuard.readyPath, 'utf8').then(JSON.parse).catch(() => null);
+      if (readReady?.token !== readGuard.token) throw new Error('Filbeskyttelsen blev ikke indlæst. Opgaven blev ikke startet.');
       if (this.sandbox) {
         const ready = await fs.readFile(this.sandbox.readyPath, 'utf8').then(JSON.parse).catch(() => null);
         if (ready?.token !== this.sandbox.readyToken || ready?.identity !== this.sandbox.identity) throw new Error('Kommandobeskyttelsen blev ikke indlæst. Opgaven blev ikke startet.');
@@ -300,4 +336,4 @@ class OpenCodeEngine {
   async diff() { return this.request(`/session/${this.session.id}/diff`); }
   async close() { this.cancelCompletionCheck(); this.cancelCompaction(); this.active = false; this.eventsAbort?.abort(); this.pending.clear(); if (this.child && this.child.exitCode === null) { this.child.kill(); await new Promise(resolve => { const timer = setTimeout(() => { this.child.kill('SIGKILL'); resolve(); }, 3000); this.child.once('exit', () => { clearTimeout(timer); resolve(); }); }); } }
 }
-module.exports = { OpenCodeEngine, findExecutable, isolatedEnv, permissions, engineConfig, writeSkills, writePluginRuntime, pluginRuntimeFiles, pluginRuntimePatterns, VERSION, SUMMARIZE_TIMEOUT_MS };
+module.exports = { OpenCodeEngine, findExecutable, isolatedEnv, permissions, engineConfig, writeSkills, writePluginRuntime, pluginRuntimeFiles, pluginRuntimePatterns, createReadGuard, writeReadGuard, VERSION, SUMMARIZE_TIMEOUT_MS };

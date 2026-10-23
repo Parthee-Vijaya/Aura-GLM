@@ -118,7 +118,10 @@ class AzureDeployment {
   }
   async status(c,receipt) {
     const list=await this.az(['environment','list',...this.args(c)]);
-    const e=list.find(x=>(x.buildId||x.name?.split('/').pop())==='harness-test');
+    // SWA fjerner bindestregen fra det navngivne miljø. Bevar også det gamle
+    // præcise navn, så tidligere kvitteringer stadig kan kontrolleres.
+    const e=list.filter(x=>['harnesstest','harness-test'].includes(x.buildId||x.name?.split('/').pop()))
+      .sort((a,b)=>Date.parse(b.lastUpdatedOn)-Date.parse(a.lastUpdatedOn))[0];
     if(!e || !(Date.parse(e.lastUpdatedOn)>=Date.parse(receipt.startedAt))) return {state:'AWAITING_UPDATE',url:null};
     return {state:e.status==='Ready'?'READY':e.status||'UNKNOWN',url:e.hostname?publicURL(e.hostname,'.azurestaticapps.net'):null};
   }

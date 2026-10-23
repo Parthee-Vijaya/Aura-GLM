@@ -41,8 +41,9 @@ test('plugin-opstart bruger den bundtede SDK og et isoleret hjem uden installati
     assert.equal(sdk.version, VERSION);
   }
   assert.ok((await pluginRuntimeFiles()).some(folder => folder.endsWith(path.join('@opencode-ai', 'sdk'))));
-  const env = isolatedEnv(dir, { plugin: ['file:///trusted-plugin.mjs'] }, 'syntetisk');
+  const env = isolatedEnv(dir, { plugin: ['file:///trusted-plugin.mjs'] }, 'syntetisk', { commandIsolation: true });
   assert.equal(env.HOME, path.join(dir, 'home')); assert.equal(env.USERPROFILE, env.HOME); assert.equal(env.SHELL, '/bin/bash');
+  assert.equal(isolatedEnv(dir, { plugin: ['file:///read-guard.mjs'] }, 'syntetisk').SHELL, undefined);
 });
 test('pakkereglerne bevarer SDK-afhængigheder, når electron-builder flytter nested moduler til roden', async () => {
   const { minimatch } = require('minimatch'), patterns = await pluginRuntimePatterns();

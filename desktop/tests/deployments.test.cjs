@@ -22,6 +22,18 @@ test('Azure accepterer ikke en gammel testudgivelse som resultatet af ny upload'
  const c={project:'test',subscription:'sub',group:'group'},receipt={startedAt:'2026-09-24T10:00:00Z'};
  assert.equal((await provider.status(c,receipt)).state,'AWAITING_UPDATE');lastUpdatedOn='2026-09-24T10:01:00Z';assert.equal((await provider.status(c,receipt)).state,'READY');
 });
+test('Azure finder SWAs faktiske miljønavn efter fjernet bindestreg og bruger testadressen',async()=>{
+ const observed=[
+  {buildId:'default',name:'default',status:'WaitingForDeployment',hostname:'yellow-bush-08813f903.4.azurestaticapps.net',lastUpdatedOn:'2026-10-23T00:02:19.408277+00:00'},
+  {buildId:'harnesstest',name:'harnesstest',status:'Ready',hostname:'yellow-bush-08813f903-harnesstest.westeurope.4.azurestaticapps.net',lastUpdatedOn:'2026-10-23T00:12:45.915833+00:00'},
+ ];
+ const provider=new AzureDeployment(async()=>JSON.stringify(observed));
+ const c={project:'test',subscription:'sub',group:'group'},receipt={startedAt:'2026-10-23T00:12:00Z'};
+ assert.deepEqual(await provider.status(c,receipt),{state:'READY',url:'https://yellow-bush-08813f903-harnesstest.westeurope.4.azurestaticapps.net'});
+ assert.equal((await provider.status(c,{startedAt:'2026-10-23T00:13:00Z'})).state,'AWAITING_UPDATE');
+ observed[1].buildId='other'; observed[1].name='other';
+ assert.equal((await provider.status(c,receipt)).state,'AWAITING_UPDATE','Et andet miljø må ikke blive kvittering for vores upload');
+});
 
 test('hver kontrol erstatter gammel evidens; fejl og adgang lover ikke en fungerende app', async () => {
  const f=fixture(),r=await f.deployments.review('/test',config);await f.deployments.deploy('/test',r.token);

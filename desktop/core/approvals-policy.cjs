@@ -8,13 +8,20 @@ const { createHash } = require('node:crypto');
 const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const within = (root, target) => { const relative = path.relative(root, target); return relative === '' || (relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative)); };
 const stable = value => Array.isArray(value) ? value.map(stable) : value && typeof value === 'object' ? Object.fromEntries(Object.keys(value).sort().map(key => [key, stable(value[key])])) : value;
-const protectedPath = value => String(value).split(/[\\/]/).some(part => ['.git', 'secrets', 'references'].includes(part) || /^\.env/i.test(part) || /\.(key|pem)$/i.test(part));
+const protectedPath = value => String(value).split(/[\\/]/).some(part => ['.git', 'secrets', 'references'].includes(part.toLowerCase()) || /^\.env/i.test(part) || /\.(key|pem)$/i.test(part));
 const writable = mode => ['free', 'build'].includes(mode);
 
 // realpath på den nærmeste eksisterende forælder dækker også nye filer. Et link
 // uden et eksisterende mål afvises; det må ikke ligne en ny, almindelig fil.
 async function canonicalPath(value) {
   if (typeof value !== 'string' || !path.isAbsolute(value) || /[\0\r\n]/.test(value) || value.length > 4096 || /[?*\[\]{}]/.test(value) || value.split(/[\\/]/).includes('..')) throw new Error('Stien kan ikke afgrænses sikkert.');
+  if (path.sep === '\\') {
+    // Kun fulde drev- og UNC-stier. NTFS-streams, enheder og navne, som Win32
+    // omskriver, må ikke blive en almindelig automatisk filgodkendelse.
+    if (/^[\\/]{2}[?.][\\/]/.test(value) || !/^(?:[a-z]:[\\/]|[\\/]{2}[^\\/]+[\\/][^\\/]+(?:[\\/]|$))/i.test(value)) throw new Error('Stien kan ikke afgrænses sikkert.');
+    const parts = value.slice(path.parse(value).root.length).split(/[\\/]/).filter(part => part && part !== '.');
+    if (parts.some(part => /[<>:"|\x00-\x1f]/.test(part) || /[. ]$/.test(part) || /^(?:con|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³])(?:\.|$)/i.test(part))) throw new Error('Stien kan ikke afgrænses sikkert.');
+  }
   let cursor = path.normalize(value); const tail = [];
   while (true) {
     try { await fs.lstat(cursor); return path.join(await fs.realpath(cursor), ...tail.reverse()); }
@@ -28,25 +35,39 @@ async function canonicalPath(value) {
   }
 }
 async function directory(value) { const canonical = await canonicalPath(value); if (!(await fs.stat(canonical)).isDirectory()) throw new Error('Mappen findes ikke længere.'); return canonical; }
-function fileTargets(p, workspace) {
+async function canonicalWithin(root, target) {
+  if (!within(root, target)) return false;
+  // path.win32.relative folder altid store/små bogstaver sammen, også i NTFS-
+  // mapper, der skelner mellem dem. Bekræft derfor den faktiske rodforælder.
+  let ancestor = target;
+  for (const part of path.relative(root, target).split(path.sep).filter(Boolean)) ancestor = path.dirname(ancestor);
+  return await directory(ancestor) === root;
+}
+const allCanonicalWithin = async (root, targets) => (await Promise.all(targets.map(target => canonicalWithin(root, target)))).every(Boolean);
+async function fileTargets(p, workspace) {
   let candidates = [p.metadata?.filepath, p.metadata?.filePath, p.toolInput?.filePath, p.toolInput?.filepath].filter(value => typeof value === 'string');
   const patterns = Array.isArray(p.patterns) ? p.patterns : [];
   // OpenCode viser projekt-relative patterns, men sender det konkrete absolutte
   // mål i metadata. Hvert mønster skal passe entydigt til et helt sti-suffix;
   // det må hverken indføre et nyt mål eller skjule ../, jokere eller navnesammenfald.
-  const bindTargets = values => {
+  const bindTargets = async values => {
     const safe = value => typeof value === 'string' && value.length > 0 && value.length <= 4096 && !/[\0\r\n?*\[\]{}]/.test(value) && !value.split(/[\\/]/).includes('..');
     if (values.length > 200 || patterns.length > 100 || [...values, ...patterns].some(value => !safe(value))) return [];
     const absolute = [...new Set(values.filter(value => path.isAbsolute(value)).map(value => path.normalize(value)))];
-    const matches = value => {
-      if (path.isAbsolute(value)) return absolute.includes(path.normalize(value));
+    // OpenCode normaliserer Windows-metadata, mens toolInput kan have et andet
+    // drevbogstav. Identitet afgøres af filsystemet, ikke af store/små bogstaver.
+    const canonical = await Promise.all(absolute.map(canonicalPath));
+    const matches = async value => {
+      if (path.isAbsolute(value)) return canonical.includes(await canonicalPath(value));
       const parts = value.split(/[\\/]/).filter(part => part && part !== '.');
-      return parts.length > 0 && absolute.filter(target => {
+      const identities = new Set(absolute.flatMap((target, targetIndex) => {
         const targetParts = target.split(/[\\/]/).filter(Boolean);
-        return parts.length <= targetParts.length && parts.every((part, index) => part === targetParts[targetParts.length - parts.length + index]);
-      }).length === 1;
+        const same = (a, b) => path.sep === '\\' ? a.toLowerCase() === b.toLowerCase() : a === b;
+        return parts.length <= targetParts.length && parts.every((part, index) => same(part, targetParts[targetParts.length - parts.length + index])) ? [canonical[targetIndex]] : [];
+      }));
+      return parts.length > 0 && identities.size === 1;
     };
-    if ([...values, ...patterns].some(value => !matches(value))) return [];
+    if ((await Promise.all([...values, ...patterns].map(matches))).some(match => !match)) return [];
     return absolute.map(value => ({ value, subtree: false }));
   };
   if (p.toolInput?.tool === 'apply_patch') {
@@ -58,7 +79,8 @@ function fileTargets(p, workspace) {
       // original- og flyttemål, som alle skal med i afgrænsningen.
       candidates = [p.metadata.filePath, p.toolInput.filePath, p.toolInput.filepath, ...files.flatMap(file => [file.filePath, file.movePath])].filter(value => typeof value === 'string');
     }
-    const patch = p.toolInput.patchText || p.toolInput.input?.patchText;
+    const rawPatch = p.toolInput.patchText || p.toolInput.input?.patchText;
+    const patch = typeof rawPatch === 'string' ? rawPatch.replace(/\r\n/g, '\n') : rawPatch;
     if (typeof patch !== 'string' || !patch.startsWith('*** Begin Patch\n') || !patch.trimEnd().endsWith('*** End Patch')) return [];
     const targets = [];
     for (const line of patch.split('\n')) {
@@ -140,7 +162,7 @@ class ApprovalsPolicy {
         match = { kind, origin: url.origin };
         descriptor.target = url.origin; descriptor.label = `Hjemmeside: ${url.origin}`; descriptor.persistable = true;
       } else if (['edit', 'read', 'grep', 'glob', 'list', 'external_directory'].includes(kind)) {
-        const requested = fileTargets(p, workspace); if (!requested.length) throw new Error('Ingen entydig sti.');
+        const requested = await fileTargets(p, workspace); if (!requested.length) throw new Error('Ingen entydig sti.');
         const targets = [];
         for (const item of requested) {
           const canonical = await canonicalPath(item.value);
@@ -150,11 +172,11 @@ class ApprovalsPolicy {
         }
         targets.sort((a, b) => a.path.localeCompare(b.path) || Number(a.subtree) - Number(b.subtree));
         // Både den viste sti og dens faktiske mål skal være inde i arbejdsområdet.
-        const inProject = requested.every(item => within(path.resolve(context.workspaceRoot), path.resolve(item.value))) && targets.every(item => within(workspace, item.path));
+        const inProject = requested.every(item => within(path.resolve(context.workspaceRoot), path.resolve(item.value))) && await allCanonicalWithin(workspace, targets.map(item => item.path));
         descriptor.projectFile = kind === 'edit' && inProject;
         let scratch = null;
         if (context.scratchRoot) { try { scratch = await directory(context.scratchRoot); } catch {} }
-        descriptor.scratch = Boolean(scratch && requested.every(item => within(path.resolve(context.scratchRoot), path.resolve(item.value))) && targets.every(item => within(scratch, item.path)));
+        descriptor.scratch = Boolean(scratch && requested.every(item => within(path.resolve(context.scratchRoot), path.resolve(item.value))) && await allCanonicalWithin(scratch, targets.map(item => item.path)));
         match = { kind, targets };
         descriptor.target = targets.map(item => item.path + (item.subtree ? path.sep + '*' : '')).join('\n');
         // Dette er kun et forslag, som brugeren skal se og vælge på kortet.
@@ -193,7 +215,7 @@ class ApprovalsPolicy {
     if (descriptor.kind === 'bash' && context.commandSandbox === true && context.autoCommandsSnapshot === true) {
       const roots = [await directory(context.workspaceRoot)];
       if (context.scratchRoot) roots.push(await directory(context.scratchRoot));
-      if (roots.some(root => within(root, descriptor.match.cwd))) return { allowed: true, source: 'commands', descriptor };
+      if ((await Promise.all(roots.map(root => canonicalWithin(root, descriptor.match.cwd)))).some(Boolean)) return { allowed: true, source: 'commands', descriptor };
     }
     if (descriptor.persistable && settings.rules.some(rule => rule.id === digest(descriptor.match))) return { allowed: true, source: 'rule', descriptor };
     if (descriptor.persistable && descriptor.match.targets) for (const rule of settings.rules) {
@@ -201,7 +223,7 @@ class ApprovalsPolicy {
       try {
         const folder = await directory(rule.match.folder);
         if (folder !== rule.match.folder || await broadDirectory(folder)) continue;
-        if (descriptor.match.targets.every(target => within(folder, target.path))) return { allowed: true, source: 'rule', descriptor };
+        if (await allCanonicalWithin(folder, descriptor.match.targets.map(target => target.path))) return { allowed: true, source: 'rule', descriptor };
       } catch { /* En fjernet mappe eller et ændret link ophæver tilladelsen. */ }
     }
     return { allowed: false, descriptor };
@@ -218,7 +240,7 @@ class ApprovalsPolicy {
     if (folder !== undefined) {
       if (!match.targets || descriptor.projectFile) throw new Error('Denne handling kan ikke få en mappetilladelse.');
       const canonical = await directory(folder);
-      if (await broadDirectory(canonical) || protectedPath(folder) || protectedPath(canonical) || !match.targets.every(item => within(canonical, item.path))) throw new Error('Vælg en afgrænset mappe, som indeholder de viste filer.');
+      if (await broadDirectory(canonical) || protectedPath(folder) || protectedPath(canonical) || !await allCanonicalWithin(canonical, match.targets.map(item => item.path))) throw new Error('Vælg en afgrænset mappe, som indeholder de viste filer.');
       match = { kind: descriptor.kind, folder: canonical }; target = canonical;
       label = `${descriptor.kind === 'edit' ? 'Filændringer' : 'Mappeadgang'}: ${canonical}`;
     }
