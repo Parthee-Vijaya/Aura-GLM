@@ -6,8 +6,8 @@ const os = require('node:os');
 const { spawn } = require('node:child_process');
 const { once } = require('node:events');
 
-// API fixtures isolate Aura's port selection. Real Vite/Astro are verified by
-// the separate native contribution driver, not by these API fixtures.
+// API fixtures isolate Aura's port selection for Vite and Astro.
+// The native contribution driver verifies real Vite 5.4.21; Astro is fixture-only.
 async function fixture(t, kind) {
   const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'aura-preview-port-')));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
