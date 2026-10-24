@@ -98,7 +98,7 @@ class Workbench {
   async state(chatID) {
     const chat = chatID ? this.chatFor(chatID) : this.chat, project = this.project;
     const state = await this.store.read();
-    return { connections: state.connections.filter(c => Object.hasOwn(connections.definitions, c.kind)).map(c => this.store.publicConnection(c)), retiredConnections: state.connections.filter(c => c.kind === 'komplai').map(c => ({ id: c.id, kind: c.kind, name: c.name, hasKey: Boolean(c.secret), account: { authMethod: c.account?.authMethod === 'token' ? 'token' : 'oauth' } })), definitions: connections.definitions, engineVersion: VERSION, projectSettings: project ? await this.store.project(project.root) : {}, running: this.running, workspace: chat?.data || null, historyWarning: this.historyWarning || chat?.historyWarning || '', usage: chat ? chat.currentUsage() : null, features: await this.features.get(project?.root), brief: project ? this.brief : null, plan: chat?.plan || null, lastPlan: chat?.lastPlan || null, chat: chat?.id || null, chatRunning: Boolean(chat?.running), workspaceRoot: chat?.root || project?.root, isolated: Boolean(chat?.copy), copy: chat?.copy ? { id: chat.copy.id, omissions: chat.copy.omissions } : null, chats: project ? await this.chatList(project.root) : [] };
+    return { connections: state.connections.filter(c => Object.hasOwn(connections.definitions, c.kind)).map(c => this.store.publicConnection(c)), retiredConnections: state.connections.filter(c => c.kind === 'komplai').map(c => ({ id: c.id, kind: c.kind, name: c.name, hasKey: Boolean(c.secret), account: { authMethod: c.account?.authMethod === 'token' ? 'token' : 'oauth' } })), definitions: connections.definitions, engineVersion: VERSION, projectSettings: project ? await this.store.project(project.root) : {}, running: this.running, workspace: chat?.data || null, historyWarning: this.historyWarning || chat?.historyWarning || '', usage: chat ? chat.currentUsage() : null, features: await this.features.get(project?.root), brief: project ? this.brief : null, plan: chat?.plan || null, lastPlan: chat?.lastPlan || null, chat: chat?.id || null, chatRunning: Boolean(chat?.running), conversationPermission: chat?.conversationPermission.state() || { active: false }, workspaceRoot: chat?.root || project?.root, isolated: Boolean(chat?.copy), copy: chat?.copy ? { id: chat.copy.id, omissions: chat.copy.omissions } : null, chats: project ? await this.chatList(project.root) : [] };
   }
   async activate(project) {
     await this.close();
@@ -304,6 +304,9 @@ class Workbench {
   stop(input) { return this.chatFor(input?.chat).stop(); }
   // Godkendelser og spørgsmål hører til den samtale, hvis motor stillede dem.
   reply(input) { const chat = input?.chat ? this.chatFor(input.chat) : [...this.chats.values()].find(item => item.engine?.pending.has(input?.id)) || this.chatFor(); return chat.reply(input); }
+  permissionReview(input) { return this.chatFor(input.chat).permissionReview(input); }
+  permissionConfirm(input) { return this.chatFor(input.chat).permissionConfirm(input); }
+  permissionRevoke(input) { return this.chatFor(input.chat).permissionRevoke(); }
   question(input) { const chat = input?.chat ? this.chatFor(input.chat) : [...this.chats.values()].find(item => item.questions?.has(input?.id)) || this.chatFor(); return chat.question(input); }
   editPlan(input) { return this.chatFor(input?.chat).editPlan(input); }
   restorePlan(input) { return this.chatFor(input?.chat).restorePlan(input); }

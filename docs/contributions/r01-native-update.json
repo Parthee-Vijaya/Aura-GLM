@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "scenario": "questions",
+  "label": "r01-after",
+  "checks": [
+    "No false completion receipt",
+    "Free text remains available"
+  ],
+  "sizes": [],
+  "errors": []
+}

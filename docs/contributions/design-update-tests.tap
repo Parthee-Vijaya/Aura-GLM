@@ -1,0 +1,82 @@
+TAP version 13
+# Subtest: Aura-design følger det eksisterende designvalg globalt og pr. projekt
+ok 1 - Aura-design følger det eksisterende designvalg globalt og pr. projekt
+  ---
+  duration_ms: 30.55475
+  type: 'test'
+  ...
+# Subtest: alle Aura-design-referencer når motoren som passive Markdown-filer og fjernes ved fravalg
+ok 2 - alle Aura-design-referencer når motoren som passive Markdown-filer og fjernes ved fravalg
+  ---
+  duration_ms: 27.433417
+  type: 'test'
+  ...
+# Subtest: designmetodens indhold giver ingen nye værktøjstilladelser i den eksisterende motor
+ok 3 - designmetodens indhold giver ingen nye værktøjstilladelser i den eksisterende motor
+  ---
+  duration_ms: 8.525958
+  type: 'test'
+  ...
+# Subtest: Aura-design eksporteres og installeres med alle referencer uden at erstatte projektets egne filer
+ok 4 - Aura-design eksporteres og installeres med alle referencer uden at erstatte projektets egne filer
+  ---
+  duration_ms: 30.858667
+  type: 'test'
+  ...
+# Subtest: token-generatorens kopierede kode måler faktiske lys/mørke farver inkl. danger og hover
+ok 5 - token-generatorens kopierede kode måler faktiske lys/mørke farver inkl. danger og hover
+  ---
+  duration_ms: 331.450417
+  type: 'test'
+  ...
+# Subtest: token-generatoren afviser CSS-injektion, ugyldig hex og ugyldige radier før den skriver
+ok 6 - token-generatoren afviser CSS-injektion, ugyldig hex og ugyldige radier før den skriver
+  ---
+  duration_ms: 1745.466
+  type: 'test'
+  ...
+# Subtest: de valgfrie app- og arbejdsrumslayouts bruger faktisk definerede genererede CSS-tokens
+ok 7 - de valgfrie app- og arbejdsrumslayouts bruger faktisk definerede genererede CSS-tokens
+  ---
+  duration_ms: 110.716584
+  type: 'test'
+  ...
+# Subtest: hver pakke indeholder præcis det, installationen ville skrive, med gyldigt manifest
+ok 8 - hver pakke indeholder præcis det, installationen ville skrive, med gyldigt manifest
+  ---
+  duration_ms: 53.748083
+  type: 'test'
+  ...
+# Subtest: webguidens script bruger kun felter, som kataloget har, med den rigtige form
+ok 9 - webguidens script bruger kun felter, som kataloget har, med den rigtige form
+  ---
+  duration_ms: 2.523083
+  type: 'test'
+  ...
+# Subtest: webplatforme uden projektfiler får tekst inden for platformens grænse
+ok 10 - webplatforme uden projektfiler får tekst inden for platformens grænse
+  ---
+  duration_ms: 2.042042
+  type: 'test'
+  ...
+# Subtest: siden, kataloget og pakkerne er bygget fra den aktuelle kilde og er reproducerbare
+ok 11 - siden, kataloget og pakkerne er bygget fra den aktuelle kilde og er reproducerbare
+  ---
+  duration_ms: 145.176542
+  type: 'test'
+  ...
+# Subtest: webguidens og FAQ-sidens lokale links findes i den samlede side, og alle skills og spørgsmål er med
+ok 12 - webguidens og FAQ-sidens lokale links findes i den samlede side, og alle skills og spørgsmål er med
+  ---
+  duration_ms: 28.09225
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2339.00875

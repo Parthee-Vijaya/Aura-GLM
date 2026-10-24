@@ -1,0 +1,130 @@
+TAP version 13
+# Subtest: chat: necessary questions are encouraged without changing chosen mode or plan authority
+ok 1 - chat: necessary questions are encouraged without changing chosen mode or plan authority
+  ---
+  duration_ms: 33.972334
+  type: 'test'
+  ...
+# Subtest: plan: necessary questions are encouraged without changing chosen mode or plan authority
+ok 2 - plan: necessary questions are encouraged without changing chosen mode or plan authority
+  ---
+  duration_ms: 19.724959
+  type: 'test'
+  ...
+# Subtest: build: necessary questions are encouraged without changing chosen mode or plan authority
+ok 3 - build: necessary questions are encouraged without changing chosen mode or plan authority
+  ---
+  duration_ms: 155.979958
+  type: 'test'
+  ...
+# Subtest: free: necessary questions are encouraged without changing chosen mode or plan authority
+ok 4 - free: necessary questions are encouraged without changing chosen mode or plan authority
+  ---
+  duration_ms: 117.745542
+  type: 'test'
+  ...
+# Subtest: udløbne, ukendte og afsluttende spørgsmål sendes ikke til motoren
+ok 5 - udløbne, ukendte og afsluttende spørgsmål sendes ikke til motoren
+  ---
+  duration_ms: 1.561875
+  type: 'test'
+  ...
+# Subtest: et dobbeltklik kan kun sende ét svar, også før motoren kvitterer
+ok 6 - et dobbeltklik kan kun sende ét svar, også før motoren kvitterer
+  ---
+  duration_ms: 1.664583
+  type: 'test'
+  ...
+# Subtest: en gentaget spørgehændelse ophæver ikke et svar, der allerede er ved at blive sendt
+ok 7 - en gentaget spørgehændelse ophæver ikke et svar, der allerede er ved at blive sendt
+  ---
+  duration_ms: 0.849042
+  type: 'test'
+  ...
+# Subtest: en gentaget hændelse kan ikke genåbne et allerede besvaret eller afvist spørgsmåls-id
+ok 8 - en gentaget hændelse kan ikke genåbne et allerede besvaret eller afvist spørgsmåls-id
+  ---
+  duration_ms: 0.689917
+  type: 'test'
+  ...
+# Subtest: Stop under afsendelsen gemmer ikke det gamle svar i brief eller plan
+ok 9 - Stop under afsendelsen gemmer ikke det gamle svar i brief eller plan
+  ---
+  duration_ms: 0.733917
+  type: 'test'
+  ...
+# Subtest: et registreret spørgsmål tilhører præcis den motor, session og kørsel, der stillede det
+ok 10 - et registreret spørgsmål tilhører præcis den motor, session og kørsel, der stillede det
+  ---
+  duration_ms: 0.258459
+  type: 'test'
+  ...
+# Subtest: en sen kvittering kan ikke skrive i den næste kørsel eller en anden modelsession
+ok 11 - en sen kvittering kan ikke skrive i den næste kørsel eller en anden modelsession
+  ---
+  duration_ms: 0.181292
+  type: 'test'
+  ...
+# Subtest: en transportfejl tillader nyt forsøg med det samme stadig aktuelle spørgsmål
+ok 12 - en transportfejl tillader nyt forsøg med det samme stadig aktuelle spørgsmål
+  ---
+  duration_ms: 0.130959
+  type: 'test'
+  ...
+# Subtest: et fejlet svar genåbner ikke spørgsmålet efter Stop eller motorens afvisning
+ok 13 - et fejlet svar genåbner ikke spørgsmålet efter Stop eller motorens afvisning
+  ---
+  duration_ms: 0.242
+  type: 'test'
+  ...
+# Subtest: motorens kvittering under afsendelsen bevarer det ene accepterede svar
+ok 14 - motorens kvittering under afsendelsen bevarer det ene accepterede svar
+  ---
+  duration_ms: 0.182166
+  type: 'test'
+  ...
+# Subtest: afviste spørgsmål udløber uden at fjerne andre spørgsmål eller værktøjsgodkendelser
+ok 15 - afviste spørgsmål udløber uden at fjerne andre spørgsmål eller værktøjsgodkendelser
+  ---
+  duration_ms: 0.105417
+  type: 'test'
+  ...
+# Subtest: sene eller fremmede spørgsmål kan ikke genåbne en stoppet eller inaktiv kørsel
+ok 16 - sene eller fremmede spørgsmål kan ikke genåbne en stoppet eller inaktiv kørsel
+  ---
+  duration_ms: 0.12675
+  type: 'test'
+  ...
+# Subtest: en ny forberedt kørsel rydder gamle spørgsmål, før asynkront opstartsarbejde
+ok 17 - en ny forberedt kørsel rydder gamle spørgsmål, før asynkront opstartsarbejde
+  ---
+  duration_ms: 0.365959
+  type: 'test'
+  ...
+# Subtest: afslutning og lukning udløber spørgsmål, også før oprydningen er færdig
+ok 18 - afslutning og lukning udløber spørgsmål, også før oprydningen er færdig
+  ---
+  duration_ms: 1.377875
+  type: 'test'
+  ...
+# Subtest: Spring over svarer som før uden at ændre brief, planvalg eller værktøjstilladelser
+ok 19 - Spring over svarer som før uden at ændre brief, planvalg eller værktøjstilladelser
+  ---
+  duration_ms: 0.12625
+  type: 'test'
+  ...
+# Subtest: ugyldige svar bruger ikke spørgsmålet, og en mislykket briefgemning genafsender ikke svaret
+ok 20 - ugyldige svar bruger ikke spørgsmålet, og en mislykket briefgemning genafsender ikke svaret
+  ---
+  duration_ms: 0.175334
+  type: 'test'
+  ...
+1..20
+# tests 20
+# suites 0
+# pass 20
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 379.712958

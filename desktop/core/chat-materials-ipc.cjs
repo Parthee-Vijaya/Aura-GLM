@@ -17,8 +17,10 @@ function installChatMaterials({ getWorkbench, isSelected = () => true, register,
   const handle = (name, action) => register(METHODS[name], action);
   handle('chatMaterialsState', value => { const o = owner(value); return o.materials.state(o.chat); });
   for (const [method, folder] of [['chatMaterialsChooseFiles',false],['chatMaterialsChooseFolder',true]]) handle(method, value => exclusive(async () => {
-    const o = owner(value); current(o);
-    const result = await dialog.showOpenDialog({ title:folder ? 'Vælg en skrivebeskyttet referencemappe' : 'Vælg filer, PDF eller screenshots til denne samtale', properties:folder ? ['openDirectory','dontAddToRecent'] : ['openFile','multiSelections','dontAddToRecent'], ...(folder ? {} : { filters:[{ name:'Tekst 128 KB · PDF/PNG/JPEG 5 MB', extensions:[...EXTENSIONS] }] }) });
+    const o = owner(value, folder ? [] : ['kind']); current(o);
+    if (value.kind !== undefined && !['text','pdf','image'].includes(value.kind)) throw new Error('Vælg en kendt filtype.');
+    const extensions = value.kind === 'pdf' ? ['pdf'] : value.kind === 'image' ? ['png','jpg','jpeg'] : value.kind === 'text' ? [...EXTENSIONS].filter(ext => !['pdf','png','jpg','jpeg'].includes(ext)) : [...EXTENSIONS];
+    const result = await dialog.showOpenDialog({ title:folder ? 'Vælg en skrivebeskyttet referencemappe' : 'Vælg filer, PDF eller screenshots til denne samtale', properties:folder ? ['openDirectory','dontAddToRecent'] : ['openFile','multiSelections','dontAddToRecent'], ...(folder ? {} : { filters:[{ name:'Tekst 128 KB · PDF/PNG/JPEG 5 MB', extensions }] }) });
     current(o);
     if (result.canceled || !result.filePaths?.length) return { ...o.materials.state(o.chat), cancelled:true };
     if (folder && result.filePaths.length !== 1) throw new Error('Vælg én konkret referencemappe.');

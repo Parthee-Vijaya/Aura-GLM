@@ -84,14 +84,14 @@ test('gatewayen lader en langsom strøm køre færdig, men stopper stilstand', a
  });
  await new Promise(r => server.listen(0, '127.0.0.1', r));
  const failures = [];
- const gateway = await startGateway({ kind: 'compatible', name: 'Prøve', baseURL: `http://127.0.0.1:${server.address().port}/v1` }, { id: 'kode' }, '', null, message => failures.push(message), { idleLimit: 400 });
+ const gateway = await startGateway({ kind: 'compatible', name: 'Prøve', baseURL: `http://127.0.0.1:${server.address().port}/v1` }, { id: 'kode' }, '', null, message => failures.push(message), { idleLimit: 400, graceLimit: 0, retryDelays: [] });
  t.after(async () => { await gateway.close(); server.closeAllConnections(); await new Promise(r => server.close(r)); });
  const send = () => fetch(gateway.url + '/chat/completions', { method: 'POST', headers: { authorization: `Bearer ${gateway.token}` }, body: JSON.stringify({ model: 'kode', stream: true, messages: [] }) });
  const text = await (await send()).text();
  assert.match(text, /"del":4/); assert.match(text, /\[DONE\]/); assert.deepEqual(failures, []);
  stall = true;
  await assert.rejects((await send()).text());
- assert.match(failures[0], /svarede ikke i 1 s, så forbindelsen blev afbrudt/);
+ assert.match(failures[0], /afbrudt efter modtaget indhold/);
 });
 test('Zens vilkår vises for hver model', () => {
  const zen = { kind: 'zen', name: 'Zen', baseURL: 'https://opencode.ai/zen/v1' };

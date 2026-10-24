@@ -138,6 +138,11 @@
     });
     for (const [text, allow, scope] of choices) { const button = node('button', text); button.type = 'button'; button.onclick = () => reply(allow, scope); row.append(button); }
     box.append(row);
+    if (p.policy?.conversationEligible) {
+      const full = node('button', 'Tillad og kør med fuld tilladelse …', 'text-button');
+      full.type = 'button'; full.onclick = () => action(() => window.ConversationPermission.open(v, p.id));
+      box.append(full);
+    }
     if (p.policy?.persistable) box.append(node('p', projectFile ? 'En gemt tilladelse gælder projektets filer. Du kan slå den fra under Projektets tilladelser.' : `En gemt tilladelse gælder ${p.permission === 'bash' ? 'den viste kommando i den samme mappe' : p.permission === 'webfetch' ? 'den viste hjemmeside' : 'den viste adgang'}. Du kan fjerne den under Projektets tilladelser.`, 'hint approval-scope'));
     const extra = node('div'); extra.hidden = true;
     const more = node('button', 'Flere valg', 'text-button'); more.type = 'button';

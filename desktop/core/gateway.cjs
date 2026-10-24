@@ -3,9 +3,9 @@ const { randomBytes } = require('node:crypto');
 const { usesResponses, assertSupported } = require('./connections.cjs');
 const { StreamProgress } = require('./stream-progress.cjs');
 
-const IDLE_LIMIT = 120_000, TOTAL_LIMIT = 20 * 60_000;
+const { forwardModel, IDLE_LIMIT, GRACE_LIMIT, TOTAL_LIMIT, RETRY_DELAYS } = require('./model-transport.cjs');
 // Kun agentmotoren får en midlertidig adgangskode. Den rigtige modelnøgle bliver i hovedprocessen.
-async function startGateway(connection, model, key, route, onFailure = () => {}, { idleLimit = IDLE_LIMIT, totalLimit = TOTAL_LIMIT, onProgress = () => {}, root = '', effort: initialEffort = null } = {}) {
+async function startGateway(connection, model, key, route, onFailure = () => {}, { idleLimit = IDLE_LIMIT, graceLimit = GRACE_LIMIT, totalLimit = TOTAL_LIMIT, retryDelays = RETRY_DELAYS, onRecovery = () => {}, onProgress = () => {}, root = '', effort: initialEffort = null } = {}) {
   // Brugerens valgte indsats kan skifte mellem beskeder uden at starte en ny modelsession.
   let effort = initialEffort, images = [];
   assertSupported(connection);
@@ -20,9 +20,6 @@ async function startGateway(connection, model, key, route, onFailure = () => {},
     if (failed || stopped) { res.writeHead(409, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: { message: 'Forbindelsen er stoppet. Start selv en ny opgave i appen.', type: 'api_error' } })); }
     const controller = new AbortController(); active.add(controller);
     res.on('close', () => { controller.abort(); active.delete(controller); });
-    // Et langt svar må gerne tage tid, så længe der kommer data. Stilstand i to minutter afbryder kaldet.
-    const idle = new AbortController(); let idleTimer;
-    const touch = () => { clearTimeout(idleTimer); idleTimer = setTimeout(() => idle.abort(), idleLimit); };
     try {
       const responses = usesResponses(connection);
       const anthropic = connection.kind === 'anthropic' || connection.kind === 'zen' && /^claude-/.test(model.id);
@@ -56,30 +53,25 @@ async function startGateway(connection, model, key, route, onFailure = () => {},
       const headers = { 'content-type': 'application/json' };
       if (anthropic) { headers['anthropic-version'] = '2023-06-01'; if (key) headers['x-api-key'] = key; }
       else if (key) { if (connection.kind === 'azure') headers['api-key'] = key; else headers.authorization = `Bearer ${key}`; }
-      touch();
-      const progress = new StreamProgress({ emit: onProgress, root });
-      const response = await fetch(`${base}${responses ? '/responses' : anthropic ? '/messages' : '/chat/completions'}`, { method: 'POST', headers, body: JSON.stringify(body), signal: AbortSignal.any([controller.signal, idle.signal, AbortSignal.timeout(totalLimit)]), redirect: 'error' });
-      if (!response.ok) {
-        await response.body?.cancel();
-        const advice = { 401: 'API-nøglen blev afvist. Kontrollér eller udskift den under AI-forbindelser.', 403: 'Din konto har ikke adgang til modellen. Kontrollér adgangen hos udbyderen.', 402: 'Udbyderen afviste kaldet på grund af saldo eller kvote. Kontrollér kontoen; appen vælger ikke en betalt erstatning.', 404: 'Modellen eller adressen blev ikke fundet. Hent modellisten igen, og kontrollér forbindelsen.', 429: 'Udbyderens forbrugsgrænse er nået. Prøv igen, når kvoten er tilgængelig.' }[response.status] || 'Kontrollér forbindelsen og modelvalget, og prøv igen.';
-        const message = `Modelserveren afviste kaldet (HTTP ${response.status}). ${advice}`;
-        const kind = { 401: 'key', 403: 'access', 402: 'quota', 404: 'notfound', 429: 'limit' }[response.status] || (response.status >= 500 ? 'server' : 'rejected');
-        fail(message, kind, response.status);
-        res.writeHead(response.status, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: { message, type: 'api_error' } }));
-      }
-      res.writeHead(200, { 'content-type': response.headers.get('content-type') || 'application/json', 'cache-control': 'no-store' });
-      const sse = (response.headers.get('content-type') || '').includes('text/event-stream');
-      for await (const chunk of response.body) { touch(); if (res.destroyed) break; res.write(chunk); try { progress.write(chunk, sse); } catch { /* Fremdrift må ikke afbryde svaret. */ } }
-      try { progress.end(sse); } catch { /* Selve svaret er allerede sendt videre. */ }
-      res.end();
-    } catch {
-      if (idle.signal.aborted) fail(`Modellen svarede ikke i ${idleLimit >= 60_000 ? `${Math.round(idleLimit / 60_000)} min` : `${Math.max(1, Math.round(idleLimit / 1000))} s`}, så forbindelsen blev afbrudt. Din besked er bevaret.`, 'idle');
-      else fail('Modelforbindelsen blev afbrudt. Din besked er bevaret. Kontrollér forbindelsen, og prøv igen.', 'network');
-      // En afbrudt strøm må ikke ligne et færdigt modelsvar for agentmotoren.
+      // Serialize once: every attempt uses exactly the same model, route, history,
+      // attachments and effort. Only this transport can retry a model request.
+      await forwardModel({ url: `${base}${responses ? '/responses' : anthropic ? '/messages' : '/chat/completions'}`, headers, payload: JSON.stringify(body), res, signal: controller.signal,
+        progress: new StreamProgress({ emit: onProgress, root }), idleLimit, graceLimit, totalLimit, retryDelays, onRecovery });
+    } catch (error) {
+      if (controller.signal.aborted || stopped) { res.destroy(); return; }
+      const status = error.status || null;
+      const kind = { 401: 'key', 403: 'access', 402: 'quota', 404: 'notfound', 429: 'limit' }[status] || (status >= 500 ? 'server' : error.kind || 'network');
+      const advice = { 401: 'API-nøglen blev afvist. Kontrollér eller udskift den under AI-forbindelser.', 403: 'Din konto har ikke adgang til modellen. Kontrollér adgangen hos udbyderen.', 402: 'Udbyderen afviste kaldet på grund af saldo eller kvote. Kontrollér kontoen; appen vælger ikke en betalt erstatning.', 404: 'Modellen eller adressen blev ikke fundet. Hent modellisten igen, og kontrollér forbindelsen.', 429: 'Udbyderens forbrugsgrænse er nået. Prøv igen, når kvoten er tilgængelig.' }[status];
+      const message = status ? `Modelserveren afviste kaldet (HTTP ${status}). ${advice || 'Forbindelsen kunne ikke genoptages efter de tilladte forsøg. Samtalen er bevaret.'}`
+        : res.headersSent ? 'Modelsvar blev afbrudt efter modtaget indhold. Aura gentager ikke mulige værktøjshandlinger. Samtalen og ændringerne er bevaret.'
+        : 'Modelforbindelsen kunne ikke genoptages inden for tids- og forsøgsgrænsen. Samtalen er bevaret. Prøv igen, når forbindelsen er klar.';
+      fail(message, kind, status);
+      // Never disguise a truncated response as success, or let the engine add an
+      // independent retry loop after the gateway has exhausted its budget.
       if (res.headersSent) { res.destroy(); return; }
-      if (!res.headersSent) res.writeHead(502, { 'content-type': 'application/json' });
-      if (!res.destroyed) res.end(JSON.stringify({ error: { message: 'Modelforbindelsen blev afbrudt. Ingen reserveudbyder blev brugt.', type: 'api_error' } }));
-    } finally { clearTimeout(idleTimer); active.delete(controller); }
+      res.writeHead(status || 502, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ error: { message: message + ' Ingen reserveudbyder blev brugt.', type: 'api_error' } }));
+    } finally { active.delete(controller); }
   });
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
   origin = `http://127.0.0.1:${server.address().port}`;

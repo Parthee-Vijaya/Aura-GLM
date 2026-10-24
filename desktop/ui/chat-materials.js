@@ -10,7 +10,7 @@ window.ChatMaterials = { connect(api) {
   function button(text,action,primary=false) { const n=el('button',text);n.type='button';if(primary)n.className='primary';n.onclick=action;return n; }
   function controls() {
     const disabled=!owner||!state||busy||api.read().running;
-    for(const n of document.querySelectorAll('[data-material-picker],#chat-materials-chips button'))n.disabled=disabled;
+    for(const n of document.querySelectorAll('#chat-materials-plus,[data-material-picker],#chat-materials-chips button'))n.disabled=disabled;
     for(const n of dialog.querySelectorAll('button,input'))n.disabled=busy||api.read().running;
     const attach=$('materials-attach');if(attach)attach.disabled=busy||api.read().running||!review;
     const next=$('materials-next');if(next){const count=dialog.querySelectorAll('input:checked').length;next.disabled=busy||api.read().running||count<1||count>8;}
@@ -28,7 +28,7 @@ window.ChatMaterials = { connect(api) {
     catch(error){if(same(current)&&ticket===epoch){review=null;status.textContent=error.message;status.hidden=false;const feedback=$('materials-feedback');if(feedback)feedback.textContent=error.message;}}
     finally{if(same(current)&&ticket===epoch){busy=false;controls();}}
   }
-  function close(){epoch++;busy=false;status.hidden=true;const pending=review;review=null;if(dialog.open)dialog.close();if(pending&&owner)void api.invoke('chatMaterialsRemove',{chat:owner.chat,scope:pending.scope,revision:pending.revision,id:pending.token},owner).catch(()=>{});controls();$('chat-materials-files').focus();}
+  function close(){epoch++;busy=false;status.hidden=true;const pending=review;review=null;if(dialog.open)dialog.close();if(pending&&owner)void api.invoke('chatMaterialsRemove',{chat:owner.chat,scope:pending.scope,revision:pending.revision,id:pending.token},owner).catch(()=>{});controls();$('chat-materials-plus').focus();}
   function base(title,note){dialog.replaceChildren();const heading=el('h2',title);heading.id='materials-title';dialog.append(heading,el('p',note));const feedback=el('p');feedback.id='materials-feedback';feedback.setAttribute('role','status');dialog.append(feedback);}
   function candidates(next){apply(next);review=null;base(next.folder?'Vælg filer fra referencemappen':'Gennemgå de valgte filer','Vælg præcis de filer, du vil gennemgå. Kun navne og størrelser er hentet indtil nu. Ingen hel mappe medsendes.');
     if(next.truncated)dialog.append(el('p','Listen er afgrænset til 100 filer, 250 mappeposter og tre undermappeniveauer. Vælg en mindre mappe for at se mere.'));
@@ -55,8 +55,13 @@ window.ChatMaterials = { connect(api) {
     for(const file of next.files){const section=el('section');section.append(el('h3',[file.folder,file.name].filter(Boolean).join('/')),el('small',`${file.bytes.toLocaleString('da-DK')} bytes · SHA-256 ${file.sha256}`),materialContent(file));dialog.append(section);}
     const actions=el('div');actions.className='dialog-actions';actions.append(button('Annuller',close),button('Tilføj de gennemgåede filer',()=>{const pending=review;if(pending)void perform('chatMaterialsAttach',{scope:pending.scope,revision:pending.revision,token:pending.token},value=>{review=null;apply(value);dialog.close();});},true));actions.lastChild.id='materials-attach';dialog.append(actions);controls();
   }
-  function sync(){const next=api.read(),id=next.root&&next.chat?key(next):null;if(id!==owner?.key){epoch++;owner=id?{...next,key:id}:null;state=null;busy=false;review=null;chips.replaceChildren();chips.hidden=true;status.hidden=true;if(dialog.open)dialog.close();if(owner)void refresh();}controls();}
-  for(const n of document.querySelectorAll('[data-material-picker]'))n.onclick=()=>perform(n.dataset.materialPicker,{},candidates);
+  function sync(){if(api.read().running){$('chat-materials-menu').hidden=true;$('chat-materials-plus').setAttribute('aria-expanded','false');}const next=api.read(),id=next.root&&next.chat?key(next):null;if(id!==owner?.key){$('chat-materials-menu').hidden=true;$('chat-materials-plus').setAttribute('aria-expanded','false');epoch++;owner=id?{...next,key:id}:null;state=null;busy=false;review=null;chips.replaceChildren();chips.hidden=true;status.hidden=true;if(dialog.open)dialog.close();if(owner)void refresh();}controls();}
+  const plus=$('chat-materials-plus'),menu=$('chat-materials-menu');
+  const closeMenu=()=>{menu.hidden=true;plus.setAttribute('aria-expanded','false');};
+  plus.onclick=()=>{const open=menu.hidden;menu.hidden=!open;plus.setAttribute('aria-expanded',String(open));if(open)menu.querySelector('button')?.focus();};
+  document.addEventListener('click',e=>{if(!e.target.closest('.material-menu-wrap'))closeMenu();});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!menu.hidden){closeMenu();plus.focus();e.preventDefault();}});
+  for(const n of document.querySelectorAll('[data-material-picker]'))n.onclick=()=>{closeMenu();return perform(n.dataset.materialPicker,n.dataset.materialKind?{kind:n.dataset.materialKind}:{},candidates);};
   dialog.addEventListener('cancel',event=>{event.preventDefault();if(!busy)close();});
   window.harness.onEvent(event=>{if(event.type==='chat-materials.changed'&&event.chat===owner?.chat){api.invalidate();if(!busy)void refresh();}});
   window.chatMaterials={sync,selection:()=>state?.selected.length?handle():null};sync();

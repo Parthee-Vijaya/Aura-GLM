@@ -258,7 +258,9 @@ function engineProvider(connection, model, gatewayURL, token) {
   const anthropic = connection.kind === 'anthropic' || (connection.kind === 'zen' && /^claude-/.test(model.id));
   // Mistral sender både tekst og strukturerede tænkeafsnit. Dets adapter bevarer disse gennem streaming og værktøjssvar.
   return { npm: anthropic ? '@ai-sdk/anthropic' : connection.kind === 'mistral' ? '@ai-sdk/mistral' : usesResponses(connection) ? '@ai-sdk/openai' : '@ai-sdk/openai-compatible', name: connection.name,
-    options: { baseURL: gatewayURL, apiKey: token },
+    // The gateway owns waiting/retry deadlines. OpenCode's default five-minute
+    // header timeout must not cancel a request just as the gateway retries it.
+    options: { baseURL: gatewayURL, apiKey: token, timeout: 1_230_000, headerTimeout: 1_230_000, chunkTimeout: 1_230_000 },
     models: { [model.id]: { name: model.name, tool_call: true, limit: modelLimits(connection, model), ...(usesResponses(connection) ? { options: { store: false, include: ['reasoning.encrypted_content'] } } : {}) } } };
 }
 module.exports = { definitions, assertSupported, endpoint, normalize, requestJSON, listModels, routes, disclosure, engineProvider, modelLimits, effortLevels, reasons, priceFor, usesResponses, OUTPUT_CEILING, WORKING_WINDOW };

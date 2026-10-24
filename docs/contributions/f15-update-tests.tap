@@ -1,0 +1,154 @@
+TAP version 13
+# Subtest: renderer cannot supply a path or another chat; cancellation preserves selection without reading any file
+ok 1 - renderer cannot supply a path or another chat; cancellation preserves selection without reading any file
+  ---
+  duration_ms: 8.982125
+  type: 'test'
+  ...
+# Subtest: a delayed native picker result is discarded when the active chat changes before resolution
+ok 2 - a delayed native picker result is discarded when the active chat changes before resolution
+  ---
+  duration_ms: 2.650541
+  type: 'test'
+  ...
+# Subtest: actual native-returned files produce metadata-only opaque choices and need a separate explicit preview
+ok 3 - actual native-returned files produce metadata-only opaque choices and need a separate explicit preview
+  ---
+  duration_ms: 6.264416
+  type: 'test'
+  ...
+# Subtest: plus-menu uses only supported native file filters and does not bypass review
+ok 4 - plus-menu uses only supported native file filters and does not bypass review
+  ---
+  duration_ms: 1.288291
+  type: 'test'
+  ...
+# Subtest: reviewed source text is disclosed and sent verbatim as data while outside paths never enter engine tool references
+ok 5 - reviewed source text is disclosed and sent verbatim as data while outside paths never enter engine tool references
+  ---
+  duration_ms: 109.983708
+  type: 'test'
+  ...
+# Subtest: changed source after actual prepare refuses send before any engine is constructed
+ok 6 - changed source after actual prepare refuses send before any engine is constructed
+  ---
+  duration_ms: 20.200959
+  type: 'test'
+  ...
+# Subtest: source change during real startup is rechecked immediately before engine.send and cannot dispatch old reviewed text
+ok 7 - source change during real startup is rechecked immediately before engine.send and cannot dispatch old reviewed text
+  ---
+  duration_ms: 27.845167
+  type: 'test'
+  ...
+# Subtest: selection mutation after disclosure invalidates the prepared record and cannot reuse its fingerprint
+ok 8 - selection mutation after disclosure invalidates the prepared record and cannot reuse its fingerprint
+  ---
+  duration_ms: 18.305416
+  type: 'test'
+  ...
+# Subtest: attachment dispatch consent is one-use even when the same source and recipient remain unchanged
+ok 9 - attachment dispatch consent is one-use even when the same source and recipient remain unchanged
+  ---
+  duration_ms: 36.065834
+  type: 'test'
+  ...
+# Subtest: reviewed attachments survive real copy allocation when another conversation owns the project
+ok 10 - reviewed attachments survive real copy allocation when another conversation owns the project
+  ---
+  duration_ms: 28.929792
+  type: 'test'
+  ...
+# Subtest: a connection change during startup still invalidates the next dispatch without losing the current prepared owner
+ok 11 - a connection change during startup still invalidates the next dispatch without losing the current prepared owner
+  ---
+  duration_ms: 30.02175
+  type: 'test'
+  ...
+# Subtest: native-selected metadata has opaque handles and no content/path; explicit subset preview and attach produce exact read-only text
+ok 12 - native-selected metadata has opaque handles and no content/path; explicit subset preview and attach produce exact read-only text
+  ---
+  duration_ms: 21.931958
+  type: 'test'
+  ...
+# Subtest: forged candidate paths, another chat and stale revisions cannot select contents
+ok 13 - forged candidate paths, another chat and stale revisions cannot select contents
+  ---
+  duration_ms: 3.059291
+  type: 'test'
+  ...
+# Subtest: direct secret/generated paths, binaries, invalid UTF-8 and symlink ancestors fail closed
+ok 14 - direct secret/generated paths, binaries, invalid UTF-8 and symlink ancestors fail closed
+  ---
+  duration_ms: 12.488333
+  type: 'test'
+  ...
+# Subtest: source changes invalidate preview/attach and prepared consent without altering the source
+ok 15 - source changes invalidate preview/attach and prepared consent without altering the source
+  ---
+  duration_ms: 12.11625
+  type: 'test'
+  ...
+# Subtest: prepared snapshot tampering, source replacement and removed selection cannot reuse old consent
+ok 16 - prepared snapshot tampering, source replacement and removed selection cannot reuse old consent
+  ---
+  duration_ms: 24.691958
+  type: 'test'
+  ...
+# Subtest: review tokens are one-use and expire when another task/stop generation intervenes
+ok 17 - review tokens are one-use and expire when another task/stop generation intervenes
+  ---
+  duration_ms: 7.673459
+  type: 'test'
+  ...
+# Subtest: cancelling a content review revokes its token without attaching files or invalidating unrelated consent
+ok 18 - cancelling a content review revokes its token without attaching files or invalidating unrelated consent
+  ---
+  duration_ms: 5.404625
+  type: 'test'
+  ...
+# Subtest: per-file and combined text limits are enforced before context can be attached
+ok 19 - per-file and combined text limits are enforced before context can be attached
+  ---
+  duration_ms: 15.0825
+  type: 'test'
+  ...
+# Subtest: real bounded PDF worker extracts per-page text locally without OCR or source document upload
+ok 20 - real bounded PDF worker extracts per-page text locally without OCR or source document upload
+  ---
+  duration_ms: 145.057958
+  type: 'test'
+  ...
+# Subtest: invalid, textless/scanned-equivalent and over-page-limit documents fail closed
+ok 21 - invalid, textless/scanned-equivalent and over-page-limit documents fail closed
+  ---
+  duration_ms: 368.966625
+  type: 'test'
+  ...
+# Subtest: review binds the exact source PDF and extracted page text; modifications cannot reuse approval
+ok 22 - review binds the exact source PDF and extracted page text; modifications cannot reuse approval
+  ---
+  duration_ms: 418.124
+  type: 'test'
+  ...
+# Subtest: extracted PDF text receives the same secret-content check as text files
+ok 23 - extracted PDF text receives the same secret-content check as text files
+  ---
+  duration_ms: 138.79125
+  type: 'test'
+  ...
+# Subtest: PDF worker timeout and abnormal exit reject instead of returning partial text
+ok 24 - PDF worker timeout and abnormal exit reject instead of returning partial text
+  ---
+  duration_ms: 4.045292
+  type: 'test'
+  ...
+1..24
+# tests 24
+# suites 0
+# pass 24
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1121.565166

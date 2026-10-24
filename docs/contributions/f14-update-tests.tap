@@ -1,0 +1,124 @@
+TAP version 13
+# Subtest: renderer cannot supply a path or another chat; cancellation preserves selection without reading any file
+ok 1 - renderer cannot supply a path or another chat; cancellation preserves selection without reading any file
+  ---
+  duration_ms: 8.032625
+  type: 'test'
+  ...
+# Subtest: a delayed native picker result is discarded when the active chat changes before resolution
+ok 2 - a delayed native picker result is discarded when the active chat changes before resolution
+  ---
+  duration_ms: 3.108375
+  type: 'test'
+  ...
+# Subtest: actual native-returned files produce metadata-only opaque choices and need a separate explicit preview
+ok 3 - actual native-returned files produce metadata-only opaque choices and need a separate explicit preview
+  ---
+  duration_ms: 5.621167
+  type: 'test'
+  ...
+# Subtest: plus-menu uses only supported native file filters and does not bypass review
+ok 4 - plus-menu uses only supported native file filters and does not bypass review
+  ---
+  duration_ms: 2.218834
+  type: 'test'
+  ...
+# Subtest: reviewed source text is disclosed and sent verbatim as data while outside paths never enter engine tool references
+ok 5 - reviewed source text is disclosed and sent verbatim as data while outside paths never enter engine tool references
+  ---
+  duration_ms: 108.522875
+  type: 'test'
+  ...
+# Subtest: changed source after actual prepare refuses send before any engine is constructed
+ok 6 - changed source after actual prepare refuses send before any engine is constructed
+  ---
+  duration_ms: 19.91325
+  type: 'test'
+  ...
+# Subtest: source change during real startup is rechecked immediately before engine.send and cannot dispatch old reviewed text
+ok 7 - source change during real startup is rechecked immediately before engine.send and cannot dispatch old reviewed text
+  ---
+  duration_ms: 27.706917
+  type: 'test'
+  ...
+# Subtest: selection mutation after disclosure invalidates the prepared record and cannot reuse its fingerprint
+ok 8 - selection mutation after disclosure invalidates the prepared record and cannot reuse its fingerprint
+  ---
+  duration_ms: 19.24925
+  type: 'test'
+  ...
+# Subtest: attachment dispatch consent is one-use even when the same source and recipient remain unchanged
+ok 9 - attachment dispatch consent is one-use even when the same source and recipient remain unchanged
+  ---
+  duration_ms: 31.476875
+  type: 'test'
+  ...
+# Subtest: reviewed attachments survive real copy allocation when another conversation owns the project
+ok 10 - reviewed attachments survive real copy allocation when another conversation owns the project
+  ---
+  duration_ms: 29.912167
+  type: 'test'
+  ...
+# Subtest: a connection change during startup still invalidates the next dispatch without losing the current prepared owner
+ok 11 - a connection change during startup still invalidates the next dispatch without losing the current prepared owner
+  ---
+  duration_ms: 31.4115
+  type: 'test'
+  ...
+# Subtest: native-selected metadata has opaque handles and no content/path; explicit subset preview and attach produce exact read-only text
+ok 12 - native-selected metadata has opaque handles and no content/path; explicit subset preview and attach produce exact read-only text
+  ---
+  duration_ms: 23.868458
+  type: 'test'
+  ...
+# Subtest: forged candidate paths, another chat and stale revisions cannot select contents
+ok 13 - forged candidate paths, another chat and stale revisions cannot select contents
+  ---
+  duration_ms: 3.523542
+  type: 'test'
+  ...
+# Subtest: direct secret/generated paths, binaries, invalid UTF-8 and symlink ancestors fail closed
+ok 14 - direct secret/generated paths, binaries, invalid UTF-8 and symlink ancestors fail closed
+  ---
+  duration_ms: 12.764917
+  type: 'test'
+  ...
+# Subtest: source changes invalidate preview/attach and prepared consent without altering the source
+ok 15 - source changes invalidate preview/attach and prepared consent without altering the source
+  ---
+  duration_ms: 10.679666
+  type: 'test'
+  ...
+# Subtest: prepared snapshot tampering, source replacement and removed selection cannot reuse old consent
+ok 16 - prepared snapshot tampering, source replacement and removed selection cannot reuse old consent
+  ---
+  duration_ms: 23.93925
+  type: 'test'
+  ...
+# Subtest: review tokens are one-use and expire when another task/stop generation intervenes
+ok 17 - review tokens are one-use and expire when another task/stop generation intervenes
+  ---
+  duration_ms: 9.170417
+  type: 'test'
+  ...
+# Subtest: cancelling a content review revokes its token without attaching files or invalidating unrelated consent
+ok 18 - cancelling a content review revokes its token without attaching files or invalidating unrelated consent
+  ---
+  duration_ms: 5.331292
+  type: 'test'
+  ...
+# Subtest: per-file and combined text limits are enforced before context can be attached
+ok 19 - per-file and combined text limits are enforced before context can be attached
+  ---
+  duration_ms: 14.670834
+  type: 'test'
+  ...
+1..19
+# tests 19
+# suites 0
+# pass 19
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 326.619833

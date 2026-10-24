@@ -1,0 +1,180 @@
+TAP version 13
+# Subtest: pages exhaust retained records in order without duplication or changing the stored transcript
+ok 1 - pages exhaust retained records in order without duplication or changing the stored transcript
+  ---
+  duration_ms: 1.0235
+  type: 'test'
+  ...
+# Subtest: long Unicode records are kept intact and per-page rendering is bounded
+ok 2 - long Unicode records are kept intact and per-page rendering is bounded
+  ---
+  duration_ms: 0.081792
+  type: 'test'
+  ...
+# Subtest: empty and short histories need no loader, and input validation never mutates drafts or plan records
+ok 3 - empty and short histories need no loader, and input validation never mutates drafts or plan records
+  ---
+  duration_ms: 0.328292
+  type: 'test'
+  ...
+# Subtest: fletningen fjerner kun ændringen og bevarer det, der er rettet siden, byte for byte
+ok 4 - fletningen fjerner kun ændringen og bevarer det, der er rettet siden, byte for byte
+  ---
+  duration_ms: 1.194792
+  type: 'test'
+  ...
+# Subtest: versionernes type og navn kommer fra Auras beskrivelser; omdøbning ændrer ikke Git
+ok 5 - versionernes type og navn kommer fra Auras beskrivelser; omdøbning ændrer ikke Git
+  ---
+  duration_ms: 6.741292
+  type: 'test'
+  ...
+# Subtest: fortryd en gemt version: senere versioner og ugemte rettelser bevares, konflikter afgøres, og første version kan ikke fortrydes
+ok 6 - fortryd en gemt version: senere versioner og ugemte rettelser bevares, konflikter afgøres, og første version kan ikke fortrydes
+  ---
+  duration_ms: 2151.188541
+  type: 'test'
+  ...
+# Subtest: fortryd en opgave uden Git ud fra øjebliksbilleder, med valg ved konflikt og kopi til fortrydelse
+ok 7 - fortryd en opgave uden Git ud fra øjebliksbilleder, med valg ved konflikt og kopi til fortrydelse
+  ---
+  duration_ms: 307.578417
+  type: 'test'
+  ...
+# Subtest: en versions filer og indhold vises kun, når det er sikkert
+ok 8 - en versions filer og indhold vises kun, når det er sikkert
+  ---
+  duration_ms: 991.465
+  type: 'test'
+  ...
+# Subtest: billederne gemmes i par i appens data, bindes til en version og ryddes efter 80
+ok 9 - billederne gemmes i par i appens data, bindes til en version og ryddes efter 80
+  ---
+  duration_ms: 49.875125
+  type: 'test'
+  ...
+# Subtest: startup restores the saved plan even when an event already created an empty view
+ok 10 - startup restores the saved plan even when an event already created an empty view
+  ---
+  duration_ms: 0.882875
+  type: 'test'
+  ...
+# Subtest: briefen starter med idéen og får svar og ønsker med korte overskrifter; AI-tekst kommer ikke ind
+ok 11 - briefen starter med idéen og får svar og ønsker med korte overskrifter; AI-tekst kommer ikke ind
+  ---
+  duration_ms: 1.785209
+  type: 'test'
+  ...
+# Subtest: briefen afviser tomme, for lange og for mange linjer og retter ukendte kilder
+ok 12 - briefen afviser tomme, for lange og for mange linjer og retter ukendte kilder
+  ---
+  duration_ms: 8.639917
+  type: 'test'
+  ...
+# Subtest: planen deles i de fire afsnit, og et resumé tager første linje under Det bygger vi
+ok 13 - planen deles i de fire afsnit, og et resumé tager første linje under Det bygger vi
+  ---
+  duration_ms: 0.771375
+  type: 'test'
+  ...
+# Subtest: svarmuligheder: AI’ens anbefaling markeres og står først, og etiketten bevares til svaret
+ok 14 - svarmuligheder: AI’ens anbefaling markeres og står først, og etiketten bevares til svaret
+  ---
+  duration_ms: 0.131042
+  type: 'test'
+  ...
+# Subtest: rettet plan bygges, AI’ens version kan hentes igen, og en stoppet plan kan kun læses
+ok 15 - rettet plan bygges, AI’ens version kan hentes igen, og en stoppet plan kan kun læses
+  ---
+  duration_ms: 32.604458
+  type: 'test'
+  ...
+# Subtest: en afbrudt byggeopgave genåbnes med planen som seneste plan, ikke som en plan, der kan bygges
+ok 16 - en afbrudt byggeopgave genåbnes med planen som seneste plan, ikke som en plan, der kan bygges
+  ---
+  duration_ms: 4.668584
+  type: 'test'
+  ...
+# Subtest: svar på AI’ens spørgsmål sendes som etiketter og kommer i briefen; spring over lader AI’en vælge
+ok 17 - svar på AI’ens spørgsmål sendes som etiketter og kommer i briefen; spring over lader AI’en vælge
+  ---
+  duration_ms: 11.531333
+  type: 'test'
+  ...
+# Subtest: motoren får spørgeværktøjet; OpenCode tilbyder det ellers kun til sine egne klienter
+ok 18 - motoren får spørgeværktøjet; OpenCode tilbyder det ellers kun til sine egne klienter
+  ---
+  duration_ms: 0.387708
+  type: 'test'
+  ...
+# Subtest: kladde, plan og samtale genåbnes fra appdata uden tilladelser eller projektændringer
+ok 19 - kladde, plan og samtale genåbnes fra appdata uden tilladelser eller projektændringer
+  ---
+  duration_ms: 14.820625
+  type: 'test'
+  ...
+# Subtest: afbrudt opgave bliver ikke genstartet eller præsenteret som en godkendt plan
+ok 20 - afbrudt opgave bliver ikke genstartet eller præsenteret som en godkendt plan
+  ---
+  duration_ms: 5.533625
+  type: 'test'
+  ...
+# Subtest: projekter og samtaler holdes adskilt, og en beskadiget samtalefil bevares
+ok 21 - projekter og samtaler holdes adskilt, og en beskadiget samtalefil bevares
+  ---
+  duration_ms: 6.80125
+  type: 'test'
+  ...
+# Subtest: historikken har en øvre grænse, og værktøjsdata lagres ikke
+ok 22 - historikken har en øvre grænse, og værktøjsdata lagres ikke
+  ---
+  duration_ms: 4.350292
+  type: 'test'
+  ...
+# Subtest: ny samtale efter en beskadiget projektfil gemmer filen til side og finder samtalerne igen
+ok 23 - ny samtale efter en beskadiget projektfil gemmer filen til side og finder samtalerne igen
+  ---
+  duration_ms: 12.25475
+  type: 'test'
+  ...
+# (node:98654) ExperimentalWarning: The MockTimers API is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: en ældre samtale og arkiverede samtaler flyttes til samtalefiler, og arkivet bevares
+ok 24 - en ældre samtale og arkiverede samtaler flyttes til samtalefiler, og arkivet bevares
+  ---
+  duration_ms: 6.133
+  type: 'test'
+  ...
+# Subtest: en ny samtale genbruger en tom samtale, og tomme samtaler vises ikke
+ok 25 - en ny samtale genbruger en tom samtale, og tomme samtaler vises ikke
+  ---
+  duration_ms: 9.630209
+  type: 'test'
+  ...
+# Subtest: omdøbning holder, og sletning flytter samtalefilen og vælger den nyeste
+ok 26 - omdøbning holder, og sletning flytter samtalefilen og vælger den nyeste
+  ---
+  duration_ms: 10.350916
+  type: 'test'
+  ...
+# Subtest: alle åbnede projekter står på listen, nyeste først, også ud over de 12, sidepanelet viser først
+ok 27 - alle åbnede projekter står på listen, nyeste først, også ud over de 12, sidepanelet viser først
+  ---
+  duration_ms: 9.678792
+  type: 'test'
+  ...
+# Subtest: samtalens navn er første sætning af første besked, højst 60 tegn ved et ordskifte
+ok 28 - samtalens navn er første sætning af første besked, højst 60 tegn ved et ordskifte
+  ---
+  duration_ms: 0.334875
+  type: 'test'
+  ...
+1..28
+# tests 28
+# suites 0
+# pass 28
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3551.560875

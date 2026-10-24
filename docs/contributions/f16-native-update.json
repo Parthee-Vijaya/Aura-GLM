@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "scenario": "materials",
+  "label": "f16-after",
+  "checks": [
+    "Available file kinds: text,image",
+    "Escape closes menu",
+    "Attachment selected"
+  ],
+  "sizes": [],
+  "errors": []
+}

@@ -51,3 +51,11 @@ Stierne her er relative til originalens aura-design/. Hashes beskriver de origin
 | `scripts/qa.py` | 8889 | `e55c13411acb4150e8f32d2c74cb4e7e9775d60c232092159b77af763740097b` |
 
 Browser- eller modelkvalitet følger ikke automatisk af denne kildeproveniens. Dokumentér faktiske værktøjsversioner, renderede resultater og kendte begrænsninger for hvert appprojekt.
+
+## Hovedskill til byggeopgaver · 24. oktober 2026
+
+Parthee har leveret “Skill: Design og byg gennemarbejdede webapps og hjemmesider” og bedt om at gøre den til hovedskill ved byggeopgaver. Den fulde tekst er bevaret uændret i `references/webapp-craft.md`; SHA-256 er `ae5e6d855966f1bf11b03259553b5b677f462fad79a2d72f7d263fa5e4dc7e44`.
+
+SKILL.md er omskrevet til en kort kerne med formål, én-sætningsbrief, passende designretning, funktionelle forløb, data, tilgængelighed og faktisk afprøvning. De tidligere brand-/tokenreferencer og licensmeddelelser bevares. Ovenstående kildehashes dokumenterer den tidligere import, ikke den reviderede hovedfil.
+
+Promte-eksemplet er en visuel reference, ikke kopieret komponentkode eller en officiel kommunal designguide. Screenshot og privat workspacehistorik medfølger ikke. Dets resultat dokumenterer ikke Mistrals eller Cortis kvalitet. Ingen nye rettigheder til tredjepartslogoer, fonte eller materiale gives.

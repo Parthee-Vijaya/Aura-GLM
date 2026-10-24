@@ -16,13 +16,16 @@ Et eksempel på en opgave:
 
 ## Indhold og grænser
 
+Kernen er udvidet med brugerens metode til at omsætte en enkelt sætning til et gennemarbejdet produkt. Den fulde byggevejledning findes i `references/webapp-craft.md`. Denne PR opdaterer bibliotekets indhold; automatisk indlæsning før modelkald kommer i et separat bidrag.
+
+
 - Brandmetode med dokumenterede kilder og tydelige antagelser.
 - 43 beskrevne designretninger som inspiration, herunder fem valgfrie kompositionsopskrifter. Der følger ingen downloadede SkillsUI-skills eller 43 færdige temaer med.
 - Designbrief og kvalitetsgennemgang, appmønstre og vejledning til agentarbejdsrum og paneler. Det er instruktioner til brugerprojektet, ikke nye runtimefunktioner.
 - Læsbare HTML-/CSS-eksempler og en valgfri offline tokengenerator med målte kontrastpar og inputvalidering.
 - Kontrol af reelle brugerhandlinger, små skærme, zoom, tastatur, temaer og bevægelse med ærlig angivelse af, hvad der ikke er afprøvet.
 
-Biblioteket indeholder **16 Markdown-filer**. Eksempelkode køres ikke ved indlæsning. Hvis den materialiseres eller køres i et brugerprojekt, gælder de normale fil- og værktøjsgodkendelser. Python er alene et valgfrit projektværktøj til generatoren og bliver ikke en afhængighed for Aura.
+Biblioteket indeholder **17 Markdown-filer**. Eksempelkode køres ikke ved indlæsning. Hvis den materialiseres eller køres i et brugerprojekt, gælder de normale fil- og værktøjsgodkendelser. Python er alene et valgfrit projektværktøj til generatoren og bliver ikke en afhængighed for Aura.
 
 Skillen ændrer ikke Auras egen brugerflade, onboarding, planer, godkendelser, modelvalg eller adgang til data og netværk. Den indfører ingen Privacy Gate eller sandbox. Et godkendt design i brugerprojektet må heller ikke udskiftes uden brugerens konkrete ønske og accept. Instruktioner er vejledning, ikke teknisk håndhævelse eller garanti for en models adfærd.
 

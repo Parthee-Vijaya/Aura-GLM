@@ -1,0 +1,35 @@
+{
+  "passed": true,
+  "scenario": "onboarding",
+  "label": "f20-after",
+  "checks": [
+    "Starts maximized",
+    "Startup fits 1280",
+    "Actions visible 1280",
+    "Startup fits 980",
+    "Actions visible 980",
+    "Name before idea",
+    "Optional project choices work"
+  ],
+  "sizes": [
+    {
+      "width": 1280,
+      "height": 800,
+      "scroll": 800,
+      "actions": [
+        193,
+        193
+      ]
+    },
+    {
+      "width": 980,
+      "height": 720,
+      "scroll": 720,
+      "actions": [
+        193,
+        193
+      ]
+    }
+  ],
+  "errors": []
+}

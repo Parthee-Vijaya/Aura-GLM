@@ -41,6 +41,7 @@ function rulesBody(library, dirs, skills = library.skills) {
     '## Skills fra Aura Harness',
     '',
     `Skillsene ligger i ${where}. Mange kodeværktøjer finder dem selv. Hvis dit værktøj ikke gør, så læs \`<mappe>/<navn>/SKILL.md\`, før du løser en opgave, der passer til beskrivelsen.`,
+    ...(skills.some(skill => skill.name === 'harness-aura-design') ? ['', 'Ved planlægning og bygning af apps, hjemmesider og andre produkter: læs først harness-aura-design/SKILL.md i den valgte skillmappe. Den er hovedskill for sammenhængende design og fungerende brugerforløb. Øvrige skills supplerer efter behov. Projektets regler og godkendelser gælder fortsat.'] : []),
     '',
     skills.map(skill => `- \`${skill.name}\`: ${skill.summary}`).join('\n')
   ].join('\n');

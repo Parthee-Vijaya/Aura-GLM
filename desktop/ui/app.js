@@ -42,7 +42,7 @@ function mountView(v) {
   requestAnimationFrame(() => { if (view !== v) return; $('#chat-content').scrollTop = v.followChat ? $('#chat-content').scrollHeight : v.scrollTop; updateChatScroll(); }); v.unread = false; running = v.running; activePlan = v.plan;
   $('#plan-card').hidden = !v.planCard || !v.plan;
   updatePlanOffer(v);
-  applyRunning(); renderHistoryControls();
+  applyRunning(); renderHistoryControls(); window.ConversationPermission?.sync();
 }
 const anyRunning = () => running || [...views.values()].some(v => v.running);
 // En samtales navn, som sidepanelet viser det.
@@ -376,6 +376,7 @@ async function displayProject(project, { firstTask = false } = {}) {
   usePreviewContext(project.workbench.preview || project);
   window.previewServer?.update(project.runtime);
   if (project.warnings?.length) message(project.warnings.join(' '));
+  view.conversationPermission = project.workbench.conversationPermission || { active: false }; window.ConversationPermission?.sync();
   state = project.workbench; $('#connection-select').value = ''; renderConnections(); applyFeatures();
   const saved = state.projectSettings.selection;
   const startup = state.projectSettings.startup;
@@ -447,6 +448,7 @@ async function showChat(next) {
   state = next;
   const known = views.has(next.chat);
   mountView(viewFor(next.chat));
+  view.conversationPermission = next.conversationPermission || { active: false }; window.ConversationPermission?.sync();
   fillChat(next, !known);
   usePreviewContext(next.preview);
   window.workspace?.clearReferences();
@@ -811,6 +813,7 @@ function renderStatus() {
   $('#agent-activity-text').textContent = waiting ? `Venter på dig: ${v.waitingFor[0].title}${v.waitingFor.length > 1 ? ` Og ${v.waitingFor.length - 1} mere.` : ''}` : window.ChatDisplay.phase(v) || v.statusDetail;
   $('#agent-activity-jump').hidden = !waiting; $('#agent-follow').hidden = waiting;
   window.liveWork?.render();
+  window.previewWorking?.render();
   const progress = window.ChatDisplay.progress(v);
   $('#agent-progress').textContent = progress.text; $('#agent-progress').hidden = waiting;
   $('#agent-activity').classList.toggle('is-quiet', progress.quiet && !waiting);
@@ -887,6 +890,7 @@ window.harness.onEvent(event => {
   if (!event.chat && ['usage', 'plan.ready', 'run.review', 'git.checkpoint', 'session.new', 'run.status', 'message.updated', 'message.part.updated', 'message.part.delta', 'permission.asked', 'question.asked', 'engine.error', 'session.error'].includes(event.type) && !view.id) return;
   const v = viewFor(event.chat), active = v === view;
   if (event.root) v.root ||= event.root;
+  if (event.type === 'conversation.permission') { v.conversationPermission = { active: event.active === true }; if (active) window.ConversationPermission?.sync(); return; }
   if (v.running && ['message.part.updated', 'message.part.delta', 'permission.asked', 'question.asked', 'permission.replied', 'question.replied', 'usage'].includes(event.type)) v.lastSignalAt = Date.now();
   if (event.type === 'run.todos') { v.todos = event.todos; if (active) renderStatus(); return; }
   if (event.type === 'files.written') { if (v.modelProgress) v.modelProgress.draft = null; if (active) renderStatus(); }
@@ -905,14 +909,14 @@ window.harness.onEvent(event => {
     const statuses = { starting: 'Starter agent …', working: 'Arbejder …', idle: 'Klar', error: 'Fejl', stopped: 'Stoppet' };
     setRunning(working, statuses[event.status] || event.status, v);
     if (['stopped', 'error'].includes(event.status)) {
-      v.plan = null; v.planCard = false;
+      if (event.status === 'stopped') { v.plan = null; v.planCard = false; }
       if (active) {
         if (!$('#prompt').value) $('#prompt').value = v.lastSentText;
         // Målet i forhåndsvisningen følger med beskeden tilbage, så Send igen retter det samme element.
         if (v.lastTargetRef && !window.workspace?.target()) window.workspace?.setTarget(v.lastTargetRef);
-        activePlan = null; $('#plan-card').hidden = true;
-        if ($('#work-mode').value === 'build') { $('#work-mode').value = 'plan'; updateWorkMode(); }
-      } else v.draft = { text: v.lastSentText, mode: v.draft?.mode === 'build' ? 'plan' : v.draft?.mode || 'chat' };
+        if (event.status === 'stopped') { activePlan = null; $('#plan-card').hidden = true; }
+        if (event.status === 'stopped' && $('#work-mode').value === 'build') { $('#work-mode').value = 'plan'; updateWorkMode(); }
+      } else v.draft = { text: v.lastSentText, mode: event.status === 'stopped' && v.draft?.mode === 'build' ? 'plan' : v.draft?.mode || 'chat' };
     }
     if (!working) { v.approvals.replaceChildren(); if (active) saveChatDraft(); }
   }
@@ -967,7 +971,35 @@ $('#new').onclick = () => action(async () => {
   state.features = features; await loadStartup(); if (request !== navigationRequest || current) return;
   applyFeatures(); nameTouched = false; saveIdeaDraft(); showIdeaExamples(); $('#purpose').focus();
 });
-$('#create-form').onsubmit = event => { event.preventDefault(); action(async () => { $('#create').disabled = true; $('#create').textContent = 'Åbner projektmappen …'; try { const created = await call('createProject', { name: $('#name').value, purpose: $('#purpose').value, color: projectColor(), links: $('#links').value.split('\n').map(line => line.trim()).filter(Boolean), tests: $('#tests').value, startup: startupValues() }); if (created) { await displayProject(created, { firstTask: true }); clearIdeaDraft(); $('#start-idea').click(); } } finally { $('#create').disabled = false; $('#create').textContent = 'Opret projekt'; } }); };
+$('#create-form').onsubmit = event => {
+  event.preventDefault();
+  action(async () => {
+    $('#create').disabled = true;
+    $('#create').textContent = 'Åbner projektmappen …';
+    const refined = window.IdeaRefinement?.take();
+    try {
+      const created = await call('createProject', {
+        name: $('#name').value, purpose: $('#purpose').value, color: projectColor(),
+        links: $('#links').value.split('\n').map(line => line.trim()).filter(Boolean),
+        tests: $('#tests').value, startup: startupValues()
+      });
+      if (!created) return;
+      await displayProject(created, { firstTask: true });
+      clearIdeaDraft();
+      if (!refined) { $('#start-idea').click(); return; }
+      // Preserve the reviewed proposal even if the model catalog is temporarily unavailable.
+      window.draftMessage(refined.text + '\n\nForslag fra idéhjælpen (ikke en godkendt byggeplan):\n' + refined.plan +
+        '\n\nAfklar eventuelle mangler, og lav en plan til min gennemgang, før der bygges.',
+        'Din beskrivelse og dit planforslag er klar til gennemgang.',
+        { mode: featureOn('planlaegning') ? 'plan' : 'chat' });
+      $('#connection-select').value = refined.selection.connectionID;
+      await loadModels(refined.selection);
+    } finally {
+      $('#create').disabled = false;
+      $('#create').textContent = 'Opret projekt';
+    }
+  });
+};
 $('#connections-button').onclick = () => action(async () => { const owner = selectedOwner(), ticket = navigationRequest; if (setupActive && setupStep === 'provider') setupPage('tools'); moveConnectionForm(false); const next = await call('connectionState', undefined, owner); if (ticket !== navigationRequest || owner?.root !== current?.root) return; state = next; renderConnections(); updateProvider(); connectionView('list'); $('#connections-feedback').textContent = ''; $('#connections-dialog').showModal(); });
 $('#provider-kind').onchange = () => { updateProvider(); };
 $('#connection-form').onsubmit = event => {
@@ -1853,7 +1885,9 @@ function renderRunReview(result, v = view) {
     }, true);
     box.append(build); return;
   }
-  if (['chat', 'plan'].includes(result.mode) && !result.files.length) { box.hidden = true; return; }
+  // Et svar kan være en afklaring eller et spørgsmål. Ingen filændringer er
+  // ikke et bevis på, at brugerens samlede opgave er afsluttet. Svaret og skrivefeltet bliver stående.
+  if (!result.files.length) { box.hidden = true; return; }
   show();
   box.classList.toggle('is-reviewed', v.reviewedTask === result.task);
   box.append(node('p', result.files.length ? `${result.files.length} ${result.files.length === 1 ? 'fil ændret' : 'filer ændret'}${saved ? ' · Gemt' : ''}` : 'Opgaven er afsluttet uden filændringer.', 'result-receipt'));

@@ -47,7 +47,7 @@ function appRules(features, { surface = 'desktop', skills = [], links = [], mode
   if (features.design && links.length) lines.push(designResearch);
   if (integrations.length) lines.push(`Brugeren har slået disse integrationer til: ${integrations.join(', ')}. Følg integrationens skill. Læg aldrig nøgler, brugernavne eller adgangskoder til en integration i browserkode, chat, logs eller versioner; de hører til i projektets .env og bruges kun fra en server.`);
   lines.push(skills.length
-    ? `Skills fra Aura Harness kan hentes med skill-værktøjet: ${skills.join(', ')}. Hent den skill, der passer til opgaven, før du går i gang, og læs kun de referencer, du har brug for.`
+    ? `Skills fra Aura Harness kan hentes med skill-værktøjet: ${skills.join(', ')}. Følg en allerede indlæst hovedskill direkte; hent ellers den skill, der passer til opgaven, før du går i gang. Læs kun de referencer, du har brug for.`
     : 'Brugeren har ikke slået skills fra Aura Harness til. Følg grundreglerne.');
   if (!cli) lines.push(require('./hosting-guidance.cjs').guidance(features.deling));
   return lines.join('\n');

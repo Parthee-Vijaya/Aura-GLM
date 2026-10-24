@@ -8,7 +8,7 @@ const plainRules = text => text.replace(/^---\n[\s\S]*?\n---\n+/, '');
 class Skills {
   constructor(library, store, features) { this.library = library; this.store = store; this.features = features; }
   async list(projectRoot) {
-    const library = await this.library(), settings = await this.store.project(projectRoot), on = (await this.features.get(projectRoot)).effective;
+    const library = await this.library(), settings = projectRoot == null ? {} : await this.store.project(projectRoot), on = (await this.features.get(projectRoot)).effective;
     const entries = [{ id: RULES, title: 'Grundregler', summary: 'Gælder altid. De beskytter nøgler, data og din Git-historik.', original: library.rules, alwaysOn: true },
       ...library.skills.map(skill => ({ id: skill.name, title: skill.title, summary: skill.summary, feature: library.features.find(feature => feature.skills.includes(skill.name)).id, original: skill.files.find(file => file.path === 'SKILL.md').content }))];
     return entries.map(entry => {
@@ -36,7 +36,8 @@ class Skills {
     await this.store.saveProject(projectRoot, { skills });
     return this.list(projectRoot);
   }
-  // Det, appens AI får: grundreglerne som tekst og de aktive skills som filer, der hentes efter behov.
+  // Null root is the pre-project global selection, never another open project's overrides.
+  // The build skill's core is also preloaded by chat-session/idea-refinement.
   async context(projectRoot) {
     const library = await this.library(), list = await this.list(projectRoot), features = (await this.features.get(projectRoot)).effective;
     const enabled = list.filter(skill => skill.id !== RULES && skill.enabled);

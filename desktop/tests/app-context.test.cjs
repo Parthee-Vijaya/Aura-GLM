@@ -41,3 +41,14 @@ test('planning sends the reviewed clarification and current prompt unchanged',as
  await f.bench.send({text,fingerprint:d.fingerprint,contextBinding:d.contextBinding});
  assert.equal(f.sends[0].text,text);for(const part of d.appContext.components)assert.ok(f.sends[0].system.includes(part.text));
 });
+
+
+test('Stop during asynchronous context validation prevents a later engine start and dispatch',async t=>{
+ const f=await setup(t),d=await f.prepare();
+ let entered,release;const reached=new Promise(r=>entered=r),wait=new Promise(r=>release=r);
+ const original=f.bench.chat.checkContext.bind(f.bench.chat);
+ f.bench.chat.checkContext=async(...args)=>{entered();await wait;return original(...args);};
+ const sending=f.bench.send({text:'Hej',fingerprint:d.fingerprint,contextBinding:d.contextBinding});
+ await reached;await f.bench.stop();release();
+ await assert.rejects(sending,/stoppet før afsendelse/);assert.equal(f.starts(),0);assert.equal(f.sends.length,0);assert.equal(f.bench.chat.running,false);
+});

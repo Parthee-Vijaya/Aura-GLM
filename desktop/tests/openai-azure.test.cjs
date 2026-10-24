@@ -30,7 +30,7 @@ for (const kind of ['openai', 'azure']) test(`${kind}: katalog, nøgle, Response
       assert.equal(req.url, '/v1/responses'); let raw = ''; for await (const c of req) raw += c; received.push(JSON.parse(raw));
       if (failure) { res.writeHead(401); return res.end('syntetisk-noegle'); }
       res.writeHead(200, { 'content-type': 'text/event-stream' });
-      res.end('data: {"type":"response.output_text.delta","delta":"Hej"}\n\n');
+      res.end('data: {"type":"response.output_text.delta","delta":"Hej"}\n\ndata: {"type":"response.completed"}\n\n');
     } catch (error) { errors.push(error.message); res.writeHead(500); res.end('{}'); }
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));

@@ -28,7 +28,7 @@ async function support({ platform = process.platform } = {}) {
     return { available: result.errors.length === 0, platform, reason: result.errors.length ? 'Kommandobeskyttelsen kan ikke starte: ' + result.errors.join('; ') : '', warnings: result.warnings };
   } catch { return { available: false, platform, reason: 'Kommandobeskyttelsen kan ikke starte på denne computer. Automatisk kommandokørsel er slået fra.' }; }
 }
-async function prepare({ workspaceRoot, scratchRoot, directory }) {
+async function prepare({ workspaceRoot, scratchRoot, directory, standby = false }) {
   const status = await support();
   if (!status.available) throw new Error(status.reason);
   const root = await fs.realpath(workspaceRoot), scratch = await fs.realpath(scratchRoot), node = await nodePath();
@@ -53,9 +53,24 @@ async function prepare({ workspaceRoot, scratchRoot, directory }) {
   const policyPath = path.join(trusted, 'policy.json'), pluginPath = path.join(trusted, 'plugin.mjs'), readyPath = path.join(trusted, 'ready.json'), readyToken = crypto.randomBytes(32).toString('hex');
   await fs.rm(readyPath, { force: true });
   await fs.writeFile(policyPath, JSON.stringify(policy), { mode: 0o600 });
-  const prefix = ['exec', '/usr/bin/env', '-i', ...Object.entries(policy.env).map(([key, value]) => key + '=' + quote(value)), quote(node), quote(runnerPath()), quote(policyPath)].join(' ');
-  const source = `import fs from 'node:fs/promises';\nimport path from 'node:path';\nexport const AuraCommandIsolation = async () => {\n await fs.writeFile(${JSON.stringify(readyPath)}, ${JSON.stringify(JSON.stringify({ token: readyToken, identity }))}, { mode: 0o600 });\n return {\n 'shell.env': async (_input, output) => {\n  output.env = { ...Object.fromEntries(Object.keys(process.env).map(key => [key, ''])), ...${JSON.stringify(policy.env)}, SHELL: '/bin/bash' };\n },\n 'tool.execute.before': async (input, output) => {\n  if (input.tool !== 'bash') return;\n  const roots = ${JSON.stringify([root, scratch])};\n  const cwd = await fs.realpath(output.args.workdir || roots[0]);\n  if (!roots.some(root => { const rel = path.relative(root, cwd); return rel === '' || (!rel.startsWith('..' + path.sep) && rel !== '..' && !path.isAbsolute(rel)); })) throw new Error('Kommandoens arbejdsmappe ligger uden for projektet og opgavens midlertidige mappe.');\n  if (typeof output.args.command !== 'string') throw new Error('Kommandoen mangler.');\n  const payload = Buffer.from(JSON.stringify({ command: output.args.command, cwd })).toString('base64url');\n  output.args.command = ${JSON.stringify(prefix)} + " '" + payload + "'";\n  output.args.workdir = cwd;\n }\n};\n};\n`;
+  const isolatedPrefix = ['exec', '/usr/bin/env', '-i', ...Object.entries(policy.env).map(([key, value]) => key + '=' + quote(value)), quote(node), quote(runnerPath()), quote(policyPath)].join(' ');
+  const activationPath = path.join(trusted, 'activation.json');
+  const activation = { token: readyToken, enabled: standby !== true };
+  await fs.writeFile(activationPath, JSON.stringify(activation), { mode: 0o600 });
+  const prefix = standby ? ['exec', quote(node), quote(unpacked(path.join(__dirname, 'command-dispatch.cjs'))), quote(activationPath), quote(readyToken), quote(policyPath)].join(' ') : isolatedPrefix;
+  const activationSource = `const active = async () => { const state = JSON.parse(await fs.readFile(${JSON.stringify(activationPath)}, 'utf8')); if (state.token !== ${JSON.stringify(readyToken)} || typeof state.enabled !== 'boolean') throw new Error('Kommandobeskyttelsen er ændret.'); return state.enabled; };`;
+  const source = `import fs from 'node:fs/promises';\nimport path from 'node:path';\nexport const AuraCommandIsolation = async () => {\n ${activationSource}\n await fs.writeFile(${JSON.stringify(readyPath)}, ${JSON.stringify(JSON.stringify({ token: readyToken, identity }))}, { mode: 0o600 });\n return {\n 'shell.env': async (_input, output) => {\n  if (!await active()) return;\n  output.env = { ...Object.fromEntries(Object.keys(process.env).map(key => [key, ''])), ...${JSON.stringify(policy.env)}, SHELL: '/bin/bash' };\n },\n 'tool.execute.before': async (input, output) => {\n  if (input.tool !== 'bash') return;\n  const enabled = await active();\n  const roots = ${JSON.stringify([root, scratch])};\n  const cwd = await fs.realpath(output.args.workdir || roots[0]);\n  if (enabled && !roots.some(root => { const rel = path.relative(root, cwd); return rel === '' || (!rel.startsWith('..' + path.sep) && rel !== '..' && !path.isAbsolute(rel)); })) throw new Error('Kommandoens arbejdsmappe ligger uden for projektet og opgavens midlertidige mappe.');\n  if (typeof output.args.command !== 'string') throw new Error('Kommandoen mangler.');\n  const payload = Buffer.from(JSON.stringify({ command: output.args.command, cwd })).toString('base64url');\n  output.args.command = ${JSON.stringify(prefix)} + " '" + payload + "'";\n  output.args.workdir = cwd;\n }\n};\n};\n`;
   await fs.writeFile(pluginPath, source, { mode: 0o600 });
-  return { pluginURL: pathToFileURL(pluginPath).href, policyPath, identity, readyPath, readyToken, node, runner: runnerPath(), workspaceRoot: root, scratchRoot: scratch };
+  return { activationPath, enforced: !standby, pluginURL: pathToFileURL(pluginPath).href, policyPath, identity, readyPath, readyToken, node, runner: runnerPath(), workspaceRoot: root, scratchRoot: scratch };
 }
-module.exports = { support, prepare, PACKAGE_HOSTS, contains, nodePath };
+async function activate(sandbox) {
+  const state = JSON.parse(await fs.readFile(sandbox.activationPath, 'utf8'));
+  if (state.token !== sandbox.readyToken || typeof state.enabled !== 'boolean') throw new Error('Kommandobeskyttelsen er ændret.');
+  const policy = await fs.readFile(sandbox.policyPath, 'utf8');
+  if (crypto.createHash('sha256').update(policy).digest('hex') !== sandbox.identity) throw new Error('Kommandobeskyttelsens regler er ændret.');
+  const temporary = sandbox.activationPath + '.' + crypto.randomUUID();
+  await fs.writeFile(temporary, JSON.stringify({ token: sandbox.readyToken, enabled: true }), { mode: 0o600 });
+  await fs.rename(temporary, sandbox.activationPath);
+  sandbox.enforced = true;
+}
+module.exports = { activate, support, prepare, PACKAGE_HOSTS, contains, nodePath };

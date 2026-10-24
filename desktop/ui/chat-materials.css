@@ -1,3 +1,12 @@
 .material-actions{display:flex;gap:4px;flex-wrap:wrap;margin:4px 0}.material-actions button{font-size:12px}.material-chip{display:inline-flex;align-items:center;gap:6px;max-width:100%;border:1px solid var(--line);border-radius:8px;padding:3px 7px;margin:4px}.material-chip span{overflow-wrap:anywhere}.material-chip button{padding:2px 6px}.material-candidates{max-height:38vh;overflow:auto}#chat-materials-dialog{width:min(720px,calc(100vw - 32px));max-height:85vh;overflow:auto}#chat-materials-dialog pre,#data-materials pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--canvas);padding:14px;border:1px solid var(--line);border-radius:8px;max-height:45vh;overflow:auto}#chat-materials-dialog small{overflow-wrap:anywhere;color:var(--muted)}#chat-materials-status{margin:4px 0;color:var(--muted);font-size:12px}
 
 .material-image { max-width:100%; max-height:360px; object-fit:contain; }
+
+/* One attachment menu; native review and permissions remain unchanged. */
+.material-menu-wrap{position:relative;flex:none}#chat-materials-plus{height:34px;width:34px;padding:0;font-size:25px;line-height:1;color:var(--muted);border:0;background:transparent;border-radius:8px}
+#chat-materials-menu{position:absolute;bottom:44px;left:0;width:min(270px,calc(100vw - 65px));padding:9px;border:1px solid var(--line);border-radius:14px;background:var(--surface,#fff);box-shadow:0 12px 35px #14284126;z-index:20}
+#chat-materials-menu>strong{display:block;padding:7px 9px;font-size:11px;font-weight:600;color:var(--muted);text-align:left}
+#chat-materials-menu button{display:block;text-align:left;width:100%;border:0;background:transparent;padding:10px;font-size:13px;border-radius:8px}
+#chat-materials-menu button:hover{background:var(--soft,#f1f5f9)}#chat-materials-menu small{display:block;color:var(--muted);font-weight:400;font-size:11px;margin-top:3px}
+#chat-materials-menu #chat-materials-folder{border-top:1px solid var(--line);border-radius:0;margin-top:5px;padding-top:13px}
+.composer-shortcut{font-size:10px;margin:0 5px 3px;color:var(--muted)}

@@ -1,0 +1,69 @@
+/* Konkret godkendt fork-flow: behold onboarding B og de eksisterende kontroller. */
+#setup.onboarding-b{position:relative}
+#setup.onboarding-b,#onboarding.onboarding-b{padding:24px 32px 28px}
+#setup.onboarding-b .setup-topbar{margin-bottom:18px}
+#setup.onboarding-b .setup-heading{margin-bottom:16px}
+#setup.onboarding-b .setup-heading h1,#onboarding.onboarding-b .intro h1{font-size:clamp(28px,2.7vw,38px);margin:7px 0 10px}
+#setup.onboarding-b .setup-heading>p,#onboarding.onboarding-b .intro>p{font-size:14px;line-height:1.6}
+#setup.onboarding-b .setup-quick-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin:0 0 16px}
+#setup.onboarding-b .setup-quick-actions button{border:1px solid var(--line);border-radius:10px;background:var(--surface,#fff);padding:10px 14px;font-size:13px;color:var(--ink);font-weight:600}
+#setup.onboarding-b .onboarding-b-progress{padding-bottom:16px;margin-bottom:20px}
+#setup.onboarding-b #setup-choice{margin-top:0}
+#setup.onboarding-b #setup-choice>button{min-height:175px;padding:22px}
+#onboarding.onboarding-b .intro{margin-bottom:20px}
+#onboarding.onboarding-b #create-form>.panel{padding-top:0;margin-top:0}
+#onboarding.onboarding-b #name{margin-bottom:18px}
+#onboarding.onboarding-b #purpose{min-height:105px}
+#onboarding.onboarding-b #project-options{border:1px solid var(--line);border-radius:13px;background:var(--surface,#fff);padding:0;overflow:clip;margin-top:18px}
+#onboarding.onboarding-b #project-options>summary{padding:14px 18px;font-size:13px;font-weight:600;color:var(--ink)}
+#onboarding.onboarding-b #project-options>.settings-list{margin:0 16px 14px;border:0}
+#onboarding.onboarding-b #project-options>.panel,#onboarding.onboarding-b #project-options>.hint{margin-left:16px;margin-right:16px}
+#onboarding.onboarding-b .create-footer{margin-top:18px}
+:is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-data-path{grid-template-columns:minmax(0,1fr) 12px minmax(0,1fr) 12px minmax(0,1fr);gap:4px}
+:is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-route-arrow svg{width:12px}
+:is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-route-node :is(strong,small){overflow-wrap:normal}
+@media(min-width:900px) and (max-height:900px){
+  #setup.onboarding-b,#onboarding.onboarding-b{padding-top:18px;padding-bottom:20px}
+  #setup.onboarding-b .setup-topbar{margin-bottom:12px}
+  #setup.onboarding-b .setup-heading{margin-bottom:12px}
+  #setup.onboarding-b .setup-quick-actions{position:absolute;right:32px;top:108px;max-width:40%}
+  #setup.onboarding-b .setup-heading{padding-right:40%}
+  #setup.onboarding-b .setup-heading h1{font-size:30px}
+  :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-visual-top{padding:14px 14px 0;font-size:8px}
+  :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-art{height:142px;margin-top:8px}
+  :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-art-ring{width:126px;height:126px}
+  :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-hero{width:60px;height:60px}
+  :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-hero img{width:40px;height:40px}
+  :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-visual[data-kind=''] .onboarding-b-hero img{width:50px;height:50px}
+  :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-art-pill{font-size:8px;padding:4px 8px;bottom:-4px}
+  :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-visual-copy{padding:0 16px}
+  :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-visual-heading{font-size:20px;margin:9px 0}
+  :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-visual-heading em{font-size:23px}
+  :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-visual-description{font-size:10px;line-height:1.5}
+  :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-data-path{margin:14px 12px}
+  :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-route-node{gap:4px}
+  :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-route-node strong{font-size:9px}
+  :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-route-node small{font-size:8px}
+  :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-route-tile{width:28px;height:28px}
+  :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-visual-note{padding:10px 12px;font-size:9px;line-height:1.6}
+}
+@media(max-width:700px){#setup.onboarding-b,#onboarding.onboarding-b{padding:20px 18px}#setup.onboarding-b .setup-quick-actions{justify-content:flex-start}}
+
+@media(min-width:900px) and (max-height:900px){
+ #setup.onboarding-b:is([data-step=choice],[data-step=features]) .onboarding-b-art{display:block}
+ #setup.onboarding-b:is([data-step=choice],[data-step=features]) .onboarding-b-data-path{display:grid}
+ #setup.onboarding-b:is([data-step=choice],[data-step=features]) .onboarding-b-visual-copy{padding:0 16px}
+ :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-orbit{width:26px;height:26px;border-radius:8px}
+ :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-orbit img{width:18px;height:18px}
+}
+@media(min-width:900px) and (max-height:760px){
+ #setup.onboarding-b:is([data-step=choice],[data-step=features]){padding-bottom:16px}
+ #setup.onboarding-b:is([data-step=choice],[data-step=features]) .setup-heading{margin:8px 0 12px}
+ #setup.onboarding-b:is([data-step=choice],[data-step=features]) .onboarding-b-progress{margin-bottom:14px;padding-bottom:12px}
+ #setup.onboarding-b:is([data-step=choice],[data-step=features]) .onboarding-b-art{height:112px}
+ #setup.onboarding-b:is([data-step=choice],[data-step=features]) .onboarding-b-art-ring{width:100px;height:100px}
+ #setup.onboarding-b:is([data-step=choice],[data-step=features]) .onboarding-b-art-ring::before{inset:12px}
+ #setup.onboarding-b:is([data-step=choice],[data-step=features]) .onboarding-b-art-ring::after{inset:24px}
+ #setup.onboarding-b:is([data-step=choice],[data-step=features]) .onboarding-b-visual-heading{font-size:19px}
+ #setup.onboarding-b:is([data-step=choice],[data-step=features]) .onboarding-b-visual-heading em{font-size:21px}
+}

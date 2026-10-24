@@ -1,0 +1,52 @@
+TAP version 13
+# Subtest: udbydernes brandmetadata er lokale, uforanderlige og afgrænset til originalens ti udbydere
+ok 1 - udbydernes brandmetadata er lokale, uforanderlige og afgrænset til originalens ti udbydere
+  ---
+  duration_ms: 1.107
+  type: 'test'
+  ...
+# Subtest: kortdekoration bevarer controllers, brugerens valg og originalens eksisterende kortindhold
+ok 2 - kortdekoration bevarer controllers, brugerens valg og originalens eksisterende kortindhold
+  ---
+  duration_ms: 0.267708
+  type: 'test'
+  ...
+# Subtest: en gemt eller afventende forbindelse får ikke mærket for et faktisk katalogsvar
+ok 3 - en gemt eller afventende forbindelse får ikke mærket for et faktisk katalogsvar
+  ---
+  duration_ms: 1.393041
+  type: 'test'
+  ...
+# Subtest: modelkort får et lokalt brandlogo uden at ændre model-ID, valg eller klikcontroller
+ok 4 - modelkort får et lokalt brandlogo uden at ændre model-ID, valg eller klikcontroller
+  ---
+  duration_ms: 0.1355
+  type: 'test'
+  ...
+# Subtest: modelnavne og forbindelsesnavne vises som tekst uden mulighed for HTML eller eksterne logoer
+ok 5 - modelnavne og forbindelsesnavne vises som tekst uden mulighed for HTML eller eksterne logoer
+  ---
+  duration_ms: 0.211042
+  type: 'test'
+  ...
+# Subtest: ukendte udbydere og faser kan ikke tilføje nye destinationer eller efterlade et gammelt valg
+ok 6 - ukendte udbydere og faser kan ikke tilføje nye destinationer eller efterlade et gammelt valg
+  ---
+  duration_ms: 0.138292
+  type: 'test'
+  ...
+# Subtest: omtegning er ren præsentation uden netværk, lagring, timer eller implicitte handlinger
+ok 7 - omtegning er ren præsentation uden netværk, lagring, timer eller implicitte handlinger
+  ---
+  duration_ms: 0.289791
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 40.390417

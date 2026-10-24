@@ -1,0 +1,154 @@
+TAP version 13
+# Subtest: images are bounded, re-encoded and source/normalized snapshots cannot be substituted after review
+ok 1 - images are bounded, re-encoded and source/normalized snapshots cannot be substituted after review
+  ---
+  duration_ms: 24.007666
+  type: 'test'
+  ...
+# Subtest: normalized image payloads use each existing provider protocol, never paths or raw source bytes
+ok 2 - normalized image payloads use each existing provider protocol, never paths or raw source bytes
+  ---
+  duration_ms: 0.299917
+  type: 'test'
+  ...
+# Subtest: the actual gateway refuses unknown image support and clears prior images between sends
+ok 3 - the actual gateway refuses unknown image support and clears prior images between sends
+  ---
+  duration_ms: 33.796041
+  type: 'test'
+  ...
+# Subtest: real gateway HTTP payloads preserve the reviewed image for Responses, Anthropic and Mistral
+ok 4 - real gateway HTTP payloads preserve the reviewed image for Responses, Anthropic and Mistral
+  ---
+  duration_ms: 9.165916
+  type: 'test'
+  ...
+# Subtest: pending images are absent during compaction and installed only for the subsequent reviewed send
+ok 5 - pending images are absent during compaction and installed only for the subsequent reviewed send
+  ---
+  duration_ms: 44.743125
+  type: 'test'
+  ...
+# Subtest: renderer cannot supply a path or another chat; cancellation preserves selection without reading any file
+ok 6 - renderer cannot supply a path or another chat; cancellation preserves selection without reading any file
+  ---
+  duration_ms: 5.149875
+  type: 'test'
+  ...
+# Subtest: a delayed native picker result is discarded when the active chat changes before resolution
+ok 7 - a delayed native picker result is discarded when the active chat changes before resolution
+  ---
+  duration_ms: 1.947084
+  type: 'test'
+  ...
+# Subtest: actual native-returned files produce metadata-only opaque choices and need a separate explicit preview
+ok 8 - actual native-returned files produce metadata-only opaque choices and need a separate explicit preview
+  ---
+  duration_ms: 5.804042
+  type: 'test'
+  ...
+# Subtest: plus-menu uses only supported native file filters and does not bypass review
+ok 9 - plus-menu uses only supported native file filters and does not bypass review
+  ---
+  duration_ms: 1.192041
+  type: 'test'
+  ...
+# Subtest: reviewed source text is disclosed and sent verbatim as data while outside paths never enter engine tool references
+ok 10 - reviewed source text is disclosed and sent verbatim as data while outside paths never enter engine tool references
+  ---
+  duration_ms: 106.0695
+  type: 'test'
+  ...
+# Subtest: changed source after actual prepare refuses send before any engine is constructed
+ok 11 - changed source after actual prepare refuses send before any engine is constructed
+  ---
+  duration_ms: 20.584
+  type: 'test'
+  ...
+# Subtest: source change during real startup is rechecked immediately before engine.send and cannot dispatch old reviewed text
+ok 12 - source change during real startup is rechecked immediately before engine.send and cannot dispatch old reviewed text
+  ---
+  duration_ms: 28.22425
+  type: 'test'
+  ...
+# Subtest: selection mutation after disclosure invalidates the prepared record and cannot reuse its fingerprint
+ok 13 - selection mutation after disclosure invalidates the prepared record and cannot reuse its fingerprint
+  ---
+  duration_ms: 17.485125
+  type: 'test'
+  ...
+# Subtest: attachment dispatch consent is one-use even when the same source and recipient remain unchanged
+ok 14 - attachment dispatch consent is one-use even when the same source and recipient remain unchanged
+  ---
+  duration_ms: 34.62125
+  type: 'test'
+  ...
+# Subtest: reviewed attachments survive real copy allocation when another conversation owns the project
+ok 15 - reviewed attachments survive real copy allocation when another conversation owns the project
+  ---
+  duration_ms: 29.468291
+  type: 'test'
+  ...
+# Subtest: a connection change during startup still invalidates the next dispatch without losing the current prepared owner
+ok 16 - a connection change during startup still invalidates the next dispatch without losing the current prepared owner
+  ---
+  duration_ms: 28.652583
+  type: 'test'
+  ...
+# Subtest: native-selected metadata has opaque handles and no content/path; explicit subset preview and attach produce exact read-only text
+ok 17 - native-selected metadata has opaque handles and no content/path; explicit subset preview and attach produce exact read-only text
+  ---
+  duration_ms: 23.086208
+  type: 'test'
+  ...
+# Subtest: forged candidate paths, another chat and stale revisions cannot select contents
+ok 18 - forged candidate paths, another chat and stale revisions cannot select contents
+  ---
+  duration_ms: 3.291
+  type: 'test'
+  ...
+# Subtest: direct secret/generated paths, binaries, invalid UTF-8 and symlink ancestors fail closed
+ok 19 - direct secret/generated paths, binaries, invalid UTF-8 and symlink ancestors fail closed
+  ---
+  duration_ms: 10.670542
+  type: 'test'
+  ...
+# Subtest: source changes invalidate preview/attach and prepared consent without altering the source
+ok 20 - source changes invalidate preview/attach and prepared consent without altering the source
+  ---
+  duration_ms: 13.465583
+  type: 'test'
+  ...
+# Subtest: prepared snapshot tampering, source replacement and removed selection cannot reuse old consent
+ok 21 - prepared snapshot tampering, source replacement and removed selection cannot reuse old consent
+  ---
+  duration_ms: 22.934667
+  type: 'test'
+  ...
+# Subtest: review tokens are one-use and expire when another task/stop generation intervenes
+ok 22 - review tokens are one-use and expire when another task/stop generation intervenes
+  ---
+  duration_ms: 9.768916
+  type: 'test'
+  ...
+# Subtest: cancelling a content review revokes its token without attaching files or invalidating unrelated consent
+ok 23 - cancelling a content review revokes its token without attaching files or invalidating unrelated consent
+  ---
+  duration_ms: 5.46
+  type: 'test'
+  ...
+# Subtest: per-file and combined text limits are enforced before context can be attached
+ok 24 - per-file and combined text limits are enforced before context can be attached
+  ---
+  duration_ms: 15.186834
+  type: 'test'
+  ...
+1..24
+# tests 24
+# suites 0
+# pass 24
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 330.157042

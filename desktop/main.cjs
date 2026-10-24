@@ -38,6 +38,7 @@ const requests = new AsyncLocalStorage(), operations = new Set(), spaces = new M
 let selectedRoot = null;
 function currentWorkbench() { return requests.getStore()?.bench || registry?.selected; }
 // En IPC-handling beholder projektets ejer, også hvis brugeren skifter fane under et await.
+const ideaRefinement = new (require('./core/idea-refinement.cjs').IdeaRefinement)({ getWorkbench: () => registry?.empty });
 const workbench = new Proxy({}, { get(_target, key) { const owner = currentWorkbench(), value = owner?.[key]; return typeof value === 'function' ? value.bind(owner) : value; } });
 function currentProject() { return currentWorkbench()?.project || null; }
 function requestChatID() { return requests.getStore()?.chat || currentWorkbench()?.chatID; }
@@ -90,7 +91,7 @@ function supportReport() {
   return require('./core/diagnostics.cjs').diagnostics({ version: app.getVersion(), platform: process.platform, arch: process.arch, packaged: app.isPackaged, versions: require('./core/runtime.cjs').get()?.versions, project: Boolean(currentProject()), running: workbench?.running, preview: currentSpace().devServer?.state, failures });
 }
 function shutdown() {
-  if (!shuttingDown) shuttingDown = (async () => { credentialEntry.revoke(); github?.cancel(); deploymentSetup?.promte.cancelAll(); await registry?.close(); await closeSpaces(); })().finally(() => { shuttingDown = null; });
+  if (!shuttingDown) shuttingDown = (async () => { ideaRefinement.stop(); credentialEntry.revoke(); github?.cancel(); deploymentSetup?.promte.cancelAll(); await registry?.close(); await closeSpaces(); })().finally(() => { shuttingDown = null; });
   return shuttingDown;
 }
 const uiURL = 'harness://app/index.html';
@@ -107,6 +108,7 @@ const profileRoot = app.isPackaged ? path.join(process.resourcesPath, 'profiles'
 if (app.isPackaged) require('./core/runtime.cjs').configure(process.resourcesPath);
 
 async function activate(next) {
+  ideaRefinement.stop();
   await stopPicking('project');
   const owner = await registry.select(next), request = requests.getStore();
   if (request) { request.bench = owner; request.workspaceRoot = owner.chat?.root || owner.project.root; request.chat = owner.chatID; }
@@ -595,6 +597,9 @@ handle('credential:entry', value => {
 });
 handle('connections:save', value => exclusive(() => workbench.saveConnection(credentialEntry.connection(value))));
 handle('connections:remove', value => exclusive(() => workbench.removeConnection(value)));
+handle('idea:prepare', value => { if (currentProject()) throw new Error('Brug idéhjælpen før projektoprettelse.'); return ideaRefinement.prepare(value); });
+handle('idea:send', value => { if (currentProject()) throw new Error('Idéhjælpen er lukket.'); return ideaRefinement.send(value); });
+handle('idea:stop', () => ideaRefinement.stop());
 handle('connections:models', value => workbench.models(value));
 handle('connections:routes', value => workbench.routes(value.connectionID, value.modelID));
 require('./core/chat-materials-ipc.cjs').installChatMaterials({ getWorkbench:currentWorkbench, isSelected:bench => registry.selected === bench, register:handle, dialog, exclusive, normalizeImage:require('./core/screenshot-normalizer.cjs').createImageNormalizer({ nativeImage }), emit:event => sendEvent(event) });
@@ -608,6 +613,9 @@ handle('agent:send', value => {
 });
 handle('agent:stop', value => workbench.stop(chatInput(value)));
 handle('agent:reply', value => workbench.reply(chatInput(value)));
+handle('permission:review', value => workbench.permissionReview(chatInput(value)));
+handle('permission:confirm', value => workbench.permissionConfirm(chatInput(value)));
+handle('permission:revoke', value => workbench.permissionRevoke(chatInput(value)));
 handle('agent:question', value => workbench.question(chatInput(value)));
 // Afklaring og plan: briefen er brugerens egne ord, og planen kan rettes af brugeren. Intet sendes, før næste besked.
 handle('plan:brief', value => exclusive(() => workbench.saveBrief(value)));
@@ -930,7 +938,7 @@ app.whenReady().then(async () => {
     const name = url.pathname.slice(1);
     const providerAsset = /^provider-(alexandra|anthropic|azure|compatible|corti|komplai|mistral|ollama|openai|openrouter|zen|promte|github-pages|cloudflare|vercel)\.svg$/.test(name);
     const onboardingAsset = ['onboarding-aura-mark.svg', 'onboarding-provider-claude.svg', 'onboarding-provider-mistral.svg'].includes(name);
-    if (url.host !== 'app' || (!providerAsset && !onboardingAsset && name !== 'provider-cloudflare.png' && !['history-pages.js', 'chat-materials.js', 'chat-materials.css', 'index.html', 'history-search.js', 'markdown.js', 'project-settings.js', 'aura-icon.png', 'app.js', 'updates.js', 'workspace.js', 'plan-view.js', 'planning.js', 'approval-view.js', 'approvals.js', 'preview-edit.js', 'history.js', 'chats.js', 'palette.js', 'model-advice.js', 'provider-brand.js', 'connection-overview.js', 'chat-display.js', 'context-display.js', 'conversation-mode.js', 'live-work.js', 'server.js', 'viewport.js', 'share-view.js', 'hosting.js', 'deployment-setup.js', 'promte-preview.js', 'komplai-preview.js', 'deployment.js', 'styles.css', 'demo.css', 'onboarding-b.js', 'onboarding-b.css'].includes(name))) return new Response('Ikke fundet', { status: 404 });
+    if (url.host !== 'app' || (!providerAsset && !onboardingAsset && name !== 'provider-cloudflare.png' && !['preview-working.js', 'preview-working.css', 'idea-refinement.css', 'conversation-permission.css', 'workspace-calm.js', 'workspace-calm.css', 'idea-refinement.js', 'conversation-permission.js', 'onboarding-compact.css', 'history-pages.js', 'chat-materials.js', 'chat-materials.css', 'index.html', 'history-search.js', 'markdown.js', 'project-settings.js', 'aura-icon.png', 'app.js', 'updates.js', 'workspace.js', 'plan-view.js', 'planning.js', 'approval-view.js', 'approvals.js', 'preview-edit.js', 'history.js', 'chats.js', 'palette.js', 'model-advice.js', 'provider-brand.js', 'connection-overview.js', 'chat-display.js', 'context-display.js', 'conversation-mode.js', 'live-work.js', 'server.js', 'viewport.js', 'share-view.js', 'hosting.js', 'deployment-setup.js', 'promte-preview.js', 'komplai-preview.js', 'deployment.js', 'styles.css', 'demo.css', 'onboarding-b.js', 'onboarding-b.css'].includes(name))) return new Response('Ikke fundet', { status: 404 });
     return new Response(await fs.readFile(path.join(__dirname, 'ui', name)), { headers: { 'Content-Type': name === 'aura-icon.png' ? 'image/png' : providerAsset || onboardingAsset ? 'image/svg+xml' : name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : 'text/html; charset=utf-8' } });
   });
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
@@ -942,6 +950,7 @@ app.whenReady().then(async () => {
   });
   function createWindow() {
     window = new BrowserWindow({ width: 1440, height: 940, minWidth: 980, minHeight: 720, backgroundColor: '#F8FAFC', title: DISPLAY_NAME, icon: appIcon, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, webviewTag: false } });
+    window.maximize(); // Almindeligt maksimeret vindue, ikke macOS-fuldskærm.
     window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     // Fejl, som forhåndsvisningens side selv skriver i konsollen. Kun previewets ramme; appens egne meddelelser tælles ikke.
     window.webContents.on('console-message', event => {

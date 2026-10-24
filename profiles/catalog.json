@@ -397,10 +397,10 @@
     {
       "name": "harness-aura-design",
       "title": "Aura-design til dine apps",
-      "summary": "Omsætter godkendte brandreferencer til farver, typografi, komponenter og afprøvede brugerforløb i de apps, du bygger.",
+      "summary": "Hovedskill til at bygge gennemarbejdede apps og hjemmesider fra brugerens idé med sammenhængende design, fungerende handlinger og faktisk afprøvning.",
       "faq": {
-        "hvad": "Hjælper med at finde dokumenterede brandreferencer og omsætte dem til et sammenhængende appdesign med lyst og mørkt tema, begrundede designretninger, skabeloner, agentarbejdsrum og konkrete kvalitetskontroller. Metoden gælder det projekt, du bygger med Aura Harness.",
-        "hvornaar": "Når et nyt appdesign planlægges, eller når du udtrykkeligt beder om at ændre designet i dit projekt. Eksisterende godkendt UI bevares ellers.",
+        "hvad": "Omsætter også en kort idé til et konkret første brugerforløb, en passende designretning, fælles komponenter, tilgængelighed og afprøvning. Brandmetoden og de længere referencer supplerer efter behov.",
+        "hvornaar": "Ved planlægning og bygning af webapps, hjemmesider og andre produkter, når Design og tilgængelighed er slået til. Agenten kan hente metoden med det eksisterende skill-værktøj. Eksisterende godkendt UI bevares.",
         "resultat": "Et designgrundlag med kilder og godkendt retning, farve- og typografitokens, komponenter og en ærlig oversigt over faktisk afprøvning og resterende arbejde.",
         "ikke": "Den ændrer ikke Auras egen brugerflade, giver ingen ekstra værktøjs- eller datatilladelser og erklærer ikke automatisk en app tilgængelig. Hjælpekode er læsbart referenceindhold og køres ikke ved indlæsning."
       },

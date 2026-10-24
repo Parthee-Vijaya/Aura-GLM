@@ -68,9 +68,9 @@ Kilder: [Lov om tilgængelighed af offentlige organers websteder og mobilapplika
 
 `harness-aura-design` · [SKILL.md](skills/harness-aura-design/SKILL.md)
 
-**Hvad gør den?** Hjælper med at finde dokumenterede brandreferencer og omsætte dem til et sammenhængende appdesign med lyst og mørkt tema, begrundede designretninger, skabeloner, agentarbejdsrum og konkrete kvalitetskontroller. Metoden gælder det projekt, du bygger med Aura Harness.
+**Hvad gør den?** Omsætter også en kort idé til et konkret første brugerforløb, en passende designretning, fælles komponenter, tilgængelighed og afprøvning. Brandmetoden og de længere referencer supplerer efter behov.
 
-**Hvornår bruges den?** Når et nyt appdesign planlægges, eller når du udtrykkeligt beder om at ændre designet i dit projekt. Eksisterende godkendt UI bevares ellers.
+**Hvornår bruges den?** Ved planlægning og bygning af webapps, hjemmesider og andre produkter, når Design og tilgængelighed er slået til. Agenten kan hente metoden med det eksisterende skill-værktøj. Eksisterende godkendt UI bevares.
 
 **Hvad får du?** Et designgrundlag med kilder og godkendt retning, farve- og typografitokens, komponenter og en ærlig oversigt over faktisk afprøvning og resterende arbejde.
 

@@ -62,7 +62,7 @@ test('alle Aura-design-referencer når motoren som passive Markdown-filer og fje
   const context = await skills.context(project), selected = context.skills.find(skill => skill.name === name);
   assert.ok(selected);
   const references = selected.files.filter(file => file.path !== 'SKILL.md').map(file => file.path);
-  for (const required of ['references/brand-discovery.md', 'references/app-patterns.md', 'references/token-generator.md', 'references/provenance.md']) {
+  for (const required of ['references/brand-discovery.md', 'references/app-patterns.md', 'references/token-generator.md', 'references/provenance.md', 'references/webapp-craft.md']) {
     assert.ok(references.includes(required), `${required} er med som en gennemgået reference`);
   }
   assert.equal(new Set(selected.files.map(file => file.path)).size, selected.files.length);

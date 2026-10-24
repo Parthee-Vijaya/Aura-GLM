@@ -6,3 +6,17 @@ test('renderer cannot supply a path or another chat; cancellation preserves sele
 test('a delayed native picker result is discarded when the active chat changes before resolution',async t=>{const f=await fixture(t);let release;f.pick(()=>new Promise(resolve=>release=resolve));const pending=f.handlers.get('chatMaterialsChooseFiles')({chat:f.chat.id});f.workbench.chatID='different';release({canceled:false,filePaths:[path.join(f.root,'not-read.txt')]});await assert.rejects(pending,/Samtalen er skiftet/);assert.equal(f.workbench.chatMaterials.state(f.chat).candidates.length,0);});
 test('actual native-returned files produce metadata-only opaque choices and need a separate explicit preview',async t=>{const f=await fixture(t),file=path.join(f.root,'brief.md');await fs.writeFile(file,'Synthetic source.');f.pick(async()=>({canceled:false,filePaths:[file]}));const result=await f.handlers.get('chatMaterialsChooseFiles')({chat:f.chat.id});assert.equal(result.candidates[0].name,'brief.md');assert.equal(result.candidates[0].text,undefined);assert.equal(JSON.stringify(result).includes(f.root),false);assert.deepEqual(result.selected,[]);});
 
+
+test('plus menu categories constrain native filters without accepting renderer paths',async t=>{
+ const f=await fixture(t),choose=f.handlers.get('chatMaterialsChooseFiles');
+ for(const kind of ['text','pdf','image']) {
+  await choose({chat:f.chat.id,kind});const extensions=f.calls.at(-1).filters[0].extensions;
+  if(kind==='pdf')assert.deepEqual(extensions,['pdf']);
+  if(kind==='image')assert.deepEqual(extensions,['png','jpg','jpeg']);
+  if(kind==='text'){assert(extensions.includes('txt'));assert(!extensions.includes('pdf'));assert(!extensions.includes('png'));}
+ }
+ const count=f.calls.length;
+ await assert.rejects(choose({chat:f.chat.id,kind:'unknown'}),/kendt filtype/);
+ await assert.rejects(choose({chat:f.chat.id,kind:'text',path:'/etc/passwd'}),/ingen filstier/);
+ assert.equal(f.calls.length,count);
+});

@@ -79,3 +79,18 @@ test('pakkens installationsscript og underprocesser har samme filgrænse', async
   assert.equal(result.code, 0, result.stderr);
   assert.deepEqual(JSON.parse(await fs.readFile(path.join(f.root, 'pakkescript-resultat.json'))), { read: false, write: false });
 });
+
+test('a command prepared before session consent is isolated when executed after activation', async t => {
+  if (!['darwin','linux'].includes(process.platform))return t.skip('Platform');
+  const f=await fixture(t);const configured=await sandbox.prepare({workspaceRoot:f.root,scratchRoot:f.scratch,directory:path.join(path.dirname(f.root),'standby'),standby:true});
+  const hooks=await (await import(configured.pluginURL)).AuraCommandIsolation();
+  await fs.writeFile(path.join(f.other,'secret.txt'),'SYNTHETIC');
+  const output={args:{command:'/bin/cat '+quote(path.join(f.other,'secret.txt')),workdir:f.root}};
+  await hooks['tool.execute.before']({tool:'bash'},output);assert.match(output.args.command,/command-dispatch/);
+  // Explicit one-off permission still works before the session opt-in.
+  const before=await run('/bin/bash',['-c',output.args.command],{cwd:f.root,timeout:30000});assert.match(before.stdout,/SYNTHETIC/);
+  await sandbox.activate(configured);assert.equal(configured.enforced,true);
+  await assert.rejects(run('/bin/bash',['-c',output.args.command],{cwd:f.root,timeout:30000}),error=>!error.stdout.includes('SYNTHETIC'));
+  // Broken state must not fall back to an ordinary shell.
+  await fs.writeFile(configured.activationPath,'{}');await assert.rejects(run('/bin/bash',['-c',output.args.command],{cwd:f.root,timeout:30000}),/afvist/);
+});

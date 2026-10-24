@@ -207,6 +207,10 @@ class ApprovalsPolicy {
     const descriptor = await this.describe(context, p);
     if (!descriptor.match || descriptor.blockedMode) return { allowed: false, descriptor };
     if (descriptor.kind === 'bash' && context.commandSandbox !== true) return { allowed: false, descriptor };
+    if (context.conversationPermission?.active === true) {
+      if (descriptor.projectFile) return { allowed: true, source: 'conversation', descriptor };
+      if (descriptor.kind === 'bash' && context.commandSandbox === true && await canonicalWithin(await directory(context.workspaceRoot), descriptor.match.cwd) && context.conversationPermission.active === true) return { allowed: true, source: 'conversation', descriptor };
+    }
     if (descriptor.scratch) return { allowed: true, source: 'scratch', descriptor };
     if (descriptor.projectFile && context.taskRules?.has(descriptor.key)) return { allowed: true, source: 'task', descriptor };
     const settings = await this.settings(context.projectRoot);
