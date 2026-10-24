@@ -23,6 +23,7 @@ async function record(resources, target, input, verifySignature = file => run('/
   }
   const proof = await fs.readFile(path.join(resources, 'source-proof.json'));
   const receipt = { schemaVersion: 1, target, inputSha256: input.sha256, sourceProofSha256: hash(proof), payloads: output };
+  await fs.mkdir(path.dirname(receiptPath(target)), { recursive: true });
   await fs.writeFile(receiptPath(target), JSON.stringify(receipt, null, 2) + '\n');
   return receipt;
 }
