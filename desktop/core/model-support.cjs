@@ -13,4 +13,8 @@ function report(connection, model, route, { catalogAt = null, evidence = [] } = 
  return {binding:bound,fingerprint,catalog:{source:'provider-catalog',checkedAt:catalogAt,model:{tools:known(model.capabilities?.tools),images:known(model.capabilities?.vision)},route:route?{tools:known(route.capabilities?.tools),images:known(route.capabilities?.vision)}:null},measurements,note:'Katalogoplysninger er ikke en faktisk acceptprøve. Kontrollerede testservere beviser ikke produktionsmodellens evner. Ukendt støtte er ikke dokumenteret støtte.'};
 }
 function imageAllowed(model, route) { return model.capabilities?.vision===true && route?.capabilities?.vision!==false; }
-module.exports={binding,key,report,imageAllowed};
+function toolRun(connection, model, route) {
+ const url = new URL(connection.baseURL), controlled = ['127.0.0.1','localhost','[::1]'].includes(url.hostname);
+ return { binding:key(binding(connection,model,route)),capability:'tools',outcome:'passed',environment:controlled?'controlled':'provider',method:'En opgave indeholdt et afsluttet værktøj og et afsluttende modelsvar. Det er en observation af dette forløb, ikke en generel modelkvalifikation.',at:new Date().toISOString() };
+}
+module.exports={binding,key,report,imageAllowed,toolRun};
