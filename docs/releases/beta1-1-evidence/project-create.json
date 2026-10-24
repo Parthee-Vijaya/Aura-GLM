@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "checks": [
+    "Version history is enabled",
+    "Normal creation includes Git",
+    "Create stays disabled while the last project reopens",
+    "Submit cannot overlap automatic reopening",
+    "No misleading busy error",
+    "Pending idea draft survives reopening",
+    "Reopen failure returns to a usable form",
+    "Late setup work cannot re-enable a pending create",
+    "Repeated submits reach native creation once",
+    "One folder and one initial commit",
+    "Plan remains unapproved and no AI run starts",
+    "New project is available after completion",
+    "Creation failure unlocks the form and preserves the idea",
+    "Retry after a failed creation succeeds",
+    "No renderer errors"
+  ],
+  "errors": []
+}

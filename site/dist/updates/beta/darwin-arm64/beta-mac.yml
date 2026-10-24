@@ -1,13 +1,13 @@
 {
-  "version": "1.0.0-beta.1",
+  "version": "1.0.1-beta.1",
   "files": [
     {
-      "url": "https://github.com/Parthee-Vijaya/ai-harness/releases/download/v1.0.0-beta.1/Aura-1-1.0.0-beta.1-mac-arm64.zip",
-      "sha512": "/dGzp3VZ2cDI5TSWwRsEglUXdKpx0cCxMmqu0iuLIs86k5qQsPBiJnBebbR8/g8jh4bw0EpA/f4T+4KMHDbKYg==",
-      "size": 339554163
+      "url": "https://github.com/Parthee-Vijaya/ai-harness/releases/download/v1.0.1-beta.1/Aura-1-1.0.1-beta.1-mac-arm64.zip",
+      "sha512": "jhKXvUbw4i7hrgBPzwsNMrUsbc+e2LJMZNXN0yJB9zY5ekW8BQehHpvlcbHactBPqhMKfKvdVhA01My0FyVLsA==",
+      "size": 339554229
     }
   ],
-  "releaseDate": "2026-10-24T21:36:35.295637+00:00",
+  "releaseDate": "2026-10-24T22:06:44.551409+00:00",
   "critical": false,
   "message": ""
 }

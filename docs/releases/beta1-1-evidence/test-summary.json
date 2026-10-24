@@ -1,0 +1,22 @@
+{
+  "desktop": {
+    "passed": 748,
+    "failed": 0
+  },
+  "cli": {
+    "passed": 27,
+    "failed": 0
+  },
+  "packagedProjectCreation": {
+    "passed": 15,
+    "failed": 0
+  },
+  "ideaRefinement": {
+    "passed": 7,
+    "failed": 0
+  },
+  "nativeRuntime": true,
+  "realGit": true,
+  "externalAI": false,
+  "githubCI": false
+}

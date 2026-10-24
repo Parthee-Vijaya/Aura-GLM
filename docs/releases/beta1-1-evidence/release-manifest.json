@@ -1,0 +1,25 @@
+{
+  "name": "Aura 1 beta 1.1",
+  "version": "1.0.1-beta.1",
+  "tag": "v1.0.1-beta.1",
+  "sourceCommit": "c1effa85b635d38f32da3d2a80c026e0b85daa4c",
+  "repository": "Parthee-Vijaya/ai-harness",
+  "platform": "darwin-arm64",
+  "signing": "ad-hoc",
+  "notarized": false,
+  "localTestsOnly": true,
+  "files": [
+    {
+      "name": "Aura-1-1.0.1-beta.1-mac-arm64.dmg",
+      "bytes": 345356886,
+      "sha256": "7c78e582083b894b3eff4d42e846902156515ade4ecb73c13c991c82d2a815a0",
+      "sha512": "fg4CK4RGrFCKRs4Fp5kGjkdFTGIr4Q0fu64FCtMI22sc2Z553NfXObLfcnA92F1rl/RSJ0OO2dBt2a3RqOqpTA=="
+    },
+    {
+      "name": "Aura-1-1.0.1-beta.1-mac-arm64.zip",
+      "bytes": 339554229,
+      "sha256": "8c61a6ceae6bfc9422ded3659a7268676eb43e359acfe88f4dab01196a8e3ab4",
+      "sha512": "jhKXvUbw4i7hrgBPzwsNMrUsbc+e2LJMZNXN0yJB9zY5ekW8BQehHpvlcbHactBPqhMKfKvdVhA01My0FyVLsA=="
+    }
+  ]
+}
