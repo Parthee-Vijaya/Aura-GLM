@@ -8,7 +8,7 @@ module.exports = {
   asar: true, asarUnpack: ['core/engine-guardian.cjs', 'core/pdf-text-worker.cjs', 'node_modules/pdfjs-dist/**/*', 'node_modules/@napi-rs/**/*', 'core/dev-server-runner.cjs', 'core/command-sandbox-runner.mjs', 'core/command-dispatch.cjs', 'node_modules/@anthropic-ai/sandbox-runtime/**/*', 'node_modules/@pondwader/socks5-server/**/*', 'node_modules/commander/**/*', 'node_modules/node-forge/**/*', 'node_modules/zod/**/*'], npmRebuild: false,
   extraResources: profileResources,
   artifactName: 'Aura-1-${version}-${os}-${arch}.${ext}',
-  mac: { target: ['dmg','zip'], category: 'public.app-category.developer-tools', icon: 'packaging/icon.png', identity: process.env.HARNESS_SIGN_IDENTITY || null, hardenedRuntime: true, entitlements: 'packaging/entitlements.mac.plist', entitlementsInherit: 'packaging/entitlements.mac.plist', sign: require('./scripts/sign-mac.cjs').sign, notarize: false },
+  mac: { target: ['dmg','zip'], category: 'public.app-category.developer-tools', icon: 'packaging/icon.png', identity: process.env.HARNESS_SIGN_IDENTITY || '-', hardenedRuntime: true, entitlements: 'packaging/entitlements.mac.plist', entitlementsInherit: 'packaging/entitlements.mac.plist', sign: require('./scripts/sign-mac.cjs').sign, notarize: false },
   dmg: { sign: false },
   win: { icon: 'packaging/icon.png', target: ['nsis'], signAndEditExecutable: true },
   nsis: { oneClick: false, perMachine: false, allowToChangeInstallationDirectory: true, createDesktopShortcut: true, deleteAppDataOnUninstall: false, language: '1030' },
