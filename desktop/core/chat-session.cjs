@@ -353,7 +353,7 @@ class ChatSession {
       if (['build', 'free'].includes(prepared.mode)) system += '\nAfslut med: hvad du ændrede, hvilke kontroller du faktisk udførte og hvad brugeren bør prøve. Påstå ikke at noget er testet uden udført kontrol.';
       if (Object.hasOwn(prepared.context, 'projectInstructions') && JSON.stringify(await projectInstructions(this.root)) !== JSON.stringify(prepared.context.projectInstructions)) throw new Error('Projektets AGENTS.md har ændret sig under opstart. Gennemgå oplysningerne igen før afsendelse.');
       this.gateway?.setEffort?.(prepared.disclosure.effort);
-      this.gateway?.setImages?.(prepared.chatMaterials?.files.filter(file => file.kind === 'image') || []);
+      this.gateway?.setImages?.([]);
       // Brugeren har valgt at gøre en lang samtale kortere, før beskeden sendes igen.
       if (input.compact === true && (await this.engine.messages().catch(() => [])).length) {
         this.compacting = true;
@@ -362,6 +362,7 @@ class ChatSession {
         this.log({ kind: 'session', title: 'Samtalen er gjort kortere', detail: 'AI’en har sammenfattet samtalen og fortsætter derfra. Planen og filerne er bevaret.', status: 'completed', task: this.task.id });
       }
       await bench.chatMaterials?.assertPrepared(this, prepared.chatMaterials);
+      this.gateway?.setImages?.(prepared.chatMaterials?.files.filter(file => file.kind === 'image') || []);
       checkStopped(); await this.engine.send(text, system); checkStopped();
       // De senest accepterede vilkår huskes for projektet, så de samme oplysninger ikke vises igen ved hver opgave.
       await modelConsent.remember(bench.store, projectRoot, prepared.disclosure.consentKey);

@@ -6,7 +6,7 @@ const path=require('node:path');
 async function pdfText(data,{extractPDF}={}){
  if(extractPDF!==undefined){if(typeof extractPDF!=='function')throw Error('Den lokale PDF-læser kunne ikke startes.');return extractPDF(Buffer.from(data));}
  return new Promise((resolve,reject)=>{
-  const node=require('./runtime.cjs').get()?.node||process.execPath;
+  const node=require('./runtime.cjs').get()?.node || (process.versions.electron ? path.resolve(__dirname, '..', '.runtime', process.platform+'-'+process.arch, 'node', process.platform==='win32'?'node.exe':'bin/node') : process.execPath);
   const child=spawn(node,['--max-old-space-size=256',path.join(__dirname.replace(/app\.asar(?=[\\/])/, 'app.asar.unpacked'),'pdf-text-worker.cjs')],{stdio:['pipe','pipe','pipe'],windowsHide:true,env:{PATH:path.dirname(node),NODE_NO_WARNINGS:'1'}});
   const out=[];let bytes=0,err='',settled=false;const timer=setTimeout(()=>{child.kill();finish(Error('PDF-læsningen tog for lang tid.'));},15000);
   const finish=(error,value)=>{if(settled)return;settled=true;clearTimeout(timer);error?reject(error):resolve(value);};

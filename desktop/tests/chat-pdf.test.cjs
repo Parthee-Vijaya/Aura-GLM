@@ -9,3 +9,10 @@ test('extracted PDF text receives the same secret-content check as text files', 
  const root=await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(),'aura-pdf-secret-test-')));t.after(()=>fs.rm(root,{recursive:true,force:true}));const value='OPENAI_API_KEY='+ 'sk-'+'synthetic'.repeat(6),service=new ChatMaterials(),chat={id:'fixture',project:{root},generation:0};
  for(const extension of ['txt','pdf']){const file=path.join(root,'example.'+extension);await fs.writeFile(file,extension==='pdf'?pdf(value):value);const offer=await service.offerFiles(chat,[file]);await assert.rejects(service.preview(chat,{scope:offer.scope,revision:offer.revision,ids:[offer.candidates[0].id]}),error=>error.code==='secret');}
 });
+test('PDF worker timeout and abnormal exit reject instead of returning partial text', async()=>{
+ const vm=require('node:vm'),events=require('node:events'),{PassThrough}=require('node:stream');
+ for(const mode of ['timeout','exit']){let killed=false;const child=new events.EventEmitter();child.stdin=new PassThrough();child.stdout=new PassThrough();child.stderr=new PassThrough();child.kill=()=>{killed=true;};const module={exports:{}};const custom=name=>name==='node:child_process'?{spawn:()=>{if(mode==='exit')setImmediate(()=>child.emit('close',1));return child;}}:name==='./runtime.cjs'?{get:()=>null}:name==='./image-info.cjs'?require('../core/image-info.cjs'):require(name);
+ vm.runInNewContext(await fs.readFile(path.resolve(__dirname,'../core/chat-media.cjs'),'utf8'),{module,exports:module.exports,require:custom,__dirname:path.resolve(__dirname,'../core'),process,Buffer,setTimeout:mode==='timeout'?callback=>setImmediate(callback):setTimeout,clearTimeout:mode==='timeout'?clearImmediate:clearTimeout});
+ await assert.rejects(module.exports.pdfText(Buffer.from('synthetic')),mode==='timeout'?/for lang tid/:/kunne ikke læses/);if(mode==='timeout')assert.equal(killed,true);
+ }
+});
