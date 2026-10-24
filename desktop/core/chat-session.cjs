@@ -244,6 +244,7 @@ class ChatSession {
       disclosure.accepted = false;
     }
     disclosure.modelName = selection.model.name || selection.model.id;
+    disclosure.modelSupport = require('./model-support.cjs').report(selection.connection, selection.model, selection.route, { catalogAt: bench.catalogTimes.get(selection.connection.id) || null });
     // Forhåndsvisningens størrelse til før/efter-billederne. Kun tal; siden findes i hovedprocessen.
     const view = input.view && Number.isFinite(input.view.width) && Number.isFinite(input.view.height) ? { width: Math.round(input.view.width), height: Math.round(input.view.height) } : null;
     if ((bench.connectionVersions.get(input.connectionID) || 0) !== connectionVersion) throw new Error('Forbindelsen blev ændret. Gennemgå oplysningerne igen.');
