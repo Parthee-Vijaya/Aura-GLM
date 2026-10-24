@@ -53,10 +53,10 @@ async function scenario(surface, mode) {
     assert.match(effective.rules, /R06-SYNTETISK/);
     const firstFingerprint = effective.fingerprint;
     await fs.writeFile(path.join(project, 'AGENTS.md'), own + 'NY-REGEL\n');
-    await assert.rejects(bench.send({ text: 'Undersøg designet', fingerprint: firstFingerprint }), /har ændret sig/);
+    await assert.rejects(bench.send({ text: 'Undersøg designet', fingerprint: firstFingerprint, contextBinding: effective.contextBinding }), /har ændret sig/);
     assert.equal(requests.length, 0, 'Ingen modelkald efter en ændret instruktionsfil');
     const next = await bench.prepare({ mode }); assert.notEqual(next.fingerprint, firstFingerprint);
-    await bench.send({ text: 'Undersøg designet uden filændringer', fingerprint: next.fingerprint });
+    await bench.send({ text: 'Undersøg designet uden filændringer', fingerprint: next.fingerprint, contextBinding: next.contextBinding });
     const status = await finished; assert.equal(status, 'idle');
     const main = requests.filter(body => body.tools?.some(tool => tool.function?.name === 'skill'));
     const system = JSON.stringify(main[0].messages.filter(message => message.role === 'system'));
@@ -75,7 +75,7 @@ async function scenario(surface, mode) {
     clearTimeout(timer); finished = waitForRun();
     await fs.writeFile(path.join(project, 'AGENTS.md'), own + 'TREDJE-REGEL\n');
     const changed = await bench.prepare({ mode });
-    await bench.send({ text: 'Læs med de nye regler', fingerprint: changed.fingerprint });
+    await bench.send({ text: 'Læs med de nye regler', fingerprint: changed.fingerprint, contextBinding: changed.contextBinding });
     assert.equal(await finished, 'idle');
     assert.notEqual(bench.chat.engine.session.id, previousSession, 'Ændrede regler starter en ny modelsession');
     const latest = requests.filter(body => body.tools?.some(tool => tool.function?.name === 'skill')).at(-1);
