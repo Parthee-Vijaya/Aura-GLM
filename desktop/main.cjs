@@ -581,6 +581,7 @@ handle('connections:save', value => exclusive(() => workbench.saveConnection(val
 handle('connections:remove', value => exclusive(() => workbench.removeConnection(value)));
 handle('connections:models', value => workbench.models(value));
 handle('connections:routes', value => workbench.routes(value.connectionID, value.modelID));
+require('./core/chat-materials-ipc.cjs').installChatMaterials({ getWorkbench:currentWorkbench, isSelected:bench => registry.selected === bench, register:handle, dialog, exclusive, emit:sendEvent });
 handle('agent:prepare', value => exclusive(() => workbench.prepare(chatInput(value))));
 handle('agent:send', value => {
   if (!currentProject()) throw new Error('Åbn et projekt først.');
