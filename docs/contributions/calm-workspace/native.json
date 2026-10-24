@@ -1,0 +1,31 @@
+{
+  "passed": true,
+  "label": "calm-workspace-after",
+  "checks": [
+    "Dark workspace default",
+    "Viewport fits 1280",
+    "Viewport fits 980",
+    "Viewport fits 720",
+    "Surface reachable 720",
+    "Hidden chat inert 720",
+    "Sidebar reachable 720",
+    "Hidden sidebar inert 720",
+    "Viewport fits 390",
+    "Surface reachable 390",
+    "Hidden chat inert 390",
+    "Sidebar reachable 390",
+    "Hidden sidebar inert 390",
+    "Viewport fits 320",
+    "Surface reachable 320",
+    "Hidden chat inert 320",
+    "Sidebar reachable 320",
+    "Hidden sidebar inert 320",
+    "Light theme works",
+    "Theme remembered",
+    "Onboarding remains unchanged"
+  ],
+  "errors": [],
+  "assetFailures": [],
+  "controlledModelCalls": 0,
+  "externalModelCalls": 0
+}

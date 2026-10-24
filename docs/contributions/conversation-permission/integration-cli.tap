@@ -1,0 +1,172 @@
+TAP version 13
+# Subtest: argumenter accepterer mapper med mellemrum og afviser skjulte tilladelser og nøgler
+ok 1 - argumenter accepterer mapper med mellemrum og afviser skjulte tilladelser og nøgler
+  ---
+  duration_ms: 0.831083
+  type: 'test'
+  ...
+# Subtest: ikke-interaktiv start afslås før der oprettes data eller foretages netkald
+ok 2 - ikke-interaktiv start afslås før der oprettes data eller foretages netkald
+  ---
+  duration_ms: 49.882791
+  type: 'test'
+  ...
+# Subtest: terminaltekst fjerner OSC, CSI, skjulte tegn og kendte eller registrerede nøgler
+ok 3 - terminaltekst fjerner OSC, CSI, skjulte tegn og kendte eller registrerede nøgler
+  ---
+  duration_ms: 0.364542
+  type: 'test'
+  ...
+# Subtest: udbydervalg viser fire muligheder; lange kataloger har højst fire valg pr. side
+ok 4 - udbydervalg viser fire muligheder; lange kataloger har højst fire valg pr. side
+  ---
+  duration_ms: 0.345333
+  type: 'test'
+  ...
+# Subtest: nøglelager krypterer, genåbner og afviser forkert adgangssætning og ændret ciphertext
+ok 5 - nøglelager krypterer, genåbner og afviser forkert adgangssætning og ændret ciphertext
+  ---
+  duration_ms: 132.637708
+  type: 'test'
+  ...
+# Subtest: Electrons Linux-fallback afvises selv når isEncryptionAvailable er true
+ok 6 - Electrons Linux-fallback afvises selv når isEncryptionAvailable er true
+  ---
+  duration_ms: 0.228584
+  type: 'test'
+  ...
+# Subtest: Windows-nøglelageret kalder ikke Electrons Linux-metode
+ok 7 - Windows-nøglelageret kalder ikke Electrons Linux-metode
+  ---
+  duration_ms: 0.179958
+  type: 'test'
+  ...
+# Subtest: separat lager må ikke ligge i projektet; lås beskytter mod to klienter
+ok 8 - separat lager må ikke ligge i projektet; lås beskytter mod to klienter
+  ---
+  duration_ms: 2.949708
+  type: 'test'
+  ...
+# Subtest: browserkommando og motorvalg er eksplicitte for macOS, Linux og Windows
+ok 9 - browserkommando og motorvalg er eksplicitte for macOS, Linux og Windows
+  ---
+  duration_ms: 0.488541
+  type: 'test'
+  ...
+# Subtest: eksisterende mappe uden manifest genåbner kladde og skills uden at ændre projektet
+ok 10 - eksisterende mappe uden manifest genåbner kladde og skills uden at ændre projektet
+  ---
+  duration_ms: 24.985667
+  type: 'test'
+  ...
+# Subtest: datagennemgang kræver et aktivt ja; ukendte forhold og kilde vises
+ok 11 - datagennemgang kræver et aktivt ja; ukendte forhold og kilde vises
+  ---
+  duration_ms: 0.225416
+  type: 'test'
+  ...
+# Subtest: CLI viser kun nøgle og lokal AI; Komplai afvises før nøglelager og netkald
+ok 12 - CLI viser kun nøgle og lokal AI; Komplai afvises før nøglelager og netkald
+  ---
+  duration_ms: 1.761041
+  type: 'test'
+  ...
+# Subtest: CLI afviser en gammel Komplai-forbindelse uden dekryptering eller automatisk modelskift
+ok 13 - CLI afviser en gammel Komplai-forbindelse uden dekryptering eller automatisk modelskift
+  ---
+  duration_ms: 2.428791
+  type: 'test'
+  ...
+# Subtest: CLI kan fjerne et gammelt Komplai-token uden at røre Run-adgang eller andre forbindelser
+ok 14 - CLI kan fjerne et gammelt Komplai-token uden at røre Run-adgang eller andre forbindelser
+  ---
+  duration_ms: 8.581292
+  type: 'test'
+  ...
+# Subtest: nye projekter og browserpreview bruger faktiske filer uden Git-commit
+ok 15 - nye projekter og browserpreview bruger faktiske filer uden Git-commit
+  ---
+  duration_ms: 33.177583
+  type: 'test'
+  ...
+# Subtest: Historisk forbrug vises i DKK, ikke som nul USD
+ok 16 - Historisk forbrug vises i DKK, ikke som nul USD
+  ---
+  duration_ms: 12.798833
+  type: 'test'
+  ...
+# Subtest: versionsgemning og gendannelse gennem CLI-handlinger bruger kun gennemgåede filer
+ok 17 - versionsgemning og gendannelse gennem CLI-handlinger bruger kun gennemgåede filer
+  ---
+  duration_ms: 1555.960667
+  type: 'test'
+  ...
+# Subtest: udgivelse viser version, destination og adgang og sender intet ved nej
+ok 18 - udgivelse viser version, destination og adgang og sender intet ved nej
+  ---
+  duration_ms: 9.666875
+  type: 'test'
+  ...
+# Subtest: stop under katalogkontrol forhindrer en efterfølgende modelafsendelse
+ok 19 - stop under katalogkontrol forhindrer en efterfølgende modelafsendelse
+  ---
+  duration_ms: 12.5435
+  type: 'test'
+  ...
+# Subtest: en afvist opgave viser sit eget resultat, også når forrige opgave ændrede filer
+ok 20 - en afvist opgave viser sit eget resultat, også når forrige opgave ændrede filer
+  ---
+  duration_ms: 9.358791
+  type: 'test'
+  ...
+# Subtest: CLI sends the same message and context binding that were prepared and disclosed
+ok 21 - CLI sends the same message and context binding that were prepared and disclosed
+  ---
+  duration_ms: 12.116666
+  type: 'test'
+  ...
+# Subtest: CLI-arkivet afviser private filer, traversal, symlinks, dubletter og ødelagte arkiver
+ok 22 - CLI-arkivet afviser private filer, traversal, symlinks, dubletter og ødelagte arkiver
+  ---
+  duration_ms: 4.36525
+  type: 'test'
+  ...
+# Subtest: CLI-udgivelsen kræver alle seks filer, betakladde, samme version, størrelse og faktiske hash
+ok 23 - CLI-udgivelsen kræver alle seks filer, betakladde, samme version, størrelse og faktiske hash
+  ---
+  duration_ms: 1.300584
+  type: 'test'
+  ...
+# Subtest: Pages holder CLI og desktop adskilt og vælger kun komplette offentliggjorte terminalpakker
+ok 24 - Pages holder CLI og desktop adskilt og vælger kun komplette offentliggjorte terminalpakker
+  ---
+  duration_ms: 0.610375
+  type: 'test'
+  ...
+# Subtest: GitHub-kladder findes via release-ID og tillader kun deres egne midlertidige filadresser
+ok 25 - GitHub-kladder findes via release-ID og tillader kun deres egne midlertidige filadresser
+  ---
+  duration_ms: 0.5645
+  type: 'test'
+  ...
+# Subtest: Den faktiske Pages-bygning viser CLI-guides og bevarer appens tomme tilstand
+ok 26 - Den faktiske Pages-bygning viser CLI-guides og bevarer appens tomme tilstand
+  ---
+  duration_ms: 42.061083
+  type: 'test'
+  ...
+# Subtest: Downloadsiden samler app og terminal uden at blande filtyper eller vise kladder
+ok 27 - Downloadsiden samler app og terminal uden at blande filtyper eller vise kladder
+  ---
+  duration_ms: 45.633791
+  type: 'test'
+  ...
+1..27
+# tests 27
+# suites 0
+# pass 27
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1932.351666

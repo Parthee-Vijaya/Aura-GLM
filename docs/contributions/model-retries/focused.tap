@@ -1,0 +1,214 @@
+TAP version 13
+# Subtest: OpenAI fastholder sin adresse, og Azure kræver en ressourceadresse og et deployment-navn
+ok 1 - OpenAI fastholder sin adresse, og Azure kræver en ressourceadresse og et deployment-navn
+  ---
+  duration_ms: 2.151542
+  type: 'test'
+  ...
+# Subtest: openai: katalog, nøgle, Responses-strøm, historik og afvist adgang
+ok 2 - openai: katalog, nøgle, Responses-strøm, historik og afvist adgang
+  ---
+  duration_ms: 32.16025
+  type: 'test'
+  ...
+# Subtest: azure: katalog, nøgle, Responses-strøm, historik og afvist adgang
+ok 3 - azure: katalog, nøgle, Responses-strøm, historik og afvist adgang
+  ---
+  duration_ms: 8.234708
+  type: 'test'
+  ...
+# Subtest: Responses kan hverken skifte model eller falde tilbage til Chat Completions
+ok 4 - Responses kan hverken skifte model eller falde tilbage til Chat Completions
+  ---
+  duration_ms: 2.091541
+  type: 'test'
+  ...
+# Subtest: Large 4 bruger Mistrals adapter, kataloggrænser og listepris uden en permanent lanceringsrabat
+ok 5 - Large 4 bruger Mistrals adapter, kataloggrænser og listepris uden en permanent lanceringsrabat
+  ---
+  duration_ms: 10.129166
+  type: 'test'
+  ...
+# Subtest: Corti, Mistral og Alexandra fastholder destination; ukendte udbydere afvises
+ok 6 - Corti, Mistral og Alexandra fastholder destination; ukendte udbydere afvises
+  ---
+  duration_ms: 0.73725
+  type: 'test'
+  ...
+# Subtest: corti: katalog, streaming, værktøjskald og fejl gennem rigtig HTTP-gateway
+ok 7 - corti: katalog, streaming, værktøjskald og fejl gennem rigtig HTTP-gateway
+  ---
+  duration_ms: 30.454084
+  type: 'test'
+  ...
+# Subtest: mistral: katalog, streaming, værktøjskald og fejl gennem rigtig HTTP-gateway
+ok 8 - mistral: katalog, streaming, værktøjskald og fejl gennem rigtig HTTP-gateway
+  ---
+  duration_ms: 8.4405
+  type: 'test'
+  ...
+# Subtest: alexandra: katalog, streaming, værktøjskald og fejl gennem rigtig HTTP-gateway
+ok 9 - alexandra: katalog, streaming, værktøjskald og fejl gennem rigtig HTTP-gateway
+  ---
+  duration_ms: 4.81625
+  type: 'test'
+  ...
+# Subtest: kendte modeller får deres dokumenterede tokengrænser; ukendte beholder de forsigtige
+ok 10 - kendte modeller får deres dokumenterede tokengrænser; ukendte beholder de forsigtige
+  ---
+  duration_ms: 0.433166
+  type: 'test'
+  ...
+# Subtest: gatewayen lader en langsom strøm køre færdig, men stopper stilstand
+ok 11 - gatewayen lader en langsom strøm køre færdig, men stopper stilstand
+  ---
+  duration_ms: 1310.647542
+  type: 'test'
+  ...
+# Subtest: Zens vilkår vises for hver model
+ok 12 - Zens vilkår vises for hver model
+  ---
+  duration_ms: 0.368917
+  type: 'test'
+  ...
+# Subtest: Corti-forbindelsen bruger adressen fra nøglens miljø og aldrig USA
+ok 13 - Corti-forbindelsen bruger adressen fra nøglens miljø og aldrig USA
+  ---
+  duration_ms: 0.538917
+  type: 'test'
+  ...
+# Subtest: Alexandra: DKK-priser, dokumenterede grænser og danske vilkår
+ok 14 - Alexandra: DKK-priser, dokumenterede grænser og danske vilkår
+  ---
+  duration_ms: 0.272291
+  type: 'test'
+  ...
+# Subtest: når Corti afviser nøglen, siger beskeden hvilken adresse appen prøvede
+ok 15 - når Corti afviser nøglen, siger beskeden hvilken adresse appen prøvede
+  ---
+  duration_ms: 2.487542
+  type: 'test'
+  ...
+# Subtest: corti-s1 får plads til tanker og svar, og kun de indsatsniveauer, Corti selv oplyser
+ok 16 - corti-s1 får plads til tanker og svar, og kun de indsatsniveauer, Corti selv oplyser
+  ---
+  duration_ms: 0.160625
+  type: 'test'
+  ...
+# Subtest: OpenCode får Auras højeste svarloft, så modellens egen grænse bestemmer
+ok 17 - OpenCode får Auras højeste svarloft, så modellens egen grænse bestemmer
+  ---
+  duration_ms: 1.324125
+  type: 'test'
+  ...
+# Subtest: gatewayen sender kun en indsats, når brugeren har valgt den, og som hver udbyder forventer
+ok 18 - gatewayen sender kun en indsats, når brugeren har valgt den, og som hver udbyder forventer
+  ---
+  duration_ms: 6.391083
+  type: 'test'
+  ...
+# Subtest: transient provider failures retry identical approved payload, credentials and destination
+ok 19 - transient provider failures retry identical approved payload, credentials and destination
+  ---
+  duration_ms: 49.100708
+  type: 'test'
+  ...
+# Subtest: waiting grace lets a slow model finish without restarting it
+ok 20 - waiting grace lets a slow model finish without restarting it
+  ---
+  duration_ms: 75.71575
+  type: 'test'
+  ...
+# Subtest: timeout before any content retries with the same request after cancelling the old stream
+ok 21 - timeout before any content retries with the same request after cancelling the old stream
+  ---
+  duration_ms: 52.048667
+  type: 'test'
+  ...
+# Subtest: heartbeat-only stream can reconnect; heartbeats are not replayed as model content
+ok 22 - heartbeat-only stream can reconnect; heartbeats are not replayed as model content
+  ---
+  duration_ms: 29.630542
+  type: 'test'
+  ...
+# Subtest: HTTP 400 is never retried and raw provider errors stay private
+ok 23 - HTTP 400 is never retried and raw provider errors stay private
+  ---
+  duration_ms: 3.850583
+  type: 'test'
+  ...
+# Subtest: HTTP 401 is never retried and raw provider errors stay private
+ok 24 - HTTP 401 is never retried and raw provider errors stay private
+  ---
+  duration_ms: 1.869708
+  type: 'test'
+  ...
+# Subtest: HTTP 402 is never retried and raw provider errors stay private
+ok 25 - HTTP 402 is never retried and raw provider errors stay private
+  ---
+  duration_ms: 1.894792
+  type: 'test'
+  ...
+# Subtest: HTTP 403 is never retried and raw provider errors stay private
+ok 26 - HTTP 403 is never retried and raw provider errors stay private
+  ---
+  duration_ms: 2.130292
+  type: 'test'
+  ...
+# Subtest: HTTP 404 is never retried and raw provider errors stay private
+ok 27 - HTTP 404 is never retried and raw provider errors stay private
+  ---
+  duration_ms: 2.527625
+  type: 'test'
+  ...
+# Subtest: partial tool stream is never replayed (socket loss)
+ok 28 - partial tool stream is never replayed (socket loss)
+  ---
+  duration_ms: 24.003166
+  type: 'test'
+  ...
+# Subtest: partial tool stream is never replayed (truncated clean EOF)
+ok 29 - partial tool stream is never replayed (truncated clean EOF)
+  ---
+  duration_ms: 23.521084
+  type: 'test'
+  ...
+# Subtest: Stop during backoff cancels all later attempts without blaming the provider
+ok 30 - Stop during backoff cancels all later attempts without blaming the provider
+  ---
+  duration_ms: 258.179166
+  type: 'test'
+  ...
+# Subtest: retry count is bounded and exhaustion blocks independent engine retries
+ok 31 - retry count is bounded and exhaustion blocks independent engine retries
+  ---
+  duration_ms: 21.40725
+  type: 'test'
+  ...
+# Subtest: total deadline bounds attempts and backoff together
+ok 32 - total deadline bounds attempts and backoff together
+  ---
+  duration_ms: 82.95
+  type: 'test'
+  ...
+# Subtest: Retry-After seconds/date are respected; long quota waits are not silently retried
+ok 33 - Retry-After seconds/date are respected; long quota waits are not silently retried
+  ---
+  duration_ms: 3.090042
+  type: 'test'
+  ...
+# Subtest: engine timeouts leave room for the gateway deadline on every supported protocol
+ok 34 - engine timeouts leave room for the gateway deadline on every supported protocol
+  ---
+  duration_ms: 0.819042
+  type: 'test'
+  ...
+1..34
+# tests 34
+# suites 0
+# pass 34
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3378.701292

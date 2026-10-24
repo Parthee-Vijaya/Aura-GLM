@@ -1,5 +1,5 @@
 // En komplai Run-app i forhåndsvisningen spørger siden omkring den (komplaiPreview), når SDK'et kalder komplai.
-// Aura sender kaldet til Hubs forhåndsvisning af din egen app: rigtig identitet og AI, data adskilt fra appens rigtige data.
+// Aura 1 sender kaldet til Hubs forhåndsvisning af din egen app: rigtig identitet og AI, data adskilt fra appens rigtige data.
 // Kun den aktive forhåndsvisnings vindue må bruge det valgte projekts forbindelse.
 (() => {
   const $ = selector => document.querySelector(selector);

@@ -1,0 +1,76 @@
+TAP version 13
+# Subtest: primary core is loaded in every building mode, but not ordinary chat or a disabled design feature
+ok 1 - primary core is loaded in every building mode, but not ordinary chat or a disabled design feature
+  ---
+  duration_ms: 16.893958
+  type: 'test'
+  ...
+# Subtest: project customization reaches the core; pre-project context never borrows another project
+ok 2 - project customization reaches the core; pre-project context never borrows another project
+  ---
+  duration_ms: 11.960125
+  type: 'test'
+  ...
+# Subtest: an enabled but malformed main skill fails closed instead of silently substituting instructions
+ok 3 - an enabled but malformed main skill fails closed instead of silently substituting instructions
+  ---
+  duration_ms: 0.248959
+  type: 'test'
+  ...
+# Subtest: exports route builds to the primary skill only when it is selected and retain the full guide
+ok 4 - exports route builds to the primary skill only when it is selected and retain the full guide
+  ---
+  duration_ms: 6.973959
+  type: 'test'
+  ...
+# Subtest: uden valg gælder den anbefalede pakke, og en funktion følger den, den bygger på
+ok 5 - uden valg gælder den anbefalede pakke, og en funktion følger den, den bygger på
+  ---
+  duration_ms: 0.694083
+  type: 'test'
+  ...
+# Subtest: standarden gælder alle projekter; undtagelser gemmes kun, når de afviger
+ok 6 - standarden gælder alle projekter; undtagelser gemmes kun, når de afviger
+  ---
+  duration_ms: 108.332167
+  type: 'test'
+  ...
+# Subtest: Komplai Run når kun motoren efter tilvalg og fjernes igen ved fravalg
+ok 7 - Komplai Run når kun motoren efter tilvalg og fjernes igen ved fravalg
+  ---
+  duration_ms: 19.9255
+  type: 'test'
+  ...
+# Subtest: læseregler virker med stier i forhold til Git-roden og uden Git
+ok 8 - læseregler virker med stier i forhold til Git-roden og uden Git
+  ---
+  duration_ms: 1.059875
+  type: 'test'
+  ...
+# Subtest: motorens skillmappe skrives forfra og tager kun gyldige skills
+ok 9 - motorens skillmappe skrives forfra og tager kun gyldige skills
+  ---
+  duration_ms: 3.988666
+  type: 'test'
+  ...
+# Subtest: appens regler følger funktionerne
+ok 10 - appens regler følger funktionerne
+  ---
+  duration_ms: 1.042959
+  type: 'test'
+  ...
+# Subtest: et Promte-login slår Udgivelse til som standard, men respekterer et eget valg
+ok 11 - et Promte-login slår Udgivelse til som standard, men respekterer et eget valg
+  ---
+  duration_ms: 5.473667
+  type: 'test'
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 256.95625

@@ -1,3 +1,19 @@
+# Aura 1 beta 1
+
+Dette er **Parthee-Vijayas fork af Aura Harness**. Den samlede udgave indeholder de 24 tidligere sammenlagte bidrag, opdateringerne til ti af bidragene og de syv nye funktioner. PR’erne til AI Alliancens original fortsætter særskilt; denne udgivelse er fra forken.
+
+[Hent Aura 1 beta 1 til Apple Silicon](https://github.com/Parthee-Vijaya/ai-harness/releases/tag/v1.0.0-beta.1) · [Udgivelsesnoter og afprøvning](docs/releases/aura-1-beta-1.md) · [Originalprojektet](https://github.com/ai-alliancen-org/ai-harness)
+
+- Den godkendte onboarding B med udbyderkort, brandfarver og visualisering er bevaret. Projektnavnet står over idéen, og idéhjælpen kan forfine beskrivelsen og foreslå en plan før oprettelsen.
+- Arbejdsområdet har den godkendte mørke visning, én plusmenu til tekstfiler, billeder, PDF og referencemapper samt en arbejdsstatus over forhåndsvisningen. Du kan se forhåndsvisningen under arbejdet.
+- Modellen kan stille opfølgende spørgsmål. Genforsøg ved midlertidige forbindelsesfejl og genoptagelse af sessioner bevarer kontekst og undgår automatisk gentagelse af udførte handlinger.
+- Designfunktionen aktiverer den fælles hovedskill ved byggeopgaver. Plan- og værktøjsgodkendelser gælder fortsat. Fuld tilladelse er et særskilt, advarende valg for den aktuelle samtale og ophæver ikke faste regler.
+- Appen hedder **Aura 1**, mens eksisterende data- og nøgleringsidentiteter bevares. Opdateringskontrol peger på denne fork.
+
+Denne udgivelse er en **lokalt kvalificeret macOS-beta til arm64**, uden Developer ID-notarisering. Den er ikke en udgivelse af det separate Code-OSS-baserede Aura-1-projekt, og den gør ikke krav på fuld Privacy Gate. GitHub CI, Intel-Mac, Windows og kvaliteten hos eksterne AI-udbydere er ikke certificeret af denne udgivelse. Brug en separat profil ved afprøvning. Historiske skærmbilleder og de oprindelige installationsvejledninger nedenfor beskriver originalprojektet; forkens aktuelle noter og billeder findes i linket ovenfor.
+
+---
+
 <p align="center">
   <img src="docs/images/aura-icon.png" width="88" alt="Aura">
 </p>
@@ -91,7 +107,7 @@ Når du har en Aura-installation, kan du vælge **Prøv et eksempel** ved opstar
 
 *Et lokalt eksempel, der viser samspillet mellem besked og forhåndsvisning. Der foretages ingen modelkald.*
 
-[Hent Aura til Mac eller Windows](https://ai-alliancen-org.github.io/ai-harness/desktop.html) uden GitHub-login. Downloadsiden viser den seneste offentliggjorte beta og dens udgivelsesnoter. Mac-pakkerne er signerede og notariserede; Windows-pakken er usigneret. Se [platformsafprøvning](docs/teststatus.md) for den konkrete version.
+Originalprojektets [downloads til Mac og Windows](https://ai-alliancen-org.github.io/ai-harness/desktop.html) har deres egne versions- og signeringsoplysninger. Brug [forkens udgivelse](https://github.com/Parthee-Vijaya/ai-harness/releases/tag/v1.0.0-beta.1) for **Aura 1 beta 1**; den er ikke notariseret.
 
 ### Start fra kildekoden
 

@@ -1,8 +1,9 @@
 const path = require('node:path');
 const fs = require('node:fs');
 
-// Appen hedder Aura. Før navneskiftet hed den AI Harness, og skiftet må ikke koste brugerne deres data.
-const DISPLAY_NAME = 'Aura';
+// Appen hedder Aura 1. Visningsnavnet ændrer ikke eksisterende data- eller nøgleringsidentitet.
+const DISPLAY_NAME = require('./distribution.cjs').displayName;
+const STORAGE_NAME = 'Aura';
 const LEGACY_NAME = 'AI Harness';
 
 // Datamappen og navnet i nøgleringen bestemmes før opstart. En eksisterende installation beholder sin datamappe, så
@@ -12,13 +13,13 @@ const LEGACY_NAME = 'AI Harness';
 function appIdentity({ appData, packaged, customUserData, userData, sessionData, files = fs }) {
   const legacyFolder = customUserData ? null : path.join(appData, packaged ? LEGACY_NAME : 'ai-harness-desktop');
   const legacy = Boolean(legacyFolder && files.existsSync(legacyFolder));
-  const folder = legacy ? legacyFolder : userData;
+  const folder = legacy ? legacyFolder : customUserData ? userData : packaged ? path.join(appData, STORAGE_NAME) : userData;
   const marker = path.join(folder, 'harness', 'noeglering.json');
   let keychainName;
   try { keychainName = JSON.parse(files.readFileSync(marker, 'utf8')).navn; }
-  catch { keychainName = files.existsSync(path.join(folder, 'harness')) ? LEGACY_NAME : DISPLAY_NAME; }
-  if (![LEGACY_NAME, DISPLAY_NAME].includes(keychainName)) keychainName = DISPLAY_NAME;
-  return { userData: folder, sessionData: legacy ? legacyFolder : sessionData, keychainName, marker };
+  catch { keychainName = files.existsSync(path.join(folder, 'harness')) ? LEGACY_NAME : STORAGE_NAME; }
+  if (![LEGACY_NAME, STORAGE_NAME].includes(keychainName)) keychainName = STORAGE_NAME;
+  return { userData: folder, sessionData: legacy ? legacyFolder : packaged && !customUserData ? folder : sessionData, keychainName, marker };
 }
 
 // Husker navnet, så næste opstart vælger det samme. Uden skriveadgang bruges navnet alligevel i denne kørsel.
@@ -31,7 +32,7 @@ function rememberKeychain({ marker, keychainName }, files = fs) {
 // så brugerens projekter bliver samlet ét sted.
 function projectParent(documents, files = fs) {
   const earlier = path.join(documents, LEGACY_NAME);
-  return files.existsSync(earlier) ? earlier : path.join(documents, DISPLAY_NAME);
+  return files.existsSync(earlier) ? earlier : path.join(documents, STORAGE_NAME);
 }
 
 module.exports = { appIdentity, rememberKeychain, projectParent, DISPLAY_NAME, LEGACY_NAME };

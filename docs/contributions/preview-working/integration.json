@@ -1,0 +1,196 @@
+{
+  "kind": "local integration verification; not a merged upstream branch",
+  "baseFork": "14c7130a7ae42704699b7aeea95ab2eba8f465ef",
+  "upstreamBase": "dce68ea74a199ca214ab535a16ff22765d8ee8de",
+  "approvedImplementation": "fa223d3b2ceb6f27e5fecf4c13f590913801036c",
+  "localIntegrationCommit": "9a6a6191957c222b4f370ed2ec2793b90ac0417c",
+  "desktop": {
+    "passed": 746,
+    "failed": 0
+  },
+  "cli": {
+    "passed": 27,
+    "failed": 0
+  },
+  "packages": {
+    "count": 23,
+    "regeneratedWithPinnedNode": true
+  },
+  "existingUpdatedPRs": [
+    {
+      "number": 17,
+      "branch": "feat/onboarding-b-visual-setup",
+      "commit": "f14e5f3b4a464d8ee83b8bfff362221370946569"
+    },
+    {
+      "number": 19,
+      "branch": "fix/run-bound-questions",
+      "commit": "09f4996eeee4cddc5793a490ba88795307a50252"
+    },
+    {
+      "number": 23,
+      "branch": "feat/harness-aura-design",
+      "commit": "49adbb92c493a8f4ac2645169d77615f9b09a7ac"
+    },
+    {
+      "number": 34,
+      "branch": "contrib/f12-history-load",
+      "commit": "4f42aaba0e288033998eefd8724e560c05031d0c"
+    },
+    {
+      "number": 36,
+      "branch": "contrib/f08-exact-app-context",
+      "commit": "bad4e25d5e9727ba4b07d631a9f65edc3040c0d1"
+    },
+    {
+      "number": 39,
+      "branch": "contrib/t04-package-source-integrity",
+      "commit": "9e3680a98f51c0861e238c25ce92727e2d446e0f"
+    },
+    {
+      "number": 29,
+      "branch": "contrib/f13-reviewed-chat-files",
+      "commit": "c04b9a8481bf3ff82c1a7f4c47eecc71fdccc00f"
+    },
+    {
+      "number": 30,
+      "branch": "contrib/f14-readonly-folder-context",
+      "commit": "864ec077cdb3e42d8a7a493084a0252c2ede3e59"
+    },
+    {
+      "number": 38,
+      "branch": "contrib/f16-reviewed-chat-images",
+      "commit": "54678ec74096453f3fd401f2e507135d80d1e95e"
+    },
+    {
+      "number": 40,
+      "branch": "contrib/f15-reviewed-pdf-text",
+      "commit": "205a6e825879ff5d4211875384da28c55f3fe48a"
+    }
+  ],
+  "manualReconciliation": [
+    "desktop/core/chat-materials-ipc.cjs",
+    "desktop/core/chat-session.cjs",
+    "desktop/electron-builder.cjs",
+    "desktop/main.cjs",
+    "desktop/tests/chat-materials-ipc.test.cjs",
+    "desktop/ui/app.js",
+    "desktop/ui/chat-materials.css",
+    "desktop/ui/index.html"
+  ],
+  "note": "Shared approved changes reconciled, new modules retained, question fixture passes reviewed context and all 23 exports regenerated. Not evidence that all PR branches merge without conflicts.",
+  "newInitialCodeCommits": [
+    {
+      "id": "model-retries",
+      "branch": "fix/bounded-model-retries",
+      "codeCommit": "51aca785bd2c1f88d4cac882088c28227754aeac"
+    },
+    {
+      "id": "session-recovery",
+      "branch": "fix/recover-existing-agent-session",
+      "codeCommit": "bf41d230eb85a143a7b47579e3c0ab209f8b6a65"
+    },
+    {
+      "id": "primary-design",
+      "branch": "feat/activate-primary-build-skill",
+      "codeCommit": "fc7ee94e26ca0866d2e0e9e7a3309fa81fa8eac3"
+    },
+    {
+      "id": "idea-refinement",
+      "branch": "feat/pre-project-idea-refinement",
+      "codeCommit": "d3b6b6828743799b8055df4b9794a497e34c3e4e"
+    },
+    {
+      "id": "conversation-permission",
+      "branch": "feat/conversation-lifetime-permission",
+      "codeCommit": "15eb6dcd8e1856358d38ca4b4a5e54fefce3e1b6"
+    },
+    {
+      "id": "calm-workspace",
+      "branch": "feat/calm-responsive-workspace",
+      "codeCommit": "8936a13e1d7f7a6cf3af9a26e5f55dc1ccc40a14"
+    },
+    {
+      "id": "preview-working",
+      "branch": "feat/preview-working-status",
+      "codeCommit": "1dcb0d9b3dbb86de78f9836979a531def3f1face"
+    }
+  ],
+  "scope": "Initial code commits identify extraction; final source hashes below include tested follow-up fixes.",
+  "newSourceHashes": {
+    "model-retries": {
+      "desktop/core/chat-session.cjs": "afd602557109ea8a60b4f0ceebab840b557a75b1fd19427b220128a3076a1110",
+      "desktop/core/connections.cjs": "001e1df4e219a420ee76880cfdd8f75789058bd97dbfb7611bd8fed47a9d1049",
+      "desktop/core/gateway.cjs": "425a69279d56825ca20ce826860a10a43d698e117f42351a4bb15984d685aebd",
+      "desktop/core/model-transport.cjs": "562da74be39e0dba071dd3f852b2d7c5b65d2c64d65ea48b55280cc3474c5557",
+      "desktop/tests/openai-azure.test.cjs": "be0887f02498f8b9b330d8a8755c56c37b365fb22977936e76db0e5efd9d4cc5",
+      "desktop/tests/providers.test.cjs": "2ce1e9e6e153385f9cda3122bf8f1562b70ea081c1005a5a133dfc78ee05b81d",
+      "desktop/tests/recovery-state.test.cjs": "e0f1d2fdd6fee7935061f22309613eacdb9d220734c56ef659d83d5626143801",
+      "desktop/tests/transport-retry.test.cjs": "68a7509b8a39a5ba0cddbfaff67688e6b49721a38521ff7ebb8f119285561215",
+      "desktop/ui/app.js": "7bc289aae5f6fa47cf41bce5cda80fcaaa2d743144169b34dab6f822f7959bce"
+    },
+    "session-recovery": {
+      "desktop/core/chat-session.cjs": "9c196fdfe68ec635ce9245a0f83bcb950b85d5dee746467db0b69dc0edf00ade",
+      "desktop/core/engine-events.cjs": "e06e8c2a84064222d2592508ec269437bad86fe5d102c30a779424317e684c4a",
+      "desktop/core/engine.cjs": "7058f4f77d496fd4a8668b2645f78a4b4f22ac2fe3cb55dccb7c084a78ac4e13",
+      "desktop/tests/engine-compaction.test.cjs": "311e2890fd0070e652fbd88b876c32fa8566206650019ea54a04eca0f695ffbc",
+      "desktop/tests/engine-recovery.test.cjs": "41d7c3c9d4f98ce3e20d2e39e2a4f7d7d8085a053aefb08b0c4b25fdce9be26f",
+      "desktop/tests/recovery-state.test.cjs": "e0f1d2fdd6fee7935061f22309613eacdb9d220734c56ef659d83d5626143801",
+      "desktop/ui/app.js": "7bc289aae5f6fa47cf41bce5cda80fcaaa2d743144169b34dab6f822f7959bce"
+    },
+    "primary-design": {
+      "desktop/core/adapters.cjs": "7f712c1ba92f630cf4225d1c7c22a7524001e202b35d448d7b81af86bdb9c0fa",
+      "desktop/core/build-design.cjs": "9db2955f932dc127538756ff9206ecd1a100330012bc401ee763c2c902a73c43",
+      "desktop/core/chat-session.cjs": "322fc66ff27da6aac26cfb8b8f604b18161e94f5e090c79652d904c4b9ba3f26",
+      "desktop/core/project-guidance.cjs": "87a43b584ce37aec4274d193d3ba1fa3ce765827766c879199c98e66f42f027d",
+      "desktop/core/skills.cjs": "c25b38d24b4ae8b3729673a6682cc125b6b00a6ecdbac85008a2a68d8ea56d4e",
+      "desktop/scripts/verify-primary-build-skill.cjs": "f82e4cab293e30d5f5c301581efadb659f442dd76d41bf0ac727bb718e85ff57",
+      "desktop/tests/build-design.test.cjs": "ccbfd78596729ce16fe39113f6aeb19ee31bb872331dcaab6ba120ce5120437e"
+    },
+    "idea-refinement": {
+      "desktop/core/build-design.cjs": "9db2955f932dc127538756ff9206ecd1a100330012bc401ee763c2c902a73c43",
+      "desktop/core/idea-refinement.cjs": "fc24bdfa8240e1656dc0431ba280d8d98641885e2e2728c440130102e3182922",
+      "desktop/core/skills.cjs": "c25b38d24b4ae8b3729673a6682cc125b6b00a6ecdbac85008a2a68d8ea56d4e",
+      "desktop/main.cjs": "97802965e01605e3c6c2adf459c7eaff6277bcbd0f13d9fc7b5d283c24428c02",
+      "desktop/preload.cjs": "ac8f03da3d07bf0b38bcb637f72c5438331bbe9957ac4795e25f8e9d882db4c6",
+      "desktop/tests/idea-refinement.test.cjs": "2fe9cd32ece79b045297b7f1874a37a3034084c4cb3128d9d1a9a158377c412d",
+      "desktop/ui/app.js": "f5b4b72246f88f2657c10745c913e2f11e0b1baecb701efef1c350392314d474",
+      "desktop/ui/idea-refinement.css": "277c34b954533365da316d890055dee7ed2a604bc3c88cdc6667cb048bd43e3b",
+      "desktop/ui/idea-refinement.js": "ae0158eba9670234647a46a66fa7eddf86b5329559e683905187fb11a9a18c1c",
+      "desktop/ui/index.html": "4a53f95863a3fa912853efa4c1f74935b841efba24fb5727a23ff5f918382122"
+    },
+    "conversation-permission": {
+      "desktop/core/approvals-policy.cjs": "3571ef78e7cf4adfebb73d5d5d89c8974c91bf46fb3509d68bf090f6936b9087",
+      "desktop/core/chat-session.cjs": "04b4fee613e333457f99f969e17850a0053263f3af65abb59db7313e1c9c4634",
+      "desktop/core/command-dispatch.cjs": "68d5f34268b7f16757608b3a267686138d52b1e2bbd44cdf2429c121ab0823f8",
+      "desktop/core/command-sandbox.cjs": "f61b59b909b7a943a07d42b6a2e8ffc601ce95b9e85b5df943c68a4ce6746316",
+      "desktop/core/conversation-permission.cjs": "72e53271b7a4ba24fa963cee36ca1885cea46afc062c5a7575286e5b2af7e778",
+      "desktop/core/workbench.cjs": "bf89e8e57203cd26775fa8a3a39f5b5ac5b3456a1afe3ed814ad025812b15978",
+      "desktop/electron-builder.cjs": "fadb278918b6e70d1780641845fe7015c272a4d2afa52d942530c02595dabf86",
+      "desktop/main.cjs": "6a3505699cca8e9937e890eebc6879081a90a077fb915fef998495f58494dd2d",
+      "desktop/preload.cjs": "e001ba6d24799c9e7567c00b53cd3b49415ad9a207c6dc47050b157ce30a256b",
+      "desktop/scripts/verify-conversation-permission.cjs": "9097d6cc186b7c4dbbabee7e9beffe1255b55e7afc0335ffed7e1e125b8f5462",
+      "desktop/tests/command-sandbox.test.cjs": "62f7f790e67004597eb3ed178d76fc14e2f0657a43ffe1807c29255734071a47",
+      "desktop/tests/conversation-permission.test.cjs": "24a9352727d81b1a0f4910cf2cbd8e8b54829a86d6fc03417f2b4d1d927a2f81",
+      "desktop/ui/app.js": "30ef7b147d87206084b94a129588a60098af3a02810f274932d2642d3bdf1f03",
+      "desktop/ui/approvals.js": "c32329064f36ecd9ea8dbaeadcb9b3987b7da81e396f635e6f49e6eddecb04ad",
+      "desktop/ui/conversation-permission.css": "34dc062e96a6a249822351c3bb5ad8bd9c642780912b2a042b1a7afe3da61011",
+      "desktop/ui/conversation-permission.js": "aaf9fdd45751cee67a3cb3e5cdfe10f105eb9d3a8ecc9e03984ec721723c1c7d",
+      "desktop/ui/index.html": "87e09148b1ad39f1d84265f67c42a09ba66dba8ce920d72dfdd06a6f1aff8634"
+    },
+    "calm-workspace": {
+      "desktop/main.cjs": "202f764c43a98fc5f632654728392d7c7eeedb724789fe4a7aa302d63ec14062",
+      "desktop/ui/index.html": "ec5b865cd8617a100377dd7e1657b3c8fe097d74576490e3f936437c54da1105",
+      "desktop/ui/workspace-calm.css": "edb7c80671a354bf8b1689880fabe98501da377735cde1b04d931e86a0bebc68",
+      "desktop/ui/workspace-calm.js": "9382a46a1e0afcc0f79481e23b3baeea93d563219ed378369e33f8a8dce73345"
+    },
+    "preview-working": {
+      "desktop/main.cjs": "89a52271779a2cff75ddae14c96ebc4fea78bb56e99f43a3c91725ffae077825",
+      "desktop/ui/app.js": "7390816bc79f4c5111366c05d4ac452619cfc7baf6f04ce278fbe9aac1112f4f",
+      "desktop/ui/index.html": "55574ea1f23b23a3456652d76ea3eb4e1175f3324d3619b87283efec6c638acf",
+      "desktop/ui/onboarding-aura-mark.svg": "be3d0b3648845a635484ea975176e4bf47a5953780b5bdfa8f4502dc58c00c01",
+      "desktop/ui/preview-working.css": "04b321fbe9850c58c3fbc634a7708aab2e746fbe54bceb63edf05aced9507551",
+      "desktop/ui/preview-working.js": "74ca3f8b23a0dfceebaff5556a4c3490d7f1760f39050ebba7c3eb4db0127b92"
+    }
+  }
+}

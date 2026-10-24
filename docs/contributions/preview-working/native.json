@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "label": "preview-working-after",
+  "checks": [
+    "Running preview has status overlay",
+    "Covered preview is keyboard inert",
+    "Reveal keeps run active",
+    "Preview state retained",
+    "Iframe not recreated",
+    "Overlay reopens",
+    "Waiting action focuses actual question",
+    "Other conversation has no overlay",
+    "Original conversation retains overlay",
+    "Reduced motion stops orbit",
+    "Error uncovers preview",
+    "Preview editable after error"
+  ],
+  "errors": [],
+  "assetFailures": [],
+  "controlledModelCalls": 0,
+  "externalModelCalls": 0
+}

@@ -1,0 +1,3127 @@
+TAP version 13
+# Subtest: en ny installation hedder Aura i datamappe og nøglering og husker det
+ok 1 - en ny installation hedder Aura i datamappe og nøglering og husker det
+  ---
+  duration_ms: 4.388292
+  type: 'test'
+  ...
+# Subtest: en installation fra før navneskiftet beholder sin datamappe og sit navn i nøgleringen
+ok 2 - en installation fra før navneskiftet beholder sin datamappe og sit navn i nøgleringen
+  ---
+  duration_ms: 2.324209
+  type: 'test'
+  ...
+# Subtest: udviklingsdata og en valgt datamappe følger samme regel
+ok 3 - udviklingsdata og en valgt datamappe følger samme regel
+  ---
+  duration_ms: 2.638875
+  type: 'test'
+  ...
+# Subtest: nye projekter lægges i Dokumenter/Aura, medmindre Dokumenter/AI Harness findes
+ok 4 - nye projekter lægges i Dokumenter/Aura, medmindre Dokumenter/AI Harness findes
+  ---
+  duration_ms: 0.823875
+  type: 'test'
+  ...
+# Subtest: eksisterende projekter får ingen automatisk adgang; projektfiler kan slås til og fra og huskes efter genåbning
+ok 5 - eksisterende projekter får ingen automatisk adgang; projektfiler kan slås til og fra og huskes efter genåbning
+  ---
+  duration_ms: 12.326083
+  type: 'test'
+  ...
+# Subtest: projektets filregel omfatter aldrig søskendemapper, hemmeligheder, links ud af projektet eller planning
+ok 6 - projektets filregel omfatter aldrig søskendemapper, hemmeligheder, links ud af projektet eller planning
+  ---
+  duration_ms: 11.421375
+  type: 'test'
+  ...
+# Subtest: faktiske mapper med store bogstaver kan ikke få automatisk eller husket filadgang
+ok 7 - faktiske mapper med store bogstaver kan ikke få automatisk eller husket filadgang
+  ---
+  duration_ms: 5.011583
+  type: 'test'
+  ...
+# Subtest: tilladelse til opgaven deler kun projektfiler og ophører med opgavens Set
+ok 8 - tilladelse til opgaven deler kun projektfiler og ophører med opgavens Set
+  ---
+  duration_ms: 4.171959
+  type: 'test'
+  ...
+# Subtest: kommandoer matches fuldt sammen med den kanoniske arbejdsmappe, og kan tilbagekaldes
+ok 9 - kommandoer matches fuldt sammen med den kanoniske arbejdsmappe, og kan tilbagekaldes
+  ---
+  duration_ms: 5.468375
+  type: 'test'
+  ...
+# Subtest: ændrede input og linkmål ændrer fingeraftryk og godkendelsesgruppe
+ok 10 - ændrede input og linkmål ændrer fingeraftryk og godkendelsesgruppe
+  ---
+  duration_ms: 2.669042
+  type: 'test'
+  ...
+# Subtest: en platform uden kommandoisolation tilbyder kun enkeltgodkendelse, også ved en tidligere gemt regel
+ok 11 - en platform uden kommandoisolation tilbyder kun enkeltgodkendelse, også ved en tidligere gemt regel
+  ---
+  duration_ms: 3.117834
+  type: 'test'
+  ...
+# Subtest: lokale kommandoer kræver opt-in og en faktisk isoleret motor; aldrig planning, eksternt cwd eller andre værktøjer
+ok 12 - lokale kommandoer kræver opt-in og en faktisk isoleret motor; aldrig planning, eksternt cwd eller andre værktøjer
+  ---
+  duration_ms: 5.693375
+  type: 'test'
+  ...
+# Subtest: hjemmesidetilladelsen gælder præcis origin uden at omfatte lookalike, anden port eller adgangskoder
+ok 13 - hjemmesidetilladelsen gælder præcis origin uden at omfatte lookalike, anden port eller adgangskoder
+  ---
+  duration_ms: 3.3015
+  type: 'test'
+  ...
+# Subtest: en valgt overordnet mappe dækker undermapper men ikke søskende, andre adgangstyper eller linkflugt
+ok 14 - en valgt overordnet mappe dækker undermapper men ikke søskende, andre adgangstyper eller linkflugt
+  ---
+  duration_ms: 8.001125
+  type: 'test'
+  ...
+# Subtest: gemt mappeadgang afvises, hvis selve mappen udskiftes med et symlink
+ok 15 - gemt mappeadgang afvises, hvis selve mappen udskiftes med et symlink
+  ---
+  duration_ms: 3.501958
+  type: 'test'
+  ...
+# Subtest: hverken generel tmp-, home-, filsystem- eller opencode-adgang kan gemmes som mappe
+ok 16 - hverken generel tmp-, home-, filsystem- eller opencode-adgang kan gemmes som mappe
+  ---
+  duration_ms: 2.000209
+  type: 'test'
+  ...
+# Subtest: kun Auras konkrete scratchmappe giver automatisk filadgang, aldrig bash eller skrivning under planning
+ok 17 - kun Auras konkrete scratchmappe giver automatisk filadgang, aldrig bash eller skrivning under planning
+  ---
+  duration_ms: 6.248791
+  type: 'test'
+  ...
+# Subtest: UI grupperer kun efter hovedprocessens nøgle og samler kvitteringer med antal
+ok 18 - UI grupperer kun efter hovedprocessens nøgle og samler kvitteringer med antal
+  ---
+  duration_ms: 0.201
+  type: 'test'
+  ...
+# Subtest: metadata skjuler ikke relative patterns eller eksterne og beskyttede mål i en patch
+ok 19 - metadata skjuler ikke relative patterns eller eksterne og beskyttede mål i en patch
+  ---
+  duration_ms: 11.987291
+  type: 'test'
+  ...
+# Subtest: OpenCodes relative edit/write-patterns bindes entydigt til de absolutte værktøjsmål
+ok 20 - OpenCodes relative edit/write-patterns bindes entydigt til de absolutte værktøjsmål
+  ---
+  duration_ms: 13.917542
+  type: 'test'
+  ...
+# Subtest: OpenCodes apply_patch-visningsliste erstatter aldrig metadata.files eller patchens flyttemål
+ok 21 - OpenCodes apply_patch-visningsliste erstatter aldrig metadata.files eller patchens flyttemål
+  ---
+  duration_ms: 3.592792
+  type: 'test'
+  ...
+# Subtest: filændringens diff fra OpenCode tælles og vises uden filhoveder
+ok 22 - filændringens diff fra OpenCode tælles og vises uden filhoveder
+  ---
+  duration_ms: 1.104958
+  type: 'test'
+  ...
+# Subtest: kommandoer får et gæt i almindeligt dansk, og afslutningskoden afgør resultatet
+ok 23 - kommandoer får et gæt i almindeligt dansk, og afslutningskoden afgør resultatet
+  ---
+  duration_ms: 0.885625
+  type: 'test'
+  ...
+# Subtest: modelserverens fejl får en type, så appen kan vise den rigtige vej videre
+ok 24 - modelserverens fejl får en type, så appen kan vise den rigtige vej videre
+  ---
+  duration_ms: 42.2275
+  type: 'test'
+  ...
+# Subtest: afvisning med en besked sendes til motoren og stopper ikke; Stop giver et resultatkort med det, AI’en nåede
+not ok 25 - afvisning med en besked sendes til motoren og stopper ikke; Stop giver et resultatkort med det, AI’en nåede
+  ---
+  duration_ms: 19.21175
+  type: 'test'
+  location: '<checkout>/desktop/tests/approvals.test.cjs:47:1'
+  failureType: 'testCodeFailure'
+  error: 'Godkendelsen findes ikke længere.'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    ChatSession.reply (<checkout>/desktop/core/chat-session.cjs:659:68)
+    Workbench.reply (<checkout>/desktop/core/workbench.cjs:306:178)
+    TestContext.<anonymous> (<checkout>/desktop/tests/approvals.test.cjs:54:15)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: godkendelsen får værktøjets egne oplysninger med, og en fejl fra OpenCode får en type
+not ok 26 - godkendelsen får værktøjets egne oplysninger med, og en fejl fra OpenCode får en type
+  ---
+  duration_ms: 12.004542
+  type: 'test'
+  location: '<checkout>/desktop/tests/approvals.test.cjs:74:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot read properties of undefined (reading 'properties')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    TestContext.<anonymous> (<checkout>/desktop/tests/approvals.test.cjs:82:26)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: Azure viser kun aktive abonnementer med felter, som bruges til valget
+ok 27 - Azure viser kun aktive abonnementer med felter, som bruges til valget
+  ---
+  duration_ms: 6.333542
+  type: 'test'
+  ...
+# Subtest: Azure-forbindelsen opdager værktøjer før login og skelner manglende abonnementer
+ok 28 - Azure-forbindelsen opdager værktøjer før login og skelner manglende abonnementer
+  ---
+  duration_ms: 0.882875
+  type: 'test'
+  ...
+# Subtest: Azure login startes særskilt uden at ændre CLI-indstillinger og dubleres ikke
+ok 29 - Azure login startes særskilt uden at ændre CLI-indstillinger og dubleres ikke
+  ---
+  duration_ms: 0.350334
+  type: 'test'
+  ...
+# Subtest: Azure-appvalg udleder ressourcegruppen fra ID og afviser fremmede destinationer
+ok 30 - Azure-appvalg udleder ressourcegruppen fra ID og afviser fremmede destinationer
+  ---
+  duration_ms: 1.084333
+  type: 'test'
+  ...
+# Subtest: Azure accepterer eksisterende ressourcegrupper med parenteser og danske tegn uden argumentinjektion
+ok 31 - Azure accepterer eksisterende ressourcegrupper med parenteser og danske tegn uden argumentinjektion
+  ---
+  duration_ms: 0.216417
+  type: 'test'
+  ...
+# Subtest: en fil tilskrives kun AI’en, når AI’ens filværktøj skrev præcis det indhold, der ligger nu
+ok 32 - en fil tilskrives kun AI’en, når AI’ens filværktøj skrev præcis det indhold, der ligger nu
+  ---
+  duration_ms: 2.205959
+  type: 'test'
+  ...
+# Subtest: hele samtalen: brugerens rettelse mellem to opgaver gør filen blandet, og egne filer er aldrig AI’ens
+ok 33 - hele samtalen: brugerens rettelse mellem to opgaver gør filen blandet, og egne filer er aldrig AI’ens
+  ---
+  duration_ms: 5.859208
+  type: 'test'
+  ...
+# Subtest: linjerne i en fil med mulig nøgle vises ikke
+ok 34 - linjerne i en fil med mulig nøgle vises ikke
+  ---
+  duration_ms: 0.255292
+  type: 'test'
+  ...
+# Subtest: aktivitet viser faktiske værktøjer med stier i projektet og maskeret kommando-output
+ok 35 - aktivitet viser faktiske værktøjer med stier i projektet og maskeret kommando-output
+  ---
+  duration_ms: 0.780875
+  type: 'test'
+  ...
+# Subtest: arbejdsbænken husker opgavens ændringer og tilskriver dem efter AI’ens faktiske filværktøjer
+ok 36 - arbejdsbænken husker opgavens ændringer og tilskriver dem efter AI’ens faktiske filværktøjer
+  ---
+  duration_ms: 22.438
+  type: 'test'
+  ...
+# Subtest: status skelner mellem svar, tavshed og brugerens godkendelse uden at opfinde tokens
+ok 37 - status skelner mellem svar, tavshed og brugerens godkendelse uden at opfinde tokens
+  ---
+  duration_ms: 9.39125
+  type: 'test'
+  ...
+# Subtest: Windows afviser automatisk isolation uden usikret reservevej
+ok 38 - Windows afviser automatisk isolation uden usikret reservevej
+  ---
+  duration_ms: 0.6665
+  type: 'test'
+  ...
+# Subtest: betroet plugin wrapper bash, validerer cwd og viser kun faste pakkehosts
+ok 39 - betroet plugin wrapper bash, validerer cwd og viser kun faste pakkehosts
+  ---
+  duration_ms: 135.803916
+  type: 'test'
+  ...
+# Subtest: rigtig OS-isolation tillader projektarbejde og spærrer hemmeligheder, andre mapper, symlinks og arvede nøgler
+ok 40 - rigtig OS-isolation tillader projektarbejde og spærrer hemmeligheder, andre mapper, symlinks og arvede nøgler
+  ---
+  duration_ms: 269.38
+  type: 'test'
+  ...
+# Subtest: rigtig netværksisolation afviser net uden for pakkeregistrene og direkte loopback
+ok 41 - rigtig netværksisolation afviser net uden for pakkeregistrene og direkte loopback
+  ---
+  duration_ms: 392.779708
+  type: 'test'
+  ...
+# Subtest: npm installerer en fast pakke i projektet gennem det tilladte register
+ok 42 - npm installerer en fast pakke i projektet gennem det tilladte register
+  ---
+  duration_ms: 748.760375
+  type: 'test'
+  ...
+# Subtest: pakkens installationsscript og underprocesser har samme filgrænse
+ok 43 - pakkens installationsscript og underprocesser har samme filgrænse
+  ---
+  duration_ms: 614.63175
+  type: 'test'
+  ...
+# Subtest: Enter sender, men Shift+Enter, IME, repeat og dobbelt-submit sender ikke
+ok 44 - Enter sender, men Shift+Enter, IME, repeat og dobbelt-submit sender ikke
+  ---
+  duration_ms: 1.606959
+  type: 'test'
+  ...
+# Subtest: normal samtykkegennemgang bevares, og Annuller frigiver afsendelsen
+ok 45 - normal samtykkegennemgang bevares, og Annuller frigiver afsendelsen
+  ---
+  duration_ms: 0.471458
+  type: 'test'
+  ...
+# Subtest: en klar egen byggebesked vælger Byg og bevarer samtalekonteksten, mens spørgsmål bliver i Samtale
+ok 46 - en klar egen byggebesked vælger Byg og bevarer samtalekonteksten, mens spørgsmål bliver i Samtale
+  ---
+  duration_ms: 1.402083
+  type: 'test'
+  ...
+# Subtest: et sent prepare-svar fra en anden samtale sender aldrig i den nye
+ok 47 - et sent prepare-svar fra en anden samtale sender aldrig i den nye
+  ---
+  duration_ms: 0.268375
+  type: 'test'
+  ...
+# Subtest: projektidéen forberedes i Byg og bevarer brugerens udtrykkelige valg af Planlæg
+ok 48 - projektidéen forberedes i Byg og bevarer brugerens udtrykkelige valg af Planlæg
+  ---
+  duration_ms: 0.471708
+  type: 'test'
+  ...
+# Subtest: manuelt skift til Byg medtager samtalen også uden en særlig byggebesked
+ok 49 - manuelt skift til Byg medtager samtalen også uden en særlig byggebesked
+  ---
+  duration_ms: 0.464167
+  type: 'test'
+  ...
+# Subtest: en gammel kontrol kan hverken overskrive en ny fejl eller genoplive en fjernet forbindelse
+ok 50 - en gammel kontrol kan hverken overskrive en ny fejl eller genoplive en fjernet forbindelse
+  ---
+  duration_ms: 0.442291
+  type: 'test'
+  ...
+# Subtest: kontroller tilhører én appsession og holdes adskilt mellem forbindelser
+ok 51 - kontroller tilhører én appsession og holdes adskilt mellem forbindelser
+  ---
+  duration_ms: 0.071916
+  type: 'test'
+  ...
+# Subtest: ti forbindelser vises fire ad gangen og kan findes på navn, udbyder og organisation
+ok 52 - ti forbindelser vises fire ad gangen og kan findes på navn, udbyder og organisation
+  ---
+  duration_ms: 0.373584
+  type: 'test'
+  ...
+# Subtest: kun en konkret plan giver et byggekort; afvisningen fra demoen er almindelig samtale
+ok 53 - kun en konkret plan giver et byggekort; afvisningen fra demoen er almindelig samtale
+  ---
+  duration_ms: 1.650542
+  type: 'test'
+  ...
+# Subtest: planoverskriften fra den faktiske Promte-samtale giver et byggekort
+ok 54 - planoverskriften fra den faktiske Promte-samtale giver et byggekort
+  ---
+  duration_ms: 0.132417
+  type: 'test'
+  ...
+# Subtest: brugerens klare byggebesked kan starte bygning, men omtale og afvisning kan ikke
+ok 55 - brugerens klare byggebesked kan starte bygning, men omtale og afvisning kan ikke
+  ---
+  duration_ms: 0.234875
+  type: 'test'
+  ...
+# Subtest: Samtale bruger plan-agenten med forbud mod ændringer og kommandoer
+ok 56 - Samtale bruger plan-agenten med forbud mod ændringer og kommandoer
+  ---
+  duration_ms: 0.187125
+  type: 'test'
+  ...
+# Subtest: rigtige samtalehændelser viser tilbud, husker afvisning og afviser et almindeligt plansvar
+ok 57 - rigtige samtalehændelser viser tilbud, husker afvisning og afviser et almindeligt plansvar
+  ---
+  duration_ms: 28.109416
+  type: 'test'
+  ...
+# Subtest: kopien medtager ugemte filer, udelader metadata og nøgler, og skriver aldrig gennem links
+ok 58 - kopien medtager ugemte filer, udelader metadata og nøgler, og skriver aldrig gennem links
+  ---
+  duration_ms: 10.11375
+  type: 'test'
+  ...
+# Subtest: indfletning bevarer projektets andre linjer, viser konflikter, og kan fortrydes uden Git
+ok 59 - indfletning bevarer projektets andre linjer, viser konflikter, og kan fortrydes uden Git
+  ---
+  duration_ms: 188.88225
+  type: 'test'
+  ...
+# Subtest: ny, slettet og binær fil gennemgås; ændringer efter gennemgang og beskyttede inputs afvises
+ok 60 - ny, slettet og binær fil gennemgås; ændringer efter gennemgang og beskyttede inputs afvises
+  ---
+  duration_ms: 131.713875
+  type: 'test'
+  ...
+# Subtest: Fortryd indfletning viser en senere konflikt og afviser et ændret journalgrundlag
+ok 61 - Fortryd indfletning viser en senere konflikt og afviser et ændret journalgrundlag
+  ---
+  duration_ms: 196.126
+  type: 'test'
+  ...
+# Subtest: oprydning bevarer uflettet materiale, men fjerner afsluttede kopier og afbrudte oprettelser
+ok 62 - oprydning bevarer uflettet materiale, men fjerner afsluttede kopier og afbrudte oprettelser
+  ---
+  duration_ms: 6.301125
+  type: 'test'
+  ...
+# Subtest: et forsvundet manifest sletter ikke en uflettet kopi eller erstatter den lydløst med projektet
+ok 63 - et forsvundet manifest sletter ikke en uflettet kopi eller erstatter den lydløst med projektet
+  ---
+  duration_ms: 3.335917
+  type: 'test'
+  ...
+# Subtest: arbejdsbænken afviser en ændret kopi og gemmer en gennemgået indfletning som version
+ok 64 - arbejdsbænken afviser en ændret kopi og gemmer en gennemgået indfletning som version
+  ---
+  duration_ms: 1942.418416
+  type: 'test'
+  ...
+# Subtest: pakkelinks i kopien peger på kopiens filer; links ud af projektet følger ikke med
+ok 65 - pakkelinks i kopien peger på kopiens filer; links ud af projektet følger ikke med
+  ---
+  duration_ms: 5.215625
+  type: 'test'
+  ...
+# Subtest: fejl i registrering og papirkurv mister ikke en samtales uflettede materiale
+ok 66 - fejl i registrering og papirkurv mister ikke en samtales uflettede materiale
+  ---
+  duration_ms: 18.234208
+  type: 'test'
+  ...
+# Subtest: udgivelsespakke indeholder præcis den gemte mappe og stabilt indholdsfingeraftryk
+ok 67 - udgivelsespakke indeholder præcis den gemte mappe og stabilt indholdsfingeraftryk
+  ---
+  duration_ms: 297.896375
+  type: 'test'
+  ...
+# Subtest: lokale ændringer og ugyldige mappestier afvises før pakning
+ok 68 - lokale ændringer og ugyldige mappestier afvises før pakning
+  ---
+  duration_ms: 59.343458
+  type: 'test'
+  ...
+# Subtest: hemmelighedsfiler og links kan ikke indgå i udgivelsespakken
+ok 69 - hemmelighedsfiler og links kan ikke indgå i udgivelsespakken
+  ---
+  duration_ms: 213.785542
+  type: 'test'
+  ...
+# Subtest: mistænkeligt indhold i almindelig fil afvises
+ok 70 - mistænkeligt indhold i almindelig fil afvises
+  ---
+  duration_ms: 137.1595
+  type: 'test'
+  ...
+# Subtest: Windows npm-start bevarer argumenter til Vercel, SWA og Promte uden en shell
+ok 71 - Windows npm-start bevarer argumenter til Vercel, SWA og Promte uden en shell
+  ---
+  duration_ms: 80.282
+  type: 'test'
+  ...
+# Subtest: Windows starter Azure CLI med dens egen Python og uændrede argumenter
+ok 72 - Windows starter Azure CLI med dens egen Python og uændrede argumenter
+  ---
+  duration_ms: 3.060333
+  type: 'test'
+  ...
+# Subtest: Windows bruger den tilstødende Node eller finder en native Node i PATH
+ok 73 - Windows bruger den tilstødende Node eller finder en native Node i PATH
+  ---
+  duration_ms: 2.933667
+  type: 'test'
+  ...
+# Subtest: Windows accepterer native værktøjer og en eksplicit fuld sti
+ok 74 - Windows accepterer native værktøjer og en eksplicit fuld sti
+  ---
+  duration_ms: 1.421084
+  type: 'test'
+  ...
+# Subtest: Ukendte batchfiler og npm-wrappers med ekstra fortolkning afvises
+ok 75 - Ukendte batchfiler og npm-wrappers med ekstra fortolkning afvises
+  ---
+  duration_ms: 3.251792
+  type: 'test'
+  ...
+# Subtest: Manglende script, Node eller Azure-Python afvises uden batchfallback
+ok 76 - Manglende script, Node eller Azure-Python afvises uden batchfallback
+  ---
+  duration_ms: 3.321625
+  type: 'test'
+  ...
+# Subtest: Ældre npm-wrapper peger direkte på samme script i begge grene
+ok 77 - Ældre npm-wrapper peger direkte på samme script i begge grene
+  ---
+  duration_ms: 1.667542
+  type: 'test'
+  ...
+# Subtest: Native kommandostart bevarer standardinput og afviser fejl uden at vise hemmeligheder
+ok 78 - Native kommandostart bevarer standardinput og afviser fejl uden at vise hemmeligheder
+  ---
+  duration_ms: 47.529291
+  type: 'test'
+  ...
+# Subtest: Gennemgang opretter intet; eksplicit gem skriver kun de gennemgåede filer én gang
+ok 79 - Gennemgang opretter intet; eksplicit gem skriver kun de gennemgåede filer én gang
+  ---
+  duration_ms: 25.915917
+  type: 'test'
+  ...
+# Subtest: Gem opdaterer en eksisterende fil og fjerner den gamle rest ved kortere indhold
+ok 80 - Gem opdaterer en eksisterende fil og fjerner den gamle rest ved kortere indhold
+  ---
+  duration_ms: 8.2045
+  type: 'test'
+  ...
+# Subtest: Ændringer, sletning og en ny fil efter gennemgang bevares ved afvisning
+ok 81 - Ændringer, sletning og en ny fil efter gennemgang bevares ved afvisning
+  ---
+  duration_ms: 6.880542
+  type: 'test'
+  ...
+# Subtest: Review afviser symlink i mappen, symlink i filen og hardlinks uden at skrive
+ok 82 - Review afviser symlink i mappen, symlink i filen og hardlinks uden at skrive
+  ---
+  duration_ms: 4.177375
+  type: 'test'
+  ...
+# Subtest: Udskiftning med symlink efter gennemgang ændrer ikke linkets mål
+ok 83 - Udskiftning med symlink efter gennemgang ændrer ikke linkets mål
+  ---
+  duration_ms: 3.562125
+  type: 'test'
+  ...
+# Subtest: NOFOLLOW afviser et filsymlink indsat mellem kontrol og åbning til skrivning
+ok 84 - NOFOLLOW afviser et filsymlink indsat mellem kontrol og åbning til skrivning
+  ---
+  duration_ms: 3.613042
+  type: 'test'
+  ...
+# Subtest: Et udskiftet filnavn efter åbning får ikke det allerede åbne håndtag til at skrive
+ok 85 - Et udskiftet filnavn efter åbning får ikke det allerede åbne håndtag til at skrive
+  ---
+  duration_ms: 2.927209
+  type: 'test'
+  ...
+# Subtest: Mappeudskiftning efter filåbning opdages, og hverken gammel fil eller eksternt mål ændres
+ok 86 - Mappeudskiftning efter filåbning opdages, og hverken gammel fil eller eksternt mål ændres
+  ---
+  duration_ms: 4.308791
+  type: 'test'
+  ...
+# Subtest: Alle filer kontrolleres igen efter åbning, og nye tomme filer fjernes ved konflikt
+ok 87 - Alle filer kontrolleres igen efter åbning, og nye tomme filer fjernes ved konflikt
+  ---
+  duration_ms: 3.242541
+  type: 'test'
+  ...
+# Subtest: Ukendte, dublerede og for store filer afvises uden ændringer
+ok 88 - Ukendte, dublerede og for store filer afvises uden ændringer
+  ---
+  duration_ms: 0.976541
+  type: 'test'
+  ...
+# Subtest: Gennemgangen tilhører ét projekt og udløber
+ok 89 - Gennemgangen tilhører ét projekt og udløber
+  ---
+  duration_ms: 1.109083
+  type: 'test'
+  ...
+# Subtest: Vercel-gennemgang skriver intet; bekræftelsen skriver den gennemgåede konfiguration og aktiverer sporing
+ok 90 - Vercel-gennemgang skriver intet; bekræftelsen skriver den gennemgåede konfiguration og aktiverer sporing
+  ---
+  duration_ms: 12.862708
+  type: 'test'
+  ...
+# Subtest: Versioneret Vercel-valg kan genlæses på en klon uden automatisk aktivering
+ok 91 - Versioneret Vercel-valg kan genlæses på en klon uden automatisk aktivering
+  ---
+  duration_ms: 4.210708
+  type: 'test'
+  ...
+# Subtest: Vercel tracking-open bruger frisk Git-observation og ignorerer URL fra renderer
+ok 92 - Vercel tracking-open bruger frisk Git-observation og ignorerer URL fra renderer
+  ---
+  duration_ms: 1.10675
+  type: 'test'
+  ...
+# Subtest: Vercels projektlink genkontrollerer projekt og Git-forbindelse og konstruerer selv adressen
+ok 93 - Vercels projektlink genkontrollerer projekt og Git-forbindelse og konstruerer selv adressen
+  ---
+  duration_ms: 0.848583
+  type: 'test'
+  ...
+# Subtest: Et nyt manuelt flow overtager topbaren; ældre Vercel-valg skjuler det ikke
+ok 94 - Et nyt manuelt flow overtager topbaren; ældre Vercel-valg skjuler det ikke
+  ---
+  duration_ms: 0.747708
+  type: 'test'
+  ...
+# Subtest: Skift af flow under refresh kan hverken returnere eller åbne den fravalgte observation
+ok 95 - Skift af flow under refresh kan hverken returnere eller åbne den fravalgte observation
+  ---
+  duration_ms: 0.662708
+  type: 'test'
+  ...
+# Subtest: Tracking afviser gamle statusdata, forkerte hosts og loginoplysninger i adresser
+ok 96 - Tracking afviser gamle statusdata, forkerte hosts og loginoplysninger i adresser
+  ---
+  duration_ms: 0.681167
+  type: 'test'
+  ...
+# Subtest: Pages åbner præcis kontrolleret domæne eller run, også når Cloudflare giver et andet subdomæne
+ok 97 - Pages åbner præcis kontrolleret domæne eller run, også når Cloudflare giver et andet subdomæne
+  ---
+  duration_ms: 0.96425
+  type: 'test'
+  ...
+# Subtest: Promte åbner den valgte installation efter frisk status og konto-link går til kontakt
+ok 98 - Promte åbner den valgte installation efter frisk status og konto-link går til kontakt
+  ---
+  duration_ms: 2.623458
+  type: 'test'
+  ...
+# Subtest: Azure kan skelne tom app-liste fra afvist login eller adgang
+ok 99 - Azure kan skelne tom app-liste fra afvist login eller adgang
+  ---
+  duration_ms: 0.991625
+  type: 'test'
+  ...
+# Subtest: Udgiv spørger før Promte-login, om projektet er en Promte-app, og forklarer det i almindeligt dansk
+ok 100 - Udgiv spørger før Promte-login, om projektet er en Promte-app, og forklarer det i almindeligt dansk
+  ---
+  duration_ms: 3.231667
+  type: 'test'
+  ...
+# Subtest: engangsgennemgang og verificering af godkendt indhold
+ok 101 - engangsgennemgang og verificering af godkendt indhold
+  ---
+  duration_ms: 9.335666
+  type: 'test'
+  ...
+# Subtest: ændret version, destination, udløb eller andet projekt stopper upload
+ok 102 - ændret version, destination, udløb eller andet projekt stopper upload
+  ---
+  duration_ms: 0.401417
+  type: 'test'
+  ...
+# Subtest: ukendt upload gentages ikke; login og forkert indhold vises tydeligt
+ok 103 - ukendt upload gentages ikke; login og forkert indhold vises tydeligt
+  ---
+  duration_ms: 0.596708
+  type: 'test'
+  ...
+# Subtest: projekttype og færdigbyggede filer valideres
+ok 104 - projekttype og færdigbyggede filer valideres
+  ---
+  duration_ms: 0.191792
+  type: 'test'
+  ...
+# Subtest: Vercel bruger preview uden projektændringer og afviser skjulte buildindstillinger
+ok 105 - Vercel bruger preview uden projektændringer og afviser skjulte buildindstillinger
+  ---
+  duration_ms: 0.314
+  type: 'test'
+  ...
+# Subtest: Azure uploader snapshot og holder nøglen ude af argumenter og kvittering
+ok 106 - Azure uploader snapshot og holder nøglen ude af argumenter og kvittering
+  ---
+  duration_ms: 5.638167
+  type: 'test'
+  ...
+# Subtest: Vercel uden startversion afvises inden nogen upload
+ok 107 - Vercel uden startversion afvises inden nogen upload
+  ---
+  duration_ms: 0.167333
+  type: 'test'
+  ...
+# Subtest: Azure accepterer ikke en gammel testudgivelse som resultatet af ny upload
+ok 108 - Azure accepterer ikke en gammel testudgivelse som resultatet af ny upload
+  ---
+  duration_ms: 0.274417
+  type: 'test'
+  ...
+# Subtest: Azure finder SWAs faktiske miljønavn efter fjernet bindestreg og bruger testadressen
+ok 109 - Azure finder SWAs faktiske miljønavn efter fjernet bindestreg og bruger testadressen
+  ---
+  duration_ms: 0.590834
+  type: 'test'
+  ...
+# Subtest: hver kontrol erstatter gammel evidens; fejl og adgang lover ikke en fungerende app
+ok 110 - hver kontrol erstatter gammel evidens; fejl og adgang lover ikke en fungerende app
+  ---
+  duration_ms: 1.213458
+  type: 'test'
+  ...
+# Subtest: indholdskontrollen skelner filmatch, bygget kildekode og for stort svar
+ok 111 - indholdskontrollen skelner filmatch, bygget kildekode og for stort svar
+  ---
+  duration_ms: 1.153916
+  type: 'test'
+  ...
+# Subtest: versionens navn følger godkendelsen og ændrer ikke uploadens indhold
+ok 112 - versionens navn følger godkendelsen og ændrer ikke uploadens indhold
+  ---
+  duration_ms: 0.1825
+  type: 'test'
+  ...
+# Subtest: udgivelse uden en gemt version siger, hvad der mangler
+ok 113 - udgivelse uden en gemt version siger, hvad der mangler
+  ---
+  duration_ms: 12.156375
+  type: 'test'
+  ...
+# Subtest: gemt designpakke overlever genåbning og slettede originalfiler
+ok 114 - gemt designpakke overlever genåbning og slettede originalfiler
+  ---
+  duration_ms: 11.940583
+  type: 'test'
+  ...
+# Subtest: ugyldigt materiale gemmes ikke som designpakke
+ok 115 - ugyldigt materiale gemmes ikke som designpakke
+  ---
+  duration_ms: 1.512417
+  type: 'test'
+  ...
+# Subtest: genkendelse skriver intet og udfører aldrig package-scripts eller konfiguration
+ok 116 - genkendelse skriver intet og udfører aldrig package-scripts eller konfiguration
+  ---
+  duration_ms: 12.06
+  type: 'test'
+  ...
+# Subtest: npm-kommandoer kommer til gennemgang; ukendte arbejdsområder starter ikke automatisk
+ok 117 - npm-kommandoer kommer til gennemgang; ukendte arbejdsområder starter ikke automatisk
+  ---
+  duration_ms: 8.960417
+  type: 'test'
+  ...
+# Subtest: godkendelse binder handlingen til uændret opsætning og kan ikke genbruges
+ok 118 - godkendelse binder handlingen til uændret opsætning og kan ikke genbruges
+  ---
+  duration_ms: 47.328125
+  type: 'test'
+  ...
+# Subtest: manglende installation og links ud af projektet afvises
+ok 119 - manglende installation og links ud af projektet afvises
+  ---
+  duration_ms: 3.566833
+  type: 'test'
+  ...
+# Subtest: barnets miljø udelader modelnøgler og kodeinjektion; almindelige nøgler maskeres i log
+ok 120 - barnets miljø udelader modelnøgler og kodeinjektion; almindelige nøgler maskeres i log
+  ---
+  duration_ms: 0.476334
+  type: 'test'
+  ...
+# Subtest: manglende Node fører til en konkret fejl uden automatisk installation
+ok 121 - manglende Node fører til en konkret fejl uden automatisk installation
+  ---
+  duration_ms: 0.3085
+  type: 'test'
+  ...
+# Subtest: rigtig npm-fejl bevarer projektet og kan gennemgås igen
+ok 122 - rigtig npm-fejl bevarer projektet og kan gennemgås igen
+  ---
+  duration_ms: 249.083958
+  type: 'test'
+  ...
+# Subtest: npm med en manglende lokal pakkemappe erklæres ikke klar trods exitkode nul
+ok 123 - npm med en manglende lokal pakkemappe erklæres ikke klar trods exitkode nul
+  ---
+  duration_ms: 225.527834
+  type: 'test'
+  ...
+# Subtest: stop under rigtig installation lukker også pakkescriptets underproces
+ok 124 - stop under rigtig installation lukker også pakkescriptets underproces
+  ---
+  duration_ms: 428.18225
+  type: 'test'
+  ...
+# Subtest: fejlrapport tillader kun faste felter og afviser fritekst i alle statusfelter
+ok 125 - fejlrapport tillader kun faste felter og afviser fritekst i alle statusfelter
+  ---
+  duration_ms: 1.852167
+  type: 'test'
+  ...
+# Subtest: én ændret linje giver én hunk med tre linjers kontekst og rigtige linjenumre
+ok 126 - én ændret linje giver én hunk med tre linjers kontekst og rigtige linjenumre
+  ---
+  duration_ms: 0.911166
+  type: 'test'
+  ...
+# Subtest: ny og slettet fil vises som tilføjede eller fjernede linjer
+ok 127 - ny og slettet fil vises som tilføjede eller fjernede linjer
+  ---
+  duration_ms: 0.255167
+  type: 'test'
+  ...
+# Subtest: ændringer langt fra hinanden giver to hunks; tætte ændringer slås sammen
+ok 128 - ændringer langt fra hinanden giver to hunks; tætte ændringer slås sammen
+  ---
+  duration_ms: 0.559084
+  type: 'test'
+  ...
+# Subtest: CRLF og et manglende linjeskift til sidst
+ok 129 - CRLF og et manglende linjeskift til sidst
+  ---
+  duration_ms: 0.088875
+  type: 'test'
+  ...
+# Subtest: tilfældige rettelser kan altid genskabes fra rækkerne
+ok 130 - tilfældige rettelser kan altid genskabes fra rækkerne
+  ---
+  duration_ms: 3.820542
+  type: 'test'
+  ...
+# Subtest: en fuld omskrivning af en stor fil bliver vist som fjernet og tilføjet uden at gå i stå
+ok 131 - en fuld omskrivning af en stor fil bliver vist som fjernet og tilføjet uden at gå i stå
+  ---
+  duration_ms: 18.31975
+  type: 'test'
+  ...
+# Subtest: lange diffs afkortes og siger det
+ok 132 - lange diffs afkortes og siger det
+  ---
+  duration_ms: 8.128291
+  type: 'test'
+  ...
+# Subtest: sammenfatning bruger modeltimeout og afventer idle efter HTTP-svaret
+ok 133 - sammenfatning bruger modeltimeout og afventer idle efter HTTP-svaret
+  ---
+  duration_ms: 0.611834
+  type: 'test'
+  ...
+# Subtest: sammenfatning afventer HTTP-svaret, selv om idle kommer først
+ok 134 - sammenfatning afventer HTTP-svaret, selv om idle kommer først
+  ---
+  duration_ms: 0.095458
+  type: 'test'
+  ...
+# Subtest: fejl, lukning og manglende idle afslutter sammenfatningen uden hængende modelkald
+ok 135 - fejl, lukning og manglende idle afslutter sammenfatningen uden hængende modelkald
+  ---
+  duration_ms: 11.255541
+  type: 'test'
+  ...
+# Subtest: serverens idle-status afslutter også en opgave uden separat idle-event
+ok 136 - serverens idle-status afslutter også en opgave uden separat idle-event
+  ---
+  duration_ms: 0.200834
+  type: 'test'
+  ...
+# Subtest: en afsluttet SSE-strøm efter et færdigt svar giver en terminalfejl, ikke evig spinner
+ok 137 - en afsluttet SSE-strøm efter et færdigt svar giver en terminalfejl, ikke evig spinner
+  ---
+  duration_ms: 9.668416
+  type: 'test'
+  ...
+# Subtest: manglende idle bekræftes mod motorens status, og et gammelt svar afslutter aldrig næste opgave
+ok 138 - manglende idle bekræftes mod motorens status, og et gammelt svar afslutter aldrig næste opgave
+  ---
+  duration_ms: 0.173625
+  type: 'test'
+  ...
+# Subtest: læsebeskyttelsen afviser beskyttede navne, casevarianter, streams og navnealiaser før læsning
+ok 139 - læsebeskyttelsen afviser beskyttede navne, casevarianter, streams og navnealiaser før læsning
+  ---
+  duration_ms: 6.143209
+  type: 'test'
+  ...
+# Subtest: en neutral symlink til en beskyttet fil afvises; et almindeligt link bliver kanoniseret
+ok 140 - en neutral symlink til en beskyttet fil afvises; et almindeligt link bliver kanoniseret
+  ---
+  duration_ms: 2.778583
+  type: 'test'
+  ...
+# Subtest: den genererede plugin kvitterer for indlæsning og bevarer aktive skills referencefiler
+ok 141 - den genererede plugin kvitterer for indlæsning og bevarer aktive skills referencefiler
+  ---
+  duration_ms: 7.027958
+  type: 'test'
+  ...
+# Subtest: en langsom motor i den pakkede app giver en forklaring om ventetid, ikke en udviklerkommando
+ok 142 - en langsom motor i den pakkede app giver en forklaring om ventetid, ikke en udviklerkommando
+  ---
+  duration_ms: 305.717833
+  type: 'test'
+  ...
+# Subtest: en manglende eller forkert motor i den pakkede app beder om en ny installation
+ok 143 - en manglende eller forkert motor i den pakkede app beder om en ny installation
+  ---
+  duration_ms: 137.784459
+  type: 'test'
+  ...
+# Subtest: en kontrolleret motor kontrolleres kun én gang pr. kørsel
+ok 144 - en kontrolleret motor kontrolleres kun én gang pr. kørsel
+  ---
+  duration_ms: 132.741208
+  type: 'test'
+  ...
+# Subtest: plugin-opstart bruger den bundtede SDK og et isoleret hjem uden installation på nettet
+ok 145 - plugin-opstart bruger den bundtede SDK og et isoleret hjem uden installation på nettet
+  ---
+  duration_ms: 13.187958
+  type: 'test'
+  ...
+# Subtest: pakkereglerne bevarer SDK-afhængigheder, når electron-builder flytter nested moduler til roden
+ok 146 - pakkereglerne bevarer SDK-afhængigheder, når electron-builder flytter nested moduler til roden
+  ---
+  duration_ms: 15.536875
+  type: 'test'
+  ...
+# Subtest: uden valg gælder den anbefalede pakke, og en funktion følger den, den bygger på
+ok 147 - uden valg gælder den anbefalede pakke, og en funktion følger den, den bygger på
+  ---
+  duration_ms: 0.58725
+  type: 'test'
+  ...
+# Subtest: standarden gælder alle projekter; undtagelser gemmes kun, når de afviger
+ok 148 - standarden gælder alle projekter; undtagelser gemmes kun, når de afviger
+  ---
+  duration_ms: 112.79275
+  type: 'test'
+  ...
+# Subtest: Komplai Run når kun motoren efter tilvalg og fjernes igen ved fravalg
+ok 149 - Komplai Run når kun motoren efter tilvalg og fjernes igen ved fravalg
+  ---
+  duration_ms: 21.223458
+  type: 'test'
+  ...
+# Subtest: læseregler virker med stier i forhold til Git-roden og uden Git
+ok 150 - læseregler virker med stier i forhold til Git-roden og uden Git
+  ---
+  duration_ms: 1.097125
+  type: 'test'
+  ...
+# Subtest: motorens skillmappe skrives forfra og tager kun gyldige skills
+ok 151 - motorens skillmappe skrives forfra og tager kun gyldige skills
+  ---
+  duration_ms: 4.762209
+  type: 'test'
+  ...
+# Subtest: appens regler følger funktionerne
+ok 152 - appens regler følger funktionerne
+  ---
+  duration_ms: 0.991875
+  type: 'test'
+  ...
+# Subtest: et Promte-login slår Udgivelse til som standard, men respekterer et eget valg
+ok 153 - et Promte-login slår Udgivelse til som standard, men respekterer et eget valg
+  ---
+  duration_ms: 5.515125
+  type: 'test'
+  ...
+# Subtest: feedback går kun til en navngiven, almindelig e-mailadresse
+ok 154 - feedback går kun til en navngiven, almindelig e-mailadresse
+  ---
+  duration_ms: 1.011417
+  type: 'test'
+  ...
+# Subtest: e-mailkladden har emne og spørgsmål med appversion og ingen projektdata
+ok 155 - e-mailkladden har emne og spørgsmål med appversion og ingen projektdata
+  ---
+  duration_ms: 0.206667
+  type: 'test'
+  ...
+# Subtest: HTTP-fejl og afbrudt strøm stopper nye modelkald, men brugerens Stop er ikke en model-fejl
+ok 156 - HTTP-fejl og afbrudt strøm stopper nye modelkald, men brugerens Stop er ikke en model-fejl
+  ---
+  duration_ms: 56.414916
+  type: 'test'
+  ...
+# Subtest: rigtige commits med aktivt filvalg, historik, sletning og ingen push
+ok 157 - rigtige commits med aktivt filvalg, historik, sletning og ingen push
+  ---
+  duration_ms: 638.45225
+  type: 'test'
+  ...
+# Subtest: stale gennemgang, hemmeligheder og eksisterende stage bliver afvist
+ok 158 - stale gennemgang, hemmeligheder og eksisterende stage bliver afvist
+  ---
+  duration_ms: 644.552291
+  type: 'test'
+  ...
+# Subtest: afvis overordnet repository og symbolske links; bevar afvisende hook
+ok 159 - afvis overordnet repository og symbolske links; bevar afvisende hook
+  ---
+  duration_ms: 924.119583
+  type: 'test'
+  ...
+# Subtest: automatisk version efter hver opgave med præcis opgavens filer; hemmeligheder og hooks gemmes aldrig
+ok 160 - automatisk version efter hver opgave med præcis opgavens filer; hemmeligheder og hooks gemmes aldrig
+  ---
+  duration_ms: 3189.746292
+  type: 'test'
+  ...
+# Subtest: nye projekter får Git, en anonym identitet og en første version; eksisterende repositories røres ikke
+ok 161 - nye projekter får Git, en anonym identitet og en første version; eksisterende repositories røres ikke
+  ---
+  duration_ms: 606.123666
+  type: 'test'
+  ...
+# Subtest: Gem version med ét klik gemmer alle tilladte ændringer og nævner de afviste
+ok 162 - Gem version med ét klik gemmer alle tilladte ændringer og nævner de afviste
+  ---
+  duration_ms: 855.176916
+  type: 'test'
+  ...
+# Subtest: et globalt Git-filter som Git LFS stopper ikke automatiske versioner, men et filter, projektet bruger, gør
+ok 163 - et globalt Git-filter som Git LFS stopper ikke automatiske versioner, men et filter, projektet bruger, gør
+  ---
+  duration_ms: 190.167166
+  type: 'test'
+  ...
+# Subtest: token kontrolleres, holdes uden for offentlige data og slettes lokalt
+ok 164 - token kontrolleres, holdes uden for offentlige data og slettes lokalt
+  ---
+  duration_ms: 7.801958
+  type: 'test'
+  ...
+# Subtest: Device Flow respekterer interval, slow_down, identitet og annullering
+ok 165 - Device Flow respekterer interval, slow_down, identitet og annullering
+  ---
+  duration_ms: 2.140459
+  type: 'test'
+  ...
+# Subtest: annulleret login gemmer ikke et sent tokensvar; HTTP-fejl lækker ikke respons
+ok 166 - annulleret login gemmer ikke et sent tokensvar; HTTP-fejl lækker ikke respons
+  ---
+  duration_ms: 0.935667
+  type: 'test'
+  ...
+# Subtest: konto, organisationsvalg og eksplicit synlighed ved oprettelse
+ok 167 - konto, organisationsvalg og eksplicit synlighed ved oprettelse
+  ---
+  duration_ms: 2.562958
+  type: 'test'
+  ...
+# Subtest: fletningen fjerner kun ændringen og bevarer det, der er rettet siden, byte for byte
+ok 168 - fletningen fjerner kun ændringen og bevarer det, der er rettet siden, byte for byte
+  ---
+  duration_ms: 1.000916
+  type: 'test'
+  ...
+# Subtest: versionernes type og navn kommer fra Auras beskrivelser; omdøbning ændrer ikke Git
+ok 169 - versionernes type og navn kommer fra Auras beskrivelser; omdøbning ændrer ikke Git
+  ---
+  duration_ms: 7.246625
+  type: 'test'
+  ...
+# Subtest: fortryd en gemt version: senere versioner og ugemte rettelser bevares, konflikter afgøres, og første version kan ikke fortrydes
+ok 170 - fortryd en gemt version: senere versioner og ugemte rettelser bevares, konflikter afgøres, og første version kan ikke fortrydes
+  ---
+  duration_ms: 1705.354042
+  type: 'test'
+  ...
+# Subtest: fortryd en opgave uden Git ud fra øjebliksbilleder, med valg ved konflikt og kopi til fortrydelse
+ok 171 - fortryd en opgave uden Git ud fra øjebliksbilleder, med valg ved konflikt og kopi til fortrydelse
+  ---
+  duration_ms: 266.345541
+  type: 'test'
+  ...
+# Subtest: en versions filer og indhold vises kun, når det er sikkert
+ok 172 - en versions filer og indhold vises kun, når det er sikkert
+  ---
+  duration_ms: 782.387667
+  type: 'test'
+  ...
+# Subtest: billederne gemmes i par i appens data, bindes til en version og ryddes efter 80
+ok 173 - billederne gemmes i par i appens data, bindes til en version og ryddes efter 80
+  ---
+  duration_ms: 53.437166
+  type: 'test'
+  ...
+# Subtest: hostingvejledninger åbner kun kendte kilder og skelner fra upload
+ok 174 - hostingvejledninger åbner kun kendte kilder og skelner fra upload
+  ---
+  duration_ms: 6.153334
+  type: 'test'
+  ...
+# Subtest: agentens faktiske appregler beskriver Udgiv og de tilgængelige udgivelsesveje
+ok 175 - agentens faktiske appregler beskriver Udgiv og de tilgængelige udgivelsesveje
+  ---
+  duration_ms: 0.342834
+  type: 'test'
+  ...
+# Subtest: vejledninger beskriver de faktiske login- og udgivelseskrav uden at anbefale en udbyder
+ok 176 - vejledninger beskriver de faktiske login- og udgivelseskrav uden at anbefale en udbyder
+  ---
+  duration_ms: 0.181375
+  type: 'test'
+  ...
+# Subtest: vælger få skillmapper og advarer om værktøjer, der ser samme skills to steder
+ok 177 - vælger få skillmapper og advarer om værktøjer, der ser samme skills to steder
+  ---
+  duration_ms: 1.55375
+  type: 'test'
+  ...
+# Subtest: Claude Code får en import af AGENTS.md, og filbaserede regler får deres egen fil
+ok 178 - Claude Code får en import af AGENTS.md, og filbaserede regler får deres egen fil
+  ---
+  duration_ms: 0.320916
+  type: 'test'
+  ...
+# Subtest: installerer i en tom mappe og gentager uden ændringer
+ok 179 - installerer i en tom mappe og gentager uden ændringer
+  ---
+  duration_ms: 18.912583
+  type: 'test'
+  ...
+# Subtest: tilføjer et afsnit uden at røre brugerens egne regler og fjerner det igen præcist
+ok 180 - tilføjer et afsnit uden at røre brugerens egne regler og fjerner det igen præcist
+  ---
+  duration_ms: 12.356167
+  type: 'test'
+  ...
+# Subtest: ændrede filer og afsnit bliver konflikter og overskrives aldrig
+ok 181 - ændrede filer og afsnit bliver konflikter og overskrives aldrig
+  ---
+  duration_ms: 14.351791
+  type: 'test'
+  ...
+# Subtest: opdaterer uændrede filer ved ny version og fjerner filer fra fravalgte værktøjer
+ok 182 - opdaterer uændrede filer ved ny version og fjerner filer fra fravalgte værktøjer
+  ---
+  duration_ms: 17.274917
+  type: 'test'
+  ...
+# Subtest: afviser forældede gennemgange, ødelagte markører og symbolske links
+ok 183 - afviser forældede gennemgange, ødelagte markører og symbolske links
+  ---
+  duration_ms: 5.548541
+  type: 'test'
+  ...
+# Subtest: filer med samme indhold overtages, og en anden skill med samme navn blandes ikke
+ok 184 - filer med samme indhold overtages, og en anden skill med samme navn blandes ikke
+  ---
+  duration_ms: 5.066125
+  type: 'test'
+  ...
+# Subtest: et udvalg af skills installeres, fravalgte fjernes ved næste installation, og oversigten følger udvalget
+ok 185 - et udvalg af skills installeres, fravalgte fjernes ved næste installation, og oversigten følger udvalget
+  ---
+  duration_ms: 13.376458
+  type: 'test'
+  ...
+# Subtest: integrationer står som valgfrie og ikke som fravalgte, og kommandolinjen bevarer et udvalg fra appen
+ok 186 - integrationer står som valgfrie og ikke som fravalgte, og kommandolinjen bevarer et udvalg fra appen
+  ---
+  duration_ms: 117.445542
+  type: 'test'
+  ...
+# Subtest: afsnit med de gamle ai-harness-markører opdateres til aura-harness og kan fjernes
+ok 187 - afsnit med de gamle ai-harness-markører opdateres til aura-harness og kan fjernes
+  ---
+  duration_ms: 14.75075
+  type: 'test'
+  ...
+# Subtest: komplai bruger en gemt byggemappe, tilbyder bygning ved et byggescript og ellers public som hidtil
+ok 188 - komplai bruger en gemt byggemappe, tilbyder bygning ved et byggescript og ellers public som hidtil
+  ---
+  duration_ms: 0.902708
+  type: 'test'
+  ...
+# Subtest: den lokale bygning sker i en midlertidig kopi med medfølgende npm og uden installationsscripts
+ok 189 - den lokale bygning sker i en midlertidig kopi med medfølgende npm og uden installationsscripts
+  ---
+  duration_ms: 108.501875
+  type: 'test'
+  ...
+# Subtest: fejl i installation, bygning og indhold stopper med en forståelig besked
+ok 190 - fejl i installation, bygning og indhold stopper med en forståelig besked
+  ---
+  duration_ms: 181.642792
+  type: 'test'
+  ...
+# Subtest: Udgiv bygger kun efter valg, og gennemgang og upload bruger samme bygning af samme version
+ok 191 - Udgiv bygger kun efter valg, og gennemgang og upload bruger samme bygning af samme version
+  ---
+  duration_ms: 1.947083
+  type: 'test'
+  ...
+# Subtest: uden integrationen svarer forhåndsvisningen ikke og kontakter ikke komplai
+ok 192 - uden integrationen svarer forhåndsvisningen ikke og kontakter ikke komplai
+  ---
+  duration_ms: 5.561042
+  type: 'test'
+  ...
+# Subtest: uden login eller app tilbydes login og oprettelse; appen oprettes først efter valg og kun for organisationen
+ok 193 - uden login eller app tilbydes login og oprettelse; appen oprettes først efter valg og kun for organisationen
+  ---
+  duration_ms: 2.43575
+  type: 'test'
+  ...
+# Subtest: Udgiv og forhåndsvisning bruger samme app: projektets seneste komplai-udgivelse
+ok 194 - Udgiv og forhåndsvisning bruger samme app: projektets seneste komplai-udgivelse
+  ---
+  duration_ms: 1.742334
+  type: 'test'
+  ...
+# Subtest: SDK-kald går til Hubs forhåndsvisning med det lokale manifest; app-svaret kommer fra sessionen
+ok 195 - SDK-kald går til Hubs forhåndsvisning med det lokale manifest; app-svaret kommer fra sessionen
+  ---
+  duration_ms: 2.63975
+  type: 'test'
+  ...
+# Subtest: en udløbet session startes forfra én gang; ugyldige kald og manifester afvises lokalt
+ok 196 - en udløbet session startes forfra én gang; ugyldige kald og manifester afvises lokalt
+  ---
+  duration_ms: 4.815875
+  type: 'test'
+  ...
+# Subtest: Hubs afvisning af forhåndsvisningen går til appen med koden og vises i status
+ok 197 - Hubs afvisning af forhåndsvisningen går til appen med koden og vises i status
+  ---
+  duration_ms: 2.435959
+  type: 'test'
+  ...
+# Subtest: SDK-filen er broen foran komplais SDK, og den statiske forhåndsvisning serverer den på /_komplai/run/
+ok 198 - SDK-filen er broen foran komplais SDK, og den statiske forhåndsvisning serverer den på /_komplai/run/
+  ---
+  duration_ms: 23.635209
+  type: 'test'
+  ...
+# Subtest: komplai Run: adresser, filregler og en ZIP med korrekte kontrolsummer
+ok 199 - komplai Run: adresser, filregler og en ZIP med korrekte kontrolsummer
+  ---
+  duration_ms: 1.44425
+  type: 'test'
+  ...
+# Subtest: komplai Run: synlighed vælges altid, og adresse og app kontrolleres før gennemgang
+ok 200 - komplai Run: synlighed vælges altid, og adresse og app kontrolleres før gennemgang
+  ---
+  duration_ms: 0.302417
+  type: 'test'
+  ...
+# Subtest: komplai Run: ny app gemmes før upload, ZIP eller HTML, bevaret deling og status
+ok 201 - komplai Run: ny app gemmes før upload, ZIP eller HTML, bevaret deling og status
+  ---
+  duration_ms: 20.232084
+  type: 'test'
+  ...
+# Subtest: komplai Run: kontrollen genkender en privat app bag login
+ok 202 - komplai Run: kontrollen genkender en privat app bag login
+  ---
+  duration_ms: 3.591458
+  type: 'test'
+  ...
+# Subtest: komplai Run: en upload ændrer aldrig eksisterende adgang, og en afvigelse stopper før upload
+ok 203 - komplai Run: en upload ændrer aldrig eksisterende adgang, og en afvigelse stopper før upload
+  ---
+  duration_ms: 3.707792
+  type: 'test'
+  ...
+# Subtest: komplai Run: bekræftet release bevares, når den efterfølgende oversigt fejler
+ok 204 - komplai Run: bekræftet release bevares, når den efterfølgende oversigt fejler
+  ---
+  duration_ms: 8.436
+  type: 'test'
+  ...
+# Subtest: komplai Run: frisk adgang i Hub erstatter godkendelsens gamle adgang i kontrollen
+ok 205 - komplai Run: frisk adgang i Hub erstatter godkendelsens gamle adgang i kontrollen
+  ---
+  duration_ms: 13.147333
+  type: 'test'
+  ...
+# Subtest: Hele pakken: Udgivelse er med, når komplai Run er forbundet
+ok 206 - Hele pakken: Udgivelse er med, når komplai Run er forbundet
+  ---
+  duration_ms: 0.113792
+  type: 'test'
+  ...
+# Subtest: komplai Run: en ny offentlig app oprettes for organisationen og gøres offentlig med bekræftelsen før upload
+ok 207 - komplai Run: en ny offentlig app oprettes for organisationen og gøres offentlig med bekræftelsen før upload
+  ---
+  duration_ms: 3.519792
+  type: 'test'
+  ...
+# Subtest: Tidligere Komplai AI: alle inferensindgange afvises før netkald
+ok 208 - Tidligere Komplai AI: alle inferensindgange afvises før netkald
+  ---
+  duration_ms: 6.140125
+  type: 'test'
+  ...
+# Subtest: Tidligere Komplai AI: gemt forbindelse bliver inaktiv og viser ingen nøgle eller kontometadata
+ok 209 - Tidligere Komplai AI: gemt forbindelse bliver inaktiv og viser ingen nøgle eller kontometadata
+  ---
+  duration_ms: 9.730208
+  type: 'test'
+  ...
+# Subtest: Tidligere Komplai AI: forberedt afsendelse afvises før historik, dekryptering og genbrug af en aktiv motor
+ok 210 - Tidligere Komplai AI: forberedt afsendelse afvises før historik, dekryptering og genbrug af en aktiv motor
+  ---
+  duration_ms: 14.544167
+  type: 'test'
+  ...
+# Subtest: Tidligere Komplai AI: fjernelse af eget token er lokal, browseradgang tilbagekaldes, og Run bevares
+ok 211 - Tidligere Komplai AI: fjernelse af eget token er lokal, browseradgang tilbagekaldes, og Run bevares
+  ---
+  duration_ms: 17.363166
+  type: 'test'
+  ...
+# Subtest: Tidligere Komplai AI: fejlet tilbagekaldelse bevarer både den gamle forbindelse og Run
+ok 212 - Tidligere Komplai AI: fejlet tilbagekaldelse bevarer både den gamle forbindelse og Run
+  ---
+  duration_ms: 2.021
+  type: 'test'
+  ...
+# Subtest: Historisk forbrug i DKK bevares og blandes ikke med USD efter genåbning
+ok 213 - Historisk forbrug i DKK bevares og blandes ikke med USD efter genåbning
+  ---
+  duration_ms: 13.574792
+  type: 'test'
+  ...
+# Subtest: Komplai Run: PKCE og forkert state; kun organisationer med Run og ingen AI-vilkår
+ok 214 - Komplai Run: PKCE og forkert state; kun organisationer med Run og ingen AI-vilkår
+  ---
+  duration_ms: 29.054708
+  type: 'test'
+  ...
+# Subtest: Komplai Run: manglende opsætning, forkert loginserver og afbrydelse giver ingen adgang
+ok 215 - Komplai Run: manglende opsætning, forkert loginserver og afbrydelse giver ingen adgang
+  ---
+  duration_ms: 1.962916
+  type: 'test'
+  ...
+# Subtest: Komplai Run: udgivelsesadgang gemmes krypteret, erstattes og tilbagekaldes uden AI-forbindelse
+ok 216 - Komplai Run: udgivelsesadgang gemmes krypteret, erstattes og tilbagekaldes uden AI-forbindelse
+  ---
+  duration_ms: 6.517917
+  type: 'test'
+  ...
+# Subtest: Komplai: loginrespons har en øvre grænse og tilbagekaldelse skjuler ikke netværksfejl
+ok 217 - Komplai: loginrespons har en øvre grænse og tilbagekaldelse skjuler ikke netværksfejl
+  ---
+  duration_ms: 0.359666
+  type: 'test'
+  ...
+# Subtest: det rigtige bibliotek er gyldigt, og hvert værktøj kan installeres og fjernes igen
+ok 218 - det rigtige bibliotek er gyldigt, og hvert værktøj kan installeres og fjernes igen
+  ---
+  duration_ms: 552.895958
+  type: 'test'
+  ...
+# Subtest: et samlet valg af alle værktøjer giver én installation uden modstridende filer
+ok 219 - et samlet valg af alle værktøjer giver én installation uden modstridende filer
+  ---
+  duration_ms: 34.272459
+  type: 'test'
+  ...
+# Subtest: Komplai Run vælges til særskilt og installeres med hele referencen til hvert kodeværktøj
+ok 220 - Komplai Run vælges til særskilt og installeres med hele referencen til hvert kodeværktøj
+  ---
+  duration_ms: 222.744917
+  type: 'test'
+  ...
+# Subtest: det rigtige bibliotek kan indlæses og installeres med Windows-linjeskift
+ok 221 - det rigtige bibliotek kan indlæses og installeres med Windows-linjeskift
+  ---
+  duration_ms: 45.584625
+  type: 'test'
+  ...
+# Subtest: skillsene overholder Agent Skills-formatet og indeholder ingen scripts
+ok 222 - skillsene overholder Agent Skills-formatet og indeholder ingen scripts
+  ---
+  duration_ms: 5.841917
+  type: 'test'
+  ...
+# Subtest: afviser ugyldige skills, værktøjer og uoverensstemmelser
+ok 223 - afviser ugyldige skills, værktøjer og uoverensstemmelser
+  ---
+  duration_ms: 75.007
+  type: 'test'
+  ...
+# Subtest: integrationer skal beskrive system, ejer, adgang og dataflow og stå for sig
+ok 224 - integrationer skal beskrive system, ejer, adgang og dataflow og stå for sig
+  ---
+  duration_ms: 21.891333
+  type: 'test'
+  ...
+# Subtest: funktionerne i appen dækker hele biblioteket og bygger kun på kendte funktioner
+ok 225 - funktionerne i appen dækker hele biblioteket og bygger kun på kendte funktioner
+  ---
+  duration_ms: 3.900375
+  type: 'test'
+  ...
+# Subtest: integrationsskills holder nøgler på serveren og nævner systemets regler
+ok 226 - integrationsskills holder nøgler på serveren og nævner systemets regler
+  ---
+  duration_ms: 5.556791
+  type: 'test'
+  ...
+# Subtest: Søgningen bruger kun loopback og markerer mulige cloudmodeller
+ok 227 - Søgningen bruger kun loopback og markerer mulige cloudmodeller
+  ---
+  duration_ms: 0.709625
+  type: 'test'
+  ...
+# Subtest: Manglende, tom og ugyldig server er forskellige tilstande
+ok 228 - Manglende, tom og ugyldig server er forskellige tilstande
+  ---
+  duration_ms: 0.137083
+  type: 'test'
+  ...
+# Subtest: Katalog læses over HTTP; redirects følges ikke
+ok 229 - Katalog læses over HTTP; redirects følges ikke
+  ---
+  duration_ms: 24.238208
+  type: 'test'
+  ...
+# Subtest: manifestet medtager alle appfiler, linkmål og relevante mode-bits
+ok 230 - manifestet medtager alle appfiler, linkmål og relevante mode-bits
+  ---
+  duration_ms: 9.783375
+  type: 'test'
+  ...
+# Subtest: alle tre apps kontrolleres, DMG udenomsfiler ignoreres, og kun egen udpakning fjernes
+ok 231 - alle tre apps kontrolleres, DMG udenomsfiler ignoreres, og kun egen udpakning fjernes
+  ---
+  duration_ms: 17.303792
+  type: 'test'
+  ...
+# Subtest: fejl bevares i rapporten, og oprydning er afgrænset: {"wrongZip":true}
+ok 232 - fejl bevares i rapporten, og oprydning er afgrænset: {"wrongZip":true}
+  ---
+  duration_ms: 10.676167
+  type: 'test'
+  ...
+# Subtest: fejl bevares i rapporten, og oprydning er afgrænset: {"failCheck":true}
+ok 233 - fejl bevares i rapporten, og oprydning er afgrænset: {"failCheck":true}
+  ---
+  duration_ms: 10.730666
+  type: 'test'
+  ...
+# Subtest: fejl bevares i rapporten, og oprydning er afgrænset: {"failDetach":true}
+ok 234 - fejl bevares i rapporten, og oprydning er afgrænset: {"failDetach":true}
+  ---
+  duration_ms: 11.3935
+  type: 'test'
+  ...
+# Subtest: opadgående ZIP-navne og en anden app afvises før udpakning
+ok 235 - opadgående ZIP-navne og en anden app afvises før udpakning
+  ---
+  duration_ms: 0.292291
+  type: 'test'
+  ...
+# Subtest: en delvis montering afmonteres også, når attach-processen fejler
+ok 236 - en delvis montering afmonteres også, når attach-processen fejler
+  ---
+  duration_ms: 6.478916
+  type: 'test'
+  ...
+# Subtest: en afbrydelse af kontrollen går stadig gennem afmontering og fejlrapport
+ok 237 - en afbrydelse af kontrollen går stadig gennem afmontering og fejlrapport
+  ---
+  duration_ms: 9.527417
+  type: 'test'
+  ...
+# Subtest: en eksisterende rapport eller en rapport inde i appen overskrives aldrig
+ok 238 - en eksisterende rapport eller en rapport inde i appen overskrives aldrig
+  ---
+  duration_ms: 3.812208
+  type: 'test'
+  ...
+# Subtest: native npm-pakker tillades kun i den medfølgende Node, aldrig i Electron
+ok 239 - native npm-pakker tillades kun i den medfølgende Node, aldrig i Electron
+  ---
+  duration_ms: 1.188
+  type: 'test'
+  ...
+# Subtest: Claude: Anthropics eget udgangspunkt først, derefter Sonnet og Haiku, og aldrig mere end tre
+ok 240 - Claude: Anthropics eget udgangspunkt først, derefter Sonnet og Haiku, og aldrig mere end tre
+  ---
+  duration_ms: 0.855417
+  type: 'test'
+  ...
+# Subtest: appen anbefaler aldrig selv en model
+ok 241 - appen anbefaler aldrig selv en model
+  ---
+  duration_ms: 6.115083
+  type: 'test'
+  ...
+# Subtest: Alexandra: udbyderens eget udgangspunkt først, eksperimentel model derefter
+ok 242 - Alexandra: udbyderens eget udgangspunkt først, eksperimentel model derefter
+  ---
+  duration_ms: 0.105625
+  type: 'test'
+  ...
+# Subtest: indsats vises kun, hvor udbyderen har en dokumenteret standard
+ok 243 - indsats vises kun, hvor udbyderen har en dokumenteret standard
+  ---
+  duration_ms: 0.124708
+  type: 'test'
+  ...
+# Subtest: Mistral og OpenRouter får kodemodeller først; modeller uden værktøjer vises ikke
+ok 244 - Mistral og OpenRouter får kodemodeller først; modeller uden værktøjer vises ikke
+  ---
+  duration_ms: 0.164166
+  type: 'test'
+  ...
+# Subtest: Large 4 vises én gang som prøveversion, kun når kataloget har den, og overtager ikke standardvalget
+ok 245 - Large 4 vises én gang som prøveversion, kun når kataloget har den, og overtager ikke standardvalget
+  ---
+  duration_ms: 0.089
+  type: 'test'
+  ...
+# Subtest: ukendte udbydere og egne servere får et udvalg uden anbefaling
+ok 246 - ukendte udbydere og egne servere får et udvalg uden anbefaling
+  ---
+  duration_ms: 0.136167
+  type: 'test'
+  ...
+# Subtest: samme godkendelse gælder samtale, plan, byg og projektets egne henvisninger
+ok 247 - samme godkendelse gælder samtale, plan, byg og projektets egne henvisninger
+  ---
+  duration_ms: 1.262583
+  type: 'test'
+  ...
+# Subtest: ændret model, modtager, vilkår eller privat reference kræver ny godkendelse
+ok 248 - ændret model, modtager, vilkår eller privat reference kræver ny godkendelse
+  ---
+  duration_ms: 0.339458
+  type: 'test'
+  ...
+# Subtest: rækkefølge i metadata og referencevalg giver ikke ekstra spørgsmål
+ok 249 - rækkefølge i metadata og referencevalg giver ikke ekstra spørgsmål
+  ---
+  duration_ms: 0.066208
+  type: 'test'
+  ...
+# Subtest: samtidige godkendelser gemmes og tilhører kun deres projekt
+ok 250 - samtidige godkendelser gemmes og tilhører kun deres projekt
+  ---
+  duration_ms: 6.329375
+  type: 'test'
+  ...
+# Subtest: godkendt DMG får billet og en kvittering i det kendte format, som downloadsiden accepterer
+ok 251 - godkendt DMG får billet og en kvittering i det kendte format, som downloadsiden accepterer
+  ---
+  duration_ms: 322.582417
+  type: 'test'
+  ...
+# Subtest: netudfald under ventetiden genoptages fra det gemte id uden ny indsendelse
+ok 252 - netudfald under ventetiden genoptages fra det gemte id uden ny indsendelse
+  ---
+  duration_ms: 436.760583
+  type: 'test'
+  ...
+# Subtest: afbrudt upload sendes kun igen med --send-igen
+ok 253 - afbrudt upload sendes kun igen med --send-igen
+  ---
+  duration_ms: 432.683792
+  type: 'test'
+  ...
+# Subtest: afbrudt upload, som Apple alligevel modtog, bruges uden at sende igen
+ok 254 - afbrudt upload, som Apple alligevel modtog, bruges uden at sende igen
+  ---
+  duration_ms: 302.998333
+  type: 'test'
+  ...
+# Subtest: id gemmes, mens uploaden stadig kører
+ok 255 - id gemmes, mens uploaden stadig kører
+  ---
+  duration_ms: 361.301125
+  type: 'test'
+  ...
+# Subtest: ventefil fra et script, der stoppede under uploaden, kontrolleres uden ny indsendelse
+ok 256 - ventefil fra et script, der stoppede under uploaden, kontrolleres uden ny indsendelse
+  ---
+  duration_ms: 175.305166
+  type: 'test'
+  ...
+# Subtest: fejl før Apple giver et id efterlader ingen ventefil
+ok 257 - fejl før Apple giver et id efterlader ingen ventefil
+  ---
+  duration_ms: 359.709167
+  type: 'test'
+  ...
+# Subtest: uden ventefil genbruges Apples godkendelse med samme SHA-256
+ok 258 - uden ventefil genbruges Apples godkendelse med samme SHA-256
+  ---
+  duration_ms: 330.030625
+  type: 'test'
+  ...
+# Subtest: en uafsluttet indsendelse af samme fil hos Apple stopper en ny indsendelse
+ok 259 - en uafsluttet indsendelse af samme fil hos Apple stopper en ny indsendelse
+  ---
+  duration_ms: 337.649083
+  type: 'test'
+  ...
+# Subtest: forkert SHA-256 i Apples log stopper før billetten hæftes på
+ok 260 - forkert SHA-256 i Apples log stopper før billetten hæftes på
+  ---
+  duration_ms: 277.293167
+  type: 'test'
+  ...
+# Subtest: afvist indsendelse giver id og sendes ikke igen uden --send-igen
+ok 261 - afvist indsendelse giver id og sendes ikke igen uden --send-igen
+  ---
+  duration_ms: 242.847791
+  type: 'test'
+  ...
+# Subtest: netudfald efter vedhæftning af billetten fortsætter uden ny billet eller indsendelse
+ok 262 - netudfald efter vedhæftning af billetten fortsætter uden ny billet eller indsendelse
+  ---
+  duration_ms: 498.375709
+  type: 'test'
+  ...
+# Subtest: ændret fil efter en afbrudt upload behandles som en ny fil
+ok 263 - ændret fil efter en afbrudt upload behandles som en ny fil
+  ---
+  duration_ms: 398.79875
+  type: 'test'
+  ...
+# Subtest: ZIP kontrolleres uden stapling, og kvitteringen gælder den uændrede fil
+ok 264 - ZIP kontrolleres uden stapling, og kvitteringen gælder den uændrede fil
+  ---
+  duration_ms: 675.457792
+  type: 'test'
+  ...
+# Subtest: kommandolinjen bruger den falske xcrun og afviser ukendte valg
+ok 265 - kommandolinjen bruger den falske xcrun og afviser ukendte valg
+  ---
+  duration_ms: 331.675958
+  type: 'test'
+  ...
+# Subtest: kun den kendte låste Promte/React-kombination bruger den dokumenterede npm-undtagelse
+ok 266 - kun den kendte låste Promte/React-kombination bruger den dokumenterede npm-undtagelse
+  ---
+  duration_ms: 1.03425
+  type: 'test'
+  ...
+# Subtest: npm-fejl skelner versionskonflikt, låsefil, netværk, adgang og ukendt årsag
+ok 267 - npm-fejl skelner versionskonflikt, låsefil, netværk, adgang og ukendt årsag
+  ---
+  duration_ms: 0.855334
+  type: 'test'
+  ...
+# Subtest: den fatale npm-fejl har forrang for tidligere ERESOLVE-advarsler
+ok 268 - den fatale npm-fejl har forrang for tidligere ERESOLVE-advarsler
+  ---
+  duration_ms: 0.265834
+  type: 'test'
+  ...
+# Subtest: OpenAI fastholder sin adresse, og Azure kræver en ressourceadresse og et deployment-navn
+ok 269 - OpenAI fastholder sin adresse, og Azure kræver en ressourceadresse og et deployment-navn
+  ---
+  duration_ms: 2.666375
+  type: 'test'
+  ...
+# Subtest: openai: katalog, nøgle, Responses-strøm, historik og afvist adgang
+ok 270 - openai: katalog, nøgle, Responses-strøm, historik og afvist adgang
+  ---
+  duration_ms: 31.3455
+  type: 'test'
+  ...
+# Subtest: azure: katalog, nøgle, Responses-strøm, historik og afvist adgang
+ok 271 - azure: katalog, nøgle, Responses-strøm, historik og afvist adgang
+  ---
+  duration_ms: 7.623708
+  type: 'test'
+  ...
+# Subtest: Responses kan hverken skifte model eller falde tilbage til Chat Completions
+ok 272 - Responses kan hverken skifte model eller falde tilbage til Chat Completions
+  ---
+  duration_ms: 1.954167
+  type: 'test'
+  ...
+# Subtest: advarer om skills, som projektets .gitignore udelader, i et rigtigt Git-repository
+ok 273 - advarer om skills, som projektets .gitignore udelader, i et rigtigt Git-repository
+  ---
+  duration_ms: 391.366708
+  type: 'test'
+  ...
+# Subtest: en mappe uden Git kan stadig gennemgås, og installation kræver en gennemgang først
+ok 274 - en mappe uden Git kan stadig gennemgås, og installation kræver en gennemgang først
+  ---
+  duration_ms: 107.740875
+  type: 'test'
+  ...
+# Subtest: hver pakke indeholder præcis det, installationen ville skrive, med gyldigt manifest
+ok 275 - hver pakke indeholder præcis det, installationen ville skrive, med gyldigt manifest
+  ---
+  duration_ms: 39.055875
+  type: 'test'
+  ...
+# Subtest: webguidens script bruger kun felter, som kataloget har, med den rigtige form
+ok 276 - webguidens script bruger kun felter, som kataloget har, med den rigtige form
+  ---
+  duration_ms: 2.500625
+  type: 'test'
+  ...
+# Subtest: webplatforme uden projektfiler får tekst inden for platformens grænse
+ok 277 - webplatforme uden projektfiler får tekst inden for platformens grænse
+  ---
+  duration_ms: 1.403
+  type: 'test'
+  ...
+# Subtest: siden, kataloget og pakkerne er bygget fra den aktuelle kilde og er reproducerbare
+ok 278 - siden, kataloget og pakkerne er bygget fra den aktuelle kilde og er reproducerbare
+  ---
+  duration_ms: 90.532708
+  type: 'test'
+  ...
+# Subtest: webguidens og FAQ-sidens lokale links findes i den samlede side, og alle skills og spørgsmål er med
+ok 279 - webguidens og FAQ-sidens lokale links findes i den samlede side, og alle skills og spørgsmål er med
+  ---
+  duration_ms: 25.582
+  type: 'test'
+  ...
+# Subtest: checkout med Windows-indstillinger bevarer kildefiler og downloadpakkernes bytes
+ok 280 - checkout med Windows-indstillinger bevarer kildefiler og downloadpakkernes bytes
+  ---
+  duration_ms: 50.527375
+  type: 'test'
+  ...
+# Subtest: runtime-download afviser forkert kontrolsum og bruger verificeret cache
+ok 281 - runtime-download afviser forkert kontrolsum og bruger verificeret cache
+  ---
+  duration_ms: 10.727042
+  type: 'test'
+  ...
+# Subtest: downloadside viser kun eksisterende pakker og notarisation med matchende filhash
+ok 282 - downloadside viser kun eksisterende pakker og notarisation med matchende filhash
+  ---
+  duration_ms: 8.129458
+  type: 'test'
+  ...
+# Subtest: Git-opstartsformular udfylder kun manglende lokal identitet
+ok 283 - Git-opstartsformular udfylder kun manglende lokal identitet
+  ---
+  duration_ms: 456.4845
+  type: 'test'
+  ...
+# Subtest: pakket runtime afviser forkert platform og manglende værktøjer
+ok 284 - pakket runtime afviser forkert platform og manglende værktøjer
+  ---
+  duration_ms: 2.625833
+  type: 'test'
+  ...
+# Subtest: motorens forventede version er den låste OpenCode-version
+ok 285 - motorens forventede version er den låste OpenCode-version
+  ---
+  duration_ms: 0.860083
+  type: 'test'
+  ...
+# Subtest: Pages-konfiguration afviser kode, kommandotekst og usikre stier
+ok 286 - Pages-konfiguration afviser kode, kommandotekst og usikre stier
+  ---
+  duration_ms: 1.116375
+  type: 'test'
+  ...
+# Subtest: Pages-workflows har kun eksplicit dispatch, fastlåste Actions og bevarer skjulte webfiler
+ok 287 - Pages-workflows har kun eksplicit dispatch, fastlåste Actions og bevarer skjulte webfiler
+  ---
+  duration_ms: 9.228708
+  type: 'test'
+  ...
+# Subtest: Sidekontrol afviser private DNS-svar og fastholder den kontrollerede offentlige IP
+ok 288 - Sidekontrol afviser private DNS-svar og fastholder den kontrollerede offentlige IP
+  ---
+  duration_ms: 11.49625
+  type: 'test'
+  ...
+# Subtest: Opsætning læser kun GitHub og kræver præcis gennemgået workflow og version
+ok 289 - Opsætning læser kun GitHub og kræver præcis gennemgået workflow og version
+  ---
+  duration_ms: 1.495042
+  type: 'test'
+  ...
+# Subtest: Cloudflare kræver secretnavn men læser og returnerer aldrig tokenværdien
+ok 290 - Cloudflare kræver secretnavn men læser og returnerer aldrig tokenværdien
+  ---
+  duration_ms: 0.362875
+  type: 'test'
+  ...
+# Subtest: Dispatch binder version og filer og gemmer forespørgsels-ID før netværkskald
+ok 291 - Dispatch binder version og filer og gemmer forespørgsels-ID før netværkskald
+  ---
+  duration_ms: 0.452167
+  type: 'test'
+  ...
+# Subtest: Et tabt dispatch-svar efterlader ID til sikker kontrol uden automatisk gentagelse
+ok 292 - Et tabt dispatch-svar efterlader ID til sikker kontrol uden automatisk gentagelse
+  ---
+  duration_ms: 0.159667
+  type: 'test'
+  ...
+# Subtest: Status knyttes til konkret ID, workflow, version og et fuldført uploadtrin
+ok 293 - Status knyttes til konkret ID, workflow, version og et fuldført uploadtrin
+  ---
+  duration_ms: 0.315333
+  type: 'test'
+  ...
+# Subtest: Fejlede og afbrudte Pages-kørsler vises som terminale fejl i den fælles kvittering
+ok 294 - Fejlede og afbrudte Pages-kørsler vises som terminale fejl i den fælles kvittering
+  ---
+  duration_ms: 0.774
+  type: 'test'
+  ...
+# Subtest: Cloudflare-destination kontrolleres før upload og afviser forkert branch og automatisk build
+ok 295 - Cloudflare-destination kontrolleres før upload og afviser forkert branch og automatisk build
+  ---
+  duration_ms: 0.81025
+  type: 'test'
+  ...
+# Subtest: Cloudflare bruger kun den faktiske adresse fra samme GitHub-kørsel
+ok 296 - Cloudflare bruger kun den faktiske adresse fra samme GitHub-kørsel
+  ---
+  duration_ms: 0.382833
+  type: 'test'
+  ...
+# Subtest: Workflowets faktiske filkontrol køres på Auras gemte hjemmeside og afviser ændrede filer
+ok 297 - Workflowets faktiske filkontrol køres på Auras gemte hjemmeside og afviser ændrede filer
+  ---
+  duration_ms: 34.293708
+  type: 'test'
+  ...
+# Subtest: Pages viser installationsfiler med det nye og det tidligere navn
+ok 298 - Pages viser installationsfiler med det nye og det tidligere navn
+  ---
+  duration_ms: 0.884541
+  type: 'test'
+  ...
+# Subtest: Pages viser adgangskrav og ingen opdigtede downloads
+ok 299 - Pages viser adgangskrav og ingen opdigtede downloads
+  ---
+  duration_ms: 0.139667
+  type: 'test'
+  ...
+# Subtest: Pages springer tomme udgivelser over og skjuler forkerte versioner, ZIP-apps og filer uden kontrolsum
+ok 300 - Pages springer tomme udgivelser over og skjuler forkerte versioner, ZIP-apps og filer uden kontrolsum
+  ---
+  duration_ms: 0.1805
+  type: 'test'
+  ...
+# Subtest: Pages bruger faktiske releasefiler og afviser fremmede links
+ok 301 - Pages bruger faktiske releasefiler og afviser fremmede links
+  ---
+  duration_ms: 0.207041
+  type: 'test'
+  ...
+# Subtest: Pages bevarer instruktionspakker og bygger tom tilstand fra rigtige skabeloner
+ok 302 - Pages bevarer instruktionspakker og bygger tom tilstand fra rigtige skabeloner
+  ---
+  duration_ms: 24.424667
+  type: 'test'
+  ...
+# Subtest: Offentlig beta viser betastatus og faktiske downloads uden privat adgangstekst
+ok 303 - Offentlig beta viser betastatus og faktiske downloads uden privat adgangstekst
+  ---
+  duration_ms: 17.530625
+  type: 'test'
+  ...
+# Subtest: Pages afviser privat, ukendt eller forkert repository før offentlig udgivelse
+ok 304 - Pages afviser privat, ukendt eller forkert repository før offentlig udgivelse
+  ---
+  duration_ms: 0.358917
+  type: 'test'
+  ...
+# Subtest: Pages afviser manglende adgangsoplysninger og automatisk branch-bygning
+ok 305 - Pages afviser manglende adgangsoplysninger og automatisk branch-bygning
+  ---
+  duration_ms: 0.191625
+  type: 'test'
+  ...
+# Subtest: Pages inkluderer kun de anvendte README-billeder og bevarer originalerne
+ok 306 - Pages inkluderer kun de anvendte README-billeder og bevarer originalerne
+  ---
+  duration_ms: 16.940791
+  type: 'test'
+  ...
+# Subtest: briefen starter med idéen og får svar og ønsker med korte overskrifter; AI-tekst kommer ikke ind
+ok 307 - briefen starter med idéen og får svar og ønsker med korte overskrifter; AI-tekst kommer ikke ind
+  ---
+  duration_ms: 1.959833
+  type: 'test'
+  ...
+# Subtest: briefen afviser tomme, for lange og for mange linjer og retter ukendte kilder
+ok 308 - briefen afviser tomme, for lange og for mange linjer og retter ukendte kilder
+  ---
+  duration_ms: 8.343334
+  type: 'test'
+  ...
+# Subtest: planen deles i de fire afsnit, og et resumé tager første linje under Det bygger vi
+ok 309 - planen deles i de fire afsnit, og et resumé tager første linje under Det bygger vi
+  ---
+  duration_ms: 0.766166
+  type: 'test'
+  ...
+# Subtest: svarmuligheder: AI’ens anbefaling markeres og står først, og etiketten bevares til svaret
+ok 310 - svarmuligheder: AI’ens anbefaling markeres og står først, og etiketten bevares til svaret
+  ---
+  duration_ms: 0.292125
+  type: 'test'
+  ...
+# Subtest: rettet plan bygges, AI’ens version kan hentes igen, og en stoppet plan kan kun læses
+ok 311 - rettet plan bygges, AI’ens version kan hentes igen, og en stoppet plan kan kun læses
+  ---
+  duration_ms: 27.641916
+  type: 'test'
+  ...
+# Subtest: en afbrudt byggeopgave genåbnes med planen som seneste plan, ikke som en plan, der kan bygges
+ok 312 - en afbrudt byggeopgave genåbnes med planen som seneste plan, ikke som en plan, der kan bygges
+  ---
+  duration_ms: 4.043708
+  type: 'test'
+  ...
+# Subtest: svar på AI’ens spørgsmål sendes som etiketter og kommer i briefen; spring over lader AI’en vælge
+ok 313 - svar på AI’ens spørgsmål sendes som etiketter og kommer i briefen; spring over lader AI’en vælge
+  ---
+  duration_ms: 9.234791
+  type: 'test'
+  ...
+# Subtest: motoren får spørgeværktøjet; OpenCode tilbyder det ellers kun til sine egne klienter
+ok 314 - motoren får spørgeværktøjet; OpenCode tilbyder det ellers kun til sine egne klienter
+  ---
+  duration_ms: 0.400667
+  type: 'test'
+  ...
+# Subtest: præferencer genåbnes uden godkendelser og ændrer ikke eksisterende projekter
+ok 315 - præferencer genåbnes uden godkendelser og ændrer ikke eksisterende projekter
+  ---
+  duration_ms: 8.39675
+  type: 'test'
+  ...
+# Subtest: ukendte valg afvises; beslut senere kræver ingen forbindelse
+ok 316 - ukendte valg afvises; beslut senere kræver ingen forbindelse
+  ---
+  duration_ms: 0.171167
+  type: 'test'
+  ...
+# Subtest: gammel Promte-frame kan ikke bruge det valgte projekts proxy; afventende kald beholder sin ejer
+ok 317 - gammel Promte-frame kan ikke bruge det valgte projekts proxy; afventende kald beholder sin ejer
+  ---
+  duration_ms: 2.872833
+  type: 'test'
+  ...
+# Subtest: gammel Komplai-frame afvises og svaret fra A vises aldrig efter skift til B
+ok 318 - gammel Komplai-frame afvises og svaret fra A vises aldrig efter skift til B
+  ---
+  duration_ms: 1.17675
+  type: 'test'
+  ...
+# Subtest: teksten fra siden matcher koden trods linjeskift, indrykning og HTML-tegnkoder
+ok 319 - teksten fra siden matcher koden trods linjeskift, indrykning og HTML-tegnkoder
+  ---
+  duration_ms: 0.628708
+  type: 'test'
+  ...
+# Subtest: tekstsøgningen springer kommentarer, scripts, beskyttede og genererede filer over og foretrækker den viste side og det rette tag
+ok 320 - tekstsøgningen springer kommentarer, scripts, beskyttede og genererede filer over og foretrækker den viste side og det rette tag
+  ---
+  duration_ms: 16.896334
+  type: 'test'
+  ...
+# Subtest: den nye tekst skrives, så den betyder det samme i filtypen; tegn, der kræver kode, overlades til AI’en
+ok 321 - den nye tekst skrives, så den betyder det samme i filtypen; tegn, der kræver kode, overlades til AI’en
+  ---
+  duration_ms: 0.409209
+  type: 'test'
+  ...
+# Subtest: data fra siden begrænses og renses; mulige nøgler vises ikke og sendes ikke
+ok 322 - data fra siden begrænses og renses; mulige nøgler vises ikke og sendes ikke
+  ---
+  duration_ms: 0.401416
+  type: 'test'
+  ...
+# Subtest: kortet siger, hvorfor en tekst ikke kan rettes direkte
+ok 323 - kortet siger, hvorfor en tekst ikke kan rettes direkte
+  ---
+  duration_ms: 0.086709
+  type: 'test'
+  ...
+# Subtest: siden, der vises, findes ud fra adressen; henvisningen til AI’en beskriver elementet og kilden
+ok 324 - siden, der vises, findes ud fra adressen; henvisningen til AI’en beskriver elementet og kilden
+  ---
+  duration_ms: 0.22
+  type: 'test'
+  ...
+# Subtest: valgscriptet kan oversættes og bruger en tilfældig nøgle
+ok 325 - valgscriptet kan oversættes og bruger en tilfældig nøgle
+  ---
+  duration_ms: 0.332833
+  type: 'test'
+  ...
+# Subtest: en tekstrettelse ændrer kun den valgte tekst, står som din og kan fortrydes; ændret fil fortrydes ikke
+ok 326 - en tekstrettelse ændrer kun den valgte tekst, står som din og kan fortrydes; ændret fil fortrydes ikke
+  ---
+  duration_ms: 21.133959
+  type: 'test'
+  ...
+# Subtest: fortryd en AI-opgave uden version: nye filer slettes, slettede filer kommer igen, og en fil, der er ændret siden, stopper det hele
+ok 327 - fortryd en AI-opgave uden version: nye filer slettes, slettede filer kommer igen, og en fil, der er ændret siden, stopper det hele
+  ---
+  duration_ms: 11.524459
+  type: 'test'
+  ...
+# Subtest: en fil, Aura kun kunne læse før eller efter, er hverken ny eller slettet
+ok 328 - en fil, Aura kun kunne læse før eller efter, er hverken ny eller slettet
+  ---
+  duration_ms: 2.013083
+  type: 'test'
+  ...
+# Subtest: serveren viser aktuelle filer og afviser private filer, links, traversering og forkert vært
+ok 329 - serveren viser aktuelle filer og afviser private filer, links, traversering og forkert vært
+  ---
+  duration_ms: 19.620791
+  type: 'test'
+  ...
+# Subtest: filvalget viser projektets egne filer og udelader beskyttede, genererede og symbolske links
+ok 330 - filvalget viser projektets egne filer og udelader beskyttede, genererede og symbolske links
+  ---
+  duration_ms: 17.188958
+  type: 'test'
+  ...
+# Subtest: koden vises som tekst, og billeder som data-adresse
+ok 331 - koden vises som tekst, og billeder som data-adresse
+  ---
+  duration_ms: 7.870208
+  type: 'test'
+  ...
+# Subtest: beskyttede filer og stier uden for projektet afvises med en forklaring
+ok 332 - beskyttede filer og stier uden for projektet afvises med en forklaring
+  ---
+  duration_ms: 8.246
+  type: 'test'
+  ...
+# Subtest: filhenvisninger kræver en tekstfil og linjer, der findes
+ok 333 - filhenvisninger kræver en tekstfil og linjer, der findes
+  ---
+  duration_ms: 7.515792
+  type: 'test'
+  ...
+# Subtest: projektregler læses fuldt med kilde og hash; manglende fil er tilladt, links og afkortning afvises
+ok 334 - projektregler læses fuldt med kilde og hash; manglende fil er tilladt, links og afkortning afvises
+  ---
+  duration_ms: 6.03175
+  type: 'test'
+  ...
+# Subtest: desktop og CLI får kun henvisninger til deres egne forbindelser, versioner og deling
+ok 335 - desktop og CLI får kun henvisninger til deres egne forbindelser, versioner og deling
+  ---
+  duration_ms: 0.542875
+  type: 'test'
+  ...
+# Subtest: ændrede projektregler stopper afsendelse før motorstart, også når filen oprettes efter gennemgangen
+ok 336 - ændrede projektregler stopper afsendelse før motorstart, også når filen oprettes efter gennemgangen
+  ---
+  duration_ms: 16.145583
+  type: 'test'
+  ...
+# Subtest: tilpassede skills kontrollerer referencer og andre skills før lagring og før indlæsning
+ok 337 - tilpassede skills kontrollerer referencer og andre skills før lagring og før indlæsning
+  ---
+  duration_ms: 4.231875
+  type: 'test'
+  ...
+# Subtest: projektregler kontrolleres igen efter motoropstart, før modellen modtager en opgave
+ok 338 - projektregler kontrolleres igen efter motoropstart, før modellen modtager en opgave
+  ---
+  duration_ms: 17.105625
+  type: 'test'
+  ...
+# Subtest: runtime kræver relative portable mapper og afviser Windows-drevstier
+ok 339 - runtime kræver relative portable mapper og afviser Windows-drevstier
+  ---
+  duration_ms: 1.449292
+  type: 'test'
+  ...
+# Subtest: en faktisk undermappe af filsystemets rod accepteres, og et link ud af projektet afvises
+ok 340 - en faktisk undermappe af filsystemets rod accepteres, og et link ud af projektet afvises
+  ---
+  duration_ms: 4.482083
+  type: 'test'
+  ...
+# Subtest: produktionsafgrænsningen håndterer Windows-drev, UNC, case og skift til andre drev
+ok 341 - produktionsafgrænsningen håndterer Windows-drev, UNC, case og skift til andre drev
+  ---
+  duration_ms: 1.361417
+  type: 'test'
+  ...
+# Subtest: opstart og netadgang normaliseres uden shell, tværprojektstier eller brede tilladelser
+ok 342 - opstart og netadgang normaliseres uden shell, tværprojektstier eller brede tilladelser
+  ---
+  duration_ms: 1.0175
+  type: 'test'
+  ...
+# Subtest: Automatisk bevarer almindelig HTML og genkender npm, Python og eksplicitte tjenester uden at køre dem
+ok 343 - Automatisk bevarer almindelig HTML og genkender npm, Python og eksplicitte tjenester uden at køre dem
+  ---
+  duration_ms: 12.070083
+  type: 'test'
+  ...
+# Subtest: en projektspecifik netregel åbner ikke andre projekter eller andre ressourcetyper
+ok 344 - en projektspecifik netregel åbner ikke andre projekter eller andre ressourcetyper
+  ---
+  duration_ms: 0.915
+  type: 'test'
+  ...
+# Subtest: den rigtige sessions politik bruger initiatoren også ved omdirigering og afviser andre projekter
+ok 345 - den rigtige sessions politik bruger initiatoren også ved omdirigering og afviser andre projekter
+  ---
+  duration_ms: 0.821291
+  type: 'test'
+  ...
+# Subtest: eksisterende CDN-HTML giver en konkret reparationskladde og respekterer den præcise netliste
+ok 346 - eksisterende CDN-HTML giver en konkret reparationskladde og respekterer den præcise netliste
+  ---
+  duration_ms: 3.819417
+  type: 'test'
+  ...
+# Subtest: rigtige Node-tjenester starter først efter gennemgang, deler lokale adresser og stoppes sammen
+ok 347 - rigtige Node-tjenester starter først efter gennemgang, deler lokale adresser og stoppes sammen
+  ---
+  duration_ms: 315.464875
+  type: 'test'
+  ...
+# Subtest: ændret opstart afvises efter gennemgang og et manglende værktøj installeres aldrig
+ok 348 - ændret opstart afvises efter gennemgang og et manglende værktøj installeres aldrig
+  ---
+  duration_ms: 25.513083
+  type: 'test'
+  ...
+# Subtest: rigtig Python-standardserver bruger sin gennemgåede port uden pakkeinstallation
+ok 349 - rigtig Python-standardserver bruger sin gennemgåede port uden pakkeinstallation
+  ---
+  duration_ms: 257.941667
+  type: 'test'
+  ...
+# Subtest: opret og genåbn et rigtigt projekt med profiler og adskilte materialer
+ok 350 - opret og genåbn et rigtigt projekt med profiler og adskilte materialer
+  ---
+  duration_ms: 12.82225
+  type: 'test'
+  ...
+# Subtest: afvis forkert input før oprettelse, også aktive links og ugyldige farver
+ok 351 - afvis forkert input før oprettelse, også aktive links og ugyldige farver
+  ---
+  duration_ms: 1.024833
+  type: 'test'
+  ...
+# Subtest: åbn mappe uden preview, hvis public er erstattet af et symbolsk link
+ok 352 - åbn mappe uden preview, hvis public er erstattet af et symbolsk link
+  ---
+  duration_ms: 4.032625
+  type: 'test'
+  ...
+# Subtest: åbn tomme og eksisterende mapper uden filændringer
+ok 353 - åbn tomme og eksisterende mapper uden filændringer
+  ---
+  duration_ms: 1.431292
+  type: 'test'
+  ...
+# Subtest: mappenavne bevarer danske ord i læsbar form
+ok 354 - mappenavne bevarer danske ord i læsbar form
+  ---
+  duration_ms: 0.270333
+  type: 'test'
+  ...
+# Subtest: en ny projekts startside vises ikke, før den er ændret, men eksisterende projekter vises som før
+ok 355 - en ny projekts startside vises ikke, før den er ændret, men eksisterende projekter vises som før
+  ---
+  duration_ms: 9.403208
+  type: 'test'
+  ...
+# Subtest: en ny startside indeholder ingen valgt brandfarve eller Georgia
+ok 356 - en ny startside indeholder ingen valgt brandfarve eller Georgia
+  ---
+  duration_ms: 5.933833
+  type: 'test'
+  ...
+# Subtest: mappeadgang kontrolleres ved åbning og kan prøves igen uden filændringer
+ok 357 - mappeadgang kontrolleres ved åbning og kan prøves igen uden filændringer
+  ---
+  duration_ms: 1.046458
+  type: 'test'
+  ...
+# Subtest: Promte kræver gyldig HTTPS-installation og kildekode fra gennemgåede filer
+ok 358 - Promte kræver gyldig HTTPS-installation og kildekode fra gennemgåede filer
+  ---
+  duration_ms: 4.715625
+  type: 'test'
+  ...
+# Subtest: Promte afviser private DNS-svar før login læses eller netværket kontaktes
+ok 359 - Promte afviser private DNS-svar før login læses eller netværket kontaktes
+  ---
+  duration_ms: 0.279042
+  type: 'test'
+  ...
+# Subtest: Promtes CLI-filregler anvendes før gennemgang med hash af de faktiske uploadfiler
+ok 360 - Promtes CLI-filregler anvendes før gennemgang med hash af de faktiske uploadfiler
+  ---
+  duration_ms: 0.452708
+  type: 'test'
+  ...
+# Subtest: Promte-login sker i Aura gennem browsergodkendelse og gemmes krypteret pr. vært
+ok 361 - Promte-login sker i Aura gennem browsergodkendelse og gemmes krypteret pr. vært
+  ---
+  duration_ms: 8.591125
+  type: 'test'
+  ...
+# Subtest: Promte-login stopper med en forståelig besked ved afvisning og afviser fremmede godkendelsessider
+ok 362 - Promte-login stopper med en forståelig besked ved afvisning og afviser fremmede godkendelsessider
+  ---
+  duration_ms: 2.056292
+  type: 'test'
+  ...
+# Subtest: Promte-login kan afbrydes under et svar; en sen godkendelse gemmes ikke
+ok 363 - Promte-login kan afbrydes under et svar; en sen godkendelse gemmes ikke
+  ---
+  duration_ms: 3.774375
+  type: 'test'
+  ...
+# Subtest: Promte-login stopper ved gentagne statusfejl og frigiver forsøget
+ok 364 - Promte-login stopper ved gentagne statusfejl og frigiver forsøget
+  ---
+  duration_ms: 0.388125
+  type: 'test'
+  ...
+# Subtest: sen Promte-godkendelse fra et andet projekt kan ikke erstatte det seneste login
+ok 365 - sen Promte-godkendelse fra et andet projekt kan ikke erstatte det seneste login
+  ---
+  duration_ms: 1.059041
+  type: 'test'
+  ...
+# Subtest: Promte-logud afbryder et ventende login uden at afbryde en anden vært
+ok 366 - Promte-logud afbryder et ventende login uden at afbryde en anden vært
+  ---
+  duration_ms: 0.956542
+  type: 'test'
+  ...
+# Subtest: Promte viser brugerens apps og opretter en ny app med brugeren som ejer
+ok 367 - Promte viser brugerens apps og opretter en ny app med brugeren som ejer
+  ---
+  duration_ms: 1.278833
+  type: 'test'
+  ...
+# Subtest: en Promte uden appliste svarer med en side; Aura siger det og lader brugeren indtaste ID
+ok 368 - en Promte uden appliste svarer med en side; Aura siger det og lader brugeren indtaste ID
+  ---
+  duration_ms: 0.565
+  type: 'test'
+  ...
+# Subtest: Promte bruger et eksisterende CLI-login, når Aura ikke selv er logget ind
+ok 369 - Promte bruger et eksisterende CLI-login, når Aura ikke selv er logget ind
+  ---
+  duration_ms: 0.1685
+  type: 'test'
+  ...
+# Subtest: Promte kræver dokumenteret source-capability og adgang uden at udlevere token
+ok 370 - Promte kræver dokumenteret source-capability og adgang uden at udlevere token
+  ---
+  duration_ms: 1.244541
+  type: 'test'
+  ...
+# Subtest: Promte sender præcis godkendt ZIP, isolerer uploadtoken og gemmer version før upload
+ok 371 - Promte sender præcis godkendt ZIP, isolerer uploadtoken og gemmer version før upload
+  ---
+  duration_ms: 1.623375
+  type: 'test'
+  ...
+# Subtest: Promte blokerer udokumenteret uploadvært og efterlader en kontrollerbar version
+ok 372 - Promte blokerer udokumenteret uploadvært og efterlader en kontrollerbar version
+  ---
+  duration_ms: 0.37475
+  type: 'test'
+  ...
+# Subtest: Promte bevarer bekræftet upload selv om finalize fejler
+ok 373 - Promte bevarer bekræftet upload selv om finalize fejler
+  ---
+  duration_ms: 0.467583
+  type: 'test'
+  ...
+# Subtest: Promte kontrollerer præcis release og forveksler ikke gennemgang med udgivelse
+ok 374 - Promte kontrollerer præcis release og forveksler ikke gennemgang med udgivelse
+  ---
+  duration_ms: 0.874917
+  type: 'test'
+  ...
+# Subtest: Promte-kontrollen før login skelner en almindelig hjemmeside fra et projekt, der ikke er sat op til Promte
+ok 375 - Promte-kontrollen før login skelner en almindelig hjemmeside fra et projekt, der ikke er sat op til Promte
+  ---
+  duration_ms: 9.514833
+  type: 'test'
+  ...
+# Subtest: Promte-projekter genkendes på app-biblioteket, og projektets navn bliver appens navn
+ok 376 - Promte-projekter genkendes på app-biblioteket, og projektets navn bliver appens navn
+  ---
+  duration_ms: 4.674167
+  type: 'test'
+  ...
+# Subtest: en isoleret kopis bibliotek genkendes, mens valg og forbindelse bliver hos projektet
+ok 377 - en isoleret kopis bibliotek genkendes, mens valg og forbindelse bliver hos projektet
+  ---
+  duration_ms: 6.285958
+  type: 'test'
+  ...
+# Subtest: forhåndsvisningen opretter først Promte-appen, når brugeren vælger det, og genbruger den derefter
+ok 378 - forhåndsvisningen opretter først Promte-appen, når brugeren vælger det, og genbruger den derefter
+  ---
+  duration_ms: 1.708042
+  type: 'test'
+  ...
+# Subtest: med Promte-integrationen slået fra svarer Aura ikke appen og kontakter ikke Promte
+ok 379 - med Promte-integrationen slået fra svarer Aura ikke appen og kontakter ikke Promte
+  ---
+  duration_ms: 1.081917
+  type: 'test'
+  ...
+# Subtest: uden koblet app bruger forhåndsvisningen den Promte, brugeren er logget ind på i Aura
+ok 380 - uden koblet app bruger forhåndsvisningen den Promte, brugeren er logget ind på i Aura
+  ---
+  duration_ms: 1.571458
+  type: 'test'
+  ...
+# Subtest: uden login svarer Aura ikke appen, og andre projekter berøres ikke
+ok 381 - uden login svarer Aura ikke appen, og andre projekter berøres ikke
+  ---
+  duration_ms: 2.608791
+  type: 'test'
+  ...
+# Subtest: appens kald sendes kun til Promtes app-API med et app-token, der bliver i Aura
+ok 382 - appens kald sendes kun til Promtes app-API med et app-token, der bliver i Aura
+  ---
+  duration_ms: 9.365792
+  type: 'test'
+  ...
+# Subtest: filer i en formular sendes videre som rigtige filer
+ok 383 - filer i en formular sendes videre som rigtige filer
+  ---
+  duration_ms: 1.631291
+  type: 'test'
+  ...
+# Subtest: uden koblet app videresendes intet
+ok 384 - uden koblet app videresendes intet
+  ---
+  duration_ms: 1.101083
+  type: 'test'
+  ...
+# Subtest: Promte-app-token følger den aktuelle loginidentitet og afvises efter logud
+ok 385 - Promte-app-token følger den aktuelle loginidentitet og afvises efter logud
+  ---
+  duration_ms: 1.6365
+  type: 'test'
+  ...
+# Subtest: et sent generateToken-svar fra tidligere konto afvises efter kontoskift eller logud
+ok 386 - et sent generateToken-svar fra tidligere konto afvises efter kontoskift eller logud
+  ---
+  duration_ms: 0.89425
+  type: 'test'
+  ...
+# Subtest: et allerede afsendt app-svar leveres ikke efter kontoskift eller logud
+ok 387 - et allerede afsendt app-svar leveres ikke efter kontoskift eller logud
+  ---
+  duration_ms: 0.70775
+  type: 'test'
+  ...
+# Subtest: Large 4 bruger Mistrals adapter, kataloggrænser og listepris uden en permanent lanceringsrabat
+ok 388 - Large 4 bruger Mistrals adapter, kataloggrænser og listepris uden en permanent lanceringsrabat
+  ---
+  duration_ms: 9.89325
+  type: 'test'
+  ...
+# Subtest: Corti, Mistral og Alexandra fastholder destination; ukendte udbydere afvises
+ok 389 - Corti, Mistral og Alexandra fastholder destination; ukendte udbydere afvises
+  ---
+  duration_ms: 0.49825
+  type: 'test'
+  ...
+# Subtest: corti: katalog, streaming, værktøjskald og fejl gennem rigtig HTTP-gateway
+ok 390 - corti: katalog, streaming, værktøjskald og fejl gennem rigtig HTTP-gateway
+  ---
+  duration_ms: 30.134708
+  type: 'test'
+  ...
+# Subtest: mistral: katalog, streaming, værktøjskald og fejl gennem rigtig HTTP-gateway
+ok 391 - mistral: katalog, streaming, værktøjskald og fejl gennem rigtig HTTP-gateway
+  ---
+  duration_ms: 8.248584
+  type: 'test'
+  ...
+# Subtest: alexandra: katalog, streaming, værktøjskald og fejl gennem rigtig HTTP-gateway
+ok 392 - alexandra: katalog, streaming, værktøjskald og fejl gennem rigtig HTTP-gateway
+  ---
+  duration_ms: 5.330917
+  type: 'test'
+  ...
+# Subtest: kendte modeller får deres dokumenterede tokengrænser; ukendte beholder de forsigtige
+ok 393 - kendte modeller får deres dokumenterede tokengrænser; ukendte beholder de forsigtige
+  ---
+  duration_ms: 0.341625
+  type: 'test'
+  ...
+# Subtest: gatewayen lader en langsom strøm køre færdig, men stopper stilstand
+ok 394 - gatewayen lader en langsom strøm køre færdig, men stopper stilstand
+  ---
+  duration_ms: 1312.122083
+  type: 'test'
+  ...
+# Subtest: Zens vilkår vises for hver model
+ok 395 - Zens vilkår vises for hver model
+  ---
+  duration_ms: 0.376459
+  type: 'test'
+  ...
+# Subtest: Corti-forbindelsen bruger adressen fra nøglens miljø og aldrig USA
+ok 396 - Corti-forbindelsen bruger adressen fra nøglens miljø og aldrig USA
+  ---
+  duration_ms: 0.538458
+  type: 'test'
+  ...
+# Subtest: Alexandra: DKK-priser, dokumenterede grænser og danske vilkår
+ok 397 - Alexandra: DKK-priser, dokumenterede grænser og danske vilkår
+  ---
+  duration_ms: 0.284375
+  type: 'test'
+  ...
+# Subtest: når Corti afviser nøglen, siger beskeden hvilken adresse appen prøvede
+ok 398 - når Corti afviser nøglen, siger beskeden hvilken adresse appen prøvede
+  ---
+  duration_ms: 2.507917
+  type: 'test'
+  ...
+# Subtest: corti-s1 får plads til tanker og svar, og kun de indsatsniveauer, Corti selv oplyser
+ok 399 - corti-s1 får plads til tanker og svar, og kun de indsatsniveauer, Corti selv oplyser
+  ---
+  duration_ms: 0.165833
+  type: 'test'
+  ...
+# Subtest: OpenCode får Auras højeste svarloft, så modellens egen grænse bestemmer
+ok 400 - OpenCode får Auras højeste svarloft, så modellens egen grænse bestemmer
+  ---
+  duration_ms: 0.663166
+  type: 'test'
+  ...
+# Subtest: gatewayen sender kun en indsats, når brugeren har valgt den, og som hver udbyder forventer
+ok 401 - gatewayen sender kun en indsats, når brugeren har valgt den, og som hver udbyder forventer
+  ---
+  duration_ms: 5.739834
+  type: 'test'
+  ...
+# Subtest: Udgiv gennemgår og uploader præcis Promtes filudvalg med nyt fingeraftryk og viste fravalg
+ok 402 - Udgiv gennemgår og uploader præcis Promtes filudvalg med nyt fingeraftryk og viste fravalg
+  ---
+  duration_ms: 14.799
+  type: 'test'
+  ...
+# Subtest: Udgiv beregner Promtes uploadhash igen og afviser ændret kildekode eller Git-version
+ok 403 - Udgiv beregner Promtes uploadhash igen og afviser ændret kildekode eller Git-version
+  ---
+  duration_ms: 3.83175
+  type: 'test'
+  ...
+# Subtest: Den oprindelige fil- og Git-kontrol udføres før Promtes fravalg og før kontakt til udbyderen
+ok 404 - Den oprindelige fil- og Git-kontrol udføres før Promtes fravalg og før kontakt til udbyderen
+  ---
+  duration_ms: 0.149041
+  type: 'test'
+  ...
+# Subtest: Udgiv bevarer PREPARED og UPLOADED uden at kalde en uafklaret handling udgivet
+ok 405 - Udgiv bevarer PREPARED og UPLOADED uden at kalde en uafklaret handling udgivet
+  ---
+  duration_ms: 2.326333
+  type: 'test'
+  ...
+# Subtest: Pages startes kun efter gennemgang, gemmer korrelation før dispatch og kan genfinde tabt svar
+ok 406 - Pages startes kun efter gennemgang, gemmer korrelation før dispatch og kan genfinde tabt svar
+  ---
+  duration_ms: 2.716709
+  type: 'test'
+  ...
+# Subtest: Pages stopper ændret GitHub-version før dispatch og afviser backend før GitHub-kald
+ok 407 - Pages stopper ændret GitHub-version før dispatch og afviser backend før GitHub-kald
+  ---
+  duration_ms: 0.502083
+  type: 'test'
+  ...
+# Subtest: Udgiv bruger DNS-fast sidekontrol for Pages med eget domæne og følger ikke viderestilling
+ok 408 - Udgiv bruger DNS-fast sidekontrol for Pages med eget domæne og følger ikke viderestilling
+  ---
+  duration_ms: 2.234166
+  type: 'test'
+  ...
+# Subtest: Forsinket statuskontrol kan ikke overskrive en nyere kvittering eller en nyere kontrol
+ok 409 - Forsinket statuskontrol kan ikke overskrive en nyere kvittering eller en nyere kontrol
+  ---
+  duration_ms: 11.319917
+  type: 'test'
+  ...
+# Subtest: gennemgå og push rigtige commits til isoleret Git-server; genkend synkronisering
+ok 410 - gennemgå og push rigtige commits til isoleret Git-server; genkend synkronisering
+  ---
+  duration_ms: 1559.715708
+  type: 'test'
+  ...
+# Subtest: afvis ændret synlighed, lokale ændringer og serverhistorik uden force push
+ok 411 - afvis ændret synlighed, lokale ændringer og serverhistorik uden force push
+  ---
+  duration_ms: 2749.96275
+  type: 'test'
+  ...
+# Subtest: find hemmeligheder i tidligere commits selv efter filen er slettet
+ok 412 - find hemmeligheder i tidligere commits selv efter filen er slettet
+  ---
+  duration_ms: 721.600417
+  type: 'test'
+  ...
+# Subtest: publicering tilsidesætter ikke URL-regler, hooks eller eksisterende remote
+ok 413 - publicering tilsidesætter ikke URL-regler, hooks eller eksisterende remote
+  ---
+  duration_ms: 773.630708
+  type: 'test'
+  ...
+# Subtest: LFS-pointere afvises, så manglende binærfiler ikke erklæres publiceret
+ok 414 - LFS-pointere afvises, så manglende binærfiler ikke erklæres publiceret
+  ---
+  duration_ms: 826.762458
+  type: 'test'
+  ...
+# Subtest: Udgivelse kræver én gennemgået beta med præcis tre komplette installationsfiler
+ok 415 - Udgivelse kræver én gennemgået beta med præcis tre komplette installationsfiler
+  ---
+  duration_ms: 1.735084
+  type: 'test'
+  ...
+# Subtest: Gentagen kontrol tillader downloadtællere, men afviser ændrede noter og filer
+ok 416 - Gentagen kontrol tillader downloadtællere, men afviser ændrede noter og filer
+  ---
+  duration_ms: 5.577875
+  type: 'test'
+  ...
+# Subtest: Desktopkladder hentes via ID og må bruge GitHubs midlertidige downloadadresser
+ok 417 - Desktopkladder hentes via ID og må bruge GitHubs midlertidige downloadadresser
+  ---
+  duration_ms: 0.533959
+  type: 'test'
+  ...
+# Subtest: Udgivelseskontrollen læser de faktiske bytes uden at kræve en AI-udbyder
+ok 418 - Udgivelseskontrollen læser de faktiske bytes uden at kræve en AI-udbyder
+  ---
+  duration_ms: 7.708833
+  type: 'test'
+  ...
+# Subtest: Desktopudgivelse er fortsat manuel og har ingen særskilt AI-login-kontrol
+ok 419 - Desktopudgivelse er fortsat manuel og har ingen særskilt AI-login-kontrol
+  ---
+  duration_ms: 0.55425
+  type: 'test'
+  ...
+# Subtest: gendan og fortryd efter genstart, med uændret HEAD/index og bevarede private/nye filer
+ok 420 - gendan og fortryd efter genstart, med uændret HEAD/index og bevarede private/nye filer
+  ---
+  duration_ms: 1112.126917
+  type: 'test'
+  ...
+# Subtest: afvis nye ændringer, stage, symlink, hemmeligheder og uvedkommende commits før filskrivning
+ok 421 - afvis nye ændringer, stage, symlink, hemmeligheder og uvedkommende commits før filskrivning
+  ---
+  duration_ms: 1239.531583
+  type: 'test'
+  ...
+# Subtest: afbrudt filskrivning giver en vedvarende kopi, der kan genskabe delvis gendannelse
+ok 422 - afbrudt filskrivning giver en vedvarende kopi, der kan genskabe delvis gendannelse
+  ---
+  duration_ms: 1123.870458
+  type: 'test'
+  ...
+# Subtest: historisk fil må ikke overskrive en ny ignoreret fil med samme navn
+ok 423 - historisk fil må ikke overskrive en ny ignoreret fil med samme navn
+  ---
+  duration_ms: 1024.293958
+  type: 'test'
+  ...
+# Subtest: afvist gennemgang afslutter Henter, bevarer Annuller og kan forsøges igen
+ok 424 - afvist gennemgang afslutter Henter, bevarer Annuller og kan forsøges igen
+  ---
+  duration_ms: 2.161667
+  type: 'test'
+  ...
+# Subtest: et sent svar efter Annuller åbner ikke dialogen eller aktiverer gendannelse
+ok 425 - et sent svar efter Annuller åbner ikke dialogen eller aktiverer gendannelse
+  ---
+  duration_ms: 0.367917
+  type: 'test'
+  ...
+# Subtest: resultatet er en kvittering uden Kontroller og kommandooutput; ændringer markeres gennemgået
+ok 426 - resultatet er en kvittering uden Kontroller og kommandooutput; ændringer markeres gennemgået
+  ---
+  duration_ms: 1.176834
+  type: 'test'
+  ...
+# Subtest: fortrydelse kvitterer én gang og fjerner opgavens mulighed for at blive fortrudt igen
+ok 427 - fortrydelse kvitterer én gang og fjerner opgavens mulighed for at blive fortrudt igen
+  ---
+  duration_ms: 0.81975
+  type: 'test'
+  ...
+# Subtest: kun et udtrykkeligt byggeforslag giver Byg videre; almindelig samtale og ventende spørgsmål gør ikke
+ok 428 - kun et udtrykkeligt byggeforslag giver Byg videre; almindelig samtale og ventende spørgsmål gør ikke
+  ---
+  duration_ms: 0.813208
+  type: 'test'
+  ...
+# Subtest: en konkret plan har forrang frem for en gammel eller sen plananbefaling
+ok 429 - en konkret plan har forrang frem for en gammel eller sen plananbefaling
+  ---
+  duration_ms: 0.372458
+  type: 'test'
+  ...
+# Subtest: en sen fortrydelse kvitterer i sin egen samtale uden at overtage et andet projekt
+ok 430 - en sen fortrydelse kvitterer i sin egen samtale uden at overtage et andet projekt
+  ---
+  duration_ms: 0.522666
+  type: 'test'
+  ...
+# Subtest: delingsresumé viser faktisk evidens uden at slutte privat adgang eller fuld funktion
+ok 431 - delingsresumé viser faktisk evidens uden at slutte privat adgang eller fuld funktion
+  ---
+  duration_ms: 9.858417
+  type: 'test'
+  ...
+# Subtest: kopier og ugemte filer indgår synligt i afgrænsningen
+ok 432 - kopier og ugemte filer indgår synligt i afgrænsningen
+  ---
+  duration_ms: 0.08
+  type: 'test'
+  ...
+# Subtest: kvitteringen skiller appens navn og adresse fra versionsmetadata
+ok 433 - kvitteringen skiller appens navn og adresse fra versionsmetadata
+  ---
+  duration_ms: 0.387917
+  type: 'test'
+  ...
+# Subtest: READY fra upload er ingen indholdskontrol eller bekræftet adgang
+ok 434 - READY fra upload er ingen indholdskontrol eller bekræftet adgang
+  ---
+  duration_ms: 0.138459
+  type: 'test'
+  ...
+# Subtest: privat kvittering beskriver login uden at påstå medlemsadgang
+ok 435 - privat kvittering beskriver login uden at påstå medlemsadgang
+  ---
+  duration_ms: 0.722167
+  type: 'test'
+  ...
+# Subtest: offentligt filmatch er præcist, og ændret adgang fremhæves
+ok 436 - offentligt filmatch er præcist, og ændret adgang fremhæves
+  ---
+  duration_ms: 0.107875
+  type: 'test'
+  ...
+# Subtest: ukendt upload og fejlet statuskontrol viser aldrig gammel succes
+ok 437 - ukendt upload og fejlet statuskontrol viser aldrig gammel succes
+  ---
+  duration_ms: 0.06525
+  type: 'test'
+  ...
+# Subtest: Azure viser kun en bekræftet testadresse, aldrig produktionens standardadresse
+ok 438 - Azure viser kun en bekræftet testadresse, aldrig produktionens standardadresse
+  ---
+  duration_ms: 0.07025
+  type: 'test'
+  ...
+# Subtest: privat metadata modsagt af anonymt filmatch giver tydelig adgangsadvarsel
+ok 439 - privat metadata modsagt af anonymt filmatch giver tydelig adgangsadvarsel
+  ---
+  duration_ms: 0.248917
+  type: 'test'
+  ...
+# Subtest: Pages bevarer repository-stien, og Promte får ikke en opdigtet appadresse
+ok 440 - Pages bevarer repository-stien, og Promte får ikke en opdigtet appadresse
+  ---
+  duration_ms: 0.432333
+  type: 'test'
+  ...
+# Subtest: Corti-kompatibel strøm skelner ræsonnement, tekst og kode over UTF-8-pakkegrænser
+ok 441 - Corti-kompatibel strøm skelner ræsonnement, tekst og kode over UTF-8-pakkegrænser
+  ---
+  duration_ms: 3.446833
+  type: 'test'
+  ...
+# Subtest: Claude og Responses viser de samme udkast
+ok 442 - Claude og Responses viser de samme udkast
+  ---
+  duration_ms: 0.597375
+  type: 'test'
+  ...
+# Subtest: ufuldstændige stier, private filer, nøgler og indlejrede felter skjules
+ok 443 - ufuldstændige stier, private filer, nøgler og indlejrede felter skjules
+  ---
+  duration_ms: 0.178
+  type: 'test'
+  ...
+# Subtest: ugyldige pakker, keepalive, store svar og fejl i visningen ændrer ikke observerens kald
+ok 444 - ugyldige pakker, keepalive, store svar og fejl i visningen ændrer ikke observerens kald
+  ---
+  duration_ms: 0.846125
+  type: 'test'
+  ...
+# Subtest: almindelige JSON-svar virker uden streaming
+ok 445 - almindelige JSON-svar virker uden streaming
+  ---
+  duration_ms: 0.120625
+  type: 'test'
+  ...
+# Subtest: Opdatering kræver to særskilte valg og bevarer automatiske installationer slået fra
+ok 446 - Opdatering kræver to særskilte valg og bevarer automatiske installationer slået fra
+  ---
+  duration_ms: 4.547875
+  type: 'test'
+  ...
+# Subtest: En sikkerhedsadvarsel overlever genstart og netfejl uden at blokere arbejdet
+ok 447 - En sikkerhedsadvarsel overlever genstart og netfejl uden at blokere arbejdet
+  ---
+  duration_ms: 3.787834
+  type: 'test'
+  ...
+# Subtest: Genstart afvises ved aktivt arbejde, og mislykket klargøring beholder den hentede version
+ok 448 - Genstart afvises ved aktivt arbejde, og mislykket klargøring beholder den hentede version
+  ---
+  duration_ms: 0.875875
+  type: 'test'
+  ...
+# Subtest: Parallel kontrol og download starter ikke dobbelt, og filfejl giver mulighed for nyt forsøg
+ok 449 - Parallel kontrol og download starter ikke dobbelt, og filfejl giver mulighed for nyt forsøg
+  ---
+  duration_ms: 0.973666
+  type: 'test'
+  ...
+# Subtest: Kilden kontakter ikke opdateringstjenesten, og stabile versioner henter ikke betaer
+ok 450 - Kilden kontakter ikke opdateringstjenesten, og stabile versioner henter ikke betaer
+  ---
+  duration_ms: 0.765875
+  type: 'test'
+  ...
+# Subtest: Udgivelsen binder Mac-ZIP og Windows-installation til faktiske hashes og platforme
+ok 451 - Udgivelsen binder Mac-ZIP og Windows-installation til faktiske hashes og platforme
+  ---
+  duration_ms: 13.625584
+  type: 'test'
+  ...
+# Subtest: Vercel viser saniterede teams og projekter på tværs af sider uden API-skrivninger
+ok 452 - Vercel viser saniterede teams og projekter på tværs af sider uden API-skrivninger
+  ---
+  duration_ms: 6.041375
+  type: 'test'
+  ...
+# Subtest: Vercel adskiller manglende CLI, login og tomt teamvalg
+ok 453 - Vercel adskiller manglende CLI, login og tomt teamvalg
+  ---
+  duration_ms: 0.214417
+  type: 'test'
+  ...
+# Subtest: Vercel-login åbner browseren via CLI og tillader kun ét login ad gangen
+ok 454 - Vercel-login åbner browseren via CLI og tillader kun ét login ad gangen
+  ---
+  duration_ms: 0.249875
+  type: 'test'
+  ...
+# Subtest: Vercel-valg kræver det konkrete GitHub-link og gemmer ingen andre kontofelter
+ok 455 - Vercel-valg kræver det konkrete GitHub-link og gemmer ingen andre kontofelter
+  ---
+  duration_ms: 0.269375
+  type: 'test'
+  ...
+# Subtest: Vercel-status matcher projekt, repository, Git-kilde, SHA, gren og miljø
+ok 456 - Vercel-status matcher projekt, repository, Git-kilde, SHA, gren og miljø
+  ---
+  duration_ms: 1.238833
+  type: 'test'
+  ...
+# Subtest: Vercel viser ikke en tidligere status når Git-linket ændres eller statuslisten er tom
+ok 457 - Vercel viser ikke en tidligere status når Git-linket ændres eller statuslisten er tom
+  ---
+  duration_ms: 0.174166
+  type: 'test'
+  ...
+# Subtest: Windows: OpenCodes canonical metadata og toolInput med andet drevbogstav er samme filmål
+ok 458 - Windows: OpenCodes canonical metadata og toolInput med andet drevbogstav er samme filmål
+  ---
+  duration_ms: 12.048458
+  type: 'test'
+  ...
+# Subtest: Windows: en mappe med case-sensitive filer får ikke tvetydig automatisk godkendelse
+ok 459 - Windows: en mappe med case-sensitive filer får ikke tvetydig automatisk godkendelse
+  ---
+  duration_ms: 1.111833
+  type: 'test'
+  ...
+# Subtest: Windows: case-sensitive nabomapper og junctions får ikke projekt-, opgave- eller scratchadgang
+ok 460 - Windows: case-sensitive nabomapper og junctions får ikke projekt-, opgave- eller scratchadgang
+  ---
+  duration_ms: 4.334458
+  type: 'test'
+  ...
+# Subtest: Windows: case-sensitive nabomapper får ikke automatisk kommando eller en husket mapperegel
+ok 461 - Windows: case-sensitive nabomapper får ikke automatisk kommando eller en husket mapperegel
+  ---
+  duration_ms: 3.283958
+  type: 'test'
+  ...
+# Subtest: Windows: nye filer og UNC-projekter tillades, men andet drev og junctionflugt gør ikke
+ok 462 - Windows: nye filer og UNC-projekter tillades, men andet drev og junctionflugt gør ikke
+  ---
+  duration_ms: 2.677333
+  type: 'test'
+  ...
+# Subtest: Windows: streams, device paths, drevrelative stier og Win32-navnealiaser får ingen automatisk adgang
+ok 463 - Windows: streams, device paths, drevrelative stier og Win32-navnealiaser får ingen automatisk adgang
+  ---
+  duration_ms: 1.952291
+  type: 'test'
+  ...
+# Subtest: Windows: beskyttede mappenavne genkendes uanset store og små bogstaver
+ok 464 - Windows: beskyttede mappenavne genkendes uanset store og små bogstaver
+  ---
+  duration_ms: 1.897791
+  type: 'test'
+  ...
+# Subtest: Windows: en CRLF-patch bevarer alle konkrete fil- og flyttemål
+ok 465 - Windows: en CRLF-patch bevarer alle konkrete fil- og flyttemål
+  ---
+  duration_ms: 1.663083
+  type: 'test'
+  ...
+# Subtest: pakkekontrollen finder en transitiv SDK-afhængighed, der ligger forkert i ASAR
+ok 466 - pakkekontrollen finder en transitiv SDK-afhængighed, der ligger forkert i ASAR
+  ---
+  duration_ms: 29.757458
+  type: 'test'
+  ...
+# Subtest: pakkekontrollen skelner x64 og ARM64 og afviser en ugyldig PE-fil
+ok 467 - pakkekontrollen skelner x64 og ARM64 og afviser en ugyldig PE-fil
+  ---
+  duration_ms: 2.275333
+  type: 'test'
+  ...
+# Subtest: NSIS-prøven ser den nye ASAR-version, når installeren erstatter samme filsti
+ok 468 - NSIS-prøven ser den nye ASAR-version, når installeren erstatter samme filsti
+  ---
+  duration_ms: 4.929542
+  type: 'test'
+  ...
+# Subtest: Windows-opgraderingsprøven afviser forkert platform, manglende isolation, hashes og tvetydige valg
+ok 469 - Windows-opgraderingsprøven afviser forkert platform, manglende isolation, hashes og tvetydige valg
+  ---
+  duration_ms: 1.041209
+  type: 'test'
+  ...
+# Subtest: Windows-konto med eksisterende appdata, installation eller proces afvises før NSIS starter
+ok 470 - Windows-konto med eksisterende appdata, installation eller proces afvises før NSIS starter
+  ---
+  duration_ms: 0.143917
+  type: 'test'
+  ...
+# Subtest: kun prøvens præcise per-user-installationsmappe accepteres, aldrig nabo eller fælles sti
+ok 471 - kun prøvens præcise per-user-installationsmappe accepteres, aldrig nabo eller fælles sti
+  ---
+  duration_ms: 0.593042
+  type: 'test'
+  ...
+# Subtest: NSIS-identiteten og databevarelsen er stadig kompatibel med den eksisterende Windows-beta
+ok 472 - NSIS-identiteten og databevarelsen er stadig kompatibel med den eksisterende Windows-beta
+  ---
+  duration_ms: 28.041625
+  type: 'test'
+  ...
+# Subtest: nøglelager afviser manglende kryptering; offentlige forbindelser udelader hemmeligheder
+ok 473 - nøglelager afviser manglende kryptering; offentlige forbindelser udelader hemmeligheder
+  ---
+  duration_ms: 6.50475
+  type: 'test'
+  ...
+# Subtest: instruktioner kan tilpasses og gendannes pr. projekt uden at ændre biblioteket
+ok 474 - instruktioner kan tilpasses og gendannes pr. projekt uden at ændre biblioteket
+  ---
+  duration_ms: 16.224417
+  type: 'test'
+  ...
+# Subtest: gendannelsens markør fjerner gamle planer, også når historikskrivning fejler
+ok 475 - gendannelsens markør fjerner gamle planer, også når historikskrivning fejler
+  ---
+  duration_ms: 46.974667
+  type: 'test'
+  ...
+# Subtest: stop under motoropstart sender aldrig prompten
+ok 476 - stop under motoropstart sender aldrig prompten
+  ---
+  duration_ms: 17.107291
+  type: 'test'
+  ...
+# Subtest: Stop under lagring efter afsendelse afslutter opgaven og genopliver ikke arbejdet
+ok 477 - Stop under lagring efter afsendelse afslutter opgaven og genopliver ikke arbejdet
+  ---
+  duration_ms: 13.168208
+  type: 'test'
+  ...
+# Subtest: gateway kræver nøgle, fastholder model og OpenRouter-udbyder uden fallback
+ok 478 - gateway kræver nøgle, fastholder model og OpenRouter-udbyder uden fallback
+  ---
+  duration_ms: 22.45975
+  type: 'test'
+  ...
+# Subtest: serveradresser og ukendte vilkår er tydelige
+ok 479 - serveradresser og ukendte vilkår er tydelige
+  ---
+  duration_ms: 0.351375
+  type: 'test'
+  ...
+# Subtest: planlægning lukker skrive-, shell- og ukendte værktøjer, men bevarer læsebeskyttelsen
+ok 480 - planlægning lukker skrive-, shell- og ukendte værktøjer, men bevarer læsebeskyttelsen
+  ---
+  duration_ms: 0.193
+  type: 'test'
+  ...
+# Subtest: svar på planlægningsspørgsmål følger med i afklaringen, og afvist stop ændrer ikke status
+ok 481 - svar på planlægningsspørgsmål følger med i afklaringen, og afvist stop ændrer ikke status
+  ---
+  duration_ms: 11.388292
+  type: 'test'
+  ...
+# Subtest: planlægning vælger plan-agenten og beholder de samme eksplicitte tilladelser
+ok 482 - planlægning vælger plan-agenten og beholder de samme eksplicitte tilladelser
+  ---
+  duration_ms: 0.498334
+  type: 'test'
+  ...
+# Subtest: planen bruger kun sidste agentsvar; tidligere arbejdsnoter bevares som kontekst
+ok 483 - planen bruger kun sidste agentsvar; tidligere arbejdsnoter bevares som kontekst
+  ---
+  duration_ms: 0.116958
+  type: 'test'
+  ...
+# Subtest: streamet tekst bevares ved stop, mens arbejdsnoter og tilladelser udelades
+ok 484 - streamet tekst bevares ved stop, mens arbejdsnoter og tilladelser udelades
+  ---
+  duration_ms: 13.015042
+  type: 'test'
+  ...
+# Subtest: Tillad for denne opgave gælder kun filer i projektmappen og kun indtil opgaven slutter
+ok 485 - Tillad for denne opgave gælder kun filer i projektmappen og kun indtil opgaven slutter
+  ---
+  duration_ms: 18.62725
+  type: 'test'
+  ...
+# Subtest: forbruget tælles pr. modelkald og prissættes med ræsonnement som output
+ok 486 - forbruget tælles pr. modelkald og prissættes med ræsonnement som output
+  ---
+  duration_ms: 13.644583
+  type: 'test'
+  ...
+# Subtest: en Corti-forbindelse beholder miljø og nøgle, når den redigeres uden ny nøgle
+ok 487 - en Corti-forbindelse beholder miljø og nøgle, når den redigeres uden ny nøgle
+  ---
+  duration_ms: 5.245166
+  type: 'test'
+  ...
+# Subtest: samtaler i samme projekt: samtidige opgaver i separate mapper, og godkendelser, spørgsmål og hændelser går til den rigtige samtale
+ok 488 - samtaler i samme projekt: samtidige opgaver i separate mapper, og godkendelser, spørgsmål og hændelser går til den rigtige samtale
+  ---
+  duration_ms: 176.12125
+  type: 'test'
+  ...
+# Subtest: en samtale fortsætter sin AI-session, når forbindelse, model og regler er de samme
+ok 489 - en samtale fortsætter sin AI-session, når forbindelse, model og regler er de samme
+  ---
+  duration_ms: 24.507459
+  type: 'test'
+  ...
+# Subtest: motoren fortsætter en kendt session og opretter en ny, når den gamle ikke findes
+ok 490 - motoren fortsætter en kendt session og opretter en ny, når den gamle ikke findes
+  ---
+  duration_ms: 0.41775
+  type: 'test'
+  ...
+# Subtest: Ændringer og Aktivitet bevares pr. samtale, når projektet genåbnes, fx efter en gendannelse
+ok 491 - Ændringer og Aktivitet bevares pr. samtale, når projektet genåbnes, fx efter en gendannelse
+  ---
+  duration_ms: 12.991708
+  type: 'test'
+  ...
+# Subtest: Stop venter på versionen, når abort samtidig sender idle, og frigiver ikke mappen for tidligt
+ok 492 - Stop venter på versionen, når abort samtidig sender idle, og frigiver ikke mappen for tidligt
+  ---
+  duration_ms: 9.142209
+  type: 'test'
+  ...
+# Subtest: et forsinket modelkatalog kan ikke genoplive en redigeret forbindelse eller erstatte en nyere kontrol
+ok 493 - et forsinket modelkatalog kan ikke genoplive en redigeret forbindelse eller erstatte en nyere kontrol
+  ---
+  duration_ms: 55.324291
+  type: 'test'
+  ...
+# Subtest: Gør samtalen kortere sammenfatter samtalen, før beskeden sendes, og springer en tom samtale over
+ok 494 - Gør samtalen kortere sammenfatter samtalen, før beskeden sendes, og springer en tom samtale over
+  ---
+  duration_ms: 20.196708
+  type: 'test'
+  ...
+# Subtest: kladde, plan og samtale genåbnes fra appdata uden tilladelser eller projektændringer
+ok 495 - kladde, plan og samtale genåbnes fra appdata uden tilladelser eller projektændringer
+  ---
+  duration_ms: 14.281209
+  type: 'test'
+  ...
+# Subtest: afbrudt opgave bliver ikke genstartet eller præsenteret som en godkendt plan
+ok 496 - afbrudt opgave bliver ikke genstartet eller præsenteret som en godkendt plan
+  ---
+  duration_ms: 4.991542
+  type: 'test'
+  ...
+# Subtest: projekter og samtaler holdes adskilt, og en beskadiget samtalefil bevares
+ok 497 - projekter og samtaler holdes adskilt, og en beskadiget samtalefil bevares
+  ---
+  duration_ms: 6.567292
+  type: 'test'
+  ...
+# Subtest: historikken har en øvre grænse, og værktøjsdata lagres ikke
+ok 498 - historikken har en øvre grænse, og værktøjsdata lagres ikke
+  ---
+  duration_ms: 4.366625
+  type: 'test'
+  ...
+# Subtest: ny samtale efter en beskadiget projektfil gemmer filen til side og finder samtalerne igen
+ok 499 - ny samtale efter en beskadiget projektfil gemmer filen til side og finder samtalerne igen
+  ---
+  duration_ms: 10.997042
+  type: 'test'
+  ...
+# (node:61851) ExperimentalWarning: The MockTimers API is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: en ældre samtale og arkiverede samtaler flyttes til samtalefiler, og arkivet bevares
+ok 500 - en ældre samtale og arkiverede samtaler flyttes til samtalefiler, og arkivet bevares
+  ---
+  duration_ms: 5.47425
+  type: 'test'
+  ...
+# Subtest: en ny samtale genbruger en tom samtale, og tomme samtaler vises ikke
+ok 501 - en ny samtale genbruger en tom samtale, og tomme samtaler vises ikke
+  ---
+  duration_ms: 7.127583
+  type: 'test'
+  ...
+# Subtest: omdøbning holder, og sletning flytter samtalefilen og vælger den nyeste
+ok 502 - omdøbning holder, og sletning flytter samtalefilen og vælger den nyeste
+  ---
+  duration_ms: 7.341375
+  type: 'test'
+  ...
+# Subtest: alle åbnede projekter står på listen, nyeste først, også ud over de 12, sidepanelet viser først
+ok 503 - alle åbnede projekter står på listen, nyeste først, også ud over de 12, sidepanelet viser først
+  ---
+  duration_ms: 7.529583
+  type: 'test'
+  ...
+# Subtest: samtalens navn er første sætning af første besked, højst 60 tegn ved et ordskifte
+ok 504 - samtalens navn er første sætning af første besked, højst 60 tegn ved et ordskifte
+  ---
+  duration_ms: 0.319
+  type: 'test'
+  ...
+# Subtest: tre projekter beholder hver sin motor, model, besked, hændelser og opgave ved projektskift
+ok 505 - tre projekter beholder hver sin motor, model, besked, hændelser og opgave ved projektskift
+  ---
+  duration_ms: 45.55325
+  type: 'test'
+  ...
+# Subtest: normaliseret sti og symbolsk alias deler arbejdsbænk, mens samtidige indstillingsskrivninger bevares
+ok 506 - normaliseret sti og symbolsk alias deler arbejdsbænk, mens samtidige indstillingsskrivninger bevares
+  ---
+  duration_ms: 12.544541
+  type: 'test'
+  ...
+# Subtest: en forbindelsesændring under forberedelsen kan ikke genindføre gamle credentials
+ok 507 - en forbindelsesændring under forberedelsen kan ikke genindføre gamle credentials
+  ---
+  duration_ms: 131.449916
+  type: 'test'
+  ...
+# Subtest: Samtale til Byg bevarer idéen uden plan, også efter kladdens mode er ændret
+ok 508 - Samtale til Byg bevarer idéen uden plan, også efter kladdens mode er ændret
+  ---
+  duration_ms: 219.334708
+  type: 'test'
+  ...
+# Subtest: et konkret forslag i Samtale bliver en valgbar plan og gendannes fra ældre historik
+ok 509 - et konkret forslag i Samtale bliver en valgbar plan og gendannes fra ældre historik
+  ---
+  duration_ms: 14.680791
+  type: 'test'
+  ...
+# Subtest: simuleret Windows bevarer filopgaver og enkeltgodkendelse trods en husket bash-regel
+ok 510 - simuleret Windows bevarer filopgaver og enkeltgodkendelse trods en husket bash-regel
+  ---
+  duration_ms: 18.889667
+  type: 'test'
+  ...
+# Subtest: gamle forbindelser og workspace-v1 åbner og kan sende uden nye tilvalg på simuleret Windows
+ok 511 - gamle forbindelser og workspace-v1 åbner og kan sende uden nye tilvalg på simuleret Windows
+  ---
+  duration_ms: 16.145
+  type: 'test'
+  ...
+# Subtest: et forsinket svar og registrerede rettelser beholder den oprindelige samtale
+ok 512 - et forsinket svar og registrerede rettelser beholder den oprindelige samtale
+  ---
+  duration_ms: 17.880375
+  type: 'test'
+  ...
+# Subtest: en redigeret forbindelse bevarer aktive credentials og invaliderer kun dens næste opgaver i alle projekter
+ok 513 - en redigeret forbindelse bevarer aktive credentials og invaliderer kun dens næste opgaver i alle projekter
+  ---
+  duration_ms: 25.876583
+  type: 'test'
+  ...
+# Subtest: en opgave kan ikke starte, mens dens forbindelse fjernes i et andet projekt
+ok 514 - en opgave kan ikke starte, mens dens forbindelse fjernes i et andet projekt
+  ---
+  duration_ms: 11.972792
+  type: 'test'
+  ...
+# Subtest: arkivering bevarer samtalefilen, kræver ledig opgave og genbruger aldrig en arkiveret tom samtale
+ok 515 - arkivering bevarer samtalefilen, kræver ledig opgave og genbruger aldrig en arkiveret tom samtale
+  ---
+  duration_ms: 19.530166
+  type: 'test'
+  ...
+# Subtest: godkendelser kan grupperes inden for samme projekt, huskes ved nyt besøg og genvalideres før svar
+ok 516 - godkendelser kan grupperes inden for samme projekt, huskes ved nyt besøg og genvalideres før svar
+  ---
+  duration_ms: 19.372917
+  type: 'test'
+  ...
+1..516
+# tests 516
+# suites 0
+# pass 514
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 45215.719125

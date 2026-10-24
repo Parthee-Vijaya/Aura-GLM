@@ -1,0 +1,106 @@
+TAP version 13
+# Subtest: sammenfatning bruger modeltimeout og afventer idle efter HTTP-svaret
+ok 1 - sammenfatning bruger modeltimeout og afventer idle efter HTTP-svaret
+  ---
+  duration_ms: 0.752166
+  type: 'test'
+  ...
+# Subtest: sammenfatning afventer HTTP-svaret, selv om idle kommer først
+ok 2 - sammenfatning afventer HTTP-svaret, selv om idle kommer først
+  ---
+  duration_ms: 0.104292
+  type: 'test'
+  ...
+# Subtest: fejl, lukning og manglende idle afslutter sammenfatningen uden hængende modelkald
+ok 3 - fejl, lukning og manglende idle afslutter sammenfatningen uden hængende modelkald
+  ---
+  duration_ms: 11.274333
+  type: 'test'
+  ...
+# Subtest: serverens idle-status afslutter også en opgave uden separat idle-event
+ok 4 - serverens idle-status afslutter også en opgave uden separat idle-event
+  ---
+  duration_ms: 0.215125
+  type: 'test'
+  ...
+# Subtest: en afsluttet SSE-strøm efter et færdigt svar giver en terminalfejl, ikke evig spinner
+ok 5 - en afsluttet SSE-strøm efter et færdigt svar giver en terminalfejl, ikke evig spinner
+  ---
+  duration_ms: 18.894625
+  type: 'test'
+  ...
+# Subtest: manglende idle bekræftes mod motorens status, og et gammelt svar afslutter aldrig næste opgave
+ok 6 - manglende idle bekræftes mod motorens status, og et gammelt svar afslutter aldrig næste opgave
+  ---
+  duration_ms: 0.273583
+  type: 'test'
+  ...
+# Subtest: event loss reconnects the same session and restores missed text, tool, usage, question and permission without POST
+ok 7 - event loss reconnects the same session and restores missed text, tool, usage, question and permission without POST
+  ---
+  duration_ms: 305.020667
+  type: 'test'
+  ...
+# Subtest: lost final events restore final text before authoritative completion; old history cannot end a new prompt
+ok 8 - lost final events restore final text before authoritative completion; old history cannot end a new prompt
+  ---
+  duration_ms: 20.583833
+  type: 'test'
+  ...
+# Subtest: pending approval/question prevents completion even when status temporarily omits the session
+ok 9 - pending approval/question prevents completion even when status temporarily omits the session
+  ---
+  duration_ms: 12.439166
+  type: 'test'
+  ...
+# Subtest: compaction after recovery waits for its own HTTP completion, not an old assistant snapshot
+ok 10 - compaction after recovery waits for its own HTTP completion, not an old assistant snapshot
+  ---
+  duration_ms: 14.879875
+  type: 'test'
+  ...
+# Subtest: silent event connection is detected and Stop cancels recovery
+ok 11 - silent event connection is detected and Stop cancels recovery
+  ---
+  duration_ms: 186.416917
+  type: 'test'
+  ...
+# Subtest: close rejects initial readiness so Stop during startup cannot leave send hanging
+ok 12 - close rejects initial readiness so Stop during startup cannot leave send hanging
+  ---
+  duration_ms: 0.372666
+  type: 'test'
+  ...
+# Subtest: lost prompt acknowledgement checks its unique ID and never resends the POST
+ok 13 - lost prompt acknowledgement checks its unique ID and never resends the POST
+  ---
+  duration_ms: 2.095958
+  type: 'test'
+  ...
+# Subtest: unconfirmed prompt acknowledgement fails boundedly without a second POST
+ok 14 - unconfirmed prompt acknowledgement fails boundedly without a second POST
+  ---
+  duration_ms: 4.017375
+  type: 'test'
+  ...
+# Subtest: answered approvals cannot be resurrected by a stale recovery snapshot
+ok 15 - answered approvals cannot be resurrected by a stale recovery snapshot
+  ---
+  duration_ms: 0.228125
+  type: 'test'
+  ...
+# Subtest: late completion and replayed messages cannot finish the next run before its own answer
+ok 16 - late completion and replayed messages cannot finish the next run before its own answer
+  ---
+  duration_ms: 0.289084
+  type: 'test'
+  ...
+1..16
+# tests 16
+# suites 0
+# pass 16
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 651.838

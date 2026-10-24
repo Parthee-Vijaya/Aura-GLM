@@ -96,7 +96,7 @@
     const steps = document.createElement('ol'); steps.append(...option.steps.map(value => text('li', value))); detail.append(steps, text('p', option.data), text('p', 'Priser og eventuelle gratis kvoter følger din konto. Kontrollér vilkårene hos udbyderen.'));
     for (const kind of Object.keys(option.links)) { const button = text('button', { guide: 'Åbn udbyderens vejledning', data: 'Se aftaler og databehandling', region: 'Se regioner' }[kind]); button.type = 'button'; button.className = 'text-button'; button.onclick = () => api('deploymentGuideOpen', { id, kind }).catch(error => { if (!error.stale) $('#deployment-feedback').textContent = error.message; }); detail.append(button); }
     detail.append(text('small', 'Kilder gennemgået ' + new Date(option.checkedAt + 'T12:00:00Z').toLocaleDateString('da-DK') + '. Jeres konto og aftale er ikke kontrolleret.')); target.append(detail);
-    if (!option.integrated) target.prepend(text('p', 'Udgives hos udbyderen. Aura uploader ikke herfra.'));
+    if (!option.integrated) target.prepend(text('p', 'Udgives hos udbyderen. Aura 1 uploader ikke herfra.'));
   }
   async function loadGuides() { guides = (await api('deploymentGuides')).sort((a, b) => a.name.localeCompare(b.name, 'da', { sensitivity: 'base' })); $('#hosting-guide-choice').replaceChildren(new Option('Vælg en udbyder', ''), ...guides.filter(item => !item.integrated).map(item => new Option(item.name, item.id))); showGuide('#hosting-guide-other', $('#hosting-guide-choice').value); }
   $('#hosting-guide-choice').onchange = () => showGuide('#hosting-guide-other', $('#hosting-guide-choice').value);
@@ -158,7 +158,7 @@
   }
   $('#komplai-publish-org').onchange = () => { navigation(); showOrganisation(); };
   $('#komplai-publish-login').onclick = async () => {
-    const generation = ++publish.generation; publish.loginPending = true; $('#komplai-publish-login').hidden = true; $('#komplai-publish-cancel').hidden = false; $('#komplai-publish-signin').dataset.stage = 'waiting'; $('#deployment-back').hidden = true; publishNotice('Fortsæt i browseren. Aura venter på dit login.', 'wait'); $('#komplai-publish-cancel').focus();
+    const generation = ++publish.generation; publish.loginPending = true; $('#komplai-publish-login').hidden = true; $('#komplai-publish-cancel').hidden = false; $('#komplai-publish-signin').dataset.stage = 'waiting'; $('#deployment-back').hidden = true; publishNotice('Fortsæt i browseren. Aura 1 venter på dit login.', 'wait'); $('#komplai-publish-cancel').focus();
     try {
       const result = await api('komplaiLogin'); if (generation !== publish.generation || !dialog.open) return; publish.loginPending = false;
       publish.organisations = result.organisations.filter(item => item.publishing);

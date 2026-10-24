@@ -1,5 +1,5 @@
 // Ret i siden: en frivillig ændringstilstand i forhåndsvisningen. Brugeren vælger et element og retter teksten i et felt
-// her i Aura eller beder AI'en ændre elementet. Selve siden ændres ikke af Aura, mens man skriver; rettelsen gemmes i
+// her i Aura 1 eller beder AI'en ændre elementet. Selve siden ændres ikke af Aura 1, mens man skriver; rettelsen gemmes i
 // projektets fil, og forhåndsvisningen viser den, når siden opdateres. Fortryd sætter filen tilbage.
 (() => {
   let active = false, selection = null, edit = null, checking = 0;
@@ -78,11 +78,11 @@
     $('#preview').src = current.previewURL;
     call('revision').then(next => { if (next) revision = next; }, () => {});
   }
-  // Kontrol: viser forhåndsvisningen teksten? Efter 8 sekunder siger Aura det, hvis ikke, og bliver ved med at
+  // Kontrol: viser forhåndsvisningen teksten? Efter 8 sekunder siger Aura 1 det, hvis ikke, og bliver ved med at
   // kigge i op til 30 sekunder, fordi en travl computer eller en udviklingsserver kan være længe om at opdatere.
   async function verify(text, ok) {
     const run = ++checking, check = $('#pick-check'), started = Date.now();
-    check.className = 'hint check-pending'; check.textContent = 'Aura kontrollerer forhåndsvisningen …';
+    check.className = 'hint check-pending'; check.textContent = 'Aura 1 kontrollerer forhåndsvisningen …';
     while (Date.now() - started < 30000) {
       await new Promise(resolve => setTimeout(resolve, 500));
       if (run !== checking) return;
@@ -111,7 +111,7 @@
     $('#prompt').focus();
   });
 
-  // Escape i Aura afslutter også ændringstilstanden, når man ikke er ved at skrive.
+  // Escape i Aura 1 afslutter også ændringstilstanden, når man ikke er ved at skrive.
   document.addEventListener('keydown', event => {
     if (event.key !== 'Escape' || !active || event.defaultPrevented || document.querySelector('dialog[open]') || event.target.closest?.('textarea, input, select, form')) return;
     action(() => stop()).then(() => toggle.focus());

@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "realEngine": true,
+  "protectedOutsideFileNotSent": true,
+  "sessionDoesNotPersist": true,
+  "revocationRequiresNewApproval": true,
+  "modelCalls": 6,
+  "errors": []
+}

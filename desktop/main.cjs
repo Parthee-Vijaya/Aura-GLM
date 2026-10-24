@@ -19,7 +19,7 @@ const { History, PreviewImages, kindOf } = require('./core/history.cjs');
 const { fileDetail } = require('./core/change-review.cjs');
 const { OwnTools } = require('./core/own-tools.cjs');
 
-// Appen hedder Aura. Datamappen og navnet i nøgleringen bevares fra før navneskiftet; se core/app-identity.cjs.
+// Appen hedder Aura 1. Datamappen og navnet i nøgleringen bevares fra før navneskiftet; se core/app-identity.cjs.
 const { appIdentity, rememberKeychain, projectParent, DISPLAY_NAME } = require('./core/app-identity.cjs');
 const identity = appIdentity({ appData: app.getPath('appData'), packaged: app.isPackaged, customUserData: app.commandLine.hasSwitch('user-data-dir'), userData: app.getPath('userData'), sessionData: app.getPath('sessionData') });
 const appIcon = path.join(__dirname, 'ui/aura-icon.png');
@@ -146,11 +146,11 @@ handle('updates:check', () => updates.check());
 handle('updates:download', () => updates.download());
 handle('updates:automatic', value => updates.automatic(value));
 handle('updates:restart', () => updates.restart());
-handle('updates:website', () => shell.openExternal('https://ai-alliancen-org.github.io/ai-harness/desktop.html'));
+handle('updates:website', () => shell.openExternal(require('./core/distribution.cjs').releases));
 handle('updates:notes', () => {
   const version = updates.snapshot().available?.version;
   if (!version || !/^\d+\.\d+\.\d+(?:-beta\.\d+)?$/.test(version)) throw new Error('Vælg en tilgængelig udgivelse.');
-  return shell.openExternal(`https://github.com/ai-alliancen-org/ai-harness/releases/tag/v${version}`);
+  return shell.openExternal(`${require('./core/distribution.cjs').releases}tag/v${version}`);
 });
 async function exclusive(action) {
   const request = requests.getStore();
@@ -921,6 +921,7 @@ app.whenReady().then(async () => {
   promtePreview = new (require('./core/promte-preview.cjs').PromtePreview)(workbench.store, { setup: deploymentSetup.promte, enabled: async root => (await workbench.features.get(root)).effective['integration-promte'] === true });
   komplaiPreview = new (require('./core/komplai-preview.cjs').KomplaiPreview)(workbench.store, { provider: deployments.providers.komplai, enabled: async root => (await workbench.features.get(root)).effective['integration-komplai-run'] === true });
   updates = new (require('./core/updates.cjs').Updates)({
+    ...require('./core/distribution.cjs'),
     updater: app.isPackaged && ['darwin', 'win32'].includes(process.platform) ? require('electron-updater').autoUpdater : null,
     store: workbench.store, version: app.getVersion(), enabled: app.isPackaged,
     emit: event => { if (['error', 'ready'].includes(event.value.phase) && updating) { updating = false; quitReady = false; } sendEvent(event); },

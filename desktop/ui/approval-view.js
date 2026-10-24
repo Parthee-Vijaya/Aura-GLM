@@ -33,16 +33,16 @@
   const failures = {
     key: { title: 'AI’en afviste din nøgle', text: 'Nøglen er forkert, udløbet eller slettet hos udbyderen.', action: 'connection' },
     access: { title: 'Din konto har ikke adgang til modellen', text: 'Kontrollér adgangen hos udbyderen, eller vælg en anden model.', action: 'connection' },
-    quota: { title: 'Kontoen hos udbyderen er brugt op', text: 'Udbyderen afviste kaldet på grund af saldo eller kvote. Aura skifter ikke til en anden, betalt model.', action: 'account' },
+    quota: { title: 'Kontoen hos udbyderen er brugt op', text: 'Udbyderen afviste kaldet på grund af saldo eller kvote. Aura 1 skifter ikke til en anden, betalt model.', action: 'account' },
     limit: { title: 'Udbyderen har nået en grænse', text: 'Der er sendt for meget på kort tid, eller månedens grænse er nået. Vent lidt, og prøv igen.', action: 'retry' },
     notfound: { title: 'Modellen findes ikke længere', text: 'Hent modellisten igen, og vælg en model.', action: 'model' },
     server: { title: 'Udbyderens server havde en fejl', text: 'Fejlen lå hos udbyderen. Prøv igen om lidt.', action: 'retry' },
     rejected: { title: 'Udbyderen afviste kaldet', text: 'Kontrollér forbindelsen og modelvalget, og prøv igen.', action: 'connection' },
     network: { title: 'Forbindelsen til AI’en blev afbrudt', text: 'Kontrollér internetforbindelsen, og prøv igen.', action: 'retry' },
-    idle: { title: 'AI’en svarede ikke', text: 'Modellen svarede ikke i lang tid, så Aura stoppede kaldet.', action: 'retry' },
-    engine: { title: 'AI-motoren stoppede', text: 'Aura starter motoren igen, når du sender beskeden.', action: 'retry' },
+    idle: { title: 'AI’en svarede ikke', text: 'Modellen svarede ikke i lang tid, så Aura 1 stoppede kaldet.', action: 'retry' },
+    engine: { title: 'AI-motoren stoppede', text: 'Aura 1 starter motoren igen, når du sender beskeden.', action: 'retry' },
     model: { title: 'AI’en kunne ikke gennemføre opgaven', text: 'Prøv igen. Virker det stadig ikke, så vælg en anden model.', action: 'retry' },
-    start: { title: 'Opgaven kunne ikke starte', text: 'Aura kunne ikke starte AI’en.', action: 'retry' }
+    start: { title: 'Opgaven kunne ikke starte', text: 'Aura 1 kunne ikke starte AI’en.', action: 'retry' }
   };
   const failureText = kind => failures[kind] || failures.model;
   // Kommandoens faktiske resultat. En afsluttet kommando er ikke det samme som en bestået test.

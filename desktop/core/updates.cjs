@@ -4,19 +4,19 @@ const FEED = 'https://ai-alliancen-org.github.io/ai-harness/updates/';
 const RELEASES = 'https://github.com/ai-alliancen-org/ai-harness/releases/';
 const interval = 6 * 60 * 60 * 1000;
 function channelFor(version) { return semver.prerelease(version)?.[0] === 'beta' ? 'beta' : 'latest'; }
-function validateInfo(info, { version, platform, arch }) {
+function validateInfo(info, { version, platform, arch, releases = RELEASES, artifactPrefix = 'Aura' }) {
   if (!semver.valid(info?.version) || !/^\d+\.\d+\.\d+(?:-beta\.\d+)?$/.test(info.version) || !semver.gt(info.version, version)) throw new Error('Udgivelsens version er ugyldig.');
   if (channelFor(version) === 'latest' && semver.prerelease(info.version)) throw new Error('En stabil version må ikke hente en beta.');
-  const name = `Aura-${info.version}-${platform === 'darwin' ? 'mac' : 'win'}-${arch}.${platform === 'darwin' ? 'zip' : 'exe'}`;
-  const expected = `${RELEASES}download/v${info.version}/${name}`;
+  const name = `${artifactPrefix}-${info.version}-${platform === 'darwin' ? 'mac' : 'win'}-${arch}.${platform === 'darwin' ? 'zip' : 'exe'}`;
+  const expected = `${releases}download/v${info.version}/${name}`;
   if (info.files?.length !== 1 || info.files[0].url !== expected || !/^[A-Za-z0-9+/]{86}==$/.test(info.files[0].sha512 || '') || !Number.isSafeInteger(info.files[0].size) || info.files[0].size <= 0 || info.packages || info.path && info.path !== expected) throw new Error('Opdateringsfilen matcher ikke Auras udgivelse.');
   if (info.critical !== undefined && typeof info.critical !== 'boolean') throw new Error('Ugyldig sikkerhedsmeddelelse.');
   if (info.critical && (typeof info.message !== 'string' || !info.message.trim() || info.message.length > 500)) throw new Error('Sikkerhedsopdateringen mangler en kort forklaring.');
   return { version: info.version, bytes: info.files[0].size, critical: info.critical === true, message: info.critical ? info.message.trim() : '' };
 }
 class Updates {
-  constructor({ updater, store, version, platform = process.platform, arch = process.arch, enabled = true, emit = () => {}, busy = () => false, prepare = async () => {}, install = () => updater.quitAndInstall(false, true) }) {
-    Object.assign(this, { updater, store, version, platform, arch, emit, busy, prepare, install });
+  constructor({ updater, store, version, platform = process.platform, arch = process.arch, enabled = true, feed = FEED, releases = RELEASES, artifactPrefix = 'Aura', emit = () => {}, busy = () => false, prepare = async () => {}, install = () => updater.quitAndInstall(false, true) }) {
+    Object.assign(this, { updater, store, version, platform, arch, feed, releases, artifactPrefix, emit, busy, prepare, install });
     this.enabled = enabled && ['darwin', 'win32'].includes(platform) && ['arm64', 'x64'].includes(arch);
     this.state = { phase: this.enabled ? 'idle' : 'unavailable', current: version, channel: channelFor(version), automatic: true, available: null, warning: null, checkedAt: null, error: '', percent: 0 };
     if (!this.enabled) return;
@@ -27,7 +27,7 @@ class Updates {
     updater.autoDownload = false; updater.autoInstallOnAppQuit = false; updater.autoRunAppAfterInstall = true;
     updater.allowPrerelease = this.state.channel === 'beta'; updater.channel = this.state.channel; updater.allowDowngrade = false;
     updater.disableDifferentialDownload = true; updater.disableWebInstaller = true; updater.logger = null;
-    updater.setFeedURL({ provider: 'generic', url: `${FEED}${this.state.channel}/${this.platform}-${this.arch}/`, channel: this.state.channel, useMultipleRangeRequest: false });
+    updater.setFeedURL({ provider: 'generic', url: `${this.feed}${this.state.channel}/${this.platform}-${this.arch}/`, channel: this.state.channel, useMultipleRangeRequest: false });
     updater.on('download-progress', progress => {
       if (this.state.phase === 'downloading') this.set({ percent: Math.max(0, Math.min(100, Math.round(progress.percent || 0))), transferred: progress.transferred, bytes: progress.total });
     });

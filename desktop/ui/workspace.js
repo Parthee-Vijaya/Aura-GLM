@@ -46,8 +46,8 @@
   const byText = { ai: 'AI’en', blandet: 'AI’en og andre', kommando: 'En kommando eller dig', dig: 'Dig', anden: 'Ikke AI’en' };
   // Forklaringen afhænger af visningen: en opgave udtaler sig kun om opgavens egen tid, hele samtalen også om tiden efter.
   const byHelp = {
-    task: { ai: 'AI’ens filværktøj skrev filen under opgaven.', blandet: 'AI’en skrev filen under opgaven, men den blev også ændret af andre, før opgaven sluttede.', kommando: 'Ændret under opgaven, men ikke af AI’ens filværktøjer. Det kan være en kommando, AI’en kørte, eller dig.', anden: 'Ændret under opgaven, men ikke af AI’en. Det kan være dig eller et andet program.', dig: 'Du ændrede filen i Aura, fx med Ret i siden eller Fortryd.' },
-    session: { ai: 'AI’ens filværktøj skrev filen, og ingen har ændret den siden.', blandet: 'AI’en skrev filen, men den er også ændret af andre, fx dig eller et andet program.', kommando: 'Ændret under en opgave, men ikke af AI’ens filværktøjer. Det kan være en kommando, AI’en kørte, eller dig.', anden: 'Ikke ændret af AI’en. Det kan være dig eller et andet program.', dig: 'Du ændrede filen i Aura, fx med Ret i siden eller Fortryd, og ingen har ændret den siden.' }
+    task: { ai: 'AI’ens filværktøj skrev filen under opgaven.', blandet: 'AI’en skrev filen under opgaven, men den blev også ændret af andre, før opgaven sluttede.', kommando: 'Ændret under opgaven, men ikke af AI’ens filværktøjer. Det kan være en kommando, AI’en kørte, eller dig.', anden: 'Ændret under opgaven, men ikke af AI’en. Det kan være dig eller et andet program.', dig: 'Du ændrede filen i Aura 1, fx med Ret i siden eller Fortryd.' },
+    session: { ai: 'AI’ens filværktøj skrev filen, og ingen har ændret den siden.', blandet: 'AI’en skrev filen, men den er også ændret af andre, fx dig eller et andet program.', kommando: 'Ændret under en opgave, men ikke af AI’ens filværktøjer. Det kan være en kommando, AI’en kørte, eller dig.', anden: 'Ikke ændret af AI’en. Det kan være dig eller et andet program.', dig: 'Du ændrede filen i Aura 1, fx med Ret i siden eller Fortryd, og ingen har ændret den siden.' }
   };
   byHelp.version = { ai: 'Gemt efter en AI-opgave. Filen kan være skrevet af AI’ens filværktøj eller af en kommando, den kørte.', dig: 'Gemt, gendannet eller fortrudt af dig.' };
   const help = by => byHelp[versionSource() ? 'version' : changes.source === 'session' ? 'session' : 'task'][by];
@@ -97,9 +97,9 @@
     if (view?.kind === 'version') return renderVersionFiles(view);
     if (!view) { $('#changes-empty p').textContent = changes.data?.running ? 'AI’en arbejder. Ændringerne vises her, når filerne bliver skrevet.' : 'Når AI’en ændrer filer, ser du her, hvilke filer og linjer der er ændret.'; return; }
     const session = changes.source === 'session', { totals } = view;
-    // Dine egne rettelser og fortrydelser i Aura står som dine, ikke som en opgave.
+    // Dine egne rettelser og fortrydelser i Aura 1 står som dine, ikke som en opgave.
     const own = !session && ['direct', 'undo', 'merge'].includes(view.kind);
-    // Før- og efterbillede af forhåndsvisningen, når Aura har taget dem for opgaven.
+    // Før- og efterbillede af forhåndsvisningen, når Aura 1 har taget dem for opgaven.
     compare.hidden = true;
     if (!session && view.images && window.versions) window.versions.fillCompare(compare, view.images);
     $('#changes-heading').textContent = !totals.files ? (session ? 'Ingen filer er ændret i denne samtale' : 'Opgaven ændrede ingen filer') : session ? `${plural(totals.files, 'fil', 'filer')} ændret i denne samtale` : own ? `${plural(totals.files, 'fil', 'filer')} ændret af dig` : `${plural(totals.files, 'fil', 'filer')} ændret under opgaven`;
@@ -228,7 +228,7 @@
     $('#code-files').replaceChildren(...groups);
     const notes = [];
     if (files.length > shown.length) notes.push(`Viser ${shown.length} af ${files.length} filer. Søg for at finde resten.`);
-    if (code.truncated) notes.push('Projektet har flere filer, end Aura viser her.');
+    if (code.truncated) notes.push('Projektet har flere filer, end Aura 1 viser her.');
     notes.push('Nøgler, private referencer, Git-historik og installerede pakker vises ikke.');
     $('#code-files-note').textContent = notes.join(' '); $('#code-files-note').hidden = false;
   }

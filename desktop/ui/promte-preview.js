@@ -1,5 +1,5 @@
-// En Promte-app i forhåndsvisningen beder siden omkring den om forbindelse (init). Aura svarer som Promte:
-// appen får sine indstillinger, og dens kald sendes gennem Aura til den koblede Promte-app.
+// En Promte-app i forhåndsvisningen beder siden omkring den om forbindelse (init). Aura 1 svarer som Promte:
+// appen får sine indstillinger, og dens kald sendes gennem Aura 1 til den koblede Promte-app.
 // Kun den aktive forhåndsvisnings vindue må bruge det valgte projekts forbindelse.
 (() => {
   const $ = selector => document.querySelector(selector);
@@ -21,7 +21,7 @@
     if (!value.connected) {
       show('Log ind med Promte for at afprøve appen', async () => {
         if (!active(frame, owner)) return;
-        show('Godkend Aura i browseren …');
+        show('Godkend Aura 1 i browseren …');
         const login = await window.harness.promtePreviewLogin(undefined, owner);
         if (!active(frame, owner)) return;
         if (!login.ok) throw Error(login.error);
@@ -32,7 +32,7 @@
       });
       return null;
     }
-    // Aura opretter først en app i Promte, når brugeren vælger det.
+    // Aura 1 opretter først en app i Promte, når brugeren vælger det.
     if (!value.settings) {
       show(`Opret appen ${value.name} i Promte`, async () => {
         if (!active(frame, owner)) return;

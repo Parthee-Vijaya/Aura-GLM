@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "label": "idea-refinement-after",
+  "checks": [
+    "Review makes no model call",
+    "Create is disabled during AI work",
+    "Two questions and free text",
+    "Human description without raw JSON",
+    "Follow-up carries previous proposal and answer",
+    "Proposal is a draft in plan mode",
+    "Creation never starts a build"
+  ],
+  "errors": [],
+  "assetFailures": [],
+  "controlledModelCalls": 2,
+  "externalModelCalls": 0
+}
