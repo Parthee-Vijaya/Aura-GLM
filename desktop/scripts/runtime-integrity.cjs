@@ -7,7 +7,7 @@ const { createReadStream } = require('node:fs');
 const assert = require('node:assert/strict');
 const hash = value => createHash('sha256').update(value).digest('hex');
 async function inventory(root) {
-  const entries = {};
+  const entries = new Map();
   async function visit(relative = '') {
     const directory = path.join(root, relative);
     for (const name of (await fs.readdir(directory)).sort()) {
@@ -20,19 +20,20 @@ async function inventory(root) {
         // Resolve the whole chain, including ancestor links; dangling links fail.
         const real = await fs.realpath(file);
         if (!real.startsWith(await fs.realpath(root) + path.sep)) throw Error('Runtime-link forlader pakken: ' + key);
-        entries[key] = { type: 'link', target };
+        entries.set(key, { type: 'link', target });
       } else if (before.isDirectory()) await visit(key);
       else if (before.isFile()) {
         const digest = createHash('sha256');
         for await (const chunk of createReadStream(file)) digest.update(chunk);
         const after = await fs.lstat(file, { bigint: true });
         if (['dev','ino','size','mtimeNs','ctimeNs'].some(field => before[field] !== after[field])) throw Error('Runtime-filen ændrede sig under kontrol: ' + key);
-        entries[key] = { type: 'file', bytes: Number(before.size), sha256: digest.digest('hex'), executable: Boolean(before.mode & 0o111n) };
+        entries.set(key, { type: 'file', bytes: Number(before.size), sha256: digest.digest('hex'), executable: Boolean(before.mode & 0o111n) });
       } else throw Error('Ukendt runtime-filtype: ' + key);
     }
   }
   await visit();
-  return { schemaVersion: 1, entries, sha256: hash(JSON.stringify(entries)) };
+  const payloads = Object.fromEntries(entries);
+  return { schemaVersion: 1, entries: payloads, sha256: hash(JSON.stringify(payloads)) };
 }
 async function verifyRuntime(root, manifest, expected, lock, target) {
   assert.equal(manifest.target, target, 'Forkert runtime-platform');

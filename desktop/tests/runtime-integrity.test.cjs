@@ -46,3 +46,10 @@ test('rejects absolute, escaping, dangling and ancestor-symlink payload links', 
     await assert.rejects(inventory(f.root));
   }
 });
+
+test('special object property names cannot hide unexpected runtime payloads', async t => {
+ const f = await fixture(t);
+ await fs.writeFile(path.join(f.root, '__proto__'), 'unexpected executable', { mode: 0o755 });
+ const actual = await inventory(f.root);assert.ok(Object.hasOwn(actual.entries, '__proto__'));
+ assert.notEqual(actual.sha256, f.manifest.payloads.sha256);await assert.rejects(f.verify(), /Runtime-payload/);
+});
