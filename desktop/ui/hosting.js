@@ -39,11 +39,11 @@
   }
   const open = () => { creation = null; $('#hosting-create-confirm').hidden = true; $('#hosting-technical').open = false; $('#hosting-account').open = false; $('#hosting-dialog').showModal(); invalidate(); act(refresh); };
   $('#setup-hosting').onclick = open; $('#publish-button').onclick = open;
-  $('#hosting-dialog').addEventListener('close', () => { $('#hosting-token').value = ''; cancelLogin().catch(() => {}); });
+  $('#hosting-dialog').addEventListener('close', () => { cancelLogin().catch(() => {}); });
   $('#hosting-login').onclick = () => act(async () => { const value = await api('hostingLogin'); login = value.id; $('#hosting-code').textContent = value.code; $('#hosting-device').hidden = false; timer = setTimeout(() => poll(value.id), value.retryAfter); });
   $('#hosting-browser').onclick = () => act(() => api('hostingBrowser'));
   $('#hosting-cancel').onclick = () => act(cancelLogin);
-  $('#hosting-token-form').onsubmit = event => { event.preventDefault(); const token = $('#hosting-token').value; $('#hosting-token').value = ''; act(async () => { await cancelLogin(); await api('hostingToken', token); invalidate(); await refresh(); $('#hosting-feedback').textContent = 'Konto kontrolleret og adgang gemt krypteret.'; }); };
+  $('#hosting-token-form').onsubmit = event => { event.preventDefault(); act(async () => { await cancelLogin(); const result = await api('credentialEntry', { purpose: 'github' }); if (result.canceled) return; await api('hostingToken', { keyReceipt: result.keyReceipt }); invalidate(); await refresh(); $('#hosting-feedback').textContent = 'Konto kontrolleret og adgang gemt krypteret.'; }); };
   $('#hosting-disconnect').onclick = () => act(async () => { await cancelLogin(); await api('hostingDisconnect'); invalidate(); $('#hosting-repositories').replaceChildren(); $('#hosting-owner').replaceChildren(); await refresh(); });
   $('#hosting-catalog').onclick = () => act(async () => {
     const result = await api('hostingCatalog');
