@@ -20,3 +20,6 @@ require('node:test')('tool observations record only bound metadata, label loopba
  const c={id:'one',baseURL:'http://127.0.0.1:1/v1',kind:'compatible'},m={id:'fixture'},r={id:'route'};const observed=toolRun(c,m,r);
  assert.equal(observed.environment,'controlled');assert.equal(observed.binding,key(binding(c,m,r)));assert.equal(toolRun({...c,baseURL:'https://example.org/v1'},m,r).environment,'provider');assert.equal(Object.hasOwn(observed,'content'),false);
 });
+require('node:test')('support evidence loads from a packaged core without a parent runtime-lock file',async t=>{
+ const fs=require('node:fs/promises'),path=require('node:path'),os=require('node:os'),assert=require('node:assert/strict');const root=await fs.mkdtemp(path.join(os.tmpdir(),'aura-support-package-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));await fs.cp(path.resolve(__dirname,'../core'),path.join(root,'core'),{recursive:true});assert.equal(typeof require(path.join(root,'core/model-support.cjs')).report,'function');
+});
