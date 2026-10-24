@@ -3,11 +3,12 @@
 const fs = require('node:fs/promises');
 const { constants } = require('node:fs');
 const path = require('node:path');
+const os = require('node:os');
 const crypto = require('node:crypto');
 const { TextDecoder } = require('node:util');
 const projectFiles = require('./project-files.cjs');
 const { secretContent } = require('./git.cjs');
-const LIMITS = Object.freeze({ files: 8, fileBytes: 128 * 1024, totalBytes: 384 * 1024 });
+const LIMITS = Object.freeze({ files: 8, fileBytes: 128 * 1024, totalBytes: 384 * 1024, entries: 250, candidates: 100, depth: 3 });
 const EXTENSIONS = Object.freeze(['txt','md','markdown','csv','json','jsonl','js','jsx','ts','tsx','mjs','cjs','html','css','scss','sql','py','sh','yml','yaml','xml','toml','ini','svg']);
 const ERROR_CODES = Object.freeze(['materials','path','protected','symlink','changed','type','format','binary','secret','context','stale','broad','selection','large','review']);
 const generated = new Set(['node_modules','dist','build','coverage','venv','__pycache__','target']);
@@ -82,6 +83,27 @@ class ChatMaterials {
     const state = this.context(chat), revision = state.revision, candidates = [];
     for (const nativePath of [...new Set(nativePaths)]) { const info = await inspect(nativePath); candidates.push({ id: crypto.randomUUID(), path: info.path, signature: info.signature, bytes: info.bytes, kind: info.kind, name: path.basename(info.path), folder: '' }); }
     this.assert(chat, { scope: state.scope, revision }, state); state.candidates = new Map(candidates.map(file => [file.id, file])); state.folder = ''; state.truncated = false; this.changed(chat, state); return this.state(chat);
+  }
+  async offerFolder(chat, nativePath) {
+    const root = await inspect(nativePath, true);
+    if ([path.parse(root.path).root, os.homedir(), '/Users', '/Volumes', '/private', '/private/tmp', '/tmp'].includes(root.path)) throw new MaterialsError('Vælg en konkret projekt- eller referencemappe, ikke hele hjemmet eller disken.', 'broad');
+    const state = this.context(chat), revision = state.revision, queue = [{ path: root.path, relative: '', depth: 0 }], candidates = []; let visited = 0, truncated = false;
+    while (queue.length && visited < LIMITS.entries && candidates.length < LIMITS.candidates) {
+      const directory = queue.shift(); const before = await inspect(directory.path, true); const stream = await fs.opendir(directory.path);
+      for await (const entry of stream) {
+        if (++visited > LIMITS.entries || candidates.length >= LIMITS.candidates) { truncated = true; break; }
+        const absolute = path.join(directory.path, entry.name), relative = directory.relative ? `${directory.relative}/${entry.name}` : entry.name;
+        if (entry.isSymbolicLink()) continue;
+        try {
+          allowedPath(absolute);
+          if (entry.isDirectory()) { if (directory.depth < LIMITS.depth) queue.push({ path: absolute, relative, depth: directory.depth + 1 }); else truncated = true; }
+          else if (entry.isFile() && EXTENSIONS.includes(path.extname(entry.name).slice(1).toLowerCase())) { const info = await inspect(absolute); candidates.push({ id: crypto.randomUUID(), path: info.path, signature: info.signature, bytes: info.bytes, kind: info.kind, name: relative, folder: path.basename(root.path) }); }
+        } catch (error) { if (!(error instanceof MaterialsError) && error.code !== 'ENOENT') throw error; }
+      }
+      await sameChain(before.chain);
+    }
+    await sameChain(root.chain); this.assert(chat, { scope: state.scope, revision }, state);
+    state.candidates = new Map(candidates.map(file => [file.id, file])); state.folder = path.basename(root.path); state.truncated = truncated || queue.length > 0; this.changed(chat, state); return this.state(chat);
   }
   async preview(chat, input) {
     const state = this.assert(chat, input), revision = state.revision;

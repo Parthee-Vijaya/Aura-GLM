@@ -2,7 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 const methods = {
   openExternalLink: 'links:open',
   historySearch: 'history:search',
-  chatMaterialsState:'chat-materials:state', chatMaterialsChooseFiles:'chat-materials:choose-files', chatMaterialsPreview:'chat-materials:preview', chatMaterialsAttach:'chat-materials:attach', chatMaterialsRemove:'chat-materials:remove',
+  chatMaterialsState:'chat-materials:state', chatMaterialsChooseFolder:'chat-materials:choose-folder', chatMaterialsChooseFiles:'chat-materials:choose-files', chatMaterialsPreview:'chat-materials:preview', chatMaterialsAttach:'chat-materials:attach', chatMaterialsRemove:'chat-materials:remove',
   deploymentCancelSetup: 'deployment:setup-cancel',
   projectSettings: 'project:settings', saveProjectSettings: 'project:settings-save', chatArchive: 'chat:archive',
   updatesState: 'updates:state', updatesCheck: 'updates:check', updatesDownload: 'updates:download', updatesRestart: 'updates:restart', updatesAutomatic: 'updates:automatic', updatesWebsite: 'updates:website', updatesNotes: 'updates:notes',
