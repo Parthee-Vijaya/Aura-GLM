@@ -135,10 +135,65 @@ test('connection updates without a new key preserve metadata while raw-key bypas
   for (const field of ['apiKey', 'secret', 'token']) assert.throws(() => f.entry.connection({ ...metadata(), [field]: key }), /sikre nøglevindue/);
 });
 
+test('GitHub PAT entry has a fixed recipient, one-use purpose-bound receipt and rejects every raw-token bypass', async () => {
+  const f = electronFixture(), pending = f.entry.request({ purpose: 'github', configuration: {} });
+  assert.deepEqual(f.invoke({ action: 'context' }), { name: 'GitHub', endpoint: 'https://api.github.com', kind: 'github', label: 'GitHub-token' });
+  f.invoke({ action: 'submit', value: key }); const result = await pending;
+  assert.equal(JSON.stringify(result).includes(key), false); assert.equal(f.entry.github({ keyReceipt: result.keyReceipt }), key);
+  assert.throws(() => f.entry.github({ keyReceipt: result.keyReceipt }), /udløbet/);
+  for (const input of [key, null, [], {}, { token: key }, { keyReceipt: 'forged', apiKey: key }, { keyReceipt: 'forged', endpoint: 'https://example.invalid' }]) assert.throws(() => f.entry.github(input), /sikre nøglevindue/);
+  for (const configuration of [{ baseURL: 'https://example.invalid' }, { repository: 'other/repo' }, { id: 'other' }]) await assert.rejects(f.entry.request({ purpose: 'github', configuration }), /faste GitHub/);
+  const connectionPending = f.entry.request({ configuration: metadata() }); f.invoke({ action: 'submit', value: key }); const connection = await connectionPending;
+  assert.throws(() => f.entry.github({ keyReceipt: connection.keyReceipt }), /udløbet/);
+  const githubPending = f.entry.request({ purpose: 'github' }); f.invoke({ action: 'submit', value: key }); const github = await githubPending;
+  assert.throws(() => f.entry.connection({ ...metadata(), keyReceipt: github.keyReceipt }), /udløbet/);
+  assert.throws(() => f.entry.github({ keyReceipt: github.keyReceipt }), /udløbet/);
+});
+
+test('GitHub cancellation closes only its own pending modal and revokes only GitHub receipts', async () => {
+  const f = electronFixture(), pending = f.entry.request({ purpose: 'github' }); f.entry.cancelGithub(); assert.deepEqual(await pending, { canceled: true }); assert.equal(f.handlers.size, 0);
+  const first = f.entry.request({ purpose: 'github' }); f.invoke({ action: 'submit', value: key }); const github = await first;
+  const second = f.entry.request({ configuration: metadata() }); f.invoke({ action: 'submit', value: key }); const connection = await second;
+  f.entry.cancelGithub(); assert.throws(() => f.entry.github({ keyReceipt: github.keyReceipt }), /udløbet/);
+  assert.equal(f.entry.connection({ ...metadata(), keyReceipt: connection.keyReceipt }).apiKey, key);
+  const third = f.entry.request({ configuration: metadata() }); f.entry.cancelGithub(); assert.equal(f.current().destroyed, false); f.invoke({ action: 'cancel' }); assert.deepEqual(await third, { canceled: true });
+});
+
+
+test('a changed GitHub account/login generation cannot reuse an earlier receipt', async () => {
+ const f=electronFixture(),pending=f.entry.request({purpose:'github',configuration:{generation:7}});
+ f.invoke({action:'submit',value:key});const result=await pending;
+ assert.throws(()=>f.entry.github({keyReceipt:result.keyReceipt},8),/udløbet/);
+ assert.throws(()=>f.entry.github({keyReceipt:result.keyReceipt},7),/udløbet/);
+});
 
 test('ordinary main-window teardown revokes pending and issued keys but permits entry after macOS reopen', async () => {
  const f=electronFixture(),first=f.entry.request({configuration:metadata()});f.invoke({action:'submit',value:key});const receipt=await first;
  const pending=f.entry.request({configuration:metadata()});f.entry.revoke();assert.deepEqual(await pending,{canceled:true});
  assert.throws(()=>f.entry.connection({...metadata(),keyReceipt:receipt.keyReceipt}),/udløbet/);
  const reopened=f.entry.request({configuration:metadata()});f.invoke({action:'cancel'});assert.deepEqual(await reopened,{canceled:true});
+});
+
+test('PAT entry retires a real in-flight OAuth account save before binding its own receipt', async () => {
+ const {GitHub}=require('../core/github.cjs'),{requestGithubCredential}=require('../core/github-credential.cjs');
+ const stored={hosting:{github:{login:'original-user',secret:'synthetic-existing'}}};let now=1000,releaseUser,accountWrites=0;
+ const store={async read(){return stored;},encrypt(value){return value;},async update(action){action(stored);accountWrites++;}};
+ const response=data=>({ok:true,status:200,async json(){return data;}});
+ const github=new GitHub(store,{clientID:'synthetic-client',now:()=>now,fetcher:async url=>{
+  if(url==='https://github.com/login/device/code')return response({device_code:'synthetic-device',user_code:'SYNTHETIC',verification_uri:'https://github.com/login/device',expires_in:300,interval:5});
+  if(url==='https://github.com/login/oauth/access_token')return response({access_token:'synthetic-oauth-token'});
+  assert.equal(url,'https://api.github.com/user');return new Promise(resolve=>{releaseUser=()=>resolve(response({login:'different-user'}));});
+ }});
+ const login=await github.startLogin();now+=5000;
+ const poll=github.poll(login.id),failedPoll=assert.rejects(poll,/annulleret/);
+ for(let i=0;i<10&&!releaseUser;i++)await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(typeof releaseUser,'function','The actual OAuth save must have reached its asynchronous account lookup');
+ const previousGeneration=github.generation,f=electronFixture();
+ const entry=requestGithubCredential(github,f.entry,{purpose:'github'});
+ assert.ok(github.generation>previousGeneration);assert.equal(github.pending,null);
+ f.invoke({action:'submit',value:key});const receipt=await entry;
+ releaseUser();await failedPoll;
+ assert.equal(stored.hosting.github.login,'original-user');assert.equal(accountWrites,0);
+ assert.equal(f.entry.github({keyReceipt:receipt.keyReceipt},github.generation),key);
+ f.entry.close();
 });

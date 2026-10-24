@@ -504,12 +504,12 @@ handle('git:automatic', value => exclusive(async () => {
 function hostingIdle() { /* Login og udgivelsesvalg ændrer ikke projektfiler. */ }
 async function sharingContext() { return { projectName: currentProject()?.name || '', viewingCopy: Boolean(currentChat()?.copy), copyCount: currentProject() ? (await workbench.chatList()).filter(chat => chat.isolated).length : 0 }; }
 handle('hosting:state', async () => ({ context: await sharingContext(), ...await github.state(), project: Boolean(currentProject()), publication: currentProject() ? await publishing.status(currentProject().root).catch(error => ({ message: error.message, selected: null })) : null }));
-handle('hosting:token', token => exclusive(async () => { hostingIdle(); publishing.reviews.clear(); return github.connectToken(token); }));
-handle('hosting:login', () => exclusive(async () => { hostingIdle(); return github.startLogin(); }));
-handle('hosting:poll', id => exclusive(async () => { hostingIdle(); publishing.reviews.clear(); return github.poll(id); }));
-handle('hosting:cancel', () => { github.cancel(); return true; });
+handle('hosting:token', token => exclusive(async () => { hostingIdle(); publishing.reviews.clear(); return github.connectToken(credentialEntry.github(token, github.generation)); }));
+handle('hosting:login', () => exclusive(async () => { hostingIdle(); credentialEntry.cancelGithub(); return github.startLogin(); }));
+handle('hosting:poll', id => exclusive(async () => { hostingIdle(); credentialEntry.cancelGithub(); publishing.reviews.clear(); return github.poll(id); }));
+handle('hosting:cancel', () => { credentialEntry.cancelGithub(); github.cancel(); return true; });
 handle('hosting:browser', () => { if (!github.pending) throw new Error('Start login først.'); return shell.openExternal('https://github.com/login/device'); });
-handle('hosting:disconnect', () => exclusive(async () => { hostingIdle(); publishing.reviews.clear(); return github.disconnect(); }));
+handle('hosting:disconnect', () => exclusive(async () => { hostingIdle(); credentialEntry.cancelGithub(); publishing.reviews.clear(); return github.disconnect(); }));
 handle('hosting:catalog', () => exclusive(async () => { hostingIdle(); return { owners: await github.owners(), repositories: await github.repositories() }; }));
 handle('hosting:create', input => exclusive(async () => { hostingIdle(); return github.create(input); }));
 handle('hosting:attach', fullName => exclusive(() => publishing.attach(requireProject(), fullName)));
@@ -589,7 +589,10 @@ handle('komplai:publish-address', value => deployments.providers.komplai.address
 handle('komplai:publish-disconnect', () => exclusive(() => require('./core/komplai.cjs').disconnectPublishing(workbench.store)));
 handle('connections:state', () => workbench.state(requestChatID()));
 handle('credential:cancel', () => { credentialEntry.revoke(); return true; });
-handle('credential:entry', value => credentialEntry.request(value));
+handle('credential:entry', value => {
+  if (value?.purpose !== 'github') return credentialEntry.request(value);
+  return require('./core/github-credential.cjs').requestGithubCredential(github, credentialEntry, value);
+});
 handle('connections:save', value => exclusive(() => workbench.saveConnection(credentialEntry.connection(value))));
 handle('connections:remove', value => exclusive(() => workbench.removeConnection(value)));
 handle('connections:models', value => workbench.models(value));

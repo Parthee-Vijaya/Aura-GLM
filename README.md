@@ -104,6 +104,8 @@ npm start
 
 AI-forbindelsens nøgle indtastes gennem **Indtast nøgle sikkert** i et separat vindue. Vælg **Brug denne nøgle**, og gem derefter forbindelsen i den oprindelige formular. Se [nøgleindtastningens afgrænsning og før/efterprøven](docs/contributions/f05.md).
 
+Ved manuel GitHub-adgang åbner du **Avanceret · forbind med GitHub-token** i delingsdialogen og vælger **Indtast token sikkert**. Tokenet indtastes i samme isolerede nøglevindue; kontoen kontrolleres, før adgangen gemmes krypteret. Se [GitHub-token, rettigheder og før/efterprøven](docs/contributions/f06.md).
+
 Se [installation, opsætning og lokale testkommandoer](https://github.com/ai-alliancen-org/ai-harness/blob/main/desktop/README.md).
 
 ## Teknologi, data og betastatus
