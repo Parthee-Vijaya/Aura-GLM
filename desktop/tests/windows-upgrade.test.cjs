@@ -35,10 +35,10 @@ test('NSIS-identiteten og databevarelsen er stadig kompatibel med den eksisteren
   const config = require('../electron-builder.cjs');
   const { UUID } = require('builder-util-runtime');
   assert.equal(UUID.v5(config.appId, UUID.parse('50e065bc-3134-11e6-9bab-38c9862bdaf3')), GUID);
-  assert.equal(config.productName, 'Aura');
+  assert.equal(config.productName, 'Aura 1');
   assert.equal(config.nsis.perMachine, false);
   assert.equal(config.nsis.deleteAppDataOnUninstall, false);
   assert.equal(config.nsis.oneClick, false);
-  assert.equal(config.publish.url, 'https://ai-alliancen-org.github.io/ai-harness/updates/');
+  assert.equal(config.publish.url, 'https://raw.githubusercontent.com/Parthee-Vijaya/ai-harness/main/site/dist/updates/');
   assert.equal(config.publish.channel, 'beta');
 });
