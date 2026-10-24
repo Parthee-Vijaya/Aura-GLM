@@ -120,7 +120,7 @@ class Application {
       this.ui.line(this.bench.chat.plan.text);
       if (!await this.ui.confirm('Byg efter denne plan?')) return;
     }
-    const data = await this.bench.prepare({ ...this.selection, mode: this.mode, planID: this.bench.chat.plan?.id, references: this.references, includeHistory: this.includeHistory });
+    const data = await this.bench.prepare({ ...this.selection, text, mode: this.mode, planID: this.bench.chat.plan?.id, references: this.references, includeHistory: this.includeHistory });
     check();
     if (!await disclose(this.ui, data)) return;
     check();

@@ -33,3 +33,11 @@ test('an existing owned copy and its next send review the same workspace while r
 });
 
 test('a changed prepared user message cannot reuse the same app-context review', async t=>{const f=await setup(t),d=await f.prepare();await assert.rejects(f.bench.send({text:'Anden besked',fingerprint:d.fingerprint,contextBinding:d.contextBinding}),/Beskeden er ændret/);assert.equal(f.starts(),0);});
+
+test('planning sends the reviewed clarification and current prompt unchanged',async t=>{
+ const f=await setup(t);f.bench.chat.planConversation=['Tidligere afklaring'];const text='Planlæg en lokal oversigt';
+ const d=await f.bench.prepare({mode:'plan',connectionID:'fixture',modelID:'fixture',text});
+ const plan=d.appContext.components.find(p=>p.id==='Planlægning og afklaring');assert.match(plan.text,/Tidligere afklaring/);
+ await f.bench.send({text,fingerprint:d.fingerprint,contextBinding:d.contextBinding});
+ assert.equal(f.sends[0].text,text);for(const part of d.appContext.components)assert.ok(f.sends[0].system.includes(part.text));
+});
