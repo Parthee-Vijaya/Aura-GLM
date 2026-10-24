@@ -9,9 +9,9 @@ const { TextDecoder } = require('node:util');
 const projectFiles = require('./project-files.cjs');
 const { secretContent } = require('./git.cjs');
 const LIMITS = Object.freeze({ files: 8, fileBytes: 128 * 1024, totalBytes: 384 * 1024, entries: 250, candidates: 100, depth: 3, mediaFileBytes: 5 * 1024 * 1024, mediaBytes: 4 * 1024 * 1024 });
-const EXTENSIONS = Object.freeze(['txt','md','markdown','csv','json','jsonl','js','jsx','ts','tsx','mjs','cjs','html','css','scss','sql','py','sh','yml','yaml','xml','toml','ini','svg','png','jpg','jpeg']);
+const EXTENSIONS = Object.freeze(['txt','md','markdown','csv','json','jsonl','js','jsx','ts','tsx','mjs','cjs','html','css','scss','sql','py','sh','yml','yaml','xml','toml','ini','svg','png','jpg','jpeg','pdf']);
 const ERROR_CODES = Object.freeze(['materials','path','protected','symlink','changed','type','format','binary','secret','context','stale','broad','selection','large','review']);
-const kindFor = value => /\.(png|jpe?g)$/i.test(value) ? 'image' : 'text';
+const kindFor = value => /\.(png|jpe?g)$/i.test(value) ? 'image' : /\.pdf$/i.test(value) ? 'pdf' : 'text';
 const generated = new Set(['node_modules','dist','build','coverage','venv','__pycache__','target']);
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
 const uuid = value => typeof value === 'string' && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(value);
@@ -34,7 +34,7 @@ async function inspect(value, directory = false) {
   const stat = await fs.lstat(value, { bigint: true });
   if (directory ? !stat.isDirectory() : !stat.isFile()) throw new MaterialsError(directory ? 'Vælg en almindelig mappe.' : 'Vælg en almindelig fil.', 'type');
   if (await fs.realpath(value) !== value) throw new MaterialsError('Filens sti er ændret.', 'symlink');
-  if (!directory && (!EXTENSIONS.includes(path.extname(value).slice(1).toLowerCase()) || stat.size > BigInt(kindFor(value) === 'text' ? LIMITS.fileBytes : LIMITS.mediaFileBytes))) throw new MaterialsError('Vælg tekst på højst 128 KB eller PNG/JPEG på højst 5 MB.', 'format');
+  if (!directory && (!EXTENSIONS.includes(path.extname(value).slice(1).toLowerCase()) || stat.size > BigInt(kindFor(value) === 'text' ? LIMITS.fileBytes : LIMITS.mediaFileBytes))) throw new MaterialsError('Vælg tekst på højst 128 KB eller PDF, PNG/JPEG på højst 5 MB.', 'format');
   return { path: value, kind: kindFor(value), stat, chain, signature: signature(stat), bytes: Number(stat.size) };
 }
 async function sameChain(chain) {
@@ -53,8 +53,9 @@ async function readSnapshot(candidate, { normalizeImage } = {}) {
     const end = await fd.stat({ bigint: true }); await sameChain(before.chain);
     if (length > maximum || BigInt(length) !== end.size || signature(start) !== signature(end)) throw new MaterialsError('Filen ændrede sig under læsningen.', 'changed');
     const data = bytes.subarray(0, length);
-    if (before.kind === 'image') {
+    if (before.kind !== 'text') {
       let media; try { media = await require('./chat-media.cjs').mediaSnapshot(data, before.kind, normalizeImage); } catch (error) { throw new MaterialsError(error.message, 'format'); }
+      if (media.text && secretContent(media.text)) throw new MaterialsError('Filen kan indeholde en nøgle eller adgangskode og kan ikke deles her.', 'secret');
       return { ...candidate, ...media, bytes: length, sha256: sha(data) };
     }
     let text;
