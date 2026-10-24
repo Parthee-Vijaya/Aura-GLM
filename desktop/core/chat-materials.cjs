@@ -7,9 +7,10 @@ const crypto = require('node:crypto');
 const { TextDecoder } = require('node:util');
 const projectFiles = require('./project-files.cjs');
 const { secretContent } = require('./git.cjs');
-const LIMITS = Object.freeze({ files: 8, fileBytes: 128 * 1024, totalBytes: 384 * 1024 });
-const EXTENSIONS = Object.freeze(['txt','md','markdown','csv','json','jsonl','js','jsx','ts','tsx','mjs','cjs','html','css','scss','sql','py','sh','yml','yaml','xml','toml','ini','svg']);
+const LIMITS = Object.freeze({ files: 8, fileBytes: 128 * 1024, totalBytes: 384 * 1024, mediaFileBytes: 5 * 1024 * 1024, mediaBytes: 4 * 1024 * 1024 });
+const EXTENSIONS = Object.freeze(['txt','md','markdown','csv','json','jsonl','js','jsx','ts','tsx','mjs','cjs','html','css','scss','sql','py','sh','yml','yaml','xml','toml','ini','svg','png','jpg','jpeg']);
 const ERROR_CODES = Object.freeze(['materials','path','protected','symlink','changed','type','format','binary','secret','context','stale','broad','selection','large','review']);
+const kindFor = value => /\.(png|jpe?g)$/i.test(value) ? 'image' : 'text';
 const generated = new Set(['node_modules','dist','build','coverage','venv','__pycache__','target']);
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
 const uuid = value => typeof value === 'string' && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(value);
@@ -32,25 +33,29 @@ async function inspect(value, directory = false) {
   const stat = await fs.lstat(value, { bigint: true });
   if (directory ? !stat.isDirectory() : !stat.isFile()) throw new MaterialsError(directory ? 'Vælg en almindelig mappe.' : 'Vælg en almindelig fil.', 'type');
   if (await fs.realpath(value) !== value) throw new MaterialsError('Filens sti er ændret.', 'symlink');
-  if (!directory && (!EXTENSIONS.includes(path.extname(value).slice(1).toLowerCase()) || stat.size > BigInt(LIMITS.fileBytes))) throw new MaterialsError('Vælg tekst- eller kodefiler på højst 128 KB.', 'format');
-  return { path: value, kind: 'text', stat, chain, signature: signature(stat), bytes: Number(stat.size) };
+  if (!directory && (!EXTENSIONS.includes(path.extname(value).slice(1).toLowerCase()) || stat.size > BigInt(kindFor(value) === 'text' ? LIMITS.fileBytes : LIMITS.mediaFileBytes))) throw new MaterialsError('Vælg tekst på højst 128 KB eller PNG/JPEG på højst 5 MB.', 'format');
+  return { path: value, kind: kindFor(value), stat, chain, signature: signature(stat), bytes: Number(stat.size) };
 }
 async function sameChain(chain) {
   for (const item of chain) { const current = await fs.lstat(item.path, { bigint: true }); if (current.isSymbolicLink() || current.dev !== item.dev || current.ino !== item.ino) throw new MaterialsError('Filen eller dens mappe blev erstattet. Vælg og gennemgå filen igen.', 'changed'); }
 }
-async function readSnapshot(candidate) {
+async function readSnapshot(candidate, { normalizeImage } = {}) {
   const before = await inspect(candidate.path);
   if (before.signature !== candidate.signature) throw new MaterialsError('En valgt fil er ændret. Vælg og gennemgå den igen.', 'changed');
   const fd = await fs.open(candidate.path, constants.O_RDONLY | (constants.O_NOFOLLOW || 0));
   try {
     const start = await fd.stat({ bigint: true });
     if (!start.isFile() || signature(start) !== before.signature) throw new MaterialsError('Filen blev ændret før læsning.', 'changed');
-    const maximum = LIMITS.fileBytes;
+    const maximum = before.kind === 'text' ? LIMITS.fileBytes : LIMITS.mediaFileBytes;
     const bytes = Buffer.alloc(maximum + 1); let length = 0;
     while (length < bytes.length) { const next = await fd.read(bytes, length, bytes.length - length, length); if (!next.bytesRead) break; length += next.bytesRead; }
     const end = await fd.stat({ bigint: true }); await sameChain(before.chain);
     if (length > maximum || BigInt(length) !== end.size || signature(start) !== signature(end)) throw new MaterialsError('Filen ændrede sig under læsningen.', 'changed');
     const data = bytes.subarray(0, length);
+    if (before.kind === 'image') {
+      let media; try { media = await require('./chat-media.cjs').mediaSnapshot(data, before.kind, normalizeImage); } catch (error) { throw new MaterialsError(error.message, 'format'); }
+      return { ...candidate, ...media, bytes: length, sha256: sha(data) };
+    }
     let text;
     try { text = new TextDecoder('utf-8', { fatal: true }).decode(data); } catch { throw new MaterialsError('Filen er ikke UTF-8-tekst.', 'binary'); }
     if (data.includes(0)) throw new MaterialsError('Binære filer kan ikke vedhæftes her.', 'binary');
@@ -58,11 +63,11 @@ async function readSnapshot(candidate) {
     return { ...candidate, kind: 'text', bytes: length, text, sha256: sha(data) };
   } finally { await fd.close(); }
 }
-const publicFile = (file, text = false) => ({ id: file.id, name: file.name, folder: file.folder || '', bytes: file.bytes, kind: 'text', ...(file.sha256 ? { sha256: file.sha256 } : {}), ...(file.invalid ? { changed: true } : {}), ...(text ? { text: file.text } : {}) });
+const publicFile = (file, text = false) => ({ id: file.id, name: file.name, folder: file.folder || '', bytes: file.bytes, kind: file.kind || 'text', ...(file.mime ? { mime: file.mime } : {}), ...(file.sha256 ? { sha256: file.sha256 } : {}), ...(file.invalid ? { changed: true } : {}), ...(text ? { text: file.text, ...(file.pages ? { pages: file.pages, ocr: false } : {}), ...(file.dataURL ? { dataURL: file.dataURL, normalizedHash: file.normalizedHash, width: file.width, height: file.height } : {}) } : {}) });
 class ChatMaterials {
-  constructor({ onChange = () => {} } = {}) { this.contexts = new WeakMap(); this.onChange = onChange; }
-  read(file) { return readSnapshot(file); }
-  checkTotals(files) { const all = [...files]; if (all.length > LIMITS.files || all.reduce((n, f) => n + Buffer.byteLength(f.text || ''), 0) > LIMITS.totalBytes) throw new MaterialsError('Det samlede valg overstiger otte filer eller 384 KB.', 'large'); }
+  constructor({ onChange = () => {}, normalizeImage } = {}) { this.contexts = new WeakMap(); this.onChange = onChange; this.normalizeImage = normalizeImage; }
+  read(file) { return readSnapshot(file, { normalizeImage: this.normalizeImage }); }
+  checkTotals(files) { const all = [...files]; if (all.length > LIMITS.files || all.reduce((n, f) => n + Buffer.byteLength(f.text || ''), 0) > LIMITS.totalBytes || all.reduce((n, f) => n + (f.normalizedBytes || 0), 0) > LIMITS.mediaBytes) throw new MaterialsError('Det samlede valg overstiger otte filer eller 384 KB.', 'large'); }
   binding(chat) { if (!chat || typeof chat.id !== 'string' || !chat.project?.root) throw new MaterialsError('Åbn en samtale først.', 'context'); return JSON.stringify([chat.project.root, chat.id]); }
   context(chat) {
     const binding = this.binding(chat); let state = this.contexts.get(chat);
@@ -76,7 +81,7 @@ class ChatMaterials {
     return state;
   }
   changed(chat, state) { state.revision++; state.reviews.clear(); chat.prepared = null; this.onChange({ type: 'chat-materials.changed', chat: chat.id, scope: state.scope, revision: state.revision }); }
-  state(chat) { const state = this.context(chat); return { chat: chat.id, scope: state.scope, revision: state.revision, selected: [...state.selected.values()].map(file => publicFile(file)), candidates: [...state.candidates.values()].map(file => publicFile(file)), folder: state.folder, truncated: state.truncated, limits: LIMITS, formats: EXTENSIONS, textOnly: true }; }
+  state(chat) { const state = this.context(chat); return { chat: chat.id, scope: state.scope, revision: state.revision, selected: [...state.selected.values()].map(file => publicFile(file)), candidates: [...state.candidates.values()].map(file => publicFile(file)), folder: state.folder, truncated: state.truncated, limits: LIMITS, formats: EXTENSIONS, textOnly: false }; }
   async offerFiles(chat, nativePaths) {
     if (!Array.isArray(nativePaths) || nativePaths.length > LIMITS.files) throw new MaterialsError('Vælg højst otte filer.');
     const state = this.context(chat), revision = state.revision, candidates = [];
@@ -97,7 +102,7 @@ class ChatMaterials {
     if (!entry || !uuid(input.token) || entry.expiresAt<Date.now() || entry.generation !== chat.generation || chat.running || chat.sending || chat.starting) throw new MaterialsError('Gennemgå filernes indhold igen, før du tilføjer dem.', 'review');
     const review = entry.files;
     const selected = new Map([...state.selected].filter(([, file]) => !review.some(next => next.path === file.path)));
-    for (const file of review) { const again = await this.read(file, chat); if (again.sha256 !== file.sha256) throw new MaterialsError('Filen er ændret. Gennemgå den igen.', 'changed'); selected.set(file.id, file); }
+    for (const file of review) { const again = await this.read(file, chat); if (again.sha256 !== file.sha256 || again.normalizedHash !== file.normalizedHash) throw new MaterialsError('Filen er ændret. Gennemgå den igen.', 'changed'); selected.set(file.id, file); }
     this.checkTotals(selected.values());
     this.assert(chat, { scope: state.scope, revision }, state); if (chat.running || chat.sending || chat.starting || chat.finishing) throw new MaterialsError('Vent på opgaven, før du tilføjer filer.');
     const previous = state.selected; state.selected = selected;
@@ -111,7 +116,7 @@ class ChatMaterials {
     if (!state.selected.size) return null;
     const files = [];
     for (const file of state.selected.values()) {
-      try { const current = await this.read(file, chat); if (current.sha256 !== file.sha256) throw new MaterialsError('En fil er ændret.'); files.push(publicFile(current, true)); }
+      try { const current = await this.read(file, chat); if (current.sha256 !== file.sha256 || current.normalizedHash !== file.normalizedHash) throw new MaterialsError('En fil er ændret.'); files.push(publicFile(current, true)); }
       catch (error) { file.invalid = true; this.changed(chat, state); throw new MaterialsError('En vedhæftet fil er ændret eller utilgængelig. Fjern den, og vælg/gennemgå den igen før afsendelse.', 'changed'); }
     }
     this.assert(chat, { scope: state.scope, revision }, state);

@@ -237,6 +237,7 @@ class ChatSession {
     disclosure.fingerprint = crypto.createHash('sha256').update(JSON.stringify(consent) + JSON.stringify({ connectionRevision: selection.connection.revision || null, rules: context.rules, skills: context.skills, features: context.features, projectInstructions: context.projectInstructions, surface: bench.surface, autoCheckpoint, commandIsolation, autoCommandsSnapshot })).digest('hex');
     // Resuméet før afsendelse vises igen, når modtager, model, vilkår, pris eller delt materiale ændrer sig. Skift fra plan til byg er ikke en ny modtager.
     Object.assign(disclosure, modelConsent.review(selection.connection.id, disclosure, settings, context.projectInstructions?.hash));
+    if (chatMaterials?.files.some(file => file.kind === 'image') && !require('./model-support.cjs').imageAllowed(selection.model, selection.route)) throw new Error('Billedinput er ikke dokumenteret for den valgte model/rute. Vælg en understøttet model, eller fjern billedet.');
     if (chatMaterials) {
       disclosure.sessionFingerprint = disclosure.fingerprint;
       disclosure.chatMaterials = chatMaterials;
@@ -351,6 +352,7 @@ class ChatSession {
       if (['build', 'free'].includes(prepared.mode)) system += '\nAfslut med: hvad du ændrede, hvilke kontroller du faktisk udførte og hvad brugeren bør prøve. Påstå ikke at noget er testet uden udført kontrol.';
       if (Object.hasOwn(prepared.context, 'projectInstructions') && JSON.stringify(await projectInstructions(this.root)) !== JSON.stringify(prepared.context.projectInstructions)) throw new Error('Projektets AGENTS.md har ændret sig under opstart. Gennemgå oplysningerne igen før afsendelse.');
       this.gateway?.setEffort?.(prepared.disclosure.effort);
+      this.gateway?.setImages?.(prepared.chatMaterials?.files.filter(file => file.kind === 'image') || []);
       // Brugeren har valgt at gøre en lang samtale kortere, før beskeden sendes igen.
       if (input.compact === true && (await this.engine.messages().catch(() => [])).length) {
         this.compacting = true;

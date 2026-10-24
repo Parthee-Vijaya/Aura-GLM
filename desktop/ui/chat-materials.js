@@ -37,8 +37,15 @@ window.ChatMaterials = { connect(api) {
     const nextButton=button('Gennemgå indhold',()=>perform('chatMaterialsPreview',{...handle(),ids:[...list.querySelectorAll('input:checked')].map(n=>n.value)},preview),true);nextButton.id='materials-next';
     const actions=el('div');actions.className='dialog-actions';actions.append(button('Annuller',close),nextButton);dialog.append(actions);if(!dialog.open)dialog.showModal();controls();
   }
+  function materialContent(file) {
+    if (file.kind !== 'image') return el('pre', file.text);
+    const block = el('div');
+    if (!/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/.test(file.dataURL || '')) { block.textContent = 'Billedet kunne ikke vises. Gennemgå filvalget igen.'; return block; }
+    const image = el('img'); image.src = file.dataURL; image.alt = file.name; image.className = 'material-image';
+    block.append(image, el('p', `Normaliseret PNG · ${file.width} × ${file.height} · SHA-256 ${file.normalizedHash}`)); return block;
+  }
   function preview(next){review=next;base('Dette indhold kan medsendes','Det gennemgåede indhold kan medsendes efter den normale modtager- og datagennemgang. Kildemappen bliver ikke et værktøjsområde.');
-    for(const file of next.files){const section=el('section');section.append(el('h3',[file.folder,file.name].filter(Boolean).join('/')),el('small',`${file.bytes.toLocaleString('da-DK')} bytes · SHA-256 ${file.sha256}`),el('pre',file.text));dialog.append(section);}
+    for(const file of next.files){const section=el('section');section.append(el('h3',[file.folder,file.name].filter(Boolean).join('/')),el('small',`${file.bytes.toLocaleString('da-DK')} bytes · SHA-256 ${file.sha256}`),materialContent(file));dialog.append(section);}
     const actions=el('div');actions.className='dialog-actions';actions.append(button('Annuller',close),button('Tilføj de gennemgåede filer',()=>{const pending=review;if(pending)void perform('chatMaterialsAttach',{scope:pending.scope,revision:pending.revision,token:pending.token},value=>{review=null;apply(value);dialog.close();});},true));actions.lastChild.id='materials-attach';dialog.append(actions);controls();
   }
   function sync(){const next=api.read(),id=next.root&&next.chat?key(next):null;if(id!==owner?.key){epoch++;owner=id?{...next,key:id}:null;state=null;busy=false;review=null;chips.replaceChildren();chips.hidden=true;status.hidden=true;if(dialog.open)dialog.close();if(owner)void refresh();}controls();}
@@ -50,5 +57,5 @@ window.ChatMaterials = { connect(api) {
   const target=document.getElementById('data-materials');target.replaceChildren();target.hidden=!materials;
   if(!materials)return;
   const heading=document.createElement('h3');heading.textContent='Vedhæftninger · præcist indhold';target.append(heading);
-  for(const file of materials.files){const name=document.createElement('p'),text=document.createElement('pre');name.textContent=[file.folder,file.name].filter(Boolean).join('/');text.textContent=file.text;target.append(name,text);}
+  for(const file of materials.files){const name=document.createElement('p'),text=document.createElement('pre');name.textContent=[file.folder,file.name].filter(Boolean).join('/');if (file.kind === 'image' && /^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/.test(file.dataURL || '')) { const image = document.createElement('img'); image.src = file.dataURL; image.alt = file.name; image.className = 'material-image'; target.append(name, image); } else { text.textContent=file.text; target.append(name,text); }}
 } };

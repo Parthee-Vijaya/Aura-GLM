@@ -2,12 +2,12 @@
 // Native dialogs are the only source of paths. A renderer may submit opaque IDs.
 const { ChatMaterials, EXTENSIONS } = require('./chat-materials.cjs');
 const METHODS = Object.freeze({ chatMaterialsState:'chat-materials:state', chatMaterialsChooseFiles:'chat-materials:choose-files', chatMaterialsPreview:'chat-materials:preview', chatMaterialsAttach:'chat-materials:attach', chatMaterialsRemove:'chat-materials:remove' });
-function installChatMaterials({ getWorkbench, isSelected = () => true, register, dialog, exclusive, emit = () => {} }) {
+function installChatMaterials({ getWorkbench, isSelected = () => true, register, dialog, exclusive, normalizeImage, emit = () => {} }) {
   function owner(value, fields = []) {
     if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).some(key => !['chat', ...fields].includes(key)) || typeof value.chat !== 'string') throw new Error('Brug filvalget i den aktuelle samtale. Der modtages ingen filstier.');
     const bench = getWorkbench(), chat = bench?.chatFor(value.chat);
     if (!chat || !bench.project || bench.chatID !== chat.id || bench.chats.get(chat.id) !== chat) throw new Error('Vælg den aktuelle samtale først.');
-    bench.chatMaterials ||= new ChatMaterials({ onChange:event => emit({ ...event, root:bench.project.root }) });
+    bench.chatMaterials ||= new ChatMaterials({ normalizeImage, onChange:event => emit({ ...event, root:bench.project.root }) });
     return { bench, chat, materials:bench.chatMaterials, root:bench.project.root };
   }
   function current(owner) {
@@ -18,7 +18,7 @@ function installChatMaterials({ getWorkbench, isSelected = () => true, register,
   handle('chatMaterialsState', value => { const o = owner(value); return o.materials.state(o.chat); });
   handle('chatMaterialsChooseFiles', value => exclusive(async () => {
     const o = owner(value); current(o);
-    const result = await dialog.showOpenDialog({ title:'Vælg tekst- eller kodefiler til denne samtale', properties:['openFile','multiSelections','dontAddToRecent'], filters:[{ name:'Tekst og kode · højst 128 KB pr. fil', extensions:[...EXTENSIONS] }] });
+    const result = await dialog.showOpenDialog({ title:'Vælg filer eller screenshots til denne samtale', properties:['openFile','multiSelections','dontAddToRecent'], filters:[{ name:'Tekst 128 KB · PNG/JPEG 5 MB', extensions:[...EXTENSIONS] }] });
     current(o);
     if (result.canceled || !result.filePaths?.length) return { ...o.materials.state(o.chat), cancelled:true };
     const selected = await o.materials.offerFiles(o.chat, result.filePaths); current(o); return selected;
