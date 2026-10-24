@@ -17,50 +17,61 @@ async function fixture(t){
 }
 test('reviewed source text is disclosed and sent verbatim as data while outside paths never enter engine tool references',async t=>{
  const f=await fixture(t),selected=await f.attach(),data=await f.prepare({chatMaterials:ref(selected)});assert.equal(data.chatMaterials.files[0].text,'External synthetic reference.');assert.equal(JSON.stringify(data.chatMaterials).includes(f.root),false);
- await f.bench.send({text:'Use the reviewed context.',fingerprint:data.fingerprint});const engine=f.engines[0];assert.match(engine.sent[0].text,/External synthetic reference/);assert.match(engine.sent[0].text,/ingen adgang til kildemapper/);assert.deepEqual(engine.options.references,[]);assert.equal(engine.options.root,f.project);assert.equal(await fs.readFile(f.file,'utf8'),'External synthetic reference.');await f.finish();
- const removed=await f.bench.chatMaterials.remove(f.bench.chat,{...ref(f.bench.chatMaterials.state(f.bench.chat)),id:selected.selected[0].id});assert.equal(removed.selected.length,0);const next=await f.prepare();assert.equal(next.chatMaterials,undefined);assert.equal(next.fingerprint,data.sessionFingerprint,'text snapshots must not become lasting tool grants or discard the conversation');
+ await f.bench.send({text:'Use the reviewed context.',fingerprint:data.fingerprint, contextBinding: data.contextBinding});const engine=f.engines[0];assert.match(engine.sent[0].text,/External synthetic reference/);assert.match(engine.sent[0].text,/ingen adgang til kildemapper/);assert.deepEqual(engine.options.references,[]);assert.equal(engine.options.root,f.project);assert.equal(await fs.readFile(f.file,'utf8'),'External synthetic reference.');await f.finish();
+ const removed=await f.bench.chatMaterials.remove(f.bench.chat,{...ref(f.bench.chatMaterials.state(f.bench.chat)),id:selected.selected[0].id});assert.equal(removed.selected.length,0);const next=await f.prepare();assert.equal(next.chatMaterials,undefined);assert.equal(next.sessionFingerprint,data.sessionFingerprint,'text snapshots must not become lasting tool grants or discard the conversation');
+ await f.bench.send({text:'Continue without the attachment.',fingerprint:next.fingerprint,contextBinding:next.contextBinding});assert.equal(f.engines.length,1);assert.equal(f.engines[0].sent.length,2);await f.finish();
 });
 test('changed source after actual prepare refuses send before any engine is constructed',async t=>{
- const f=await fixture(t),selected=await f.attach(),data=await f.prepare({chatMaterials:ref(selected)});await fs.writeFile(f.file,'Changed since disclosure.');await assert.rejects(f.bench.send({text:'Send.',fingerprint:data.fingerprint}),/ændret eller utilgængelig/);assert.equal(f.engines.length,0);assert.equal(f.bench.chat.running,false);
+ const f=await fixture(t),selected=await f.attach(),data=await f.prepare({chatMaterials:ref(selected)});await fs.writeFile(f.file,'Changed since disclosure.');await assert.rejects(f.bench.send({text:'Send.',fingerprint:data.fingerprint, contextBinding: data.contextBinding}),/ændret eller utilgængelig/);assert.equal(f.engines.length,0);assert.equal(f.bench.chat.running,false);
 });
 test('source change during real startup is rechecked immediately before engine.send and cannot dispatch old reviewed text',async t=>{
- const f=await fixture(t),selected=await f.attach(),data=await f.prepare({chatMaterials:ref(selected)});f.setBeforeStart(()=>fs.writeFile(f.file,'Changed while starting.'));await assert.rejects(f.bench.send({text:'Send.',fingerprint:data.fingerprint}),/ændret eller utilgængelig/);assert.equal(f.engines.length,1);assert.equal(f.engines[0].sent.length,0);assert.equal(f.bench.chat.running,false);
+ const f=await fixture(t),selected=await f.attach(),data=await f.prepare({chatMaterials:ref(selected)});f.setBeforeStart(()=>fs.writeFile(f.file,'Changed while starting.'));await assert.rejects(f.bench.send({text:'Send.',fingerprint:data.fingerprint, contextBinding: data.contextBinding}),/ændret eller utilgængelig/);assert.equal(f.engines.length,1);assert.equal(f.engines[0].sent.length,0);assert.equal(f.bench.chat.running,false);
 });
 test('selection mutation after disclosure invalidates the prepared record and cannot reuse its fingerprint',async t=>{
- const f=await fixture(t),selected=await f.attach(),data=await f.prepare({chatMaterials:ref(selected)});await f.bench.chatMaterials.remove(f.bench.chat,{...ref(selected),id:selected.selected[0].id});assert.equal(f.bench.chat.prepared,null);await assert.rejects(f.bench.send({text:'Send.',fingerprint:data.fingerprint}),/aktuelle dataoplysninger/);assert.equal(f.engines.length,0);
+ const f=await fixture(t),selected=await f.attach(),data=await f.prepare({chatMaterials:ref(selected)});await f.bench.chatMaterials.remove(f.bench.chat,{...ref(selected),id:selected.selected[0].id});assert.equal(f.bench.chat.prepared,null);await assert.rejects(f.bench.send({text:'Send.',fingerprint:data.fingerprint, contextBinding: data.contextBinding}),/aktuelle dataoplysninger/);assert.equal(f.engines.length,0);
 });
 test('attachment dispatch consent is one-use even when the same source and recipient remain unchanged',async t=>{
  const f=await fixture(t),selected=await f.attach(),data=await f.prepare({chatMaterials:ref(selected)});
- await f.bench.send({text:'First reviewed dispatch.',fingerprint:data.fingerprint});await f.finish();
+ await f.bench.send({text:'First reviewed dispatch.',fingerprint:data.fingerprint, contextBinding: data.contextBinding});await f.finish();
  assert.equal(f.bench.chat.prepared.used,true);
- await assert.rejects(f.bench.send({text:'A second dispatch without another review.',fingerprint:data.fingerprint}),/aktuelle dataoplysninger/);
+ await assert.rejects(f.bench.send({text:'A second dispatch without another review.',fingerprint:data.fingerprint, contextBinding: data.contextBinding}),/aktuelle dataoplysninger/);
  assert.equal(f.engines.reduce((total,engine)=>total+engine.sent.length,0),1);
  const next=await f.prepare({chatMaterials:ref(selected)});
  assert.notEqual(next.fingerprint,data.fingerprint);assert.equal(next.accepted,false);
- await f.bench.send({text:'A newly reviewed dispatch.',fingerprint:next.fingerprint});await f.finish();
+ await f.bench.send({text:'A newly reviewed dispatch.',fingerprint:next.fingerprint, contextBinding: next.contextBinding});await f.finish();
  assert.equal(f.engines.reduce((total,engine)=>total+engine.sent.length,0),2);
 });
 test('reviewed attachments survive real copy allocation when another conversation owns the project',async t=>{
  const f=await fixture(t),selected=await f.attach(),data=await f.prepare({chatMaterials:ref(selected)});
  f.bench.claims.set(f.project,{id:'synthetic-other-owner'});
- await f.bench.send({text:'Use the reviewed context in this conversation copy.',fingerprint:data.fingerprint});
+ await f.bench.send({text:'Use the reviewed context in this conversation copy.',fingerprint:data.fingerprint, contextBinding: data.contextBinding});
  assert.ok(f.bench.chat.copy);assert.notEqual(f.bench.chat.root,f.project);
  assert.equal(f.bench.chat.prepared.root,f.bench.chat.copy.root);assert.equal(f.bench.chat.prepared.used,true);
  assert.equal(f.engines[0].options.root,f.bench.chat.copy.root);
  assert.match(f.engines[0].sent[0].text,/External synthetic reference\./);
  assert.deepEqual(f.engines[0].options.references,[]);
  await f.finish();
- await assert.rejects(f.bench.send({text:'Replay.',fingerprint:data.fingerprint}),/aktuelle dataoplysninger/);
+ await assert.rejects(f.bench.send({text:'Replay.',fingerprint:data.fingerprint, contextBinding: data.contextBinding}),/aktuelle dataoplysninger/);
  assert.equal(f.engines[0].sent.length,1);
 });
 test('a connection change during startup still invalidates the next dispatch without losing the current prepared owner',async t=>{
  const f=await fixture(t),selected=await f.attach(),data=await f.prepare({chatMaterials:ref(selected)});
  const connectionID=f.bench.chat.prepared.connection.id;
  f.setBeforeStart(()=>f.bench.connectionChanged(connectionID));
- await f.bench.send({text:'Use the already reviewed destination.',fingerprint:data.fingerprint});await f.finish();
- assert.equal(f.bench.chat.preparedInvalidated,true);assert.equal(f.bench.chat.prepared.used,true);
- assert.equal(f.engines[0].sent.length,1);
- await assert.rejects(f.bench.send({text:'Replay after connection change.',fingerprint:data.fingerprint}),/aktuelle dataoplysninger/);
+ await assert.rejects(f.bench.send({text:'Use the already reviewed destination.',fingerprint:data.fingerprint, contextBinding: data.contextBinding}), /kontekst har ændret sig/);
+ assert.equal(f.bench.chat.preparedInvalidated,true);assert.equal(f.bench.chat.prepared,null);
+ assert.equal(f.engines[0].sent.length,0);
+ await assert.rejects(f.bench.send({text:'Replay after connection change.',fingerprint:data.fingerprint, contextBinding: data.contextBinding}),/aktuelle dataoplysninger/);
  const fresh=await f.prepare({chatMaterials:ref(selected)});
  assert.equal(f.bench.chat.preparedInvalidated,false);assert.notEqual(fresh.fingerprint,data.fingerprint);assert.equal(fresh.accepted,false);
+});
+
+test('Stop during reviewed attachment validation cannot start a new engine afterwards',async t=>{
+ const f=await fixture(t),selected=await f.attach(),data=await f.prepare({chatMaterials:ref(selected)});
+ let entered,release;const reached=new Promise(resolve=>entered=resolve),wait=new Promise(resolve=>release=resolve);
+ const original=f.bench.chatMaterials.assertPrepared.bind(f.bench.chatMaterials);
+ f.bench.chatMaterials.assertPrepared=async(...args)=>{entered();await wait;return original(...args);};
+ const sending=f.bench.send({text:'Do not dispatch after Stop.',fingerprint:data.fingerprint,contextBinding:data.contextBinding});
+ await reached;await f.bench.stop();release();
+ await assert.rejects(sending,/stoppet før afsendelse/);assert.equal(f.engines.length,0);assert.equal(f.bench.chat.running,false);
 });

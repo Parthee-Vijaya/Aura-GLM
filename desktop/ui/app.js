@@ -405,6 +405,9 @@ async function displayProject(project, { firstTask = false } = {}) {
 // beskederne skal vises fra den gemte samtale; ellers står de allerede i samtalens visning.
 function fillChat(next, fresh) {
   const history = next.workspace, v = view;
+  // Startup events can create an empty view before displayProject receives the
+  // stored conversation. Its existence does not mean its plan was restored.
+  fresh ||= !v.historyLoaded && !v.log.children.length;
   if (fresh || !v.historyLoaded && !v.log.children.length) { const page=window.HistoryPages.takePrevious(history?.messages || []);v.historyPending=page.older;v.historyLoaded=true;for(const item of page.recent){const element=appendMessage(item.text,item.role);if(typeof item.id==='string')element.dataset.messageId=item.id;} }
   renderHistoryControls();
   const empty = !v.log.children.length;
@@ -1667,8 +1670,13 @@ function renderShortlist() {
   for (const { model, text } of picks) {
     const button = node('button', undefined, 'model-choice'); button.type = 'button'; button.dataset.model = model.id;
     if (window.OnboardingB) {
-    button.append(node('strong', model.name), node('span', text));
-    window.OnboardingB?.decorateProviderCard(button, kind);
+      button.append(node('strong', model.name), node('span', text));
+      window.OnboardingB.decorateProviderCard(button, kind);
+      // Keep the approved card layout while identifying routed model publishers.
+      const brandAsset = window.ProviderBrand.asset(kind, model.id);
+      const logo = button.querySelector('img');
+      if (!brandAsset) logo?.remove();
+      else if (kind === 'openrouter' && logo) logo.src = brandAsset;
     } else {
     const heading = node('strong', undefined, 'provider-brand-heading');
     const logo = window.ProviderBrand.icon(kind, model.id, document);

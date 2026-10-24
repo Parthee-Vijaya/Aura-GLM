@@ -40,7 +40,7 @@ async function fixture(t) {
   }
   async function send(mode = 'chat', extra = {}) {
     const disclosure = await prepare(mode, extra);
-    await bench.send({ text: 'Synthetic user request', fingerprint: disclosure.fingerprint });
+    await bench.send({ text: 'Synthetic user request', fingerprint: disclosure.fingerprint, contextBinding: disclosure.contextBinding });
     return disclosure;
   }
   let answers = 0;
@@ -97,14 +97,14 @@ test('planrevision bevarer sessionen men afviser en forældet plan og afsendelse
   await f.send('plan'); await f.finish(plan);
   const first = await f.prepare('build'), oldPlanID = f.bench.chat.plan.id;
   await f.bench.editPlan({ planID: oldPlanID, text: plan.replace('En lokal side.', 'En lokal side med to afsnit.') });
-  await assert.rejects(f.bench.send({ text: 'Old plan', fingerprint: first.fingerprint }), /Planen har ændret sig/);
+  await assert.rejects(f.bench.send({ text: 'Old plan', fingerprint: first.fingerprint, contextBinding: first.contextBinding }), /Planen har ændret sig/);
   assert.equal(f.engines.length, 1);
   const next = await f.prepare('build');
   assert.notEqual(next.planID, oldPlanID);
   assert.notEqual(next.fingerprint, first.fingerprint);
   assert.equal(next.sessionFingerprint, first.sessionFingerprint);
-  await assert.rejects(f.bench.send({ text: 'Old review', fingerprint: first.fingerprint }), /Gennemgå/);
-  await f.bench.send({ text: 'Approved revised plan', fingerprint: next.fingerprint });
+  await assert.rejects(f.bench.send({ text: 'Old review', fingerprint: first.fingerprint, contextBinding: first.contextBinding }), /Gennemgå/);
+  await f.bench.send({ text: 'Approved revised plan', fingerprint: next.fingerprint, contextBinding: next.contextBinding });
   assert.equal(f.engines.at(-1).options.resume, f.engines[0].session.id);
   await f.finish();
 });
@@ -132,8 +132,8 @@ for (const change of ['model', 'connection', 'revision', 'route', 'references', 
     }
     const next = await f.prepare('chat', extra);
     assert.notEqual(next.sessionFingerprint, first.sessionFingerprint);
-    if (change !== 'engine-version') await assert.rejects(f.bench.send({ text: 'Old review', fingerprint: first.fingerprint }), /Gennemgå/);
-    await f.bench.send({ text: 'Reviewed changed selection', fingerprint: next.fingerprint });
+    if (change !== 'engine-version') await assert.rejects(f.bench.send({ text: 'Old review', fingerprint: first.fingerprint, contextBinding: first.contextBinding }), /Gennemgå/);
+    await f.bench.send({ text: 'Reviewed changed selection', fingerprint: next.fingerprint, contextBinding: next.contextBinding });
     assert.equal(f.engines.at(-1).options.resume, null);
     assert.notEqual(f.engines.at(-1).session.id, old);
     await f.finish();
@@ -151,7 +151,7 @@ test('samme kontonavn og adresse giver ikke adgang til en anden forbindelses ses
   assert.equal(next.fingerprint, first.fingerprint, 'det gamle fingerprint skelnede ikke mellem ens metadata');
   assert.notEqual(next.sessionFingerprint, first.sessionFingerprint);
   assert.equal(next.accepted, false, 'modtageraccept er stadig bundet til konto-id');
-  await f.bench.send({ text: 'New connection', fingerprint: next.fingerprint });
+  await f.bench.send({ text: 'New connection', fingerprint: next.fingerprint, contextBinding: next.contextBinding });
   assert.equal(f.engines.at(-1).options.resume, null);
   await f.finish();
 });
@@ -170,7 +170,7 @@ test('ældre historik uden sessionsbinding starter én ny session og bevarer lok
   const first = await f.send('plan'); await f.finish(plan);
   const old = f.engines[0].session.id, planID = f.bench.chat.plan.id;
   await f.bench.chat.close(false);
-  f.bench.chat.data = await f.bench.history.updateChat(f.root, f.bench.chat.id, data => { data.opencode = { session: old, fingerprint: first.fingerprint }; });
+  f.bench.chat.data = await f.bench.history.updateChat(f.root, f.bench.chat.id, data => { data.opencode = { session: old, fingerprint: first.fingerprint, contextBinding: first.contextBinding }; });
   await f.send('plan');
   assert.equal(f.engines.at(-1).options.resume, null);
   const modern = f.engines.at(-1).session.id;
@@ -214,7 +214,7 @@ test('projektets instruktioner ændret efter gennemgang blokerer før motoren f�
   await f.send('plan'); await f.finish(plan);
   const reviewed = await f.prepare('build');
   await fs.writeFile(path.join(f.root, 'AGENTS.md'), 'Changed after review.');
-  await assert.rejects(f.bench.send({ text: 'Do not send', fingerprint: reviewed.fingerprint }), /AGENTS.md har ændret sig/);
+  await assert.rejects(f.bench.send({ text: 'Do not send', fingerprint: reviewed.fingerprint, contextBinding: reviewed.contextBinding }), /AGENTS.md har ændret sig/);
   assert.equal(f.engines.length, 1);
   assert.equal(f.engines[0].sent.length, 1);
 });

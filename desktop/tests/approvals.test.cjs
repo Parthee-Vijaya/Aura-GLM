@@ -51,6 +51,8 @@ test('afvisning med en besked sendes til motoren og stopper ikke; Stop giver et 
   const bench = new Workbench({ directory: path.join(directory, 'data'), profiles, emit: event => events.push(event), safeStorage: {} });
   await bench.activate({ root, name: 'Prøve' }); const chat = bench.chat;
   chat.engine = { pending: new Map([['p1', { permission: 'bash' }], ['p2', { permission: 'bash' }]]), reply: async (...args) => calls.push(args), abort: async () => {}, close: async () => {} };
+  chat.running = true; chat.runMode = 'build';
+  for (const id of ['p1','p2']) await chat.permissionAsked({ type:'permission.asked', properties:{ id, permission:'bash', patterns:['npm test'], metadata:{} } });
   await bench.reply({ id: 'p1', allow: false, message: '  Brug ikke npm. Skriv det i ren JavaScript.  ' });
   await bench.reply({ id: 'p2', allow: false });
   assert.deepEqual(calls, [['p1', false, 'Brug ikke npm. Skriv det i ren JavaScript.'], ['p2', false, '']]);
@@ -77,9 +79,10 @@ test('godkendelsen får værktøjets egne oplysninger med, og en fejl fra OpenCo
   const bench = new Workbench({ directory: path.join(directory, 'data'), profiles, emit: event => events.push(event), safeStorage: {} });
   await bench.activate({ root: directory, name: 'Prøve' }); const chat = bench.chat;
   chat.running = true; chat.runTools = new Map([['del', { id: 'del', callID: 'kald-1', tool: 'bash', state: { status: 'running', input: { command: 'npm test', description: 'Kører testene', workdir: path.join(directory, 'web') } } }]]);
-  chat.event({ type: 'permission.asked', properties: { id: 'p', permission: 'bash', patterns: ['npm test'], metadata: {}, tool: { messageID: 'm', callID: 'kald-1' } } });
+  chat.engine = { pending: new Map([['p', {}]]), close: async () => {} };
+  await chat.event({ type: 'permission.asked', properties: { id: 'p', permission: 'bash', patterns: ['npm test'], metadata: {}, tool: { messageID: 'm', callID: 'kald-1' } } });
   const asked = events.find(event => event.type === 'permission.asked');
-  assert.deepEqual(asked.properties.toolInput, { tool: 'bash', command: 'npm test', description: 'Kører testene', workdir: path.join(directory, 'web'), url: undefined });
+  assert.deepEqual(asked.properties.toolInput, { tool: 'bash', command: 'npm test', description: 'Kører testene', workdir: path.join(directory, 'web'), input: { command: 'npm test', description: 'Kører testene', workdir: path.join(directory, 'web') } });
   chat.event({ type: 'session.error', properties: { error: { name: 'APIError', data: { message: 'Rate limit', statusCode: 429 } } } });
   assert.deepEqual(chat.runFailure, { kind: 'limit', status: 429, message: 'Rate limit' });
   chat.running = false; await bench.close();

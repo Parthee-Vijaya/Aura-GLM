@@ -76,7 +76,7 @@ function fixture() {
   $('#connection-select').value = connection.id; $('#model-select').value = 'anthropic/claude-prøve';
   $('#model-select').selectedOptions = [{ textContent: 'Claude prøve' }];
   $('#route-select').value = 'konkret-rute'; $('#prompt').value = 'Bevar kladde';
-  const context = { $, state: { connections: [connection], definitions: { openrouter: { provider: 'OpenRouter' } } }, view: { running: false, effort: null },
+  const context = { $, renderContextUsage() {}, syncOnboardingVisuals() {}, state: { connections: [connection], definitions: { openrouter: { provider: 'OpenRouter' } } }, view: { running: false, effort: null },
     window: { ProviderBrand: brand, ModelAdvice: { effort: () => null } }, acceptedFingerprint: 'godkendt-materiale', activePlan: Object.freeze({ id: 'godkendt-plan' }) };
   vm.createContext(context);
   const source = fs.readFileSync(path.join(__dirname, '../ui/app.js'), 'utf8');

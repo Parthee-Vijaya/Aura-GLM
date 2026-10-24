@@ -1,0 +1,332 @@
+{
+  "date": "2026-10-24",
+  "repository": "Parthee-Vijaya/ai-harness",
+  "base": "dce68ea74a199ca214ab535a16ff22765d8ee8de",
+  "platform": "macOS Apple Silicon",
+  "node": "22.23.3",
+  "electron": "44.4.4",
+  "opencode": "1.18.33",
+  "desktopTests": {
+    "passed": 696,
+    "failed": 0,
+    "skipped": 0
+  },
+  "cliTests": {
+    "passed": 27,
+    "failed": 0,
+    "skipped": 0
+  },
+  "planningChecks": 11,
+  "onboardingChecks": 7,
+  "composerGlowChecks": 14,
+  "native": {
+    "f08": {
+      "realEngine": "OpenCode 1.18.33",
+      "model": "controlled synthetic SSE server",
+      "actualModelRequest": true,
+      "rendererErrors": [],
+      "gitWrites": 0
+    },
+    "f09": {
+      "realEngine": "OpenCode 1.18.33",
+      "model": "controlled synthetic SSE server",
+      "actualModelRequest": true,
+      "rendererErrors": [],
+      "gitWrites": 0,
+      "realToolObservationDisplayed": true
+    },
+    "f16": {
+      "realEngine": "OpenCode 1.18.33",
+      "model": "controlled synthetic SSE server",
+      "exactReviewedMaterialInActualRequest": true,
+      "rawSourcePathSent": false,
+      "sourceChangeBlocksNextRequest": true,
+      "rendererErrors": [],
+      "gitWrites": 0
+    },
+    "f15": {
+      "realEngine": "OpenCode 1.18.33",
+      "model": "controlled synthetic SSE server",
+      "exactReviewedMaterialInActualRequest": true,
+      "rawSourcePathSent": false,
+      "sourceChangeBlocksNextRequest": true,
+      "rendererErrors": [],
+      "gitWrites": 0
+    },
+    "f31": {
+      "realEngine": "OpenCode 1.18.33",
+      "model": "controlled synthetic tool-call stream",
+      "after": {
+        "all905RowsReadableBeforePermission": true,
+        "noFileBeforeApproval": true,
+        "exactFileWrittenAfterOneApproval": true,
+        "scrollPreserved": true
+      },
+      "rendererErrors": [],
+      "gitWrites": 0
+    },
+    "f12": {
+      "retainedMessages": 80,
+      "initialRendered": 20,
+      "pagesOf": 20,
+      "allLoadedInOrder": true,
+      "duplicateMessages": 0,
+      "modelOrHTTPRequestsDuringLoad": 0,
+      "draftPlanAndModePreserved": true,
+      "reloadRestoresPagingAndDraft": true,
+      "searchOlderMessagePreservesDraftAndPlan": true,
+      "searchClearsPendingPages": true,
+      "rendererErrors": [],
+      "gitWrites": 0,
+      "productionCredentials": false
+    },
+    "f14": {
+      "baseline": "F13, so screenshots isolate only the F14 folder addition",
+      "actualEngine": "OpenCode 1.18.33",
+      "model": "controlled synthetic SSE response",
+      "folderChoiceInitiallyUnchecked": true,
+      "explicitSubsetOnly": true,
+      "selectedExactTextSent": true,
+      "unselectedTextSent": false,
+      "absoluteSourceFolderSent": false,
+      "sourceFilesUnchanged": true,
+      "rendererErrors": [],
+      "gitWrites": 0
+    },
+    "f05": {
+      "nativeIsolatedPasswordWindow": true,
+      "flags": {
+        "sandbox": true,
+        "contextIsolation": true,
+        "nodeIntegration": false,
+        "devTools": false,
+        "separateSession": true
+      },
+      "connectionFormPasswordFields": 0,
+      "normalFlowMainRendererReceivedKey": false,
+      "syntheticKeyStoredEncrypted": true,
+      "rawKeyBypassRejected": true,
+      "formChangeRevokesReceipt": true,
+      "cancelPreservesForm": true,
+      "testHelperVerified": true,
+      "localCatalogRequests": 1,
+      "productionCredentials": false,
+      "rendererErrors": [],
+      "gitWrites": 0
+    },
+    "f06": {
+      "baseline": "F05, so screenshots isolate only the GitHub-token addition",
+      "nativeIsolatedGithubWindow": true,
+      "hostingFormPasswordFields": 0,
+      "logicalDestination": "https://api.github.com/user",
+      "transport": "controlled loopback response; no actual GitHub account or push",
+      "syntheticTokenEncrypted": true,
+      "rawTokenBypassRejected": true,
+      "forgedReceiptRejected": true,
+      "cancelPreservesAccount": true,
+      "accountVerificationRequests": 1,
+      "rendererErrors": [],
+      "gitWrites": 0
+    }
+  },
+  "pullRequests": [
+    {
+      "order": 1,
+      "fork": "https://github.com/Parthee-Vijaya/ai-harness/pull/1",
+      "original": "https://github.com/ai-alliancen-org/ai-harness/pull/17",
+      "title": "F20: visuel AI-opsætning og modelvalg med onboarding B",
+      "head": "66020ae65dbc90188a5367273e1575a323b8430d",
+      "branch": "feat/onboarding-b-visual-setup"
+    },
+    {
+      "order": 2,
+      "fork": "https://github.com/Parthee-Vijaya/ai-harness/pull/2",
+      "original": "https://github.com/ai-alliancen-org/ai-harness/pull/18",
+      "title": "F28: Vis aktivt arbejde med en lyskant rundt om chatfeltet",
+      "head": "1e9ff8ddf329d77d5337b56e301d259c1e3342c7",
+      "branch": "feat/composer-working-glow"
+    },
+    {
+      "order": 3,
+      "fork": "https://github.com/Parthee-Vijaya/ai-harness/pull/3",
+      "original": "https://github.com/ai-alliancen-org/ai-harness/pull/19",
+      "title": "R01: Lad kun den aktuelle opgave modtage svar på AI-spørgsmål",
+      "head": "539a84913a303d7724934b121acf47fe3c77000c",
+      "branch": "fix/run-bound-questions"
+    },
+    {
+      "order": 4,
+      "fork": "https://github.com/Parthee-Vijaya/ai-harness/pull/4",
+      "original": "https://github.com/ai-alliancen-org/ai-harness/pull/20",
+      "title": "R02: Bevar modelsessionen fra Planlæg til Byg",
+      "head": "9534dc8742a4999a89c25f91cbcc0ecfb40c9bb1",
+      "branch": "fix/plan-build-session-continuity"
+    },
+    {
+      "order": 5,
+      "fork": "https://github.com/Parthee-Vijaya/ai-harness/pull/5",
+      "original": "https://github.com/ai-alliancen-org/ai-harness/pull/21",
+      "title": "F07: Vis seneste målte kontekst adskilt fra samtalens forbrug",
+      "head": "14d7b9aba4ff587402feba899ee6285b3d11f2dd",
+      "branch": "feat/measured-context-usage"
+    },
+    {
+      "order": 6,
+      "fork": "https://github.com/Parthee-Vijaya/ai-harness/pull/6",
+      "original": "https://github.com/ai-alliancen-org/ai-harness/pull/22",
+      "title": "F03: Vis lokale udbyderlogoer ved den valgte chatmodel",
+      "head": "03945fccfb379d1cfcafe7171ad16143e71d6c4d",
+      "branch": "feat/chat-provider-branding"
+    },
+    {
+      "order": 7,
+      "fork": "https://github.com/Parthee-Vijaya/ai-harness/pull/7",
+      "original": "https://github.com/ai-alliancen-org/ai-harness/pull/23",
+      "title": "feat: add a reviewed app design skill to the shared library",
+      "head": "a92c2f6e373650e6d67109e57c20a4ee2d8d32dd",
+      "branch": "feat/harness-aura-design"
+    },
+    {
+      "order": 8,
+      "fork": "https://github.com/Parthee-Vijaya/ai-harness/pull/8",
+      "original": "https://github.com/ai-alliancen-org/ai-harness/pull/24",
+      "title": "R04: Bevar senere brugerændringer i flettede projektkopier",
+      "head": "c64e6a022bb98e26101b66d0dd21ce855418856b",
+      "branch": "fix/preserve-merged-copy-changes"
+    },
+    {
+      "order": 9,
+      "fork": "https://github.com/Parthee-Vijaya/ai-harness/pull/9",
+      "original": "https://github.com/ai-alliancen-org/ai-harness/pull/25",
+      "title": "R03: Giv lokale Vite- og Astro-forhåndsvisninger hver sin port",
+      "head": "2bcc2cf5f66f69131562c080ca1e14a162ac252c",
+      "branch": "fix/allocate-vite-preview-port"
+    },
+    {
+      "order": 10,
+      "fork": "https://github.com/Parthee-Vijaya/ai-harness/pull/10",
+      "original": "https://github.com/ai-alliancen-org/ai-harness/pull/26",
+      "title": "R06: Vis de faktiske fælles grundregler før afsendelse",
+      "head": "ed4273fac423caf2a7d797d565d88221a87911d5",
+      "branch": "fix/disclose-effective-harness-rules"
+    },
+    {
+      "order": 11,
+      "fork": "https://github.com/Parthee-Vijaya/ai-harness/pull/11",
+      "original": "https://github.com/ai-alliancen-org/ai-harness/pull/27",
+      "title": "F10: Gør AI-svar læsbare med tabeller, kopiering og sikre links",
+      "head": "61266eb4f08fb1e616699adc54e73cdd762d8f02",
+      "branch": "feat/safe-answer-tables-and-copy"
+    },
+    {
+      "order": 12,
+      "fork": "https://github.com/Parthee-Vijaya/ai-harness/pull/12",
+      "original": "https://github.com/ai-alliancen-org/ai-harness/pull/28",
+      "title": "F11: Søg lokalt i samtalernes beskeder og åbn det præcise træf",
+      "head": "810293f139ffd03a00b26a8034eb0406dbf6517e",
+      "branch": "feat/local-conversation-search"
+    },
+    {
+      "order": 13,
+      "fork": "https://github.com/Parthee-Vijaya/ai-harness/pull/13",
+      "original": "https://github.com/ai-alliancen-org/ai-harness/pull/29",
+      "title": "Vedhæft gennemgåede tekstfiler direkte i samtalen (F13)",
+      "head": "735ee0716d35266747fd7e7e28b6aa7ba1e840dc",
+      "branch": "contrib/f13-reviewed-chat-files"
+    },
+    {
+      "order": 14,
+      "fork": "https://github.com/Parthee-Vijaya/ai-harness/pull/14",
+      "original": "https://github.com/ai-alliancen-org/ai-harness/pull/30",
+      "title": "Brug udvalgte filer fra referencemapper som læsekontekst (F14)",
+      "head": "f7806ba99707d12cf5350d32084ec20b4ef4113d",
+      "branch": "contrib/f14-readonly-folder-context"
+    },
+    {
+      "order": 15,
+      "fork": "https://github.com/Parthee-Vijaya/ai-harness/pull/15",
+      "original": "https://github.com/ai-alliancen-org/ai-harness/pull/31",
+      "title": "Stop ejede OpenCode-processer efter brat app-lukning (R05)",
+      "head": "a9cebb46522dd748a8066ff6dea4fa6081b48167",
+      "branch": "contrib/r05-owned-engine-guardian"
+    },
+    {
+      "order": 16,
+      "fork": "https://github.com/Parthee-Vijaya/ai-harness/pull/16",
+      "original": "https://github.com/ai-alliancen-org/ai-harness/pull/32",
+      "title": "Indtast AI-nøgler i et separat isoleret vindue (F05)",
+      "head": "d0c40f76c6f03fe25bb2664d51500cd482a078fe",
+      "branch": "contrib/f05-isolated-ai-credentials"
+    },
+    {
+      "order": 17,
+      "fork": "https://github.com/Parthee-Vijaya/ai-harness/pull/17",
+      "original": "https://github.com/ai-alliancen-org/ai-harness/pull/33",
+      "title": "Indtast GitHub-token i det isolerede nøglevindue (F06)",
+      "head": "9d159942985c5efdc480274d8142aa989a5dba0a",
+      "branch": "contrib/f06-isolated-github-token"
+    },
+    {
+      "order": 18,
+      "fork": "https://github.com/Parthee-Vijaya/ai-harness/pull/18",
+      "original": "https://github.com/ai-alliancen-org/ai-harness/pull/34",
+      "title": "Indlæs tidligere gemte beskeder med en diskret knap (F12)",
+      "head": "818df97002106d9d0e05dba351eb9e5359bc8813",
+      "branch": "contrib/f12-history-load"
+    },
+    {
+      "order": 19,
+      "fork": "https://github.com/Parthee-Vijaya/ai-harness/pull/19",
+      "original": "https://github.com/ai-alliancen-org/ai-harness/pull/35",
+      "title": "F31: Gennemgå alle diff-linjer før en filændring godkendes",
+      "head": "1e8e83325a78b47e76545d4068dcb0d573109523",
+      "branch": "contrib/f31-complete-approval-diffs"
+    },
+    {
+      "order": 20,
+      "fork": "https://github.com/Parthee-Vijaya/ai-harness/pull/20",
+      "original": "https://github.com/ai-alliancen-org/ai-harness/pull/36",
+      "title": "F08: Bind gennemgået appkontekst til den konkrete afsendelse",
+      "head": "0bcfd04eb21a2bf37ecb5ed77585053c4bb5abb7",
+      "branch": "contrib/f08-exact-app-context"
+    },
+    {
+      "order": 21,
+      "fork": "https://github.com/Parthee-Vijaya/ai-harness/pull/21",
+      "original": "https://github.com/ai-alliancen-org/ai-harness/pull/37",
+      "title": "F09: Skeln modelkatalogets oplysninger fra observeret værktøjsstøtte",
+      "head": "8fa0fc53ba08a4e8ce06fb16bc5c9528fdad20dd",
+      "branch": "contrib/f09-model-support-evidence"
+    },
+    {
+      "order": 22,
+      "fork": "https://github.com/Parthee-Vijaya/ai-harness/pull/22",
+      "original": "https://github.com/ai-alliancen-org/ai-harness/pull/38",
+      "title": "F16: Vedhæft gennemgåede PNG- og JPEG-billeder i chatten",
+      "head": "048c361f2f47f64f0fbaaec4bb116f1a4137c43a",
+      "branch": "contrib/f16-reviewed-chat-images"
+    },
+    {
+      "order": 23,
+      "fork": "https://github.com/Parthee-Vijaya/ai-harness/pull/23",
+      "original": "https://github.com/ai-alliancen-org/ai-harness/pull/39",
+      "title": "T04: Verificér pakkens kildeidentitet og samtlige runtime-filer",
+      "head": "9e605a593791dcfbf5992e1eafbf12182b85cb2e",
+      "branch": "contrib/t04-package-source-integrity"
+    },
+    {
+      "order": 24,
+      "fork": "https://github.com/Parthee-Vijaya/ai-harness/pull/24",
+      "original": "https://github.com/ai-alliancen-org/ai-harness/pull/40",
+      "title": "F15: Gennemgå lokalt udtrukket PDF-tekst før deling i chatten",
+      "head": "7ee4f71e36458de9a865063478d9f2761b6da0f0",
+      "branch": "contrib/f15-reviewed-pdf-text"
+    }
+  ],
+  "limitations": [
+    "No production provider credentials or external model quality test",
+    "No GitHub Actions run",
+    "No Windows, Intel Mac or Linux native run",
+    "No new installer or DMG built"
+  ]
+}

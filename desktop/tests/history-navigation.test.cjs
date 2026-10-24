@@ -5,7 +5,7 @@ const app=fs.readFileSync(path.join(__dirname,'../ui/app.js'),'utf8'),start=app.
 function fixture(running=false){
  const project={id:'a'.repeat(64),root:'/synthetic/project'},chat='11111111-1111-1111-1111-111111111111',messages=[{id:'persisted-message',role:'assistant',text:'Stored answer'}],actions=[];
  const owner={id:chat,running,log:{children:[],replaceChildren(){this.children=[];},querySelectorAll(){return[];}},parts:new Map(),assistantText:new Map(),pendingMarkdown:new Set()};
- const context={window:{chats:{projects:()=>[project],openChat:async()=>{actions.push('select chat');}}},current:{root:project.root},view:owner,anyRunning:()=>false,saveChatDraft:async required=>{assert.equal(required,true);actions.push('save draft');},call:async method=>{assert.equal(method,'chatOpen');return{workspace:{messages}};},fillChat:()=>{throw Error('Do not reinitialize plan/brief editors');},appendMessage:(text,role,v)=>{assert.equal(v,owner);const element={dataset:{},classList:{add(){}},scrollIntoView(){},focus(){}};v.log.children.push(element);return element;}};
+ const context={renderHistoryControls(){assert.equal(owner.historyPending.length,0);assert.equal(owner.historyLoaded,true);},window:{chats:{projects:()=>[project],openChat:async()=>{actions.push('select chat');}}},current:{root:project.root},view:owner,anyRunning:()=>false,saveChatDraft:async required=>{assert.equal(required,true);actions.push('save draft');},call:async method=>{assert.equal(method,'chatOpen');return{workspace:{messages}};},fillChat:()=>{throw Error('Do not reinitialize plan/brief editors');},appendMessage:(text,role,v)=>{assert.equal(v,owner);const element={dataset:{},classList:{add(){}},scrollIntoView(){},focus(){}};v.log.children.push(element);return element;}};
  vm.runInNewContext(code,context);return{context,owner,actions,result:{project:project.id,chat,message:'persisted-message'}};
 }
 test('opening a newly persisted same-chat message reloads only transcript, preserving editor state',async()=>{
@@ -13,4 +13,21 @@ test('opening a newly persisted same-chat message reloads only transcript, prese
 });
 test('a missing message never rebuilds the transcript of a running task',async()=>{
  const f=fixture(true);await assert.rejects(f.context.window.openStoredMessage(f.result),/arbejder stadig/);assert.equal(f.owner.log.children.length,0);
+});
+test('startup restores the saved plan even when an event already created an empty view',()=>{
+ const begin=app.indexOf('function fillChat(next, fresh)'),stop=app.indexOf("  $('#work-mode').value",begin);
+ const source=app.slice(begin,stop)+'\n}';
+ const elements=new Map(),owner={log:{children:[]},historyLoaded:false,plan:null};
+ const plan={id:'saved-plan',text:'The current approved plan'};
+ const context={view:owner,activePlan:null,window:{HistoryPages:{takePrevious:messages=>({older:[],recent:messages})}},
+  $:key=>{if(!elements.has(key))elements.set(key,{});return elements.get(key);},
+  appendMessage:()=>{const element={dataset:{}};owner.log.children.push(element);return element;},renderHistoryControls(){},updatePlanOffer(){}};
+ vm.runInNewContext(source,context);
+ context.fillChat({workspace:{messages:[{id:'stored',role:'assistant',text:'Saved reply'}],mode:'plan'},plan},false);
+ assert.equal(context.activePlan,plan);assert.equal(owner.planCard,true);assert.equal(owner.historyLoaded,true);
+ assert.equal(owner.log.children[0].dataset.messageId,'stored');
+ const livePlan={id:'newer-plan',text:'A newer plan in the open view'};owner.plan=livePlan;
+ context.fillChat({workspace:{messages:[],mode:'plan'},plan},false);
+ assert.equal(context.activePlan,livePlan,'an already loaded view keeps its current plan');
+ assert.equal(owner.log.children.length,1);
 });

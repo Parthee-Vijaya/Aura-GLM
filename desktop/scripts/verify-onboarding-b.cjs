@@ -64,7 +64,7 @@ const helpers = require('./ui-test-helpers.cjs');
     await card[method]();
     await page.waitForFunction(value => document.querySelector('#setup-visual').dataset.kind === value, kind);
     assert.equal(requests.length, 0, 'visuelt valg må ikke hente katalog eller sende en opgave');
-    assert.equal(await page.isVisible('#api-key'), false, 'hover/fokus må ikke åbne formularen');
+    assert.equal(await page.isVisible('#credential-open'), false, 'hover/fokus må ikke åbne formularen');
     const expected = await page.evaluate(value => window.OnboardingB.provider(value).accent, kind);
     const accent = await page.locator('#setup-visual').evaluate(element => getComputedStyle(element).getPropertyValue('--ob-brand').trim());
     assert.equal(accent.toLowerCase(), expected.toLowerCase());
@@ -94,10 +94,11 @@ const helpers = require('./ui-test-helpers.cjs');
     assert.equal(await page.inputValue('#provider-kind'), 'mistral');
     assert.equal(await page.inputValue('#base-url'), 'https://api.mistral.ai/v1');
     assert.equal(await page.locator('#base-url').evaluate(element => element.readOnly), true);
-    assert.equal(await page.isVisible('#api-key'), true); assert.equal(requests.length, 0);
+    assert.equal(await page.isVisible('#credential-open'), true); assert.equal(requests.length, 0);
     await shot('forbindelse-mistral');
-    await page.fill('#api-key', 'syntetisk-ikke-gemt'); await page.click('#setup-back');
-    assert.equal(await page.inputValue('#api-key'), '');
+    assert.equal(await page.locator('#api-key').count(), 0, 'nøglen hører kun til det isolerede vindue');
+    await page.click('#setup-back');
+    assert.equal(await page.textContent('#credential-status'), 'Ingen ny nøgle valgt');
     passed('Oprindelig udbyderformular og endpoint bevares; Tilbage rydder kun den ikke-gemte nøgle');
 
     for (const [width, height, zoom] of [[1440, 940, 1], [980, 720, 1], [980, 720, 1.5], [750, 850, 1], [390, 844, 1]]) {

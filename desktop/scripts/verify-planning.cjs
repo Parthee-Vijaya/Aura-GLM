@@ -98,8 +98,7 @@ const questions = [
     await helpers.addConnection(page, { name: 'Kontrolleret plan', baseURL: `http://127.0.0.1:${server.address().port}/v1` });
     const connection = (await page.evaluate(() => window.harness.connectionState())).value.connections[0].id;
     await helpers.taskOptions(page); await page.selectOption('#connection-select', connection); await page.locator('#model-shortlist button').first().click();
-    // Samtale er standard. Prøvens afklaring og plan kræver Planlæg.
-    assert.equal(await page.inputValue('#work-mode'), 'chat');
+    // Select the planning workflow explicitly; the current default is direct work.
     await helpers.selectMode(page, 'plan');
 
     // Første besked: Før du sender viser briefen under alle oplysninger.
@@ -178,6 +177,7 @@ const questions = [
     passed('Brugeren retter en linje i briefen og selve planen; planen siger, at briefen er ændret bagefter');
 
     await page.click('#plan-build');
+    await page.locator('#approvals .approval').first().getByRole('button', { name: 'Flere valg', exact: true }).click({ timeout: 90000 });
     const allow = page.locator('#approvals button').filter({ hasText: 'Tillad for denne opgave' }); await allow.waitFor({ timeout: 90000 }); await allow.click();
     await page.locator('#run-status').filter({ hasText: 'Klar' }).waitFor({ timeout: 90000 });
     const build = requests.find(body => JSON.stringify(body.messages).includes('Byg efter denne plan'));
@@ -224,7 +224,10 @@ const questions = [
     passed('Spring over lader AI’en vælge selv, og opgaven fortsætter til en plan');
 
     // Genstart: brief og plan genåbnes under Plan.
-    await app.close(); await launch();
+    // Playwright's connection can close before Electron finishes flushing the
+    // history queue. A real restart begins after the previous process exits.
+    const processExit = new Promise(resolve => app.process().once('exit', resolve));
+    await app.close(); await processExit; await launch();
     await page.waitForSelector('#workspace:not([hidden])', { timeout: 30000 });
     assert.equal(await selected(), 'preview');
     await page.click('#tab-plan');
