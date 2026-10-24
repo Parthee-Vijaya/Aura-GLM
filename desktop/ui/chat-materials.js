@@ -43,7 +43,7 @@ window.ChatMaterials = { connect(api) {
   }
   function sync(){const next=api.read(),id=next.root&&next.chat?key(next):null;if(id!==owner?.key){epoch++;owner=id?{...next,key:id}:null;state=null;busy=false;review=null;chips.replaceChildren();chips.hidden=true;status.hidden=true;if(dialog.open)dialog.close();if(owner)void refresh();}controls();}
   for(const n of document.querySelectorAll('[data-material-picker]'))n.onclick=()=>perform(n.dataset.materialPicker,{},candidates);
-  dialog.addEventListener('cancel',event=>{event.preventDefault();close();});
+  dialog.addEventListener('cancel',event=>{event.preventDefault();if(!busy)close();});
   window.harness.onEvent(event=>{if(event.type==='chat-materials.changed'&&event.chat===owner?.chat){api.invalidate();if(!busy)void refresh();}});
   window.chatMaterials={sync,selection:()=>state?.selected.length?handle():null};sync();
 }, disclose(materials) {
