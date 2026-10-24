@@ -1,0 +1,79 @@
+{
+  "passed": true,
+  "engine": "1.18.33",
+  "evidence": "Controlled local server; no live design-quality claim",
+  "results": [
+    {
+      "kind": "mistral",
+      "mode": "plan",
+      "design": true,
+      "surface": "desktop",
+      "model": "mistral-large-4",
+      "requests": 1,
+      "coreBytes": 9826,
+      "coreHash": "8231acb8e4f25d05c8890be786b06b04880daf7c1335e42f704bf21235276fea",
+      "externalModelCalls": 0,
+      "passed": true
+    },
+    {
+      "kind": "mistral",
+      "mode": "free",
+      "design": true,
+      "surface": "desktop",
+      "model": "mistral-large-4",
+      "requests": 1,
+      "coreBytes": 9826,
+      "coreHash": "8231acb8e4f25d05c8890be786b06b04880daf7c1335e42f704bf21235276fea",
+      "externalModelCalls": 0,
+      "passed": true
+    },
+    {
+      "kind": "corti",
+      "mode": "plan",
+      "design": true,
+      "surface": "desktop",
+      "model": "corti-s1",
+      "requests": 1,
+      "coreBytes": 9826,
+      "coreHash": "8231acb8e4f25d05c8890be786b06b04880daf7c1335e42f704bf21235276fea",
+      "externalModelCalls": 0,
+      "passed": true
+    },
+    {
+      "kind": "corti",
+      "mode": "free",
+      "design": true,
+      "surface": "desktop",
+      "model": "corti-s1",
+      "requests": 1,
+      "coreBytes": 9826,
+      "coreHash": "8231acb8e4f25d05c8890be786b06b04880daf7c1335e42f704bf21235276fea",
+      "externalModelCalls": 0,
+      "passed": true
+    },
+    {
+      "kind": "corti",
+      "mode": "free",
+      "design": false,
+      "surface": "desktop",
+      "model": "corti-s1",
+      "requests": 1,
+      "coreBytes": 0,
+      "coreHash": null,
+      "externalModelCalls": 0,
+      "passed": true
+    },
+    {
+      "kind": "mistral",
+      "mode": "free",
+      "design": true,
+      "surface": "cli",
+      "model": "mistral-large-4",
+      "requests": 1,
+      "coreBytes": 9826,
+      "coreHash": "8231acb8e4f25d05c8890be786b06b04880daf7c1335e42f704bf21235276fea",
+      "externalModelCalls": 0,
+      "passed": true
+    }
+  ]
+}

@@ -12,6 +12,8 @@ Dette er **Parthee-Vijayas fork af Aura Harness**. Den samlede udgave indeholder
 
 Denne udgivelse er en **lokalt kvalificeret macOS-beta til arm64**, uden Developer ID-notarisering. Den er ikke en udgivelse af det separate Code-OSS-baserede Aura-1-projekt, og den gør ikke krav på fuld Privacy Gate. GitHub CI, Intel-Mac, Windows og kvaliteten hos eksterne AI-udbydere er ikke certificeret af denne udgivelse. Brug en separat profil ved afprøvning. Historiske skærmbilleder og de oprindelige installationsvejledninger nedenfor beskriver originalprojektet; forkens aktuelle noter og billeder findes i linket ovenfor.
 
+![Aura 1 beta 1: den godkendte arbejdsvisning](docs/images/aura-1-beta-1/working.png)
+
 ---
 
 <p align="center">

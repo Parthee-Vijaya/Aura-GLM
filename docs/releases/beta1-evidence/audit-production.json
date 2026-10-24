@@ -1,0 +1,213 @@
+{
+  "auditReportVersion": 2,
+  "vulnerabilities": {
+    "@anthropic-ai/sandbox-runtime": {
+      "name": "@anthropic-ai/sandbox-runtime",
+      "severity": "high",
+      "isDirect": true,
+      "via": [
+        "node-forge",
+        "zod"
+      ],
+      "effects": [],
+      "range": "*",
+      "nodes": [
+        "node_modules/@anthropic-ai/sandbox-runtime"
+      ],
+      "fixAvailable": false
+    },
+    "@opencode-ai/plugin": {
+      "name": "@opencode-ai/plugin",
+      "severity": "high",
+      "isDirect": true,
+      "via": [
+        "effect",
+        "zod"
+      ],
+      "effects": [],
+      "range": "<=0.0.0-windows-fix-202511131842 || >=0.10.0",
+      "nodes": [
+        "node_modules/@opencode-ai/plugin"
+      ],
+      "fixAvailable": {
+        "name": "@opencode-ai/plugin",
+        "version": "0.9.11",
+        "isSemVerMajor": true
+      }
+    },
+    "effect": {
+      "name": "effect",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "toml"
+      ],
+      "effects": [
+        "@opencode-ai/plugin"
+      ],
+      "range": "4.0.0-beta.0 - 4.0.0-rc.118",
+      "nodes": [
+        "node_modules/effect"
+      ],
+      "fixAvailable": {
+        "name": "@opencode-ai/plugin",
+        "version": "0.9.11",
+        "isSemVerMajor": true
+      }
+    },
+    "node-forge": {
+      "name": "node-forge",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1240912,
+          "name": "node-forge",
+          "dependency": "node-forge",
+          "title": "node-forge RSA PKCS#1 v1.5 signature verification accepts extra nested DigestAlgorithm elements",
+          "url": "https://github.com/advisories/GHSA-86w9-cpqp-85rv",
+          "severity": "high",
+          "cwe": [
+            "CWE-347"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N"
+          },
+          "range": "<=1.4.0"
+        }
+      ],
+      "effects": [
+        "@anthropic-ai/sandbox-runtime"
+      ],
+      "range": "*",
+      "nodes": [
+        "node_modules/node-forge"
+      ],
+      "fixAvailable": false
+    },
+    "toml": {
+      "name": "toml",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1242862,
+          "name": "toml",
+          "dependency": "toml",
+          "title": "toml-node: Quadratic-complexity DoS via many array-of-tables headers in toml.parse()",
+          "url": "https://github.com/advisories/GHSA-4qx8-w7c3-pj3p",
+          "severity": "high",
+          "cwe": [
+            "CWE-407"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": "<=5.0.0"
+        },
+        {
+          "source": 1242863,
+          "name": "toml",
+          "dependency": "toml",
+          "title": "toml-node: Quadratic-complexity DoS via long dotted keys or table paths in toml.parse()",
+          "url": "https://github.com/advisories/GHSA-9j65-hcg3-gc64",
+          "severity": "high",
+          "cwe": [
+            "CWE-407"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": "<=5.0.0"
+        },
+        {
+          "source": 1242864,
+          "name": "toml",
+          "dependency": "toml",
+          "title": "toml-node: Uncontrolled resource consumption (CPU DoS) via unbounded-length integer literals in toml.parse()",
+          "url": "https://github.com/advisories/GHSA-9qmh-m7c6-f92p",
+          "severity": "high",
+          "cwe": [
+            "CWE-400",
+            "CWE-770"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": "<=5.0.0"
+        }
+      ],
+      "effects": [
+        "effect"
+      ],
+      "range": "<=5.0.0",
+      "nodes": [
+        "node_modules/toml"
+      ],
+      "fixAvailable": {
+        "name": "@opencode-ai/plugin",
+        "version": "0.9.11",
+        "isSemVerMajor": true
+      }
+    },
+    "zod": {
+      "name": "zod",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1243066,
+          "name": "zod",
+          "dependency": "zod",
+          "title": "Zod can exhaust memory while validating oversized constrained collections",
+          "url": "https://github.com/advisories/GHSA-mrhx-c7xc-m3w5",
+          "severity": "high",
+          "cwe": [
+            "CWE-770"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": "<4.6.6"
+        }
+      ],
+      "effects": [
+        "@anthropic-ai/sandbox-runtime",
+        "@opencode-ai/plugin"
+      ],
+      "range": "<4.6.6",
+      "nodes": [
+        "node_modules/@opencode-ai/plugin/node_modules/zod",
+        "node_modules/zod"
+      ],
+      "fixAvailable": {
+        "name": "@opencode-ai/plugin",
+        "version": "0.9.11",
+        "isSemVerMajor": true
+      }
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 6,
+      "critical": 0,
+      "total": 6
+    },
+    "dependencies": {
+      "prod": 47,
+      "dev": 267,
+      "optional": 44,
+      "peer": 13,
+      "peerOptional": 0,
+      "total": 334
+    }
+  }
+}
