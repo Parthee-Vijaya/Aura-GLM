@@ -90,7 +90,7 @@ function supportReport() {
   return require('./core/diagnostics.cjs').diagnostics({ version: app.getVersion(), platform: process.platform, arch: process.arch, packaged: app.isPackaged, versions: require('./core/runtime.cjs').get()?.versions, project: Boolean(currentProject()), running: workbench?.running, preview: currentSpace().devServer?.state, failures });
 }
 function shutdown() {
-  if (!shuttingDown) shuttingDown = (async () => { credentialEntry.close(); github?.cancel(); deploymentSetup?.promte.cancelAll(); await registry?.close(); await closeSpaces(); })().finally(() => { shuttingDown = null; });
+  if (!shuttingDown) shuttingDown = (async () => { credentialEntry.revoke(); github?.cancel(); deploymentSetup?.promte.cancelAll(); await registry?.close(); await closeSpaces(); })().finally(() => { shuttingDown = null; });
   return shuttingDown;
 }
 const uiURL = 'harness://app/index.html';
@@ -586,6 +586,7 @@ handle('komplai:publish-overview', () => deployments.providers.komplai.overview(
 handle('komplai:publish-address', value => deployments.providers.komplai.address(value?.slug, value?.appId));
 handle('komplai:publish-disconnect', () => exclusive(() => require('./core/komplai.cjs').disconnectPublishing(workbench.store)));
 handle('connections:state', () => workbench.state(requestChatID()));
+handle('credential:cancel', () => { credentialEntry.revoke(); return true; });
 handle('credential:entry', value => credentialEntry.request(value));
 handle('connections:save', value => exclusive(() => workbench.saveConnection(credentialEntry.connection(value))));
 handle('connections:remove', value => exclusive(() => workbench.removeConnection(value)));
@@ -967,4 +968,4 @@ app.whenReady().then(async () => {
   app.on('activate', () => { if (!window) createWindow(); });
 });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
-app.on('before-quit', event => { komplaiLogin.cancel(); if (quitReady) return; event.preventDefault(); shutdown().finally(() => { quitReady = true; app.quit(); }); });
+app.on('before-quit', event => { credentialEntry.close(); komplaiLogin.cancel(); if (quitReady) return; event.preventDefault(); shutdown().finally(() => { quitReady = true; app.quit(); }); });

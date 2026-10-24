@@ -135,3 +135,10 @@ test('connection updates without a new key preserve metadata while raw-key bypas
   for (const field of ['apiKey', 'secret', 'token']) assert.throws(() => f.entry.connection({ ...metadata(), [field]: key }), /sikre nøglevindue/);
 });
 
+
+test('ordinary main-window teardown revokes pending and issued keys but permits entry after macOS reopen', async () => {
+ const f=electronFixture(),first=f.entry.request({configuration:metadata()});f.invoke({action:'submit',value:key});const receipt=await first;
+ const pending=f.entry.request({configuration:metadata()});f.entry.revoke();assert.deepEqual(await pending,{canceled:true});
+ assert.throws(()=>f.entry.connection({...metadata(),keyReceipt:receipt.keyReceipt}),/udløbet/);
+ const reopened=f.entry.request({configuration:metadata()});f.invoke({action:'cancel'});assert.deepEqual(await reopened,{canceled:true});
+});
