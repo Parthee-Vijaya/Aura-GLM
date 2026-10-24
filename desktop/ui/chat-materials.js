@@ -38,6 +38,13 @@ window.ChatMaterials = { connect(api) {
     const actions=el('div');actions.className='dialog-actions';actions.append(button('Annuller',close),nextButton);dialog.append(actions);if(!dialog.open)dialog.showModal();controls();
   }
   function materialContent(file) {
+    if (file.kind === 'pdf') {
+      const block = el('div'), select = el('select'), text = el('pre'); select.setAttribute('aria-label','Vælg PDF-side');
+      block.append(el('p','Udtrukket PDF-tekst med sidetal. Ingen OCR eller billedanalyse er udført.'));
+      for (const page of file.pages || []) { const option = el('option', 'Side ' + page.page); option.value = String(page.page); select.append(option); }
+      select.onchange = () => { text.textContent = file.pages.find(page => String(page.page) === select.value)?.text || ''; }; select.onchange(); text.tabIndex = 0;
+      block.append(select, text); return block;
+    }
     if (file.kind !== 'image') return el('pre', file.text);
     const block = el('div');
     if (!/^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/.test(file.dataURL || '')) { block.textContent = 'Billedet kunne ikke vises. Gennemgå filvalget igen.'; return block; }
