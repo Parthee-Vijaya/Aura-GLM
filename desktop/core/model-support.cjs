@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: EUPL-1.2
 // Catalog declarations and measured outcomes are different kinds of evidence.
 const { createHash } = require('node:crypto');
-const version = require('../runtime-lock.json').opencode;
+const version = require('./engine.cjs').VERSION;
 const known = value => typeof value === 'boolean' ? value : null;
 function binding(connection, model, route) {
  return { connection:connection.id, revision:connection.revision || null, endpoint:connection.baseURL, protocol:connection.protocol || connection.kind, model:model.id, route:route?.id || null, engine:version };
