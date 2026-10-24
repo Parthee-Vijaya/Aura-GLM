@@ -14,3 +14,9 @@ test('malformed or unsupported measurement records never become verification evi
  const bound=key(binding(connection,model,route)),valid={binding:bound,capability:'images',outcome:'passed',environment:'controlled',method:'Synthetic bounded response',at:'2026-10-24T08:00:00Z'};
  const evidence=[null,{}, {...valid,environment:'model-claim'}, {...valid,at:'not-a-date'}, {...valid,outcome:'probably'}, {...valid,capability:'all'}, {...valid,method:'x'.repeat(501)}];assert.deepEqual(report(connection,model,route,{evidence}).measurements,[]);
 });
+
+require('node:test')('tool observations record only bound metadata, label loopback controls and never store tool contents',()=>{
+ const {toolRun,binding,key}=require('../core/model-support.cjs'),assert=require('node:assert/strict');
+ const c={id:'one',baseURL:'http://127.0.0.1:1/v1',kind:'compatible'},m={id:'fixture'},r={id:'route'};const observed=toolRun(c,m,r);
+ assert.equal(observed.environment,'controlled');assert.equal(observed.binding,key(binding(c,m,r)));assert.equal(toolRun({...c,baseURL:'https://example.org/v1'},m,r).environment,'provider');assert.equal(Object.hasOwn(observed,'content'),false);
+});
