@@ -35,7 +35,7 @@ async function inventory(root) {
   const payloads = Object.fromEntries(entries);
   return { schemaVersion: 1, entries: payloads, sha256: hash(JSON.stringify(payloads)) };
 }
-async function verifyRuntime(root, manifest, expected, lock, target) {
+async function verifyRuntime(root, manifest, expected, lock, target, finalPayloads = null) {
   assert.equal(manifest.target, target, 'Forkert runtime-platform');
   assert.deepEqual(manifest.archives, lock.targets[target], 'Runtime-arkiver afviger fra låsefilen');
   assert.deepEqual(manifest.sources, lock.sources || [], 'Runtime-kildearkiver afviger fra låsefilen');
@@ -43,7 +43,7 @@ async function verifyRuntime(root, manifest, expected, lock, target) {
   assert.equal(expected.payloads?.schemaVersion, 1, 'Forbered runtime igen med den aktuelle runtime:prepare');
   assert.deepEqual(manifest.payloads, expected.payloads, 'Pakkens runtimebevis afviger fra den forberedte runtime');
   const actual = await inventory(root);
-  assert.deepEqual(actual, expected.payloads, 'Runtime-payload er ændret, ufuldstændig eller indeholder ekstra filer');
+  assert.deepEqual(actual, finalPayloads || expected.payloads, 'Runtime-payload er ændret, ufuldstændig eller indeholder ekstra filer');
   return { files: Object.keys(actual.entries).length, sha256: actual.sha256 };
 }
 module.exports = { inventory, verifyRuntime };

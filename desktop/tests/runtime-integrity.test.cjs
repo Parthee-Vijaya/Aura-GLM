@@ -53,3 +53,25 @@ test('special object property names cannot hide unexpected runtime payloads', as
  const actual = await inventory(f.root);assert.ok(Object.hasOwn(actual.entries, '__proto__'));
  assert.notEqual(actual.sha256, f.manifest.payloads.sha256);await assert.rejects(f.verify(), /Runtime-payload/);
 });
+
+test('a controlled macOS signing transformation has a separate exact-byte receipt; later executable changes fail', { skip: process.platform !== 'darwin' }, async t => {
+  const { execFileSync } = require('node:child_process');
+  const { record, expected, receiptPath } = require('../scripts/signed-runtime-proof.cjs');
+  const f = await fixture(t), target = 'darwin-synthetic-test', resources = await fs.mkdtemp(path.join(os.tmpdir(), 'aura-signed-proof-'));
+  t.after(() => fs.rm(resources, { recursive: true, force: true }));
+  t.after(() => fs.rm(receiptPath(target), { force: true }));
+  await fs.mkdir(path.join(resources, 'runtime')); await fs.copyFile('/usr/bin/true', path.join(resources, 'runtime', 'tool'));
+  await fs.writeFile(path.join(resources, 'source-proof.json'), '{"source":"synthetic"}');
+  const input = await inventory(path.join(resources, 'runtime'));
+  const manifest = { ...f.manifest, target, payloads: input }, lock = { ...f.lock, targets: { [target]: f.manifest.archives } };
+  execFileSync('/usr/bin/codesign', ['--force', '--sign', '-', path.join(resources, 'runtime', 'tool')], { stdio: 'pipe' });
+  await assert.rejects(verifyRuntime(path.join(resources, 'runtime'), manifest, manifest, lock, target));
+  const receipt = await record(resources, target, input);
+  assert.notEqual(receipt.payloads.sha256, input.sha256);
+  const final = await expected(resources, target, input);
+  await verifyRuntime(path.join(resources, 'runtime'), manifest, manifest, lock, target, final);
+  await fs.appendFile(path.join(resources, 'runtime', 'tool'), 'modified');
+  await assert.rejects(verifyRuntime(path.join(resources, 'runtime'), manifest, manifest, lock, target, final));
+  await fs.writeFile(path.join(resources, 'source-proof.json'), '{"source":"other"}');
+  await assert.rejects(expected(resources, target, input), /andre kildefiler/);
+});

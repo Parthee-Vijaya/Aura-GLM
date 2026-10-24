@@ -20,6 +20,7 @@ module.exports = {
     context.packager.config.asarUnpack = [...new Set([...context.packager.config.asarUnpack, ...pluginPatterns])];
     const target = `${context.electronPlatformName}-${Arch[context.arch]}`;
     const folder = path.join(__dirname, '.runtime', target);
+    await require('node:fs/promises').rm(require('./scripts/signed-runtime-proof.cjs').receiptPath(target), { force: true });
     const manifest = require(path.join(folder, 'manifest.json'));
     if (manifest.target !== target) throw new Error('Forkert runtime til pakningen.');
     if (manifest.payloads?.schemaVersion !== 1) throw new Error('Forbered runtime igen med npm run runtime:prepare før pakning.');

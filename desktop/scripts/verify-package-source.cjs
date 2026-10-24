@@ -39,7 +39,8 @@ async function verify(resources, target) {
   assert.deepEqual(manifest.versions, { opencode: lock.opencode, git: lock.git, node: lock.node });
   assert.deepEqual(manifest.archives, lock.targets[target]);
   const expected = JSON.parse(await fs.readFile(path.join(root, '.runtime', target, 'manifest.json'), 'utf8'));
-  const runtimePayload = await require('./runtime-integrity.cjs').verifyRuntime(path.join(resources, 'runtime'), manifest, expected, lock, target);
+  const finalPayloads = target.startsWith('darwin-') ? await require('./signed-runtime-proof.cjs').expected(resources, target, expected.payloads) : null;
+  const runtimePayload = await require('./runtime-integrity.cjs').verifyRuntime(path.join(resources, 'runtime'), manifest, expected, lock, target, finalPayloads);
   const proof = JSON.parse(await fs.readFile(path.join(resources, 'source-proof.json'), 'utf8'));
   const expectedProof = await require('./package-source-proof.cjs').sourceProof(root, ['package.json', 'package-lock.json', 'runtime-lock.json', '../LICENSE', ...names, ...profiles.map(f => '../profiles/' + f)]);
   assert.deepEqual(proof.files, expectedProof.files, 'Kildebeviset skal omfatte alle aktuelle produktfiler');
