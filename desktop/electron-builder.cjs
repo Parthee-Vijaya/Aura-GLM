@@ -22,6 +22,10 @@ module.exports = {
     const folder = path.join(__dirname, '.runtime', target);
     const manifest = require(path.join(folder, 'manifest.json'));
     if (manifest.target !== target) throw new Error('Forkert runtime til pakningen.');
-    context.packager.config.extraResources = [...profileResources, { from: folder, to: 'runtime' }];
+    if (manifest.payloads?.schemaVersion !== 1) throw new Error('Forbered runtime igen med npm run runtime:prepare før pakning.');
+    await require('./scripts/runtime-integrity.cjs').verifyRuntime(folder, manifest, manifest, require('./runtime-lock.json'), target);
+    const proof = path.join(__dirname, '.runtime', `source-proof-${target}.json`);
+    await require('./scripts/package-source-proof.cjs').create(__dirname, proof);
+    context.packager.config.extraResources = [...profileResources, { from: folder, to: 'runtime' }, { from: proof, to: 'source-proof.json' }];
   }
 };
