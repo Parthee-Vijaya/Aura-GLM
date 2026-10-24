@@ -1,6 +1,12 @@
 const $ = selector => document.querySelector(selector);
 let current = null, revision = null, polling = false, state = null, modelRequest = 0, acceptedFingerprint = null, pendingSend = null, running = false;
-let projectLoading = true, projectDisplayRequest = 0, navigationRequest = 0;
+let projectLoading = true, projectDisplayRequest = 0, navigationRequest = 0, startupLoads = 0;
+// All owners contribute to availability. Finishing one task must not unlock a
+// form still owned by startup, project creation or idea refinement.
+function syncCreateAvailability() {
+  $('#create').disabled = projectLoading || startupLoads > 0 || $('#idea-refinement').getAttribute('aria-busy') === 'true';
+  $('#create').textContent = projectLoading ? 'Åbner projektmappen …' : 'Opret projekt';
+}
 // Et accepteret resumé gælder samme modelsession og samme delte materiale, også filhenvisninger.
 const reviewKey = data => `${data.fingerprint}|${data.consentKey}`;
 let skillList = [], skillOwner = null, featuresOwner = null;
@@ -153,6 +159,7 @@ function syncOnboardingVisuals() {
 let preferredConnection = '', autoConnect = false;
 try { preferredConnection = localStorage.getItem('harness.preferredConnection') || ''; } catch {}
 function setupControls() {
+  syncCreateAvailability();
   const id = $('#setup-connection').value, busy = projectLoading;
   $('#setup-test').disabled = !id || busy;
   $('#setup-continue').disabled = !id || verifiedConnection !== id || busy;
@@ -973,12 +980,13 @@ $('#new').onclick = () => action(async () => {
 });
 $('#create-form').onsubmit = event => {
   event.preventDefault();
+  if (current || projectLoading || startupLoads > 0 || $('#idea-refinement').getAttribute('aria-busy') === 'true') return;
   action(async () => {
-    $('#create').disabled = true;
-    $('#create').textContent = 'Åbner projektmappen …';
+    projectLoading = true; applyRunning();
     const refined = window.IdeaRefinement?.take();
+    let created;
     try {
-      const created = await call('createProject', {
+      created = await call('createProject', {
         name: $('#name').value, purpose: $('#purpose').value, color: projectColor(),
         links: $('#links').value.split('\n').map(line => line.trim()).filter(Boolean),
         tests: $('#tests').value, startup: startupValues()
@@ -986,18 +994,17 @@ $('#create-form').onsubmit = event => {
       if (!created) return;
       await displayProject(created, { firstTask: true });
       clearIdeaDraft();
-      if (!refined) { $('#start-idea').click(); return; }
-      // Preserve the reviewed proposal even if the model catalog is temporarily unavailable.
-      window.draftMessage(refined.text + '\n\nForslag fra idéhjælpen (ikke en godkendt byggeplan):\n' + refined.plan +
-        '\n\nAfklar eventuelle mangler, og lav en plan til min gennemgang, før der bygges.',
-        'Din beskrivelse og dit planforslag er klar til gennemgang.',
-        { mode: featureOn('planlaegning') ? 'plan' : 'chat' });
-      $('#connection-select').value = refined.selection.connectionID;
-      await loadModels(refined.selection);
     } finally {
-      $('#create').disabled = false;
-      $('#create').textContent = 'Opret projekt';
+      projectLoading = false; applyRunning();
     }
+    if (!refined) { $('#start-idea').click(); return; }
+    // Preserve the reviewed proposal even if the model catalog is temporarily unavailable.
+    window.draftMessage(refined.text + '\n\nForslag fra idéhjælpen (ikke en godkendt byggeplan):\n' + refined.plan +
+      '\n\nAfklar eventuelle mangler, og lav en plan til min gennemgang, før der bygges.',
+      'Din beskrivelse og dit planforslag er klar til gennemgang.',
+      { mode: featureOn('planlaegning') ? 'plan' : 'chat' });
+    $('#connection-select').value = refined.selection.connectionID;
+    await loadModels(refined.selection);
   });
 };
 $('#connections-button').onclick = () => action(async () => { const owner = selectedOwner(), ticket = navigationRequest; if (setupActive && setupStep === 'provider') setupPage('tools'); moveConnectionForm(false); const next = await call('connectionState', undefined, owner); if (ticket !== navigationRequest || owner?.root !== current?.root) return; state = next; renderConnections(); updateProvider(); connectionView('list'); $('#connections-feedback').textContent = ''; $('#connections-dialog').showModal(); });
@@ -1074,7 +1081,7 @@ for (const id of ['support-dialog', 'connections-dialog', 'features-dialog']) do
 });
 $('#connections-dialog').addEventListener('close', () => { clearConnectionReceipt(); });
 setInterval(async () => { if (!current || polling) return; polling = true; const project = current, root = current.workspaceRoot; try { const next = await call('revision'); if (current !== project || current.workspaceRoot !== root || !next) return; if (revision && next !== revision) $('#preview').src = current.previewURL; revision = next; $('#preview-status').textContent = 'Lokal forhåndsvisning'; } catch { $('#preview-status').textContent = 'Kan ikke læse siden – kontrollér projektfilerne'; } finally { polling = false; } }, 1500);
-action(async () => { $('#create').disabled = true; $('#create').textContent = 'Åbner projektmappen …'; try { state = await call('connectionState'); renderConnections(); updateProvider(); await loadDesigns(); await loadStartup(); applyFeatures(); renderLocation(await call('projectLocation')); restoreIdeaDraft(); showIdeaExamples(); await refreshRecent(); setupControls(); for (const id of ['#welcome-build', '#welcome-example', '#welcome-open']) $(id).disabled = false; if ($('#welcome-dialog').open) $('#welcome-title').focus(); else { $('#purpose').focus(); await reopenLast(); } } finally { projectLoading = false; $('#create').disabled = false; applyRunning(); } });
+action(async () => { syncCreateAvailability(); try { state = await call('connectionState'); renderConnections(); updateProvider(); await loadDesigns(); await loadStartup(); applyFeatures(); renderLocation(await call('projectLocation')); restoreIdeaDraft(); showIdeaExamples(); await refreshRecent(); setupControls(); for (const id of ['#welcome-build', '#welcome-example', '#welcome-open']) $(id).disabled = false; if ($('#welcome-dialog').open) $('#welcome-title').focus(); else { $('#purpose').focus(); await reopenLast(); } } finally { projectLoading = false; applyRunning(); } });
 // Kom tilbage: det senest åbnede projekt åbnes igen ved start, så man fortsætter, hvor man slap.
 // Et projekt, brugeren selv har lukket med Nyt projekt, åbnes ikke igen.
 const lastProjectKey = 'harness.lastProject.v1';
@@ -1320,7 +1327,7 @@ async function clearStartupDesign() {
 }
 async function loadStartup() {
   const request = navigationRequest, owner = selectedOwner();
-  $('#create').disabled = true;
+  ++startupLoads; syncCreateAvailability();
   try {
   const result = await call('preferencesGet', undefined, owner);
   if (request !== navigationRequest) return;
@@ -1333,7 +1340,7 @@ async function loadStartup() {
   }
   for (const selector of ['#project-options', '#design-options']) $(selector).open = false;
   updateStartupSummary();
-  } finally { if (request === navigationRequest) { $('#create').disabled = false; $('#create').textContent = 'Opret projekt'; } }
+  } finally { --startupLoads; syncCreateAvailability(); }
 }
 $('#forget-startup').onclick = () => action(async () => { await call('preferencesSave', { hosting: '', connectionID: '', designID: '', tests: 'senere' }); $('#startup-warning').textContent = 'De huskede valg er glemt. Valgene her er bevaret.'; });
 for (const selector of ['#startup-hosting', '#startup-connection', '#tests']) $(selector).addEventListener('change', updateStartupSummary);

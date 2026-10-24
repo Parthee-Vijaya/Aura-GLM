@@ -10,7 +10,7 @@
     busy=value;panel.setAttribute('aria-busy',String(value));status.textContent=text||'';status.classList.toggle('is-thinking',value);
     for(const el of panel.querySelectorAll('select,textarea,button'))el.disabled=value;
     $('#idea-refine-stop').hidden=!value;$('#idea-refine-stop').disabled=false;
-    $('#idea-refine-open').disabled=value;$('#create').disabled=value;
+    $('#idea-refine-open').disabled=value;syncCreateAvailability();
   }
   const input = () => ({name:$('#name').value,idea:$('#purpose').value,message:$('#idea-refine-answer').value,connectionID:connection.value,modelID:model.value,routeID:route.value});
   async function loadModelsForIdea(){
