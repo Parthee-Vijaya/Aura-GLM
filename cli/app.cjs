@@ -126,7 +126,7 @@ class Application {
     check();
     this.parts.clear(); this.tools.clear(); this.review = null;
     this.ui.line('\nAI arbejder. Ctrl+C stopper opgaven; filer, der allerede er ændret, bliver liggende.');
-    await this.bench.send({ text, fingerprint: data.fingerprint });
+    await this.bench.send({ text, fingerprint: data.fingerprint, contextBinding: data.contextBinding });
     while (this.bench.running || this.bench.finishing) await pause(50);
     await this.queue; this.flush();
     this.result();
