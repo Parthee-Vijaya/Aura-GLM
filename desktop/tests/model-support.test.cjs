@@ -23,3 +23,16 @@ require('node:test')('tool observations record only bound metadata, label loopba
 require('node:test')('support evidence loads from a packaged core without a parent runtime-lock file',async t=>{
  const fs=require('node:fs/promises'),path=require('node:path'),os=require('node:os'),assert=require('node:assert/strict');const root=await fs.mkdtemp(path.join(os.tmpdir(),'aura-support-package-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));await fs.cp(path.resolve(__dirname,'../core'),path.join(root,'core'),{recursive:true});assert.equal(typeof require(path.join(root,'core/model-support.cjs')).report,'function');
 });
+
+test('binding uses the configured transport protocol, including provider defaults',()=>{
+ for(const [kind,protocol] of Object.entries({openai:'responses',azure:'responses',mistral:'openai',corti:'openai',zen:'openai',anthropic:'anthropic'}))assert.equal(binding({id:kind,kind,baseURL:'https://example.invalid/v1'},model).protocol,protocol);
+ assert.equal(binding({...connection,kind:'openai',protocol:'openai'},model).protocol,'openai');
+});
+test('catalog HTTP parsing preserves explicit, false and unknown image capabilities for models and routes',async t=>{
+ const http=require('node:http'),{listModels,routes}=require('../core/connections.cjs');
+ const server=http.createServer((req,res)=>{res.setHeader('content-type','application/json');res.end(JSON.stringify(req.url.endsWith('/endpoints')?{data:{endpoints:[{tag:'yes',input_modalities:['text','image'],supported_parameters:['tools']},{tag:'no',capabilities:{vision:false}},{tag:'unknown'}]}}:{data:[{id:'explicit',capabilities:{vision:true}},{id:'negative',capabilities:{vision:false}},{id:'image-input',capabilities:{image_input:{supported:true}}},{id:'modalities',architecture:{input_modalities:['text','image']}},{id:'text',architecture:{input_modalities:['text']}},{id:'unknown'}]}));});
+ await new Promise(r=>server.listen(0,'127.0.0.1',r));t.after(()=>{server.closeAllConnections();return new Promise(r=>server.close(r));});
+ const c={kind:'compatible',baseURL:`http://127.0.0.1:${server.address().port}/v1`};
+ assert.deepEqual((await listModels(c)).map(m=>m.capabilities.vision),[true,false,true,true,false,undefined]);
+ assert.deepEqual((await routes({...c,kind:'openrouter'},'synthetic','fixture')).map(r=>r.capabilities.vision),[true,false,null]);
+});
