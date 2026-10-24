@@ -54,6 +54,7 @@ async function readSnapshot(candidate, { normalizeImage } = {}) {
     const data = bytes.subarray(0, length);
     if (before.kind !== 'text') {
       let media; try { media = await require('./chat-media.cjs').mediaSnapshot(data, before.kind, normalizeImage); } catch (error) { throw new MaterialsError(error.message, 'format'); }
+      if (media.text && secretContent(media.text)) throw new MaterialsError('Filen kan indeholde en nøgle eller adgangskode og kan ikke deles her.', 'secret');
       return { ...candidate, ...media, bytes: length, sha256: sha(data) };
     }
     let text;
