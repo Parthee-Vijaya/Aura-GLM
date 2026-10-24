@@ -1,0 +1,6 @@
+{
+  "passed": true,
+  "oldNumberingRequiresManualInstall": true,
+  "newNumberingAcceptsIncreasingVersions": true,
+  "automaticDowngradeStillBlocked": true
+}

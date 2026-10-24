@@ -20,6 +20,8 @@ Brug største relevante kategori, hvis en release indeholder flere ændringer. B
 
 Den tekniske SemVer er `0.3.1-beta.1`, tagget `v0.3.1-beta.1`, og den synlige titel **Aura 1 beta 0.3.1**. Hver udgivelse får et nyt tal i hovedversionen; tidligere tag/pakke må ikke overskrives. Brug `npm version <version>-beta.1 --no-git-tag-version --ignore-scripts` i `desktop` til at opdatere både package.json og package-lock.json. Kontrollér runtimeversion, UI, pakke, tag, feed, README og noter før publicering.
 
+Hvis det ønskede tekniske tag allerede findes fra den gamle versionsrække, bruges næste ledige beta-iteration, eksempelvis `1.0.0-beta.2`. Den synlige version er stadig **Aura 1 beta 1.0.0**. Flyt aldrig et eksisterende tag.
+
 Nulstillingen fra beta 1/1.1 (`1.0.0-beta.1`/`1.0.1-beta.1`) til `0.3.1-beta.1` kræver **manuel installation**. Den eksisterende beskyttelse mod automatisk nedgradering bevares. Efter manuel installation kan opdateringer følge den nye stigende række normalt. Bundle-, profil- og nøgleringsidentiteter bevares.
 
 ## Kvalifikation og offentliggørelse
