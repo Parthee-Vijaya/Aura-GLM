@@ -110,6 +110,8 @@ AI-forbindelsens nøgle indtastes gennem **Indtast nøgle sikkert** i et separat
 
 Ved manuel GitHub-adgang åbner du **Avanceret · forbind med GitHub-token** i delingsdialogen og vælger **Indtast token sikkert**. Tokenet indtastes i samme isolerede nøglevindue; kontoen kontrolleres, før adgangen gemmes krypteret. Se [GitHub-token, rettigheder og før/efterprøven](docs/contributions/f06.md).
 
+Ved lokal pakning bindes produktfilerne til en Git-commit, og runtime-filerne kontrolleres mod de låste arkiver. Se [pakkens kildebevis, kontrolkommando og begrænsninger](docs/contributions/t04.md).
+
 Se [installation, opsætning og lokale testkommandoer](https://github.com/ai-alliancen-org/ai-harness/blob/main/desktop/README.md).
 
 ## Teknologi, data og betastatus
