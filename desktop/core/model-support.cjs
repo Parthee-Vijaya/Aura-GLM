@@ -4,7 +4,7 @@ const { createHash } = require('node:crypto');
 const version = require('./engine.cjs').VERSION;
 const known = value => typeof value === 'boolean' ? value : null;
 function binding(connection, model, route) {
- return { connection:connection.id, revision:connection.revision || null, endpoint:connection.baseURL, protocol:connection.protocol || connection.kind, model:model.id, route:route?.id || null, engine:version };
+ return { connection:connection.id, revision:connection.revision || null, endpoint:connection.baseURL, protocol:connection.protocol || require('./connections.cjs').definitions[connection.kind]?.protocol || connection.kind, model:model.id, route:route?.id || null, engine:version };
 }
 const key = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 function report(connection, model, route, { catalogAt = null, evidence = [] } = {}) {
