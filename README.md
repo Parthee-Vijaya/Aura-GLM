@@ -36,6 +36,7 @@ Beskriv, hvad du vil lave, og arbejd videre med AI’en i et lokalt projekt. Sam
 - **Følg ændringerne.** Gennemgå filændringer og de handlinger, der kræver din godkendelse. Ved lange forslag kan **Vis flere linjer** indlæse resten før godkendelse; se [gennemgang af alle diff-linjer](docs/contributions/f31.md). Fanerne Plan, Ændringer, Kode og Aktivitet samler detaljerne.
 - **Medtag udvalgte tekstfiler.** Vælg **Vedhæft filer** i samtalen, eller **Referencemappe · kun læsning** for at vælge enkelte filer fra en mappe. Gennemgå indholdet, og godkend den konkrete afsendelse. Se [filvalg og grænser](docs/contributions/f13.md) samt [referencemapper og før/efterprøven](docs/contributions/f14.md).
 - **Læs tidligere beskeder.** Åbn en gemt samtale, og vælg **Indlæs tidligere beskeder** over beskederne for at hente næste gemte del. Det starter ingen AI-opgave. Se [visningsindlæsning, grænser og før/efterprøven](docs/contributions/f12.md).
+- **Medtag et billede.** Samme filvalg kan gennemgå PNG/JPEG før deling med en model og eventuel rute med angivet billedstøtte. Se [billedgennemgang og størrelsesgrænser](docs/contributions/f16.md).
 - **Se og afprøv resultatet.** Brug forhåndsvisningen til at prøve løsningen i forskellige skærmstørrelser. Understøttede webprojekter kan startes gennem appen.
 - **Gem og fortryd.** Brug lokale Git-versioner til at følge arbejdet og gennemgå en tidligere version, før du gendanner den.
 

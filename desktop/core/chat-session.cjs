@@ -272,6 +272,7 @@ class ChatSession {
     // Resuméet før afsendelse vises igen, når modtager, model, vilkår, pris eller delt materiale ændrer sig. Skift fra plan til byg er ikke en ny modtager.
     Object.assign(disclosure, modelConsent.review(selection.connection.id, disclosure, settings, context.projectInstructions?.hash));
     const engineFingerprint = disclosure.fingerprint;
+    if (chatMaterials?.files.some(file => file.kind === 'image') && !require('./model-support.cjs').imageAllowed(selection.model, selection.route)) throw new Error('Billedinput er ikke dokumenteret for den valgte model/rute. Vælg en understøttet model, eller fjern billedet.');
     if (chatMaterials) {
       disclosure.chatMaterials = chatMaterials;
       disclosure.fingerprint = crypto.createHash('sha256').update(JSON.stringify([engineFingerprint, chatMaterials.sha256, crypto.randomUUID()])).digest('hex');
@@ -405,6 +406,7 @@ class ChatSession {
       if (this.commandSandbox) system += '\nAlle kommandoer kører med teknisk isolation. Du kan arbejde i arbejdsområdet og den midlertidige mappe. Hemmeligheder og øvrige mapper er spærret. Netadgang er afgrænset til registry.npmjs.org, pypi.org og files.pythonhosted.org. Forklar en afvist adgang; forsøg ikke at omgå den.';
       if (Object.hasOwn(prepared.context, 'projectInstructions') && JSON.stringify(await projectInstructions(this.root)) !== JSON.stringify(prepared.context.projectInstructions)) throw new Error('Projektets AGENTS.md har ændret sig under opstart. Gennemgå oplysningerne igen før afsendelse.');
       this.gateway?.setEffort?.(prepared.disclosure.effort);
+      this.gateway?.setImages?.([]);
       // Brugeren har valgt at gøre en lang samtale kortere, før beskeden sendes igen.
       if (input.compact === true && (await this.engine.messages().catch(() => [])).length) {
         this.compacting = true;
@@ -414,6 +416,7 @@ class ChatSession {
       }
       await bench.chatMaterials?.assertPrepared(this, prepared.chatMaterials);
       if (prepared.guard) await this.checkContext(prepared, runPlan);
+      this.gateway?.setImages?.(prepared.chatMaterials?.files.filter(file => file.kind === 'image') || []);
       checkStopped(); await this.engine.send(text, system); checkStopped();
       // De senest accepterede vilkår huskes for projektet, så de samme oplysninger ikke vises igen ved hver opgave.
       await modelConsent.remember(bench.store, projectRoot, prepared.disclosure.consentKey);

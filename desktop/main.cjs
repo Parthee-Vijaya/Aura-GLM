@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, protocol, session, safeStorage, Menu, shell, webFrameMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, protocol, session, safeStorage, Menu, shell, webFrameMain, nativeImage } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const crypto = require('node:crypto');
@@ -597,7 +597,7 @@ handle('connections:save', value => exclusive(() => workbench.saveConnection(cre
 handle('connections:remove', value => exclusive(() => workbench.removeConnection(value)));
 handle('connections:models', value => workbench.models(value));
 handle('connections:routes', value => workbench.routes(value.connectionID, value.modelID));
-require('./core/chat-materials-ipc.cjs').installChatMaterials({ getWorkbench:currentWorkbench, isSelected:bench => registry.selected === bench, register:handle, dialog, exclusive, emit:event => sendEvent(event) });
+require('./core/chat-materials-ipc.cjs').installChatMaterials({ getWorkbench:currentWorkbench, isSelected:bench => registry.selected === bench, register:handle, dialog, exclusive, normalizeImage:require('./core/screenshot-normalizer.cjs').createImageNormalizer({ nativeImage }), emit:event => sendEvent(event) });
 handle('agent:prepare', value => exclusive(() => workbench.prepare(chatInput(value))));
 handle('agent:send', value => {
   if (!currentProject()) throw new Error('Åbn et projekt først.');
