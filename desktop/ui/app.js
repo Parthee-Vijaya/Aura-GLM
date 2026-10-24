@@ -21,7 +21,7 @@ function node(tag, text, className) { const el = document.createElement(tag); if
 // samtales visning står i siden med de faste id'er; de andre lever videre og opdateres af deres egne hændelser.
 const views = new Map();
 function makeView(id) {
-  const v = { id, log: node('div'), approvals: node('div'), review: node('section', undefined, 'journey-card'), roles: new Map(), parts: new Map(), partTypes: new Map(), assistantText: new Map(), pendingMarkdown: new Set(), activityGroup: null, lastSentText: '', lastTarget: '', lastTargetRef: null, lastCheckpoint: null, rejectedThisRun: false, lastRejection: null, running: false, runStartedAt: 0, runLabel: '', statusDetail: '', waitingFor: [], plan: null, planCard: false, unread: false, draft: null, followChat: true, scrollTop: 0, lastSignalAt: 0, receivedChars: 0 };
+  const v = { id, historyPending:[], historyLoaded:false, historyNotice:'', log: node('div'), approvals: node('div'), review: node('section', undefined, 'journey-card'), roles: new Map(), parts: new Map(), partTypes: new Map(), assistantText: new Map(), pendingMarkdown: new Set(), activityGroup: null, lastSentText: '', lastTarget: '', lastTargetRef: null, lastCheckpoint: null, rejectedThisRun: false, lastRejection: null, running: false, runStartedAt: 0, runLabel: '', statusDetail: '', waitingFor: [], plan: null, planCard: false, unread: false, draft: null, followChat: true, scrollTop: 0, lastSignalAt: 0, receivedChars: 0 };
   v.log.setAttribute('aria-live', 'polite'); v.review.hidden = true; v.review.setAttribute('aria-live', 'polite');
   if (id) views.set(id, v);
   return v;
@@ -42,7 +42,7 @@ function mountView(v) {
   requestAnimationFrame(() => { if (view !== v) return; $('#chat-content').scrollTop = v.followChat ? $('#chat-content').scrollHeight : v.scrollTop; updateChatScroll(); }); v.unread = false; running = v.running; activePlan = v.plan;
   $('#plan-card').hidden = !v.planCard || !v.plan;
   updatePlanOffer(v);
-  applyRunning();
+  applyRunning(); renderHistoryControls();
 }
 const anyRunning = () => running || [...views.values()].some(v => v.running);
 // En samtales navn, som sidepanelet viser det.
@@ -405,7 +405,8 @@ async function displayProject(project, { firstTask = false } = {}) {
 // beskederne skal vises fra den gemte samtale; ellers står de allerede i samtalens visning.
 function fillChat(next, fresh) {
   const history = next.workspace, v = view;
-  if (fresh) for (const item of history?.messages || []) { const element = appendMessage(item.text, item.role); if (typeof item.id === 'string') element.dataset.messageId = item.id; }
+  if (fresh || !v.historyLoaded && !v.log.children.length) { const page=window.HistoryPages.takePrevious(history?.messages || []);v.historyPending=page.older;v.historyLoaded=true;for(const item of page.recent){const element=appendMessage(item.text,item.role);if(typeof item.id==='string')element.dataset.messageId=item.id;} }
+  renderHistoryControls();
   const empty = !v.log.children.length;
   $('#project-intro').hidden = !empty; $('#start-idea').hidden = !empty;
   $('#resume-notice').hidden = !history?.messages?.length && !next.historyWarning; $('#resume-notice').open = false;
@@ -468,6 +469,7 @@ window.openStoredMessage = async result => {
     // brief/plan editor, model selection, draft or approval controls.
     owner.log.replaceChildren(); owner.parts.clear(); owner.assistantText.clear(); owner.pendingMarkdown.clear();
     for (const item of next.workspace?.messages || []) { const element = appendMessage(item.text, item.role, owner); if (typeof item.id === 'string') element.dataset.messageId = item.id; }
+    owner.historyPending=[];owner.historyLoaded=true;owner.historyNotice='';renderHistoryControls();
   }
   const target = find(); if (!target) throw new Error('Beskeden findes ikke længere i den gemte samtale. Søg igen.');
   for (const element of owner.log.querySelectorAll('.search-message-hit')) element.classList.remove('search-message-hit');
@@ -1922,3 +1924,14 @@ $('#credential-open').onclick=()=>action(async()=>{
 });
 for(const id of ['connection-name','base-url','azure-endpoint','azure-deployment','azure-protocol','clear-key'])$('#'+id).addEventListener('input',clearConnectionReceipt);
 $('#connection-form').addEventListener('reset',clearConnectionReceipt);
+function renderHistoryControls(){const count=view.historyPending?.length||0;$('#history-load').hidden=!count;$('#history-load').textContent=`Indlæs tidligere beskeder (${count})`;$('#history-load-status').hidden=!view.historyNotice;$('#history-load-status').textContent=view.historyNotice||'';}
+$('#history-load').onclick=()=>{
+  const v=view,container=$('#chat-content'),height=container.scrollHeight,top=container.scrollTop;
+  const page=window.HistoryPages.takePrevious(v.historyPending);if(!page.recent.length)return;
+  const fragment=document.createDocumentFragment(),staging={...v,log:fragment};
+  for(const item of page.recent){const element=appendMessage(item.text,item.role,staging);if(typeof item.id==='string')element.dataset.messageId=item.id;}
+  v.followChat=false;v.log.prepend(fragment);v.historyPending=page.older;v.historyNotice=`${page.recent.length} tidligere beskeder indlæst fra denne computer.`;renderHistoryControls();
+  const position=top+container.scrollHeight-height;container.scrollTop=position;v.scrollTop=position;
+  if(!page.older.length)$('#history-load-status').focus({preventScroll:true});
+  requestAnimationFrame(()=>{if(view===v){container.scrollTop=position;v.scrollTop=position;updateChatScroll();}});
+};
