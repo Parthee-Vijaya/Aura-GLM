@@ -641,7 +641,7 @@ class ChatSession {
     if (!current()) return;
     this.waiting = true; this.bench.chatsChanged();
     this.log({ id: `approval-${p.id}`, kind: 'approval', permission: p.permission, title: approvalTitles[p.permission] || 'Godkendelse', target: approvalTarget(p, this.root), status: 'waiting', started: Date.now(), task: this.task?.id });
-    this.emit({ ...event, properties: { ...p, policy: { ...descriptor, conversationEligible: Boolean((descriptor.projectFile || descriptor.kind === 'bash') && !descriptor.blockedMode && this.commandSandbox && this.engine?.sandbox === this.commandSandbox && ['free','build'].includes(context.mode)) } } });
+    this.emit({ ...event, properties: { ...p, policy: { ...descriptor, conversationEligible: Boolean((descriptor.projectFile || descriptor.persistable || descriptor.kind === 'bash') && descriptor.match && !descriptor.blockedMode && this.commandSandbox && this.engine?.sandbox === this.commandSandbox && ['free','build'].includes(context.mode)) } } });
   }
   event(event) {
     const p = event.properties || {}, bench = this.bench, owner = (this.copy || bench.checkpointOwner === this);
@@ -754,25 +754,38 @@ class ChatSession {
     }
     await this.saveHistory('stopped'); this.emit({ type: 'run.status', status: this.starting ? 'starting' : 'stopped' }); bench.chatsChanged();
   }
-  permissionReview(input) {
-    const record = this.approvals.get(input.id);
-    if (!record || !this.running || this.runStopped || record.engine !== this.engine || record.generation !== this.generation || this.engine.pending.get(input.id) !== record.request || !(record.descriptor.projectFile || record.descriptor.kind === 'bash') || !record.descriptor.match || record.descriptor.blockedMode || !this.commandSandbox || this.engine.sandbox !== this.commandSandbox || !['free','build'].includes(this.runMode)) throw new Error('Fuld tilladelse er ikke tilgængelig for denne handling.');
-    return this.conversationPermission.review({ id: input.id, record, engine: this.engine, generation: this.generation, sandbox: this.commandSandbox });
+  async permissionReview(input) {
+    const record = input.id === undefined ? null : this.approvals.get(input.id);
+    const running = this.running, engine = this.engine, generation = this.generation, sandbox = this.commandSandbox;
+    if (this.sending || this.starting || this.finishing || this.compacting || this.archiving || this.data.archived) throw new Error('Vent til samtalen er klar, før du vælger YOLO.');
+    if (running) {
+      if (this.runStopped || !sandbox || engine?.sandbox !== sandbox || !['free', 'build'].includes(this.runMode)) throw new Error('YOLO kan kun aktiveres under Byg med kommandobeskyttelse.');
+    } else {
+      if (input.id !== undefined || !['free', 'build'].includes(input.mode)) throw new Error('Vælg Byg, før du aktiverer YOLO.');
+      const support = await require('./command-sandbox.cjs').support();
+      if (!support.available) throw new Error(support.reason);
+      if (this.running !== running || this.engine !== engine || this.generation !== generation || this.sending || this.starting || this.finishing || this.archiving || this.data.archived) throw new Error('Samtalen er ændret. Vælg YOLO igen.');
+    }
+    if (input.id !== undefined && (!record || record.engine !== engine || record.generation !== generation || engine.pending.get(input.id) !== record.request || !(record.descriptor.projectFile || record.descriptor.persistable || record.descriptor.kind === 'bash') || !record.descriptor.match || record.descriptor.blockedMode)) throw new Error('Fuld tilladelse er ikke tilgængelig for denne handling.');
+    return this.conversationPermission.review({ id: input.id, record, engine, generation, sandbox, running });
   }
   async permissionConfirm(input) {
     const review = this.conversationPermission.check(input.token, input.acknowledged);
-    const { id, record, engine, generation, sandbox } = review.binding;
-    const current = () => this.running && !this.runStopped && this.engine === engine && this.generation === generation && this.commandSandbox === sandbox && engine.pending.get(id) === record.request && this.approvals.get(id) === record;
+    const { id, record, engine, generation, sandbox, running } = review.binding;
+    const current = () => this.running === running && !this.sending && !this.starting && !this.finishing && !this.compacting && !this.archiving && !this.data.archived && this.engine === engine && this.generation === generation && this.commandSandbox === sandbox && (!running || (!this.runStopped && ['free', 'build'].includes(this.runMode) && engine?.sandbox === sandbox)) && (!record || (engine.pending.get(id) === record.request && this.approvals.get(id) === record));
     if (!current()) throw new Error('Handlingen er ikke længere aktuel.');
-    const descriptor = await this.bench.approvalsPolicy.describe(this.approvalContext(), record.p);
-    if (!current() || descriptor.fingerprint !== record.descriptor.fingerprint || !descriptor.match || descriptor.blockedMode) throw new Error('Handlingen er ændret. Gennemgå den igen.');
-    await require('./command-sandbox.cjs').activate(sandbox);
+    if (record) {
+      const descriptor = await this.bench.approvalsPolicy.describe(this.approvalContext(), record.p);
+      if (!current() || descriptor.fingerprint !== record.descriptor.fingerprint || !descriptor.match || descriptor.blockedMode) throw new Error('Handlingen er ændret. Gennemgå den igen.');
+    }
+    if (running) await require('./command-sandbox.cjs').activate(sandbox);
     if (!current()) throw new Error('Handlingen er ikke længere aktuel.');
     this.conversationPermission.activate(review);
+    if (!running) this.prepared = null; // The next send must prepare the isolated engine.
     this.emit({ type: 'conversation.permission', ...this.conversationPermission.state() });
-    this.log({ kind: 'approval', title: 'Fuld tilladelse i denne samtale', detail: 'Gælder til tilbagekaldelse eller lukning. Projektets dataregler og afgrænsninger gælder fortsat.', status: 'answered' });
+    this.log({ kind: 'approval', title: 'YOLO aktiveret i denne samtale', detail: 'Almindelige værktøjshandlinger under Byg tillades indtil tilbagekaldelse eller lukning. Planer, dataregler og tekniske afgrænsninger gælder fortsat.', status: 'answered' });
     // Re-run the existing policy and fresh request bindings for every pending tool.
-    // Unsupported/protected destinations remain explicit approvals.
+    // Unsupported/protected destinations keep their existing restrictions.
     for (const [pendingID, entry] of [...this.approvals]) {
       if (this.engine !== engine || this.generation !== generation || !this.conversationPermission.active) break;
       await this.permissionAsked({ type: 'permission.asked', properties: entry.p });

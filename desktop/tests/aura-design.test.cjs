@@ -28,7 +28,7 @@ async function fixture(t) {
   return { root, library, store, features, skills: new Skills(async () => library, store, features) };
 }
 
-test('Aura-design følger det eksisterende designvalg globalt og pr. projekt', async t => {
+test('Aura-design er altid aktiv globalt og pr. projekt uden at ændre øvrige funktioner', async t => {
   const { root, library, features, skills } = await fixture(t);
   assert.deepEqual(library.features.filter(feature => feature.skills.includes(name)).map(feature => feature.id), ['design']);
   assert.deepEqual(library.categories.filter(category => category.skills.includes(name)).map(category => category.id), ['planlaegning']);
@@ -38,25 +38,25 @@ test('Aura-design følger det eksisterende designvalg globalt og pr. projekt', a
   assert.equal(defaults.effective.design, true);
   for (const skill of designSkills) assert.ok((await selected(first)).includes(skill), `${skill} er med som standard`);
   await features.save(null, { scope: 'alle', values: { design: false } });
-  for (const project of [first, second]) for (const skill of designSkills) assert.ok(!(await selected(project)).includes(skill), `${skill} følger globalt fravalg`);
+  for (const project of [first, second]) for (const skill of designSkills) assert.ok((await selected(project)).includes(skill), `${skill} bevares trods globalt fravalg`);
   await features.save(first, { scope: 'projekt', values: { design: true } });
   for (const skill of designSkills) {
     assert.ok((await selected(first)).includes(skill), `${skill} følger projektets tilvalg`);
-    assert.ok(!(await selected(second)).includes(skill), `${skill} ændrer ikke andre projekter`);
+    assert.ok((await selected(second)).includes(skill), `${skill} bevares også i andre projekter`);
   }
   await features.save(first, { scope: 'projekt', values: { design: null } });
-  for (const skill of designSkills) assert.ok(!(await selected(first)).includes(skill), `${skill} kan vende tilbage til standarden`);
+  for (const skill of designSkills) assert.ok((await selected(first)).includes(skill), `${skill} kan vende tilbage til standarden`);
   await features.save(null, { scope: 'alle', values: { design: true } });
   await features.save(first, { scope: 'projekt', values: { design: false } });
   for (const skill of designSkills) {
-    assert.ok(!(await selected(first)).includes(skill), `${skill} følger projektets fravalg`);
+    assert.ok((await selected(first)).includes(skill), `${skill} bevares trods projektets fravalg`);
     assert.ok((await selected(second)).includes(skill), `${skill} bliver i det andet projekt`);
   }
   const current = (await features.get(first)).effective;
   for (const [id, value] of Object.entries(defaults.effective)) if (id !== 'design') assert.equal(current[id], value, `${id} er uændret`);
 });
 
-test('alle Aura-design-referencer når motoren som passive Markdown-filer og fjernes ved fravalg', async t => {
+test('alle Aura-design-referencer når motoren som passive Markdown-filer og bevares ved gamle fravalg', async t => {
   const { root, skills, features } = await fixture(t);
   const project = path.join(root, 'project'), directory = path.join(root, 'engine');
   const context = await skills.context(project), selected = context.skills.find(skill => skill.name === name);
@@ -81,7 +81,8 @@ test('alle Aura-design-referencer når motoren som passive Markdown-filer og fje
   assert.deepEqual((await fs.readdir(directory)).sort(), ['config'], 'indlæsning starter ingen generator eller test og opretter intet projekt');
   await features.save(project, { scope: 'projekt', values: { design: false } });
   await writeSkills(directory, (await skills.context(project)).skills);
-  await assert.rejects(fs.stat(skillRoot), { code: 'ENOENT' }, 'en tidligere indlæst skill bliver ikke liggende efter fravalg');
+  assert.ok((await fs.stat(skillRoot)).isDirectory(), 'grundpakken bliver tilgængelig trods et gammelt fravalg');
+  for (const file of selected.files) assert.ok((await fs.readFile(path.join(skillRoot, file.path), 'utf8')).startsWith(file.content));
 });
 
 test('designmetodens indhold giver ingen nye værktøjstilladelser i den eksisterende motor', async t => {

@@ -43,7 +43,8 @@ function permissions(root, references, mode = 'free', skills = null) {
   const read = { '*': 'allow', '*.env': 'deny', '*.env.*': 'deny', '*.key': 'deny', '*.pem': 'deny', '*.env:*': 'deny', '*.key:*': 'deny', '*.pem:*': 'deny' };
   // NTFS kan åbne samme fil via fx nøgle.key::$DATA. Et andet navn på dens
   // datastrøm ophæver ikke beskyttelsen, heller ikke før Auras godkendelseskort.
-  for (const dir of ['.git', 'secrets', 'references']) for (const pattern of [...everywhere(dir), `${dir}:*`, `*/${dir}:*`]) read[pattern] = 'deny';
+  for (const dir of ['.git', 'secrets', 'references', '.ssh', '.aws', '.gnupg', '.kube', '.azure']) for (const pattern of [...everywhere(dir), `${dir}:*`, `*/${dir}:*`]) read[pattern] = 'deny';
+  for (const file of ['.npmrc', '.pypirc']) for (const pattern of [file, `*/${file}`, `${file}:*`, `*/${file}:*`]) read[pattern] = 'deny';
   // Udvalgte referencer har et unikt filnavn fra appen, så mønsteret kun rammer den valgte fil.
   for (const file of references) for (const pattern of [file, `*/${file}`]) read[pattern] = 'allow';
   const external = { '*': 'ask' };
@@ -153,7 +154,7 @@ function createReadGuard({ fs, path, root, references = [], selectedFiles = [] }
   const selected = new Set([...references.map(file => path.resolve(root, file)), ...selectedFiles]);
   const protectedFile = file => file.split(/[\\/]/).some(component => {
     const name = component.split(':')[0].replace(/[. ]+$/, '').toLowerCase();
-    return ['.git', 'secrets', 'references'].includes(name) || name.startsWith('.env') || /\.(key|pem)$/.test(name);
+    return ['.git', 'secrets', 'references', '.ssh', '.aws', '.gnupg', '.kube', '.azure', '.npmrc', '.pypirc'].includes(name) || name.startsWith('.env') || /\.(key|pem)$/.test(name);
   });
   return async (input, output) => {
     if (input.tool !== 'read') return;

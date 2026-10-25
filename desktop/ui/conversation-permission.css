@@ -5,3 +5,8 @@
 .permission-boundary p{margin-bottom:0}
 #conversation-permission-status{display:flex;align-items:center;justify-content:space-between;background:var(--soft,#f1f5f9);padding:8px 12px;border-radius:9px;font-size:12px;margin:0 12px}
 #conversation-permission-status button{font-size:11px;padding:4px 8px}
+
+#yolo-choice{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
+#yolo-toggle{font-size:13px;padding:8px 12px}
+#yolo-toggle[aria-pressed="true"]{border-color:var(--accent,#0056d6);font-weight:600}
+#yolo-help{margin-bottom:0}

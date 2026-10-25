@@ -139,7 +139,7 @@
     for (const [text, allow, scope] of choices) { const button = node('button', text); button.type = 'button'; button.onclick = () => reply(allow, scope); row.append(button); }
     box.append(row);
     if (p.policy?.conversationEligible) {
-      const full = node('button', 'Tillad og kør med fuld tilladelse …', 'text-button');
+      const full = node('button', 'Tillad og kør med YOLO …', 'text-button');
       full.type = 'button'; full.onclick = () => action(() => window.ConversationPermission.open(v, p.id));
       box.append(full);
     }

@@ -1,5 +1,5 @@
 // Real Workbench -> pinned OpenCode -> provider adapter -> gateway -> controlled HTTP.
-// Synthetic responses verify transport and opt-out, not a live model's design quality.
+// Controlled responses verify transport and mandatory design, not a live model's design quality.
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises'), path = require('node:path'), os = require('node:os'), http = require('node:http');
 const { createHash } = require('node:crypto');
@@ -29,13 +29,18 @@ async function scenario(kind, mode, design, surface = 'desktop') {
     if (!library.features.find(f=>f.id==='design').skills.includes('harness-aura-design')) library.features.find(f=>f.id==='design').skills.push('harness-aura-design');
     await bench.activate({root:project,name:'Syntetisk prøve'});
     await bench.features.save(project,{scope:'projekt',values:{design}});
+    if (!design) {
+      await bench.store.update(state => { state.features = { chosen: 'valgt', on: { design: false } }; });
+      await bench.store.saveProject(project, { features: { design: false } });
+    }
+    assert.equal((await bench.features.get(project)).effective.design, true);
     const modelID = kind === 'mistral' ? 'mistral-large-4' : 'corti-s1';
     bench.selection=async()=>({connection:{id:'synthetic',kind,name:'Lokal transportprøve',baseURL:`http://127.0.0.1:${server.address().port}/v1`},model:{id:modelID,name:modelID,tool_call:true,limit:{context:131072,output:4096}}});
     const text='En app til at melde sig til borgermøder i Nyborg Kommune';
     const review=await bench.prepare({mode,text});
     assert.equal(requests.length,0,'Review must not send anything');
     const core=review.appContext.components.find(p=>p.id==='Hovedskill til bygning');
-    assert.equal(Boolean(core),design && mode !== 'chat');
+    assert.equal(Boolean(core),mode !== 'chat');
     await bench.send({text,fingerprint:review.fingerprint,contextBinding:review.contextBinding});
     const deadline=Date.now()+60000;
     while(!events.some(e=>e.type==='run.status'&&['idle','error','stopped'].includes(e.status))) {
@@ -50,7 +55,7 @@ async function scenario(kind, mode, design, surface = 'desktop') {
     assert.equal(first.model,modelID);
     if(core) assert.ok(system.includes(core.text),'First provider request includes exact reviewed core without a skill call');
     else assert.ok(!system.includes('HOVEDSKILL TIL BYGNING:'));
-    if(!design)assert.ok(!system.includes('<name>harness-aura-design</name>'));
+    assert.ok(system.includes('<name>harness-aura-design</name>'));
     assert.ok(first.messages.some(m=>m.role==='user'&&JSON.stringify(m.content).includes(text)));
     assert.deepEqual(await fs.readdir(project),[],'Transport test did not modify the project');
     return {kind,mode,design,surface,model:modelID,requests:calls.length,coreBytes:core?Buffer.byteLength(core.text):0,coreHash:core?createHash('sha256').update(core.text).digest('hex'):null,externalModelCalls:0,passed:true};
@@ -61,6 +66,6 @@ async function scenario(kind, mode, design, surface = 'desktop') {
 }
 (async()=>{
  const results=[];
- for(const args of [['mistral','plan',true],['mistral','free',true],['corti','plan',true],['corti','free',true],['corti','free',false],['mistral','free',true,'cli']])results.push(await scenario(...args));
+ for(const args of [['mistral','plan',true],['mistral','free',true],['corti','plan',true],['corti','free',true],['corti','free',false],['mistral','free',true,'cli'],['mistral','chat',false]])results.push(await scenario(...args));
  console.log(JSON.stringify({passed:true,engine:require('../runtime-lock.json').opencode,evidence:'Controlled local server; no live design-quality claim',results},null,2));
 })().catch(error=>{console.error(error);process.exitCode=1;});

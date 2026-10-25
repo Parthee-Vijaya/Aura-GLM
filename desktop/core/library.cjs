@@ -174,6 +174,8 @@ function validateFeatures(features, names) {
     if (!NAME.test(feature.id || '') || typeof feature.title !== 'string' || !feature.title || typeof feature.summary !== 'string' || !feature.summary || !Array.isArray(feature.skills) || !feature.skills.length) throw new Error(`Funktionen ${feature.id || '(uden id)'} mangler id, titel, beskrivelse eller skills.`);
     if (feature.requires !== undefined && (!Array.isArray(feature.requires) || feature.requires.some(id => id === feature.id || !ids.has(id)))) throw new Error(`Funktionen ${feature.id} bygger på en ukendt funktion.`);
     if (feature.default !== undefined && typeof feature.default !== 'boolean') throw new Error(`Funktionen ${feature.id} har en ugyldig standard.`);
+    if (feature.alwaysOn !== undefined && typeof feature.alwaysOn !== 'boolean') throw new Error(`Funktionen ${feature.id} har en ugyldig grundpakkeregel.`);
+    if (feature.alwaysOn && (feature.default === false || feature.group || (feature.requires || []).some(id => !features.find(item => item.id === id)?.alwaysOn))) throw new Error(`Funktionen ${feature.id}: Grundpakken kan ikke afhænge af et tilvalg.`);
     if (feature.group !== undefined && !FEATURE_GROUPS.includes(feature.group)) throw new Error(`Funktionen ${feature.id} står i en ukendt gruppe.`);
     // En integration er sin egen funktion med én skill og er slået fra, til brugeren vælger den.
     const integration = feature.skills.some(name => name.startsWith('harness-integration-'));

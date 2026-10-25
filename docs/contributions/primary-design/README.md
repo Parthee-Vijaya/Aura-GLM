@@ -1,5 +1,7 @@
 # Aktivér den valgte hovedskill før planlægning og bygning
 
+Denne side bevarer det oprindelige bidrags afgrænsning og testbeviser. I Aura 1 er designhjælpen siden gjort til en [obligatorisk grundpakke](../../design-baseline.md); beskrivelsen af fravalg nedenfor gælder det historiske bidrag.
+
 At installere en designskill sikrer ikke, at modellen læser den. Den aktive og validerede harness-aura-design-kerne indgår nu før første modelkald ved Planlæg, Byg og Arbejd direkte. Samme metode kan bruges i idéhjælpen og i eksport til andre værktøjer.
 
 ## Før og efter

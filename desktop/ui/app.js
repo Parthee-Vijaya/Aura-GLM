@@ -1241,12 +1241,12 @@ function featureRow(feature, checked, onChange, note, withSkills = true) {
   if (note) row.append(note);
   return row;
 }
-// Første start, Vælg selv: intet er slået til, før brugeren vælger det.
+// Første start, Vælg selv: grundpakken gælder altid; kun de valgfrie funktioner vælges.
 let pendingAI = false, pickedFeatures = {};
 function updatePick() {
   for (const input of document.querySelectorAll('#setup-features-list input[data-feature]')) input.checked = pickedFeatures[input.dataset.feature] === true;
   const count = Object.values(pickedFeatures).filter(Boolean).length;
-  $('#features-continue').textContent = count ? `Fortsæt med ${count} ${count === 1 ? 'funktion' : 'funktioner'}` : 'Fortsæt uden funktioner';
+  $('#features-continue').textContent = count ? `Fortsæt med ${count} tilvalg` : 'Fortsæt med grundpakken';
 }
 $('#features-all').onclick = () => action(async () => {
   state.features = await call('featuresSave', { scope: 'alle', chosen: 'alle', values: {} });
@@ -1254,7 +1254,7 @@ $('#features-all').onclick = () => action(async () => {
 });
 $('#features-pick').onclick = () => {
   // Ved første start vælges kun de almindelige funktioner. Integrationer slås til under Indstillinger › Funktioner.
-  const main = state.features.list.filter(feature => !feature.group);
+  const main = state.features.list.filter(feature => !feature.group && !feature.alwaysOn);
   pickedFeatures = Object.fromEntries(main.map(feature => [feature.id, false]));
   $('#setup-features-list').replaceChildren(...main.map(feature => featureRow(feature, false, (id, value) => { pickedFeatures = coupleFeatures(pickedFeatures, id, value); updatePick(); }, null, false)));
   updatePick(); setupPage('features-pick');
@@ -1283,7 +1283,7 @@ function renderFeatures(focus) {
   // Integrationer står for sig: én kontakt pr. system, som man slår til, når projektet skal bruge det.
   const integrations = features.list.filter(feature => feature.group === 'integrationer');
   const heading = integrations.length ? [node('h3', 'Integrationer', 'features-group'), node('p', 'Slå de systemer til, dit projekt skal hente data fra.', 'hint')] : [];
-  $('#features-list').replaceChildren(...features.list.filter(feature => !feature.group).map(row), ...heading, ...integrations.map(row));
+  $('#features-list').replaceChildren(...features.list.filter(feature => !feature.group && !feature.alwaysOn).map(row), ...heading, ...integrations.map(row));
   $('#features-advanced').hidden = !current;
   if (focus) document.querySelector(`#features-list input[data-feature="${focus}"]`)?.focus();
 }
@@ -1745,6 +1745,7 @@ function updateWorkMode() {
   $('#composer-mode').textContent = ({ chat: 'Samtale', plan: 'Planlæg', build: 'Byg', free: 'Byg' })[mode];
   $('#prompt').placeholder = window.workspace?.target() ? 'Hvad skal AI’en ændre her? Fx Gør teksten kortere.' : mode === 'chat' ? 'Stil et spørgsmål, eller beskriv din idé …' : 'Beskriv det, du vil bygge eller ændre …';
   $('#mode-help').textContent = mode === 'chat' ? 'Tal med AI’en om projektet. Filerne ændres ikke.' : mode === 'plan' ? 'Lav en plan sammen med AI’en, før den ændrer appen.' : mode === 'build' ? 'AI’en bygger efter den plan, du har valgt. Handlinger kræver fortsat godkendelse.' : 'AI’en ændrer appen efter din besked og projektets tilladelser.';
+  window.ConversationPermission?.sync();
 }
 $('#work-mode').onchange = () => {
   if (['chat', 'plan'].includes(view.composerMode) && ['free', 'build'].includes($('#work-mode').value)) $('#include-history').checked = true;

@@ -10,7 +10,10 @@ class Skills {
   async list(projectRoot) {
     const library = await this.library(), settings = projectRoot == null ? {} : await this.store.project(projectRoot), on = (await this.features.get(projectRoot)).effective;
     const entries = [{ id: RULES, title: 'Grundregler', summary: 'Gælder altid. De beskytter nøgler, data og din Git-historik.', original: library.rules, alwaysOn: true },
-      ...library.skills.map(skill => ({ id: skill.name, title: skill.title, summary: skill.summary, feature: library.features.find(feature => feature.skills.includes(skill.name)).id, original: skill.files.find(file => file.path === 'SKILL.md').content }))];
+      ...library.skills.map(skill => {
+        const feature = library.features.find(feature => feature.skills.includes(skill.name));
+        return { id: skill.name, title: skill.title, summary: skill.summary, feature: feature.id, alwaysOn: feature.alwaysOn === true, original: skill.files.find(file => file.path === 'SKILL.md').content };
+      })];
     return entries.map(entry => {
       const override = settings.skills?.[entry.id]?.content;
       const customized = typeof override === 'string';
@@ -41,7 +44,7 @@ class Skills {
   async context(projectRoot) {
     const library = await this.library(), list = await this.list(projectRoot), features = (await this.features.get(projectRoot)).effective;
     const enabled = list.filter(skill => skill.id !== RULES && skill.enabled);
-    const skills = enabled.map(skill => ({ name: skill.id, files: [{ path: 'SKILL.md', content: skill.content }, ...library.skills.find(item => item.name === skill.id).files.filter(file => file.path !== 'SKILL.md')] }));
+    const skills = enabled.map(skill => ({ name: skill.id, ...(skill.alwaysOn && skill.customized ? { baseline: skill.original } : {}), files: [{ path: 'SKILL.md', content: skill.content }, ...library.skills.find(item => item.name === skill.id).files.filter(file => file.path !== 'SKILL.md')] }));
     for (const skill of skills) validateSkillFiles(skill.name, skill.files);
     validateSkillLinks(skills, new Set(library.skills.map(skill => skill.name)));
     const integrations = library.features.filter(feature => feature.group === 'integrationer' && features[feature.id]).map(feature => feature.title);

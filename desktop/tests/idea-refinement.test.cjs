@@ -6,7 +6,8 @@ async function fixture(t){
  const server=http.createServer(async(req,res)=>{let body='';for await(const chunk of req)body+=chunk;sent.push({url:req.url,body:JSON.parse(body)});if(hold)return;res.setHeader('content-type','application/json');res.end(JSON.stringify({choices:[{finish_reason:'stop',message:{content:JSON.stringify(reply)}}]}));});await new Promise(r=>server.listen(0,'127.0.0.1',r));
  t.after(()=>{server.closeAllConnections();server.close();});
  const connection={id:'local',name:'Lokal prøve',kind:'compatible',baseURL:`http://127.0.0.1:${server.address().port}/v1`};
- const bench={connection:async()=>({...connection}),models:async()=>[{id:'test',name:'Test'}],routes:async()=>[],store:{decrypt:()=>''},skills:{context:async()=>({features:{design:false},skills:[]})}};
+ const library=await require('../core/library.cjs').loadLibrary(require('node:path').resolve(__dirname,'../../profiles'));
+ const bench={connection:async()=>({...connection}),models:async()=>[{id:'test',name:'Test'}],routes:async()=>[],store:{decrypt:()=>''},skills:{context:async()=>({features:{design:true},skills:library.skills})}};
  const service=new IdeaRefinement({getWorkbench:()=>bench});t.after(()=>service.stop());
  return {sent,connection,bench,service,hold:()=>{hold=true},reply:value=>{reply=value}};
 }
@@ -35,14 +36,15 @@ for(const kind of ['mistral','corti'])test(`${kind}: idea guidance is present in
  const f=await fixture(t),{loadLibrary}=require('../core/library.cjs');
  const library=await loadLibrary(require('node:path').resolve(__dirname,'../../profiles'));
  if (!library.skills.some(skill => skill.name === 'harness-aura-design')) library.skills.push({name:'harness-aura-design',files:[{path:'SKILL.md',content:'---\nname: harness-aura-design\ndescription: Synthetic method\n---\n\nByg noget der fungerer.'}]});
- let enabled=true;f.connection.kind=kind;
- f.bench.skills.context=async root=>{assert.equal(root,null);return {features:{design:enabled},skills:library.skills};};
+ f.connection.kind=kind;
+ f.bench.skills.context=async root=>{assert.equal(root,null);return {features:{design:true},skills:library.skills};};
  const review=await f.service.prepare(input);assert.equal(f.sent.length,0);assert.match(review.system,/HOVEDSKILL TIL BYGNING/);
  assert.match(review.system,/ingen værktøjer i idéhjælpen/);await f.service.send({token:review.token});
  assert.equal(f.sent[0].body.messages[0].content,review.system);assert.equal(f.sent[0].body.tools,undefined);
- const next=await f.service.prepare(input);enabled=false;
+ const next=await f.service.prepare(input);
+ library.skills.find(s=>s.name==='harness-aura-design').files.find(f=>f.path==='SKILL.md').content+='\nCHANGED-DESIGN-INSTRUCTIONS';
  await assert.rejects(f.service.send({token:next.token}),/Designinstruktionerne blev ændret/);assert.equal(f.sent.length,1);
- const disabled=await f.service.prepare(input);assert.doesNotMatch(disabled.system,/HOVEDSKILL TIL BYGNING/);
+ const updated=await f.service.prepare(input);assert.match(updated.system,/CHANGED-DESIGN-INSTRUCTIONS/);
 });
 test('custom core is carried by all supported idea API formats',()=>{
  const system='SYNTHETIC-EXACT-REVIEWED-CORE',messages=[{role:'user',content:'En idé'}];

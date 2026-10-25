@@ -1,3 +1,4 @@
+const requiredBuildSkills = require('./fixtures/required-build-skills.cjs');
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
@@ -38,7 +39,7 @@ test('ændrede projektregler stopper afsendelse før motorstart, også når file
   const root = await temp(t); let starts = 0;
   const bench = new Workbench({ directory: await temp(t), profiles, emit: () => {}, safeStorage: {}, engineFactory: () => { starts++; throw Error('Må ikke starte'); } });
   await bench.activate({ root, name: 'Prøve' });
-  const context = { rules: '', skills: [], titles: [], features: {}, projectInstructions: null };
+  const context = { rules: '', skills: requiredBuildSkills(), titles: [], features: {}, projectInstructions: null };
   bench.chat.prepared = { root, context, connection: { kind: 'compatible', name: 'Lokal prøve', baseURL: 'http://127.0.0.1:1/v1' }, disclosure: { fingerprint: 'prøve' } };
   await fs.writeFile(path.join(root, 'AGENTS.md'), 'Ny regel');
   await assert.rejects(bench.send({ text: 'Byg', fingerprint: 'prøve' }), /har ændret sig/);
@@ -69,7 +70,7 @@ test('projektregler kontrolleres igen efter motoropstart, før modellen modtager
   const root = await temp(t); let sends = 0;
   const bench = new Workbench({ directory: await temp(t), profiles, emit: () => {}, safeStorage: {}, engineFactory: () => ({ active: false, start: async () => fs.writeFile(path.join(root, 'AGENTS.md'), 'Ændret under opstart'), send: async () => sends++, abort: async () => {}, close: async () => {} }) });
   await bench.activate({ root, name: 'Prøve' });
-  bench.chat.prepared = { mode: 'free', root, disclosure: { fingerprint: 'prøve' }, connection: { kind: 'compatible', name: 'Lokal prøve', baseURL: 'http://127.0.0.1:1/v1' }, model: { id: 'model' }, references: [], context: { rules: '', skills: [], titles: [], features: {}, projectInstructions: null } };
+  bench.chat.prepared = { mode: 'free', root, disclosure: { fingerprint: 'prøve' }, connection: { kind: 'compatible', name: 'Lokal prøve', baseURL: 'http://127.0.0.1:1/v1' }, model: { id: 'model' }, references: [], context: { rules: '', skills: requiredBuildSkills(), titles: [], features: {}, projectInstructions: null } };
   await assert.rejects(bench.send({ text: 'Undersøg projektet', fingerprint: 'prøve' }), /ændret sig under opstart/);
   assert.equal(sends, 0); await bench.close();
 });

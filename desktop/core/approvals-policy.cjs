@@ -8,7 +8,7 @@ const { createHash } = require('node:crypto');
 const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const within = (root, target) => { const relative = path.relative(root, target); return relative === '' || (relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative)); };
 const stable = value => Array.isArray(value) ? value.map(stable) : value && typeof value === 'object' ? Object.fromEntries(Object.keys(value).sort().map(key => [key, stable(value[key])])) : value;
-const protectedPath = value => String(value).split(/[\\/]/).some(part => ['.git', 'secrets', 'references'].includes(part.toLowerCase()) || /^\.env/i.test(part) || /\.(key|pem)$/i.test(part));
+const protectedPath = value => String(value).split(/[\\/]/).some(part => ['.git', 'secrets', 'references', '.ssh', '.aws', '.gnupg', '.kube', '.azure', '.npmrc', '.pypirc'].includes(part.toLowerCase()) || /^\.env/i.test(part) || /\.(key|pem)$/i.test(part));
 const writable = mode => ['free', 'build'].includes(mode);
 
 // realpath på den nærmeste eksisterende forælder dækker også nye filer. Et link
@@ -207,9 +207,13 @@ class ApprovalsPolicy {
     const descriptor = await this.describe(context, p);
     if (!descriptor.match || descriptor.blockedMode) return { allowed: false, descriptor };
     if (descriptor.kind === 'bash' && context.commandSandbox !== true) return { allowed: false, descriptor };
-    if (context.conversationPermission?.active === true) {
+    // YOLO is an app-lifetime Build grant, not a new engine permission rule.
+    // Only concrete, already reviewed kinds qualify; protected/ambiguous targets
+    // and read-only modes still fail above.
+    if (context.conversationPermission?.active === true && writable(context.mode)) {
       if (descriptor.projectFile) return { allowed: true, source: 'conversation', descriptor };
       if (descriptor.kind === 'bash' && context.commandSandbox === true && await canonicalWithin(await directory(context.workspaceRoot), descriptor.match.cwd) && context.conversationPermission.active === true) return { allowed: true, source: 'conversation', descriptor };
+      if (descriptor.persistable && ['webfetch', 'edit', 'read', 'grep', 'glob', 'list', 'external_directory'].includes(descriptor.kind)) return { allowed: true, source: 'conversation', descriptor };
     }
     if (descriptor.scratch) return { allowed: true, source: 'scratch', descriptor };
     if (descriptor.projectFile && context.taskRules?.has(descriptor.key)) return { allowed: true, source: 'task', descriptor };

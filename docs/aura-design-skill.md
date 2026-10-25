@@ -4,9 +4,11 @@
 
 ## Brug i Aura og dit eget kodeværktøj
 
-Skillen følger den eksisterende funktion **Design og tilgængelighed** under **Indstillinger → Funktioner**. Er design slået til, kan agenten hente skillen, når opgaven passer. Et fravalg gælder fra næste besked og kan gælde alle projekter eller kun det aktuelle projekt. Der tilføjes ingen ny indstilling eller dialog.
+**Design og tilgængelighed er altid slået til i Aura 1.** Under **Indstillinger → Funktioner → Altid slået til** står Aura-design og byggevejledningen som del af grundpakken. Tidligere globale fravalg og projektundtagelser deaktiverer dem ikke. Det gælder også efter genstart og ved Vælg selv i opsætningen.
 
-Under **Tilpas instruktioner** kan du læse skillen, gemme en lokal projekttilpasning og gendanne bibliotekets fælles version. De eksisterende projektfiler og regler bevares.
+Hovedskillens kerne indlæses automatisk før det første modelkald i idéhjælp, Planlæg, Byg og Byg den valgte plan, uanset modeludbyder. Den kræver et gennemarbejdet første udkast med en konkret designretning, typografi, farver, sammenhængende brugerforløb og visuel kontrol. Længere referencer og design- og tilgængelighedsskillen kan hentes efter behov. Almindelig samtale tilføjes ikke automatisk byggeinstruktioner.
+
+Under **Tilpas instruktioner** kan du læse skillen, gemme en lokal projekttilpasning og gendanne bibliotekets fælles version. Projekttilpasningen supplerer den obligatoriske designkerne; den erstatter den ikke. Hele den indlæste tekst er med i gennemgangen før afsendelse. De eksisterende projektfiler og regler bevares.
 
 Skillen følger også med de 23 instruktionspakker til kodeværktøjer. Den bruger hver adapters eksisterende skillplacering. Pakkerne indeholder nu 13 almindelige skills; de fire systemintegrationer er fortsat særskilte tilvalg. Eksport understøtter filplaceringen, men er ikke bevis for, at hvert kodeværktøj eller en bestemt model følger instruktionerne.
 
@@ -16,7 +18,7 @@ Et eksempel på en opgave:
 
 ## Indhold og grænser
 
-Kernen er udvidet med brugerens metode til at omsætte en enkelt sætning til et gennemarbejdet produkt. Den fulde byggevejledning findes i `references/webapp-craft.md`. Denne PR opdaterer bibliotekets indhold; automatisk indlæsning før modelkald kommer i et separat bidrag.
+Kernen er udvidet med brugerens metode til at omsætte en enkelt sætning til et gennemarbejdet produkt. Den fulde byggevejledning findes i `references/webapp-craft.md`. Begge dele er integreret i Aura 1 sammen med automatisk indlæsning før modelkald. Mangler hovedskillen eller er den ugyldig, stoppes byggeforespørgslen, før noget sendes.
 
 
 - Brandmetode med dokumenterede kilder og tydelige antagelser.
@@ -41,4 +43,4 @@ Kildens `brand_scan.py` og `qa.py` medfølger ikke: de kan henholdsvis hente vil
 
 ## Afprøvning
 
-Se [bidragets før/eftervisninger, prøver og begrænsninger](contributions/aura-design-pr.md). Der er ingen ny installationspakke, release eller hosted CI-kørsel i dette bidrag.
+Se [det oprindelige bidrags før/eftervisninger og begrænsninger](contributions/aura-design-pr.md) og [grundpakkens implementering og prøver](design-baseline.md). Eksport til andre kodeværktøjer bevarer fortsat brugerens eksplicitte skilludvalg; Aura 1s faste grundpakke gælder appens egne byggeforløb.

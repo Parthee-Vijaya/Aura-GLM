@@ -11,7 +11,7 @@ Rettelsen af projektoprettelse fra beta 1.1 er bevaret: første klik kunne blive
 - Den godkendte onboarding B med udbyderkort, brandfarver og visualisering er bevaret. Projektnavnet står over idéen, og idéhjælpen kan forfine beskrivelsen og foreslå en plan før oprettelsen.
 - Arbejdsområdet har den godkendte mørke visning, én plusmenu til tekstfiler, billeder, PDF og referencemapper samt en arbejdsstatus over forhåndsvisningen. Du kan se forhåndsvisningen under arbejdet.
 - Modellen kan stille opfølgende spørgsmål. Genforsøg ved midlertidige forbindelsesfejl og genoptagelse af sessioner bevarer kontekst og undgår automatisk gentagelse af udførte handlinger.
-- Designfunktionen aktiverer den fælles hovedskill ved byggeopgaver. Plan- og værktøjsgodkendelser gælder fortsat. Fuld tilladelse er et særskilt, advarende valg for den aktuelle samtale og ophæver ikke faste regler.
+- Designfunktionen aktiverer den fælles hovedskill ved byggeopgaver. Plan- og værktøjsgodkendelser gælder fortsat. **YOLO** kan vælges under **Byg** efter en advarsel. Almindelige kommando-, hjemmeside- og filgodkendelser håndteres automatisk i den aktuelle samtale, indtil valget slås fra eller appen lukkes. Planer, datadeling, beskyttede filer og tekniske adgangsgrænser bevares. Se [YOLO og samtaletilladelser](docs/yolo.md).
 - Appen hedder **Aura 1**, mens eksisterende data- og nøgleringsidentiteter bevares. Opdateringskontrol peger på denne fork.
 
 Denne udgivelse er en **lokalt kvalificeret macOS-beta til arm64**, uden Developer ID-notarisering. Den er ikke en udgivelse af det separate Code-OSS-baserede Aura-1-projekt, og den gør ikke krav på fuld Privacy Gate. GitHub CI, Intel-Mac, Windows og kvaliteten hos eksterne AI-udbydere er ikke certificeret af denne udgivelse. Brug en separat profil ved afprøvning. Historiske skærmbilleder og de oprindelige installationsvejledninger nedenfor beskriver originalprojektet; forkens aktuelle noter og billeder findes i linket ovenfor.
@@ -69,13 +69,13 @@ I **Før du sender → Se alle oplysninger** kan du gennemgå appens præcise te
 
 ### Vælg den hjælp, du har brug for
 
-Under **Indstillinger → Funktioner** vælger du blandt andet planlægning, versioner, design, kodekvalitet og hjælp til sikkerhed og data. Valgene kan gælde alle projekter eller kun det aktuelle. Integrationer som Adresser og CVR vælges til særskilt.
+Under **Indstillinger → Funktioner** vælger du blandt andet planlægning, versioner, kodekvalitet og hjælp til sikkerhed og data. Design og tilgængelighed er altid slået til. Valgene kan gælde alle projekter eller kun det aktuelle. Integrationer som Adresser og CVR vælges til særskilt.
 
 ![Dialogen Funktioner med valg af planlægning, versioner, design, sikkerhed, kodekvalitet og integrationer.](docs/images/aura-funktioner.png)
 
 *Funktionerne styrer, hvilke arbejdsgange og instruktioner Aura stiller til rådighed. De er ikke en sikkerheds- eller myndighedsgodkendelse.*
 
-Designfunktionen indeholder også [Aura-design til dine apps](docs/aura-design-skill.md): en genbrugelig metode til brandkilder, designretning, farver, temaer og appmønstre i dit projekt. Den følger det eksisterende designvalg og ændrer ikke Auras egen brugerflade eller godkendelser.
+Designfunktionen indeholder også [Aura-design til dine apps](docs/aura-design-skill.md): en genbrugelig metode til brandkilder, designretning, farver, temaer og appmønstre i dit projekt. Den er altid med i grundpakken og indlæses fra første idé- eller byggeforsøg, også med Mistral og Corti. Første udkast skal allerede have gennemarbejdet typografi, farver, layout og brugerforløb. Det giver ingen ekstra værktøjstilladelser og ændrer ikke et godkendt design på egen hånd.
 
 ## Brug Aura i terminalen
 

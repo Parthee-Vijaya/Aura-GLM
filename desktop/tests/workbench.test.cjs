@@ -1,3 +1,4 @@
+const requiredBuildSkills = require('./fixtures/required-build-skills.cjs');
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
@@ -61,7 +62,7 @@ test('stop under motoropstart sender aldrig prompten', async t => {
  let entered, release, calls=0; const reached = new Promise(r=>entered=r); const blocked = new Promise(r=>release=r);
  const bench = new Workbench({ directory:await temp(t), profiles, emit:()=>{}, safeStorage:{}, engineFactory:()=>({ active:false, start:async()=>{entered();await blocked;}, send:async()=>calls++, abort:async()=>{}, close:async()=>{} }) });
  await bench.activate({root:await temp(t),name:'Prøve'}); const chat = bench.chat;
- chat.prepared = { root:chat.root, disclosure:{fingerprint:'test'}, connection:{kind:'compatible',name:'Prøve',baseURL:'http://127.0.0.1:1/v1'}, model:{id:'test'}, references:[], context:{ rules:'', skills:[], titles:[], features:{ versioner:true } } };
+ chat.prepared = { root:chat.root, disclosure:{fingerprint:'test'}, connection:{kind:'compatible',name:'Prøve',baseURL:'http://127.0.0.1:1/v1'}, model:{id:'test'}, references:[], context:{ rules:'', skills:requiredBuildSkills(), titles:[], features:{ versioner:true } } };
  const pending = bench.send({text:'Må ikke sendes',fingerprint:'test'});
  const rejection = assert.rejects(pending, /stoppet/);
  await reached; await bench.stop(); release(); await rejection;
@@ -73,7 +74,7 @@ test('Stop under lagring efter afsendelse afslutter opgaven og genopliver ikke a
  const reached = new Promise(r => entered = r), blocked = new Promise(r => release = r);
  const bench = new Workbench({ directory: await temp(t), profiles, emit: event => events.push(event), safeStorage: {}, engineFactory: () => ({ active: true, start: async () => {}, send: async () => {}, abort: async () => {}, close: async () => {} }) });
  await bench.activate({ root: await temp(t), name: 'Prøve' }); const chat = bench.chat;
- chat.prepared = { mode: 'free', root: chat.root, disclosure: { fingerprint: 'test', consentKey: 'test' }, connection: { kind: 'compatible', name: 'Prøve', baseURL: 'http://127.0.0.1:1/v1' }, model: { id: 'test' }, references: [], context: { rules: '', skills: [], titles: [], features: {} } };
+ chat.prepared = { mode: 'free', root: chat.root, disclosure: { fingerprint: 'test', consentKey: 'test' }, connection: { kind: 'compatible', name: 'Prøve', baseURL: 'http://127.0.0.1:1/v1' }, model: { id: 'test' }, references: [], context: { rules: '', skills: requiredBuildSkills(), titles: [], features: {} } };
  const consent = require('../core/model-consent.cjs'), remember = consent.remember;
  t.mock.method(consent, 'remember', async (...args) => { entered(); await blocked; return remember(...args); });
  const pending = bench.send({ text: 'Stop under lagring', fingerprint: 'test' }), rejected = assert.rejects(pending, /stoppet/);
@@ -264,7 +265,7 @@ function fakeSend(bench, engines) {
  bench.engineFactory = options => { const engine = { options, active: false, resumed: Boolean(options.resume), session: { id: options.resume || `ses-${engines.length + 1}` }, pending: new Map(), sent: [], start: async () => { engine.active = true; }, send: async text => { engine.sent.push(text); }, request: async () => true, reply: async () => {}, abort: async () => {}, close: async () => { engine.active = false; } }; engines.push(engine); return engine; };
  return async (chat, text, fingerprint = 'regler-1', extra = {}) => {
   chat.prepared = { mode: 'free', root: chat.root, sessionFingerprint: 'session-' + fingerprint, connection: { id: 'c', kind: 'compatible', name: 'Prøve', baseURL: 'http://127.0.0.1:1/v1' }, model: { id: 'test' }, route: null, references: [], fileRefs: [], view: null, autoCheckpoint: false, startup: null,
-   disclosure: { fingerprint, consentKey: 'samtykke', modelName: 'test', provider: 'Prøve' }, context: { rules: '', skills: [], titles: [], features: { versioner: false }, integrations: [] } };
+   disclosure: { fingerprint, consentKey: 'samtykke', modelName: 'test', provider: 'Prøve' }, context: { rules: '', skills: requiredBuildSkills(), titles: [], features: { versioner: false }, integrations: [] } };
   return bench.send({ chat: chat.id, text, fingerprint, ...extra });
  };
 }

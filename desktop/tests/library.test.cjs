@@ -142,6 +142,9 @@ test('afviser ugyldige skills, værktøjer og uoverensstemmelser', async t => {
   await rejects({ catalog: { features: [{ id: 'a', title: 'A', summary: 'A.', skills: [] }] } }, /mangler id, titel/);
   await rejects({ catalog: { features: [{ id: 'a', title: 'A', summary: 'A.', requires: ['ukendt'], skills: ['harness-a'] }] } }, /ukendt funktion/);
   await rejects({ catalog: { features: [{ id: 'a', title: 'A', summary: 'A.', default: 'nej', skills: ['harness-a'] }] } }, /ugyldig standard/);
+  await rejects({ catalog: { features: [{ id: 'a', title: 'A', summary: 'A.', alwaysOn: 'ja', skills: ['harness-a'] }] } }, /ugyldig grundpakkeregel/);
+  await rejects({ catalog: { features: [{ id: 'a', title: 'A', summary: 'A.', alwaysOn: true, default: false, skills: ['harness-a'] }] } }, /Grundpakken/);
+  await rejects({ catalog: { features: [{ id: 'a', title: 'A', summary: 'A.', alwaysOn: true, requires: ['b'], skills: ['harness-a'] }, { id: 'b', title: 'B', summary: 'B.', skills: ['harness-a'] }] } }, /Grundpakken/);
   await rejects({ catalog: { features: [{ id: 'a', title: 'A', summary: 'A.', group: 'ukendt', skills: ['harness-a'] }] } }, /ukendt gruppe/);
   await rejects({ catalog: { features: [{ id: 'a', title: 'A', summary: 'A.', group: 'integrationer', default: false, skills: ['harness-a'] }] } }, /kun der/);
 });

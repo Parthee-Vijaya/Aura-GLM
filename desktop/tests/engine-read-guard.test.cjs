@@ -22,7 +22,7 @@ async function fixture(t) {
 
 test('læsebeskyttelsen afviser beskyttede navne, casevarianter, streams og navnealiaser før læsning', async t => {
   const { root, read } = await fixture(t);
-  for (const name of ['.env', '.ENV', '.env.local', 'api.KEY::$DATA', 'api.pem:stream', 'api.key.', 'api.key ', 'Secrets/value.txt', '.GIT/config', 'REFERENCES/privat.txt']) {
+  for (const name of ['.env', '.ENV', '.env.local', 'api.KEY::$DATA', 'api.pem:stream', 'api.key.', 'api.key ', 'Secrets/value.txt', '.GIT/config', 'REFERENCES/privat.txt', '.ssh/id_rsa', '.AWS/credentials', '.gnupg/private-keys-v1.d/key', '.kube/config', '.azure/accessTokens.json', '.npmrc', '.pypirc']) {
     await assert.rejects(read(path.join(root, name)), /Aura beskytter denne fil/, name);
   }
   assert.equal(await read('normal.txt'), path.join(root, 'normal.txt'));
@@ -33,7 +33,11 @@ test('en neutral symlink til en beskyttet fil afvises; et almindeligt link blive
   const { root, read } = await fixture(t);
   await fs.symlink(path.join(root, '.env'), path.join(root, 'offentligt-navn.txt'));
   await fs.symlink(path.join(root, 'normal.txt'), path.join(root, 'normalt-link.txt'));
+  await fs.mkdir(path.join(root, '.ssh'));
+  await fs.writeFile(path.join(root, '.ssh', 'id_rsa'), 'Synthetic credential');
+  await fs.symlink(path.join(root, '.ssh', 'id_rsa'), path.join(root, 'neutral.txt'));
   await assert.rejects(read('offentligt-navn.txt'), /Aura beskytter denne fil/);
+  await assert.rejects(read('neutral.txt'), /Aura beskytter denne fil/);
   assert.equal(await read('normalt-link.txt'), path.join(root, 'normal.txt'));
   await fs.rm(path.join(root, 'references', 'valgt.txt'));
   await fs.symlink(path.join(root, 'normal.txt'), path.join(root, 'references', 'valgt.txt'));

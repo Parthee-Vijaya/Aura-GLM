@@ -11,13 +11,13 @@ const { appRules } = require('../core/project-guidance.cjs');
 const { Skills } = require('../core/skills.cjs');
 const profiles = path.join(__dirname, '../../profiles');
 async function temp(t) { const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'harness-funktioner-'))); t.after(() => fs.rm(root, { recursive: true, force: true })); return root; }
-const definitions = [{ id: 'versioner' }, { id: 'design' }, { id: 'deling', requires: ['versioner'], default: false }];
+const definitions = [{ id: 'versioner' }, { id: 'design', alwaysOn: true }, { id: 'deling', requires: ['versioner'], default: false }];
 
 test('uden valg gælder den anbefalede pakke, og en funktion følger den, den bygger på', () => {
   assert.deepEqual(resolve(definitions), { versioner: true, design: true, deling: false });
   assert.deepEqual(resolve(definitions, { deling: true }), { versioner: true, design: true, deling: true });
   assert.deepEqual(resolve(definitions, { versioner: false }), { versioner: false, design: true, deling: false });
-  assert.deepEqual(resolve(definitions, { design: false }, { design: true }), { versioner: true, design: true, deling: false }, 'en undtagelse går forud for standarden');
+  assert.deepEqual(resolve(definitions, { design: false }, { design: false }), { versioner: true, design: true, deling: false }, 'grundpakken gælder også ved gamle fravalg');
   assert.deepEqual(couple(definitions, { deling: true }), { deling: true, versioner: true });
   assert.deepEqual(couple(definitions, { versioner: false }), { versioner: false, deling: false });
 });
@@ -33,26 +33,26 @@ test('standarden gælder alle projekter; undtagelser gemmes kun, når de afviger
   // Vælg selv ved første start: kun versioner.
   const picked = await features.save(null, { scope: 'alle', chosen: 'valgt', values: { versioner: true, planlaegning: false, design: false, sikkerhed: false, kvalitet: false, deling: false } });
   assert.equal(picked.chosen, 'valgt');
-  assert.deepEqual(picked.defaults, { versioner: true, planlaegning: false, design: false, sikkerhed: false, kvalitet: false, deling: false, 'integration-adresser': false, 'integration-cvr': false, 'integration-promte': false, 'integration-komplai-run': false });
-  // Et projekt får design som undtagelse. Deling slår også versionerne til, som allerede er standard, så kun deling gemmes.
-  const project = await features.save('/projekt', { scope: 'projekt', values: { design: true } });
-  assert.deepEqual(project.exceptions, { design: true });
-  assert.deepEqual((await features.save('/projekt', { scope: 'projekt', values: { deling: true } })).exceptions, { design: true, deling: true });
-  assert.equal((await features.get('/andet')).effective.design, false, 'andre projekter følger standarden');
+  assert.deepEqual(picked.defaults, { versioner: true, planlaegning: false, design: true, sikkerhed: false, kvalitet: false, deling: false, 'integration-adresser': false, 'integration-cvr': false, 'integration-promte': false, 'integration-komplai-run': false });
+  // Et projekt får kodekvalitet som undtagelse. Deling slår også versionerne til, som allerede er standard, så kun deling gemmes.
+  const project = await features.save('/projekt', { scope: 'projekt', values: { kvalitet: true } });
+  assert.deepEqual(project.exceptions, { kvalitet: true });
+  assert.deepEqual((await features.save('/projekt', { scope: 'projekt', values: { deling: true } })).exceptions, { kvalitet: true, deling: true });
+  assert.equal((await features.get('/andet')).effective.kvalitet, false, 'andre projekter følger standarden');
   // Slås versioner fra i projektet, følger deling med, og Brug standarden fjerner undtagelsen igen.
   const off = await features.save('/projekt', { scope: 'projekt', values: { versioner: false } });
-  assert.deepEqual(off.exceptions, { design: true, versioner: false }); assert.equal(off.effective.deling, false);
-  assert.deepEqual((await features.save('/projekt', { scope: 'projekt', values: { versioner: null } })).exceptions, { design: true });
+  assert.deepEqual(off.exceptions, { kvalitet: true, versioner: false }); assert.equal(off.effective.deling, false);
+  assert.deepEqual((await features.save('/projekt', { scope: 'projekt', values: { versioner: null } })).exceptions, { kvalitet: true });
   // Når standarden ændres til det samme som undtagelsen, betyder undtagelsen ikke noget, men den bevares til den ændres.
-  const all = await features.save('/projekt', { scope: 'alle', values: { design: true } });
-  assert.equal(all.chosen, 'valgt', 'valget ved første start bevares'); assert.equal(all.defaults.design, true);
+  const all = await features.save('/projekt', { scope: 'alle', values: { kvalitet: true } });
+  assert.equal(all.chosen, 'valgt', 'valget ved første start bevares'); assert.equal(all.defaults.kvalitet, true);
   // Hele pakken følger igen katalogets anbefaling, også efter Vælg selv.
   const recommended = await features.save(null, { scope: 'alle', chosen: 'alle', values: {} });
   assert.equal(recommended.chosen, 'alle'); assert.deepEqual(recommended.defaults, first.defaults);
   assert.deepEqual((await store.read()).features.on, {}, 'intet valg gemmes, så en ny anbefaling slår igennem');
   for (const input of [null, { scope: 'alle', values: { ukendt: true } }, { scope: 'alle', values: { design: 'ja' } }, { scope: 'alle', values: { design: null } }, { scope: 'projekt', values: {}, chosen: 'alle' }, { scope: 'alle', values: {}, chosen: 'nogle' }])
     await assert.rejects(features.save('/projekt', input), /Ugyldigt valg|Ukendt funktion/);
-  await assert.rejects(features.save(null, { scope: 'projekt', values: { design: true } }), /Åbn et projekt/);
+  await assert.rejects(features.save(null, { scope: 'projekt', values: { kvalitet: true } }), /Åbn et projekt/);
 });
 
 test('Komplai Run når kun motoren efter tilvalg og fjernes igen ved fravalg', async t => {

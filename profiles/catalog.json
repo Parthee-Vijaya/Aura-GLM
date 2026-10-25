@@ -104,6 +104,7 @@
     {
       "id": "design",
       "title": "Design og tilgængelighed",
+      "alwaysOn": true,
       "summary": "Designpakker, logo og en side, som alle kan bruge.",
       "skills": [
         "harness-design-og-tilgaengelighed",

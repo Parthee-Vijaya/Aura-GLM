@@ -1,3 +1,4 @@
+const requiredBuildSkills = require('./fixtures/required-build-skills.cjs');
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
@@ -20,7 +21,7 @@ async function setup(t) {
 function prepare(chat, connection, modelID) {
   const fingerprint = `${connection.id}:${connection.revision || 'first'}:${modelID}`;
   chat.prepared = { mode: 'free', root: chat.root, connection, model: { id: modelID }, references: [], autoCheckpoint: false,
-    disclosure: { fingerprint, consentKey: 'test', modelName: modelID }, context: { rules: '', skills: [], features: { versioner: false } } };
+    disclosure: { fingerprint, consentKey: 'test', modelName: modelID }, context: { rules: '', skills: requiredBuildSkills(), features: { versioner: false } } };
   chat.preparedInvalidated = false; return fingerprint;
 }
 test('tre projekter beholder hver sin motor, model, besked, hændelser og opgave ved projektskift', async t => {
@@ -61,7 +62,7 @@ test('en forbindelsesændring under forberedelsen kan ikke genindføre gamle cre
   const saved = await bench.saveConnection({ kind: 'compatible', name: 'Før', baseURL: 'http://127.0.0.1:1/v1' }), connection = await bench.connection(saved.connections[0].id);
   bench.selection = async () => ({ connection, model: { id: 'test' }, route: null });
   let entered, release; const ready = new Promise(resolve => { entered = resolve; }), blocked = new Promise(resolve => { release = resolve; });
-  bench.skills.context = async () => { entered(); await blocked; return { rules: '', skills: [], titles: [], features: {}, integrations: [] }; };
+  bench.skills.context = async () => { entered(); await blocked; return { rules: '', skills: requiredBuildSkills(), titles: [], features: {}, integrations: [] }; };
   const preparing = bench.prepare({ connectionID: connection.id, modelID: 'test', mode: 'free' });
   const rejected = assert.rejects(preparing, /Forbindelsen blev ændret/);
   await ready; await bench.saveConnection({ id: connection.id, kind: 'compatible', name: 'Efter', baseURL: connection.baseURL }); release(); await rejected;
@@ -71,7 +72,7 @@ test('Samtale til Byg bevarer idéen uden plan, også efter kladdens mode er æn
   const { registry, projects, engines } = await setup(t), bench = await registry.select(projects[0]);
   const saved = await bench.saveConnection({ kind: 'compatible', name: 'Prøve', baseURL: 'http://127.0.0.1:1/v1' }), connection = await bench.connection(saved.connections[0].id);
   bench.selection = async () => ({ connection, model: { id: 'test' }, route: null });
-  bench.skills.context = async () => ({ rules: '', skills: [], titles: [], features: {}, integrations: [] });
+  bench.skills.context = async () => ({ rules: '', skills: requiredBuildSkills(), titles: [], features: {}, integrations: [] });
   bench.chat.data = await bench.history.updateChat(bench.project.root, bench.chat.id, data => {
     data.lastRunMode = 'chat'; data.mode = 'free';
     data.messages = [{ id: 'idé', role: 'user', text: 'Byg en app til 17 blå cykler.' }, { id: 'svar', role: 'assistant', text: 'Vi bruger en oversigt med antal og farve.' }];
@@ -106,7 +107,7 @@ test('simuleret Windows bevarer filopgaver og enkeltgodkendelse trods en husket 
   const { registry, projects, engines, events } = await setup(t), bench = await registry.select(projects[0]);
   const saved = await bench.saveConnection({ kind: 'compatible', name: 'Prøve', baseURL: 'http://127.0.0.1:1/v1' }), connection = await bench.connection(saved.connections[0].id);
   bench.selection = async () => ({ connection, model: { id: 'test' }, route: null });
-  bench.skills.context = async () => ({ rules: '', skills: [], titles: [], features: {}, integrations: [] });
+  bench.skills.context = async () => ({ rules: '', skills: requiredBuildSkills(), titles: [], features: {}, integrations: [] });
   const p = { id: 'kommando', permission: 'bash', metadata: { command: 'node lokal.cjs', workdir: bench.project.root }, patterns: [] };
   await bench.approvalsPolicy.grant({ projectRoot: bench.project.root, workspaceRoot: bench.project.root, mode: 'free', commandSandboxSupported: true }, p, { scope: 'project' });
   t.mock.method(require('../core/command-sandbox.cjs'), 'support', async () => ({ available: false, platform: 'win32', reason: 'Isolation understøttes endnu ikke på Windows.' }));
@@ -135,7 +136,7 @@ test('gamle forbindelser og workspace-v1 åbner og kan sende uden nye tilvalg p�
   assert.equal(bench.store.decrypt(await bench.connection(connection.id)), 'syntetisk-gammel-nøgle');
   assert.deepEqual(await bench.approvalsPolicy.settings(project.root), { autoProjectFiles: false, autoCommands: false, rules: [] });
   bench.selection = async () => ({ connection: await bench.connection(connection.id), model: { id: 'gammel-model' }, route: null });
-  bench.skills.context = async () => ({ rules: '', skills: [], titles: [], features: {}, integrations: [] });
+  bench.skills.context = async () => ({ rules: '', skills: requiredBuildSkills(), titles: [], features: {}, integrations: [] });
   const disclosure = await bench.prepare({ connectionID: connection.id, modelID: 'gammel-model', mode: 'free' });
   await bench.send({ text: 'Sæt i gang!', fingerprint: disclosure.fingerprint, contextBinding: disclosure.contextBinding });
   assert.equal(engines[0].options.sandbox, null); assert.match(engines[0].sent[0].system, /Bevar den eksisterende idé/);

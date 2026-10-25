@@ -75,35 +75,35 @@ const helpers = require('./ui-test-helpers.cjs');
     assert.equal((await features()).chosen, '');
     await page.click('#features-pick');
     await page.locator('#setup-title').filter({ hasText: 'Hvad vil du slå til?' }).waitFor();
-    assert.equal(await page.locator('#setup-features-list input[data-feature]').count(), 6);
-    assert.equal(await page.locator('#setup-features-list input[data-feature]:checked').count(), 0, 'Vælg selv starter uden funktioner');
-    assert.equal(await page.textContent('#features-continue'), 'Fortsæt uden funktioner');
+    assert.equal(await page.locator('#setup-features-list input[data-feature]').count(), 5);
+    assert.equal(await page.locator('#setup-features-list input[data-feature]:checked').count(), 0, 'Vælg selv starter uden tilvalg');
+    assert.equal(await page.textContent('#features-continue'), 'Fortsæt med grundpakken');
     // Deling bygger på versionerne: den ene slår den anden til, og et fravalg af versioner slår deling fra.
     await toggle('#setup-features-list', 'deling').check();
     assert.equal(await toggle('#setup-features-list', 'versioner').isChecked(), true);
-    assert.equal(await page.textContent('#features-continue'), 'Fortsæt med 2 funktioner');
+    assert.equal(await page.textContent('#features-continue'), 'Fortsæt med 2 tilvalg');
     await toggle('#setup-features-list', 'versioner').uncheck();
     assert.equal(await toggle('#setup-features-list', 'deling').isChecked(), false);
     await toggle('#setup-features-list', 'versioner').check();
-    assert.equal(await page.textContent('#features-continue'), 'Fortsæt med 1 funktion');
+    assert.equal(await page.textContent('#features-continue'), 'Fortsæt med 1 tilvalg');
     await shot('vaelg-selv');
     await page.click('#features-continue'); await page.waitForSelector('#create-form');
     const chosen = await features();
     assert.equal(chosen.chosen, 'valgt');
-    assert.deepEqual(chosen.defaults, { versioner: true, planlaegning: false, design: false, sikkerhed: false, kvalitet: false, deling: false, 'integration-adresser': false, 'integration-cvr': false, 'integration-promte': false, 'integration-komplai-run': false });
-    assert.equal(await page.locator('#setup-features-list .feature-row').count(), 6, 'integrationer vælges ikke ved første start');
-    // 2. Startsiden viser ikke design og hostingønske, når funktionerne er slået fra.
+    assert.deepEqual(chosen.defaults, { versioner: true, planlaegning: false, design: true, sikkerhed: false, kvalitet: false, deling: false, 'integration-adresser': false, 'integration-cvr': false, 'integration-promte': false, 'integration-komplai-run': false });
+    assert.equal(await page.locator('#setup-features-list .feature-row').count(), 5, 'integrationer vælges ikke ved første start');
+    // 2. Startsiden bevarer designgrundpakken; hostingønsket er fortsat fravalgt.
     await helpers.projectOptions(page);
-    assert.equal(await page.isVisible('#design-options'), false); assert.equal(await page.isVisible('#startup-hosting-row'), false);
+    assert.equal(await page.isVisible('#design-options'), true); assert.equal(await page.isVisible('#startup-hosting-row'), false);
     // ⓘ uden for en dialog: et klik åbner forklaringen, Escape lukker den, og fokus vender tilbage til knappen.
     await page.click('#onboarding .intro .info');
     await page.locator('#info-pop').filter({ hasText: 'foreslår teknologi ud fra din idé' }).waitFor();
     await page.keyboard.press('Escape'); await page.waitForFunction(() => !document.querySelector('#info-pop').matches(':popover-open'));
     assert.equal(await page.evaluate(() => document.activeElement.matches('#onboarding .intro .info')), true);
-    // Flere valg viser kun AI og tests; udgivelse og design hører til funktioner, der er slået fra.
-    assert.equal(await page.isVisible('#design-row'), false);
-    assert.deepEqual(await page.locator('#project-options .setting-row:visible label').allTextContents(), ['AI', 'Tests']);
-    await shot('startside-uden-design');
+    // Flere valg viser AI, tests og design; udgivelse er fortsat fravalgt.
+    assert.equal(await page.isVisible('#design-row'), true);
+    assert.deepEqual(await page.locator('#project-options .setting-row:visible label').allTextContents(), ['AI', 'Tests', 'Design']);
+    await shot('startside-med-designgrundpakke');
     await page.fill('#purpose', 'Jeg vil lave en oversigt over tre fiktive mødelokaler.'); await page.click('#create');
     await page.waitForSelector('#workspace:not([hidden])');
     project = path.join(documents, 'Aura', (await fs.readdir(path.join(documents, 'Aura')))[0]);
@@ -117,7 +117,7 @@ const helpers = require('./ui-test-helpers.cjs');
     assert.equal(await page.inputValue('#work-mode'), 'chat');
     await page.click('#composer-mode'); await page.selectOption('#work-mode', 'free'); await page.click('[data-close="task-dialog"]');
     assert.match(await page.inputValue('#prompt'), /tre fiktive mødelokaler/);
-    // 3. Første opgave: kun Git-skillen kan hentes, og appens regler følger funktionerne.
+    // 3. Første opgave: designgrundpakken og Git-skillen kan hentes, og appens regler følger funktionerne.
     await helpers.addConnection(page, { name: 'Kontrolleret model', baseURL: `http://127.0.0.1:${server.address().port}/v1` });
     await chooseModel();
     await page.click('#send'); await page.waitForSelector('#data-dialog[open]');
@@ -126,12 +126,12 @@ const helpers = require('./ui-test-helpers.cjs');
     await page.locator('#approvals button').filter({ hasText: 'Tillad for denne opgave' }).click({ timeout: 90000 });
     await heading('Udkast 1'); await page.locator('#run-review button').filter({ hasText: 'Fortryd opgaven' }).waitFor({ timeout: 90000 });
     await page.waitForFunction(() => document.querySelector('#run-status').textContent === 'Klar');
-    assert.deepEqual(prompts[0].skills, ['harness-git-og-samarbejde']);
+    assert.deepEqual(prompts[0].skills, ['harness-aura-design', 'harness-design-og-tilgaengelighed', 'harness-git-og-samarbejde']);
     for (const text of ['APPENS REGLER', 'FÆLLES-GRUNDLAG-02', 'slået planlægning før bygning fra', 'Udgivelse er slået fra', 'gemmer selv en version efter hver AI-opgave']) assert.ok(prompts[0].system.includes(text), text);
     assert.match((await log())[0], /^AI-opgave: /);
     // 4. Indstillinger › Funktioner: en undtagelse for projektet og en ændring for alle projekter.
     await helpers.menuClick(page, '#features-button'); await page.waitForSelector('#features-dialog[open]');
-    assert.equal(await page.isVisible('#features-scope'), true); assert.equal(await page.locator('#features-list .feature-row').count(), 10);
+    assert.equal(await page.isVisible('#features-scope'), true); assert.equal(await page.locator('#features-list .feature-row').count(), 9);
     assert.equal(await page.textContent('#features-list .features-group'), 'Integrationer');
     // Projektvalgets skjulte radioknapper fik før den generelle input-bredde og gav dialogen en vandret rullebjælke.
     assert.deepEqual(await page.locator('#features-dialog').evaluate(el => el.scrollWidth <= el.clientWidth), true, 'dialogen har ingen vandret rullebjælke');
@@ -168,7 +168,7 @@ const helpers = require('./ui-test-helpers.cjs');
     await page.click('#composer-mode'); await page.selectOption('#work-mode', 'free'); await page.click('[data-close="task-dialog"]');
     // 5. Næste opgave starter en ny modelsession med de nye skills og regler.
     const second = await sendTask('Gør overskriften tydeligere.', true);
-    assert.deepEqual(second.skills, ['harness-afproevning-og-fejlretning', 'harness-git-og-samarbejde', 'harness-integration-adresser', 'harness-kodestil', 'harness-overdragelse-og-drift', 'harness-udgivelse-og-gendannelse']);
+    assert.deepEqual(second.skills, ['harness-afproevning-og-fejlretning', 'harness-aura-design', 'harness-design-og-tilgaengelighed', 'harness-git-og-samarbejde', 'harness-integration-adresser', 'harness-kodestil', 'harness-overdragelse-og-drift', 'harness-udgivelse-og-gendannelse']);
     assert.ok(second.system.includes('Udgiv-knap'));
     assert.ok(second.system.includes('slået disse integrationer til: Adresser'));
     // 6. Uden Versioner og fortryd får et nyt projekt ingen Git, og resultatkortet tilbyder ikke versioner.
@@ -198,7 +198,7 @@ const helpers = require('./ui-test-helpers.cjs');
     const after = await features();
     assert.equal(after.chosen, 'valgt'); assert.equal(after.defaults.versioner, false); assert.equal(after.defaults.kvalitet, true);
     assert.deepEqual(errors, []);
-    console.log(JSON.stringify({ status: 'bestået', root, checks: ['første start med Vælg selv', 'deling og versioner følges ad', 'startsiden uden design og hosting', 'ⓘ åbner og lukker i og uden for en dialog', 'Git fra start med versioner', 'Del og sikkerhedskopi skjult uden deling', 'direkte arbejde uden planlægning', 'kun aktive skills i motoren', 'appens regler følger funktionerne', 'undtagelse for ét projekt', 'ingen vandret rullebjælke i dialogen', 'integration slået til for ét projekt', 'arbejdsmåden følger planlægning med det samme', 'ændring for alle projekter', 'ny modelsession med nye skills', 'projekt uden Git og uden versionsknapper', 'valget husket efter genstart'] }, null, 2));
+    console.log(JSON.stringify({ status: 'bestået', root, checks: ['første start med Vælg selv', 'deling og versioner følges ad', 'startsiden med designgrundpakke og uden hosting', 'ⓘ åbner og lukker i og uden for en dialog', 'Git fra start med versioner', 'Del og sikkerhedskopi skjult uden deling', 'direkte arbejde uden planlægning', 'kun aktive skills i motoren', 'appens regler følger funktionerne', 'undtagelse for ét projekt', 'ingen vandret rullebjælke i dialogen', 'integration slået til for ét projekt', 'arbejdsmåden følger planlægning med det samme', 'ændring for alle projekter', 'ny modelsession med nye skills', 'projekt uden Git og uden versionsknapper', 'valget husket efter genstart'] }, null, 2));
   } catch (error) {
     if (page) await page.screenshot({ path: path.join(root, 'fejl.png'), animations: 'disabled' }).catch(() => {});
     console.error(JSON.stringify({ root, errors }));

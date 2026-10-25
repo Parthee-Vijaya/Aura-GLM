@@ -19,7 +19,7 @@ async function fixture(t) {
   const store = new Store(path.join(root, 'data')), features = new Features(store, async () => library);
   return { root, library, store, features, skills: new Skills(async () => library, store, features) };
 }
-test('primary core is loaded in every building mode, but not ordinary chat or a disabled design feature', async t => {
+test('mandatory core is loaded in every building mode; ordinary chat stays scoped', async t => {
   const f = await fixture(t), context = await f.skills.context(f.root);
   const main = context.skills.find(s => s.name === name).files.find(f => f.path === 'SKILL.md').content;
   for (const mode of ['plan', 'build', 'free', 'idea']) {
@@ -30,21 +30,51 @@ test('primary core is loaded in every building mode, but not ordinary chat or a 
   }
   assert.equal(primaryBuildGuidance(context, 'chat'), '');
   assert.equal(primaryBuildGuidance(context, 'unknown'), '');
-  assert.equal(primaryBuildGuidance({ ...context, skills: [] }, 'free'), '');
-  assert.equal(primaryBuildGuidance({ ...context, features: { design: false } }, 'free'), '');
+  assert.throws(() => primaryBuildGuidance({ ...context, skills: [] }, 'free'), /mangler/);
+  assert.equal(primaryBuildGuidance({ ...context, features: { design: false } }, 'free'), primaryBuildGuidance(context, 'free'));
   await f.features.save(f.root, { scope: 'projekt', values: { design: false } });
-  assert.equal(primaryBuildGuidance(await f.skills.context(f.root), 'build'), '');
+  assert.equal(primaryBuildGuidance(await f.skills.context(f.root), 'build'), primaryBuildGuidance(context, 'build'));
 });
 test('project customization reaches the core; pre-project context never borrows another project', async t => {
   const f = await fixture(t), original = (await f.skills.list(f.root)).find(s => s.id === name);
-  await f.skills.save(f.root, { id: name, content: original.content + '\nPROJECT-ONLY-SYNTHETIC-DESIGN\n' });
+  // Replace the local body while retaining valid reference declarations.
+  const references = original.content.split('\n').filter(line => line.includes('](references/')).join('\n');
+  await f.skills.save(f.root, { id: name, content: '---\nname: ' + name + '\ndescription: Project design instructions\n---\nPROJECT-ONLY-SYNTHETIC-DESIGN\n' + references });
   assert.match(primaryBuildGuidance(await f.skills.context(f.root), 'free'), /PROJECT-ONLY-SYNTHETIC-DESIGN/);
+  assert.ok(primaryBuildGuidance(await f.skills.context(f.root), 'free').includes(original.content.split('\n---\n')[1].trim()), 'project customization cannot remove the baseline');
   assert.doesNotMatch(primaryBuildGuidance(await f.skills.context(null), 'idea'), /PROJECT-ONLY-SYNTHETIC-DESIGN/);
   await f.features.save(null, { scope: 'alle', values: { design: false } });
-  assert.equal(primaryBuildGuidance(await f.skills.context(null), 'idea'), '');
+  assert.match(primaryBuildGuidance(await f.skills.context(null), 'idea'), /HOVEDSKILL TIL BYGNING/);
   await f.features.save(f.root, { scope: 'projekt', values: { design: true } });
   assert.match(primaryBuildGuidance(await f.skills.context(f.root), 'free'), /PROJECT-ONLY-SYNTHETIC-DESIGN/);
-  assert.equal(primaryBuildGuidance(await f.skills.context(null), 'idea'), '');
+  assert.match(primaryBuildGuidance(await f.skills.context(null), 'idea'), /HOVEDSKILL TIL BYGNING/);
+});
+test('legacy global and project opt-outs cannot remove baseline skills, including after reload', async t => {
+  const f = await fixture(t);
+  await f.store.update(state => { state.features = { chosen: 'valgt', on: { design: false, sikkerhed: false, planlaegning: false, deling: false } }; });
+  await f.store.saveProject(f.root, { features: { design: false, kvalitet: false }, approvedPlan: 'preserve-synthetic-plan', permissions: { keep: 'synthetic-permission' } });
+  const before = await f.store.read();
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const settings = await f.features.get(f.root);
+    assert.equal(settings.effective.design, true);
+    assert.equal(settings.defaults.design, true);
+    assert.equal(settings.exceptions.design, undefined);
+    assert.equal(settings.effective.sikkerhed, false);
+    assert.equal(settings.effective.planlaegning, false);
+    assert.equal(settings.effective.deling, false);
+    assert.equal(settings.effective.kvalitet, false);
+    const list = await f.skills.list(f.root);
+    for (const id of [name, 'harness-design-og-tilgaengelighed']) assert.ok(list.find(skill => skill.id === id).alwaysOn);
+    for (const root of [f.root, null]) {
+      const context = await f.skills.context(root);
+      for (const id of [name, 'harness-design-og-tilgaengelighed']) assert.ok(context.skills.some(skill => skill.name === id));
+      assert.match(primaryBuildGuidance(context, root ? 'build' : 'idea'), /HOVEDSKILL TIL BYGNING/);
+    }
+    const store = new Store(path.join(f.root, 'data'));
+    f.features = new Features(store, async () => f.library);
+    f.skills = new Skills(async () => f.library, store, f.features);
+  }
+  assert.deepEqual(await f.store.read(), before, 'read-time migration preserves saved plans, permissions and all user data');
 });
 test('an enabled but malformed main skill fails closed instead of silently substituting instructions', () => {
   const context = files => ({ features: { design: true }, skills: [{ name, files }] });
