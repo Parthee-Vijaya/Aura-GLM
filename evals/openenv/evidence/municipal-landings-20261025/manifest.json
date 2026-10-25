@@ -1,0 +1,203 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-25",
+  "sourceLabelsAreRelativeToPrivateEvidenceRoot": true,
+  "sourceReports": [
+    {
+      "label": "corrections/round-2/qa-summary.json",
+      "sha256": "23c4840161680413698b0fb03b82aaf02b62119bad67892f60a5b3fe26b7af2e",
+      "published": false
+    },
+    {
+      "label": "corrections/round-2/QA-REPORT.md",
+      "sha256": "c57354473904b425e02db3c76691d60aaa17f84de3a95798b450b5929ca1dace",
+      "published": false
+    },
+    {
+      "label": "corrections/round-2/transport-summary.json",
+      "sha256": "7b74781b6a33df5e07c90314f566727f6670804ac2d95bd4a880de792200e7ec",
+      "published": false
+    },
+    {
+      "label": "corrections/round-2/transport-summary.md",
+      "sha256": "d1d5ee5f87697d815f5aa6273ca2fea9b52abca511adca3fd8c3d49ba8616f97",
+      "published": false
+    },
+    {
+      "label": "corrections/focus-inspector-summary.json",
+      "sha256": "3b1b86089b4a678341087227987e783bc945cddfa208e690dda5d94ad5a6c26e",
+      "published": false
+    },
+    {
+      "label": "corrections/focus-inspector-summary.md",
+      "sha256": "d450d07df8650e5de8fea5d417e6e3983b92fbb7363d711e0628d266d992e1ad",
+      "published": false
+    },
+    {
+      "label": "corrections/final-verification.json",
+      "sha256": "23dc1966859d82523539bf84c60d6c29a5172a7524527ebf1c8264e74d069982",
+      "published": false
+    },
+    {
+      "label": "corrections/round-2/acceptance-result.json",
+      "sha256": "5aa88517b4416b1247c0b6ff24889e2ebe3e5c26ecf66b1cc7533140ec4d0a42",
+      "published": false
+    }
+  ],
+  "screenshots": [
+    {
+      "file": "vejle/desktop.png",
+      "sourceEvidence": "qa/corrections/round-2/vejle/desktop.png",
+      "stage": "final-tested",
+      "sha256": "c15d5e16d8fd7b1f8f1c67633e5a89301fed8f4a51b719603f27678f8b740e5f",
+      "bytes": 105412,
+      "width": 1440,
+      "height": 1000,
+      "imageReviewed": true,
+      "metadataTextChunks": false
+    },
+    {
+      "file": "vejle/mobile.png",
+      "sourceEvidence": "qa/corrections/round-2/vejle/mobile.png",
+      "stage": "final-tested",
+      "sha256": "f74df0cb26784a4c0dd5a143f46585beea185665fa2ea6fdc021912111c633c6",
+      "bytes": 54700,
+      "width": 390,
+      "height": 844,
+      "imageReviewed": true,
+      "metadataTextChunks": false
+    },
+    {
+      "file": "kalundborg/desktop.png",
+      "sourceEvidence": "qa/corrections/round-2/kalundborg/desktop.png",
+      "stage": "final-tested",
+      "sha256": "b34c3542b2a257435a73ba24be855c866bbe1fdb4f826a0f2fbd53f46dbcd75d",
+      "bytes": 110139,
+      "width": 1440,
+      "height": 1000,
+      "imageReviewed": true,
+      "metadataTextChunks": false
+    },
+    {
+      "file": "kalundborg/mobile.png",
+      "sourceEvidence": "qa/corrections/round-2/kalundborg/mobile.png",
+      "stage": "final-tested",
+      "sha256": "5ba4b87de63d2d7d3208fcfec368246638d202725709e0e4fc5a85d97b3ab64c",
+      "bytes": 55373,
+      "width": 390,
+      "height": 844,
+      "imageReviewed": true,
+      "metadataTextChunks": false
+    },
+    {
+      "file": "gentofte/desktop.png",
+      "sourceEvidence": "qa/corrections/round-2/gentofte/desktop.png",
+      "stage": "final-tested",
+      "sha256": "cc478f220870a04cf84ac21e7413da3eb3a9a6bc3ed16cc01096c5c4f558f518",
+      "bytes": 118267,
+      "width": 1440,
+      "height": 1000,
+      "imageReviewed": true,
+      "metadataTextChunks": false
+    },
+    {
+      "file": "gentofte/mobile.png",
+      "sourceEvidence": "qa/corrections/round-2/gentofte/mobile.png",
+      "stage": "final-tested",
+      "sha256": "1d5c2cdb8c98fc34954ff8fd9e342c76ff350c863551327efe8b9ccc355b8dd0",
+      "bytes": 61819,
+      "width": 390,
+      "height": 844,
+      "imageReviewed": true,
+      "metadataTextChunks": false
+    },
+    {
+      "file": "sonderborg/desktop.png",
+      "sourceEvidence": "qa/corrections/round-2/sonderborg/desktop.png",
+      "stage": "final-tested",
+      "sha256": "19e05cfb7d60be34fa5b02f389946d4e4fcf8cc0ddea70666d0f8bf50d02984b",
+      "bytes": 100757,
+      "width": 1440,
+      "height": 1000,
+      "imageReviewed": true,
+      "metadataTextChunks": false
+    },
+    {
+      "file": "sonderborg/mobile.png",
+      "sourceEvidence": "qa/corrections/round-2/sonderborg/mobile.png",
+      "stage": "final-tested",
+      "sha256": "1da7ae48215f1790e9edc849d941b138cb73520e06a4b74defe7c873d8700ac2",
+      "bytes": 55086,
+      "width": 390,
+      "height": 844,
+      "imageReviewed": true,
+      "metadataTextChunks": false
+    },
+    {
+      "file": "viborg/desktop.png",
+      "sourceEvidence": "qa/corrections/round-2/viborg/desktop.png",
+      "stage": "final-tested",
+      "sha256": "0e7ec149e62b1909fb03950c0a04efd0a765f3573d51765e177fb8003deff107",
+      "bytes": 115290,
+      "width": 1440,
+      "height": 1000,
+      "imageReviewed": true,
+      "metadataTextChunks": false
+    },
+    {
+      "file": "viborg/mobile.png",
+      "sourceEvidence": "qa/corrections/round-2/viborg/mobile.png",
+      "stage": "final-tested",
+      "sha256": "af09265ec9f96998bdb4ec5ece22da0633fe1f1cf2061458349e86ace17cf8a3",
+      "bytes": 56850,
+      "width": 390,
+      "height": 844,
+      "imageReviewed": true,
+      "metadataTextChunks": false
+    },
+    {
+      "file": "kalundborg/first-desktop.png",
+      "sourceEvidence": "qa/corrections/round-2/kalundborg/first/desktop.png",
+      "stage": "before-first-product-quality-check",
+      "sha256": "db4958db07a63287ade8a14fce0033ee3af988de2770b034e06f2024bac172a9",
+      "bytes": 108863,
+      "width": 1440,
+      "height": 1000,
+      "imageReviewed": true,
+      "metadataTextChunks": false
+    },
+    {
+      "file": "kalundborg/first-mobile.png",
+      "sourceEvidence": "qa/corrections/round-2/kalundborg/first/mobile.png",
+      "stage": "before-first-product-quality-check",
+      "sha256": "385e53314151fd9ead9c86bc0dda124fced83f48bbe91f7ef261ba78a6036983",
+      "bytes": 54712,
+      "width": 390,
+      "height": 844,
+      "imageReviewed": true,
+      "metadataTextChunks": false
+    },
+    {
+      "file": "viborg/first-mobile-full.png",
+      "sourceEvidence": "qa/corrections/round-2/viborg/first/mobile-full.png",
+      "stage": "before-first-product-quality-check",
+      "sha256": "e8788a4c67be0358e622494eebbf142720d92cf683d5e9dfb34fcda8341f8008",
+      "bytes": 250020,
+      "width": 390,
+      "height": 4407,
+      "imageReviewed": true,
+      "metadataTextChunks": false
+    },
+    {
+      "file": "viborg/mobile-full.png",
+      "sourceEvidence": "qa/corrections/round-2/viborg/mobile-full.png",
+      "stage": "final-tested",
+      "sha256": "ecb2cfb7413199c46c26fadf13fa8fcaa2d861055d6721dcd783bec343292af5",
+      "bytes": 250161,
+      "width": 390,
+      "height": 4407,
+      "imageReviewed": true,
+      "metadataTextChunks": false
+    }
+  ]
+}

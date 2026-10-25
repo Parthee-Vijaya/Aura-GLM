@@ -8,6 +8,8 @@ Dette er **Parthee-Vijayas fork af Aura Harness**. Udgaven samler forbedret desi
 
 840 desktop-, 27 CLI- og 24 evalueringstests samt syv native regressioner består. Et helt forløb med rigtig Mistral fra kildekoden består; en ekstra rigtig AI-prøve direkte fra DMG’en afventer macOS-nøgleringen. GPT-prøven har fortsat transporttimeouts. Se de konkrete begrænsninger i udgivelsesnoterne.
 
+**Efterfølgende kildearbejde — endnu ikke i DMG’en:** [Fem kommunale landing pages med GPT-6.1 Sol](evals/openenv/MUNICIPAL-LANDINGS-2026-10-25.md) gennemfører nu Auras Plan/Byg-forløb med 331 browserkontroller, 60 visuelle kontrolpunkter og screenshots fra både første og sidste udkast. De 79 modelkald i denne runde havde ingen timeout; tidligere fejlede forsøg, resterende advarsler og 26 fejlede modellæsninger er dokumenteret. Designvejledningen opfordrer desuden til at kombinere Aura-design med relevante designskills, som det aktuelle miljø faktisk tilbyder. Det installerer ingen eksterne skills og ændrer ingen udgivet app.
+
 ## Det nye i 0.4.0
 
 - **Design gennem skills og den valgte model.** Aura indlæser designmetoden fra første idé- og byggeforsøg. Modellen skaber designet ud fra opgaven, brugerens valg og dokumenterede designguides, logoer og farver. Aura påtvinger ikke alle apps den samme palette eller layoutopskrift. Se [designskillen](docs/aura-design-skill.md).

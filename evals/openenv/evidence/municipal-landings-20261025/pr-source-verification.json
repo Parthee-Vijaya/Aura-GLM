@@ -1,0 +1,77 @@
+{
+  "date": "2026-10-25",
+  "scope": "Current PR sources after focus geometry review; distinct from frozen live-model trials",
+  "sourceFiles": [
+    {
+      "path": "desktop/core/app-quality.cjs",
+      "sha256": "4049c3b1f0515ea2f9cafea8a0cf1508f5b2e1222e94346c3177ec050fa1d44a"
+    },
+    {
+      "path": "desktop/scripts/verify-app-quality-focus.cjs",
+      "sha256": "4952e1ccb823538653f5e5fd96887d702532dda9a72a2ce45d7d5b54870eb978"
+    },
+    {
+      "path": "desktop/tests/app-quality-focus.test.cjs",
+      "sha256": "402cf805186ffba550c3413230006cc13391f05691f5b6c5198eb1f2d814c05a"
+    },
+    {
+      "path": "evals/openenv/codex_bridge.cjs",
+      "sha256": "a008feeded2bdd211284bfabae2002716b3737b64ffd2d204727c8b4651f190d"
+    },
+    {
+      "path": "evals/openenv/codex_bridge.test.cjs",
+      "sha256": "82c8ec1b2c24630114441a981209ecf9b21f35dcf16e4d61527934488fc8ed3d"
+    },
+    {
+      "path": "profiles/skills/harness-aura-design/SKILL.md",
+      "sha256": "82c3c66aa16d921d9d88386fb7874ca592ecfcc7a8c6c28af06dde15274e3e40"
+    }
+  ],
+  "tests": {
+    "desktop": {
+      "passed": 843,
+      "failed": 0,
+      "logSha256": "eec6d592eda96464e0c2c79c65529b4dc74effe3dbd8a498a61e53c9f46816b1"
+    },
+    "evaluationJavaScript": {
+      "passed": 32,
+      "failed": 0,
+      "logSha256": "c50e1b2d24f7585c2437d2102130f9c50a06b9eec6aa13acb6c67ed3c50b120c"
+    },
+    "openenvPython": {
+      "passed": 3,
+      "failed": 0,
+      "logSha256": "09ca64311207aff3d1cd9d905f282970c5a73bf7a1e0e19eb656840deba0fb36"
+    }
+  },
+  "nativeFocus": {
+    "passed": 34,
+    "failed": 0,
+    "externalRequests": 0,
+    "preservedViborgRegression": [
+      {
+        "name": "desktop",
+        "keyboardFocus": {
+          "steps": 12,
+          "tested": 11,
+          "invisible": 1,
+          "uncertain": 10
+        }
+      },
+      {
+        "name": "mobile",
+        "keyboardFocus": {
+          "steps": 12,
+          "tested": 11,
+          "invisible": 1,
+          "uncertain": 10
+        }
+      }
+    ],
+    "preservedViborgSourceFingerprint": "6a413c35e903a3796473c242a386152795c732d2e16872fa660d3b00b0022071",
+    "sourceReportSha256": "231966b15c585a9d050145d0c75ffd4d8bdf958a9fddaa74625aee7c52996cb1"
+  },
+  "newLiveModelCalls": 0,
+  "dmgBuilt": false,
+  "githubCiRun": false
+}
