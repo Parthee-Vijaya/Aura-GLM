@@ -1,0 +1,33 @@
+{
+  "checkedAt": "2026-10-25T16:15:03.466360+00:00",
+  "releaseUrl": "https://github.com/Parthee-Vijaya/ai-harness/releases/tag/v0.4.0-beta.2",
+  "releaseId": 423511691,
+  "publishedAt": "2026-10-25T16:14:24Z",
+  "prerelease": true,
+  "assets": [
+    {
+      "name": "Aura-1-0.4.0-beta.2-mac-arm64.dmg",
+      "bytes": 345374400,
+      "sha256": "34bdaf203eb023298843253841291fa4c2bc2dd91ba76de41ebfce333767b979",
+      "githubDigestMatches": true,
+      "downloadMatches": true,
+      "url": "https://github.com/Parthee-Vijaya/ai-harness/releases/download/v0.4.0-beta.2/Aura-1-0.4.0-beta.2-mac-arm64.dmg"
+    },
+    {
+      "name": "Aura-1-0.4.0-beta.2-mac-arm64.zip",
+      "bytes": 339580889,
+      "sha256": "ab9f6e16aba2fa891c069dff2eaa99545b7e6a11de19d2333de90cda407a3a88",
+      "githubDigestMatches": true,
+      "downloadMatches": true,
+      "url": "https://github.com/Parthee-Vijaya/ai-harness/releases/download/v0.4.0-beta.2/Aura-1-0.4.0-beta.2-mac-arm64.zip"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 200,
+      "sha256": "766520ac10c80b68fded7b5ba7a42d38e4be890414da34f2f40956f360b739c3",
+      "githubDigestMatches": true,
+      "downloadMatches": true,
+      "url": "https://github.com/Parthee-Vijaya/ai-harness/releases/download/v0.4.0-beta.2/SHA256SUMS.txt"
+    }
+  ]
+}

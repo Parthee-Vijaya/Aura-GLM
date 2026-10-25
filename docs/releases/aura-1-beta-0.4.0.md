@@ -1,15 +1,15 @@
 # Aura 1 beta 0.4.0
 
-**Kommende udgivelse — endnu ikke offentliggjort.** Dette dokument er klargjort den 25. oktober 2026. En test med status “afventer” er ikke gennemført eller godkendt af dette dokument.
+**Udgivet 25. oktober 2026 i Parthee-Vijayas fork.** En test med status “afventer” er ikke gennemført eller godkendt af dette dokument.
 
 | Oplysning | Status |
 |---|---|
 | Synligt navn | Aura 1 beta 0.4.0 |
-| Planlagt teknisk version og tag | `0.4.0-beta.2` / `v0.4.0-beta.2` |
+| Teknisk version og tag | `0.4.0-beta.2` / `v0.4.0-beta.2` |
 | Platform | macOS, Apple Silicon / arm64 |
 | Kildecommit i den færdige pakke | `95c7056b18cf8ec22df51ac45e460404faabf483`; 215 kilde-/profilfiler kontrolleret |
-| Release | [Kommende releaseadresse](https://github.com/Parthee-Vijaya/ai-harness/releases/tag/v0.4.0-beta.2); endnu ingen verificeret download |
-| Senest udgivne version | [Aura 1 beta 0.3.1](https://github.com/Parthee-Vijaya/ai-harness/releases/tag/v0.3.1-beta.1) |
+| Release | [Aura 1 beta 0.4.0](https://github.com/Parthee-Vijaya/ai-harness/releases/tag/v0.4.0-beta.2) |
+| Foregående udgivelse | [Aura 1 beta 0.3.1](https://github.com/Parthee-Vijaya/ai-harness/releases/tag/v0.3.1-beta.1) |
 
 Versionsstigningen følger den samlede funktionelle udvidelse med appkontrol og godkendt aktivitetsvisning. Det historiske tag `v0.4.0-beta.1` er allerede optaget og flyttes ikke. Den synlige version er 0.4.0; beta-iterationen er teknisk metadata. Se [versionsreglen](POLICY.md).
 
@@ -47,9 +47,9 @@ En ventende filpatch, som mangler patchtekst i hændelsen, kan hente teksten fra
 
 ## Bevaret adfærd
 
-Onboarding B, øvrig godkendt UI, projektoprettelse, modelvalg, vedhæftninger, referencemapper, samtaler, planer, godkendelser og adgangsgrænser skal bestå de afsluttende regressioner. Den allerede implementerede YOLO-indstilling er bevaret baseline, ikke en ny funktion i denne ændringsserie. Den gør ikke datadeling, beskyttede filer eller planer automatisk tilladt.
+Onboarding B, øvrig godkendt UI, projektoprettelse, modelvalg, vedhæftninger, referencemapper, samtaler, planer, godkendelser og adgangsgrænser er bevaret; de syv afsluttende native regressioner består. Den allerede implementerede YOLO-indstilling er bevaret baseline, ikke en ny funktion i denne ændringsserie. Den gør ikke datadeling, beskyttede filer eller planer automatisk tilladt.
 
-Bundle-, profil- og nøgleringsidentiteter bevares. Den installerede 0.3.1 og eksisterende brugerdata ændres ikke af dokumentationsarbejdet. Appversionen skal fortsat komme fra den kørende apps metadata.
+Bundle-, profil- og nøgleringsidentiteter bevares. Den installerede 0.3.1 og eksisterende brugerdata er ikke ændret af releasearbejdet. Appversionen skal fortsat komme fra den kørende apps metadata.
 
 ## Afprøvning og udgivelsesstatus
 
@@ -65,17 +65,17 @@ Bundle-, profil- og nøgleringsidentiteter bevares. Den installerede 0.3.1 og ek
 | Pakkens kildebevis, runtime og kontrolsummer | Kildebevis og medfølgende OpenCode 1.18.33 / Git 2.53.0 / Node 22.23.3 kontrolleret. Den monterede app starter med begrænset PATH og viser reelt preview. |
 | Appsignatur og notarisering | Ad hoc-signatur består dyb og streng codesign-kontrol. Ingen Developer ID-notarisering. |
 | GitHub CI | Forkens GitHub API viste 0 kørsler og 0 checks på main før push. Lokal afprøvning er ikke grøn GitHub CI. |
-| Intel-Mac, Windows og en anden fysisk Mac | Ikke kvalificeret af denne planlagte Apple Silicon-pakke. |
-| Release, feed og downloadbytes | Afventer publicering og kontrol af de faktisk uploadede filer. |
+| Intel-Mac, Windows og en anden fysisk Mac | Ikke kvalificeret af denne Apple Silicon-pakke. |
+| Release og downloadbytes | Publiceret i egen fork. Alle tre assets er downloadet og SHA-256 matcher både de kvalificerede lokale filer og GitHubs digests. Opdateringsfeedet kontrolleres efter det afsluttende push. |
 | Oprydning | Afventer verificeret udgivelse; ingen lokal kildekode må slettes. |
 
-Den [tidligere modelsammenligning](../../evals/openenv/MODELSAMMENLIGNING-2026-10-25.md) dokumenterer rigtige Mistral- og Corti-kørsler med fiktive appdata, både funktionelle restfejl og manglende visuel polering. GPTs supplerende filreference blev lavet gennem en anden arbejdsgang. Resultaterne må ikke omskrives til tre ens, fejlfri Aura-prøver. De er heller ikke en native end-to-end-kvalifikation af den kommende DMG.
+Den [tidligere modelsammenligning](../../evals/openenv/MODELSAMMENLIGNING-2026-10-25.md) dokumenterer rigtige Mistral- og Corti-kørsler med fiktive appdata, både funktionelle restfejl og manglende visuel polering. GPTs supplerende filreference blev lavet gennem en anden arbejdsgang. Resultaterne må ikke omskrives til tre ens, fejlfri Aura-prøver. De er heller ikke en native end-to-end-kvalifikation af DMG’en.
 
 De verificerede kilde-, pakke- og native resultater findes i [evidensmappen](beta-0.4.0-evidence/). Tidlige fejl i prøvescripts er bevaret i rapporterne sammen med de efterfølgende beståede prøver. Afventende resultater opdateres efter faktisk gennemførelse. Historiske 0.3.1-billeder må ikke mærkes som nye 0.4.0-billeder.
 
 ## Distribution og kendte grænser
 
-Der planlægges kun tre release-assets: DMG, opdaterings-ZIP og `SHA256SUMS.txt`. Kildecommit, runtimeversioner, manifeste og kontrolsummer skal dokumenteres fra de faktiske pakker. En grøn kildeprøve alene er ikke pakkeverifikation. Den kommende releaseadresse bliver først en gyldig downloadmulighed efter publicering.
+Der er kun tre release-assets: DMG, opdaterings-ZIP og `SHA256SUMS.txt`. Kildecommit, runtimeversioner, manifeste og kontrolsummer er dokumenteret fra de faktiske pakker. En grøn kildeprøve alene er ikke pakkeverifikation.
 
 Denne fork er særskilt fra det Code-OSS-baserede Aura-1-projekt. Udgivelsen gør ikke krav på fuld Privacy Gate eller fuld isolation af alle agentværktøjer. Skills og lokale appkontroller kan hjælpe den valgte model, men udligner ikke dokumenteret forskellene i modelkvalitet og garanterer ikke et poleret første udkast.
 

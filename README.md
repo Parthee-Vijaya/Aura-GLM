@@ -1,12 +1,12 @@
-# Aura 1 beta 0.4.0 — under klargøring
+# Aura 1 beta 0.4.0
 
-Dette er **Parthee-Vijayas fork af Aura Harness**. Den kommende udgave samler forbedret designhjælp, en lokal kontrol af genererede webapps og den godkendte aktivitetsvisning. Onboarding B, øvrige funktioner, planer og godkendelser bevares. Bidrag til AI Alliancens original håndteres i særskilte PR’er.
+Dette er **Parthee-Vijayas fork af Aura Harness**. Udgaven samler forbedret designhjælp, en lokal kontrol af genererede webapps og den godkendte aktivitetsvisning. Onboarding B, øvrige funktioner, planer og godkendelser bevares. Bidrag til AI Alliancens original håndteres i særskilte PR’er.
 
-**Status:** 0.4.0 er endnu ikke udgivet eller kvalificeret som færdig DMG. Den tekniske version bliver `0.4.0-beta.2`; det historiske tag `v0.4.0-beta.1` genbruges ikke. Den senest udgivne udgave er fortsat 0.3.1.
+**Udgivet 25. oktober 2026** til macOS på Apple Silicon. Teknisk version: `0.4.0-beta.2`. Pakken og lokale native prøver er verificeret. Den er ad hoc-signeret og ikke notariseret af Apple; GitHub CI har ingen kørsler for denne fork.
 
-[Hent udgivet Aura 1 beta 0.3.1 til Apple Silicon](https://github.com/Parthee-Vijaya/ai-harness/releases/tag/v0.3.1-beta.1) · [Kommende 0.4.0-release](https://github.com/Parthee-Vijaya/ai-harness/releases/tag/v0.4.0-beta.2) · [0.4.0-noter og teststatus](docs/releases/aura-1-beta-0.4.0.md) · [Originalprojektet](https://github.com/ai-alliancen-org/ai-harness)
+[Hent Aura 1 beta 0.4.0 til Apple Silicon](https://github.com/Parthee-Vijaya/ai-harness/releases/download/v0.4.0-beta.2/Aura-1-0.4.0-beta.2-mac-arm64.dmg) · [Release og kontrolsummer](https://github.com/Parthee-Vijaya/ai-harness/releases/tag/v0.4.0-beta.2) · [0.4.0-noter og teststatus](docs/releases/aura-1-beta-0.4.0.md) · [Originalprojektet](https://github.com/ai-alliancen-org/ai-harness)
 
-Den kommende releaseadresse bliver først en downloadmulighed, når pakken er bygget, verificeret og offentliggjort.
+840 desktop-, 27 CLI- og 24 evalueringstests samt syv native regressioner består. Et helt forløb med rigtig Mistral fra kildekoden består; en ekstra rigtig AI-prøve direkte fra DMG’en afventer macOS-nøgleringen. GPT-prøven har fortsat transporttimeouts. Se de konkrete begrænsninger i udgivelsesnoterne.
 
 ## Det nye i 0.4.0
 
@@ -16,7 +16,7 @@ Den kommende releaseadresse bliver først en downloadmulighed, når pakken er by
 - **Tydelig aktivitet under arbejdet.** Den godkendte aktivitetsvisning samler arbejdet i forståelige trin og gør tekniske detaljer valgfrie. Lyskanten om skrivefeltet viser, når AI’en arbejder. Planer, filgennemgang og værktøjsgodkendelser er fortsat særskilte.
 - **Præcise værktøjsgodkendelser.** En ventende filpatch kan hente den manglende patchtekst fra netop den tilsvarende kørende værktøjshandling. Bindingen til samtale, besked og handling kontrolleres før den normale godkendelsesvurdering.
 
-Design-skills er vejledning, ikke en garanti for et flot eller fejlfrit første udkast. De [dokumenterede modelprøver](evals/openenv/MODELSAMMENLIGNING-2026-10-25.md) viser reelle forskelle mellem Mistral og Corti. GPT-referenceappen brugte en anden transport og kan ikke tælle som en tredje identisk Aura-prøve. Den efterfølgende GPT-, brandguide- og native afprøvning fremgår særskilt af udgivelsesnoterne; afventende prøver er ikke beståede prøver.
+Design-skills er vejledning, ikke en garanti for et flot eller fejlfrit første udkast. De [dokumenterede modelprøver](evals/openenv/MODELSAMMENLIGNING-2026-10-25.md) viser reelle forskelle mellem Mistral og Corti. GPT-referenceappen brugte en anden transport og kan ikke tælle som en tredje identisk Aura-prøve. De opfølgende [GPT-prøver](evals/openenv/GPT-TRANSPORT-2026-10-25.md), [brandprøver med officielle Nyborg-logoer](evals/openenv/BRAND-MODELS-2026-10-25.md) og native afprøvning er dokumenteret særskilt. GPT-appen bestod 26 browserkontroller, men agentforløbet ramte tidsgrænsen; afventende prøver er ikke beståede prøver.
 
 ## Det bevarer vi
 
@@ -26,13 +26,13 @@ Design-skills er vejledning, ikke en garanti for et flot eller fejlfrit første 
 - Den allerede implementerede **YOLO**-indstilling under **Byg**: efter advarsel gælder den kun den aktuelle samtale, indtil den slås fra eller appen lukkes. Planer, datadeling, beskyttede filer og tekniske adgangsgrænser består. Se [YOLO og samtaletilladelser](docs/yolo.md).
 - Appnavnet **Aura 1**, synlig version fra den kørende app, eksisterende data- og nøgleringsidentiteter samt forkens opdateringskanal.
 
-Udgivelsen forberedes til **macOS på Apple Silicon**. Kildecommit, endelige testtal, pakkeintegritet, signering og faktiske downloadfiler tilføjes først efter verificering. Der påstås ikke Developer ID-notarisering, grøn GitHub CI, Intel-/Windows-afprøvning, fuld Privacy Gate eller modeluafhængig designkvalitet. Denne fork er særskilt fra det Code-OSS-baserede Aura-1-projekt.
+Udgivelsen er verificeret til **macOS på Apple Silicon**. Pakken stammer fra produktcommit `95c7056b18cf8ec22df51ac45e460404faabf483`; kildebevis, testtal, pakkeintegritet, signering og downloadfiler er dokumenteret i [release-noterne](docs/releases/aura-1-beta-0.4.0.md). Der påstås ikke Developer ID-notarisering, grøn GitHub CI, Intel-/Windows-afprøvning, fuld Privacy Gate eller modeluafhængig designkvalitet. Denne fork er særskilt fra det Code-OSS-baserede Aura-1-projekt.
 
 [Versions- og oprydningsregel](docs/releases/POLICY.md): kun tre seneste færdige lokale DMG-versioner beholdes; lokal kildekode, worktrees, beskrivelser og brugerdata bevares. Brug en separat profil ved afprøvning.
 
 ![Tidligere udgivet Aura 1 beta 0.3.1 med synligt versionsnummer](docs/images/aura-1-beta-0.3.1/workspace.png)
 
-*Billedet viser den udgivne 0.3.1 og dokumenterer ikke den kommende 0.4.0. Historiske skærmbilleder og originalens vejledninger følger nedenfor.*
+*Billedet viser den udgivne 0.3.1 og dokumenterer ikke 0.4.0. Historiske skærmbilleder og originalens vejledninger følger nedenfor.*
 
 ---
 
@@ -129,7 +129,7 @@ Når du har en Aura-installation, kan du vælge **Prøv et eksempel** ved opstar
 
 *Et lokalt eksempel, der viser samspillet mellem besked og forhåndsvisning. Der foretages ingen modelkald.*
 
-Originalprojektets [downloads til Mac og Windows](https://ai-alliancen-org.github.io/ai-harness/desktop.html) har deres egne versions- og signeringsoplysninger. Forkens senest udgivne version er [Aura 1 beta 0.3.1](https://github.com/Parthee-Vijaya/ai-harness/releases/tag/v0.3.1-beta.1), som ikke er notariseret. [Aura 1 beta 0.4.0](https://github.com/Parthee-Vijaya/ai-harness/releases/tag/v0.4.0-beta.2) er under klargøring; se [test- og udgivelsesstatus](docs/releases/aura-1-beta-0.4.0.md), før du vælger en pakke.
+Originalprojektets [downloads til Mac og Windows](https://ai-alliancen-org.github.io/ai-harness/desktop.html) har deres egne versions- og signeringsoplysninger. Forkens senest udgivne version er [Aura 1 beta 0.4.0](https://github.com/Parthee-Vijaya/ai-harness/releases/tag/v0.4.0-beta.2), som ikke er notariseret. Se [test- og udgivelsesstatus](docs/releases/aura-1-beta-0.4.0.md), før du vælger en pakke.
 
 ### Start fra kildekoden
 

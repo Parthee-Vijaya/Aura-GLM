@@ -1,6 +1,6 @@
 # Kvalitet på tværs af modeller
 
-Denne ændring er under lokal afprøvning. Den er ikke i den installerede Aura 1 beta 0.3.1.
+Denne funktion er udgivet i [Aura 1 beta 0.4.0](releases/aura-1-beta-0.4.0.md). Den installerede 0.3.1 ændres først, når brugeren selv opdaterer appen.
 
 Aura aktiverer de eksisterende design-skills med alle understøttede modeller. Den valgte model udarbejder designet ud fra opgaven, brugerens valg og dokumenterede brandkilder. Aura vælger ikke faste opgavespecifikke paletter, skrifter eller layoutopskrifter. Designmetoden hjælper modellen med at begrunde hierarki, farver, typografi, komposition, billeder og mobiladfærd; brugerens godkendte design og eksplicitte valg har forrang.
 

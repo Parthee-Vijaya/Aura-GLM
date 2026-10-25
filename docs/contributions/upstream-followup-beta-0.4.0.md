@@ -1,6 +1,6 @@
 # Bidrag til originalen efter Aura 1 beta 0.3.1
 
-**Lokalt efterslæb til den planlagte 0.4.0, klargjort 25. oktober 2026.** Ingen PR’er er oprettet, opdateret, lukket eller flettet som del af denne releaseforberedelse.
+**Efterslæb efter den udgivne 0.4.0, opdateret 25. oktober 2026.** Ingen PR’er er oprettet, opdateret, lukket eller flettet som del af denne releaseforberedelse.
 
 Fordelingen nedenfor bygger på de aktuelle lokale ændringer og [den senest dokumenterede PR-gennemgang](upstream-status-20261025.md). Det er ikke et nyt live-check af originalens main eller PR-heads. Før indsendelse skal den relevante PR og originalens nyeste main læses igen, og ændringen skal afprøves på den pågældende gren. Ved overlap opdateres den eksisterende PR frem for at oprette en dublet.
 
@@ -31,6 +31,6 @@ Navnet Aura 1, version `0.4.0-beta.2`, forkens releaseadresse og opdateringsfeed
 - Med samme borgermødeopgave, skills og originale Nyborg-logoer bestod Mistral 24/26 og Corti 14/26 browserkontroller. Ingen fuld offentlig designmanual blev fundet. Rapporten viser konkrete restfejl og en begrænsning i Mistral-prøvens værktøjspolitik.
 - Den opfølgende GPT-prøve gav en urørt app, der består 26 browserkontroller, men agentforløbet ramte 900 sekunders tidsfrist efter to transporttimeouts. Den er delvis transportvalidering, ikke dokumentation for løst stabilitet eller tre identiske, fejlfri modelkørsler.
 - Før/efterbilleder til kommende PR-opdateringer skal komme fra de faktiske relevante grene. Historiske screenshots og billeder af modelgenererede apps må ikke fremstilles som bevis for en anden UI-version.
-- [Release-noterne](../releases/aura-1-beta-0.4.0.md) adskiller kommende kvalifikation fra tidligere testresultater.
+- [Release-noterne](../releases/aura-1-beta-0.4.0.md) adskiller beståede prøver, åbne fejl og afventende kontroller.
 
 Ved næste commit/push opdateres dette efterslæb med den faktiske produktcommit og eventuelle nye forskelle. En lokal release ændrer ikke i sig selv en upstream-PR’s status.
