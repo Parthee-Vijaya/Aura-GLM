@@ -1,5 +1,29 @@
 # Aura 1 beta 0.3.1 og forkens seneste kode: dækning i originalens PR’er
 
+## Udført efter godkendelse — 25. oktober 2026
+
+Den efterfølgende bestilling er udført i rækkefølgen nedenfor. Alle fem PR’er er åbne i originalen; ingen er flettet. Remote-heads og samtlige 13 billedlinks i beskrivelserne er verificeret mod GitHub. Originalens `main` er fortsat `dce68ea74a199ca214ab535a16ff22765d8ee8de`.
+
+| PR | Handling | Verificeret head | Lokal validering |
+|---|---|---|---|
+| [#49 – Opret projekt](https://github.com/ai-alliancen-org/ai-harness/pull/49) | Ny | `cf5f90a` | 15 native kontroller; fuld suite 514/516 |
+| [#23 – Designmetoden](https://github.com/ai-alliancen-org/ai-harness/pull/23) | Opdateret | `c1db20a` | 7/7 designprøver; native før/efter; fuld suite 521/523; 23 eksportpakker genbygget |
+| [#43 – Altid aktiv designgrundpakke](https://github.com/ai-alliancen-org/ai-harness/pull/43) | Opdateret | `1b77c8b` | 22/22 fokuserede, 10 native, 7 motortransportforløb; fuld suite 520/522 |
+| [#45 – YOLO under Byg](https://github.com/ai-alliancen-org/ai-harness/pull/45) | Opdateret | `252d8a0` | 35/35 fokuserede, 16 native, rigtig Electron/OpenCode/macOS-isolation; fuld suite 523/525 |
+| [#50 – Synlig kørende version](https://github.com/ai-alliancen-org/ai-harness/pull/50) | Ny | `525a6d1` | 9/9 fokuserede, 8 native; fuld suite 517/519 |
+
+De fulde suites har kun de to samme fejl i `approvals.test.cjs` (47 og 74), der er reproduceret på uændret upstream. Ingen prøver er sprunget over. Dette er lokal validering; der påstås ikke grøn GitHub CI. Motortransport bruger kontrollerede lokale modelsvar, ikke en ekstern models vurderede designkvalitet.
+
+**Ekstra integrationstest af #23 + #43:** 527/529 desktoptests, 26/26 CLI-tests og syv transportforløb med den fulde designskill. De to desktopfejl er de samme upstream-fejl. Integration er bevaret lokalt på `test/mandatory-design-integration`, commit `89b6d35`. PR #43 beskriver genbygning af eksporterne og sammenfletning med F08/#36. PR #49 indeholder opstarts-/oprettelsesdelen på originalens kode og beskriver den nødvendige kobling med #44’s idéforfinelse; #44 er ikke ændret ved denne bestilling.
+
+Før/efterbilleder kommer fra den faktiske Electron-app i separate testprofiler. Hver PR har en opdateret beskrivelse, testlog, præcis afgrænsning og integrationsnoter. Versions-PR’en viser originalens egne metadata (`0.6.0-beta.1`) og overfører ikke forkens navn, versionsnulstilling eller opdateringsfeed.
+
+#39’s valgfrie lokale testsignering og den overlappende #48 er ikke ændret. Der er ingen ny DMG eller release. Testapps er lukket, syntetiske appprofiler er ryddet op, og lokal kildekode samt testprojekter/worktrees er bevaret.
+
+Nedenstående er den historiske vurdering, som lå til grund for bestillingen. Henvisninger til “mangler” og PR-titler nedenfor gælder før de fem ændringer ovenfor.
+
+---
+
 Kontrolleret 25. oktober 2026. Dette er en kode- og PR-vurdering; ingen PR til originalen er oprettet, ændret, lukket eller flettet som del af vurderingen.
 
 ## Resultat

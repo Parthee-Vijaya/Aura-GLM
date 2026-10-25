@@ -1,8 +1,8 @@
 ﻿Prioritet,Handling,Emne,I udgivet 0.3.1,Eksisterende PR,Anbefalet afgrænsning,Kildecommit
-1,Ny PR,Ret låst projektoprettelse,Ja,Ingen,Serialisér oprettelse med opstart og idéforfinelse; bevar kladde og genåbn knappen korrekt.,2f915722a2a02d86e9c39a7e21c8cce40b98e446
-2,Opdatér eksisterende PR,Gennemarbejdet første udkast,Nej,https://github.com/ai-alliancen-org/ai-harness/pull/23,Tilføj den nye kvalitetsregel til hovedskillen og de genererede skillpakker.,af9f1677f9668c256809219e52666a26fb0be00c
-3,Opdatér eksisterende PR,Designgrundpakke altid aktiv,Nej,https://github.com/ai-alliancen-org/ai-harness/pull/43,"Bevar grundmetoden gennem gamle fravalg og projekttilpasninger; aktivér den før idé, plan og byg.",af9f1677f9668c256809219e52666a26fb0be00c
-4,Opdatér eksisterende PR,YOLO under Byg,Nej,https://github.com/ai-alliancen-org/ai-harness/pull/45,"Tilføj aktivering før første værktøj, udvidet samtaletilladelse og beskyttede læsninger; opdatér advarsel og beskrivelse.",af9f1677f9668c256809219e52666a26fb0be00c
-5,Ny PR,Vis kørende version under logoet,Ja,Ingen,Overfør versionsvisningen med originalens eget navn og versionsnummer.,9f44ff7
+1,Oprettet,Ret låst projektoprettelse,Ja,https://github.com/ai-alliancen-org/ai-harness/pull/49,Indsendt: opstart og projektoprettelse serialiseres; kobling med #44 dokumenteret i PR.,2f915722a2a02d86e9c39a7e21c8cce40b98e446
+2,Opdateret,Gennemarbejdet første udkast,Nej,https://github.com/ai-alliancen-org/ai-harness/pull/23,Tilføj den nye kvalitetsregel til hovedskillen og de genererede skillpakker.,af9f1677f9668c256809219e52666a26fb0be00c
+3,Opdateret,Designgrundpakke altid aktiv,Nej,https://github.com/ai-alliancen-org/ai-harness/pull/43,"Bevar grundmetoden gennem gamle fravalg og projekttilpasninger; aktivér den før idé, plan og byg.",af9f1677f9668c256809219e52666a26fb0be00c
+4,Opdateret,YOLO under Byg,Nej,https://github.com/ai-alliancen-org/ai-harness/pull/45,"Tilføj aktivering før første værktøj, udvidet samtaletilladelse og beskyttede læsninger; opdatér advarsel og beskrivelse.",af9f1677f9668c256809219e52666a26fb0be00c
+5,Oprettet,Vis kørende version under logoet,Ja,https://github.com/ai-alliancen-org/ai-harness/pull/50,Overfør versionsvisningen med originalens eget navn og versionsnummer.,9f44ff7
 6,Valgfri opdatering,Lokale ad hoc-signerede testbuilds,Ja,https://github.com/ai-alliancen-org/ai-harness/pull/39,Adskil lokale test-entitlements fra Developer ID-signering; afstem med originalens udgivelsespolitik.,c51a32c / ffbeada
 Før sammenlægning,Afklar overlap,Samle-PR #48,Delvist,https://github.com/ai-alliancen-org/ai-harness/pull/48,Kortlæg integrationsbindinger før eventuel lukning; undgå at sende de samme funktioner to gange.,fa223d3b2ceb6f27e5fecf4c13f590913801036c
