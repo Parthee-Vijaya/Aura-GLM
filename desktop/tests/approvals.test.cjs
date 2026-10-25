@@ -29,6 +29,7 @@ test('kommandoer får et gæt i almindeligt dansk, og afslutningskoden afgør re
   assert.equal(commandResult({ status: 'completed', exit: null }).ok, null);
   assert.match(commandResult({ status: 'error', error: 'Afvist' }).text, /Mislykkedes: Afvist/);
   assert.equal(failureText('key').action, 'connection'); assert.equal(failureText('quota').action, 'account'); assert.equal(failureText('ukendt').title, failureText('model').title);
+  assert.equal(failureText('quality').action, 'review'); assert.match(failureText('quality').text, /Ændringerne er bevaret/); assert.doesNotMatch(failureText('quality').text, /anden model/);
 });
 
 test('modelserverens fejl får en type, så appen kan vise den rigtige vej videre', async t => {

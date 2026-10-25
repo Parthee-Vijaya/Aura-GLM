@@ -57,7 +57,7 @@ function toolEntry(part, root) {
   return entry;
 }
 function approvalTarget(p, root) {
-  if (p.permission === 'bash') return String(p.metadata?.command || (p.patterns || []).join('\n'));
+  if (p.permission === 'bash') return String(p.toolInput?.command || p.metadata?.command || (p.patterns || []).join('\n'));
   if (typeof p.metadata?.filepath === 'string') return projectPath(root, p.metadata.filepath);
   return (p.patterns || []).join('\n');
 }

@@ -892,6 +892,7 @@ app.whenReady().then(async () => {
     ] }
   ]));
   registry = new WorkspaceRegistry({ directory: path.join(app.getPath('userData'), 'harness'), safeStorage, profiles: profileRoot,
+    qualityInspector: require('./core/app-quality.cjs').createAppQualityInspector({ BrowserWindow, session, directory: path.join(app.getPath('userData'), 'harness', 'quality-reports') }),
     emit: event => { if (['session.error','engine.error'].includes(event.type)) recordFailure('agent', 'model'); sendEvent(event); },
     configure: bench => {
       bench.restoration = new (require('./core/restoration.cjs').Restoration)(bench.git, bench.store);

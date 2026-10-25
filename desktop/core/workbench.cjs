@@ -19,9 +19,9 @@ const { ApprovalsPolicy } = require('./approvals-policy.cjs');
 // og projektets samtaler. Hver samtale er en ChatSession med sin egen motor og opgave. Kun én samtale ad gangen kan
 // arbejde i den samme mappe; den, der arbejder, har "krav" på mappen, indtil opgaven er færdig.
 class Workbench {
-  constructor({ directory, safeStorage, profiles, emit, store, history, library: sharedLibrary, registry, surface = 'desktop', engineFactory = options => new OpenCodeEngine(options) }) {
+  constructor({ directory, safeStorage, profiles, emit, store, history, library: sharedLibrary, registry, surface = 'desktop', qualityInspector, engineFactory = options => new OpenCodeEngine(options) }) {
     if (!['desktop', 'cli'].includes(surface)) throw new Error('Ukendt Aura-brugerflade.');
-    this.surface = surface;
+    this.surface = surface; this.qualityInspector = typeof qualityInspector === 'function' ? qualityInspector : null;
     this.store = store || new Store(directory, safeStorage); this.history = history || new WorkspaceHistory(this.store); this.registry = registry || null;
     this.approvalsPolicy = new ApprovalsPolicy(this.store);
     this.connectionRemovals = registry?.connectionRemovals || new Set();

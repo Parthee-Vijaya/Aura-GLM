@@ -41,6 +41,7 @@
     network: { title: 'Forbindelsen til AI’en blev afbrudt', text: 'Kontrollér internetforbindelsen, og prøv igen.', action: 'retry' },
     idle: { title: 'AI’en svarede ikke', text: 'Modellen svarede ikke i lang tid, så Aura 1 stoppede kaldet.', action: 'retry' },
     engine: { title: 'AI-motoren stoppede', text: 'Aura 1 starter motoren igen, når du sender beskeden.', action: 'retry' },
+    quality: { title: 'Den lokale kontrol fandt fejl', text: 'Ændringerne er bevaret. Gennemgå kontrollens fund i Aktivitet og resultatet i forhåndsvisningen, før du fortsætter.', action: 'review' },
     model: { title: 'AI’en kunne ikke gennemføre opgaven', text: 'Prøv igen. Virker det stadig ikke, så vælg en anden model.', action: 'retry' },
     start: { title: 'Opgaven kunne ikke starte', text: 'Aura 1 kunne ikke starte AI’en.', action: 'retry' }
   };

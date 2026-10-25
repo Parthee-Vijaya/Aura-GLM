@@ -869,6 +869,7 @@ const toolLabels = { read: 'Læs fil', edit: 'Rediger fil', write: 'Skriv fil', 
 const toolStatuses = { pending: 'Venter', running: 'I gang', completed: 'Afsluttet', error: 'Mislykkedes' };
 // Værktøjerne står under Aktivitet. Samtalen viser én linje pr. opgave med antallet og en vej dertil.
 function noteTool(id, v = view) {
+  if (window.liveWork?.noteTool?.(id, v)) return;
   if (!v.activityGroup) {
     v.activityGroup = node('p', undefined, 'activity-pointer'); v.activityGroup.tools = new Set();
     const open = node('button', 'Se Aktivitet', 'text-button'); open.type = 'button'; open.onclick = () => window.workspace.show('activity');

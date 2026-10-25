@@ -4,7 +4,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const os = require('node:os');
 const { taskSummary, sessionSummary, fileDetail, hash } = require('../core/change-review.cjs');
-const { Activity, toolEntry, toolFiles, projectPath } = require('../core/activity.cjs');
+const { Activity, toolEntry, toolFiles, projectPath, approvalTarget } = require('../core/activity.cjs');
 const { capture, changes } = require('../core/changes.cjs');
 const { Workbench } = require('../core/workbench.cjs');
 const profiles = path.join(__dirname, '../../profiles');
@@ -58,6 +58,16 @@ test('aktivitet viser faktiske værktøjer med stier i projektet og maskeret kom
   assert.equal(log.list().length, 1); assert.equal(log.get('a').status, 'allowed'); assert.equal(events.length, 2);
   for (const id of ['b', 'c', 'd']) log.put({ id, title: id });
   assert.deepEqual(log.list().map(entry => entry.id), ['b', 'c', 'd']);
+});
+
+test('aktivitetens godkendelse bevarer samme konkrete kommando som godkendelseskortet', () => {
+  const command = 'echo færdig med lokalerne';
+  const wrapper = "exec node command-dispatch.cjs 'controlled-test-payload'";
+  const request = { permission: 'bash', toolInput: { command }, metadata: { command: wrapper }, patterns: [wrapper] };
+  assert.equal(approvalTarget(request, '/project'), command);
+  assert.equal(approvalTarget({ permission: 'bash', metadata: { command } }, '/project'), command);
+  assert.equal(approvalTarget({ permission: 'bash', patterns: [command] }, '/project'), command);
+  assert.equal(request.metadata.command, wrapper);
 });
 
 test('arbejdsbænken husker opgavens ændringer og tilskriver dem efter AI’ens faktiske filværktøjer', async t => {

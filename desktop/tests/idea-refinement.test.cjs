@@ -3,7 +3,7 @@ const {IdeaRefinement,buildRequest,parseResponse}=require('../core/idea-refineme
 const input={name:'Syntetisk projekt',idea:'En tilmeldingsside',connectionID:'local',modelID:'test'};
 async function fixture(t){
  const sent=[];let reply={description:'En lokal tilmeldingsside.',plan:'Afklar, byg og test.',questions:['Skal deltagerne dele data?']};let hold=false;
- const server=http.createServer(async(req,res)=>{let body='';for await(const chunk of req)body+=chunk;sent.push({url:req.url,body:JSON.parse(body)});if(hold)return;res.setHeader('content-type','application/json');res.end(JSON.stringify({choices:[{finish_reason:'stop',message:{content:JSON.stringify(reply)}}]}));});await new Promise(r=>server.listen(0,'127.0.0.1',r));
+ const server=http.createServer(async(req,res)=>{let body='';for await(const chunk of req)body+=chunk;sent.push({url:req.url,body:JSON.parse(body)});if(hold)return;res.setHeader('content-type','application/json');res.end(JSON.stringify(req.url.endsWith('/responses')?{status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify(reply)}]}]}:{choices:[{finish_reason:'stop',message:{content:JSON.stringify(reply)}}]}));});await new Promise(r=>server.listen(0,'127.0.0.1',r));
  t.after(()=>{server.closeAllConnections();server.close();});
  const connection={id:'local',name:'Lokal prøve',kind:'compatible',baseURL:`http://127.0.0.1:${server.address().port}/v1`};
  const library=await require('../core/library.cjs').loadLibrary(require('node:path').resolve(__dirname,'../../profiles'));
@@ -29,18 +29,40 @@ test('malformed JSON, oversized descriptions and tool calls never appear as ordi
 test('all supported provider protocols keep tools absent and explicit OpenRouter route cannot fallback',()=>{
  const model={id:'test'};for(const kind of ['compatible','anthropic','openai','azure','mistral','corti','ollama','openrouter']){
  const request=buildRequest({connection:{kind,baseURL:'http://127.0.0.1:1/v1'},model,route:{id:'chosen'}},[{role:'user',content:'Syntetisk'}]);assert.equal(request.body.tools,undefined);assert.equal(request.body.stream,false);if(kind==='openrouter')assert.deepEqual(request.body.provider,{only:['chosen'],allow_fallbacks:false});
+ if(kind==='mistral')assert.deepEqual(request.body.response_format,{type:'json_object'});else assert.equal(request.body.response_format,undefined,'do not assume JSON mode support on other providers');
  }assert.throws(()=>buildRequest({connection:{kind:'openrouter',baseURL:'x'},model},[]),/konkret/);
 });
 
-for(const kind of ['mistral','corti'])test(`${kind}: idea guidance is present in the exact reviewed HTTP request, without files or tools`,async t=>{
+test('Mistral JSON mode preserves multiline visual proposals and their reviewed request through follow-up',async t=>{
+ const f=await fixture(t);f.connection.kind='mistral';
+ const proposal={description:'En madbestillingsdemo.\n\nDesignforslag: Varm elfenbensbaggrund, kulsort tekst og tomatrød kurvhandling. Menuen prioriterer ret, pris og tilvalg. På mobil ligger kurven nederst.',plan:'Visuel gennemgang på mobil og desktop; gennemfør menu → kurv → bekræftelse.',questions:['Skal bestillinger sendes til et rigtigt spisested?']};
+ f.reply(proposal);
+ const reviewed=await f.service.prepare({...input,idea:'En madbestillingsapp'});
+ assert.match(reviewed.system,/DESIGN GENNEM SKILLS/);
+ assert.doesNotMatch(reviewed.system,/#FAF7F1|#B84A37|--color-background:|grid-template-columns:|LAYOUTREFERENCE TIL ET NYT MAD-UI/);
+ assert.match(reviewed.system,/godkendte designforslag har forrang/);
+ assert.equal(f.sent.length,0);
+ const result=await f.service.send({token:reviewed.token});
+ assert.deepEqual(result,proposal);
+ assert.deepEqual(f.sent[0].body.response_format,{type:'json_object'});
+ assert.equal(f.sent[0].body.messages[0].content,reviewed.system);
+ const next=await f.service.prepare({...input,idea:'En madbestillingsapp',message:'Kun en demo med fiktive data'});
+ assert.deepEqual(JSON.parse(next.content[1].content),proposal);
+ assert.equal(f.sent.length,1,'follow-up preparation does not send automatically');
+ // A provider that still returns invalid JSON must remain rejected.
+ assert.throws(()=>parseResponse({choices:[{finish_reason:'stop',message:{content:'{"description":"Madapp\nDesignforslag","plan":"Plan","questions":[]}'}}]},{}),/ufuldstændigt/);
+});
+
+for(const kind of ['mistral','corti','openai'])test(`${kind}: idea guidance is present in the exact reviewed HTTP request, without files or tools`,async t=>{
  const f=await fixture(t),{loadLibrary}=require('../core/library.cjs');
  const library=await loadLibrary(require('node:path').resolve(__dirname,'../../profiles'));
  if (!library.skills.some(skill => skill.name === 'harness-aura-design')) library.skills.push({name:'harness-aura-design',files:[{path:'SKILL.md',content:'---\nname: harness-aura-design\ndescription: Synthetic method\n---\n\nByg noget der fungerer.'}]});
  f.connection.kind=kind;
  f.bench.skills.context=async root=>{assert.equal(root,null);return {features:{design:true},skills:library.skills};};
- const review=await f.service.prepare(input);assert.equal(f.sent.length,0);assert.match(review.system,/HOVEDSKILL TIL BYGNING/);
+ const review=await f.service.prepare({...input,idea:'En madbestillingsapp'});assert.equal(f.sent.length,0);assert.match(review.system,/HOVEDSKILL TIL BYGNING/);
+ assert.match(review.system,/DESIGN GENNEM SKILLS/);assert.doesNotMatch(review.system,/#FAF7F1|#B84A37|--color-background:|grid-template-columns:|LAYOUTREFERENCE TIL ET NYT MAD-UI/);
  assert.match(review.system,/ingen værktøjer i idéhjælpen/);await f.service.send({token:review.token});
- assert.equal(f.sent[0].body.messages[0].content,review.system);assert.equal(f.sent[0].body.tools,undefined);
+ assert.equal(kind==='openai'?f.sent[0].body.instructions:f.sent[0].body.messages[0].content,review.system);assert.equal(f.sent[0].body.tools,undefined);
  const next=await f.service.prepare(input);
  library.skills.find(s=>s.name==='harness-aura-design').files.find(f=>f.path==='SKILL.md').content+='\nCHANGED-DESIGN-INSTRUCTIONS';
  await assert.rejects(f.service.send({token:next.token}),/Designinstruktionerne blev ændret/);assert.equal(f.sent.length,1);
@@ -53,4 +75,15 @@ test('custom core is carried by all supported idea API formats',()=>{
   assert.equal(request.responses?request.body.instructions:request.anthropic?request.body.system:request.body.messages[0].content,system);
   assert.equal(request.body.tools,undefined);
  }
+});
+
+test('reasoning idea models retain room for their visible proposal without changing effort',()=>{
+ const connection={kind:'corti',baseURL:'https://example.invalid/v1'};
+ const request=model=>buildRequest({connection,model},[{role:'user',content:'En madbestillingsapp'}]).body;
+ const reasoning=request({id:'test',capabilities:{reasoning:true},limits:{context:128000,output:64000}});
+ assert.equal(reasoning.max_tokens,32768);
+ assert.equal(reasoning.reasoning_effort,undefined);
+ assert.equal(reasoning.reasoning,undefined);
+ assert.equal(request({id:'test',capabilities:{reasoning:true},limits:{output:12000}}).max_tokens,12000);
+ assert.equal(request({id:'test',capabilities:{reasoning:false},limits:{output:64000}}).max_tokens,8192);
 });

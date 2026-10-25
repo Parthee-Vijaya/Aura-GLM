@@ -1,7 +1,7 @@
 {
   "name": "aura-desktop",
   "productName": "Aura 1",
-  "version": "0.3.1-beta.1",
+  "version": "0.4.0-beta.2",
   "private": true,
   "license": "EUPL-1.2",
   "feedback": {

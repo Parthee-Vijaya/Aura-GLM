@@ -407,21 +407,39 @@
     return parts.filter(Boolean).join(' · ');
   }
   function renderEntry(entry) {
-    const item = node('li', undefined, `activity-entry kind-${entry.kind} status-${entry.status || 'none'}`); item.dataset.id = entry.id;
+    const presentation = window.ChatDisplay.activityEntry(entry);
+    const item = node('li', undefined, `activity-entry kind-${entry.kind} status-${presentation.status}`); item.dataset.id = entry.id;
     const body = node('div', undefined, 'activity-body');
-    const head = node('p', undefined, 'activity-head'); head.append(node('strong', entry.title, 'activity-title'));
+    const technical = ['tool', 'approval'].includes(entry.kind);
+    const head = node('p', undefined, 'activity-head'); head.append(node('strong', presentation.title, 'activity-title'));
     if (entry.target && entry.kind === 'run') head.append(' ', node('span', `»${entry.target}«`, 'activity-quote'));
-    else if (entry.target) {
+    else if (entry.target && !technical) {
       const target = node('span', undefined, 'activity-target');
       const resolved = ['tool', 'approval', 'edit'].includes(entry.kind) ? resolve(entry.target) : null;
       target.append(resolved ? referenceButton(resolved, document.createTextNode(entry.target)) : entry.target);
       head.append(' ', target);
     }
     body.append(head);
-    const state = entryState(entry); if (state) body.append(node('p', state, 'activity-state'));
-    if (entry.detail) body.append(node('p', entry.detail, 'activity-detail'));
-    if (entry.error) body.append(node('p', entry.error, 'activity-error'));
-    if (entry.output) { const fold = node('details', undefined, 'activity-output'); fold.append(node('summary', 'Vis output'), node('pre', entry.output)); body.append(fold); }
+    const state = entryState({ ...entry, status: presentation.status, exit: undefined }); if (state) body.append(node('p', state, 'activity-state'));
+    if (presentation.detail) body.append(node('p', presentation.detail, 'activity-detail'));
+    if (entry.error && !technical) body.append(node('p', entry.error, 'activity-error'));
+    if (technical || entry.output) {
+      const fold = node('details', undefined, 'activity-output activity-technical');
+      fold.append(node('summary', 'Tekniske detaljer'));
+      if (technical) {
+        fold.append(node('p', entry.title, 'activity-technical-title'));
+        if (entry.target) {
+          const target = node(entry.tool === 'bash' || entry.permission === 'bash' ? 'pre' : 'p', undefined, 'activity-target');
+          const resolved = resolve(entry.target);
+          target.append(resolved ? referenceButton(resolved, document.createTextNode(entry.target)) : entry.target);
+          fold.append(target);
+        }
+        if (Number.isInteger(entry.exit)) fold.append(node('p', `Afslutningskode: ${entry.exit}`));
+        if (entry.error) fold.append(node('pre', entry.error));
+      }
+      if (entry.output) fold.append(node('pre', entry.output));
+      body.append(fold);
+    }
     item.append(node('time', clock(entry.at), 'activity-time'), body);
     item.querySelector('time').dateTime = new Date(entry.at).toISOString();
     return item;

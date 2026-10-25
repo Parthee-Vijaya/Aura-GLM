@@ -72,10 +72,15 @@ body.workspace-calm[data-workspace-theme="light"] {
 .workspace-calm #composer-shortcut { font-size:9px; margin:2px 5px 6px; color:var(--calm-faint); }
 .workspace-calm :is(.composer-status,#context-status) { font-size:10px; color:var(--calm-faint); padding-inline:15px; }
 .workspace-calm .composer-status { flex-wrap:wrap; gap:3px 10px; padding-bottom:9px; }
-.workspace-calm #chat-form::before { inset:-1px; padding:1px; border-radius:17px; }
-.workspace-calm #chat-form::after { inset:-3px; padding:2px; filter:blur(5px); }
-.workspace-calm #chat-form[data-metal-state="working"]::before { opacity:.6; animation-duration:8s; }
-.workspace-calm #chat-form[data-metal-state="working"]::after { opacity:.12; animation-duration:8s; }
+.workspace-calm #chat-form::before { inset:-2px; padding:2px; border-radius:18px; }
+.workspace-calm #chat-form::after { inset:-4px; padding:3px; border-radius:20px; filter:blur(5px); }
+.workspace-calm #chat-form[data-metal-state="working"]::before,
+.workspace-calm #chat-form[data-metal-state="working"]::after {
+  background:conic-gradient(from var(--aura-metal-angle),#92bdb0 0deg,#9c8fbf 85deg,#b7a77b 165deg,#93b7bc 245deg,#9484bc 310deg,#92bdb0 360deg);
+  animation-duration:5s;
+}
+.workspace-calm #chat-form[data-metal-state="working"]::before { opacity:.95; }
+.workspace-calm #chat-form[data-metal-state="working"]::after { opacity:.25; }
 .workspace-calm #chat-form[data-metal-state="waiting"]::before { inset:-1px; padding:1px; background:var(--calm-warning); opacity:.7; }
 .workspace-calm .work-tabs { flex-wrap:nowrap; overflow-x:auto; min-height:46px; padding:6px 8px; gap:2px; }
 .workspace-calm .work-tab { font-size:11px; font-weight:450; padding:6px 9px; border-radius:5px; }

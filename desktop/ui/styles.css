@@ -1189,3 +1189,34 @@ kbd { font: 600 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
 .history-search-result small { color: var(--muted); }
 .search-message-hit { outline: 2px solid var(--accent, #0055ce); outline-offset: 4px; }
 @media (max-width: 600px) { .history-search-form { grid-template-columns: minmax(0, 1fr); } }
+
+/* Approved compact activity: ordinary words first, exact actions by choice. */
+.work-progress-card { margin: 18px 0 22px; padding: 0; border: 0; color: var(--muted); }
+.work-progress-card > summary { display: flex; align-items: flex-start; gap: 10px; list-style: none; cursor: pointer; padding: 6px 0; }
+.work-progress-card > summary::-webkit-details-marker { display: none; }
+.work-progress-card > summary::after { content: '⌄'; margin-left: auto; font-size: 14px; transform: rotate(-90deg); }
+.work-progress-card[open] > summary::after { transform: none; }
+.work-progress-card > summary > span:nth-child(2) { display: grid; gap: 3px; min-width: 0; }
+.work-progress-card > summary strong { color: var(--ink); font-size: 12px; font-weight: 550; line-height: 1.5; overflow-wrap: anywhere; }
+.work-progress-card > summary small { font-size: 10px; line-height: 1.5; }
+.work-progress-symbol { color: var(--accent); padding-top: 2px; font-size: 13px; }
+.work-progress-body { margin: 9px 0 0 6px; padding-left: 18px; border-left: 1px solid var(--line); }
+.work-progress-steps { display: grid; gap: 15px; margin: 0; padding: 2px 0; list-style: none; }
+.work-progress-step { position: relative; display: flex; align-items: flex-start; gap: 8px; min-width: 0; font-size: 11px; line-height: 1.6; }
+.work-progress-step > div { flex: 1; min-width: 0; }
+.work-progress-step strong { font-weight: 500; overflow-wrap: anywhere; }
+.work-progress-step p { margin: 3px 0 0; font-size: 10px; line-height: 1.65; overflow-wrap: anywhere; }
+.work-progress-step time { white-space: nowrap; font-size: 9px; padding-top: 1px; }
+.work-progress-mark { position: absolute; left: -25px; top: 2px; width: 12px; height: 12px; display: grid; place-content: center; color: var(--accent); background: var(--surface, #fff); font-size: 10px; }
+.work-progress-step.status-running { color: var(--ink); }
+.work-progress-step.status-running .work-progress-mark { border: 1px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: work-progress-spin 1s linear infinite; }
+.work-progress-step.status-waiting { color: var(--calm-warning, #775823); }
+.work-progress-step.status-error { color: var(--calm-error, #963636); }
+.work-progress-step.status-error .work-progress-mark { color: inherit; }
+.work-progress-technical { margin-top: 14px; }
+.work-progress-technical > summary { font-size: 10px; cursor: pointer; padding: 3px 0; }
+.work-progress-technical pre { max-height: 220px; overflow: auto; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--calm-raised, #f2f5f9); color: var(--ink); font: 10px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+.work-progress-technical .text-button, .work-progress-choice { padding: 6px 0; font-size: 10px; }
+.activity-technical-title { font-size: 11px; margin-bottom: 4px; }
+@keyframes work-progress-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .work-progress-step.status-running .work-progress-mark { animation: none; } }
