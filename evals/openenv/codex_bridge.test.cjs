@@ -21,9 +21,9 @@ const { PassThrough } = require('node:stream');
 const { start } = require('./codex_bridge.cjs');
 async function fixture(t, options = {}) {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'aura-codex-bridge-test-'));
-  const kills = [], children = [];
+  const kills = [], children = [], invocations = [];
   const bridge = await start(directory, { requestTimeoutMs: 100, ...options, spawnProcess: (_bin, args) => {
-    const child = new EventEmitter(); child.stdin = new PassThrough(); child.stdout = new PassThrough(); child.stderr = new PassThrough(); children.push(child);
+    invocations.push(args); const child = new EventEmitter(); child.stdin = new PassThrough(); child.stdout = new PassThrough(); child.stderr = new PassThrough(); children.push(child);
     child.kill = signal => { kills.push(signal); setImmediate(() => child.emit('close', null, signal)); return true; };
     if (!options.hang) child.stdin.on('finish', async () => {
       const output = args[args.indexOf('-o') + 1];
@@ -34,7 +34,7 @@ async function fixture(t, options = {}) {
     return child;
   } });
   t.after(async () => { await bridge.close(); await fs.rm(directory, { recursive: true, force: true }); });
-  return { bridge, kills, children };
+  return { bridge, kills, children, invocations };
 }
 test('loopback adapter forwards validated response and usage without executing tools', async t => {
   const f = await fixture(t, { answer: response('apply_patch', { patchText: '*** Begin Patch\n*** End Patch' }) });
@@ -66,4 +66,59 @@ test('failed argument validation still records real model usage', async t => {
   const f = await fixture(t, { answer: response('apply_patch', { patchText: 12 }) });
   const res = await fetch(f.bridge.url + '/chat/completions', { method: 'POST', body: JSON.stringify(body) });
   assert.equal(res.status, 502); await res.text(); assert.equal(f.bridge.records[0].usage.output_tokens, 5); assert.equal(f.bridge.records[0].success, undefined);
+});
+
+const { CODEX_CONFIG, requestMetrics, nativeToolUsed } = require('./codex_bridge.cjs');
+test('host skill, plugin and memory context is explicitly disabled without changing Aura request', async t => {
+  const f = await fixture(t);
+  const res = await fetch(f.bridge.url + '/chat/completions', { method: 'POST', body: JSON.stringify(body) });
+  await res.json();
+  for (const value of CODEX_CONFIG) assert.ok(f.invocations[0].includes(value), value);
+  for (const key of ['skills.include_instructions=false', 'skills.bundled.enabled=false', 'features.plugins=false', 'features.memories=false', 'memories.use_memories=false']) assert.ok(CODEX_CONFIG.includes(key));
+  assert.deepEqual(JSON.parse(instruction(body).split('AURA REQUEST:\n')[1]), body);
+});
+test('path guidance leaves both malformed and new path strings unmodified', () => {
+  assert.match(instruction(body), /references to existing resources/);
+  assert.match(instruction(body), /choose new filenames/);
+  const pathValue = '/public/BRAND.md sediment?';
+  assert.equal(validateResponse(body, response('read', {filePath:pathValue,offset:null})).tool_calls[0].arguments.filePath, pathValue);
+});
+test('native events accept model text/reasoning but reject every actual or unknown tool surface', () => {
+  assert.equal(nativeToolUsed([{item:{type:'agent_message'}},{item:{type:'reasoning'}}]), false);
+  for (const type of ['command_execution','file_change','mcp_tool_call','web_search','image_view','dynamic_tool_call','todo_list','unknown_tool']) assert.equal(nativeToolUsed([{item:{type}}]), true, type);
+});
+test('measured prompt parts and event times are recorded, progress fires only on validated completion', async t => {
+  const progress=[];
+  const f = await fixture(t,{onProgress:event=>progress.push(event),events:[{type:'thread.started'},{type:'turn.started'},{type:'item.completed',item:{type:'agent_message',text:'fixture'}},{type:'turn.completed',usage:{input_tokens:10,output_tokens:5}}]});
+  const res=await fetch(f.bridge.url+'/chat/completions',{method:'POST',body:JSON.stringify(body)});await res.json();
+  const record=f.bridge.records[0];
+  assert.equal(record.promptBytes,Buffer.byteLength(instruction(body)));
+  assert.deepEqual(record.requestMetrics,requestMetrics(body));
+  assert.equal(record.eventTimings.length,4);assert.ok(record.firstItemMs>=0);assert.ok(record.processMilliseconds>=record.firstEventMs);
+  assert.equal(progress.length,1);assert.equal(progress[0].kind,'model-completed');
+});
+test('heartbeat or timeout never counts as completed-model progress', async t => {
+  const progress=[]; const f=await fixture(t,{hang:true,requestTimeoutMs:20,onProgress:e=>progress.push(e)});
+  const res=await fetch(f.bridge.url+'/chat/completions',{method:'POST',body:JSON.stringify(body)});await res.text();assert.deepEqual(progress,[]);
+});
+
+const { classifyItem } = require('./codex_bridge.cjs');
+const deprecatedAliasDiagnostic = '`[features].memory_tool` is deprecated. Use `[features].memories` instead. (Enable it with `--enable memories` or `[features].memories` in config.toml. See https://developers.openai.com/codex/config-basic#feature-flags for details.)';
+test('known config diagnostic is distinct from a native tool and deprecated alias is no longer emitted by config', async t => {
+  assert.ok(!CODEX_CONFIG.includes('features.memory_tool=false'));
+  assert.equal(classifyItem({type:'error',message:deprecatedAliasDiagnostic}),'known-diagnostic');
+  const f=await fixture(t,{events:[{type:'item.completed',item:{type:'error',message:deprecatedAliasDiagnostic}},{type:'turn.completed',usage:{input_tokens:10,output_tokens:5}}]});
+  const res=await fetch(f.bridge.url+'/chat/completions',{method:'POST',body:JSON.stringify(body)});assert.equal(res.status,200);await res.json();
+  assert.deepEqual(f.bridge.records[0].diagnostics,['deprecated-memory-tool-alias']);assert.equal(f.bridge.records[0].termination,undefined);assert.deepEqual(f.kills,[]);
+});
+test('unknown Codex diagnostic fails closed without mislabeling it as a native action', async t => {
+  const f=await fixture(t,{events:[{type:'item.completed',item:{type:'error',message:'Unknown diagnostic'}},{type:'turn.completed',usage:{input_tokens:10,output_tokens:5}}]});
+  const res=await fetch(f.bridge.url+'/chat/completions',{method:'POST',body:JSON.stringify(body)});assert.equal(res.status,502);assert.match(await res.text(),/Unrecognized Codex diagnostic/);
+  assert.equal(f.bridge.records[0].termination,undefined);assert.deepEqual(f.kills,[]);
+});
+test('settled streaming validation failure never becomes client_closed or kills a completed process', async t => {
+  const f=await fixture(t,{answer:response('apply_patch',{patchText:12})});
+  const res=await fetch(f.bridge.url+'/chat/completions',{method:'POST',body:JSON.stringify({...body,stream:true})});
+  await assert.rejects(res.text());await new Promise(resolve=>setTimeout(resolve,10));
+  assert.match(f.bridge.records[0].error,/Invalid response/);assert.equal(f.bridge.records[0].termination,undefined);assert.deepEqual(f.kills,[]);
 });
