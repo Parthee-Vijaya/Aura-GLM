@@ -1,0 +1,13 @@
+{
+  "checkedAt": "2026-10-25T16:17:04.895Z",
+  "url": "https://raw.githubusercontent.com/Parthee-Vijaya/ai-harness/main/site/dist/updates/beta/darwin-arm64/beta-mac.yml",
+  "status": 200,
+  "manifestMatchesRepository": true,
+  "acceptedByProductValidator": true,
+  "fromVersion": "0.3.1-beta.1",
+  "toVersion": "0.4.0-beta.2",
+  "zipSha512": "p2qoV+hzYgvvzpFHT2UPhxyi6S9NXS05LOYjX6Ml9l6sgo5TVGrkyu5gHp81icvpEQ7AwDX6DDm7swJTn4ibBA==",
+  "zipBytes": 339580889,
+  "installed": false,
+  "note": "Feed and download hashes verified; installed user app was not updated."
+}

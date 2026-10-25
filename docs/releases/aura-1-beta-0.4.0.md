@@ -64,10 +64,10 @@ Bundle-, profil- og nøgleringsidentiteter bevares. Den installerede 0.3.1 og ek
 | Faktisk DMG og opdaterings-ZIP | Bygget fra produktcommitten. DMG-checksum, ZIP-integritet og byte-/mode-/symlink-sammenligning af 11.332 poster består. |
 | Pakkens kildebevis, runtime og kontrolsummer | Kildebevis og medfølgende OpenCode 1.18.33 / Git 2.53.0 / Node 22.23.3 kontrolleret. Den monterede app starter med begrænset PATH og viser reelt preview. |
 | Appsignatur og notarisering | Ad hoc-signatur består dyb og streng codesign-kontrol. Ingen Developer ID-notarisering. |
-| GitHub CI | Forkens GitHub API viste 0 kørsler og 0 checks på main før push. Lokal afprøvning er ikke grøn GitHub CI. |
+| GitHub CI | Forkens GitHub API viste fortsat 0 kørsler efter push og publicering. Lokal afprøvning er ikke grøn GitHub CI. |
 | Intel-Mac, Windows og en anden fysisk Mac | Ikke kvalificeret af denne Apple Silicon-pakke. |
-| Release og downloadbytes | Publiceret i egen fork. Alle tre assets er downloadet og SHA-256 matcher både de kvalificerede lokale filer og GitHubs digests. Opdateringsfeedet kontrolleres efter det afsluttende push. |
-| Oprydning | Afventer verificeret udgivelse; ingen lokal kildekode må slettes. |
+| Release, feed og downloadbytes | Publiceret i egen fork. Alle tre assets er downloadet og SHA-256 matcher både de kvalificerede lokale filer og GitHubs digests. Det offentlige opdateringsfeed svarer med den korrekte ZIP, størrelse og SHA-512 og accepteres af Auras opdateringskontrol fra 0.3.1. Den installerede app er ikke opdateret. |
+| Oprydning | 14 ubrugte appkopier, pakke-/debugfiler og testcaches fjernet efter kontrol. Målt fri plads steg cirka 2,19 GiB. Kode, testprojekter, worktrees, rapporter, brugerdata, credentials og den monterede DMG med den afventende prøve er bevaret. |
 
 Den [tidligere modelsammenligning](../../evals/openenv/MODELSAMMENLIGNING-2026-10-25.md) dokumenterer rigtige Mistral- og Corti-kørsler med fiktive appdata, både funktionelle restfejl og manglende visuel polering. GPTs supplerende filreference blev lavet gennem en anden arbejdsgang. Resultaterne må ikke omskrives til tre ens, fejlfri Aura-prøver. De er heller ikke en native end-to-end-kvalifikation af DMG’en.
 
@@ -79,6 +79,6 @@ Der er kun tre release-assets: DMG, opdaterings-ZIP og `SHA256SUMS.txt`. Kildeco
 
 Denne fork er særskilt fra det Code-OSS-baserede Aura-1-projekt. Udgivelsen gør ikke krav på fuld Privacy Gate eller fuld isolation af alle agentværktøjer. Skills og lokale appkontroller kan hjælpe den valgte model, men udligner ikke dokumenteret forskellene i modelkvalitet og garanterer ikke et poleret første udkast.
 
-Efter en verificeret udgivelse beholdes højst tre færdige lokale DMG-versioner. Ubrugte byggede pakker, caches og klart syntetiske profiler kan ryddes op efter ejerskabs- og brugscheck. Lokal kode, checkouts, worktrees, beskrivelser, testkilder, brugerprojekter og credentials bevares, også når de er committed og pushed.
+Efter en verificeret udgivelse beholdes højst tre færdige lokale DMG-versioner for denne fork. Opgavens ubrugte byggede appkopier, ZIP-dublet, blockmaps, debugfil og afsluttede testcaches er ryddet op efter ejerskabs- og brugscheck. Den aktive DMG-kopi og den verificerede Downloads-levering bevares. Historiske pakker fra det særskilte Code-OSS-projekt og ukendte cloud-placeholders er ikke slettet som del af denne fork-release. Lokal kode, checkouts, worktrees, beskrivelser, testkilder, brugerprojekter og credentials er bevaret, også når de er committed og pushed.
 
 De lokale ændringers foreløbige fordeling på bidrag til originalen findes i [PR-efterslæbet for 0.4.0](../contributions/upstream-followup-beta-0.4.0.md). Denne releaseforberedelse opretter eller opdaterer ingen upstream-PR’er.

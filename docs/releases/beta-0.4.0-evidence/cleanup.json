@@ -1,0 +1,55 @@
+{
+  "startedAt": "2026-10-25T16:17:30.008315+00:00",
+  "completedAt": "2026-10-25T16:17:34.580971+00:00",
+  "releaseUrl": "https://github.com/Parthee-Vijaya/ai-harness/releases/tag/v0.4.0-beta.2",
+  "status": "completed",
+  "checks": {
+    "publishedAssetsVerified": true,
+    "deliveryHashesVerified": true,
+    "temporaryZipIdentical": true,
+    "appCopiesMatchQualifiedManifests": true,
+    "ownershipPathsGitAndOpenFilesPassed": true
+  },
+  "removedCount": 14,
+  "skippedCount": 0,
+  "logicalBytesRemoved": 2257191716,
+  "recordedAllocatedBytesRemoved": 2337275904,
+  "freeBytesBefore": 23593877504,
+  "freeBytesAfter": 25941692416,
+  "observedFreeByteIncrease": 2347814912,
+  "spaceCaveat": "Observed volume delta may include concurrent activity and APFS shared blocks; allocated inventory is not a guaranteed reclamation amount.",
+  "preserved": {
+    "mountedDmgAndTestProcesses": true,
+    "deliveryAssetsHashesUnchanged": true,
+    "allNonCacheTrialFilesMetadataUnchanged": true,
+    "sourceWorktreeProjectsAndProfileState": true,
+    "historicalDmgAndCloudPlaceholders": true,
+    "uniqueBuilderDiagnosticsArchived": true
+  },
+  "removedCategories": [
+    {
+      "kind": "duplicate-zip",
+      "targets": 1,
+      "logicalBytes": 339580889,
+      "recordedAllocatedBytes": 353370112
+    },
+    {
+      "kind": "extracted-built-app-copy",
+      "targets": 2,
+      "logicalBytes": 1905202288,
+      "recordedAllocatedBytes": 1972633600
+    },
+    {
+      "kind": "generated-build-metadata",
+      "targets": 3,
+      "logicalBytes": 717227,
+      "recordedAllocatedBytes": 724992
+    },
+    {
+      "kind": "owned-completed-trial-cache",
+      "targets": 8,
+      "logicalBytes": 11691312,
+      "recordedAllocatedBytes": 10547200
+    }
+  ]
+}
