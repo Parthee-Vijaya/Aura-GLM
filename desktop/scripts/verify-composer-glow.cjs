@@ -27,7 +27,7 @@ const helpers = require('./ui-test-helpers.cjs');
     const before = getComputedStyle(form, '::before'), after = getComputedStyle(form, '::after');
     const box = form.getBoundingClientRect(), prompt = document.querySelector('#prompt').getBoundingClientRect();
     return {
-      state: form.dataset.metalState, busy: form.getAttribute('aria-busy'),
+      state: form.dataset.metalState, busy: form.getAttribute('aria-busy'), theme: document.body.dataset.workspaceTheme, animationAt: performance.now(),
       before: { opacity: before.opacity, animation: before.animationName, duration: before.animationDuration, pointerEvents: before.pointerEvents, display: before.display, angle: before.getPropertyValue('--aura-metal-angle').trim() },
       after: { opacity: after.opacity, animation: after.animationName, pointerEvents: after.pointerEvents, display: after.display },
       form: { x: box.x, y: box.y, width: box.width, height: box.height, right: box.right, bottom: box.bottom, border: style.borderColor, outline: style.outlineStyle, outlineWidth: style.outlineWidth },
@@ -105,15 +105,35 @@ const helpers = require('./ui-test-helpers.cjs');
     await emit(ownerA, { type: 'run.status', status: 'working' });
     const working = await expectState('working');
     assert.equal(working.before.animation, 'aura-metal-flow'); assert.equal(working.before.duration, '5s');
-    assert.equal(working.before.opacity, '1'); assert.equal(working.after.opacity, '0.3');
+    assert.equal(working.before.opacity, '0.95'); assert.equal(working.after.opacity, '0.25');
     // Stop-knappen er normalt skjult i idle og må ændre toolbarens højde. Sammenlign
     // derfor samme working-visning med og uden pseudoelementer, ikke to forskellige UI-tilstande.
     const noDecoration = await page.evaluate(() => { const sheet = document.styleSheets[0]; return sheet.insertRule('#chat-form::before, #chat-form::after { display: none !important; }', sheet.cssRules.length); });
     assert.deepEqual((await inspect()).form, working.form, 'Den dekorative kant ændrer ikke skrivefeltets placering eller størrelse.');
     await page.evaluate(index => document.styleSheets[0].deleteRule(index), noDecoration);
-    await page.waitForTimeout(120);
-    assert.notEqual((await inspect()).before.angle, working.before.angle, 'Det registrerede CSS-vinkelparameter bevæger sig faktisk.');
-    await screenshot('working'); check('Starting og working bruger den aktive samtales kant; 5-sekunders animationen bevæger sig uden layoutændring.');
+    // Test the animation across the regular 1-second status render, not merely its CSS name.
+    const animationAngles = [], animationTimes = [];
+    for (let sample = 0; sample < 3; sample++) {
+      await page.waitForTimeout(650);
+      const frame = await inspect();
+      animationAngles.push(parseFloat(frame.before.angle)); animationTimes.push(frame.animationAt);
+    }
+    assert.ok(animationAngles.every(Number.isFinite));
+    for (let sample = 1; sample < animationAngles.length; sample++) {
+      // A normal full rotation wraps to zero; compare circular phase against real
+      // elapsed time instead of treating wraparound as a restart.
+      const advance = (animationAngles[sample] - animationAngles[sample - 1] + 360) % 360;
+      const expected = ((animationTimes[sample] - animationTimes[sample - 1]) / 5000 * 360) % 360;
+      const delta = Math.abs(advance - expected);
+      assert.ok(Math.min(delta, 360 - delta) < 15, 'Statusopdateringer må ikke genstarte eller standse rotationen.');
+    }
+    await screenshot('working-dark');
+    await page.evaluate(() => document.querySelector('#workspace-theme').click());
+    const light = await inspect(); assert.equal(light.theme, 'light');
+    assert.equal(light.before.animation, 'aura-metal-flow'); assert.equal(light.before.opacity, '0.95');
+    await screenshot('working-light');
+    await page.evaluate(() => document.querySelector('#workspace-theme').click());
+    check('Starting og working bruger den aktive samtales kant; 5-sekunders animationen bevæger sig gennem statusopdateringer i mørkt og lyst tema uden layoutændring.');
 
     assert.equal(working.before.pointerEvents, 'none'); assert.equal(working.after.pointerEvents, 'none');
     await page.locator('#prompt').click(); await page.keyboard.type('Denne kladde bevares.');
@@ -164,7 +184,7 @@ const helpers = require('./ui-test-helpers.cjs');
     const reduced = await inspect();
     assert.equal(reduced.state, 'working'); assert.equal(reduced.reduced, true);
     assert.equal(reduced.before.animation, 'none'); assert.equal(reduced.after.animation, 'none');
-    assert.equal(reduced.before.opacity, '1'); assert.equal(reduced.after.display, 'none');
+    assert.equal(reduced.before.opacity, '0.95'); assert.equal(reduced.after.display, 'none');
     await screenshot('reduced-motion'); check('Reduceret bevægelse fjerner rotation og slør; den statiske arbejdskant og eksisterende status bevares.');
 
     await page.emulateMedia({ reducedMotion: 'no-preference', forcedColors: 'active' });
@@ -182,7 +202,8 @@ const helpers = require('./ui-test-helpers.cjs');
     assert.ok(narrow.viewport.scrollWidth <= narrow.viewport.width + 1, 'Der opstår ingen vandret sidescroll ved 720 px.');
     assert.ok(narrow.form.x >= 0 && narrow.form.right <= narrow.viewport.width + 1);
     assert.ok(narrow.form.y >= 0 && narrow.form.bottom <= narrow.viewport.height + 1);
-    for (const selector of ['#prompt', '#model-chip', '#stop', '#send']) {
+    assert.equal(await page.isVisible('#send'), false, 'Den godkendte rolige arbejdsvisning viser Stop i stedet for Send under arbejde.');
+    for (const selector of ['#prompt', '#model-chip', '#stop']) {
       const box = await page.locator(selector).boundingBox();
       assert.ok(box && box.x >= 0 && box.x + box.width <= 721 && box.y + box.height <= 801, selector + ' er synlig uden afskæring.');
     }
@@ -211,7 +232,8 @@ const helpers = require('./ui-test-helpers.cjs');
     const report = {
       kind: 'Electron-renderer med kontrollerede IPC-hændelser; ingen rigtig AI-motor eller modelkontakt',
       platform: process.platform, electron: await app.evaluate(() => process.versions.electron),
-      source: Object.fromEntries(await Promise.all(['ui/app.js', 'ui/styles.css', 'scripts/verify-composer-glow.cjs'].map(async file => [file, crypto.createHash('sha256').update(await fs.readFile(path.join(__dirname, '..', file))).digest('hex')]))),
+      source: Object.fromEntries(await Promise.all(['ui/app.js', 'ui/styles.css', 'ui/workspace-calm.css', 'ui/workspace-calm.js', 'scripts/verify-composer-glow.cjs'].map(async file => [file, crypto.createHash('sha256').update(await fs.readFile(path.join(__dirname, '..', file))).digest('hex')]))),
+      animationAngles, animationTimes,
       checks, screenshots, states, errors, profile: root,
       limits: ['Ingen påstand om modelkvalitet, modelnetværk eller live AI-kørsel.', 'Tilstande kommer fra kontrollerede IPC-hændelser; selve Electron-rendereren, samtaleskift og betjening er virkelige.', '720 px er den afprøvede smalle vinduesbredde; øvrige responsive grænser er ikke udvidet.']
     };

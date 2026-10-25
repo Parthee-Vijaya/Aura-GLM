@@ -1,0 +1,504 @@
+{
+  "status": "gpt_transport_not_stable",
+  "scope": "Real Aura Workbench and OpenCode pipeline through experimental Codex CLI bridge; not an installed DMG or direct OpenAI API test",
+  "latestConclusion": "Typed arguments passed real patch validation and produced an app that passed 26 desktop/mobile browser checks. Two model calls timed out; the 900-second Aura stage stopped the final response before product quality control. The full agent pipeline is not passed.",
+  "attempts": {
+    "compactString": {
+      "status": "failed",
+      "scope": "Real Aura Workbench and OpenCode pipeline through experimental Codex CLI bridge; not an installed DMG or direct OpenAI API test",
+      "model": "gpt-6.1-sol",
+      "effort": "low",
+      "sameTaskSHA256": "2f2521346ec12ccb28ae0742316e70faf582c1a714d892eb455aee431033c48d",
+      "sameSkills": true,
+      "sameProductSourceHashes": true,
+      "inputDifference": "Neutral project name Madklar instead of Madbestillingsdemo; original model comparison is not replaced",
+      "stages": [
+        {
+          "name": "plan",
+          "seconds": 66.463,
+          "status": "idle",
+          "faults": []
+        },
+        {
+          "name": "build",
+          "seconds": 793.623,
+          "status": "error",
+          "faults": [
+            "engine.error"
+          ]
+        }
+      ],
+      "elapsedSeconds": 860.7862248420715,
+      "completedLiveInferences": 9,
+      "successfullyReleasedResponses": 6,
+      "rejectedResponses": 3,
+      "usageIncludingRejectedResponses": {
+        "input_tokens": 457654,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 34268,
+        "reasoning_output_tokens": 58
+      },
+      "cost": null,
+      "outcome": "Only HTML, CSS and three SVGs were written. app.js was rejected three times for malformed inner JSON; no handwritten repairs or further model runs.",
+      "browser": {
+        "version": "153.0.8010.12",
+        "completedApplication": false,
+        "mainCharacters": 0,
+        "appJsStatus": 404,
+        "sourceUnchanged": true,
+        "externalRequests": 0,
+        "screenshots": [
+          "evidence/gpt-transport-20261025/desktop.png",
+          "evidence/gpt-transport-20261025/mobile.png"
+        ]
+      },
+      "adapterAfterTrial": {
+        "arguments": "typed objects restored; string prototype rejected",
+        "localTests": {
+          "passed": 15,
+          "failed": 0
+        },
+        "liveRetested": false
+      },
+      "processesClosed": true,
+      "productProviderChanged": false,
+      "published": false
+    },
+    "typedObject": {
+      "status": "pipeline_deadline_with_functional_app",
+      "model": "gpt-6.1-sol",
+      "effort": "low",
+      "transport": "typed-function-arguments",
+      "sameTaskSHA256": "2f2521346ec12ccb28ae0742316e70faf582c1a714d892eb455aee431033c48d",
+      "sameSkills": true,
+      "sameSkillsSHA256": "5bae9a06b99a900796d9258818ef15a95ee644538611f020d24d9cf2baace6bb",
+      "projectName": "Madklar",
+      "sourceChangeSincePreviousAttempt": "app-quality.cjs had the separately reviewed contrast fix; no quality pass ran in this trial. Other three recorded product modules and all skills matched. All recorded modules stayed unchanged during inference.",
+      "stages": [
+        {
+          "name": "plan",
+          "seconds": 54.654,
+          "faults": [],
+          "status": "idle"
+        },
+        {
+          "name": "build",
+          "seconds": 900.087,
+          "faults": [
+            "pilot_deadline"
+          ],
+          "status": "stopped"
+        }
+      ],
+      "elapsedSeconds": 955.0796358585358,
+      "requests": 11,
+      "completedLiveInferences": 8,
+      "usageUnknownForCalls": [
+        6,
+        7,
+        11
+      ],
+      "confirmedUsageLowerBound": {
+        "input_tokens": 405043,
+        "output_tokens": 15580,
+        "cached_input_tokens": 52480,
+        "reasoning_output_tokens": 107
+      },
+      "cost": null,
+      "calls": [
+        {
+          "index": 1,
+          "started": "2026-10-25T15:49:18.796Z",
+          "finished": "2026-10-25T15:49:25.382Z",
+          "toolCalls": [
+            "read",
+            "skill"
+          ],
+          "success": true
+        },
+        {
+          "index": 2,
+          "started": "2026-10-25T15:49:25.426Z",
+          "finished": "2026-10-25T15:49:32.101Z",
+          "toolCalls": [
+            "read",
+            "read",
+            "read"
+          ],
+          "success": true
+        },
+        {
+          "index": 3,
+          "started": "2026-10-25T15:49:32.154Z",
+          "finished": "2026-10-25T15:49:38.291Z",
+          "toolCalls": [
+            "read",
+            "read",
+            "skill"
+          ],
+          "success": true
+        },
+        {
+          "index": 4,
+          "started": "2026-10-25T15:49:38.318Z",
+          "finished": "2026-10-25T15:50:11.886Z",
+          "toolCalls": [],
+          "success": true
+        },
+        {
+          "index": 5,
+          "started": "2026-10-25T15:50:13.377Z",
+          "finished": "2026-10-25T15:50:23.682Z",
+          "toolCalls": [
+            "skill",
+            "skill",
+            "todowrite"
+          ],
+          "success": true
+        },
+        {
+          "index": 6,
+          "started": "2026-10-25T15:50:23.734Z",
+          "termination": "timeout",
+          "error": "Codex request timed out",
+          "finished": "2026-10-25T15:55:23.746Z"
+        },
+        {
+          "index": 7,
+          "started": "2026-10-25T15:55:24.751Z",
+          "termination": "timeout",
+          "error": "Codex request timed out",
+          "finished": "2026-10-25T16:00:24.777Z"
+        },
+        {
+          "index": 8,
+          "started": "2026-10-25T16:00:27.784Z",
+          "finished": "2026-10-25T16:02:07.753Z",
+          "toolCalls": [
+            "apply_patch"
+          ],
+          "success": true
+        },
+        {
+          "index": 9,
+          "started": "2026-10-25T16:02:07.801Z",
+          "finished": "2026-10-25T16:04:21.690Z",
+          "toolCalls": [
+            "apply_patch"
+          ],
+          "success": true
+        },
+        {
+          "index": 10,
+          "started": "2026-10-25T16:04:21.736Z",
+          "finished": "2026-10-25T16:04:32.137Z",
+          "toolCalls": [
+            "read",
+            "todowrite"
+          ],
+          "success": true
+        },
+        {
+          "index": 11,
+          "started": "2026-10-25T16:04:32.169Z",
+          "termination": "client_closed",
+          "error": "Codex process did not complete",
+          "finished": "2026-10-25T16:05:12.068Z"
+        }
+      ],
+      "toolApprovals": [
+        {
+          "paths": [
+            "public/assets/bowl.svg",
+            "public/assets/burger.svg",
+            "public/assets/pizza.svg",
+            "public/index.html",
+            "public/styles.css"
+          ],
+          "allow": true,
+          "scope": "once"
+        },
+        {
+          "paths": [
+            "public/app.js"
+          ],
+          "allow": true,
+          "scope": "once"
+        }
+      ],
+      "productQualityPasses": 0,
+      "browser": {
+        "scope": "Actual generated app after the Aura run hit its 900-second deadline; no handwritten source fixes and no further AI calls",
+        "browserVersion": "153.0.8010.12",
+        "sourceFiles": {
+          "app.js": "d0b796513bd7e1d88ff6714cc33a60e192ece2c69b321de89f6a54eaf00adce9",
+          "assets/bowl.svg": "f9e0749218614ae1ded1ed8c48dcdd25dfc0d0b78fc8e8941917e9ebf551245f",
+          "assets/burger.svg": "cb36a28f679abf4b26065cd133e5d00262d9da85d4fa8ca240a6a289f4666638",
+          "assets/pizza.svg": "11543f254b95960d1bfa6f47cc83930f7df05d59ba1ed61ba123ffd7a8b4d5dc",
+          "index.html": "95e938622fa5b4bd300c33ddca31d482820fc16fcb862047bf0f82629afeaeaf",
+          "styles.css": "056ba4b4f93cb03dd4942d78f403b166b1d7e649f27ffbd7c4fc55752096ff4a"
+        },
+        "views": [
+          {
+            "name": "desktop",
+            "label": "home",
+            "viewport": {
+              "width": 1440,
+              "height": 900
+            },
+            "file": "evidence/gpt-typed-20261025/desktop-home.png",
+            "overflow": false,
+            "mainCharacters": 661
+          },
+          {
+            "name": "desktop",
+            "label": "menu",
+            "viewport": {
+              "width": 1440,
+              "height": 900
+            },
+            "file": "evidence/gpt-typed-20261025/desktop-menu.png",
+            "overflow": false,
+            "mainCharacters": 602
+          },
+          {
+            "name": "desktop",
+            "label": "cart",
+            "viewport": {
+              "width": 1440,
+              "height": 900
+            },
+            "file": "evidence/gpt-typed-20261025/desktop-cart.png",
+            "overflow": false,
+            "mainCharacters": 768
+          },
+          {
+            "name": "desktop",
+            "label": "checkout",
+            "viewport": {
+              "width": 1440,
+              "height": 900
+            },
+            "file": "evidence/gpt-typed-20261025/desktop-checkout.png",
+            "overflow": false,
+            "mainCharacters": 748
+          },
+          {
+            "name": "desktop",
+            "label": "confirmation",
+            "viewport": {
+              "width": 1440,
+              "height": 900
+            },
+            "file": "evidence/gpt-typed-20261025/desktop-confirmation.png",
+            "overflow": false,
+            "mainCharacters": 417
+          },
+          {
+            "name": "mobile",
+            "label": "home",
+            "viewport": {
+              "width": 390,
+              "height": 844
+            },
+            "file": "evidence/gpt-typed-20261025/mobile-home.png",
+            "overflow": false,
+            "mainCharacters": 661
+          },
+          {
+            "name": "mobile",
+            "label": "menu",
+            "viewport": {
+              "width": 390,
+              "height": 844
+            },
+            "file": "evidence/gpt-typed-20261025/mobile-menu.png",
+            "overflow": false,
+            "mainCharacters": 523
+          },
+          {
+            "name": "mobile",
+            "label": "cart",
+            "viewport": {
+              "width": 390,
+              "height": 844
+            },
+            "file": "evidence/gpt-typed-20261025/mobile-cart.png",
+            "overflow": false,
+            "mainCharacters": 523
+          },
+          {
+            "name": "mobile",
+            "label": "checkout",
+            "viewport": {
+              "width": 390,
+              "height": 844
+            },
+            "file": "evidence/gpt-typed-20261025/mobile-checkout.png",
+            "overflow": false,
+            "mainCharacters": 748
+          },
+          {
+            "name": "mobile",
+            "label": "confirmation",
+            "viewport": {
+              "width": 390,
+              "height": 844
+            },
+            "file": "evidence/gpt-typed-20261025/mobile-confirmation.png",
+            "overflow": false,
+            "mainCharacters": 417
+          }
+        ],
+        "checks": [
+          {
+            "view": "desktop",
+            "label": "Three fictional restaurants and explicit demo",
+            "passed": true
+          },
+          {
+            "view": "desktop",
+            "label": "Empty cart has no checkout",
+            "passed": true
+          },
+          {
+            "view": "desktop",
+            "label": "Menu search and reset",
+            "passed": true
+          },
+          {
+            "view": "desktop",
+            "label": "Pizza extras and quantity total 204 DKK",
+            "passed": true
+          },
+          {
+            "view": "desktop",
+            "label": "Quantity update total 306 DKK",
+            "passed": true
+          },
+          {
+            "view": "desktop",
+            "label": "Delivery adds restaurant fee 29 DKK",
+            "passed": true
+          },
+          {
+            "view": "desktop",
+            "label": "Invalid contact blocks order with readable errors",
+            "passed": true
+          },
+          {
+            "view": "desktop",
+            "label": "Delivery confirmation and persisted order total 335 DKK",
+            "passed": true
+          },
+          {
+            "view": "desktop",
+            "label": "History survives browser reload",
+            "passed": true
+          },
+          {
+            "view": "desktop",
+            "label": "Pickup order has no delivery fee",
+            "passed": true
+          },
+          {
+            "view": "desktop",
+            "label": "Keyboard Escape dismisses item dialog",
+            "passed": true
+          },
+          {
+            "view": "desktop",
+            "label": "Draft cart survives browser reload",
+            "passed": true
+          },
+          {
+            "view": "desktop",
+            "label": "Restaurant switch requires explicit cart-clear confirmation",
+            "passed": true
+          },
+          {
+            "view": "mobile",
+            "label": "Three fictional restaurants and explicit demo",
+            "passed": true
+          },
+          {
+            "view": "mobile",
+            "label": "Empty cart has no checkout",
+            "passed": true
+          },
+          {
+            "view": "mobile",
+            "label": "Menu search and reset",
+            "passed": true
+          },
+          {
+            "view": "mobile",
+            "label": "Pizza extras and quantity total 204 DKK",
+            "passed": true
+          },
+          {
+            "view": "mobile",
+            "label": "Quantity update total 306 DKK",
+            "passed": true
+          },
+          {
+            "view": "mobile",
+            "label": "Delivery adds restaurant fee 29 DKK",
+            "passed": true
+          },
+          {
+            "view": "mobile",
+            "label": "Invalid contact blocks order with readable errors",
+            "passed": true
+          },
+          {
+            "view": "mobile",
+            "label": "Delivery confirmation and persisted order total 335 DKK",
+            "passed": true
+          },
+          {
+            "view": "mobile",
+            "label": "History survives browser reload",
+            "passed": true
+          },
+          {
+            "view": "mobile",
+            "label": "Pickup order has no delivery fee",
+            "passed": true
+          },
+          {
+            "view": "mobile",
+            "label": "Keyboard Escape dismisses item dialog",
+            "passed": true
+          },
+          {
+            "view": "mobile",
+            "label": "Draft cart survives browser reload",
+            "passed": true
+          },
+          {
+            "view": "mobile",
+            "label": "Restaurant switch requires explicit cart-clear confirmation",
+            "passed": true
+          }
+        ],
+        "errors": [],
+        "consoleErrors": [],
+        "external": [],
+        "sourceUnchanged": true,
+        "passed": true
+      },
+      "visualObservation": "Responsive coherent food palette, typography and locally drawn SVGs. Existing field errors remain visible while values are corrected and clear only on resubmission. This is a UI rough edge, not a blocked order in the verified flow.",
+      "sourceUnchangedDuringBrowserChecks": true,
+      "handwrittenApplicationFixes": false,
+      "processesClosed": true
+    }
+  },
+  "adapterLocalTests": {
+    "passed": 15,
+    "failed": 0
+  },
+  "productProviderChanged": false,
+  "published": false
+}

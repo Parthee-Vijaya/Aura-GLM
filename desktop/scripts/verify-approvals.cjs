@@ -1,6 +1,6 @@
 // Godkendelser og fejl i Electron: konkrete godkendelseskort med diff og kommando, afvis med besked, der lader AI'en
-// fortsætte, afvis, der stopper, Stop med fortrydelse, fejltyper fra modelserveren og kontroller med faktiske resultater,
-// herunder Auras egen kontrol af forhåndsvisningen. Den rigtige OpenCode-motor bruges med en kontrolleret lokal
+// fortsætte, afvis, der stopper, Stop med fortrydelse, fejltyper fra modelserveren og faktiske kommandoresultater
+// i Aktivitet samt forhåndsvisningens indhold og konsol. Den rigtige OpenCode-motor bruges med en kontrolleret lokal
 // modelserver og et nyt projekt med Git i en midlertidig mappe; dette repository røres ikke.
 const { _electron: electron } = require('playwright');
 const assert = require('node:assert/strict');
@@ -50,17 +50,17 @@ const helpers = require('./ui-test-helpers.cjs');
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const checks = []; const passed = text => { checks.push(text); console.log('✓ ' + text); };
-  const errors = []; let app, page;
+  const errors = [], consoleErrors = []; let app, page;
   const capture = async name => { const png = await app.evaluate(async ({ BrowserWindow }) => (await BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).webContents.capturePage()).toPNG().toString('base64')); await fs.writeFile(path.join(root, name), Buffer.from(png, 'base64')); };
   const send = async text => {
     await page.fill('#prompt', text); await page.click('#send');
-    await page.waitForFunction(() => document.querySelector('#data-dialog').open || !document.querySelector('#stop').hidden || /Fejl|Klar/.test(document.querySelector('#run-status').textContent));
+    await page.waitForFunction(() => document.querySelector('#data-dialog').open || !document.querySelector('#stop').hidden || /Fejl/.test(document.querySelector('#run-status').textContent));
     if (await page.locator('#data-dialog').evaluate(el => el.open)) await page.click('#accept-send');
   };
   const idle = () => page.waitForFunction(() => document.querySelector('#stop').hidden, null, { timeout: 90000 });
   try {
     app = await electron.launch({ executablePath: require('electron'), args: [path.join(__dirname, '..'), '--user-data-dir=' + path.join(root, 'appdata')], env: { ...process.env, PATH: bin + path.delimiter + process.env.PATH, ELECTRON_RUN_AS_NODE: undefined } });
-    page = await app.firstWindow(); page.on('pageerror', error => errors.push(error.message));
+    page = await app.firstWindow(); page.on('pageerror', error => errors.push(error.message)); page.on('console', entry => { if (entry.type() === 'error') consoleErrors.push(entry.text()); });
     await helpers.isolateDocuments(app, documents); await helpers.skipIntroduction(page); await helpers.toOnboarding(page);
     await page.fill('#purpose', 'En side med mødelokaler.'); await page.click('#create'); await page.waitForSelector('#workspace:not([hidden])');
     project = path.join(documents, 'Aura', (await fs.readdir(path.join(documents, 'Aura')))[0]);
@@ -79,7 +79,7 @@ const helpers = require('./ui-test-helpers.cjs');
     assert.equal(await card.locator('details').first().evaluate(el => el.open), false);
     await card.locator('summary', { hasText: 'Se ændringen' }).click();
     assert.match(await card.locator('.approval-diff').innerText(), /Tilføjet:\s*<!doctype html>[^\n]*<h1>Find et lokale<\/h1>/);
-    assert.match(await card.locator('.approval-scope').textContent(), /kun filer i projektmappen, til opgaven slutter/);
+    assert.match(await card.locator('.approval-scope').textContent(), /En gemt tilladelse gælder projektets filer/);
     assert.equal(await page.locator('#run-status').textContent(), 'Venter på dig');
     assert.equal(await page.locator('#agent-activity-text').textContent(), 'Venter på dig: Må AI’en ændre filer i projektet?');
     assert.equal(await page.isVisible('#connection-warning'), false);
@@ -89,44 +89,47 @@ const helpers = require('./ui-test-helpers.cjs');
     await capture('godkendelse-fil.png');
     passed('Filgodkendelsen viser filen, antal linjer, ændringen og omfanget; statuslinjen siger, at AI’en venter, og Vis fører til kortet');
 
-    await card.locator('button', { hasText: 'Kun denne fil' }).click();
+    await card.locator('button', { hasText: 'Tillad én gang' }).click();
     const command = page.locator('#approvals .approval').first(); await command.locator('.approval-kind', { hasText: 'Kommando' }).waitFor({ timeout: 90000 });
     assert.equal(await command.locator('code.action-target').textContent(), 'echo "1 test fejlede" && exit 1');
     assert.match(await command.locator('.approval-facts').innerText(), /Hvorfor\s+AI’ens begrundelse: Kører testene/);
     assert.match(await command.locator('.approval-hints').innerText(), /Ser ud til kun at læse eller vise noget/);
     assert.match(await command.locator('.approval-facts').innerText(), /Et gæt ud fra kommandoens tekst, ikke en kontrol/);
     assert.equal(await command.locator('.approval-actions button.primary').count(), 0, 'en kommando har ingen fremhævet Tillad-knap');
-    assert.match(await page.locator('#messages .answer-record').last().textContent(), /Du gav AI’en lov til at ændre filer i projektet: public\/index\.html\./);
+    assert.match(await page.locator('#messages .answer-record').last().textContent(), /1 handling godkendt: Filændring: .*\/public\/index\.html\./);
     await command.locator('button', { hasText: 'Tillad én gang' }).click();
     await idle();
     passed('Kommandokortet viser kommandoen, AI’ens begrundelse og et gæt i almindeligt dansk uden en fremhævet Tillad');
 
-    // Resultatet: faktiske kontroller. Kommandoen fejlede med kode 1, og forhåndsvisningen skrev en fejl i konsollen.
-    const review = page.locator('#run-review'); await review.locator('h3', { hasText: 'Prøv resultatet i forhåndsvisningen' }).waitFor();
-    const checksText = review.locator('.check-list');
-    await checksText.locator('li.check-failed', { hasText: 'Forhåndsvisning: siden blev vist, men skrev 1 fejl i konsollen.' }).waitFor({ timeout: 30000 });
-    await review.locator('li.check-failed summary', { hasText: 'Se fejlene' }).click();
-    assert.match(await review.locator('li.check-failed pre').first().textContent(), /Kunne ikke hente lokalerne/);
-    assert.match(await checksText.innerText(), /Kommando echo "1 test fejlede" && exit 1: Afsluttet med fejl \(kode 1\)\./);
-    await review.locator('summary', { hasText: 'Sidste linjer af output' }).click();
-    assert.match(await review.locator('.check-list pre').last().textContent(), /1 test fejlede/);
-    await page.click('#tab-activity'); await page.locator('.activity-entry.kind-check', { hasText: 'Siden blev vist · 1 fejl i siden: Kunne ikke hente lokalerne' }).waitFor(); await page.click('#tab-preview');
-    await capture('resultat-kontroller.png');
-    passed('Kontrollerne viser faktiske resultater: sidens konsolfejl fra forhåndsvisningen og kommandoens afslutningskode og output');
+    // Den kompakte kvittering bevares; faktiske kommandoresultater vises under Aktivitet.
+    const review = page.locator('#run-review');
+    await review.locator('.result-receipt').filter({ hasText: '1 fil ændret' }).waitFor();
+    await page.frameLocator('#preview').locator('h1', { hasText: 'Find et lokale' }).waitFor();
+    assert.ok(consoleErrors.some(text => text.includes('Kunne ikke hente lokalerne')), 'den faktiske forhåndsvisning afvikler prøvens konsolfejl');
+    await page.click('#tab-activity');
+    const failedCommand = page.locator('.activity-entry.kind-tool.status-error').filter({ hasText: 'Kør kommando' }).first();
+    await failedCommand.waitFor();
+    await failedCommand.locator('summary').click();
+    assert.match(await failedCommand.innerText(), /Afslutningskode: 1/);
+    assert.match(await failedCommand.innerText(), /1 test fejlede/);
+    assert.match(await failedCommand.innerText(), /command-dispatch\.cjs/);
+    await capture('resultat-kontroller.png'); await page.click('#tab-preview');
+    passed('Den godkendte kommando viser afslutningskode 1 og output under Aktivitet; den faktiske forhåndsvisning og dens konsolfejl er afprøvet');
 
     // Afvis med en besked: AI'en fortsætter med beskeden som rettelse.
     await send('INSTALLER en pakke');
     const install = page.locator('#approvals .approval').first(); await install.waitFor({ timeout: 90000 });
     assert.match(await install.locator('.approval-hints').innerText(), /Installerer pakker fra internettet/);
-    await install.locator('button', { hasText: 'Afvis med en besked' }).click();
+    await install.getByRole('button', { name: 'Flere valg', exact: true }).click();
+    await install.getByRole('button', { name: 'Afvis med en besked', exact: true }).click();
     assert.equal(await page.evaluate(() => document.activeElement.tagName), 'TEXTAREA');
     await install.locator('textarea').fill('Brug ikke en pakke. Skriv funktionen selv.');
     await install.locator('button', { hasText: 'Afvis og send beskeden' }).click();
     await page.locator('#messages .assistant', { hasText: 'Forstået. Jeg skriver funktionen selv uden en pakke.' }).waitFor({ timeout: 90000 });
     await idle();
     assert.ok(requests.some(body => JSON.stringify(body.messages).includes('with the following feedback: Brug ikke en pakke. Skriv funktionen selv.')));
-    assert.match(await page.locator('#messages .answer-record').last().textContent(), /Du afviste, at AI’en må køre en kommando: npm install leftpad-ukendt, og skrev: Brug ikke en pakke/);
-    assert.notEqual(await review.locator('h3').textContent(), 'Du afviste en handling, så AI’en stoppede');
+    assert.match(await page.locator('#messages .answer-record').last().textContent(), /Du afviste 1 handling og skrev: Brug ikke en pakke/);
+    assert.equal(await review.locator('h3', { hasText: 'Du afviste en handling, så AI’en stoppede' }).isVisible(), false);
     passed('Afvis med en besked giver AI’en beskeden som rettelse, og opgaven fortsætter');
 
     // Afvis uden besked: opgaven stopper, og kortet siger, hvad der blev afvist, med en vej videre.
@@ -145,13 +148,15 @@ const helpers = require('./ui-test-helpers.cjs');
     // Stop efter en filændring: kortet viser det, AI'en nåede, og kan fortryde det.
     await page.fill('#prompt', '');
     await send('STOP undervejs');
+    await page.locator('#approvals').getByRole('button', { name: 'Flere valg', exact: true }).click({ timeout: 90000 });
     const allowTask = page.locator('#approvals button', { hasText: 'Tillad for denne opgave' }); await allowTask.waitFor({ timeout: 90000 }); await allowTask.click();
     await page.locator('#messages .assistant', { hasText: 'Jeg arbejder videre' }).waitFor({ timeout: 90000 });
     await page.click('#stop'); await page.locator('#run-status').filter({ hasText: 'Stoppet' }).waitFor({ timeout: 30000 });
     await review.locator('h3', { hasText: 'Du stoppede opgaven' }).waitFor();
     assert.match(await review.innerText(), /AI’en nåede at ændre 1 fil:\s*public\/stop\.html/);
     assert.equal(await page.inputValue('#prompt'), 'STOP undervejs');
-    await review.locator('button', { hasText: 'Fortryd det, den nåede' }).click();
+    await review.locator('.result-options > summary').click();
+    await review.getByRole('button', { name: 'Fortryd opgaven', exact: true }).click();
     await page.waitForFunction(() => !document.querySelector('#restore-confirm').disabled); await page.click('#restore-confirm');
     await page.waitForSelector('#restore-dialog:not([open])', { state: 'attached' });
     await assert.rejects(fs.stat(path.join(project, 'public/stop.html')), 'filen fra den stoppede opgave er fortrudt');

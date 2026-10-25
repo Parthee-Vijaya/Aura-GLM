@@ -1,5 +1,7 @@
 # Aura 1 beta 0.3.1 og forkens seneste kode: dækning i originalens PR’er
 
+> **Efterfølgende lokalt arbejde:** [0.4.0-efterslæbet](upstream-followup-beta-0.4.0.md) kortlægger de nyere, endnu ikke indsendte tilføjelser. PR-heads og testtal nedenfor er den historiske kontrol fra 25. oktober, ikke en løbende live-status.
+
 ## Udført efter godkendelse — 25. oktober 2026
 
 Den efterfølgende bestilling er udført i rækkefølgen nedenfor. Alle fem PR’er er åbne i originalen; ingen er flettet. Remote-heads og samtlige 13 billedlinks i beskrivelserne er verificeret mod GitHub. Originalens `main` er fortsat `dce68ea74a199ca214ab535a16ff22765d8ee8de`.

@@ -1,22 +1,38 @@
-# Aura 1 beta 0.3.1
+# Aura 1 beta 0.4.0 — under klargøring
 
-Dette er **Parthee-Vijayas fork af Aura Harness**. Den samlede udgave indeholder de 24 tidligere sammenlagte bidrag, opdateringerne til ti af bidragene og de syv nye funktioner. PR’erne til AI Alliancens original fortsætter særskilt; denne udgivelse er fra forken.
+Dette er **Parthee-Vijayas fork af Aura Harness**. Den kommende udgave samler forbedret designhjælp, en lokal kontrol af genererede webapps og den godkendte aktivitetsvisning. Onboarding B, øvrige funktioner, planer og godkendelser bevares. Bidrag til AI Alliancens original håndteres i særskilte PR’er.
 
-[Hent Aura 1 beta 0.3.1 til Apple Silicon](https://github.com/Parthee-Vijaya/ai-harness/releases/tag/v0.3.1-beta.1) · [Udgivelsesnoter og afprøvning](docs/releases/aura-1-beta-0.3.1.md) · [Originalprojektet](https://github.com/ai-alliancen-org/ai-harness)
+**Status:** 0.4.0 er endnu ikke udgivet eller kvalificeret som færdig DMG. Den tekniske version bliver `0.4.0-beta.2`; det historiske tag `v0.4.0-beta.1` genbruges ikke. Den senest udgivne udgave er fortsat 0.3.1.
 
-Rettelsen af projektoprettelse fra beta 1.1 er bevaret: første klik kunne blive afvist med “Denne handling er allerede i gang”, mens det tidligere projekt stadig blev åbnet. Oprettelse bliver nu først tilgængelig, når opstart og eventuel idéhjælp er afsluttet. Gentagne klik opretter kun ét projekt, og fejl bevarer idékladden. Design, funktioner, planer og godkendelser er bevaret.
+[Hent udgivet Aura 1 beta 0.3.1 til Apple Silicon](https://github.com/Parthee-Vijaya/ai-harness/releases/tag/v0.3.1-beta.1) · [Kommende 0.4.0-release](https://github.com/Parthee-Vijaya/ai-harness/releases/tag/v0.4.0-beta.2) · [0.4.0-noter og teststatus](docs/releases/aura-1-beta-0.4.0.md) · [Originalprojektet](https://github.com/ai-alliancen-org/ai-harness)
 
-**Ny versionsrække:** Versionen står nu under Aura 1-navnet ved logoet. Overgangen fra beta 1/1.1 kræver manuel installation én gang. Fremtidige versioner følger [reglen for ændringens størrelse](docs/releases/POLICY.md). De tidligere releasebeskrivelser er [arkiveret](docs/releases/retired/), og al lokal kildekode skal bevares under oprydning.
+Den kommende releaseadresse bliver først en downloadmulighed, når pakken er bygget, verificeret og offentliggjort.
 
-- Den godkendte onboarding B med udbyderkort, brandfarver og visualisering er bevaret. Projektnavnet står over idéen, og idéhjælpen kan forfine beskrivelsen og foreslå en plan før oprettelsen.
-- Arbejdsområdet har den godkendte mørke visning, én plusmenu til tekstfiler, billeder, PDF og referencemapper samt en arbejdsstatus over forhåndsvisningen. Du kan se forhåndsvisningen under arbejdet.
-- Modellen kan stille opfølgende spørgsmål. Genforsøg ved midlertidige forbindelsesfejl og genoptagelse af sessioner bevarer kontekst og undgår automatisk gentagelse af udførte handlinger.
-- Designfunktionen aktiverer den fælles hovedskill ved byggeopgaver. Plan- og værktøjsgodkendelser gælder fortsat. **YOLO** kan vælges under **Byg** efter en advarsel. Almindelige kommando-, hjemmeside- og filgodkendelser håndteres automatisk i den aktuelle samtale, indtil valget slås fra eller appen lukkes. Planer, datadeling, beskyttede filer og tekniske adgangsgrænser bevares. Se [YOLO og samtaletilladelser](docs/yolo.md).
-- Appen hedder **Aura 1**, mens eksisterende data- og nøgleringsidentiteter bevares. Opdateringskontrol peger på denne fork.
+## Det nye i 0.4.0
 
-Denne udgivelse er en **lokalt kvalificeret macOS-beta til arm64**, uden Developer ID-notarisering. Den er ikke en udgivelse af det separate Code-OSS-baserede Aura-1-projekt, og den gør ikke krav på fuld Privacy Gate. GitHub CI, Intel-Mac, Windows og kvaliteten hos eksterne AI-udbydere er ikke certificeret af denne udgivelse. Brug en separat profil ved afprøvning. Historiske skærmbilleder og de oprindelige installationsvejledninger nedenfor beskriver originalprojektet; forkens aktuelle noter og billeder findes i linket ovenfor.
+- **Design gennem skills og den valgte model.** Aura indlæser designmetoden fra første idé- og byggeforsøg. Modellen skaber designet ud fra opgaven, brugerens valg og dokumenterede designguides, logoer og farver. Aura påtvinger ikke alle apps den samme palette eller layoutopskrift. Se [designskillen](docs/aura-design-skill.md).
+- **Mere robust idéhjælp.** Et afsluttet svar med ugyldigt format kan få én formatrettelse hos samme model under samme samlede tidsfrist. Stop, den gennemgåede afsendelse og modelvalget bevares. Forslaget er stadig ikke en godkendt byggeplan.
+- **Lokal afprøvning af genererede webapps.** En afgrænset kopi af en statisk app i `public/` kontrolleres ved desktop- og mobilstørrelse for blandt andet runtimefejl, overløb, billeder og målelig tekstkontrast. Konkrete fund kan udløse højst to rettelsesforsøg med samme model og de eksisterende godkendelser. Se [omfang og begrænsninger](docs/design-quality-control.md).
+- **Tydelig aktivitet under arbejdet.** Den godkendte aktivitetsvisning samler arbejdet i forståelige trin og gør tekniske detaljer valgfrie. Lyskanten om skrivefeltet viser, når AI’en arbejder. Planer, filgennemgang og værktøjsgodkendelser er fortsat særskilte.
+- **Præcise værktøjsgodkendelser.** En ventende filpatch kan hente den manglende patchtekst fra netop den tilsvarende kørende værktøjshandling. Bindingen til samtale, besked og handling kontrolleres før den normale godkendelsesvurdering.
 
-![Aura 1 beta 0.3.1 med synligt versionsnummer](docs/images/aura-1-beta-0.3.1/workspace.png)
+Design-skills er vejledning, ikke en garanti for et flot eller fejlfrit første udkast. De [dokumenterede modelprøver](evals/openenv/MODELSAMMENLIGNING-2026-10-25.md) viser reelle forskelle mellem Mistral og Corti. GPT-referenceappen brugte en anden transport og kan ikke tælle som en tredje identisk Aura-prøve. Den efterfølgende GPT-, brandguide- og native afprøvning fremgår særskilt af udgivelsesnoterne; afventende prøver er ikke beståede prøver.
+
+## Det bevarer vi
+
+- Onboarding B med store udbyderkort, brandfarver og visualisering, projektnavn over idéen og den eksisterende projektoprettelse.
+- Det godkendte arbejdsområde, én plusmenu til tekstfiler, billeder, PDF og referencemapper, modelvalg, forbrug og kontekst under skrivefeltet.
+- Planvalg, værktøjsgodkendelser, datagennemgang, samtalehistorik samt afgrænset genforsøg og genoptagelse uden blind gentagelse af udførte handlinger.
+- Den allerede implementerede **YOLO**-indstilling under **Byg**: efter advarsel gælder den kun den aktuelle samtale, indtil den slås fra eller appen lukkes. Planer, datadeling, beskyttede filer og tekniske adgangsgrænser består. Se [YOLO og samtaletilladelser](docs/yolo.md).
+- Appnavnet **Aura 1**, synlig version fra den kørende app, eksisterende data- og nøgleringsidentiteter samt forkens opdateringskanal.
+
+Udgivelsen forberedes til **macOS på Apple Silicon**. Kildecommit, endelige testtal, pakkeintegritet, signering og faktiske downloadfiler tilføjes først efter verificering. Der påstås ikke Developer ID-notarisering, grøn GitHub CI, Intel-/Windows-afprøvning, fuld Privacy Gate eller modeluafhængig designkvalitet. Denne fork er særskilt fra det Code-OSS-baserede Aura-1-projekt.
+
+[Versions- og oprydningsregel](docs/releases/POLICY.md): kun tre seneste færdige lokale DMG-versioner beholdes; lokal kildekode, worktrees, beskrivelser og brugerdata bevares. Brug en separat profil ved afprøvning.
+
+![Tidligere udgivet Aura 1 beta 0.3.1 med synligt versionsnummer](docs/images/aura-1-beta-0.3.1/workspace.png)
+
+*Billedet viser den udgivne 0.3.1 og dokumenterer ikke den kommende 0.4.0. Historiske skærmbilleder og originalens vejledninger følger nedenfor.*
 
 ---
 
@@ -87,7 +103,7 @@ CLI'en kræver Node 22.12 eller nyere, npm og Git. Hent pakken og vejledningen t
 
 ## Brug dit eget kodeværktøj
 
-Aura Harness kan også bruges uden desktopappen. Grundreglerne og de 13 skills er læsbare tekstfiler, som kodeagenten kan bruge til afgrænsning, arkitektur, design, kodning, afprøvning, data og drift.
+Aura Harness kan også bruges uden desktopappen. Grundreglerne og de fælles skills er læsbare tekstfiler, som kodeagenten kan bruge til afgrænsning, arkitektur, design, kodning, afprøvning, data og drift.
 
 Der er pakker til blandt andet Claude Code, Codex, OpenCode, Cursor, GitHub Copilot, Gemini CLI, Mistral Vibe og Zed. Lovable får en tekst til platformens egne felter. Se [kataloget og de enkelte skills](https://github.com/ai-alliancen-org/ai-harness/blob/main/profiles/SKILLS.md).
 
@@ -113,7 +129,7 @@ Når du har en Aura-installation, kan du vælge **Prøv et eksempel** ved opstar
 
 *Et lokalt eksempel, der viser samspillet mellem besked og forhåndsvisning. Der foretages ingen modelkald.*
 
-Originalprojektets [downloads til Mac og Windows](https://ai-alliancen-org.github.io/ai-harness/desktop.html) har deres egne versions- og signeringsoplysninger. Brug [forkens udgivelse](https://github.com/Parthee-Vijaya/ai-harness/releases/tag/v1.0.0-beta.1) for **Aura 1 beta 1**; den er ikke notariseret.
+Originalprojektets [downloads til Mac og Windows](https://ai-alliancen-org.github.io/ai-harness/desktop.html) har deres egne versions- og signeringsoplysninger. Forkens senest udgivne version er [Aura 1 beta 0.3.1](https://github.com/Parthee-Vijaya/ai-harness/releases/tag/v0.3.1-beta.1), som ikke er notariseret. [Aura 1 beta 0.4.0](https://github.com/Parthee-Vijaya/ai-harness/releases/tag/v0.4.0-beta.2) er under klargøring; se [test- og udgivelsesstatus](docs/releases/aura-1-beta-0.4.0.md), før du vælger en pakke.
 
 ### Start fra kildekoden
 

@@ -1,0 +1,10 @@
+{
+  "desktop": 840,
+  "cli": 27,
+  "evaluation": 24,
+  "status": "passed",
+  "productSourceCommit": "95c7056b18cf8ec22df51ac45e460404faabf483",
+  "note": "Core/skills byte-identical to tested sources; version metadata bumped after source tests. Actual package checked separately.",
+  "nativeAppQuality": "passed",
+  "nativeAppQualityBoundaries": "passed"
+}

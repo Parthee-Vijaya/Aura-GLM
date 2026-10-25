@@ -1,0 +1,53 @@
+model,viewport,check,passed,evidence
+mistral-medium-3-5,desktop,"Officielt logo uændret, proportionelt og på hvid baggrund",True,
+mistral-medium-3-5,desktop,Demoafgrænsning og ingen vandret overflow,True,
+mistral-medium-3-5,desktop,Søgning erstatter mødelisten uden dubletter,True,
+mistral-medium-3-5,desktop,Filter viser kun møder fra valgt emne,True,
+mistral-medium-3-5,desktop,Tom søgningstilstand forsvinder efter nulstilling,True,
+mistral-medium-3-5,desktop,Mødets detaljer kan åbnes direkte fra oversigten før tilmelding,True,
+mistral-medium-3-5,desktop,Tomt navn og manglende deltagerantal afvises,True,
+mistral-medium-3-5,desktop,Bekræftelsen bevarer navn og antal deltagere,True,
+mistral-medium-3-5,desktop,Tilmeldingen overlever genindlæsning med korrekt navn,True,
+mistral-medium-3-5,desktop,Samme navn kan ikke skabe en dobbelt tilmelding,True,
+mistral-medium-3-5,desktop,Detaljedialog kan afbrydes med Escape,False,mistral-closed-dialog-desktop.png
+mistral-medium-3-5,desktop,Afmelding fjerner tilmeldingen også efter genindlæsning,True,
+mistral-medium-3-5,desktop,Mødekort kan åbnes med tastatur,True,
+mistral-medium-3-5,mobile,"Officielt logo uændret, proportionelt og på hvid baggrund",True,
+mistral-medium-3-5,mobile,Demoafgrænsning og ingen vandret overflow,True,
+mistral-medium-3-5,mobile,Søgning erstatter mødelisten uden dubletter,True,
+mistral-medium-3-5,mobile,Filter viser kun møder fra valgt emne,True,
+mistral-medium-3-5,mobile,Tom søgningstilstand forsvinder efter nulstilling,True,
+mistral-medium-3-5,mobile,Mødets detaljer kan åbnes direkte fra oversigten før tilmelding,True,
+mistral-medium-3-5,mobile,Tomt navn og manglende deltagerantal afvises,True,
+mistral-medium-3-5,mobile,Bekræftelsen bevarer navn og antal deltagere,True,
+mistral-medium-3-5,mobile,Tilmeldingen overlever genindlæsning med korrekt navn,True,
+mistral-medium-3-5,mobile,Samme navn kan ikke skabe en dobbelt tilmelding,True,
+mistral-medium-3-5,mobile,Detaljedialog kan afbrydes med Escape,False,mistral-closed-dialog-desktop.png
+mistral-medium-3-5,mobile,Afmelding fjerner tilmeldingen også efter genindlæsning,True,
+mistral-medium-3-5,mobile,Mødekort kan åbnes med tastatur,True,
+corti-s1,desktop,"Officielt logo uændret, proportionelt og på hvid baggrund",True,
+corti-s1,desktop,Demoafgrænsning og ingen vandret overflow,True,
+corti-s1,desktop,Søgning erstatter mødelisten uden dubletter,False,corti-search-desktop.png
+corti-s1,desktop,Filter viser kun møder fra valgt område,False,
+corti-s1,desktop,Tom søgningstilstand forsvinder efter nulstilling,True,
+corti-s1,desktop,Mødets detaljer kan åbnes direkte fra oversigten før tilmelding,False,
+corti-s1,desktop,Tomt navn og ugyldigt deltagerantal afvises,True,
+corti-s1,desktop,Bekræftelsen bevarer navn og antal deltagere,False,corti-missing-name-mobile.png
+corti-s1,desktop,Tilmeldingen overlever genindlæsning med korrekt navn,False,corti-missing-name-mobile.png
+corti-s1,desktop,Ny tilmelding til samme møde tilbydes ikke igen,True,
+corti-s1,desktop,Afmeldingsdialog kan afbrydes med Escape,True,
+corti-s1,desktop,Afmelding fjerner tilmeldingen også efter genindlæsning,False,
+corti-s1,desktop,Hovedmenuen kan bruges med tastatur,True,
+corti-s1,mobile,"Officielt logo uændret, proportionelt og på hvid baggrund",True,
+corti-s1,mobile,Demoafgrænsning og ingen vandret overflow,True,
+corti-s1,mobile,Søgning erstatter mødelisten uden dubletter,False,corti-search-desktop.png
+corti-s1,mobile,Filter viser kun møder fra valgt område,False,
+corti-s1,mobile,Tom søgningstilstand forsvinder efter nulstilling,True,
+corti-s1,mobile,Mødets detaljer kan åbnes direkte fra oversigten før tilmelding,False,
+corti-s1,mobile,Tomt navn og ugyldigt deltagerantal afvises,True,
+corti-s1,mobile,Bekræftelsen bevarer navn og antal deltagere,False,corti-missing-name-mobile.png
+corti-s1,mobile,Tilmeldingen overlever genindlæsning med korrekt navn,False,corti-missing-name-mobile.png
+corti-s1,mobile,Ny tilmelding til samme møde tilbydes ikke igen,True,
+corti-s1,mobile,Afmeldingsdialog kan afbrydes med Escape,True,
+corti-s1,mobile,Afmelding fjerner tilmeldingen også efter genindlæsning,False,
+corti-s1,mobile,Hovedmenuen kan bruges med tastatur,True,

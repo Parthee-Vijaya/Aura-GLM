@@ -1,0 +1,483 @@
+{
+  "date": "2026-10-25",
+  "task": "Uofficiel dansk Nyborg-borgermødedemo",
+  "trialsPerModel": 1,
+  "method": "Native Aura Workbench/gateway/OpenCode; konkret plangodkendelse og engangstilladelse til public-filer; rigtig AI og browserbetjening med fiktive eksempeldata.",
+  "sameInput": {
+    "skillsSha256": true,
+    "initialFilesSha256": true,
+    "planTaskSha256": true,
+    "normalizedAuraSystemSha256": true
+  },
+  "skillNames": [
+    "harness-ide-og-afgraensning",
+    "harness-eksisterende-projekt",
+    "harness-arkitektur-og-teknologi",
+    "harness-data-og-leverandoerer",
+    "harness-noegler-og-afhaengigheder",
+    "harness-design-og-tilgaengelighed",
+    "harness-aura-design",
+    "harness-kodestil",
+    "harness-afproevning-og-fejlretning",
+    "harness-git-og-samarbejde",
+    "harness-sikkerhedsgennemgang"
+  ],
+  "commonInputHashes": {
+    "skillsSha256": "6205b9341fd6726bc232b90f3ba5d373b69716fdb593f3b43238b3e6ae11ddd3",
+    "initialFilesSha256": "c573ecaaccbcb3133402115e1830cd9b6d470f1aaf5b06e3234f7d942e1efc77",
+    "planTaskSha256": "71ef31c9658ef343b0494889745f453e342af51b8e5e98d2f9b2bf61169d41d2",
+    "normalizedAuraSystemSha256": "e30106b0bd18d8dd038ab43ba015f813739f32595e2f8f18a2fb384ea20bf510"
+  },
+  "productSourcesUnchangedDuringAI": true,
+  "manualAppEdits": false,
+  "effectiveLimits": {
+    "context": 200000,
+    "output": 16384
+  },
+  "browser": "153.0.8010.12",
+  "viewports": [
+    {
+      "name": "desktop",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "name": "mobile",
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "models": [
+    {
+      "provider": "mistral",
+      "model": "mistral-medium-3-5",
+      "effort": "provider-default",
+      "status": "failed",
+      "elapsedSeconds": 254.14963102340698,
+      "modelCalls": 17,
+      "estimatedUSD": 1.4957894999999999,
+      "summary": {
+        "passed": 24,
+        "failed": 2,
+        "pageErrors": 0,
+        "externalRequests": 0
+      },
+      "sourceUnchangedDuringBrowser": true,
+      "snapshotEqualsFirst": {
+        "001": true,
+        "002": true
+      },
+      "finalEqualsFirst": true,
+      "officialSeedFilesUnchanged": true,
+      "checks": [
+        {
+          "viewport": "desktop",
+          "name": "Officielt logo uændret, proportionelt og på hvid baggrund",
+          "passed": true
+        },
+        {
+          "viewport": "desktop",
+          "name": "Demoafgrænsning og ingen vandret overflow",
+          "passed": true
+        },
+        {
+          "viewport": "desktop",
+          "name": "Søgning erstatter mødelisten uden dubletter",
+          "passed": true
+        },
+        {
+          "viewport": "desktop",
+          "name": "Filter viser kun møder fra valgt emne",
+          "passed": true
+        },
+        {
+          "viewport": "desktop",
+          "name": "Tom søgningstilstand forsvinder efter nulstilling",
+          "passed": true
+        },
+        {
+          "viewport": "desktop",
+          "name": "Mødets detaljer kan åbnes direkte fra oversigten før tilmelding",
+          "passed": true
+        },
+        {
+          "viewport": "desktop",
+          "name": "Tomt navn og manglende deltagerantal afvises",
+          "passed": true
+        },
+        {
+          "viewport": "desktop",
+          "name": "Bekræftelsen bevarer navn og antal deltagere",
+          "passed": true
+        },
+        {
+          "viewport": "desktop",
+          "name": "Tilmeldingen overlever genindlæsning med korrekt navn",
+          "passed": true
+        },
+        {
+          "viewport": "desktop",
+          "name": "Samme navn kan ikke skabe en dobbelt tilmelding",
+          "passed": true
+        },
+        {
+          "viewport": "desktop",
+          "name": "Detaljedialog kan afbrydes med Escape",
+          "passed": false,
+          "evidence": "mistral-closed-dialog-desktop.png"
+        },
+        {
+          "viewport": "desktop",
+          "name": "Afmelding fjerner tilmeldingen også efter genindlæsning",
+          "passed": true
+        },
+        {
+          "viewport": "desktop",
+          "name": "Mødekort kan åbnes med tastatur",
+          "passed": true
+        },
+        {
+          "viewport": "mobile",
+          "name": "Officielt logo uændret, proportionelt og på hvid baggrund",
+          "passed": true
+        },
+        {
+          "viewport": "mobile",
+          "name": "Demoafgrænsning og ingen vandret overflow",
+          "passed": true
+        },
+        {
+          "viewport": "mobile",
+          "name": "Søgning erstatter mødelisten uden dubletter",
+          "passed": true
+        },
+        {
+          "viewport": "mobile",
+          "name": "Filter viser kun møder fra valgt emne",
+          "passed": true
+        },
+        {
+          "viewport": "mobile",
+          "name": "Tom søgningstilstand forsvinder efter nulstilling",
+          "passed": true
+        },
+        {
+          "viewport": "mobile",
+          "name": "Mødets detaljer kan åbnes direkte fra oversigten før tilmelding",
+          "passed": true
+        },
+        {
+          "viewport": "mobile",
+          "name": "Tomt navn og manglende deltagerantal afvises",
+          "passed": true
+        },
+        {
+          "viewport": "mobile",
+          "name": "Bekræftelsen bevarer navn og antal deltagere",
+          "passed": true
+        },
+        {
+          "viewport": "mobile",
+          "name": "Tilmeldingen overlever genindlæsning med korrekt navn",
+          "passed": true
+        },
+        {
+          "viewport": "mobile",
+          "name": "Samme navn kan ikke skabe en dobbelt tilmelding",
+          "passed": true
+        },
+        {
+          "viewport": "mobile",
+          "name": "Detaljedialog kan afbrydes med Escape",
+          "passed": false,
+          "evidence": "mistral-closed-dialog-desktop.png"
+        },
+        {
+          "viewport": "mobile",
+          "name": "Afmelding fjerner tilmeldingen også efter genindlæsning",
+          "passed": true
+        },
+        {
+          "viewport": "mobile",
+          "name": "Mødekort kan åbnes med tastatur",
+          "passed": true
+        }
+      ],
+      "limitations": [
+        "Første og sidste snapshot er identiske; intet er håndrettet.",
+        "Kvalitetsreparation blev afbrudt af evaluatorens afvisning af to grep-kald mod public/styles.css. Den præcise afvisningsgren er ikke bevaret; reparationsevnen kan ikke bedømmes."
+      ]
+    },
+    {
+      "provider": "corti",
+      "model": "corti-s1",
+      "effort": "low",
+      "status": "completed",
+      "elapsedSeconds": 142.32280588150024,
+      "modelCalls": 27,
+      "estimatedUSD": 0.5933152,
+      "summary": {
+        "passed": 14,
+        "failed": 12,
+        "pageErrors": 0,
+        "externalRequests": 0
+      },
+      "sourceUnchangedDuringBrowser": true,
+      "snapshotEqualsFirst": {
+        "001": true
+      },
+      "finalEqualsFirst": true,
+      "officialSeedFilesUnchanged": true,
+      "checks": [
+        {
+          "viewport": "desktop",
+          "name": "Officielt logo uændret, proportionelt og på hvid baggrund",
+          "passed": true
+        },
+        {
+          "viewport": "desktop",
+          "name": "Demoafgrænsning og ingen vandret overflow",
+          "passed": true
+        },
+        {
+          "viewport": "desktop",
+          "name": "Søgning erstatter mødelisten uden dubletter",
+          "passed": false,
+          "evidence": "corti-search-desktop.png"
+        },
+        {
+          "viewport": "desktop",
+          "name": "Filter viser kun møder fra valgt område",
+          "passed": false
+        },
+        {
+          "viewport": "desktop",
+          "name": "Tom søgningstilstand forsvinder efter nulstilling",
+          "passed": true
+        },
+        {
+          "viewport": "desktop",
+          "name": "Mødets detaljer kan åbnes direkte fra oversigten før tilmelding",
+          "passed": false
+        },
+        {
+          "viewport": "desktop",
+          "name": "Tomt navn og ugyldigt deltagerantal afvises",
+          "passed": true
+        },
+        {
+          "viewport": "desktop",
+          "name": "Bekræftelsen bevarer navn og antal deltagere",
+          "passed": false,
+          "evidence": "corti-missing-name-mobile.png"
+        },
+        {
+          "viewport": "desktop",
+          "name": "Tilmeldingen overlever genindlæsning med korrekt navn",
+          "passed": false,
+          "evidence": "corti-missing-name-mobile.png"
+        },
+        {
+          "viewport": "desktop",
+          "name": "Ny tilmelding til samme møde tilbydes ikke igen",
+          "passed": true
+        },
+        {
+          "viewport": "desktop",
+          "name": "Afmeldingsdialog kan afbrydes med Escape",
+          "passed": true
+        },
+        {
+          "viewport": "desktop",
+          "name": "Afmelding fjerner tilmeldingen også efter genindlæsning",
+          "passed": false
+        },
+        {
+          "viewport": "desktop",
+          "name": "Hovedmenuen kan bruges med tastatur",
+          "passed": true
+        },
+        {
+          "viewport": "mobile",
+          "name": "Officielt logo uændret, proportionelt og på hvid baggrund",
+          "passed": true
+        },
+        {
+          "viewport": "mobile",
+          "name": "Demoafgrænsning og ingen vandret overflow",
+          "passed": true
+        },
+        {
+          "viewport": "mobile",
+          "name": "Søgning erstatter mødelisten uden dubletter",
+          "passed": false,
+          "evidence": "corti-search-desktop.png"
+        },
+        {
+          "viewport": "mobile",
+          "name": "Filter viser kun møder fra valgt område",
+          "passed": false
+        },
+        {
+          "viewport": "mobile",
+          "name": "Tom søgningstilstand forsvinder efter nulstilling",
+          "passed": true
+        },
+        {
+          "viewport": "mobile",
+          "name": "Mødets detaljer kan åbnes direkte fra oversigten før tilmelding",
+          "passed": false
+        },
+        {
+          "viewport": "mobile",
+          "name": "Tomt navn og ugyldigt deltagerantal afvises",
+          "passed": true
+        },
+        {
+          "viewport": "mobile",
+          "name": "Bekræftelsen bevarer navn og antal deltagere",
+          "passed": false,
+          "evidence": "corti-missing-name-mobile.png"
+        },
+        {
+          "viewport": "mobile",
+          "name": "Tilmeldingen overlever genindlæsning med korrekt navn",
+          "passed": false,
+          "evidence": "corti-missing-name-mobile.png"
+        },
+        {
+          "viewport": "mobile",
+          "name": "Ny tilmelding til samme møde tilbydes ikke igen",
+          "passed": true
+        },
+        {
+          "viewport": "mobile",
+          "name": "Afmeldingsdialog kan afbrydes med Escape",
+          "passed": true
+        },
+        {
+          "viewport": "mobile",
+          "name": "Afmelding fjerner tilmeldingen også efter genindlæsning",
+          "passed": false
+        },
+        {
+          "viewport": "mobile",
+          "name": "Hovedmenuen kan bruges med tastatur",
+          "passed": true
+        }
+      ],
+      "limitations": [
+        "Første og sidste snapshot er identiske; intet er håndrettet.",
+        "Teknisk appkontrol fandt ingen fejl; senere brugerflowprøve fejlede seks kontrolpunkter pr. skærmstørrelse."
+      ]
+    }
+  ],
+  "limits": [
+    "Nyborgs officielle logovejledning er verificeret; en fuld UI-guide med farver og fonte er ikke fundet.",
+    "Mistrals reparationsforløb blev afbrudt af evaluatorens grep-afvisning; førsteudkastet kan vurderes, men ikke evnen til at reparere.",
+    "26 kontrolpunkter er 13 konkrete prøver på to skærmstørrelser, ikke en samlet designkarakter.",
+    "Ét forsøg pr. model er en stikprøve; providerformat og modelindsats er ikke identiske.",
+    "Ingen GPT-borgermødeversion er kørt i denne prøve.",
+    "Ingen modelkilder er håndrettet; første og sidste udkast er identiske for begge modeller."
+  ],
+  "officialSources": [
+    "https://www.nyborg.dk/da/om-kommunen/logo/",
+    "https://www.nyborg.dk/da/om-hjemmesiden/tilgaengelighed/",
+    "https://www.nyborg.dk/da/nyheder/nyt-design-og-forbedret-soegefunktion-gaa-paa-opdagelse-paa-den-nye-hjemmeside/"
+  ],
+  "gallery": "https://mac-studio-tilhrende-parthee.tailefb5b1.ts.net/aura-ui/brand-model-test-20261025/",
+  "screenshotFiles": [
+    {
+      "file": "mistral-first-desktop.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 104115,
+      "sha256": "85a993b07de3d080d877287e8eb8026f9d001b10bd6dc67461f9357fb9243d1f",
+      "metadataChunks": [
+        "IDAT",
+        "IEND",
+        "IHDR"
+      ],
+      "reviewed": true
+    },
+    {
+      "file": "mistral-first-mobile.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 44463,
+      "sha256": "e87b8fc4806f2d274aec78d816546ec11815720994e9bb2cae2229d994c4ff89",
+      "metadataChunks": [
+        "IDAT",
+        "IEND",
+        "IHDR"
+      ],
+      "reviewed": true
+    },
+    {
+      "file": "corti-first-desktop.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 134689,
+      "sha256": "082b8875f2fb3cbd63600040f85759d89a8ffe6e850125f2bd845184f3733ab1",
+      "metadataChunks": [
+        "IDAT",
+        "IEND",
+        "IHDR"
+      ],
+      "reviewed": true
+    },
+    {
+      "file": "corti-first-mobile.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 62362,
+      "sha256": "a32c74d51868e56711d080e7f17eaa89972b2d2ed9a3b1b951138a77ba2f1cb3",
+      "metadataChunks": [
+        "IDAT",
+        "IEND",
+        "IHDR"
+      ],
+      "reviewed": true
+    },
+    {
+      "file": "mistral-closed-dialog-desktop.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 52513,
+      "sha256": "a17dd769a25146c7fc5d7e4a8d661661dc9c780e59135daa89927302eda549df",
+      "metadataChunks": [
+        "IDAT",
+        "IEND",
+        "IHDR"
+      ],
+      "reviewed": true
+    },
+    {
+      "file": "corti-search-desktop.png",
+      "width": 1440,
+      "height": 900,
+      "bytes": 132796,
+      "sha256": "5ca71b791d629a30c015eb1881ecd7d11d788fb44640e1dc7eda7df9483a6b75",
+      "metadataChunks": [
+        "IDAT",
+        "IEND",
+        "IHDR"
+      ],
+      "reviewed": true
+    },
+    {
+      "file": "corti-missing-name-mobile.png",
+      "width": 390,
+      "height": 844,
+      "bytes": 60291,
+      "sha256": "4dcce055bbbb9ce0101da4f9deafdc0c090ef14da9107d100f98749055573336",
+      "metadataChunks": [
+        "IDAT",
+        "IEND",
+        "IHDR"
+      ],
+      "reviewed": true
+    }
+  ],
+  "evidenceScope": "Kun gennemgåede resultater og originale browserbilleder. Ingen credentials, konfiguration, rå requests, sessionslogs, private stier eller genereret appkode."
+}

@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "checks": [
+    "All three labels match native version",
+    "Version visible in onboarding B",
+    "Visible and unclipped in dark workspace",
+    "Visible and unclipped in light workspace",
+    "Collapsed logo retains full version tooltip",
+    "No renderer errors"
+  ],
+  "errors": []
+}

@@ -74,17 +74,30 @@ const http = require('node:http');
     await page.waitForFunction(() => document.querySelector('#prompt').value === 'Husk plads til fem aktiviteter.');
     // Vilkårene er accepteret for projektet før genstarten. Bygningen sender planen uden at vise resuméet igen.
     await page.fill('#prompt', ''); await page.click('#build-plan');
-    await page.locator('#approvals button').filter({ hasText: 'Kun denne fil' }).waitFor({ timeout: 60000 });
+    await page.locator('#approvals button').filter({ hasText: 'Tillad én gang' }).waitFor({ timeout: 60000 });
     assert.equal(await page.locator('#data-dialog').evaluate(el => el.open), false);
     assert.ok(requests.some(r => JSON.stringify(r.messages).includes('fælleshuset')));
     assert.equal(await fs.readFile(path.join(project, 'public/index.html'), 'utf8'), '<h1>Før bygning</h1>');
-    await page.locator('#approvals button').filter({ hasText: 'Kun denne fil' }).click();
+    await page.locator('#approvals button').filter({ hasText: 'Tillad én gang' }).click();
     await page.frameLocator('#preview').locator('h1').filter({ hasText: 'Fælleshuset er klar' }).waitFor({ timeout: 30000 });
     await page.locator('#run-status').filter({ hasText: 'Klar' }).waitFor({ timeout: 30000 });
     await page.click('#resume-notice > summary'); await page.check('#include-history'); await require('./ui-test-helpers.cjs').selectMode(page, 'plan'); await draft('Vurder næste skridt.'); await page.click('#send');
-    await page.waitForSelector('#data-dialog[open]'); assert.match(await page.locator('#data-history-text').textContent(), /medsendes efter dit tilvalg/);
-    await page.click('#accept-send'); await page.locator('#run-status').filter({ hasText: 'Klar' }).waitFor({ timeout: 60000 });
-    assert.ok(requests.some(r => JSON.stringify(r.messages).includes('Tidligere samtale, som brugeren har valgt') && JSON.stringify(r.messages).includes('violet-cykel')));
+    await page.waitForFunction(() => document.querySelector('#data-dialog').open || [...document.querySelectorAll('#messages .user')].some(el => el.textContent.includes('Vurder næste skridt.')));
+    // Den samme AI har allerede brugerens fælles engangsgodkendelse. Historietilvalget
+    // kontrolleres stadig i det faktiske modelkald nedenfor.
+    if (await page.locator('#data-dialog').evaluate(el => el.open)) {
+      assert.match(await page.locator('#data-history-text').textContent(), /medsendes efter dit tilvalg/);
+      await page.click('#accept-send');
+    }
+    await page.waitForFunction(() => !document.querySelector('#stop').hidden || !document.querySelector('#plan-card').hidden);
+    await page.locator('#run-status').filter({ hasText: 'Klar' }).waitFor({ timeout: 60000 });
+    const followUp = requests.findLast(r => JSON.stringify(r.messages.filter(message => message.role === 'user').at(-1)?.content).includes('Vurder næste skridt.'));
+    assert.ok(followUp, 'den nye besked nåede den kontrollerede model');
+    // Den genoptagne OpenCode-session sender tidligere beskeder med deres oprindelige
+    // roller; der skal ikke kræves en ekstra, duplikeret tekstblok med en gammel overskrift.
+    assert.ok(followUp.messages.some(message => message.role === 'user' && JSON.stringify(message.content).includes('violet-cykel')), 'den oprindelige brugerbesked er i den konkrete opfølgningsanmodning');
+    assert.ok(followUp.messages.some(message => message.role === 'assistant' && JSON.stringify(message.content).includes('Siden er ændret.')), 'bygningens svar er med i den genoptagne session');
+    assert.equal(await fs.readFile(path.join(project, 'public/index.html'), 'utf8'), '<h1>Fælleshuset er klar</h1><button>Tilmeld</button>', 'den nye planlægning ændrer ikke projektfilen');
     // Ny samtale starter en tom samtale ved siden af den gamle, som bevares i sidepanelet; projektfilerne er uændrede.
     await page.click('#project-list .project-entry.is-current .project-add'); await page.waitForFunction(() => document.querySelector('#messages').textContent === '');
     assert.equal(await page.inputValue('#prompt'), ''); assert.equal(await page.isVisible('#plan-card'), false);
@@ -114,7 +127,7 @@ const http = require('node:http');
     assert.equal(await page.isVisible('#plan-card'), false); assert.equal(requests.length,requestCount);
     assert.equal(await page.isVisible('#stop'), false);
 
-    console.log(JSON.stringify({ status: 'bestået', root, checks: ['rigtig genstart med plan, kladde og samtale', 'genåbning uden netværkskald', 'kladders adskillelse mellem projekter', 'accepterede vilkår huskes efter genstart; filgodkendelse efter genstart', 'nyt resumé, når tidligere samtale medsendes', 'rigtig filændring og preview', 'aktivt tilvalg af tidligere samtale', 'ny samtale ved siden af den gamle med bevarede filer', '980 × 720, tastaturfokus og dialoger', 'lukning under streaming bevarer delvist svar uden genstart'] }));
+    console.log(JSON.stringify({ status: 'bestået', root, checks: ['rigtig genstart med plan, kladde og samtale', 'genåbning uden netværkskald', 'kladders adskillelse mellem projekter', 'accepterede vilkår huskes efter genstart; filgodkendelse efter genstart', 'fælles datagodkendelse med faktisk medsendt historik efter tilvalg', 'rigtig filændring og preview', 'aktivt tilvalg af tidligere samtale', 'ny samtale ved siden af den gamle med bevarede filer', '980 × 720, tastaturfokus og dialoger', 'lukning under streaming bevarer delvist svar uden genstart'] }));
   } catch (error) { if (page) { await page.screenshot({ animations: 'disabled', path: path.join(root, 'fejl.png'), timeout: 3000 }).catch(() => {}); console.error('Testmateriale: ' + root); } throw error; }
   finally { await app?.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

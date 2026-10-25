@@ -59,6 +59,7 @@ const helpers = require('./ui-test-helpers.cjs');
     page = await app.firstWindow();
     const errors = []; page.on('pageerror', error => errors.push(error.message));
     await helpers.skipIntroduction(page);
+    await app.evaluate(({ BrowserWindow }) => { const w = BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')); w.setSize(1480, 900); w.webContents.setBackgroundThrottling(false); w.setIgnoreMouseEvents(true); w.showInactive(); });
     await app.evaluate(({ dialog }, folder) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [folder] }); }, project);
     await page.click('#open'); await page.waitForSelector('#workspace:not([hidden])');
     const selected = () => page.locator('.work-tab[aria-selected="true"]').getAttribute('data-tab');
@@ -118,6 +119,7 @@ const helpers = require('./ui-test-helpers.cjs');
     await page.click('#tab-code'); await page.click('#code-files .code-file[data-path="src/app.js"]');
     await page.click('#send'); await page.waitForSelector('#data-dialog[open]'); await page.click('#accept-send');
     const allowTask = page.locator('#approvals button').filter({ hasText: 'Tillad for denne opgave' });
+    await page.locator('#approvals').getByRole('button', { name: 'Flere valg', exact: true }).click({ timeout: 90000 });
     await allowTask.waitFor({ timeout: 90000 });
     assert.equal(await selected(), 'code');
     await page.focus('#prompt'); await page.keyboard.type('Næste idé');
@@ -145,13 +147,20 @@ const helpers = require('./ui-test-helpers.cjs');
     // Aktivitet: faktiske værktøjer, godkendelser med ventetid, kommandoens output og resultatet.
     await page.click('#tab-activity');
     const activityText = await page.locator('#activity-list').innerText();
-    assert.match(activityText, /Opgave: arbejd direkte/); assert.match(activityText, /Skriv fil\s+public\/index\.html/);
-    assert.match(activityText, /Godkendelse: ændre en fil\s+public\/index\.html\s+Du tillod filændringer i projektet for resten af opgaven · efter \d+ s/);
-    assert.match(activityText, /Godkendelse: køre en kommando\s+echo færdig med lokalerne\s+Du tillod den · efter/);
-    assert.match(activityText, /Kør kommando\s+echo færdig med lokalerne\s+Afsluttet/);
+    assert.match(activityText, /Opgave: arbejd direkte/); assert.match(activityText, /Har skrevet en fil/);
+    assert.match(activityText, /Godkendelse: ændre en fil\s+Du tillod filændringer i projektet for resten af opgaven · efter \d+ s/);
+    assert.match(activityText, /Godkendelse: køre en kommando\s+Du tillod den · efter/);
+    assert.match(activityText, /Har kørt et arbejdstrin\s+Afsluttet/);
+    assert.doesNotMatch(activityText, /echo færdig med lokalerne/);
+    assert.doesNotMatch(activityText, /command-dispatch\.cjs/);
     assert.match(activityText, /Opgaven er færdig/); assert.match(activityText, /2 filer ændret · 1 af dem ikke af AI'ens filværktøjer · 1 kommando kørt/);
     await page.locator('.activity-entry.kind-tool:has-text("Kør kommando") summary').click();
-    assert.match(await page.locator('.activity-entry.kind-tool:has-text("Kør kommando") pre').textContent(), /færdig med lokalerne/);
+    const commandRow = page.locator('.activity-entry.kind-tool:has-text("Kør kommando")');
+    assert.match(await commandRow.innerText(), /command-dispatch\.cjs/);
+    assert.match(await commandRow.locator('pre').last().textContent(), /færdig med lokalerne/);
+    const commandApproval = page.locator('.activity-entry.kind-approval').filter({ hasText: 'Godkendelse: køre en kommando' });
+    await commandApproval.locator('summary').click();
+    assert.match(await commandApproval.innerText(), /echo færdig med lokalerne/);
     passed('Aktivitet viser de faktiske værktøjer, godkendelser med ventetid, kommandoens rigtige output og resultatet');
 
     // Ændringer: resumé først, derefter linje-diff. Brugerens samtidige rettelse tilskrives ikke AI'en.
@@ -181,18 +190,23 @@ const helpers = require('./ui-test-helpers.cjs');
     assert.equal(await page.locator('#code-lines .code-line.is-marked').getAttribute('data-line'), '2');
     passed('Filhenvisninger i AI’ens svar åbner den rigtige fil og linje under Kode');
 
-    // Henvisning til AI'en: synlig i skrivefeltet og i Før du sender, og den sendes som sti og linjer.
+    // Henvisning til AI'en: synlig i skrivefeltet og sendes som sti og linjer.
+    // Samme forbindelse/model kan allerede have den fælles engangsgodkendelse.
     await page.click('#code-reference');
     assert.match(await page.locator('#composer-refs').innerText(), /src\/app\.js · linje 2/);
     assert.equal(await page.evaluate(() => document.activeElement.id), 'prompt');
     await page.fill('#prompt', 'Hvad gør linjen?'); await page.click('#send');
-    await page.waitForSelector('#data-dialog[open]');
-    assert.match(await page.locator('#data-refs-text').textContent(), /Filhenvisninger: src\/app\.js \(linje 2\)/);
-    await page.click('#accept-send'); await page.locator('#run-status').filter({ hasText: 'Klar' }).waitFor({ timeout: 90000 });
+    await page.waitForFunction(() => document.querySelector('#data-dialog').open || [...document.querySelectorAll('#messages .user')].some(el => el.textContent.includes('Hvad gør linjen?')));
+    if (await page.locator('#data-dialog').evaluate(el => el.open)) {
+      assert.match(await page.locator('#data-refs-text').textContent(), /Filhenvisninger: src\/app\.js \(linje 2\)/);
+      await page.click('#accept-send');
+    }
+    await page.locator('#messages .assistant').filter({ hasText: 'Svar uden ændringer' }).last().waitFor({ timeout: 90000 });
+    await page.locator('#run-status').filter({ hasText: 'Klar' }).waitFor({ timeout: 90000 });
     const asked = requests.filter(body => JSON.stringify(body.messages).includes('Hvad gør linjen?')).at(-1);
     assert.match(JSON.stringify(asked.messages), /Filhenvisninger fra Aura \(læs selv filerne i projektet\):\\n- src\/app\.js \(linje 2\)/);
     assert.equal(await page.isVisible('#composer-refs'), false);
-    passed('En filhenvisning vises i skrivefeltet og i Før du sender og når modellen som sti og linje');
+    passed('En filhenvisning vises før afsendelse og når modellen som sti og linje med den eksisterende datagodkendelse');
 
     // Stop: opgaven stoppes af brugeren og står som stoppet i Aktivitet.
     await page.fill('#prompt', 'STOP efter første svar'); await page.click('#send');
@@ -240,12 +254,21 @@ const helpers = require('./ui-test-helpers.cjs');
       measured = await layout(); results[zoom] = measured;
       assert.equal(measured.overflowX, false, `vandret rulning ved ${zoom}`); assert.ok(measured.tabsInside, `faner uden for ved ${zoom}`); assert.ok(measured.sendVisible, `Send skjult ved ${zoom}`);
       await capture(`980x720-zoom-${zoom * 100}.png`);
+      if (await page.isVisible('#workspace-surface')) {
+        await page.click('#workspace-surface');
+        assert.equal(await page.isVisible('#work-surface'), true);
+        assert.equal(await page.isVisible('#chat-panel'), false);
+        const surface = await layout(); assert.equal(surface.overflowX, false); assert.ok(surface.tabsInside);
+        assert.ok(await page.locator('.work-tab').first().evaluate(el => el.getBoundingClientRect().width > 0));
+        await capture(`980x720-zoom-${zoom * 100}-arbejdsflade.png`);
+        await page.click('#workspace-chat'); assert.equal(await page.evaluate(() => document.activeElement.id), 'prompt');
+      }
     }
     assert.equal(results[1.5].collapsed, true, 'sidepanelet er foldet sammen ved stor tekst');
-    await page.click('#sidebar-toggle'); assert.equal(await page.evaluate(() => document.body.classList.contains('sidebar-overlay')), true);
+    await page.click('#workspace-navigation'); assert.equal(await page.evaluate(() => document.body.classList.contains('calm-sidebar-open')), true);
     await capture('980x720-zoom-150-sidepanel.png');
-    await page.keyboard.press('Escape'); assert.equal(await page.evaluate(() => document.body.classList.contains('sidebar-overlay')), false);
-    assert.equal(await page.evaluate(() => document.activeElement.id), 'sidebar-toggle');
+    await page.keyboard.press('Escape'); assert.equal(await page.evaluate(() => document.body.classList.contains('calm-sidebar-open')), false);
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'workspace-navigation');
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).webContents.setZoomFactor(1)); await page.waitForTimeout(400);
     passed('980 × 720 uden vandret rulning med fanerne på én linje; ved 125 % og 150 % tekst er faner og Send synlige, og sidepanelet foldes sammen');
 
@@ -264,7 +287,7 @@ const helpers = require('./ui-test-helpers.cjs');
     passed('Sidepanelet kan foldes sammen og ud, beholder tilgængelige navne, menuen står ved knappen, og valget huskes');
 
     // Aktiviteten overlever en genindlæsning af brugerfladen, så længe appen er åben.
-    await page.click('#tab-activity'); assert.match(await page.locator('#activity-list').innerText(), /Skriv fil/);
+    await page.click('#tab-activity'); assert.match(await page.locator('#activity-list').innerText(), /Har skrevet en fil/);
     await page.emulateMedia({ reducedMotion: 'reduce' });
     assert.equal(await page.locator('#activity-badge').evaluate(el => { el.hidden = false; el.classList.add('running'); const name = getComputedStyle(el).animationName; el.classList.remove('running'); return name; }), 'none');
     passed('Reduceret bevægelse slår markeringens animation fra; aktiviteten bevares ved genindlæsning');

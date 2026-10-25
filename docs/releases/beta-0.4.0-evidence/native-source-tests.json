@@ -1,0 +1,100 @@
+{
+  "source": {
+    "status": "bestået",
+    "provider": "mistral",
+    "model": "mistral-medium-3-5",
+    "realModel": true,
+    "packaged": false,
+    "checks": [
+      "Rigtig AI-idéhjælp viser beskrivelse og overfører godkendt tekst",
+      "Plan uden filændring",
+      "Bygget preview filtrerer 1, 5, 9 og 99 deltagere",
+      "AI-rettelsen ændrer overskrift og bevarer funktionen",
+      "Fortryd genskaber byteidentiske projektfiler",
+      "Preview virker igen efter fortrydelse",
+      "Arbejdskant er synlig og animeret under rigtige AI-kald",
+      "Genstart bevarer projekt, model og samtale",
+      "Preview virker efter genstart"
+    ],
+    "errors": [],
+    "sourceSettingsUnchanged": true,
+    "screenshotsVersion": "0.3.1-beta.1, with current product source before metadata bump",
+    "approvals": [
+      {
+        "stage": "bygning",
+        "allowed": true
+      },
+      {
+        "stage": "rettelse",
+        "allowed": true
+      }
+    ],
+    "notes": "Separate local profile. Fictional app data, real provider calls. Original encrypted settings unchanged. No manual edits to generated app."
+  },
+  "corti-interrupted-runner": {
+    "status": "fejl",
+    "provider": "corti",
+    "model": "corti-s1",
+    "realModel": true,
+    "packaged": false,
+    "checks": [
+      "Rigtig AI-idéhjælp viser beskrivelse og overfører godkendt tekst",
+      "Plan uden filændring"
+    ],
+    "errors": [],
+    "sourceSettingsUnchanged": true,
+    "screenshotsVersion": "0.3.1-beta.1, with current product source before metadata bump",
+    "testInterruption": "locator.click: Timeout 20000ms exceeded.",
+    "approvals": [
+      {
+        "stage": "plan",
+        "kind": "spørgsmål"
+      },
+      {
+        "stage": "plan",
+        "kind": "spørgsmål"
+      },
+      {
+        "stage": "plan",
+        "kind": "spørgsmål"
+      },
+      {
+        "stage": "bygning",
+        "allowed": true
+      },
+      {
+        "stage": "bygning",
+        "allowed": true
+      },
+      {
+        "stage": "bygning",
+        "allowed": true
+      },
+      {
+        "stage": "bygning",
+        "allowed": true
+      },
+      {
+        "stage": "bygning",
+        "allowed": false
+      }
+    ],
+    "notes": "Separate local profile. Fictional app data, real provider calls. Original encrypted settings unchanged. No manual edits to generated app."
+  },
+  "mistral-clarification-runner": {
+    "status": "fejl",
+    "provider": "mistral",
+    "model": "mistral-medium-3-5",
+    "realModel": true,
+    "packaged": false,
+    "checks": [
+      "Rigtig AI-idéhjælp viser beskrivelse og overfører godkendt tekst"
+    ],
+    "errors": [],
+    "sourceSettingsUnchanged": true,
+    "screenshotsVersion": "0.3.1-beta.1, with current product source before metadata bump",
+    "testInterruption": "The expression evaluated to a falsy value:",
+    "approvals": [],
+    "notes": "Separate local profile. Fictional app data, real provider calls. Original encrypted settings unchanged. No manual edits to generated app."
+  }
+}

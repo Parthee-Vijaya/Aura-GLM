@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "roots": [
+    "built app",
+    "read-only mounted DMG app",
+    "extracted updater ZIP app"
+  ],
+  "entries": 11332,
+  "differences": []
+}

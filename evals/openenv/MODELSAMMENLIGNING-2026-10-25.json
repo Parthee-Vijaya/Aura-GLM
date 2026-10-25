@@ -1,0 +1,457 @@
+{
+  "date": "2026-10-25",
+  "scope": "Real Aura first-draft food app comparison; independent browser checks; no handwritten model-output changes",
+  "sourceCommit": "293670ca8b23fd7eab32e1dd190e3e6bb135c9fa",
+  "sourceWorkingTreeChanged": true,
+  "taskSHA256": "2f2521346ec12ccb28ae0742316e70faf582c1a714d892eb455aee431033c48d",
+  "provenanceEqual": {
+    "taskSHA256": true,
+    "skillManifestSHA256": true,
+    "starterManifestSHA256": true,
+    "normalizedSystemSHA256": true,
+    "normalizedUserSHA256": true,
+    "modelLimits": true,
+    "runnerSHA256": true
+  },
+  "commonCaps": {
+    "context": 200000,
+    "requestedOutput": 16384,
+    "completedCallStopThreshold": 64,
+    "stageSeconds": 900,
+    "note": "Usage-event stop is not a pre-dispatch hard cap. Codex CLI output limit is not verified."
+  },
+  "primaryBrowser": {
+    "name": "Chromium",
+    "version": "153.0.8010.12",
+    "desktop": [
+      1440,
+      900
+    ],
+    "mobile": [
+      390,
+      844
+    ],
+    "deviceScaleFactor": 1,
+    "locale": "da-DK",
+    "colorScheme": "light",
+    "reducedMotion": "reduce"
+  },
+  "sharedMaterials": {
+    "skills": 11,
+    "skillFiles": 34,
+    "starterFiles": 7,
+    "noModelSpecificIdeaRefinement": true,
+    "noForcedPaletteOrLayout": true
+  },
+  "models": [
+    {
+      "arm": "mistral-food",
+      "model": "mistral-medium-3-5",
+      "effort": "provider-default",
+      "modelRunStatus": "failed",
+      "planSeconds": 21.101,
+      "buildAndProductQASeconds": 338.236,
+      "firstDraft": {
+        "snapshot": "quality-snapshots/001",
+        "elapsedSecondsIncludingStartup": 208.3,
+        "completedCallsIncludingPlan": 14,
+        "tokens": {
+          "input": 356787,
+          "output": 22096,
+          "reasoning": 0
+        },
+        "cacheRead": 160000,
+        "sourceSHA256": "12338005ee26447276d1195dbde2cf2bffd30289cc264fcc7204294aa55e0a9d",
+        "estimatedCostUSD": 0.9409005,
+        "priceUSDPerMillionTokens": {
+          "input": 1.5,
+          "output": 7.5,
+          "cacheRead": 1.5,
+          "cacheWrite": 1.5
+        },
+        "historicalCostReconciledAgainstRunTotal": true
+      },
+      "allStagesUsageIncludingProductRepairs": {
+        "input": 408542,
+        "output": 31152,
+        "reasoning": 0,
+        "cacheRead": 3255936,
+        "cacheWrite": 0,
+        "calls": 61,
+        "cost": 5.7303570000000015,
+        "unpriced": 0
+      },
+      "productRepairs": 1,
+      "qualityPasses": [
+        {
+          "index": 1,
+          "status": "checked",
+          "findings": [
+            {
+              "id": "runtime-error",
+              "severity": "error",
+              "count": 1
+            },
+            {
+              "id": "low-contrast",
+              "severity": "error",
+              "count": 17
+            },
+            {
+              "id": "nonsemantic-control",
+              "severity": "warning",
+              "count": 5
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "status": "checked",
+          "findings": [
+            {
+              "id": "runtime-error",
+              "severity": "error",
+              "count": 1
+            },
+            {
+              "id": "low-contrast",
+              "severity": "error",
+              "count": 1
+            }
+          ]
+        }
+      ],
+      "deniedTools": [
+        {
+          "permission": "bash",
+          "paths": []
+        }
+      ],
+      "flowEvidence": "round-2/mistral-food/functional-browser-chromium/flow.json",
+      "sourceUnchangedDuringBrowser": true,
+      "planPassSeconds": 7.822,
+      "planFormatClarificationSeconds": 13.279
+    },
+    {
+      "arm": "corti-food",
+      "model": "corti-s1",
+      "effort": "low",
+      "modelRunStatus": "completed",
+      "planSeconds": 12.185,
+      "buildAndProductQASeconds": 201.816,
+      "firstDraft": {
+        "snapshot": "quality-snapshots/001",
+        "elapsedSecondsIncludingStartup": 198.4,
+        "completedCallsIncludingPlan": 20,
+        "tokens": {
+          "input": 90744,
+          "output": 34972,
+          "reasoning": 7181
+        },
+        "cacheRead": 1075004,
+        "sourceSHA256": "3942a55dfe16a9b5c7243d1c2619e95d8f28f1cea2e76dd44606441f9fe6789d",
+        "estimatedCostUSD": 0.7337128,
+        "priceUSDPerMillionTokens": {
+          "input": 2,
+          "output": 8,
+          "cacheRead": 0.2,
+          "cacheWrite": 2
+        },
+        "historicalCostReconciledAgainstRunTotal": true
+      },
+      "allStagesUsageIncludingProductRepairs": {
+        "input": 90744,
+        "output": 34972,
+        "reasoning": 7181,
+        "cacheRead": 1075004,
+        "cacheWrite": 0,
+        "calls": 20,
+        "cost": 0.7337128000000002,
+        "unpriced": 0
+      },
+      "productRepairs": 0,
+      "qualityPasses": [
+        {
+          "index": 1,
+          "status": "checked",
+          "findings": [
+            {
+              "id": "small-text",
+              "severity": "warning",
+              "count": 7
+            }
+          ]
+        }
+      ],
+      "deniedTools": [],
+      "flowEvidence": "round-2/corti-food/functional-browser/report.json",
+      "sourceUnchangedDuringBrowser": true,
+      "savedCartReloadCheck": {
+        "status": "passed",
+        "totalDKK": 178,
+        "evidence": "round-2/corti-food/functional-browser/persisted-cart-report.json",
+        "navigationLimitation": "Reload returns to the venue list with no direct basket link; reselecting the same venue reveals the preserved basket and allows normal checkout.",
+        "sourceUnchanged": true
+      }
+    },
+    {
+      "arm": "gpt-codex-food",
+      "model": "gpt-6.1-sol",
+      "effort": "low",
+      "modelRunStatus": "infrastructure-timeout",
+      "firstDraft": null,
+      "completedCalls": 5,
+      "knownUsage": {
+        "input_tokens": 219865,
+        "output_tokens": 1789,
+        "cached_input_tokens": 20096,
+        "reasoning_output_tokens": 45
+      },
+      "unreportedUsage": [
+        "timed-out request 006",
+        "automatically-started and cancelled request 007"
+      ],
+      "costUSD": null,
+      "projectPublicUnchanged": true,
+      "automaticRetryStarted": true,
+      "automaticRetryCancelled": true,
+      "evidence": "round-2/gpt-codex-food/transport-timeout.json"
+    }
+  ],
+  "functionalSummary": {
+    "mistral": "Pizza customization, prices, delivery and order history work. Pickup needs an address; reloaded basket checkout and burger menu cause runtime errors. Those three errors remain after one product repair.",
+    "corti": "Tested pickup, delivery and mobile orders persist after reload. Remaining UX error: mobile order bar shows89 while checkout total is118 without a subtotal label. A saved basket also completes after reload, but requires reselecting the same venue because the home screen has no direct basket access.",
+    "gpt": "No generated application; OpenRouter402 and alternative Codex transport timeout prevent a design or functional judgement."
+  },
+  "firstRoundRetained": {
+    "mistral": "unfinished at65 completed calls; one off-by-one testdriver threshold and denied own-public grep",
+    "corti": "completed modelrun but empty main because script reference missing; own-public grep denied",
+    "gpt": "direct OpenRouter402; initial Codex catalogue preflight error; first Codex build blocked by missing apply_patch tool input at approval time"
+  },
+  "round2InfrastructureChanges": [
+    "Strict session/message/part/call/tool/generation-bound apply_patch hydration before unchanged product approvals",
+    "Own-public read/grep review added to shared eval policy",
+    "Usage-event stop threshold changed from >64 to >=64"
+  ],
+  "infrastructureValidation": {
+    "desktopTests": 839,
+    "permissionHydrationFocusedTests": 23,
+    "nativePatchApprovalRegression": "passed",
+    "independentReview": "passed",
+    "approvalAndEvalPolicyTests": 26,
+    "productApprovalPolicyTests": 17,
+    "evalPolicyTests": 9,
+    "pythonAdapterTests": 3
+  },
+  "notCompleted": [
+    "Comparable completed GPT app through Aura",
+    "Installed DMG end-to-end test",
+    "Statistical model ranking",
+    "Fully polished first draft guarantee"
+  ],
+  "safePublication": "Only this reviewed summary is intended for repository use; raw sessions, settings references, adapter captures and local profiles remain private.",
+  "supplementaryGPTReference": {
+    "model": "gpt-6.1-sol",
+    "effort": "low",
+    "method": "supplementary one-response file output; no Aura tool loop or automatic repair",
+    "status": "files-generated",
+    "seconds": 188.356,
+    "usage": {
+      "input_tokens": 48489,
+      "cached_input_tokens": 0,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 14470,
+      "reasoning_output_tokens": 85
+    },
+    "costUSD": null,
+    "generatedFiles": 7,
+    "sourceRequestSHA256": "ec09814fb76d6e660f499624f5378a2d01229546cf3588d71d7c273193411ab0",
+    "taskSHA256": "2f2521346ec12ccb28ae0742316e70faf582c1a714d892eb455aee431033c48d",
+    "nativeTools": false,
+    "readOnly": true,
+    "inheritsAuraRequest6History": true,
+    "samePipelineAsMainComparison": false,
+    "replacesMainTimeout": false,
+    "handwrittenOutputChanges": false,
+    "browserStatus": "tested-main-flow-passed-with-minor-visual-findings",
+    "evidence": "gpt-reference-files/status.json",
+    "secondsScope": "Supplementary file-output response only; excludes prior planning and timeout",
+    "skillAccess": "Only already-inserted/read material in preserved request-6 history; no further skill reads possible",
+    "browserVersion": "153.0.8010.12",
+    "flowChecks": [
+      {
+        "id": "venue-menu",
+        "name": "Stedvalg viser særskilt menu",
+        "pass": true,
+        "evidence": [
+          "menu-desktop",
+          "second-venue-menu"
+        ]
+      },
+      {
+        "id": "options",
+        "name": "Tilvalg summeres korrekt",
+        "pass": true,
+        "evidence": [
+          "customization-selected",
+          "cart-one"
+        ],
+        "actual": "85 + 12 + 10 = 107 kr."
+      },
+      {
+        "id": "quantity",
+        "name": "Plus/minus opdaterer antal og beløb",
+        "pass": true,
+        "evidence": [
+          "cart-quantity-two",
+          "cart-quantity-one"
+        ]
+      },
+      {
+        "id": "empty-cart",
+        "name": "Fjern sidste vare giver tom kurv",
+        "pass": true,
+        "evidence": [
+          "cart-empty"
+        ]
+      },
+      {
+        "id": "invalid-contact",
+        "name": "Tomme kontaktfelter og ugyldigt telefonnummer afvises",
+        "pass": true,
+        "evidence": [
+          "checkout-empty-rejected",
+          "checkout-invalid-phone-rejected"
+        ]
+      },
+      {
+        "id": "pickup",
+        "name": "Afhentning gennemføres med korrekte tilvalg og pris",
+        "pass": true,
+        "evidence": [
+          "pickup-confirmation"
+        ]
+      },
+      {
+        "id": "delivery-validation",
+        "name": "Manglende adresse og ugyldigt postnummer afvises",
+        "pass": true,
+        "evidence": [
+          "delivery-missing-address-rejected",
+          "delivery-invalid-postcode-rejected"
+        ]
+      },
+      {
+        "id": "delivery-order",
+        "name": "Levering gemmer adresse og pris inklusive gebyr",
+        "pass": true,
+        "evidence": [
+          "delivery-confirmation"
+        ],
+        "actual": "95 + 25 = 120 kr."
+      },
+      {
+        "id": "mobile-flow",
+        "name": "Hele mobilforløbet kan gennemføres med to tilpassede pizzaer",
+        "pass": true,
+        "evidence": [
+          "mobile-add-two",
+          "mobile-cart-two",
+          "mobile-checkout-ready",
+          "mobile-confirmation"
+        ],
+        "actual": "2 × (85 + 12) = 194 kr. ved afhentning; tidligere leveringsvalg ændret gennem synlig formular."
+      },
+      {
+        "id": "history-reload",
+        "name": "Tre ordrer og leveringsadresse bevares efter almindelig reload",
+        "pass": true,
+        "evidence": [
+          "history-after-reload",
+          "history-desktop-reloaded"
+        ]
+      },
+      {
+        "id": "saved-cart-to-confirmation",
+        "name": "Gemt kurv efter reload kan gennemføres til bekræftelse",
+        "pass": true,
+        "evidence": [
+          "persisted-cart-before-reload",
+          "persisted-cart-after-reload",
+          "persisted-cart-confirmation"
+        ],
+        "actual": "2 × (85+12) = 194 kr.; antal, tilvalg og pris overlever reload og fuldfører afhentning."
+      }
+    ],
+    "browserSummary": {
+      "pass": 11,
+      "total": 11,
+      "blockingFunctionalFailures": 0,
+      "allEightStandardScreenshots": true
+    },
+    "sourceUnchangedDuringBrowser": true,
+    "visualAssessment": {
+      "verdict": "Sammenhængende og brugbar reference med tydelig madidentitet og hierarki; stadig plads til detaljepolering, især mobil og kurv.",
+      "strengths": [
+        "Varm neutral grund med kontrolleret rustaccent, konsekvent typografi og kantlinjer.",
+        "Tre lokale madillustrationer giver spisestederne tydelig identitet; desktopkort og primære knapper har fælles bundlinje.",
+        "Menuside skifter til læsbare varerækker med pris, tilvalg og selvstændig kurv til højre.",
+        "Demostatus, leveringspris, tilvalg og slutbeløb kommunikeres tydeligt.",
+        "Mobilfladen omarrangerer kort og navigation og tillader hele bestillingsforløbet."
+      ],
+      "remaining": [
+        {
+          "id": "duplicate-cart-title",
+          "severity": "minor",
+          "detail": "Kurvmodallen gentager Din kurv som både dialogtitel og indre paneltitel.",
+          "screenshots": [
+            "cart-desktop.png",
+            "cart-mobile.png"
+          ]
+        },
+        {
+          "id": "mobile-density",
+          "severity": "minor",
+          "detail": "Mobilforsidens sidestillede antal spisesteder presser Vælg spisested over to linjer. Menuens top og filtre optager meget af første skærm.",
+          "screenshots": [
+            "home-mobile.png",
+            "menu-mobile.png"
+          ]
+        },
+        {
+          "id": "reused-food-art",
+          "severity": "minor",
+          "detail": "Samme pizzaillustration genbruges til flere forskellige retter. Det er markeret vejledende, men føles skematisk.",
+          "screenshots": [
+            "menu-desktop.png"
+          ]
+        },
+        {
+          "id": "small-remove",
+          "severity": "minor",
+          "detail": "Fjern er en lille understreget teksthandling sammenlignet med de øvrige store kontroller.",
+          "screenshots": [
+            "cart-desktop.png",
+            "cart-mobile.png"
+          ]
+        },
+        {
+          "id": "checkout-length",
+          "severity": "minor",
+          "detail": "Meget luft over checkout og fuld mobilkurvknap gør mobilformularen lang. Bekræftelse kræver scroll, men det afprøvede flow er tilgængeligt.",
+          "screenshots": [
+            "checkout-desktop.png",
+            "checkout-mobile.png"
+          ]
+        }
+      ]
+    },
+    "runtimeErrorCount": 0,
+    "externalRequestCount": 0,
+    "browserEvidence": "gpt-reference-files/functional-browser/report.json",
+    "cleanup": {
+      "browserClosed": true,
+      "localServerClosed": true
+    }
+  }
+}

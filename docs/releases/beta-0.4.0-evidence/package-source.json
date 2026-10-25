@@ -1,0 +1,20 @@
+{
+  "sourceIdentity": {
+    "sourceCommit": "95c7056b18cf8ec22df51ac45e460404faabf483",
+    "files": 215
+  },
+  "version": "0.4.0-beta.2",
+  "target": "darwin-arm64",
+  "sourceFiles": 163,
+  "profileFiles": 50,
+  "runtime": {
+    "opencode": "1.18.33",
+    "git": "2.53.0",
+    "node": "22.23.3"
+  },
+  "runtimePayload": {
+    "files": 5222,
+    "sha256": "f306b78d9b29ed37a50ec813047c2ec5bbf9bef02bc9f7ed23e45412ba3f6199"
+  },
+  "limitation": "Filkontrol mod arbejdsmappe og l\u00e5sefil. Ikke installation, signeringskontrol eller afpr\u00f8vning p\u00e5 en anden computer."
+}

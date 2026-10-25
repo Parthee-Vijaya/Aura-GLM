@@ -1,0 +1,211 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-25T16:03:13.215007+00:00",
+  "status": "PASS",
+  "passed": 7,
+  "total": 7,
+  "kind": "Controlled local Electron/OpenCode native regressions",
+  "nodeVersion": "v22.23.3",
+  "externalAIRequests": 0,
+  "usesSyntheticModelResponses": true,
+  "packagedDMGTest": false,
+  "modelDesignQualityClaim": false,
+  "sourceContext": {
+    "runnerGitHead": "293670ca8b23fd7eab32e1dd190e3e6bb135c9fa",
+    "productCommitRecordedAfterRuns": "95c7056",
+    "note": "The coordinator kept product sources frozen during these runs and committed the product separately. Packaged artifact checks and live-model acceptance are recorded separately."
+  },
+  "results": [
+    {
+      "name": "setup",
+      "status": "PASS",
+      "durationSeconds": 7.4,
+      "completedAt": "2026-10-25T15:51:26.874958+00:00",
+      "script": "desktop/scripts/verify-setup.cjs",
+      "executedScriptSHA256": "d68f7496b2c6fa76f0fce7e5b3e6b76effb205308ff99469a6637d3552db9cb2",
+      "remainingOwnProcesses": 0,
+      "coverage": [
+        "Guided connection and model selection in a separate profile"
+      ]
+    },
+    {
+      "name": "workspace",
+      "status": "PASS",
+      "durationSeconds": 25.51,
+      "completedAt": "2026-10-25T15:59:10.728478+00:00",
+      "script": "desktop/scripts/verify-workspace.cjs",
+      "executedScriptSHA256": "4a0e6a903bd917edcf8368f9b6765599051a4d81583b63d7e9d6495ce3e523df",
+      "remainingOwnProcesses": 0,
+      "coverage": [
+        "Read-only files and protected paths",
+        "File references, diffs and concurrent user edits",
+        "Preview/form/draft preservation",
+        "Stop, failure, keyboard and responsive layout"
+      ]
+    },
+    {
+      "name": "planning",
+      "status": "PASS",
+      "durationSeconds": 20.33,
+      "completedAt": "2026-10-25T15:52:09.003871+00:00",
+      "script": "desktop/scripts/verify-planning.cjs",
+      "executedScriptSHA256": "f1f132e6d7c4f70075d69807a70c604a716a0142835ca22c9b7bdec86abe0f10",
+      "remainingOwnProcesses": 0,
+      "coverage": [
+        "Follow-up questions and free-form answers",
+        "Brief and plan revisions",
+        "Separate approval before building"
+      ]
+    },
+    {
+      "name": "approvals",
+      "status": "PASS",
+      "durationSeconds": 37.18,
+      "completedAt": "2026-10-25T15:59:47.985615+00:00",
+      "script": "desktop/scripts/verify-approvals.cjs",
+      "executedScriptSHA256": "b36bfe0e11fd8ed07c2805e4de25880542ecaf0a98afc56f2cc4554f15cc3dd3",
+      "remainingOwnProcesses": 0,
+      "coverage": [
+        "File diff and explicit once/task approval",
+        "Command explanation, actual exit code and output",
+        "Reject, reject with feedback, Stop and undo",
+        "Credential/quota/stream interruption handling and retry",
+        "980x720 approval layout"
+      ]
+    },
+    {
+      "name": "resume",
+      "status": "PASS",
+      "durationSeconds": 20.49,
+      "completedAt": "2026-10-25T16:02:21.259766+00:00",
+      "script": "desktop/scripts/verify-resume.cjs",
+      "executedScriptSHA256": "ed61e94b4f26b6ee3606b19828ed00345a27cd658c6f7a2054971e0cf53380dc",
+      "remainingOwnProcesses": 0,
+      "coverage": [
+        "Restart preserves model, plan, conversation and draft",
+        "No model calls on reopening",
+        "Explicit file approval after restart",
+        "Original user message and build answer reach the new follow-up model request",
+        "Planning preserves the project file",
+        "Separate projects/conversations and interruption during streaming"
+      ]
+    },
+    {
+      "name": "composer-glow",
+      "status": "PASS",
+      "durationSeconds": 4.55,
+      "completedAt": "2026-10-25T15:54:55.898354+00:00",
+      "script": "desktop/scripts/verify-composer-glow.cjs",
+      "executedScriptSHA256": "172889e9fd2256f10810ee77e61df5620a9fded00b07bf780d43c50dc0c913da",
+      "remainingOwnProcesses": 0,
+      "coverage": [
+        "Working and waiting states",
+        "Idle state",
+        "Reduced motion"
+      ]
+    },
+    {
+      "name": "conversation-progress",
+      "status": "PASS",
+      "durationSeconds": 25.58,
+      "completedAt": "2026-10-25T15:55:21.562059+00:00",
+      "script": "desktop/scripts/verify-conversation-progress.cjs",
+      "executedScriptSHA256": "afcccd729e925536400340d0a21c3c40a84515e9697ed29507f3ba77e615d09d",
+      "remainingOwnProcesses": 0,
+      "coverage": [
+        "Reasoning and tool-draft progress",
+        "Technical details collapsed by default",
+        "No file change before explicit approval"
+      ]
+    }
+  ],
+  "earlierFailures": [
+    {
+      "attempt": "initial",
+      "test": "workspace",
+      "observation": "The first file click did not display public/index.html before a 20-second wait expired.",
+      "classification": "Unreproduced test instability; not claimed fixed.",
+      "followUp": "Full instrumented run and unchanged ordinary verifier both passed. No product code or selector was changed."
+    },
+    {
+      "attempt": "initial",
+      "test": "approvals",
+      "observation": "The send helper returned on the pre-existing idle status before the disclosure dialog opened. The dialog was still open at timeout.",
+      "classification": "Runner race.",
+      "followUp": "Wait for an open disclosure dialog, running state or error; do not return on pre-existing idle."
+    },
+    {
+      "attempt": "initial",
+      "test": "resume",
+      "observation": "The verifier waited for the old file approval label.",
+      "classification": "Stale selector.",
+      "followUp": "Use the current explicit once-approval button; still assert no file change before approval."
+    },
+    {
+      "attempt": "rerun-1",
+      "test": "approvals",
+      "observation": "The verifier expected an old result heading and checklist removed by the approved compact UI.",
+      "classification": "Stale UI expectations.",
+      "followUp": "Verify actual command output and exit code in Activity, the compact receipt, preview content and real console error. Open More choices before feedback/task approval and undo."
+    },
+    {
+      "attempt": "rerun-1",
+      "test": "resume",
+      "observation": "The verifier expected another disclosure dialog for the already approved AI.",
+      "classification": "Stale consent expectation.",
+      "followUp": "Allow the existing shared one-time consent and verify the actual outgoing follow-up request."
+    },
+    {
+      "attempt": "rerun-2",
+      "test": "resume",
+      "observation": "The verifier expected a historical heading for copied conversation context.",
+      "classification": "Stale transport-text expectation.",
+      "followUp": "Inspect the actual new model request."
+    },
+    {
+      "attempt": "rerun-3",
+      "test": "resume",
+      "observation": "The verifier expected a handoff text block, although the resumed engine sends original user/assistant messages.",
+      "classification": "Stale session-shape expectation.",
+      "followUp": "Assert the original user message and completed build answer appear with their roles in the concrete new follow-up request, and that planning leaves the project file unchanged."
+    }
+  ],
+  "testScriptChanges": [
+    {
+      "path": "desktop/scripts/verify-approvals.cjs",
+      "currentSHA256": "afa95425dc2a50a10bbb7ab70f9a7f4a54b759ca83969f4e94806bd87e2b9912"
+    },
+    {
+      "path": "desktop/scripts/verify-resume.cjs",
+      "currentSHA256": "ed61e94b4f26b6ee3606b19828ed00345a27cd658c6f7a2054971e0cf53380dc"
+    }
+  ],
+  "review": {
+    "productCodeChanged": false,
+    "uiChanged": false,
+    "approvalBypassAdded": false,
+    "checksPreserved": [
+      "First-send disclosure handling",
+      "No file write before explicit approval",
+      "Plan and tool approvals",
+      "Reject and feedback continuation",
+      "Stop and undo",
+      "Actual command exit status and output",
+      "Restart and conversation isolation",
+      "Actual history in the follow-up request"
+    ],
+    "commentOnlyDifference": "The final approvals script differs from its executed passing hash only in the explanatory opening comment.",
+    "diffWhitespaceCheck": "PASS"
+  },
+  "cleanup": {
+    "remainingOwnProcesses": 0,
+    "deletedFiles": 0,
+    "allTestProjectCodePreserved": true,
+    "syntheticProfilesRetainedForScopedReleaseCleanup": true
+  },
+  "limitations": [
+    "One initial workspace file-click timeout could not be reproduced.",
+    "This suite uses controlled local model replies; it is not evidence of live-model design quality or an end-to-end packaged DMG run.",
+    "Raw logs, local paths and test-profile contents are deliberately excluded from this public summary."
+  ]
+}

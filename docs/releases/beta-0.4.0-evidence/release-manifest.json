@@ -1,0 +1,23 @@
+{
+  "title": "Aura 1 beta 0.4.0",
+  "version": "0.4.0-beta.2",
+  "tag": "v0.4.0-beta.2",
+  "sourceCommit": "95c7056b18cf8ec22df51ac45e460404faabf483",
+  "assets": [
+    {
+      "name": "Aura-1-0.4.0-beta.2-mac-arm64.dmg",
+      "bytes": 345374400,
+      "sha256": "34bdaf203eb023298843253841291fa4c2bc2dd91ba76de41ebfce333767b979",
+      "sha512": "TrGQsnr34gLOhn2qEMUVEoGSMrtF1RzRWCdmOTiqt/QCFkC4jODCu8ub3CuLeIxLqedJXkV2CdECyP7bKex4LQ=="
+    },
+    {
+      "name": "Aura-1-0.4.0-beta.2-mac-arm64.zip",
+      "bytes": 339580889,
+      "sha256": "ab9f6e16aba2fa891c069dff2eaa99545b7e6a11de19d2333de90cda407a3a88",
+      "sha512": "p2qoV+hzYgvvzpFHT2UPhxyi6S9NXS05LOYjX6Ml9l6sgo5TVGrkyu5gHp81icvpEQ7AwDX6DDm7swJTn4ibBA=="
+    }
+  ],
+  "signing": "ad hoc",
+  "notarized": false,
+  "target": "darwin-arm64"
+}

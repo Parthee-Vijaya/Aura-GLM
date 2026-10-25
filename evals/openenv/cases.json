@@ -1,0 +1,20 @@
+[
+  {
+    "id": "meetings", "name": "Mødested",
+    "brief": "Byg en flot dansk webapp til at finde og tilmelde sig borgermøder. Vis tre tydeligt markerede eksempelmøder, søgning, tilmelding og Mine tilmeldinger. Tilmeldinger gemmes kun lokalt, og man kan afmelde igen.",
+    "answers": "Lav en selvstændig lokal HTML/CSS/JavaScript-app i public/. Ingen login, backend, CDN, netværk, pakkeinstallationer, Git eller shellkommandoer. Kun fiktive eksempler. Udtryk: roligt, imødekommende og gennemarbejdet. Vælg selv den konkrete visuelle retning. Brug semantiske knapper og tydelige formularlabels. Projektets navn er Mødested. Lav en konkret plan først; byg kun efter godkendelsen.",
+    "revision": "Bevar funktioner og design. Tilføj en tydelig 'Kun ledige pladser'-filtrering til mødeoversigten. Jeg skal kunne slå den til og fra. Bevar tilmeldinger ved genindlæsning. Lav først en kort konkret ændringsplan."
+  },
+  {
+    "id": "time", "name": "Tidsrum",
+    "brief": "Byg en flot dansk tidsregistreringsapp til en freelancer. Man skal kunne angive projekt og opgave, starte og stoppe en timer, se registreringer og samlet tid samt slette en registrering. Gem lokalt mellem besøg.",
+    "answers": "Lav en selvstændig lokal HTML/CSS/JavaScript-app i public/. Ingen login, backend, CDN, netværk, pakkeinstallationer, Git eller shellkommandoer. Kun fiktive eksempler. Udtryk: fokuseret, professionelt og gennemarbejdet. Vælg selv farver, typografi og detaljer. Brug semantiske knapper og tydelige formularlabels. Projektets navn er Tidsrum. Lav en konkret plan først; byg kun efter godkendelsen.",
+    "revision": "Bevar funktioner og design. Tilføj en 'Eksportér CSV'-knap til registreringerne med projekt, opgave og varighed som kolonner. Bevar de eksisterende registreringer. Lav først en kort konkret ændringsplan."
+  },
+  {
+    "id": "rooms", "name": "Rumklar",
+    "brief": "Byg en flot dansk webapp til at reservere mødelokaler. Vis tre tydeligt markerede eksempellokaler med kapacitet. Man skal kunne filtrere efter deltagerantal, reservere et lokale på en dato og se og annullere egne reservationer. Gem kun lokalt.",
+    "answers": "Lav en selvstændig lokal HTML/CSS/JavaScript-app i public/. Ingen login, backend, CDN, netværk, pakkeinstallationer, Git eller shellkommandoer. Kun fiktive eksempler. Udtryk: lyst, roligt og gennemarbejdet. Vælg selv konkret visuel retning. Brug semantiske knapper og tydelige formularlabels. Projektets navn er Rumklar. Lav en konkret plan først; byg kun efter godkendelsen.",
+    "revision": "Bevar funktioner og design. Tilføj 'Kun med skærm' som et filter på lokalerne. Eksemplerne skal omfatte både et lokale med skærm og et uden. Bevar gemte reservationer. Lav først en kort konkret ændringsplan."
+  }
+]
