@@ -21,6 +21,7 @@ class Element {
   addEventListener(name, fn) { (this.listeners[name] ||= []).push(fn); }
   setAttribute(name, value) { this.attributes[name] = value; }
   getAttribute(name) { return this.attributes[name]; }
+  removeAttribute(name) { delete this.attributes[name]; }
   showModal() { this.open = true; }
   close() { this.open = false; for (const fn of this.listeners.close || []) fn(); }
   focus() { this.focused = true; }
@@ -185,4 +186,67 @@ test('en sen fortrydelse kvitterer i sin egen samtale uden at overtage et andet 
   assert.equal(navigations, 0); assert.equal(context.view, nextView);
   assert.match(view.review.textContent, /^Opgaven er fortrudt/); assert.equal(view.undoneTasks.has('opgave'), true);
   assert.equal(nextView.review.textContent, ''); assert.equal(view.review.focused, undefined);
+});
+
+function previewUI(context, initialText = 'Godkendt version') {
+  const frame = context.$('#preview');
+  let disk = initialText, rendered = initialText, navigations = 0, poll;
+  frame.setAttribute('src', context.current.previewURL);
+  Object.defineProperty(frame, 'src', { get: () => frame.getAttribute('src'), set(value) { frame.setAttribute('src', value); rendered = disk; navigations++; } });
+  context.current.workspaceRoot = context.current.root;
+  context.revision = null; context.polling = false;
+  context.syncResultPreview = () => {};
+  context.setInterval = (callback, ms) => { assert.equal(ms, 1500); poll = callback; };
+  // Den rigtige visning og revisionskontrol: ingen tidligere revision ved opstart.
+  const show = appSource.slice(appSource.indexOf('function showPreview('), appSource.indexOf('async function displayProject('));
+  const interval = appSource.split('\n').find(line => line.startsWith('setInterval(async () => { if (!current || polling)'));
+  assert.ok(interval); vm.runInContext(show + '\n' + interval, context);
+  context.showChat = async next => context.showPreview(next.preview.previewURL, next.preview.previewExternal);
+  return { write: text => { disk = text; }, poll: () => poll(), rendered: () => rendered, navigations: () => navigations, frame };
+}
+
+test('fortrydelse før første revisionskontrol genindlæser den eksisterende statiske forhåndsvisning', async () => {
+  const calls = []; let preview;
+  const { context, $, dialog } = environment(async method => {
+    calls.push(method);
+    if (method === 'restoreReview') return { token: 'token', kind: 'undo', files: [{ file: 'public/index.html', action: 'Ændres' }] };
+    if (method === 'restoreVersion') {
+      preview.write('Ugemt forsøg');
+      return { restored: { files: 1 }, state: { preview: { previewURL: context.current.previewURL, previewExternal: false } } };
+    }
+    if (method === 'revision') return 'after-undo';
+    throw Error('Uventet handling: ' + method);
+  });
+  vm.runInContext(historySource, context); preview = previewUI(context);
+  await context.window.reviewRestoration({ undo: true });
+  assert.equal(context.revision, null); assert.equal(preview.rendered(), 'Godkendt version');
+  await $('#restore-confirm').onclick();
+  assert.equal(dialog.open, false); assert.equal(preview.rendered(), 'Ugemt forsøg');
+  assert.equal(preview.navigations(), 1);
+  for (let index = 0; index < 20; index++) await preview.poll();
+  assert.equal(preview.rendered(), 'Ugemt forsøg'); assert.equal(preview.navigations(), 1);
+  assert.deepEqual(calls.slice(0, 2), ['restoreReview', 'restoreVersion']);
+  assert.ok(calls.every(method => ['restoreReview', 'restoreVersion', 'revision'].includes(method)), 'Ingen serverstart, tilslutning eller ny godkendelse.');
+});
+
+for (const scenario of ['unchanged', 'blocked', 'external', 'stopped', 'wrong-owner', 'closed-dialog', 'changed-during-show']) test('gendannelse genindlæser ikke en uvedkommende eller ikke-aktiv forhåndsvisning: ' + scenario, async () => {
+  let resolve, preview;
+  const { context, $, dialog } = environment(async method => {
+    if (method === 'restoreReview') return { token: 'token', kind: 'undo', files: [{ file: 'public/index.html', action: 'Ændres' }] };
+    assert.equal(method, 'restoreVersion'); return new Promise(done => { resolve = done; });
+  });
+  vm.runInContext(historySource, context); preview = previewUI(context);
+  if (scenario === 'changed-during-show') {
+    const show = context.showChat;
+    context.showChat = async next => { await show(next); context.current = { root: '/andet', previewURL: 'aura-preview://other/' }; context.view = { id: 'other' }; };
+  }
+  await context.window.reviewRestoration({ undo: true });
+  const pending = $('#restore-confirm').onclick();
+  if (scenario === 'wrong-owner') { context.current = { root: '/andet', previewURL: 'aura-preview://other/' }; context.view = { id: 'other' }; }
+  if (scenario === 'closed-dialog') dialog.close();
+  const url = ['blocked', 'stopped'].includes(scenario) ? null : scenario === 'external' ? 'http://127.0.0.1:4567/' : 'aura-preview://test/index.html';
+  if (scenario === 'external') preview.frame.setAttribute('src', url);
+  resolve({ restored: { files: scenario === 'unchanged' ? 0 : 1 }, state: { preview: { previewURL: url, previewExternal: scenario === 'external' } } });
+  await pending;
+  assert.equal(preview.navigations(), 0);
 });

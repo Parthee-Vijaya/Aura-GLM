@@ -274,6 +274,12 @@
     if (active() && request === reviewRequest && $('#restore-dialog').open) {
       if (result.project) await displayProject(result.project);
       else if (result.state) { await showChat(result.state); await refreshRecent(); }
+      // Gendannelse kan ske før første revisionsmåling efter opstart. Genindlæs
+      // kun den allerede åbne statiske side; start eller tilslut aldrig en server.
+      const previewURL = current?.previewURL, frame = $('#preview');
+      if (result.restored?.files > 0 && active() && request === reviewRequest && $('#restore-dialog').open
+        && !current.previewExternal && typeof previewURL === 'string' && previewURL.startsWith('aura-preview://')
+        && frame?.getAttribute('src') === previewURL) frame.src = previewURL;
     }
     if (request === reviewRequest) $('#restore-dialog').close();
     if (mergeChat) {
