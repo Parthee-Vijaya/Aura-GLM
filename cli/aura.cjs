@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+// Only the executable entry point installs the audited HTTP implementation.
+// Importing the CLI for tests/library use must preserve injected transports.
+if (require.main === module) require('../desktop/core/http-runtime.cjs').install();
 const path = require('node:path');
 const { spawn } = require('node:child_process');
 const { Terminal } = require('./terminal.cjs');

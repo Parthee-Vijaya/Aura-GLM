@@ -99,3 +99,32 @@ test('a command prepared before session consent is isolated when executed after 
   // Broken state must not fall back to an ordinary shell.
   await fs.writeFile(configured.activationPath,'{}');await assert.rejects(run('/bin/bash',['-c',output.args.command],{cwd:f.root,timeout:30000}),/afvist/);
 });
+
+test('real runner rejects unused TLS, credentials, proxy and oversized policy before executing a command', async t => {
+  const reason = await sandboxPrerequisiteReason(); if (reason) return t.skip(reason);
+  const f = await fixture(t), original = await fs.readFile(f.configured.policyPath, 'utf8');
+  const marker = path.join(f.root, 'must-not-run.txt');
+  const changes = [
+    value => { value.config.network.allowedDomains.push('example.invalid'); },
+    value => { value.config.network.tlsTerminate = { caKeyPath: '/private/SENSITIVE' }; },
+    value => { value.config.network.parentProxy = { http: 'https://SECRET@example.invalid' }; },
+    value => { value.config.credentials = { env: { SECRET: 'secret' } }; },
+    value => { value.config.network.decider = { fd: 3 }; }
+  ];
+  for (const change of changes) {
+    const value = JSON.parse(original); change(value);
+    await fs.writeFile(f.configured.policyPath, JSON.stringify(value));
+    const result = await f.execute('/usr/bin/touch ' + quote(marker));
+    assert.notEqual(result.code, 0);
+    assert.match(result.stderr, /indstillinger er ugyldige eller for store/);
+    assert.doesNotMatch(result.stderr, /SENSITIVE|SECRET|example\.invalid/);
+    await assert.rejects(fs.access(marker));
+  }
+  await fs.writeFile(f.configured.policyPath, ' '.repeat(require('../core/command-sandbox-policy.cjs').MAX_POLICY_BYTES + 1));
+  const oversized = await f.execute('/usr/bin/touch ' + quote(marker));
+  assert.notEqual(oversized.code, 0); assert.match(oversized.stderr, /indstillinger er ugyldige eller for store/);
+  await assert.rejects(fs.access(marker));
+  await fs.writeFile(f.configured.policyPath, original);
+  const restored = await f.execute('/usr/bin/touch ' + quote(marker));
+  assert.equal(restored.code, 0, restored.stderr); await fs.access(marker);
+});

@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { SandboxManager } from '@anthropic-ai/sandbox-runtime';
+import policyBoundary from './command-sandbox-policy.cjs';
 const contains = (root, target) => { const relative = path.relative(root, target); return relative === '' || (!relative.startsWith('..' + path.sep) && relative !== '..' && !path.isAbsolute(relative)); };
 let child;
 try {
@@ -12,15 +13,15 @@ try {
     if (process.platform === 'darwin') await fs.access('/usr/bin/sandbox-exec');
     process.stdout.write(JSON.stringify(result));
   } else {
-    const policy = JSON.parse(await fs.readFile(process.argv[2], 'utf8'));
-    const input = JSON.parse(Buffer.from(process.argv[3], 'base64url').toString());
-    if (policy.version !== 1 || typeof input.command !== 'string' || input.command.length > 200000) throw new Error('Ugyldig isoleret kommando.');
+    const policy = await policyBoundary.readPolicy(process.argv[2]);
+    const input = policyBoundary.parseCommand(process.argv[3]);
     const cwd = await fs.realpath(input.cwd);
     if (![policy.workspaceRoot, policy.scratchRoot].some(root => contains(root, cwd))) throw new Error('Arbejdsområdet er ændret. Kommandoen blev afvist.');
     // Ingen modelnøgler, motorindstillinger, proxyadgang eller brugerens shellopsætning arves.
     for (const key of Object.keys(process.env)) delete process.env[key];
     Object.assign(process.env, policy.env);
     process.chdir(cwd);
+    policyBoundary.validatePolicy(policy);
     await SandboxManager.initialize(policy.config, undefined, false);
     if (!SandboxManager.isSandboxingEnabled()) throw new Error('Kommandobeskyttelsen er ikke aktiv.');
     // SRT sætter normalt en fælles TMPDIR. Den overskrives inden brugerens kommando og er ikke skrivbar i vores profil.

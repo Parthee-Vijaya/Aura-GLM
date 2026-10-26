@@ -7,7 +7,7 @@ module.exports = {
   appId: 'org.ai-alliancen.harness', productName: 'Aura 1',
   directories: { output: 'release', buildResources: 'packaging' },
   files: ['main.cjs', 'preload.cjs', 'core/**/*', 'privacy/**/*', '!privacy/isolation/.runtime/**/*', '!privacy/isolation/notes/**/*', '!privacy/**/.gitignore', 'ui/**/*', 'package.json', 'runtime-lock.json'],
-  asar: true, asarUnpack: ['core/engine-guardian.cjs', 'core/pdf-text-worker.cjs', 'node_modules/pdfjs-dist/**/*', 'node_modules/@napi-rs/**/*', 'core/dev-server-runner.cjs', 'core/command-sandbox-runner.mjs', 'core/command-dispatch.cjs', 'node_modules/@anthropic-ai/sandbox-runtime/**/*', 'node_modules/@pondwader/socks5-server/**/*', 'node_modules/commander/**/*', 'node_modules/node-forge/**/*', 'node_modules/zod/**/*'], npmRebuild: false,
+  asar: true, asarUnpack: ['core/engine-guardian.cjs', 'core/pdf-text-worker.cjs', 'node_modules/pdfjs-dist/**/*', 'node_modules/@napi-rs/**/*', 'core/dev-server-runner.cjs', 'core/command-sandbox-runner.mjs', 'core/command-sandbox-policy.cjs', 'core/protected-paths.cjs', 'core/command-dispatch.cjs', 'node_modules/@anthropic-ai/sandbox-runtime/**/*', 'node_modules/@pondwader/socks5-server/**/*', 'node_modules/commander/**/*', 'node_modules/node-forge/**/*', 'node_modules/zod/**/*'], npmRebuild: false,
   extraResources: profileResources,
   artifactName: 'Aura-1-${version}-${os}-${arch}.${ext}',
   mac: { target: ['dmg','zip'], category: 'public.app-category.developer-tools', icon: 'packaging/icon.png', identity: process.env.HARNESS_SIGN_IDENTITY || '-', hardenedRuntime: true, entitlements: macEntitlements, entitlementsInherit: macEntitlements, sign: require('./scripts/sign-mac.cjs').sign, notarize: false },

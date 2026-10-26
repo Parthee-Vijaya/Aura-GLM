@@ -5,10 +5,9 @@ const { pathToFileURL } = require('node:url');
 const { execFile } = require('node:child_process');
 const { promisify } = require('node:util');
 const crypto = require('node:crypto');
-const protectedPaths = require('./protected-paths.cjs');
+const { PACKAGE_HOSTS, createPolicy } = require('./command-sandbox-policy.cjs');
 const { createPositiveProbe, createSingleFlight, candidateIdentity } = require('./sandbox-probe-cache.cjs');
 const run = promisify(execFile);
-const PACKAGE_HOSTS = ['registry.npmjs.org', 'pypi.org', 'files.pythonhosted.org'];
 const unpacked = file => file.replace(/app\.asar([/\\])/, 'app.asar.unpacked$1');
 const runnerPath = () => unpacked(path.join(__dirname, 'command-sandbox-runner.mjs'));
 const quote = value => "'" + String(value).replaceAll("'", "'\\''") + "'";
@@ -54,18 +53,7 @@ async function prepare({ workspaceRoot, scratchRoot, directory, standby = false 
   if (contains(root, trusted) || contains(scratch, trusted)) throw new Error('Kommandobeskyttelsens indstillinger skal ligge uden for arbejdsområdet.');
   const home = path.join(scratch, 'home'), temp = path.join(scratch, 'tmp');
   await fs.mkdir(home, { recursive: true, mode: 0o700 }); await fs.mkdir(temp, { recursive: true, mode: 0o700 });
-  const literal = value => ({ path: value, literal: true });
-  const systemRead = process.platform === 'darwin'
-    ? ['/bin', '/sbin', '/usr/bin', '/usr/sbin', '/usr/lib', '/usr/share', '/System/Library', '/Library/Apple', '/private/etc/ssl', '/private/etc/resolv.conf', '/private/etc/hosts', '/private/etc/localtime']
-    : ['/bin', '/sbin', '/usr/bin', '/usr/sbin', '/usr/lib', '/usr/lib64', '/lib', '/lib64', '/usr/share', '/etc/ssl', '/etc/resolv.conf', '/etc/hosts', '/etc/localtime'];
-  // Runtimefilerne er læsbare, men brugerens hjem, appdata og øvrige projekter er ikke.
-  const runtimeRoot = path.dirname(path.dirname(node));
-  const sensitive = protectedPaths.toSandboxGlobs();
-  const policy = { version: 1, workspaceRoot: root, scratchRoot: scratch, node, env: { PATH: [path.dirname(node), '/usr/bin', '/bin', '/usr/sbin', '/sbin'].join(':'), HOME: home, TMPDIR: temp, TMP: temp, TEMP: temp, LANG: 'en_US.UTF-8', npm_config_cache: path.join(home, '.npm'), PIP_CACHE_DIR: path.join(home, '.cache', 'pip') }, config: {
-    network: { allowedDomains: PACKAGE_HOSTS, deniedDomains: [], strictAllowlist: true, allowLocalBinding: false, allowUnixSockets: [], allowAllUnixSockets: false },
-    filesystem: { denyRead: ['/', ...[root, scratch].flatMap(folder => sensitive.map(pattern => path.join(folder, pattern)))], allowRead: [root, scratch, runtimeRoot, ...systemRead, '/dev/null', '/dev/urandom', '/dev/random', '/dev/fd'].map(literal), allowWrite: [root, scratch].map(literal), denyWrite: ['/tmp/claude', '/private/tmp/claude', ...[root, scratch].flatMap(folder => sensitive.map(pattern => path.join(folder, pattern)))] },
-    allowPty: false, enableWeakerNestedSandbox: false, enableWeakerNetworkIsolation: false
-  } };
+  const policy = createPolicy({ workspaceRoot: root, scratchRoot: scratch, node });
   const identity = crypto.createHash('sha256').update(JSON.stringify(policy)).digest('hex');
   const policyPath = path.join(trusted, 'policy.json'), pluginDirectory = path.join(trusted, 'command-plugin'), pluginPath = path.join(pluginDirectory, 'index.mjs'), readyPath = path.join(trusted, 'ready.json'), readyToken = crypto.randomBytes(32).toString('hex');
   await fs.rm(readyPath, { force: true });

@@ -71,7 +71,7 @@
     "node": ">=22.12.0"
   },
   "devDependencies": {
-    "electron": "44.4.4",
+    "electron": "44.9.3",
     "electron-builder": "26.16.1",
     "playwright": "1.63.0"
   },
@@ -80,6 +80,7 @@
     "@anthropic-ai/sandbox-runtime": "0.0.81",
     "electron-updater": "6.8.9",
     "pdfjs-dist": "6.4.299",
-    "semver": "7.8.5"
+    "semver": "7.8.5",
+    "undici": "7.30.1"
   }
 }
