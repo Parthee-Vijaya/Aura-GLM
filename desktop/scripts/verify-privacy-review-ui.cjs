@@ -6,6 +6,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises'), path = require('node:path'), os = require('node:os'), http = require('node:http');
 const { createHash } = require('node:crypto');
 const helpers = require('./ui-test-helpers.cjs');
+const { launchTestApp } = require('./electron-test-launch.cjs');
 
 (async () => {
   const temp = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'aura-privacy-review-ui-')));
@@ -23,10 +24,10 @@ const helpers = require('./ui-test-helpers.cjs');
     response.end(JSON.stringify({ choices: [{ finish_reason: 'stop', message: { content: JSON.stringify({ description: local?'LOCAL-ONLY-ANSWER: Et lokalt idéforslag.':'CLOUD-ONLY-ANSWER: Et kontrolleret offentligt idéforslag.', plan: 'Afklar, byg og afprøv.', questions: [] }) } }] }));
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-  let app, page, exited = false;
+  let app, page, launch, exited = false;
   const ok = result => { assert.equal(result?.ok, true, result?.error || 'Expected successful application IPC'); return result.value; };
   try {
-    app = await electron.launch({ executablePath: require('electron'), args: [path.join(__dirname, '..'), '--user-data-dir=' + path.join(temp, 'profile')], env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined } });
+    ({ app, evidence: launch } = await launchTestApp({ electron, profile: path.join(temp, 'profile') }));
     await helpers.isolateDocuments(app, documents);
     page = await app.firstWindow(); page.on('pageerror', error => errors.push(error.message));
     await helpers.skipIntroduction(page); await helpers.toOnboarding(page);
@@ -105,12 +106,12 @@ const helpers = require('./ui-test-helpers.cjs');
     ok(await page.evaluate(()=>window.harness.ideaStop()));
     checks.push({scenario:'actual-local-handoff',cloudRequests:0,localRequests:localCalls.length,separateHistory:true,originalLocalInput:true,localStatusEvent:true,planStillProposal:true,replayRejected:true});
     assert.deepEqual(errors, []);
-    const report = { ok: true, coverage: 'Native Electron UI, real preload/IPC, IdeaRefinement, PrivacyService and actual controlled HTTP transport. No OpenCode task or paid model.', checks, modelRequests: calls.length, localModelRequests:localCalls.length, rendererErrors: errors, screenshots: ['review-cancel.png', 'review-local.png', 'review-exact-payload.png'] };
+    const report = { ok: true, launch, coverage: 'Native Electron UI, real preload/IPC, IdeaRefinement, PrivacyService and actual controlled HTTP transport. No OpenCode task or paid model.', checks, modelRequests: calls.length, localModelRequests:localCalls.length, rendererErrors: errors, screenshots: ['review-cancel.png', 'review-local.png', 'review-exact-payload.png'] };
     await fs.writeFile(path.join(reports, 'review-ui-report.json'), JSON.stringify(report, null, 2) + '\n');
     console.log(JSON.stringify({ ...report, reports }));
   } catch (error) {
     if (page) await page.screenshot({ path: path.join(reports, 'review-ui-failure.png'), fullPage: true }).catch(() => {});
-    console.error(JSON.stringify({ reports, modelRequests: calls.length, errors })); throw error;
+    console.error(JSON.stringify({ reports, launch: launch || error.testLaunch, modelRequests: calls.length, errors })); throw error;
   } finally {
     if (app) { const process = app.process(); const done = process.exitCode !== null ? Promise.resolve() : new Promise(resolve => process.once('exit', resolve)); await app.close(); await done; exited = true; }
     server.closeAllConnections(); await new Promise(resolve => server.close(resolve));

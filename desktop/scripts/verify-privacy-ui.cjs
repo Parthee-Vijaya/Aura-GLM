@@ -4,13 +4,14 @@ const {_electron:electron}=require('playwright');
 const assert=require('node:assert/strict');
 const fs=require('node:fs/promises'), path=require('node:path'), os=require('node:os');
 const helpers=require('./ui-test-helpers.cjs');
+const {launchTestApp}=require('./electron-test-launch.cjs');
 (async()=>{
  const temp=await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(),'aura-privacy-ui-')));
  const reports=process.env.AURA_PRIVACY_REPORT||await fs.mkdtemp(path.join(os.tmpdir(),'aura-privacy-ui-report-'));await fs.mkdir(reports,{recursive:true});
  const documents=path.join(temp,'Documents');await fs.mkdir(documents);
- let app,page;const errors=[];
+ let app,page,launch;const errors=[];
  try{
- app=await electron.launch({executablePath:require('electron'),args:[path.join(__dirname,'..'),'--user-data-dir='+path.join(temp,'profile')],env:{...process.env,ELECTRON_RUN_AS_NODE:undefined}});
+ ({app,evidence:launch}=await launchTestApp({electron,profile:path.join(temp,'profile')}));
  await helpers.isolateDocuments(app,documents);
  page=await app.firstWindow();page.on('pageerror',e=>errors.push(e.message));
  await helpers.skipIntroduction(page);await helpers.toOnboarding(page);await helpers.openSetup(page);await page.click('#setup-local');
@@ -32,7 +33,7 @@ const helpers=require('./ui-test-helpers.cjs');
  const enabled=await page.evaluate(()=>window.harness.privacyGet({scope:'project'}));assert.equal(enabled.ok,true);assert.equal(enabled.value.enabled,true);
  assert.equal(await page.locator('#workspace').isVisible(),true);assert.equal(await page.locator('#prompt').inputValue(),'Et syntetisk eksempel uden rigtige borgerdata.');
  await page.screenshot({path:path.join(reports,'privacy-workspace.png'),fullPage:true});
- assert.deepEqual(errors,[]);console.log(JSON.stringify({ok:true,checks:['native UI loaded','three work modes','visible switch track and moving knob','main-owned settings persisted after fresh project and automatic Git status','existing draft and workspace preserved','no renderer errors'],capabilities:enabled.value.capabilities,reports}));
- }catch(error){if(page){await page.screenshot({path:path.join(reports,'privacy-failure.png'),fullPage:true}).catch(()=>{});console.error(JSON.stringify({reports,feedback:await page.locator('#privacy-settings-feedback').textContent().catch(()=>null),errors}));}throw error;}
+ assert.deepEqual(errors,[]);console.log(JSON.stringify({ok:true,launch,checks:['native UI loaded','three work modes','visible switch track and moving knob','main-owned settings persisted after fresh project and automatic Git status','existing draft and workspace preserved','no renderer errors'],capabilities:enabled.value.capabilities,reports}));
+ }catch(error){if(page){await page.screenshot({path:path.join(reports,'privacy-failure.png'),fullPage:true}).catch(()=>{});console.error(JSON.stringify({reports,launch:launch||error.testLaunch,feedback:await page.locator('#privacy-settings-feedback').textContent().catch(()=>null),errors}));}else console.error(JSON.stringify({reports,launch:error.testLaunch}));throw error;}
  finally{await app?.close();await fs.rm(temp,{recursive:true,force:true});}
 })().catch(error=>{console.error(error);process.exitCode=1;});

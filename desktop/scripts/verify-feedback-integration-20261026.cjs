@@ -6,13 +6,14 @@ const path = require('node:path');
 const os = require('node:os');
 const assert = require('node:assert/strict');
 const helpers = require('./ui-test-helpers.cjs');
+const { launchTestApp } = require('./electron-test-launch.cjs');
 (async () => {
   const output = process.env.AURA_FEEDBACK_OUTPUT || path.join(os.homedir(), 'Library/Application Support/Aura1/ReleaseReports/feedback-20261026/integration');
   await fs.mkdir(output, { recursive: true });
   const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'aura-feedback-integrated-'))), project = path.join(root, 'Borgermoeder');
   await fs.mkdir(path.join(project, 'public'), { recursive: true });
   await fs.writeFile(path.join(project, 'public/index.html'), '<!doctype html><html lang="da"><meta charset="utf-8"><title>Borgermøder</title><style>body{font:18px system-ui;padding:36px;background:#f7faf8;color:#21382e}h1{font:44px Georgia}button{padding:12px 20px;background:#275c48;color:white;border:0;border-radius:8px}</style><p>SYNTETISK VISNING TIL PRØVEN</p><h1>Borgermøder i din kommune</h1><p>Find et møde, og vær med til at forme lokalsamfundet.</p><button>Se kommende møder</button></html>');
-  let app, page;
+  let app, page, launch;
   const checks = [], screenshots = [], errors = [], failedResources = [];
   const pass = (id, evidence) => { checks.push({ id, evidence }); console.log('PASS ' + id); };
   const capture = async name => { await page.waitForFunction(() => [...document.querySelectorAll('dialog[open]')].every(el => !el.getAnimations().some(a => a.playState === 'running'))); await page.evaluate(() => getSelection()?.removeAllRanges()); const file = path.join(output, name + '.png'); await page.screenshot({ path: file }); screenshots.push(file); };
@@ -20,7 +21,7 @@ const helpers = require('./ui-test-helpers.cjs');
   const resize = async (width, height) => { await app.evaluate(({ BrowserWindow }, size) => { const w = BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')); w.setMinimumSize(380, 400); w.setContentSize(size.width, size.height); }, { width, height }); await page.waitForFunction(width => innerWidth === width, width); };
   const theme = async () => { await page.click('#project-menu-toggle'); await page.click('#workspace-theme'); if (await page.locator('#project-menu').evaluate(el => el.matches(':popover-open'))) await page.click('#project-menu-toggle'); };
   try {
-    app = await electron.launch({ executablePath: require('electron'), args: [path.join(__dirname, '..'), '--user-data-dir=' + path.join(root, 'appdata')], env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined } });
+    ({ app, evidence: launch } = await launchTestApp({ electron, profile: path.join(root, 'appdata') }));
     page = await app.firstWindow(); page.on('pageerror', error => errors.push(error.message)); page.on('response', response => { if (response.url().startsWith('harness://') && response.status() >= 400) failedResources.push(response.url()); });
     await app.evaluate(({ app, session }, root) => { app.setPath('documents', root); session.defaultSession.webRequest.onBeforeRequest((details, callback) => callback({ cancel: /^https?:/.test(details.url) })); global.fetch = async () => { throw Error('Feedback integration forbids external/model requests.'); }; }, root);
     await helpers.forbidGitWrites(app); await helpers.skipIntroduction(page); await helpers.openExistingProject(app, page, project); await resize(1280, 800);
@@ -67,8 +68,8 @@ const helpers = require('./ui-test-helpers.cjs');
     await resize(1280,800); await emit(owner,{type:'run.status',status:'working'}); await page.emulateMedia({reducedMotion:'reduce'}); assert.equal(await page.locator('#chat-form').evaluate(el => getComputedStyle(el,'::before').animationName),'none'); pass('reduced-motion-preserved');
     await emit(owner,{type:'run.status',status:'idle'}); await page.emulateMedia({reducedMotion:'no-preference'});
     await helpers.assertNoGitWrites(app); assert.deepEqual(errors,[]); assert.deepEqual(failedResources,[]); pass('no-renderer-errors-or-missing-ui-assets');
-    await fs.writeFile(path.join(output,'report.json'), JSON.stringify({checks,screenshots,errors,failedResources,profile:root,platform:process.platform,electron:await app.evaluate(()=>process.versions.electron),limits:['Controlled events, no real model.','macOS only, not a native Windows test.','No automatic server start, permissions change or release.']},null,2)+'\n');
+    await fs.writeFile(path.join(output,'report.json'), JSON.stringify({launch,checks,screenshots,errors,failedResources,profile:root,platform:process.platform,electron:await app.evaluate(()=>process.versions.electron),limits:['Controlled events, no real model.','macOS only, not a native Windows test.','No automatic server start, permissions change or release.']},null,2)+'\n');
     console.log(JSON.stringify({output,passed:checks.length}));
-  } catch(error) { await capture('failure').catch(()=>{}); await fs.writeFile(path.join(output,'error.json'),JSON.stringify({message:error.message,stack:error.stack,checks,errors,failedResources,profile:root},null,2)); throw error; }
+  } catch(error) { await capture('failure').catch(()=>{}); await fs.writeFile(path.join(output,'error.json'),JSON.stringify({message:error.message,stack:error.stack,launch:launch||error.testLaunch,checks,errors,failedResources,profile:root},null,2)); throw error; }
   finally { await app?.close(); }
 })().catch(error=>{console.error(error);process.exitCode=1;});
