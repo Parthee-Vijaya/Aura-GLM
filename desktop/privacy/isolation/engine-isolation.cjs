@@ -143,6 +143,7 @@ async function createScopedIsolation({ workspaceRoot, runtimeRoot, stateRoot, ga
     if (disposed || !launched) throw fail('Arbejdsprocessen er ikke aktiv.');
     for (let attempt = 0; attempt < 40; attempt++) {
       const result = await scopeCall('--count');
+      if (disposed) throw fail('Privacy Gates procesisolation er lukket.');
       if (Number.isInteger(result.matchingProcesses) && result.matchingProcesses > 0) return Object.freeze({ scoped: true, matchingProcesses: result.matchingProcesses });
       await new Promise(resolve => setTimeout(resolve, 25));
     }
@@ -167,6 +168,7 @@ async function createScopedIsolation({ workspaceRoot, runtimeRoot, stateRoot, ga
       const stat = await fs.lstat(expected.file);
       if (stat.isSymbolicLink() || stat.dev !== expected.dev || stat.ino !== expected.ino || await fs.realpath(expected.file) !== expected.file || stat.mode & 0o022) throw fail('En isolationsmappe eller runtime-fil er ændret.');
     }
+    if (disposed) throw fail('Privacy Gates procesisolation er lukket.');
     return Object.freeze({ available: true, implementation: kind === 'renderer' ? 'macos-seatbelt-offline-renderer' : kind === 'offline' ? 'macos-seatbelt-offline-process' : 'macos-seatbelt-whole-engine', identity, gatewayOrigin: gateway.origin, enginePort, network: kind === 'engine' ? 'fixed-loopback-ports-only' : 'none', filesystem: 'private-workspace-and-state', inheritedBySubprocesses: true });
   }
   function environment(input = {}) {
@@ -190,6 +192,10 @@ async function createScopedIsolation({ workspaceRoot, runtimeRoot, stateRoot, ga
     if (!Array.isArray(args) || args.some(arg => typeof arg !== 'string' || arg.includes('\0')) || options.shell) throw fail('En isoleret motor kræver eksplicitte argumenter uden shell.');
     const cwd = options.cwd ? await fs.realpath(cleanPath(options.cwd)) : workspaceRoot;
     if (!contains(workspaceRoot, cwd) && !contains(stateRoot, cwd)) throw fail('Motorens arbejdsmappe ligger uden for isolationens arbejdsområde.');
+    // Verification yields to the host. Revocation or another launch may win
+    // while paths are checked; commit the capability only while still current.
+    if (disposed) throw fail('Privacy Gates procesisolation er lukket.');
+    if (launched) throw fail('En isoleret motor må kun startes én gang pr. arbejdsmiljø.');
     launched = true;
     const cleanOptions = { ...options, cwd, env: environment(options.env), shell: false };
     if (kind === 'renderer') {
