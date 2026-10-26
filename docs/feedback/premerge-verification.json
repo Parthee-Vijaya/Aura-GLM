@@ -28,7 +28,18 @@
   "source": {
     "fileCount": 721,
     "sha256": "b4a41747e03b96651b49f8f8972fb4061f9ff3657df4a08635f320f9ea6345df",
-    "format": "Sorted array of {path,sha256}; JSON UTF-8, sorted keys, compact separators; desktop/cli/profiles/scripts/evals/site and root package files."
+    "format": "Sorted array of {path,sha256}; JSON UTF-8, sorted keys, compact separators; desktop/cli/profiles/scripts/evals/site and root package files.",
+    "committedComparison": {
+      "sourceCommit": "fb5746f1d0d8ae86aab27dda60670514f83e6a26",
+      "fileCount": 721,
+      "byteIdentical": 719,
+      "unchangedHistoricalCsvLineEndingNormalization": [
+        "evals/openenv/evidence/brand-models-20261025/checks.csv",
+        "evals/openenv/evidence/municipal-landings-20261025/results.csv"
+      ],
+      "sha256": "204ca31b62a13ae4640c698b0f267c76c975a0dcb0e15278d68ce336d7bbfcd6",
+      "scope": "719 filer er byteidentiske med testgrundlaget. To uændrede historiske CSV-filer har CRLF i lokal checkout og LF i Git. Ingen produktkode afviger."
+    }
   },
   "previousAppEvidence": [
     {
