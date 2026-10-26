@@ -5,6 +5,18 @@ const os = require('node:os');
 const path = require('node:path');
 const asar = require('@electron/asar');
 const { pluginClosure, peMachine } = require('../scripts/verify-windows-package.cjs');
+test('V2-pakken bruger motorens egne hooks og afviser en glemt V1-plugin-afhængighed', async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'aura-v2-package-audit-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const source = path.join(root, 'source'); await fs.mkdir(source);
+  await fs.writeFile(path.join(source, 'runtime-lock.json'), JSON.stringify({ opencode: '2.1.4' }));
+  await fs.writeFile(path.join(source, 'package.json'), JSON.stringify({ dependencies: {} }));
+  const complete = path.join(root, 'complete.asar'); await asar.createPackage(source, complete);
+  assert.deepEqual(await pluginClosure(complete), []);
+  await fs.writeFile(path.join(source, 'package.json'), JSON.stringify({ dependencies: { '@opencode-ai/plugin': '1.18.33' } }));
+  const stale = path.join(root, 'stale.asar'); await asar.createPackage(source, stale);
+  await assert.rejects(pluginClosure(stale), /gamle plugin-afhængighed/);
+});
 test('pakkekontrollen finder en transitiv SDK-afhængighed, der ligger forkert i ASAR', async t => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'aura-package-audit-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));

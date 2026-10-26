@@ -21,7 +21,7 @@ const helpers = require('./ui-test-helpers.cjs');
   const page1 = '<!doctype html><html lang="da"><meta charset="utf-8"><title>Lokaler</title><h1>Find et lokale</h1><p>Tre lokaler.</p><script>console.error("Kunne ikke hente lokalerne")</script></html>\n';
   // Modelserveren: hver besked styrer et forløb af værktøjskald. Tekst fra værktøjsresultater bruges til at fortsætte.
   const server = http.createServer(async (req, res) => {
-    if (req.url === '/v1/models') { res.setHeader('content-type', 'application/json'); return res.end(JSON.stringify({ data: [{ id: 'godkend-model', name: 'Kontrolleret model' }] })); }
+    if (req.url === '/v1/models') { res.setHeader('content-type', 'application/json'); return res.end(JSON.stringify({ data: [{ id: 'godkend-model', name: 'Kontrolleret model', context_length: 262144 }] })); }
     let raw = ''; for await (const chunk of req) raw += chunk;
     const body = JSON.parse(raw); requests.push(body);
     if (body.tools?.length && ['key', 'quota'].includes(mode)) { res.writeHead(mode === 'key' ? 401 : 402, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: { message: 'PRIVAT_LEVERANDØRSVAR' } })); }
@@ -31,13 +31,13 @@ const helpers = require('./ui-test-helpers.cjs');
     let step;
     if (!body.tools?.length) step = { text: 'Titel' };
     else if (mode === 'stream') step = { broken: true };
-    else if (last.includes('RET FIL') && tools.length === 0) step = { tool: 'write', args: { filePath: path.join(project, 'public/index.html'), content: page1 } };
-    else if (last.includes('RET FIL') && tools.length === 1) step = { tool: 'bash', args: { command: 'echo "1 test fejlede" && exit 1', description: 'Kører testene' } };
+    else if (last.includes('RET FIL') && tools.length === 0) step = { tool: 'write', args: { path: path.join(project, 'public/index.html'), content: page1 } };
+    else if (last.includes('RET FIL') && tools.length === 1) step = { tool: 'shell', args: { command: 'echo "1 test fejlede" && exit 1', description: 'Kører testene' } };
     else if (last.includes('RET FIL')) step = { text: 'Jeg rettede siden. Testen fejlede, se resultatet.' };
-    else if (last.includes('INSTALLER') && tools.length === 0) step = { tool: 'bash', args: { command: 'npm install leftpad-ukendt', description: 'Installerer en hjælpepakke' } };
-    else if (last.includes('INSTALLER')) step = { text: JSON.stringify(tools).includes('following feedback') ? 'Forstået. Jeg skriver funktionen selv uden en pakke.' : 'Uventet.' };
-    else if (last.includes('SLET') && tools.length === 0) step = { tool: 'bash', args: { command: 'rm -rf public', description: 'Rydder op' } };
-    else if (last.includes('STOP') && tools.length === 0) step = { tool: 'write', args: { filePath: path.join(project, 'public/stop.html'), content: '<h1>Delvis</h1>\n' } };
+    else if (last.includes('INSTALLER') && tools.length === 0) step = { tool: 'shell', args: { command: 'npm install leftpad-ukendt', description: 'Installerer en hjælpepakke' } };
+    else if (last.includes('INSTALLER')) step = { text: JSON.stringify(tools).includes('Brug ikke en pakke. Skriv funktionen selv.') ? 'Forstået. Jeg skriver funktionen selv uden en pakke.' : 'Uventet.' };
+    else if (last.includes('SLET') && tools.length === 0) step = { tool: 'shell', args: { command: 'rm -rf public', description: 'Rydder op' } };
+    else if (last.includes('STOP') && tools.length === 0) step = { tool: 'write', args: { path: path.join(project, 'public/stop.html'), content: '<h1>Delvis</h1>\n' } };
     else if (last.includes('STOP')) step = { hold: true };
     else step = { text: 'Det er gjort.' };
     if (step.broken) { res.writeHead(200, { 'content-type': 'text/event-stream' }); res.write('data: ' + JSON.stringify({ id: 'x', object: 'chat.completion.chunk', created: 1, model: body.model, choices: [{ index: 0, delta: { role: 'assistant', content: 'Halvt' }, finish_reason: null }] }) + '\n\n'); setTimeout(() => res.destroy(), 50); return; }
@@ -101,9 +101,15 @@ const helpers = require('./ui-test-helpers.cjs');
     await idle();
     passed('Kommandokortet viser kommandoen, AI’ens begrundelse og et gæt i almindeligt dansk uden en fremhævet Tillad');
 
-    // Den kompakte kvittering bevares; faktiske kommandoresultater vises under Aktivitet.
+    // The approved receipt offers testing; real command output remains under Activity.
     const review = page.locator('#run-review');
-    await review.locator('.result-receipt').filter({ hasText: '1 fil ændret' }).waitFor();
+    await review.locator('.result-receipt').filter({ hasText: 'Prøv resultatet' }).waitFor();
+    assert.match(await review.innerText(), /Ikke gennemgået af dig/);
+    assert.doesNotMatch(await review.innerText(), /1 fil ændret/);
+    await review.getByRole('button', { name: 'Ændringer', exact: true }).click();
+    await page.locator('#changes-heading').filter({ hasText: '1 fil ændret under opgaven' }).waitFor();
+    assert.match(await review.innerText(), /Ikke gennemgået af dig/);
+    await review.getByRole('button', { name: 'Afprøv resultatet', exact: true }).click();
     await page.frameLocator('#preview').locator('h1', { hasText: 'Find et lokale' }).waitFor();
     assert.ok(consoleErrors.some(text => text.includes('Kunne ikke hente lokalerne')), 'den faktiske forhåndsvisning afvikler prøvens konsolfejl');
     await page.click('#tab-activity');
@@ -112,7 +118,9 @@ const helpers = require('./ui-test-helpers.cjs');
     await failedCommand.locator('summary').click();
     assert.match(await failedCommand.innerText(), /Afslutningskode: 1/);
     assert.match(await failedCommand.innerText(), /1 test fejlede/);
-    assert.match(await failedCommand.innerText(), /command-dispatch\.cjs/);
+    // V2 reports the approved command rather than the internal dispatch wrapper.
+    // The separate native conversation-permission test proves command isolation.
+    assert.match(await failedCommand.innerText(), /echo "1 test fejlede" && exit 1/);
     await capture('resultat-kontroller.png'); await page.click('#tab-preview');
     passed('Den godkendte kommando viser afslutningskode 1 og output under Aktivitet; den faktiske forhåndsvisning og dens konsolfejl er afprøvet');
 
@@ -127,7 +135,7 @@ const helpers = require('./ui-test-helpers.cjs');
     await install.locator('button', { hasText: 'Afvis og send beskeden' }).click();
     await page.locator('#messages .assistant', { hasText: 'Forstået. Jeg skriver funktionen selv uden en pakke.' }).waitFor({ timeout: 90000 });
     await idle();
-    assert.ok(requests.some(body => JSON.stringify(body.messages).includes('with the following feedback: Brug ikke en pakke. Skriv funktionen selv.')));
+    assert.ok(requests.some(body => body.messages.some(message => message.role === 'tool' && JSON.stringify(message.content).includes('Brug ikke en pakke. Skriv funktionen selv.'))));
     assert.match(await page.locator('#messages .answer-record').last().textContent(), /Du afviste 1 handling og skrev: Brug ikke en pakke/);
     assert.equal(await review.locator('h3', { hasText: 'Du afviste en handling, så AI’en stoppede' }).isVisible(), false);
     passed('Afvis med en besked giver AI’en beskeden som rettelse, og opgaven fortsætter');
@@ -139,6 +147,8 @@ const helpers = require('./ui-test-helpers.cjs');
     await remove.locator('.approval-actions button', { hasText: 'Afvis' }).click();
     await idle();
     await review.locator('h3', { hasText: 'Du afviste en handling, så AI’en stoppede' }).waitFor();
+    assert.equal(await page.locator('#run-status').innerText(), 'Klar');
+    assert.doesNotMatch(await page.locator('#messages').innerText(), /Step interrupted|Der opstod en fejl\. AI’en stopper/);
     assert.match(await review.innerText(), /Afvist: køre en kommando · rm -rf public\./);
     await review.locator('button', { hasText: 'Skriv, hvad AI’en skal gøre i stedet' }).click();
     assert.equal(await page.evaluate(() => document.activeElement.id), 'prompt'); assert.equal(await page.inputValue('#prompt'), 'Gør det på en anden måde: ');
@@ -190,5 +200,5 @@ const helpers = require('./ui-test-helpers.cjs');
     console.error(error);
     try { await page?.screenshot({ path: path.join(root, 'fejl.png'), animations: 'disabled' }); console.error('Skærmbillede:', path.join(root, 'fejl.png')); } catch {}
     process.exitCode = 1;
-  } finally { await app?.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
+  } finally { await fs.writeFile(path.join(root, 'synthetic-model-requests.json'), JSON.stringify(requests, null, 2)); await app?.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
 })();

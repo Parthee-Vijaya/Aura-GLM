@@ -10,6 +10,7 @@ const { content } = require('./git.cjs');
 const { capture, changes } = require('./changes.cjs');
 const connections = require('./connections.cjs');
 const { ContextUsage } = require('./context-usage.cjs');
+const { localMetrics } = require('./run-metrics.cjs');
 const contextEngine = 'opencode@' + require('../runtime-lock.json').opencode;
 const modelConsent = require('./model-consent.cjs');
 const { projectInstructions, instructionText } = require('./project-instructions.cjs');
@@ -73,6 +74,20 @@ function planningReply(roles, parts) {
 }
 // Forbrug i en samtale. Tokens tælles pr. modelkald (OpenCodes step-finish), fordi beskeden kun beholder det sidste kalds tal.
 const emptyUsage = () => ({ input: 0, output: 0, reasoning: 0, cacheRead: 0, cacheWrite: 0, calls: 0, cost: 0, unpriced: 0 });
+function observeRunContext(chat, event, part) {
+  if (chat.runPrivacy) {
+    // The host-owned privacy engine attaches the selection used for this exact
+    // step. A local stage must never inherit the selected cloud model's window.
+    const selected = event.privacySelection;
+    chat.contextUsage.bind(selected ? {
+      connectionID: selected.connectionID, modelID: selected.modelID,
+      routeID: selected.routeID || '', engineID: contextEngine,
+      sessionID: selected.stageSessionID || selected.sessionID || part.sessionID || '',
+      model: { limits: { context: selected.contextWindow } }
+    } : null);
+  }
+  chat.contextUsage.observe(part);
+}
 function addStep(usage, tokens = {}, price) {
   const step = { input: tokens.input || 0, output: tokens.output || 0, reasoning: tokens.reasoning || 0, cacheRead: tokens.cache?.read || 0, cacheWrite: tokens.cache?.write || 0 };
   for (const key of Object.keys(step)) usage[key] += step[key];
@@ -91,7 +106,7 @@ class ChatSession {
     this.plan = data.plan || null; this.planConversation = [...(data.planConversation || [])]; this.lastPlan = data.lastPlan || null;
     this.usageBase = { ...emptyUsage(), ...(data.usage || {}) };
     this.contextUsage = new ContextUsage();
-    this.running = false; this.starting = false; this.finishing = null; this.qualityChecking = null; this.generation = 0; this.task = null; this.prepared = null;
+    this.running = false; this.starting = false; this.finishing = null; this.stopping = null; this.closing = null; this.qualityChecking = null; this.generation = 0; this.task = null; this.prepared = null;
     this.engine = null; this.gateway = null; this.engineIdentity = null; this.allowProjectEdits = false; this.historyWarning = '';
     this.conversationPermission = new (require('./conversation-permission.cjs').ConversationPermission)();
     this.taskRules = new Set(); this.approvals = new Map();
@@ -112,7 +127,7 @@ class ChatSession {
   session() { return this.changes; }
   currentUsage() {
     const usage = { ...emptyUsage(), ...(this.usageBase || {}) };
-    for (const tokens of this.runSteps?.values() || []) addStep(usage, tokens, this.runPrice);
+    for (const [id,tokens] of this.runSteps || []) addStep(usage, tokens, this.runPrices?.has(id)?this.runPrices.get(id):this.runPrice);
     return usage;
   }
   // Det, brugerfladen skal bruge for at vise samtalen.
@@ -195,15 +210,29 @@ class ChatSession {
 
   // ---------- Før du sender og afsendelse ----------
   async prepare(input) {
+    const measurement = localMetrics.create({ mode: input?.mode || 'chat', origin: 'conversation' });
+    measurement.prepareStarted();
+    try {
+      const disclosure = await this.prepareActual(input);
+      if (this.prepared?.disclosure === disclosure) {
+        this.preparedMeasurement?.finish('superseded');
+        this.preparedMeasurement = measurement;
+        measurement.prepared(this.prepared.appContext.components, this.prepared.privacy?.mode || 'off');
+      } else measurement.finish('superseded');
+      return disclosure;
+    } catch (error) { measurement.finish('error'); throw error; }
+  }
+  async prepareActual(input) {
     if (this.archiving || this.data.archived) throw new Error('Hent samtalen fra arkivet, før du fortsætter.');
-    if (this.running || this.sending || this.finishing) throw new Error('Vent på opgaven, eller stop den først.');
+    if (this.running || this.sending || this.finishing || this.stopping || this.closing) throw new Error('Vent på opgaven, eller stop den først.');
     this.projectContext = this.bench.project;
     const bench = this.bench, projectRoot = this.project.root;
     const connectionVersion = bench.connectionVersions.get(input.connectionID) || 0;
     const mode = input.mode || 'chat';
     if (!['chat', 'plan', 'build', 'free'].includes(mode)) throw new Error('Ukendt arbejdstilstand.');
     if (mode === 'build' && (!this.plan || input.planID !== this.plan.id)) throw new Error('Gennemgå og vælg den seneste plan først.');
-    const selection = await bench.selection(input);
+    await bench.privacy?.assertSelection({kind:'conversation',root:projectRoot,chat:this.id},input);
+    const selection = await bench.selection(input, this.id);
     const references = input.references || [];
     if (!Array.isArray(references) || references.length > 20) throw new Error('Ugyldigt referencevalg.');
     const known = (this.project.assets || []).filter(a => a.kind === 'reference');
@@ -278,7 +307,27 @@ class ChatSession {
     // Startpunktet beskriver aktuelle projektfiler; øvrige designvalg er bundet.
     const { mode: policyMode, planID: approvedPlan, projectDesign, ...sessionConsent } = consent;
     const { startingPoint, ...sessionDesign } = projectDesign;
-    const sessionFingerprint = crypto.createHash('sha256').update(JSON.stringify({ version: 1, connectionID: selection.connection.id, engineVersion: require('./engine.cjs').VERSION, workspaceRoot: this.root, ...sessionConsent, material: sessionMaterial, projectDesign: sessionDesign }) + JSON.stringify({ connectionRevision: selection.connection.revision || null, rules: context.rules, skills: context.skills, features: context.features, projectInstructions: context.projectInstructions, surface: bench.surface, autoCheckpoint, autoCommands: approvalSettings.autoCommands === true })).digest('hex');
+    const engineVersion = require('./engine.cjs').VERSION;
+    const fingerprintForVersion = version => crypto.createHash('sha256').update(JSON.stringify({ version: 1, connectionID: selection.connection.id, engineVersion: version, workspaceRoot: this.root, ...sessionConsent, material: sessionMaterial, projectDesign: sessionDesign }) + JSON.stringify({ connectionRevision: selection.connection.revision || null, rules: context.rules, skills: context.skills, features: context.features, projectInstructions: context.projectInstructions, surface: bench.surface, autoCheckpoint, autoCommands: approvalSettings.autoCommands === true })).digest('hex');
+    const sessionFingerprint = fingerprintForVersion(engineVersion);
+    const previousEngine = this.data.opencode;
+    // A runtime upgrade must not silently discard same-account conversational
+    // memory. Match the complete previous policy binding with only its engine
+    // version changed. Legacy V1 records did not store their version separately.
+    // A changed account, destination, model, reference set or policy never matches.
+    const previousVersion = previousEngine?.engineVersion || '1.18.33';
+    const engineMigration = typeof previousEngine?.session === 'string'
+      && /^\d+\.\d+\.\d+$/.test(previousVersion) && previousVersion !== engineVersion
+      && previousEngine.sessionFingerprint === fingerprintForVersion(previousVersion)
+      ? { fromVersion: previousVersion, toVersion: engineVersion, session: previousEngine.session, sessionFingerprint: previousEngine.sessionFingerprint } : null;
+    if (engineMigration) {
+      // Only visible host-owned conversation text becomes historical context.
+      // Tool calls, pending requests and permissions are deliberately not replayed.
+      const history = (this.data.messages || []).filter(message => ['user', 'assistant'].includes(message.role) && typeof message.text === 'string')
+        .map(message => `${message.role === 'user' ? 'Bruger' : 'AI'}: ${message.text}`).join('\n\n');
+      disclosure.conversation = [typeof previousEngine.conversation === 'string' ? previousEngine.conversation : '', history].filter(Boolean).join('\n\n');
+      disclosure.historyIncluded = Boolean(disclosure.conversation);
+    }
     disclosure.sessionFingerprint = sessionFingerprint;
     // Resuméet før afsendelse vises igen, når modtager, model, vilkår, pris eller delt materiale ændrer sig. Skift fra plan til byg er ikke en ny modtager.
     Object.assign(disclosure, modelConsent.review(selection.connection.id, disclosure, settings, context.projectInstructions?.hash));
@@ -294,9 +343,10 @@ class ChatSession {
     // Forhåndsvisningens størrelse til før/efter-billederne. Kun tal; siden findes i hovedprocessen.
     const view = input.view && Number.isFinite(input.view.width) && Number.isFinite(input.view.height) ? { width: Math.round(input.view.width), height: Math.round(input.view.height) } : null;
     if ((bench.connectionVersions.get(input.connectionID) || 0) !== connectionVersion) throw new Error('Forbindelsen blev ændret. Gennemgå oplysningerne igen.');
-    this.prepared = { mode, engineFingerprint, chatMaterials, ...selection, disclosure, sessionFingerprint, references, fileRefs: checkedRefs, previewTarget: target, view, context, autoCheckpoint, commandIsolation, commandStandby, commandSandboxSupported: commandSupport.available, autoCommandsSnapshot, startup, runtime: settings.runtime, root: this.root };
+    this.prepared = { mode, engineFingerprint, chatMaterials, ...selection, disclosure, sessionFingerprint, engineVersion, engineMigration, references, fileRefs: checkedRefs, previewTarget: target, view, context, autoCheckpoint, commandIsolation, commandStandby, commandSandboxSupported: commandSupport.available, autoCommandsSnapshot, startup, runtime: settings.runtime, root: this.root };
     const prepared = this.prepared;
-    prepared.handoff = this.engineIdentity === engineFingerprint && this.engine?.active ? this.engineConversation || '' : this.data.opencode?.sessionFingerprint === sessionFingerprint ? this.data.opencode.conversation || '' : disclosure.conversation || '';
+    prepared.privacy = await bench.privacyRuntimeProvider?.prepareChat(this, prepared);
+    prepared.handoff = engineMigration ? disclosure.conversation : this.engineIdentity === engineFingerprint && this.engine?.active ? this.engineConversation || '' : this.data.opencode?.sessionFingerprint === sessionFingerprint ? this.data.opencode.conversation || '' : disclosure.conversation || '';
     prepared.reviewRoot = this.root; prepared.messageText = typeof input.text === 'string' ? input.text : null;
     prepared.guard = JSON.stringify({ project: currentProject, context, startup, runtime: settings.runtime, plan: this.plan, planConversation: this.planConversation, dismissed: this.data.planOffersDismissed });
     prepared.appContext = composeAppContext({ prepared, project: structuredClone(currentProject), plan: structuredClone(this.plan), planConversation: [...this.planConversation, ...(mode === 'plan' && input.text ? [input.text + disclosure.fileReferenceText + disclosure.previewReferenceText + materialText(chatMaterials)] : [])], dismissed: this.data.planOffersDismissed, handoff: prepared.handoff, surface: bench.surface });
@@ -319,7 +369,7 @@ class ChatSession {
   }
   async send(input) {
     if (this.archiving || this.data.archived) throw new Error('Hent samtalen fra arkivet, før du fortsætter.');
-    if (this.sending || this.running || this.finishing) throw new Error('Der er allerede en opgave i gang i denne samtale.');
+    if (this.sending || this.running || this.finishing || this.stopping || this.closing) throw new Error('Der er allerede en opgave i gang i denne samtale.');
     this.sending = true;
     try { return await this.sendPrepared(input); } finally { this.sending = false; this.starting = false; }
   }
@@ -329,9 +379,11 @@ class ChatSession {
     if (this.preparedInvalidated || !prepared || prepared.used || prepared.root !== this.root || input.fingerprint !== prepared.disclosure.fingerprint) throw new Error('Gennemgå de aktuelle dataoplysninger før afsendelse.');
     if (bench.connectionRemovals.has(prepared.connection.id)) throw new Error('Forbindelsen er ved at blive fjernet. Vælg en anden forbindelse.');
     connections.assertSupported(prepared.connection);
+    if (prepared.privacy) bench.privacyRuntimeProvider.assertPrepared(prepared.privacy);
     if (typeof input.text !== 'string' || !input.text.trim() || input.text.length > 30000) throw new Error('Skriv en besked på højst 30.000 tegn.');
     if (prepared.mode === 'build' && prepared.disclosure.planID !== this.plan?.id) throw new Error('Planen har ændret sig. Gennemgå den igen.');
     const generation = ++this.generation; this.runStopped = false; this.questions.clear(); this.closedQuestions.clear();
+    this.runMeasurement = this.preparedMeasurement;
     const checkStopped = () => { if (generation !== this.generation) throw new Error('Opgaven blev stoppet før afsendelse.'); };
     if (Object.hasOwn(prepared.context, 'projectInstructions') && JSON.stringify(await projectInstructions(this.root)) !== JSON.stringify(prepared.context.projectInstructions)) throw new Error('Projektets AGENTS.md har ændret sig. Gennemgå oplysningerne igen før afsendelse.');
     if (prepared.guard) {
@@ -351,9 +403,10 @@ class ChatSession {
     const text = input.text + (prepared.disclosure.fileReferenceText || '') + (prepared.disclosure.previewReferenceText || '') + materialText(prepared.chatMaterials);
     const shown = input.text + (prepared.disclosure.fileReferenceText || '') + (prepared.disclosure.previewReference ? `\n\nMål i forhåndsvisningen: ${prepared.disclosure.previewReference}` : '');
     this.supportSelection = { connection: prepared.connection, model: prepared.model, route: prepared.route };
+    this.runPrivacy = prepared.privacy || null;
     this.runQuality = null; this.qualityFingerprints = new Set(); this.qualityAwaitingReply = null; this.runRejected = false; this.runSystem = null; this.qualityBinding = null;
     this.runMode = prepared.mode; this.runConnectionID = prepared.connection.id; this.runText = new Map(); this.runTools = new Map(); this.runRoles = new Map(); this.allowProjectEdits = false; this.taskRules = new Set(); this.approvals.clear(); this.runFinish = null; this.runFailure = null;
-    this.usageBase = this.currentUsage(); this.runSteps = new Map(); this.runPrice = connections.priceFor(prepared.connection, prepared.model, prepared.route);
+    this.usageBase = this.currentUsage(); this.runSteps = new Map(); this.runPrices = new Map(); this.runPrice = connections.priceFor(prepared.connection, prepared.model, prepared.route);
     if (prepared.mode === 'plan') {
       if (this.planConversation.join('\n').length + text.length > 120000) throw new Error('Afklaringen er blevet for lang. Start en ny samtale for at lave en ny plan.');
       this.retirePlan('ny'); this.planConversation.push(text);
@@ -385,6 +438,21 @@ class ChatSession {
       const savedSession = this.data.opencode;
       const sameSession = typeof prepared.sessionFingerprint === 'string' && savedSession?.sessionFingerprint === prepared.sessionFingerprint;
       const sessionIdentityChanged = prepared.sessionFingerprint && !sameSession;
+      if (prepared.privacy) {
+        // The facade's send() waits for all stages; it is not a prompt ACK.
+        this.runMeasurement?.unsupported('privacy-runtime');
+        await this.close(false); await bench.closeOthers(this); checkStopped();
+        const protectedEngine = await bench.privacyRuntimeProvider.createChatEngine({chat:this,prepared,
+          assertCurrent:()=>{checkStopped();return this.running && !this.runStopped && this.prepared===prepared;},
+          onEvent:event=>{if(this.engine===protectedEngine)this.event(event);}});
+        this.engine=protectedEngine;
+        await protectedEngine.start();checkStopped();
+        this.engineIdentity='privacy:'+prepared.privacy.authority;
+        // Only the local lane receives the shared plan/history in hybrid mode.
+        // Controlled-cloud mode rechecks this complete material in its own gate.
+        this.engineConversation=prepared.handoff||'';
+        if(!protectedEngine.resumed)this.emit({type:'session.new'});
+      } else {
       if (this.engineIdentity !== (prepared.engineFingerprint || prepared.disclosure.fingerprint) || sessionIdentityChanged || !this.engine?.active || prepared.commandIsolation) {
         await this.close(false); await bench.closeOthers(this); checkStopped();
         this.commandSandbox = (prepared.commandIsolation || prepared.commandStandby) ? await require('./command-sandbox.cjs').prepare({ standby: !prepared.commandIsolation, workspaceRoot: this.root, scratchRoot: this.scratchRoot, directory: path.join(bench.store.root, 'sandboxes', bench.store.projectKey(projectRoot), this.id, this.task.id + '-policy') }) : null;
@@ -392,7 +460,7 @@ class ChatSession {
         const key = bench.store.decrypt(prepared.connection);
         const gateway = await startGateway(prepared.connection, prepared.model, key, prepared.route, (message, failure) => {
           if (this.gateway === gateway && this.running && !this.runStopped) this.event({ type: 'engine.error', message, failure });
-        }, { root: this.root, onRecovery: recovery => {
+        }, { root: this.root, dispatch: (request, transport) => bench.privacy.dispatch({ ...request, scope: { kind: 'conversation', root: this.project.root, chat: this.id }, connection: prepared.connection, model: prepared.model, route: prepared.route, purpose: 'project-conversation', revision: this.task?.id, contextPartition: `conversation:${this.id}`, assertCurrent: () => this.running && !this.runStopped }, transport), onRecovery: recovery => {
           if (this.gateway === gateway && this.running && !this.runStopped) this.event({ type: 'engine.recovery', recovery });
         }, onProgress: progress => {
           if (this.gateway === gateway && this.running && !this.runStopped) this.emit({ type: 'model.progress', progress });
@@ -405,19 +473,23 @@ class ChatSession {
         // Ældre politikbindinger dokumenterer ikke samme konto og sessionsregler.
         // Start én ny modelsession; samtale og plan på disk bevares.
         const resume = sameSession ? savedSession.session : null;
-        this.engine = bench.engineFactory({ root: this.root, directory: path.join(bench.store.root, 'runtime', bench.store.projectKey(this.root)), provider, model: prepared.model, references: prepared.references, mode: prepared.mode, skills: prepared.context.skills, resume, sandbox: this.commandSandbox, onEvent: event => { if (this.engine === instance) this.event(event); } });
+        // V2 has an automatic, in-place legacy database migration. Keep the V1
+        // engine directory intact; host-owned context is handed to a fresh V2 DB.
+        this.engine = bench.engineFactory({ root: this.root, directory: path.join(bench.store.root, 'runtime-v2', bench.store.projectKey(this.root)), provider, model: prepared.model, references: prepared.references, mode: prepared.mode, skills: prepared.context.skills, resume, sandbox: this.commandSandbox, measurement: this.runMeasurement, onEvent: event => { if (this.engine === instance) this.event(event); } });
         const instance = this.engine;
         await this.engine.start(); checkStopped(); this.engineIdentity = (prepared.engineFingerprint || prepared.disclosure.fingerprint);
         this.engineConversation = prepared.handoff ?? (this.engine.resumed ? this.data.opencode?.conversation || '' : prepared.disclosure.conversation || '');
-        const opencode = { session: this.engine.session?.id || null, fingerprint: (prepared.engineFingerprint || prepared.disclosure.fingerprint), ...(prepared.sessionFingerprint ? { sessionFingerprint: prepared.sessionFingerprint } : {}), ...(this.engineConversation ? { conversation: this.engineConversation } : {}) };
+        const previousSessions = [...(savedSession?.previousSessions || []), ...(prepared.engineMigration ? [prepared.engineMigration] : [])];
+        const opencode = { session: this.engine.session?.id || null, fingerprint: (prepared.engineFingerprint || prepared.disclosure.fingerprint), ...(prepared.sessionFingerprint ? { sessionFingerprint: prepared.sessionFingerprint } : {}), ...(prepared.engineVersion ? { engineVersion: prepared.engineVersion } : {}), ...(previousSessions.length ? { previousSessions } : {}), ...(this.engineConversation ? { conversation: this.engineConversation } : {}) };
         if (opencode.session) this.data = await bench.history.updateChat(projectRoot, this.id, data => { data.opencode = opencode; }).catch(() => this.data);
         if (!this.engine.resumed) this.emit({ type: 'session.new' });
         this.log(this.engine.resumed ? { kind: 'session', title: 'AI-sessionen fortsætter', detail: 'Samme AI og samme samtale som sidst.', status: 'completed', task: this.task.id } : { kind: 'session', title: 'Ny AI-session', detail: this.engineConversation ? 'Den tidligere samtale følger med som kontekst.' : 'Plan og afklaring følger med.', status: 'completed', task: this.task.id });
       }
+      }
       this.contextUsage.bind({ connectionID: prepared.connection.id || '', modelID: prepared.model.id, routeID: prepared.route?.id || '', engineID: contextEngine, sessionID: this.engine.session?.id || '', model: prepared.model });
       let system = prepared.appContext ? prepared.appContext.system : composeAppContext({ prepared, project: this.project, plan: this.plan, planConversation: this.planConversation, dismissed: this.data.planOffersDismissed, handoff: this.engineConversation, surface: bench.surface }).system;
-      if (this.copy) system += '\nArbejd kun i denne samtales kopi: ' + this.root + '. Projektets oprindelige mappe er ikke dit arbejdsområde. Aura håndterer indfletning separat efter brugerens gennemgang.';
-      system += '\nMidlertidige hjælpefiler til denne opgave kan ligge i ' + JSON.stringify(this.scratchRoot) + '. Brug kun denne midlertidige mappe; den hører til denne samtale.';
+      if (this.copy && !prepared.privacy) system += '\nArbejd kun i denne samtales kopi: ' + this.root + '. Projektets oprindelige mappe er ikke dit arbejdsområde. Aura håndterer indfletning separat efter brugerens gennemgang.';
+      system += prepared.privacy ? '\nMidlertidige hjælpefiler skal blive i det isolerede arbejdsområde, som denne kørsel stiller til rådighed. Aura gennemgår tilbageførsel til projektet separat.' : '\nMidlertidige hjælpefiler til denne opgave kan ligge i ' + JSON.stringify(this.scratchRoot) + '. Brug kun denne midlertidige mappe; den hører til denne samtale.';
       if (this.commandSandbox?.enforced) system += '\nAlle kommandoer kører med teknisk isolation. Du kan arbejde i arbejdsområdet og den midlertidige mappe. Hemmeligheder og øvrige mapper er spærret. Netadgang er afgrænset til registry.npmjs.org, pypi.org og files.pythonhosted.org. Forklar en afvist adgang; forsøg ikke at omgå den.';
       if (Object.hasOwn(prepared.context, 'projectInstructions') && JSON.stringify(await projectInstructions(this.root)) !== JSON.stringify(prepared.context.projectInstructions)) throw new Error('Projektets AGENTS.md har ændret sig under opstart. Gennemgå oplysningerne igen før afsendelse.');
       this.gateway?.setEffort?.(prepared.disclosure.effort);
@@ -437,6 +509,10 @@ class ChatSession {
       if (Object.hasOwn(prepared.context, 'projectInstructions') && JSON.stringify(qualityInstructions) !== JSON.stringify(prepared.context.projectInstructions)) throw new Error('Projektets AGENTS.md har ændret sig før afsendelse. Gennemgå oplysningerne igen.');
       this.runSystem = system;
       this.qualityBinding = { plan: JSON.stringify(this.plan), instructions: JSON.stringify(qualityInstructions) };
+      if (!prepared.privacy) {
+        if (typeof this.engine.setRunMeasurement === 'function') this.engine.setRunMeasurement(this.runMeasurement);
+        else this.runMeasurement?.unsupported('observer-unavailable');
+      }
       checkStopped(); await this.engine.send(text, system); checkStopped();
       // De senest accepterede vilkår huskes for projektet, så de samme oplysninger ikke vises igen ved hver opgave.
       await modelConsent.remember(bench.store, projectRoot, prepared.disclosure.consentKey);
@@ -463,6 +539,7 @@ class ChatSession {
   }
   // En afsluttet opgave gemmes med sine ændringer, så Ændringer kan vise dem og sige, hvem der lavede dem.
   async finishTask(status, diff) {
+    this.runMeasurement?.finish(status === 'idle' ? 'completed' : status === 'stopped' ? 'stopped' : 'error');
     const task = this.task; if (!task) return null;
     this.task = null;
     await Promise.allSettled(task.reads);
@@ -471,9 +548,9 @@ class ChatSession {
     delete task.reads; delete task.completed;
     this.changes.tasks.push(task); while (this.changes.tasks.length > 20) this.changes.tasks.shift();
     const summary = taskSummary(task);
-    const statuses = { idle: 'completed', error: 'error', stopped: 'stopped', interrupted: 'stopped' };
+    const statuses = { idle: 'completed', error: 'error', stopped: 'stopped', interrupted: 'stopped', rejected: 'rejected' };
     this.log({ id: `run-${task.id}`, status: statuses[status] || status, ended: task.endedAt });
-    const titles = { idle: 'Opgaven er færdig', error: 'Opgaven fejlede', stopped: 'Opgaven blev stoppet', interrupted: 'Opgaven blev afbrudt' };
+    const titles = { idle: 'Opgaven er færdig', error: 'Opgaven fejlede', stopped: 'Opgaven blev stoppet', interrupted: 'Opgaven blev afbrudt', rejected: 'Du afviste en handling, så AI’en stoppede' };
     const parts = [diff ? (files.length ? `${files.length === 1 ? '1 fil ændret' : `${files.length} filer ændret`}` : 'Ingen filer ændret') : 'Ændringerne kunne ikke læses'];
     if (summary.totals.others) parts.push(`${summary.totals.others} af dem ikke af AI'ens filværktøjer`);
     parts.push(task.commands ? `${task.commands === 1 ? '1 kommando kørt' : `${task.commands} kommandoer kørt`}` : 'ingen kommandoer kørt');
@@ -676,6 +753,12 @@ class ChatSession {
   }
   event(event) {
     const p = event.properties || {}, bench = this.bench, owner = (this.copy || bench.checkpointOwner === this);
+    if (event.type === 'privacy.local-processing') {
+      if (!this.runPrivacy || !this.running || this.runStopped || this.finishing || p.locality !== 'device') return;
+      const model = typeof p.model === 'string' ? cleanOutput(p.model).replace(/[\r\n]/g, ' ').slice(0, 120) : '';
+      this.log({ id: `privacy-local-${this.task?.id}`, kind: 'session', title: 'Fortsætter med lokal model', detail: `Denne computer${model ? ` · ${model}` : ''}. Den eksterne model modtager ikke dette arbejdstrin.`, status: 'completed', task: this.task?.id });
+      return;
+    }
     if (event.type === 'engine.recovery') {
       if (!this.running || this.runStopped || this.finishing) return;
       const phase = event.recovery?.phase;
@@ -684,7 +767,7 @@ class ChatSession {
       return;
     }
     if (event.compacting || this.compacting) {
-      if (event.type === 'message.part.updated' && p.part?.type === 'step-finish' && this.runSteps && !this.runSteps.has(p.part.id)) { this.runSteps.set(p.part.id, p.part.tokens || {}); this.contextUsage.observe(p.part); this.emit({ type: 'usage', usage: this.currentUsage(), contextUsage: this.contextUsage.snapshot() }); }
+      if (event.type === 'message.part.updated' && p.part?.type === 'step-finish' && this.runSteps && !this.runSteps.has(p.part.id)) { this.runSteps.set(p.part.id, p.part.tokens || {}); if(Object.hasOwn(event,'privacyPrice')) (this.runPrices ||= new Map()).set(p.part.id,event.privacyPrice); observeRunContext(this, event, p.part); this.emit({ type: 'usage', usage: this.currentUsage(), contextUsage: this.contextUsage.snapshot() }); }
       if (['session.error', 'engine.error'].includes(event.type)) this.runFailure = { kind: event.failure?.kind || sessionFailure(p.error), message: String(event.message || p.error?.data?.message || 'Sammenfatningen mislykkedes.').slice(0, 800) };
       return;
     }
@@ -702,11 +785,11 @@ class ChatSession {
       this.questions.delete(id); this.waiting = this.approvals.size > 0 || this.questions.size > 0; bench.chatsChanged();
       const entry = this.changes.activity.get(`question-${id}`); if (entry?.status === 'waiting') this.log({ id: entry.id, status: event.type === 'question.rejected' ? 'rejected' : 'answered', ended: Date.now() });
     }
-    if (['session.error', 'engine.error'].includes(event.type) && this.running && !this.runFailure) this.runFailure = { kind: event.failure?.kind || sessionFailure(p.error), status: event.failure?.status || p.error?.data?.statusCode || null, message: String(event.message || p.error?.data?.message || p.error?.message || '').slice(0, 800) };
-    if (['session.error', 'engine.error'].includes(event.type) && this.running) this.log({ kind: 'error', title: 'Fejl under opgaven', detail: String(event.message || p.error?.data?.message || p.error?.message || 'Modelkaldet mislykkedes.').slice(0, 800), status: 'error', task: this.task?.id });
+    if (['session.error', 'engine.error'].includes(event.type) && !event.permissionRejected && this.running && !this.runFailure) this.runFailure = { kind: event.failure?.kind || sessionFailure(p.error), status: event.failure?.status || p.error?.data?.statusCode || null, message: String(event.message || p.error?.data?.message || p.error?.message || '').slice(0, 800) };
+    if (['session.error', 'engine.error'].includes(event.type) && !event.permissionRejected && this.running) this.log({ kind: 'error', title: 'Fejl under opgaven', detail: String(event.message || p.error?.data?.message || p.error?.message || 'Modelkaldet mislykkedes.').slice(0, 800), status: 'error', task: this.task?.id });
     if (event.type === 'message.part.updated' && p.part?.type === 'step-finish' && this.runSteps && !this.runSteps.has(p.part.id)) {
-      this.runSteps.set(p.part.id, p.part.tokens || {});
-      this.contextUsage.observe(p.part);
+      this.runSteps.set(p.part.id, p.part.tokens || {}); if(Object.hasOwn(event,'privacyPrice')) (this.runPrices ||= new Map()).set(p.part.id,event.privacyPrice);
+      observeRunContext(this, event, p.part);
       // Grunden til modellens sidste stop, fx "length", når svaret blev afskåret ved grænsen for svarlængde.
       this.runFinish = p.part.reason || null;
       this.emit({ type: 'usage', usage: this.currentUsage(), contextUsage: this.contextUsage.snapshot() });
@@ -736,14 +819,14 @@ class ChatSession {
       if (event.type === 'session.idle' && this.qualityAwaitingReply && !this.qualityAwaitingReply.seen) return;
       this.qualityAwaitingReply = null;
       if (event.type === 'session.idle' && this.startQualityCheck()) return;
-      this.finishRun(event.type === 'session.idle' ? 'idle' : 'error');
+      this.finishRun(event.permissionRejected ? 'rejected' : event.type === 'session.idle' ? 'idle' : 'error');
     }
     if (['message.part.updated', 'message.part.delta', 'message.updated', 'session.error', 'engine.error', 'permission.asked', 'permission.replied', 'question.asked', 'question.replied', 'question.rejected', 'session.diff'].includes(event.type)) this.emit(event);
   }
   // The app performs these checks, rather than relying on the selected model to
   // remember a prompt. No new task, plan, session or permission grant is created.
   startQualityCheck() {
-    if (typeof this.bench.qualityInspector !== 'function' || !['build', 'free'].includes(this.runMode) || !this.runBefore || !this.runSystem || !this.qualityBinding || this.runFailure || this.approvals.size || this.questions.size || !this.engine?.active || !this.task) return false;
+    if (typeof this.bench.qualityInspector !== 'function' || this.runPrivacy && this.bench.qualityInspector.supportsPrivacyIsolation !== true || !['build', 'free'].includes(this.runMode) || !this.runBefore || !this.runSystem || !this.qualityBinding || this.runFailure || this.approvals.size || this.questions.size || !this.engine?.active || !this.task) return false;
     const operation = { controller: new AbortController(), generation: this.generation, engine: this.engine, task: this.task, phase: 'inspect', pendingIdle: null };
     this.qualityChecking = operation;
     operation.promise = this.inspectQuality(operation).catch(() => {
@@ -791,7 +874,7 @@ class ChatSession {
     operation.timer = setTimeout(() => operation.controller.abort(), 45000);
     let report;
     try {
-      report = await Promise.race([Promise.resolve().then(() => this.bench.qualityInspector({ root: this.root, signal: operation.controller.signal })), aborted]);
+      report = await Promise.race([Promise.resolve().then(() => this.bench.qualityInspector({ root: this.root, signal: operation.controller.signal, privacy: this.runPrivacy })), aborted]);
     } finally { clearTimeout(operation.timer); operation.controller.signal.removeEventListener('abort', onAbort); }
     if (!current()) return;
     const repairs = this.runQuality?.repairs || 0;
@@ -889,7 +972,19 @@ class ChatSession {
     });
   }
   async stop() {
+    // One caller owns abort, the result and the terminal history write. A second
+    // Stop joins that work, and app shutdown must wait before releasing resources.
+    if (this.stopping) return this.stopping;
+    if (this.closing) return this.closing;
     if (this.finishing) throw new Error('Afslutningen er i gang. Vent på resultatet.');
+    // Repeated IPC calls after completion must not retire a reviewed plan or
+    // replace idle history with a second, empty Stop result.
+    if (!this.running && !this.starting && !this.sending && !this.task && !this.qualityChecking && !this.qualityAwaitingReply && !this.compacting) return;
+    const stopping = this.stopping = this.stopCurrentRun();
+    try { return await stopping; }
+    finally { if (this.stopping === stopping) this.stopping = null; }
+  }
+  async stopCurrentRun() {
     const bench = this.bench, owner = (this.copy || bench.checkpointOwner === this);
     this.runStopped = true; this.cancelQuality(); this.questions.clear(); this.allowProjectEdits = false; this.taskRules.clear(); this.approvals.clear(); this.retirePlan('stoppet'); if (owner) this.checkpoints.cancel(); ++this.generation; this.engineIdentity = null;
     this.log({ kind: 'stop', title: 'Du trykkede på Stop', detail: 'AI\'en stopper. Det, den nåede at ændre, står under Ændringer.', status: 'stopped', task: this.task?.id });
@@ -1004,10 +1099,18 @@ class ChatSession {
     return result;
   }
   async close(reset = true) {
+    if (!reset) { await this.stopping; return this.closeCurrentRun(false); }
+    if (this.closing) return this.closing;
+    const closing = this.closing = this.closeCurrentRun(true);
+    try { return await closing; }
+    finally { if (this.closing === closing) this.closing = null; }
+  }
+  async closeCurrentRun(reset) {
     if (reset) { this.permissionRevoke(); this.cancelQuality(); }
     this.questions.clear();
     if (reset) {
       if ((this.copy || this.bench.checkpointOwner === this)) this.checkpoints.cancel();
+      await this.stopping;
       await this.finishing;
       if (this.running) { ++this.generation; this.runStopped = true; this.running = false; await this.finishTask('interrupted', null); await this.saveHistory('interrupted'); this.bench.release(this); }
       clearTimeout(this.historyTimer); this.historyTimer = null;

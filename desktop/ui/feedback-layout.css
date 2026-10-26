@@ -1,0 +1,69 @@
+/* User-approved feedback refinements, limited to the workspace. Onboarding B is unchanged. */
+#sidebar-divider { display:none; }
+@media (min-width:901px) {
+  body.workspace-calm:not(.sidebar-collapsed) { --sidebar:var(--feedback-sidebar-width,208px); }
+  body.workspace-calm:not(.sidebar-collapsed) #sidebar-divider { display:block; position:fixed; top:51px; bottom:0; left:calc(var(--sidebar) - 3px); width:6px; z-index:32; cursor:col-resize; touch-action:none; }
+  body.workspace-calm #sidebar-divider:is(:hover,:focus-visible) { background:var(--calm-focus); outline:0; }
+  body.resizing-sidebar { cursor:col-resize; user-select:none; }
+  body.resizing-sidebar iframe { pointer-events:none; }
+}
+.workspace-calm #chat-form { padding:7px 9px; margin-top:6px; }
+.workspace-calm #chat-form #prompt { min-height:34px; height:34px; max-height:150px; line-height:22px; padding:5px; margin:0; }
+/* Keep the focus hint out of flow so blur cannot move a button between pointerdown and click. */
+.workspace-calm #chat-form #composer-shortcut { position:absolute; bottom:calc(100% + 6px); right:6px; max-width:calc(100% - 12px); font-size:11px; margin:0; padding:3px 6px; border:1px solid var(--line); border-radius:5px; background:var(--surface); pointer-events:none; }
+.workspace-calm #chat-form:not(:focus-within) #composer-shortcut,
+.workspace-calm #chat-form:is([data-metal-state="working"],[data-metal-state="waiting"]) #composer-shortcut { width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+.workspace-calm #agent-activity { flex-shrink:0; margin:0 14px; padding:7px 3px; border:0; font-size:12px; column-gap:7px; }
+.workspace-calm #agent-activity-text { min-width:0; flex:1; }
+.workspace-calm #agent-progress { font-size:11px; }
+.workspace-calm #agent-activity.is-actionable { position:relative; padding-right:44px; cursor:pointer; color:var(--calm-warning); border-radius:6px; }
+.workspace-calm #agent-activity.is-actionable:hover { background:var(--calm-warning-bg); }
+.workspace-calm #agent-activity.is-actionable:focus-visible { outline:2px solid var(--calm-focus); outline-offset:2px; }
+.workspace-calm #agent-activity button { font-size:11px; padding:3px 5px; }
+.workspace-calm .question-card textarea { width:100%; min-height:64px; resize:vertical; }
+.workspace-calm .question-card .question-custom-label { display:block; margin:12px 0 5px; }
+.workspace-calm .question-card .question-shortcut { font-size:11px; margin:4px 0 8px; color:var(--muted); }
+.connection-removal-dialog { width:min(32rem,calc(100vw - 2rem)); }
+.workspace-calm #plan-card { padding:14px; }
+.workspace-calm #plan-card h3 { margin:0 0 8px; font-size:15px; }
+.workspace-calm #agent-activity { display:grid; grid-template-columns:12px minmax(0,1fr) auto; }
+.workspace-calm #agent-activity .activity-spinner { grid-column:1; grid-row:1; }
+.workspace-calm #agent-activity-text { grid-column:2; grid-row:1; }
+.workspace-calm #agent-activity :is(#agent-follow,#agent-activity-jump) { grid-column:3; grid-row:1; }
+.workspace-calm #agent-progress { grid-column:2 / 4; grid-row:2; padding-left:0; }
+.workspace-calm .question-card .answer-footer { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px 12px; margin-top:8px; }
+.workspace-calm .question-card .answer-footer small { font-size:11px; }
+.workspace-calm #plan-summary { padding-left:18px; margin:8px 0 12px; }
+.workspace-calm #plan-summary li + li { margin-top:7px; }
+
+/* One real button fills the waiting row; no nested interactive role or duplicate tab stop. */
+.workspace-calm #agent-activity.is-actionable #agent-activity-jump { position:absolute; inset:0; width:100%; height:100%; margin:0; display:flex; align-items:center; justify-content:flex-end; padding-right:5px; border:0; border-radius:6px; background:transparent; color:inherit; }
+.workspace-calm #agent-activity.is-actionable #agent-activity-jump:focus-visible { outline:2px solid var(--calm-focus); outline-offset:2px; }
+
+/* FB11/FB15: approved mode explanations and explicit result review. */
+#composer-mode-menu { position:fixed; inset:auto; margin:0; padding:12px 8px 6px; width:360px; max-width:calc(100vw - 24px); overflow-y:auto; border:1px solid var(--line); border-radius:14px; background:var(--surface); color:var(--ink); }
+#composer-mode-menu .mode-menu-title { margin:0 12px 7px; font-size:10px; letter-spacing:.12em; color:var(--muted); font-weight:600; }
+#composer-mode-menu [data-work-mode] { display:flex; align-items:flex-start; gap:10px; text-align:left; width:100%; border:1px solid transparent; border-radius:9px; padding:10px; background:transparent; margin:2px 0; }
+#composer-mode-menu [data-work-mode][aria-checked="true"] { background:var(--tint); border-color:var(--line); }
+#composer-mode-menu [data-work-mode] > span:nth-child(2) { flex:1; }
+#composer-mode-menu [data-work-mode] strong { display:block; font-size:13px; margin-bottom:4px; font-weight:600; }
+#composer-mode-menu [data-work-mode] small { display:block; font-size:11px; line-height:1.65; color:var(--muted); }
+#composer-mode-menu .mode-menu-icon { flex:none; width:20px; font-size:21px; line-height:1.15; text-align:center; color:var(--accent); }
+#composer-mode-menu .mode-menu-check { visibility:hidden; font-size:13px; color:var(--accent); }
+#composer-mode-menu [aria-checked="true"] .mode-menu-check { visibility:visible; }
+#composer-mode-menu .mode-menu-footer { display:flex; align-items:center; gap:10px; margin-top:5px; padding:10px 10px 5px; border-top:1px solid var(--line); }
+#composer-yolo { font-size:11px; padding:6px 8px; white-space:nowrap; }
+#composer-mode-boundary { margin:0; font-size:10px; line-height:1.6; color:var(--muted); }
+.workspace-calm #composer-mode::after { content:'⌄'; display:inline-block; margin-left:4px; }
+.workspace-calm .journey-card.result-complete { padding:16px 0 0; margin-top:22px; border:0; border-top:1px solid var(--line); border-radius:0; background:transparent; }
+.result-complete .result-eyebrow { margin:0 0 10px; font-size:10px; letter-spacing:.12em; color:var(--muted); font-weight:600; }
+.result-complete .result-receipt { margin:0 0 10px; font-size:19px; line-height:1.35; color:var(--ink); }
+.result-complete .result-description { font-size:13px; line-height:1.65; color:var(--muted); margin:0 0 14px; }
+.result-complete .result-test-hint { padding-left:11px; border-left:2px solid var(--line); margin:16px 0; font-size:12px; line-height:1.65; color:var(--muted); }
+.result-complete .review-actions { margin:17px 0 14px; }
+.result-complete .review-actions button { font-size:12px; padding:8px 11px; }
+.result-complete .result-review-status { display:flex; flex-direction:column; align-items:flex-start; gap:6px; margin-top:15px; }
+.result-complete .result-review-status span { color:var(--muted); font-size:11px; line-height:1.6; }
+.result-complete .result-review-status button { font-size:12px; color:var(--accent); padding:3px 0; }
+.result-complete .result-undo { padding:4px 0; font-size:11px; margin-top:12px; }
+.result-complete .result-preview-note { margin-top:12px; font-size:11px; line-height:1.6; }

@@ -1,3 +1,4 @@
+const { ExternalEgress } = require('./privacy/external-egress.cjs');
 const fs = require('node:fs/promises');
 const { randomUUID } = require('node:crypto');
 const { run, protectedPath, secretContent } = require('./git.cjs');
@@ -5,19 +6,21 @@ const { defaultName } = require('./history.cjs');
 const { hooksBlock } = require('./checkpoints.cjs');
 
 class GitTransport {
-  constructor(provider) { this.provider = provider; }
+  constructor(provider, { getPrivacy } = {}) { this.provider = provider; this.egress = new ExternalEgress(getPrivacy); }
   async guard(root) {
     let names = '';
     try { names = (await run(root, ['config', '--name-only', '--get-regexp', '^(url\\.|http\\.|credential\\.)'])).toString(); }
-    catch (error) { if (error.code !== 1) throw error; }
+    catch (error) { if (error.code !== 1 && error.gitExitCode !== 1) throw error; }
     if (names.split('\n').some(key => /^url\./i.test(key) || /^http\..*(extraheader|sslverify|proxy|cookiefile|savecookies|sslcert|sslkey)$/i.test(key))) throw new Error('Git har særlige netværks- eller URL-regler. Gennemgå publicering i dit Git-værktøj; appen tilsidesætter dem ikke.');
   }
   async command(root, target, args) {
+    const assertCurrent = await this.egress.legacyPermit(root);
     if (!/^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\.git$/.test(target.gitURL)) throw new Error('Git-destinationen er ikke understøttet af denne adapter.');
     await this.guard(root);
     const token = await this.provider.credential();
     const config = [['http.followRedirects', 'false'], ['http.sslVerify', 'true'], ['credential.helper', ''], ['http.https://github.com/.extraHeader', 'Authorization: Basic ' + Buffer.from('x-access-token:' + token).toString('base64')]];
     // Nøglen ligger kun i barnets miljø; aldrig i argumenter, remote-URL, projektfiler eller fejloutput.
+    assertCurrent(); this.egress.service()?.bench?.releaseFreshGitForPublishing(root, assertCurrent);
     return run(root, args(target.gitURL), undefined, config);
   }
   async head(root, target, branch) {
@@ -30,7 +33,7 @@ class GitTransport {
   async push(root, target, branch, sha) { await this.command(root, target, url => ['-c', 'push.followTags=false', 'push', '--porcelain', '--no-follow-tags', '--recurse-submodules=no', url, `${sha}:refs/heads/${branch}`]); }
 }
 class Publishing {
-  constructor({ store, git, provider, transport = new GitTransport(provider) }) { this.store = store; this.git = git; this.provider = provider; this.transport = transport; this.reviews = new Map(); }
+  constructor({ store, git, provider, getPrivacy, transport = new GitTransport(provider, { getPrivacy }) }) { this.egress = new ExternalEgress(getPrivacy); this.store = store; this.git = git; this.provider = provider; this.transport = transport; this.reviews = new Map(); }
   async local(root) {
     const repo = await this.git.repository(root);
     if (!repo.initialized || repo.block || !repo.head) throw new Error(repo.block || 'Gem en lokal version før publicering.');
@@ -42,15 +45,17 @@ class Publishing {
     return repo;
   }
   async target(root) {
+    const assertCurrent = await this.egress.legacyPermit(root);
     const selection = (await this.store.project(root)).publication;
     if (!selection || selection.provider !== this.provider.id) throw new Error('Vælg et repository til projektet.');
-    const target = await this.provider.get(selection.fullName);
+    assertCurrent(); const target = await this.provider.get(selection.fullName);
     if (target.id !== selection.id) throw new Error('Repositoryet er blevet erstattet eller flyttet. Vælg destinationen igen.');
     if (!target.writable || target.archived) throw new Error('Kontoen har ikke skriveadgang til dette repository.');
     return target;
   }
   async attach(root, fullName) {
-    const repo = await this.local(root); const target = await this.provider.get(fullName);
+    const assertCurrent = await this.egress.legacyPermit(root);
+    const repo = await this.local(root); assertCurrent(); const target = await this.provider.get(fullName);
     if (!target.writable || target.archived) throw new Error('Repositoryet kan ikke modtage ændringer fra denne konto.');
     const remotes = (await run(repo.root, ['remote'])).toString().trim().split('\n').filter(Boolean);
     let remoteName = '';
@@ -95,13 +100,14 @@ class Publishing {
     return [...paths].sort();
   }
   async review(root) {
+    const assertCurrent = await this.egress.legacyPermit(root);
     const repo = await this.local(root); const target = await this.target(root);
-    const remoteHead = await this.transport.head(repo.root, target, repo.branch);
+    assertCurrent(); const remoteHead = await this.transport.head(repo.root, target, repo.branch);
     const version = await this.version(root, repo.head), checkedAt = new Date().toISOString();
     if (remoteHead === repo.head) return { synchronized: true, version, checkedAt, target, branch: repo.branch, head: repo.head, files: [], commits: [] };
     if (remoteHead) {
-      await this.transport.fetch(repo.root, target, repo.branch);
-      if (await this.transport.head(repo.root, target, repo.branch) !== remoteHead) throw new Error('Serveren blev ændret under gennemgangen. Kontrollér igen.');
+      assertCurrent(); await this.transport.fetch(repo.root, target, repo.branch);
+      assertCurrent(); if (await this.transport.head(repo.root, target, repo.branch) !== remoteHead) throw new Error('Serveren blev ændret under gennemgangen. Kontrollér igen.');
       try { await run(repo.root, ['merge-base', '--is-ancestor', remoteHead, repo.head]); }
       catch { throw new Error('Serverens historik er foran, anderledes eller divergeret. Gennemgå og integrér ændringerne i dit Git-værktøj. Appen merger eller force-pusher ikke.'); }
     }
@@ -112,14 +118,15 @@ class Publishing {
     return { token, version, checkedAt, target, branch: repo.branch, head: repo.head, remoteHead, commits, files, synchronized: false };
   }
   async push(root, token) {
+    const assertCurrent = await this.egress.legacyPermit(root);
     const review = this.reviews.get(token); this.reviews.delete(token);
     if (!review || review.expires < Date.now() || review.root !== await fs.realpath(root)) throw new Error('Gennemgå publiceringen igen.');
     const repo = await this.local(root); const target = await this.target(root);
     if (repo.head !== review.head || repo.branch !== review.branch || target.id !== review.target.id || target.private !== review.target.private) throw new Error('Projekt eller destination har ændret sig. Gennemgå publiceringen igen.');
-    if (await this.transport.head(repo.root, target, repo.branch) !== review.remoteHead) throw new Error('Serveren er ændret siden gennemgangen. Kontrollér igen.');
-    try { await this.transport.push(repo.root, target, repo.branch, repo.head); }
-    catch { throw new Error('Push blev ikke bekræftet. Kontrollér serverstatus før et nyt forsøg. Rettigheder, branchregler eller nye serverændringer kan have afvist det. Intet force-push blev forsøgt.'); }
-    const confirmed = await this.transport.head(repo.root, target, repo.branch);
+    assertCurrent(); if (await this.transport.head(repo.root, target, repo.branch) !== review.remoteHead) throw new Error('Serveren er ændret siden gennemgangen. Kontrollér igen.');
+    try { assertCurrent(); await this.transport.push(repo.root, target, repo.branch, repo.head); }
+    catch (error) { if (error.code?.startsWith('PRIVACY_')) throw error; throw new Error('Push blev ikke bekræftet. Kontrollér serverstatus før et nyt forsøg. Rettigheder, branchregler eller nye serverændringer kan have afvist det. Intet force-push blev forsøgt.'); }
+    assertCurrent(); const confirmed = await this.transport.head(repo.root, target, repo.branch);
     if (confirmed !== repo.head) throw new Error('Push-resultatet kunne ikke bekræftes. Kontrollér serveren igen.');
     return { version: review.version, checkedAt: new Date().toISOString(), head: confirmed, branch: repo.branch, target, message: 'Versionen er bekræftet på Git-serveren. Applikationen er ikke deployet.' };
   }

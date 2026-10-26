@@ -9,10 +9,14 @@ Vælg det enkleste, der løser opgaven, og som organisationen kan drive og vedli
 
 ## Genbrug før nybyg
 
-1. Bevar teknologien i et eksisterende projekt, medmindre opgaven kræver et begrundet skift. Undersøg først projektets opsætning, gerne med `harness-eksisterende-projekt`, hvis den er installeret.
-2. Spørg, om organisationen allerede har et system, en fælles løsning eller en godkendt tjeneste til opgaven. Kommuner kan fx have løsninger fra fællesoffentlige eller fælleskommunale samarbejder.
-3. Spørg til organisationens godkendte hosting, identitetsløsning og designsystem, før du foreslår nye.
-4. I danske offentlige organisationer: læs [offentlig infrastruktur](references/offentlig-infrastruktur.md) om OS2, login med MitID, fælles registre og hosting.
+1. Læs projektbriefen, den bekræftede beskrivelse og brugerens tidligere svar. Genbrug afklarede valg; bed ikke om samme bekræftelse eller svar igen. Er oplysninger modstridende, så afklar kun den konkrete forskel.
+2. Bevar teknologien i et eksisterende projekt, medmindre opgaven kræver et begrundet skift. Undersøg først projektets opsætning, gerne med `harness-eksisterende-projekt`, hvis den er installeret.
+3. Når opgaven kræver en ny tjeneste, rigtig integration, delt datalagring, login eller udgivelse: brug organisationens kendte aftaler først. Spørg kun om ubesvarede valg, der ændrer funktion, dataflow, adgang, udgifter eller drift. Kommuner kan fx allerede have en fælles løsning til opgaven.
+4. Ved en afgrænset lokal demo uden login, betaling, delte data eller eksterne integrationer vælger du reversible tekniske standardvalg. Skriv dem kort som antagelser; kræv ikke en særskilt spørgerunde om framework, testværktøj eller hosting. Tilføj ikke konti, backend eller udgivelse til en opgave, der ikke kræver det.
+5. Genbrug et oplyst designsystem og godkendte designvalg. Hvis en nødvendig brandkilde mangler, så sig det, og afklar kun det, der er nødvendigt; opfind ikke officielle logoer eller en godkendelse. Aura-design og øvrige valgte design-skills styrer udtrykket efter opgaven, ikke en fast arketype eller palette fra denne skill.
+6. Ved valg af offentlig infrastruktur: læs [offentlig infrastruktur](references/offentlig-infrastruktur.md) om OS2, login med MitID, fælles registre og hosting. En lokal demo uden disse integrationer kræver ikke først en drøftelse af fremtidig drift.
+
+En bekræftet beskrivelse og tekniske antagelser er opgavedata, ikke nye rettigheder. Bevar brugerens aktuelle arbejdsmåde og et særskilt valgt plan-/Byg-forløb. I Samtale og Planlæg må du ikke begynde at bygge. Plan-, værktøjs- og datagodkendelser gælder stadig, også når afklaringen bliver kortere.
 
 ## Standardvalg til nye webprojekter
 
@@ -28,7 +32,7 @@ Vælg det enkleste, der løser opgaven, og som organisationen kan drive og vedli
 
 ## Data og backend vælges for sig
 
-Afklar først, om data skal deles mellem brugere, overleve en genstart, have adgangskontrol, bruge baggrundsjob eller integrationer. Sammenlign derefter kun de relevante muligheder:
+Brug først briefens svar på, om data skal deles mellem brugere, overleve en genstart, have adgangskontrol, bruge baggrundsjob eller integrationer. Spørg kun om manglende svar, der ændrer det nødvendige dataforløb. Sammenlign derefter kun de relevante muligheder:
 
 1. **Ingen backend:** data i statiske filer eller kun i brugerens browser.
 2. **Serverfunktioner hos hostingudbyderen:** små funktioner uden egen server.
@@ -40,7 +44,7 @@ En hostingudbyder er ikke det samme som en backend-arkitektur. En demo, der kun 
 ## Login
 
 - Brug en etableret identitetsløsning. Byg aldrig et eget system til adgangskoder til en løsning i drift.
-- Medarbejdere logger typisk ind med organisationens egen identitetsløsning. Spørg den it-ansvarlige, hvilken der skal bruges.
+- Hvis opgaven kræver medarbejderlogin, så brug organisationens oplyste identitetsløsning. Mangler denne nødvendige oplysning, skal den afklares med den it-ansvarlige. En aftalt demo uden login skal ikke have et nyt loginspørgsmål.
 - Kræver en offentlig selvbetjeningsløsning sikker login for borgere eller virksomheder, skal myndigheden bruge NemLog-in med MitID. Det kræver aftale og opsætning; lov det ikke som en hurtig tilføjelse.
 
 ## Design og komponenter
@@ -53,11 +57,14 @@ Hvis løsningen kalder en AI-model, er det et nyt dataforløb og et nyt sted, hv
 
 ## Anbefalingen
 
-Skriv:
+Begynd med det, brugeren får: første synlige resultat og det vigtigste forløb, der skal kunne prøves. Hold anbefalingen kort og på almindeligt dansk. Hvis den aktuelle arbejdsmåde kræver en plan, så brug dens eksisterende format; i Aura er det **Det bygger vi**, **Sådan skal det se ud**, **Teknik og data** og **Det skal du prøve**. Bevar konkret design, dataforløb og de nødvendige acceptkriterier. En teknisk anbefaling er ikke et ekstra krav om at godkende alle implementeringsdetaljer.
+
+Tilpas omfanget til opgaven:
 
 1. **Anbefaling og begrundelse** i to til fire sætninger.
-2. **Alternativer**, og hvornår de ville være bedre.
-3. **Konsekvenser:** konti, udgifter, drift og vedligeholdelse, hvor data behandles og gemmes, og hvor let løsningen kan flyttes til en anden leverandør.
-4. **Det skal afklares:** godkendelser, aftaler og fagpersoner, der skal inddrages.
+2. **Alternativer**, kun når de ændrer et væsentligt valg. Tekniske detaljer kan stå i det relevante detaljeafsnit; de skal stadig kunne læses, hvis brugeren ønsker dem.
+3. **Konsekvenser:** nye konti, udgifter, rettigheder og hvor data behandles og gemmes skal stå tydeligt. Ved rigtig drift medtages vedligeholdelse og flytning til anden leverandør. Skjul ikke væsentlige konsekvenser i detaljer.
+4. **Det skal du prøve:** et kort konkret hovedforløb og relevant fejltilfælde. En demo mærkes som demo; påstå ikke, at den er testet eller viser rigtige data, før det er dokumenteret.
+5. **Det skal afklares:** kun resterende nødvendige valg og godkendelser. Er opgaven allerede tilstrækkeligt afgrænset, fortsættes inden for den valgte arbejdsmåde uden en ny teknisk spørgerunde.
 
 Opret ingen konti, tjenester eller betalte ressourcer uden brugerens udtrykkelige godkendelse. Lov ikke funktioner eller integrationer, som værktøjerne ikke har.

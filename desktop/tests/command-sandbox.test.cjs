@@ -7,6 +7,11 @@ const { execFile } = require('node:child_process');
 const { promisify } = require('node:util');
 const run = promisify(execFile);
 const sandbox = require('../core/command-sandbox.cjs');
+const { sandboxPrerequisiteReason } = require('./helpers/sandbox-prerequisites.cjs');
+async function pluginHooks(directory) {
+ const hooks={}; const plugin=await import(require('node:url').pathToFileURL(path.join(directory,'index.mjs')).href);
+ await plugin.default.setup({tool:{hook:async(name,fn)=>{hooks['tool.'+name]=async(input,output)=>fn({tool:input.tool==='bash'?'shell':input.tool,input:output.args});}},shell:{hook:async(name,fn)=>{hooks['shell.'+name]=fn;}}}); return hooks;
+}
 const quote = value => "'" + value.replaceAll("'", "'\\''") + "'";
 async function fixture(t) {
   const base = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'aura-sandbox-test-')));
@@ -25,8 +30,8 @@ test('Windows afviser automatisk isolation uden usikret reservevej', async () =>
   assert.equal((await sandbox.support({ platform: 'win32' })).available, false);
 });
 test('betroet plugin wrapper bash, validerer cwd og viser kun faste pakkehosts', async t => {
-  if (!['darwin', 'linux'].includes(process.platform)) return t.skip('Denne platforms isolation understøttes ikke.');
-  const f = await fixture(t), plugin = await import(f.configured.pluginURL), hooks = await plugin.AuraCommandIsolation();
+  const reason = await sandboxPrerequisiteReason(); if (reason) return t.skip(reason);
+  const f = await fixture(t), hooks = await pluginHooks(f.configured.pluginURL);
   const input = { args: { command: 'echo "$(touch forkert)"', workdir: f.root } };
   await hooks['tool.execute.before']({ tool: 'bash' }, input);
   assert.match(input.args.command, /^exec \/usr\/bin\/env -i /);
@@ -37,7 +42,7 @@ test('betroet plugin wrapper bash, validerer cwd og viser kun faste pakkehosts',
   assert.equal(policy.config.network.strictAllowlist, true);
 });
 test('rigtig OS-isolation tillader projektarbejde og spærrer hemmeligheder, andre mapper, symlinks og arvede nøgler', async t => {
-  if (!['darwin', 'linux'].includes(process.platform)) return t.skip('Denne platforms isolation understøttes ikke.');
+  const reason = await sandboxPrerequisiteReason(); if (reason) return t.skip(reason);
   const f = await fixture(t);
   await fs.writeFile(path.join(f.other, 'hemmelig.txt'), 'SYNTETISK-HEMMELIGHED');
   await fs.writeFile(path.join(f.root, '.env'), 'SYNTETISK-PROJEKTNØGLE');
@@ -54,7 +59,7 @@ test('rigtig OS-isolation tillader projektarbejde og spærrer hemmeligheder, and
   assert.equal(await fs.readFile(path.join(f.scratch, 'ok.txt'), 'utf8'), 'ok');
 });
 test('rigtig netværksisolation afviser net uden for pakkeregistrene og direkte loopback', async t => {
-  if (!['darwin', 'linux'].includes(process.platform)) return t.skip('Denne platforms isolation understøttes ikke.');
+  const reason = await sandboxPrerequisiteReason(); if (reason) return t.skip(reason);
   const f = await fixture(t);
   const result = await f.execute('/usr/bin/curl --max-time 5 --fail --silent --show-error https://example.com');
   assert.notEqual(result.code, 0); assert.match(result.stderr, /403|denied|refused|beskyttelse|isolation/i);
@@ -62,7 +67,7 @@ test('rigtig netværksisolation afviser net uden for pakkeregistrene og direkte 
   assert.notEqual(direct.code, 0);
 });
 test('npm installerer en fast pakke i projektet gennem det tilladte register', async t => {
-  if (!['darwin', 'linux'].includes(process.platform)) return t.skip('Denne platforms isolation understøttes ikke.');
+  const reason = await sandboxPrerequisiteReason(); if (reason) return t.skip(reason);
   const f = await fixture(t);
   await fs.writeFile(path.join(f.root, 'package.json'), JSON.stringify({ name: 'syntetisk-isolationsprove', version: '1.0.0', private: true }));
   const result = await f.execute('npm install --ignore-scripts --no-audit --no-fund --package-lock=false --fetch-retries=0 --fetch-timeout=6000 is-number@7.0.0');
@@ -70,7 +75,7 @@ test('npm installerer en fast pakke i projektet gennem det tilladte register', a
   assert.equal(JSON.parse(await fs.readFile(path.join(f.root, 'node_modules/is-number/package.json'))).version, '7.0.0');
 });
 test('pakkens installationsscript og underprocesser har samme filgrænse', async t => {
-  if (!['darwin', 'linux'].includes(process.platform)) return t.skip('Denne platforms isolation understøttes ikke.');
+  const reason = await sandboxPrerequisiteReason(); if (reason) return t.skip(reason);
   const f = await fixture(t);
   await fs.writeFile(path.join(f.other, 'hemmelig.txt'), 'SYNTETISK-PAKKEHEMMELIGHED');
   await fs.writeFile(path.join(f.root, 'package.json'), JSON.stringify({ name: 'syntetisk-pakkescript', version: '1.0.0', private: true, scripts: { postinstall: 'node postinstall.cjs' } }));
@@ -81,9 +86,9 @@ test('pakkens installationsscript og underprocesser har samme filgrænse', async
 });
 
 test('a command prepared before session consent is isolated when executed after activation', async t => {
-  if (!['darwin','linux'].includes(process.platform))return t.skip('Platform');
+  const reason = await sandboxPrerequisiteReason(); if (reason) return t.skip(reason);
   const f=await fixture(t);const configured=await sandbox.prepare({workspaceRoot:f.root,scratchRoot:f.scratch,directory:path.join(path.dirname(f.root),'standby'),standby:true});
-  const hooks=await (await import(configured.pluginURL)).AuraCommandIsolation();
+  const hooks=await pluginHooks(configured.pluginURL);
   await fs.writeFile(path.join(f.other,'secret.txt'),'SYNTHETIC');
   const output={args:{command:'/bin/cat '+quote(path.join(f.other,'secret.txt')),workdir:f.root}};
   await hooks['tool.execute.before']({tool:'bash'},output);assert.match(output.args.command,/command-dispatch/);

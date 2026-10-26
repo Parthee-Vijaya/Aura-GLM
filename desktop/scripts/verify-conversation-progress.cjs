@@ -139,7 +139,7 @@ const { GitVersions } = require('../core/git.cjs');
     gates.written(); await page.locator('#run-status').filter({ hasText: 'Klar' }).waitFor({ timeout: 60000 });
     await page.waitForFunction(() => !document.querySelector('#version-rename').disabled);
     const undo = page.locator('#run-review button').filter({ hasText: 'Fortryd opgaven' }); assert.match(await undo.getAttribute('class'), /text-button/);
-    await page.click('#run-review .result-options > summary');
+    await page.locator('#run-review .result-receipt').filter({ hasText: 'Prøv resultatet' }).waitFor();
     await undo.click(); await page.locator('#restore-dialog[open]').waitFor();
     await page.locator('#restore-outcomes').filter({ hasText: 'index.html' }).waitFor();
     await page.click('#restore-confirm'); await page.locator('#run-review').filter({ hasText: 'Opgaven er fortrudt' }).waitFor();

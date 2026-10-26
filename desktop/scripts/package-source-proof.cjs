@@ -20,8 +20,8 @@ async function sourceProof(root, names) {
   return { schemaVersion: 1, sourceCommit, files };
 }
 async function create(root, output) {
-  const { files } = require('./verify-package-source.cjs');
-  const names = ['package.json', 'package-lock.json', 'runtime-lock.json', 'main.cjs', 'preload.cjs', ...await files(path.join(root, 'core'), 'core/'), ...await files(path.join(root, 'ui'), 'ui/'), '../LICENSE', '../profiles/catalog.json', '../profiles/grundregler.md', '../profiles/gitignore.txt', ...await files(path.join(root, '../profiles/skills'), '../profiles/skills/')];
+  const { files, privacyFiles } = require('./verify-package-source.cjs');
+  const names = ['package.json', 'package-lock.json', 'runtime-lock.json', 'main.cjs', 'preload.cjs', ...await files(path.join(root, 'core'), 'core/'), ...await files(path.join(root, 'ui'), 'ui/'), ...await privacyFiles(), '../LICENSE', '../profiles/catalog.json', '../profiles/grundregler.md', '../profiles/gitignore.txt', ...await files(path.join(root, '../profiles/skills'), '../profiles/skills/')];
   const proof = await sourceProof(root, names);
   await fs.writeFile(output, JSON.stringify(proof, null, 2) + '\n');
   return proof;

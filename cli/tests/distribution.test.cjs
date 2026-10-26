@@ -8,8 +8,9 @@ const { names, sha256, unpack, releaseFiles, validateRelease } = require('../../
 const { assetURL } = require('../../scripts/release-contract.cjs');
 const { render, renderCLI, cliGuides, build } = require('../../scripts/build-pages.cjs');
 const { selectDraft, validateAssetIDs } = require('../../scripts/download-cli-draft.cjs');
+const distribution = require('../../desktop/core/distribution.cjs');
 const version = '0.2.0-beta.6', tag = `cli-v${version}`;
-const meta = { full_name: 'ai-alliancen-org/ai-harness', private: false };
+const meta = { full_name: distribution.repository, private: false };
 function fixture() {
   const files = new Map(names(version).map(n => [n, Buffer.from('Syntetisk prøve: ' + n)]));
   const release = { tag_name: tag, draft: true, prerelease: true, body: 'Terminalbeta', published_at: '2026-10-13T10:00:00Z',
@@ -30,6 +31,14 @@ test('CLI-arkivet afviser private filer, traversal, symlinks, dubletter og ødel
   assert.equal(unpack(archive()).get('cli/aura.cjs').toString(), 'test');
   for (const e of [{ name: 'package/.env' }, { name: 'package/docs/komplai-api-token.md' }, { name: 'package/profiles/../secret.md' }, { name: 'package/cli/aura.cjs', type: 50 }, { name: 'package/cli/aura.cjs' }, { name: '../package.json' }]) assert.throws(() => unpack(archive([e])));
   assert.throws(() => unpack(Buffer.from('ikke gzip')));
+});
+test('CLI-arkivet omfatter Privacy Gate-moduler og native kilde uden interne probes eller runtimefiler', async () => {
+  const sources = ['desktop/core/privacy/index.cjs', 'desktop/core/privacy/hybrid-seatbelt-workspaces.cjs', 'desktop/privacy/isolation/engine-isolation.cjs', 'desktop/privacy/isolation/prepare-helper.cjs', 'desktop/privacy/isolation/scope-reaper.c'];
+  const packed = unpack(archive(sources.map(name => ({ name: 'package/' + name }))));
+  for (const name of sources) assert(packed.has(name));
+  for (const name of ['desktop/privacy/isolation/notes/scope-probe.c', 'desktop/privacy/isolation/.runtime/helper', 'desktop/privacy/organization-policy.json', 'desktop/core/privacy/credentials.json']) assert.throws(() => unpack(archive([{ name: 'package/' + name }])));
+  const pkg = JSON.parse(await fs.readFile(path.resolve(__dirname, '../../package.json'), 'utf8'));
+  for (const pattern of ['desktop/core/privacy/*.cjs', 'desktop/privacy/isolation/*.cjs', 'desktop/privacy/isolation/*.c']) assert(pkg.files.includes(pattern));
 });
 test('CLI-udgivelsen kræver alle seks filer, betakladde, samme version, størrelse og faktiske hash', () => {
   const f = fixture(); assert.doesNotThrow(() => validateRelease(f.release, f.files, version));
@@ -86,7 +95,7 @@ test('Downloadsiden samler app og terminal uden at blande filtyper eller vise kl
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aura-downloads-')); t.after(() => fs.rm(dir, { recursive: true, force: true }));
   const { release } = fixture(); release.draft = false;
   const desktop = { ...release, tag_name: 'v' + version, assets: ['mac-arm64.dmg', 'mac-x64.dmg', 'win-x64.exe'].map(target => {
-    const name = `Aura-${version}-${target}`;
+    const name = `${distribution.artifactPrefix}-${version}-${target}`;
     return { name, state: 'uploaded', size: 1234, digest: 'sha256:' + 'c'.repeat(64), browser_download_url: assetURL('v' + version, name) };
   }) };
   await build([release, desktop], meta, dir);

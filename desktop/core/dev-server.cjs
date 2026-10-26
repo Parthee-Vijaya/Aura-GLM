@@ -1,3 +1,5 @@
+const { ExternalEgress } = require('./privacy/external-egress.cjs');
+const { PreviewStartupReview } = require('./preview-startup-review.cjs');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { spawn, execFile } = require('node:child_process');
@@ -145,9 +147,22 @@ async function terminate(child) {
   }
 }
 class DevServer {
-  constructor({ emit = () => {}, runner = path.join(__dirname, 'dev-server-runner.cjs'), komplaiScript = async () => null, runtimeConfig = {}, getRuntimeConfig } = {}) { this.emit = emit; this.runner = runner; this.komplaiScript = komplaiScript; this.root = null; this.state = 'idle'; this.output = ''; this.generation = 0; this.config = normalizeRuntimeConfig(runtimeConfig); this.getRuntimeConfig = getRuntimeConfig; this.children = []; this.services = []; }
-  configure(config = {}) { if (active(this.state)) throw Error('Stop forhåndsvisningen, før opstarten ændres.'); this.config = normalizeRuntimeConfig(config); this.review = null; return this.config; }
-  async runtimeConfig() { return normalizeRuntimeConfig(this.getRuntimeConfig ? await this.getRuntimeConfig(this.root) : this.config); }
+  constructor({ emit = () => {}, runner = path.join(__dirname, 'dev-server-runner.cjs'), komplaiScript = async () => null, runtimeConfig = {}, getRuntimeConfig, getPrivacy, now = Date.now, reviewTtlMs = 120_000 } = {}) {
+    this.egress = new ExternalEgress(getPrivacy); this.emit = emit; this.runner = runner; this.komplaiScript = komplaiScript; this.root = null; this.state = 'idle'; this.output = ''; this.generation = 0; this.config = normalizeRuntimeConfig(runtimeConfig); this.getRuntimeConfig = getRuntimeConfig; this.children = []; this.services = [];
+    this.startupReview = new PreviewStartupReview({
+      getPolicy: async root => {
+        const scope = this.egress.scope(root), revision = this.egress.binding(scope);
+        const enabled = await this.egress.active(root);
+        if (this.egress.binding(scope) !== revision) throw this.staleReview();
+        return { active: enabled, revision };
+      },
+      getRuntimeConfig: root => this.runtimeConfig(root), now, ttlMs: reviewTtlMs
+    });
+  }
+  staleReview() { return Object.assign(new Error('Projektets opsætning er ændret, eller handlingen er stoppet. Gennemgå handlingen igen.'), { code: 'PREVIEW_REVIEW_STALE' }); }
+  operationGuard(root, generation) { return () => { if (this.root !== root || this.generation !== generation) throw this.staleReview(); }; }
+  configure(config = {}) { if (active(this.state)) throw Error('Stop forhåndsvisningen, før opstarten ændres.'); this.config = normalizeRuntimeConfig(config); this.review = null; ++this.generation; this.startupReview.invalidate(); return this.config; }
+  async runtimeConfig(root = this.root) { return normalizeRuntimeConfig(this.getRuntimeConfig ? await this.getRuntimeConfig(root) : this.config); }
   snapshot() { return { root: this.root, state: this.state, url: this.url || null, output: this.output, message: this.message || '', kind: this.kind, services: this.services || [], runtimeConfig: this.activeConfig || null }; }
   update(state, message = '') { this.state = state; this.message = message; this.emit(this.snapshot()); }
   async activate(root) { await this.stop(); this.review = null; this.root = root; this.url = null; this.output = ''; this.kind = null; this.update('idle'); }
@@ -155,19 +170,27 @@ class DevServer {
   async prepare(action, scripts = false) {
     if (!this.root || active(this.state)) throw new Error('Stop den aktuelle server eller installation først.');
     if (!['install', 'start'].includes(action)) throw new Error('Ukendt handling.');
-    const project = await inspect(this.root, await this.runtimeConfig());
+    const root = this.root, generation = ++this.generation, current = this.operationGuard(root, generation);
+    this.review = null; this.startupReview.invalidate();
+    const assertPolicy = await this.egress.legacyPermit(root); current();
+    const config = await this.runtimeConfig(root); current();
+    const project = await inspect(root, config); current();
     if (!project.supported) throw new Error(project.reason);
     if (action === 'start' && !project.installed) throw new Error('Installér projektets pakker først.');
     const custom = project.kind === 'services';
     const executables = !custom || project.services.some(s => ['node', 'npm'].includes(s.command[0])) ? await nodeRuntime() : {};
+    current();
     if (custom) {
       executables.services = {};
       for (const service of project.services) {
-        const cwd = await serviceDirectory(this.root, service.cwd), name = service.command[0];
+        const cwd = await serviceDirectory(root, service.cwd), name = service.command[0]; current();
         executables.services[service.id] = ['node', 'npm'].includes(name) ? executables.node : await findProgram(name, cwd);
+        current();
       }
     }
-    const review = { token: randomUUID(), root: this.root, action, scripts: scripts === true, project, executables };
+    const basis = await this.startupReview.prepare(root, action === 'install' ? 'install-dependencies' : 'start-server'); current();
+    if (basis.decision !== 'explicit-review-required' || basis.projectFingerprint !== project.fingerprint) throw this.staleReview();
+    assertPolicy(); const review = { token: randomUUID(), root, action, scripts: scripts === true, project, executables, basisID: basis.id };
     this.review = review;
     const npmCommand = item => [`npm ${item.install}`, '--no-audit', '--no-fund', '--include=dev', `--ignore-scripts=${scripts !== true}`, ...item.installPolicy.args].join(' ');
     const command = custom ? action === 'install' ? [...new Map(project.installs.map(item => [item.cwd, item])).values()].map(item => item.kind === 'npm' ? `${npmCommand(item)} (${path.relative(this.root, item.cwd) || '.'})${item.installPolicy.reason ? '\n' + item.installPolicy.reason : ''}` : `Python: opret projektets .venv og installér ${item.requirements ? 'requirements.txt' : 'projektets pyproject.toml'} dér. Pakkernes byggekommandoer kan køre.`).join('\n') : project.services.map(service => `${service.label}: ${service.command.join(' ')}${service.declaredScript ? `\npackage.json: ${service.declaredScript}` : ''}\nMappe: ${service.cwd}; HOST=127.0.0.1; PORT=${service.port || 'ledig port'}`).join('\n\n') : action === 'install' ? `${npmCommand(project)}${project.installPolicy.reason ? '\n' + project.installPolicy.reason : ''}` : `${project.kind === 'vite' ? 'Vite' : 'Astro'} dev · 127.0.0.1 · ledig port`;
@@ -176,17 +199,22 @@ class DevServer {
   async execute(token) {
     const review = this.review; this.review = null;
     if (!review || token !== review.token || review.root !== this.root || active(this.state)) throw new Error('Gennemgå handlingen igen før godkendelse.');
-    const project = await inspect(this.root, await this.runtimeConfig());
+    const root = this.root, generation = ++this.generation, current = this.operationGuard(root, generation);
+    const assertPolicy = await this.egress.legacyPermit(root); current();
+    const config = await this.runtimeConfig(root); current();
+    const project = await inspect(root, config); current();
     if (!project.supported || project.fingerprint !== review.project.fingerprint) throw new Error('Projektets opsætning er ændret. Gennemgå handlingen igen.');
+    const basis = await this.startupReview.consume(review.basisID); current();
+    if (basis.decision !== 'explicit-review-required') throw this.staleReview();
+    const assertLaunch = () => { current(); assertPolicy(); };
     this.activeConfig = project.runtimeConfig;
-    if (project.kind === 'services') return this.executeServices(review, project);
-    const generation = ++this.generation;
+    if (project.kind === 'services') return this.executeServices(review, project, assertLaunch, generation);
     this.output = ''; this.url = null; this.kind = project.kind;
     const installing = review.action === 'install';
-    const args = installing ? [review.executables.npm, project.install, '--no-audit', '--no-fund', '--include=dev', `--ignore-scripts=${!review.scripts}`, ...project.installPolicy.args] : [this.runner, this.root, project.kind];
+    const args = installing ? [review.executables.npm, project.install, '--no-audit', '--no-fund', '--include=dev', `--ignore-scripts=${!review.scripts}`, ...project.installPolicy.args] : [this.runner, root, project.kind];
     this.update(installing ? 'installing' : 'starting');
     const env = environment(); env.PATH = [path.dirname(review.executables.node), env.PATH || ''].join(path.delimiter);
-    const child = spawn(review.executables.node, args, { cwd: this.root, env, shell: false, detached: process.platform !== 'win32', windowsHide: true, stdio: ['ignore', 'pipe', 'pipe', ...(installing ? [] : ['ipc'])] });
+    assertLaunch(); const child = spawn(review.executables.node, args, { cwd: root, env, shell: false, detached: process.platform !== 'win32', windowsHide: true, stdio: ['ignore', 'pipe', 'pipe', ...(installing ? [] : ['ipc'])] });
     this.child = child;
     let timer;
     const failure = async message => {
@@ -208,7 +236,9 @@ class DevServer {
       if (generation !== this.generation) return;
       if (installing && code === 0) {
         try {
-          if (!(await inspect(this.root)).installed) return void failure('npm afsluttede, men frameworkets pakke mangler. Gennemgå pakkeadresserne og installér igen.');
+          const next = await inspect(root, project.runtimeConfig);
+          if (generation !== this.generation) return;
+          if (!next.installed) return void failure('npm afsluttede, men frameworkets pakke mangler. Gennemgå pakkeadresserne og installér igen.');
           await terminate(child);
           if (generation !== this.generation) return;
           this.child = null; this.update('installed', 'Pakkerne er installeret. Du kan nu starte forhåndsvisningen.');
@@ -240,8 +270,11 @@ class DevServer {
     }
     return this.snapshot();
   }
-  async executeServices(review, project) {
-    const generation = ++this.generation, installing = review.action === 'install';
+  async executeServices(review, project, assertPolicy, operationGeneration) {
+    assertPolicy ||= await this.egress.legacyPermit(this.root);
+    const generation = operationGeneration ?? ++this.generation, installing = review.action === 'install';
+    const root = this.root, current = this.operationGuard(root, generation);
+    current(); assertPolicy();
     this.output = ''; this.url = null; this.kind = 'services'; this.services = []; this.children = [];
     this.update(installing ? 'installing' : 'starting');
     const env = environment();
@@ -255,7 +288,7 @@ class DevServer {
       if (this.generation === generation + 1) this.update('error', message);
     };
     const launch = (file, args, cwd, label, childEnv = env) => {
-      const child = spawn(file, args, { cwd, env: childEnv, shell: false, detached: process.platform !== 'win32', windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+      current(); assertPolicy(); const child = spawn(file, args, { cwd, env: childEnv, shell: false, detached: process.platform !== 'win32', windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
       this.children.push(child);
       child.stdout.on('data', data => append(label, data.toString())); child.stderr.on('data', data => append(label, data.toString()));
       return child;
@@ -277,11 +310,13 @@ class DevServer {
             const python = await findProgram('python3', item.cwd), localPython = path.join(item.cwd, '.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python');
             if (!python.startsWith(path.join(item.cwd, '.venv') + path.sep)) await runStep(python, ['-m', 'venv', '.venv'], item.cwd, 'Python-miljø');
             await runStep(localPython, ['-m', 'pip', '--disable-pip-version-check', 'install', ...(item.requirements ? ['-r', 'requirements.txt'] : ['.'])], item.cwd, 'Python-pakker');
+            current(); assertPolicy();
             await fs.writeFile(path.join(item.cwd, '.venv', 'aura-installed'), item.dependencyHash + '\n');
           }
         }
         if (generation !== this.generation) return;
-        const next = await inspect(this.root, await this.runtimeConfig());
+        const config = await this.runtimeConfig(root); current();
+        const next = await inspect(root, config); current(); assertPolicy();
         if (!next.installed) throw Error('Pakkerne kunne ikke kontrolleres efter installationen. Se procesloggen.');
         this.update('installed', 'Pakkerne er installeret. Gennemgå opstarten for at se appen.');
       })().catch(error => void failed(error.message));
@@ -297,7 +332,7 @@ class DevServer {
       if (generation !== this.generation) return;
       const shared = Object.fromEntries(services.map(service => [`AURA_SERVICE_${service.id.replace(/-/g, '_').toUpperCase()}_URL`, service.url]));
       for (const service of services) {
-        const cwd = await serviceDirectory(this.root, service.cwd), [program, ...input] = service.command;
+        const cwd = await serviceDirectory(root, service.cwd), [program, ...input] = service.command; current();
         const args = input.map(arg => arg.replace(/\{host\}/g, '127.0.0.1').replace(/\{port\}/g, String(service.port)));
         if (program === 'npm') args.unshift(review.executables.npm);
         const child = launch(review.executables.services[service.id], args, cwd, service.label, { ...env, ...shared, HOST: '127.0.0.1', PORT: String(service.port), PYTHONUNBUFFERED: '1' });
@@ -323,7 +358,7 @@ class DevServer {
   async stop() {
     if (this.stopping) return this.stopping;
     clearTimeout(this.timer);
-    this.review = null; ++this.generation; this.url = null; this.services = []; this.activeConfig = null;
+    this.review = null; ++this.generation; this.startupReview.invalidate(); this.url = null; this.services = []; this.activeConfig = null;
     const child = this.child; this.child = null;
     const children = [...new Set([child, ...this.children].filter(Boolean))]; this.children = [];
     if (!children.length) { if (this.root) this.update('stopped', 'Forhåndsvisningen er stoppet.'); return; }

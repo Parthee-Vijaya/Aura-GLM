@@ -1,25 +1,59 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const protectedPaths = require('./protected-paths.cjs');
 const { execFile } = require('node:child_process');
 const { createHash, randomUUID } = require('node:crypto');
 const digest = data => createHash('sha256').update(data).digest('hex');
 const LIMIT = 2 * 1024 * 1024;
+// Host-only registrations cover every importing module (including checkpoints
+// and restoration), not just calls through GitVersions. All applicable scopes
+// must stay current; no renderer field can opt an invocation out of isolation.
+const privacyResolvers = new Set();
+function registerGitPrivacyResolver(resolve) {
+  if (typeof resolve !== 'function') throw new TypeError('Git privacy resolver must be a function.');
+  privacyResolvers.add(resolve); return () => privacyResolvers.delete(resolve);
+}
+function gitPermit(root) {
+  const permits = [...privacyResolvers].map(resolve => resolve(root)).filter(Boolean);
+  if (permits.some(permit => typeof permit.assertCurrent !== 'function' || typeof permit.protected !== 'boolean')) throw new Error('Git Privacy Gate could not validate its host scope.');
+  const assertCurrent = () => { for (const permit of permits) if (permit.assertCurrent() !== true) throw new Error('Git Privacy Gate scope changed.'); return true; };
+  const recordUncontained = () => { for (const permit of permits) permit.recordUncontained?.(); };
+  assertCurrent(); return { protected: permits.some(permit => permit.protected), assertCurrent, recordUncontained };
+}
+function metadataOnly(args, configuration) {
+  if (configuration.length || !Array.isArray(args) || args.some(arg => typeof arg !== 'string')) return false;
+  const copy = [...args]; if (copy[0] === '--no-literal-pathspecs') copy.shift();
+  if (copy.length === 1 && copy[0] === '--version') return true;
+  if (copy[0] === 'init') return true;
+  if (copy[0] === 'config') return !copy.some(arg => ['--edit', '-e', 'edit'].includes(arg));
+  if (copy[0] === 'symbolic-ref') return copy.length === 3 && copy[1] === '--short' && copy[2] === 'HEAD';
+  if (copy[0] === 'rev-parse') return copy.length === 2 && ['--show-toplevel','--is-bare-repository','--absolute-git-dir','--is-shallow-repository'].includes(copy[1]) || copy.length === 3 && copy[1] === '--git-path';
+  // Object readers can lazily fetch missing objects in partial repositories;
+  // log can invoke a configured signature verifier. Neither is metadata-only.
+  return copy[0] === 'check-ignore';
+}
 
 function run(root, args, input, configuration = []) {
+  const permit = gitPermit(root);
+  if (permit.protected) return require('./privacy/git-isolation.cjs').runIsolatedGit(root, args, input, configuration, permit);
   const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')));
   Object.assign(env, { GIT_TERMINAL_PROMPT: '0', GIT_OPTIONAL_LOCKS: '0', GIT_LITERAL_PATHSPECS: '1', LC_ALL: 'C' });
   env.GIT_CONFIG_COUNT = String(configuration.length);
   configuration.forEach(([key, value], index) => { env[`GIT_CONFIG_KEY_${index}`] = key; env[`GIT_CONFIG_VALUE_${index}`] = value; });
   return new Promise((resolve, reject) => {
     const runtime = require('./runtime.cjs');
+    permit.assertCurrent();
+    // A finished unsandboxed hook may leave a detached child. Do not clear this
+    // provenance when Git exits. Even status can run configured clean filters.
+    if (!metadataOnly(args, configuration)) permit.recordUncontained();
     const child = execFile(runtime.get()?.git || 'git', ['-c', 'core.fsmonitor=false', ...args], { cwd: root, env: runtime.gitEnvironment(env), timeout: 30000, maxBuffer: 8 * LIMIT, windowsHide: true, encoding: 'buffer' }, (error, stdout) => {
       if (error) { const failure = new Error(error.code === 'ENOENT' ? 'Git blev ikke fundet. Installer Git, og genstart appen.' : 'Git kunne ikke gennemføre handlingen. Kontrollér repository, låsefiler, hooks og eventuel commitsignering.'); failure.code = error.code; reject(failure); }
-      else resolve(stdout);
+      else { try { permit.assertCurrent(); resolve(stdout); } catch (error) { reject(error); } }
     });
     child.stdin.on('error', () => {}); child.stdin.end(input);
   });
 }
-async function optional(root, args) { try { return (await run(root, args)).toString('utf8').trim(); } catch (error) { if (error.code === 'ENOENT') throw error; return ''; } }
+async function optional(root, args) { try { return (await run(root, args)).toString('utf8').trim(); } catch (error) { if (error.code === 'ENOENT' || typeof error.code === 'string' && error.code.startsWith('PRIVACY_') && !Number.isInteger(error.gitExitCode)) throw error; return ''; } }
 async function exists(file) { try { await fs.lstat(file); return true; } catch (e) { if (e.code === 'ENOENT') return false; throw e; } }
 function parseStatus(raw) {
   const fields = raw.toString('utf8').split('\0'); const files = [];
@@ -32,7 +66,7 @@ function parseStatus(raw) {
   return files;
 }
 function protectedPath(file) {
-  return file.split('/').some(part => /^(\.git|\.env(?:\..*)?|\.npmrc|\.pypirc|references|secrets|\.secrets|node_modules)$/i.test(part)) || /(?:credentials|\.(?:pem|key|p12|pfx)$)/i.test(file);
+  return protectedPaths.isProtected(file) || protectedPaths.isGenerated(file, 'git');
 }
 function secretContent(text) {
   return /-----BEGIN (?:[A-Z ]+ )?PRIVATE KEY-----|\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-(?:ant-|or-v1-)?[A-Za-z0-9_-]{20,}|AKIA[A-Z0-9]{16}|kp_live_[A-Za-z0-9_-]{43}|komp_publish_(?:grant_)?[a-f0-9]{64})\b/i.test(text) || /(?:api[_-]?key|secret|password|access[_-]?token)\s*["']?\s*[:=]\s*["'][^"'\r\n]{12,}["']/i.test(text);
@@ -176,4 +210,4 @@ class GitVersions {
     } finally { this.busy = false; }
   }
 }
-module.exports = { GitVersions, run, secretContent, protectedPath, content, ANONYMOUS };
+module.exports = { GitVersions, run, secretContent, protectedPath, content, ANONYMOUS, registerGitPrivacyResolver, metadataOnly };

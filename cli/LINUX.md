@@ -22,7 +22,7 @@ npm install --include=optional --ignore-scripts --no-audit --no-fund --no-save .
 ./node_modules/.bin/aura doctor
 ```
 
-Der kræves ingen global installation eller `sudo`. npm henter den fastlåste OpenCode-motor, der passer til Node-processens platform. Aura ændrer ikke din øvrige OpenCode-opsætning. `doctor` skal finde Node, Git og OpenCode 1.18.33. Stop ved fejl. Se efter manglende diskplads, blokeret netadgang eller udeladte valgfrie afhængigheder. Slå ikke organisationens sikkerhedskontrol fra. Der installeres ingen Docker eller projektpakker ved opstart.
+Der kræves ingen global installation eller `sudo`. npm henter den fastlåste OpenCode-motor, der passer til Node-processens platform. Aura ændrer ikke din øvrige OpenCode-opsætning. `doctor` skal finde Node, Git og OpenCode 2.1.4. Stop ved fejl. Se efter manglende diskplads, blokeret netadgang eller udeladte valgfrie afhængigheder. Slå ikke organisationens sikkerhedskontrol fra. Der installeres ingen Docker eller projektpakker ved opstart.
 
 ## Første prøve
 

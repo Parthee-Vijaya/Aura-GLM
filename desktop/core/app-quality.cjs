@@ -264,7 +264,8 @@ function qualityRepairInstruction(report) {
 }
 
 function createAppQualityInspector({ BrowserWindow, session, directory }) {
-  return async ({ root, signal }) => {
+  const inspect = async ({ root, signal, privacy }) => {
+    if (privacy) return require('../privacy/isolation/offline-renderer.cjs').inspectProtectedApp({ root, signal, directory });
     const controller = new AbortController(), abort = () => controller.abort();
     signal?.addEventListener('abort', abort, { once: true });
     if (signal?.aborted) abort();
@@ -383,5 +384,7 @@ function createAppQualityInspector({ BrowserWindow, session, directory }) {
       if (ses) { ses.protocol.unhandle('https'); let cleanupTimer; await Promise.race([ses.clearStorageData().catch(() => {}), new Promise(resolve => { cleanupTimer = setTimeout(resolve, 1000); })]); clearTimeout(cleanupTimer); }
     }
   };
+  inspect.supportsPrivacyIsolation = process.platform === 'darwin';
+  return inspect;
 }
 module.exports = { createAppQualityInspector, snapshotApp, findingsFor, qualityRepairInstruction, LIMITS };

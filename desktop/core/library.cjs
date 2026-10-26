@@ -60,10 +60,15 @@ function validateSkillLinks(skills, names) {
   }
 }
 
+function validateSkillName(name) {
+  const where = `Skill ${name}`;
+  if (typeof name !== 'string' || !NAME.test(name) || name.length > 64) throw new Error(`${where}: Navnet skal bestå af små bogstaver, tal og bindestreger og højst have 64 tegn.`);
+  if (!name.startsWith('harness-')) throw new Error(`${where}: Navnet skal begynde med harness-, så det ikke forveksles med projektets egne skills.`);
+}
+
 function validateSkill(entry, files) {
   const where = `Skill ${entry.name}`;
-  if (!NAME.test(entry.name) || entry.name.length > 64) throw new Error(`${where}: Navnet skal bestå af små bogstaver, tal og bindestreger og højst have 64 tegn.`);
-  if (!entry.name.startsWith('harness-')) throw new Error(`${where}: Navnet skal begynde med harness-, så det ikke forveksles med projektets egne skills.`);
+  validateSkillName(entry.name);
   const skill = files.find(file => file.path === 'SKILL.md');
   if (!skill) throw new Error(`${where}: SKILL.md mangler.`);
   const { fields } = validateSkillFiles(entry.name, files, where);
@@ -137,6 +142,8 @@ async function loadLibrary(profileRoot) {
   const names = new Set();
   const skills = [];
   for (const entry of catalog.skills) {
+    // Validate before constructing or reading a path, independently of filesystem casing.
+    validateSkillName(entry?.name);
     if (names.has(entry.name)) throw new Error(`Skill ${entry.name} står flere gange i kataloget.`);
     names.add(entry.name);
     const files = await readSkillFiles(path.join(profileRoot, 'skills', entry.name));

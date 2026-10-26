@@ -87,3 +87,15 @@ test('reasoning idea models retain room for their visible proposal without chang
  assert.equal(request({id:'test',capabilities:{reasoning:true},limits:{output:12000}}).max_tokens,12000);
  assert.equal(request({id:'test',capabilities:{reasoning:false},limits:{output:64000}}).max_tokens,8192);
 });
+
+
+test('idea history survives harmless catalogue and check metadata refresh while an in-flight review stays exact',async t=>{
+ const f=await fixture(t);let price=1;f.bench.models=async()=>[{id:'test',name:'Test',price:{input:price}}];
+ let review=await f.service.prepare(input);await f.service.send({token:review.token});
+ f.connection.checkedAt='later';price=2;
+ review=await f.service.prepare({...input,message:'Bevar funktionerne.'});assert.equal(review.content.length,3);
+ price=3;await assert.rejects(f.service.send({token:review.token}),/ændret/);assert.equal(f.sent.length,1);
+ review=await f.service.prepare(input);assert.equal(review.content.length,3);
+ f.connection.secret='another-encrypted-account';
+ review=await f.service.prepare(input);assert.equal(review.content.length,1,'a different account must never inherit the previous history');
+});

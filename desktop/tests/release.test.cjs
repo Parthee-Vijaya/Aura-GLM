@@ -4,7 +4,7 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
-const { expectedFiles, assetURL, validateRelease, releaseSnapshot } = require('../../scripts/release-contract.cjs');
+const { repository, expectedFiles, assetURL, validateRelease, releaseSnapshot } = require('../../scripts/release-contract.cjs');
 const { check } = require('../../scripts/check-release.cjs');
 const { selectDraft, validateAssetIDs } = require('../../scripts/download-desktop-draft.cjs');
 const version = '0.2.0-beta.6';
@@ -35,7 +35,7 @@ test('Desktopkladder hentes via ID og må bruge GitHubs midlertidige downloadadr
   const f = fixture();
   f.release.assets.forEach((a, i) => {
     a.id = 100 + i; a.size ||= 100; a.digest ||= 'sha256:' + 'b'.repeat(64);
-    a.url = `https://api.github.com/repos/ai-alliancen-org/ai-harness/releases/assets/${a.id}`;
+    a.url = `https://api.github.com/repos/${repository}/releases/assets/${a.id}`;
     a.browser_download_url = assetURL('untagged-9eb271ba7508f6aaf1fd', a.name);
   });
   assert.equal(selectDraft([f.release], 'v' + version).id, f.release.id);
@@ -43,14 +43,14 @@ test('Desktopkladder hentes via ID og må bruge GitHubs midlertidige downloadadr
   assert.equal(validateRelease(f.release, f.manifest, f.checksums, version).files.length, 3);
   for (const mutate of [r => r.assets[0].url = 'https://example.org/fil', r => r.assets[0].id = r.assets[1].id,
     r => r.assets[1].browser_download_url = assetURL('untagged-abcdef', r.assets[1].name),
-    r => r.assets[0].browser_download_url = r.assets[0].browser_download_url.replace('ai-alliancen-org', 'other'),
+    r => r.assets[0].browser_download_url = r.assets[0].browser_download_url.replace(repository, 'other/repo'),
     r => r.assets[0].size = 0, r => r.assets.pop(), r => r.draft = false]) {
     const bad = structuredClone(f.release); mutate(bad); assert.throws(() => validateAssetIDs(bad));
   }
 });
 test('Udgivelseskontrollen læser de faktiske bytes uden at kræve en AI-udbyder', async t => {
   const root=await fs.mkdtemp(path.join(os.tmpdir(),'aura-release-test-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));
-  const f=fixture(), metadata={full_name:'ai-alliancen-org/ai-harness',private:false,visibility:'public'};
+  const f=fixture(), metadata={full_name:repository,private:false,visibility:'public'};
   for(const file of f.manifest.files)await fs.writeFile(path.join(root,file.name),f.content);
   await fs.writeFile(path.join(root,'release.json'),JSON.stringify(f.manifest));await fs.writeFile(path.join(root,'SHA256SUMS.txt'),f.checksums);
   t.mock.method(globalThis, 'fetch', () => { throw new Error('Generel udgivelse må ikke kontakte en AI-udbyder'); });
@@ -58,6 +58,7 @@ test('Udgivelseskontrollen læser de faktiske bytes uden at kræve en AI-udbyder
   await fs.writeFile(path.join(root,f.manifest.files[0].name),Buffer.alloc(f.content.length));
   await assert.rejects(check(root,f.release,metadata,version),/SHA-256/);
   await assert.rejects(check(root,f.release,{...metadata,private:true},version),/offentligt/);
+  await assert.rejects(check(root,f.release,{...metadata,full_name:'ai-alliancen-org/ai-harness'},version),/offentligt/);
 });
 test('Desktopudgivelse er fortsat manuel og har ingen særskilt AI-login-kontrol', async () => {
   const workflow = await fs.readFile(path.join(__dirname, '../../.github/workflows/desktop-release.yml'), 'utf8');

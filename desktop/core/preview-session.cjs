@@ -30,6 +30,22 @@ function diagnosticForConsole(event) {
   return blockedRequest({ url: address, resourceType });
 }
 
+// An ordinary browser renderer never becomes an egress path for protected
+// project data. Protected previews need a separately qualified adapter;
+// the ordinary renderer is denied before it can receive those local assets.
+async function privacyAllows(ctx,details) {
+  const service=ctx?.owner?.privacy;
+  if(!service)return true;
+  const egress = new (require('./privacy/external-egress.cjs').ExternalEgress)(()=>service);
+  const scope=egress.scope(ctx.root || ctx.owner.project.root), binding=egress.binding(scope);
+  const policy=require('./privacy/policy.cjs').composePolicy(await egress.policies(scope));
+  if(egress.binding(scope)!==binding)return false;
+  if(!policy.enabled)return true;
+  // Protected content must not enter this shared renderer: WebRTC/other
+  // browser channels are outside ordinary webRequest filtering. The offline
+  // quality inspector uses a distinct network-denied session instead.
+  return false;
+}
 function installSession(ses, { contexts, resolveFrame = () => null, sdk, onDiagnostic = () => {}, appOrigin = 'harness://app' } = {}) {
   if (typeof contexts !== 'function') throw Error('Forhåndsvisningen mangler arbejdsområderne.');
   const all = () => [...contexts()];
@@ -59,8 +75,13 @@ function installSession(ses, { contexts, resolveFrame = () => null, sdk, onDiagn
     const source = originOf(details.initiatorOrigin || details.frame?.url || details.referrer);
     const appResource = originOf(details.url) === appOrigin && (!source || source === appOrigin) && !resolveFrame(details);
     const ctx = context(details), allowed = appResource || allowedForContext(ctx, details);
-    if (!allowed && ctx) diagnose(ctx, details);
-    callback({ cancel: !allowed });
+    if(appResource){callback({cancel:false});return;}
+    // Preserve the synchronous legacy path when no privacy service is attached.
+    if (!ctx?.owner?.privacy) { if (!allowed && ctx) diagnose(ctx,details); callback({cancel:!allowed}); return; }
+    Promise.resolve(allowed && privacyAllows(ctx,details)).then(permitted=>{
+      if(!permitted&&ctx)diagnose(ctx,details);
+      callback({cancel:!permitted});
+    },()=>callback({cancel:true}));
   });
   ses.webRequest.onHeadersReceived((details, callback) => {
     const ctx = context(details), headers = { ...details.responseHeaders };
@@ -75,4 +96,4 @@ function installSession(ses, { contexts, resolveFrame = () => null, sdk, onDiagn
   return { contextForRequest: context, allowed: details => allowedForContext(context(details), details) };
 }
 
-module.exports = { installSession, staticPreview, contextForURL, contextPolicy, allowedForContext, diagnosticForConsole };
+module.exports = { installSession, staticPreview, contextForURL, contextPolicy, allowedForContext, diagnosticForConsole, privacyAllows };

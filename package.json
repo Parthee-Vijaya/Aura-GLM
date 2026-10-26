@@ -7,17 +7,18 @@
   "bin": { "aura": "cli/aura.cjs" },
   "engines": { "node": ">=22.12.0" },
   "optionalDependencies": {
-    "opencode-darwin-arm64": "1.18.33",
-    "opencode-darwin-x64-baseline": "1.18.33",
-    "opencode-windows-arm64": "1.18.33",
-    "opencode-windows-x64-baseline": "1.18.33",
-    "opencode-linux-arm64": "1.18.33",
-    "opencode-linux-arm64-musl": "1.18.33",
-    "opencode-linux-x64-baseline": "1.18.33",
-    "opencode-linux-x64-baseline-musl": "1.18.33"
+    "@opencode/cli-darwin-arm64": "2.1.4",
+    "@opencode/cli-darwin-x64-baseline": "2.1.4",
+    "@opencode/cli-windows-arm64": "2.1.4",
+    "@opencode/cli-windows-x64-baseline": "2.1.4",
+    "@opencode/cli-linux-arm64": "2.1.4",
+    "@opencode/cli-linux-arm64-musl": "2.1.4",
+    "@opencode/cli-linux-x64-baseline": "2.1.4",
+    "@opencode/cli-linux-x64-baseline-musl": "2.1.4"
   },
-  "files": ["cli/*.cjs", "cli/*.md", "desktop/core/*.cjs", "desktop/ui/conversation-mode.js", "desktop/ui/plan-view.js", "desktop/runtime-lock.json", "profiles/", "scripts/harness.cjs", "LICENSE"],
+  "files": ["cli/*.cjs", "cli/*.md", "desktop/core/*.cjs", "desktop/core/privacy/*.cjs", "desktop/privacy/isolation/*.cjs", "desktop/privacy/isolation/*.c", "desktop/ui/conversation-mode.js", "desktop/ui/plan-view.js", "desktop/runtime-lock.json", "profiles/", "scripts/harness.cjs", "LICENSE"],
   "scripts": {
+    "check": "node scripts/check.cjs",
     "package:cli": "node scripts/build-cli-release.cjs",
     "test:cli": "node --test --test-concurrency=1 cli/tests/*.test.cjs",
     "test:cli-live": "node cli/tests/verify-cli.cjs"

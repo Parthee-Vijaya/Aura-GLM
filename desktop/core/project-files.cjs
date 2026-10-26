@@ -4,16 +4,16 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { protectedPath, secretContent } = require('./git.cjs');
+const protectedPaths = require('./protected-paths.cjs');
 
 const TEXT_LIMIT = 1024 * 1024, IMAGE_LIMIT = 2 * 1024 * 1024;
 // Genererede mapper og værktøjsmapper, der ikke hjælper brugeren med at forstå sit projekt.
-const GENERATED = new Set(['.git', 'node_modules', '.next', 'dist', 'build', '.venv', 'venv', '__pycache__', '.cache', '.turbo', '.parcel-cache', '.svelte-kit', '.astro', 'coverage', '.idea', '.vscode']);
 const NOISE = /^(\.DS_Store|Thumbs\.db|desktop\.ini)$/i;
 const IMAGES = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp', '.ico': 'image/x-icon' };
 
 // Samme regler som agentens læsetilladelser: også fx produktion.env og mappen secrets er beskyttet.
 function isProtected(file) {
-  return protectedPath(file) || /(^|\/)[^/]*\.env(\.[^/]*)?$/i.test(file) || /(^|\/)\.?secrets(\/|$)/i.test(file);
+  return protectedPath(file);
 }
 class FileError extends Error { constructor(message, code) { super(message); this.code = code; } }
 
@@ -81,7 +81,7 @@ async function listFiles(root, { limit = 3000 } = {}) {
     for (const entry of entries) {
       const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
       if (entry.isSymbolicLink() || NOISE.test(entry.name) || isProtected(relative)) continue;
-      if (entry.isDirectory()) { if (!GENERATED.has(entry.name)) await visit(path.join(dir, entry.name), relative, depth + 1); continue; }
+      if (entry.isDirectory()) { if (!protectedPaths.isGenerated(relative, 'browser')) await visit(path.join(dir, entry.name), relative, depth + 1); continue; }
       if (!entry.isFile()) continue;
       if (files.length >= limit) { truncated = true; return; }
       files.push({ path: relative, image: Boolean(IMAGES[path.extname(entry.name).toLowerCase()]) });

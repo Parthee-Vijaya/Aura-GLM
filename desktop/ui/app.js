@@ -353,7 +353,7 @@ function showPreview(url, external = false) {
   $('#preview').setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms');
   if (url) { if ($('#preview').getAttribute('src') !== url) $('#preview').src = url; } else $('#preview').removeAttribute('src');
   $('#preview-status').textContent = url ? (external ? 'Tilsluttet lokal server' : 'Lokal forhåndsvisning') : 'Ingen forhåndsvisning';
-  window.previewEdit?.onPreview();
+  window.previewEdit?.onPreview(); syncResultPreview();
 }
 async function displayProject(project, { firstTask = false } = {}) {
   if (!project) return;
@@ -539,7 +539,7 @@ function renderConnectionList() {
       const remove = node('button', connection.account?.authMethod === 'token' ? 'Fjern fra Aura 1' : 'Log ud og fjern', 'text-button danger');
       remove.type = 'button'; remove.setAttribute('aria-label', `${remove.textContent}: ${connection.name}`);
       remove.title = connection.account?.authMethod === 'token' ? 'Fjerner det gemte token fra Aura 1. Tokenet kan stadig bruges i andre programmer.' : 'Tilbagekalder den gamle AI-adgang og fjerner forbindelsen. komplai Run bevares.';
-      remove.onclick = () => action(async () => { remove.disabled = true; try { await removeSavedConnection(connection.id); $('#connections-search').focus(); } finally { remove.disabled = false; } });
+      remove.onclick = () => action(async () => { remove.disabled = true; try { await removeSavedConnection(connection.id, { fromList: true }); $('#connections-search').focus(); } finally { remove.disabled = false; } });
       row.append(text, remove); return row;
     }
     const status = node('small'); status.dataset.connectionStatus = connection.id; text.append(status);
@@ -631,11 +631,21 @@ $('#connection-test').onclick = () => action(async () => {
   try { const result = await checkConnection(id); if (result && !setupActive && id === $('#connection-id').value) $('#connection-feedback').textContent = result.detail; }
   finally { $('#connection-test').disabled = false; }
 });
-async function removeSavedConnection(id) {
-  const selected = $('#connection-select').value;
-  state = await call('removeConnection', id); connectionChecks.clear(id); ++setupGeneration; verifiedConnection = ''; acceptedFingerprint = null; renderConnections();
-  connectionView('list'); $('#connections-feedback').textContent = 'Forbindelsen er fjernet.';
-  if (current && selected === id) connectionFailed('Den valgte forbindelse er fjernet.');
+async function removeSavedConnection(id, { fromList = false } = {}) {
+  const find = () => [...(state?.connections || []), ...(state?.retiredConnections || [])].find(connection => connection.id === id);
+  const connection = find(), navigation = navigationRequest, editing = editingConnection;
+  if (!connection) return false;
+  const original = JSON.stringify(connection);
+  const stillCurrent = exactID => exactID === id && navigation === navigationRequest && $('#connections-dialog').open && (fromList ? !$('#connections-list').hidden : editingConnection === editing && editing === id && !$('#connection-edit').hidden) && JSON.stringify(find()) === original;
+  return window.ConnectionRemoval.request({ connection: { id, name: connection.name, retiredOAuth: connection.kind === 'komplai' && connection.account?.authMethod !== 'token' }, stillCurrent, remove: async exactID => {
+    if (!stillCurrent(exactID)) throw Error('Forbindelsen eller dit valg er ændret. Gennemgå fjernelsen igen.');
+    const selected = $('#connection-select').value, next = await call('removeConnection', exactID);
+    connectionChecks.clear(exactID);
+    if (navigation !== navigationRequest) return;
+    state = next; ++setupGeneration; verifiedConnection = ''; acceptedFingerprint = null; renderConnections();
+    connectionView('list'); $('#connections-feedback').textContent = 'Forbindelsen er fjernet. Dine projekter og samtaler er bevaret.';
+    if (current && selected === exactID) connectionFailed('Den valgte forbindelse er fjernet.');
+  } });
 }
 $('#connection-remove').onclick = () => action(() => removeSavedConnection(editingConnection));
 // Trin for trin til en nøgle hos de tre udbydere i opsætningen. Knapperne åbner faste sider via hovedprocessen. Kontrolleret 29. september 2026.
@@ -824,6 +834,7 @@ function renderStatus() {
   const progress = window.ChatDisplay.progress(v);
   $('#agent-progress').textContent = progress.text; $('#agent-progress').hidden = waiting;
   $('#agent-activity').classList.toggle('is-quiet', progress.quiet && !waiting);
+  window.feedbackLayout?.update({ running: v.running, waitingTarget: waiting ? v.waitingFor[0].element : null });
   $('#chat-form').setAttribute('aria-busy', String(v.running));
   if (v.running) $('#run-status').textContent = waiting ? 'Venter på dig' : `${v.runLabel} ${elapsedText(Date.now() - v.runStartedAt)}`;
 }
@@ -858,7 +869,7 @@ function applyRunning() {
   $('#task-next-note').hidden = !running;
   $('#include-history').disabled = running;
   setupControls();
-  renderStatus(); window.previewEdit?.available(); window.chatMaterials?.sync();
+  renderStatus(); window.previewEdit?.available(); window.chatMaterials?.sync(); window.ComposerWorkMode?.sync();
 }
 function showSkill() {
   const skill = skillList.find(s => s.id === $('#skill-select').value); if (!skill) return;
@@ -885,6 +896,7 @@ function partElement(id, role, v = view) {
 }
 // Hændelser fra en samtales opgave vises i dens egen visning, også når en anden samtale er åben.
 window.harness.onEvent(event => {
+  window.PrivacyGate?.onEvent(event);
   const p = event.properties || {};
   if (event.type === 'chat.copy-removed') { previewFrames.get(event.workspaceRoot)?.remove(); previewFrames.delete(event.workspaceRoot); previewRevisions.delete(event.workspaceRoot); return; }
   if (event.type === 'chat.preview' && event.chat === view.id) { usePreviewContext(event); return; }
@@ -914,7 +926,7 @@ window.harness.onEvent(event => {
   if (event.type === 'session.new') { v.contextUsage = null; if (active) renderContextUsage(); v.roles.clear(); v.parts.clear(); v.partTypes.clear(); }
   if (event.type === 'run.status') {
     const working = ['starting', 'working'].includes(event.status);
-    const statuses = { starting: 'Starter agent …', working: 'Arbejder …', idle: 'Klar', error: 'Fejl', stopped: 'Stoppet' };
+    const statuses = { starting: 'Starter agent …', working: 'Arbejder …', idle: 'Klar', error: 'Fejl', stopped: 'Stoppet', rejected: 'Klar' };
     setRunning(working, statuses[event.status] || event.status, v);
     if (['stopped', 'error'].includes(event.status)) {
       if (event.status === 'stopped') { v.plan = null; v.planCard = false; }
@@ -948,7 +960,7 @@ window.harness.onEvent(event => {
   // AI'ens spørgsmål vises ét ad gangen med klikbare svar; se planning.js. Fokus bliver, hvor brugeren er.
   if (event.type === 'question.asked') window.planning.showQuestion(p, v);
   // En fejl under en opgave vises ét sted: på resultatkortet med en vej videre. Beskeden står klar i skrivefeltet.
-  if (['engine.error', 'session.error'].includes(event.type)) {
+  if (['engine.error', 'session.error'].includes(event.type) && !event.permissionRejected) {
     if (active && !$('#prompt').value) $('#prompt').value = v.lastSentText;
     if (['key', 'access', 'rejected', 'notfound'].includes(event.failure?.kind)) {
       invalidateConnection(v.runConnection, event.failure?.message || event.message || 'Udbyderen afviste opgaven. Kontrollér adgang og model.');
@@ -1074,6 +1086,8 @@ $('#preview-form').onsubmit = event => { event.preventDefault(); action(async ()
 $('#static-preview').onclick = () => action(async () => { showPreview(await call('attachPreview', '')); $('#preview-dialog').close(); });
 $('#refresh').onclick = () => { if (current?.previewURL) $('#preview').src = current.previewURL; };
 for (const button of document.querySelectorAll('[data-close]')) button.onclick = () => document.getElementById(button.dataset.close).close();
+// Kun ren information får klik-udenfor. Formularer og godkendelser bevarer deres egne forløb.
+window.ConnectionRemoval.bindInformationalDismiss($('#support-dialog'));
 // Menuhandlingen er skjult igen, når dialogen lukkes. Giv fokus tilbage til den synlige menuåbner.
 for (const id of ['support-dialog', 'connections-dialog', 'features-dialog']) document.getElementById(id).addEventListener('close', () => {
   if (document.querySelector('dialog[open]') || setupActive) return;
@@ -1117,6 +1131,7 @@ function versionTime(at) {
 // Under skrivefeltet står altid den aktive model, udbyderen og indsatsen, ligesom i Claude Code.
 const effortNames = { minimal: 'minimal', low: 'lav', medium: 'middel', high: 'høj', xhigh: 'meget høj', max: 'maksimal' };
 function updateModelSummary() {
+  window.PrivacyGate?.sync();
   const model = $('#model-select');
   const connection = state?.connections.find(c => c.id === $('#connection-select').value);
   const provider = state?.definitions?.[connection?.kind]?.provider || connection?.name || '';
@@ -1746,14 +1761,14 @@ function updateWorkMode() {
   $('#composer-mode').textContent = ({ chat: 'Samtale', plan: 'Planlæg', build: 'Byg', free: 'Byg' })[mode];
   $('#prompt').placeholder = window.workspace?.target() ? 'Hvad skal AI’en ændre her? Fx Gør teksten kortere.' : mode === 'chat' ? 'Stil et spørgsmål, eller beskriv din idé …' : 'Beskriv det, du vil bygge eller ændre …';
   $('#mode-help').textContent = mode === 'chat' ? 'Tal med AI’en om projektet. Filerne ændres ikke.' : mode === 'plan' ? 'Lav en plan sammen med AI’en, før den ændrer appen.' : mode === 'build' ? 'AI’en bygger efter den plan, du har valgt. Handlinger kræver fortsat godkendelse.' : 'AI’en ændrer appen efter din besked og projektets tilladelser.';
-  window.ConversationPermission?.sync();
+  window.ConversationPermission?.sync(); window.ComposerWorkMode?.sync();
 }
 $('#work-mode').onchange = () => {
   if (['chat', 'plan'].includes(view.composerMode) && ['free', 'build'].includes($('#work-mode').value)) $('#include-history').checked = true;
   view.modeChosen = true; acceptedFingerprint = null; updateWorkMode();
   if ($('#work-mode').value === 'chat') { view.planCard = false; $('#plan-card').hidden = true; }
 };
-$('#composer-mode').onclick = () => { $('#task-dialog').showModal(); $('#task-dialog .workflow').open = true; $('#work-mode').focus(); };
+$('#composer-mode').onclick = () => { if (window.ComposerWorkMode) return window.ComposerWorkMode.open(); $('#task-dialog').showModal(); $('#task-dialog .workflow').open = true; $('#work-mode').focus(); };
 $('#accept-plan-offer').onclick = () => {
   if (running) return;
   if (activePlan) { view.planCard = true; $('#plan-card').hidden = false; updatePlanOffer(); $('#build-plan').focus(); return; }
@@ -1809,27 +1824,69 @@ function undoAction(result, label, title, v = view) {
 function resultActions(result, v = view) {
   const actions = node('div', undefined, 'review-actions');
   if (result.files.length && result.task) {
-    const changes = reviewButton(v.reviewedTask === result.task ? 'Ændringer gennemgået' : 'Se ændringer', () => action(async () => {
+    // Viewing the diff is navigation, not the user's acknowledgement of the result.
+    actions.append(reviewButton('Se ændringer', () => action(async () => {
+      if (v !== view) return;
       await window.workspace.showChange(result.task);
-      v.reviewedTask = result.task; changes.textContent = 'Ændringer gennemgået';
-      v.review.classList.add('is-reviewed');
-      for (const details of v.review.querySelectorAll('details')) details.open = false;
-    }));
-    actions.append(changes);
+    })));
   }
   const undo = undoAction(result, 'Fortryd opgaven', 'Fortryd opgaven', v);
   if (undo) { const menu = node('details', undefined, 'result-options'); menu.append(node('summary', 'Flere valg'), undo); actions.append(menu); }
   return actions;
 }
+function syncResultPreview() {
+  const button = view?.review?.querySelector('.result-try');
+  if (!button) return;
+  button.disabled = !current?.previewURL;
+  const note = view.review.querySelector('.result-preview-note');
+  if (note) note.hidden = Boolean(current?.previewURL);
+}
+function completedResult(result, v = view) {
+  const box = v.review;
+  box.classList.add('result-complete');
+  box.append(node('p', 'RESULTAT', 'result-eyebrow'), node('h3', 'Prøv resultatet', 'result-receipt'), node('p', 'AI’ens arbejde er afsluttet. Afprøv selv resultatet, før du bygger videre.', 'result-description'));
+  const hint = node('p', 'Prøv de vigtigste handlinger og det, du bad om.', 'result-test-hint');
+  box.append(hint);
+  const actions = node('div', undefined, 'review-actions');
+  const preview = reviewButton('Afprøv resultatet', () => {
+    if (v !== view || actions.parentNode !== box || !current?.previewURL) return;
+    // Switch only to the existing preview. This never starts or reconnects a server.
+    window.workspace.show('preview', { focus: true });
+  }, true);
+  preview.classList.add('result-try'); preview.disabled = v !== view || !current?.previewURL; actions.append(preview);
+  if (result.task) actions.append(reviewButton('Ændringer', () => action(async () => {
+    if (v !== view || actions.parentNode !== box) return;
+    await window.workspace.showChange(result.task);
+  })));
+  box.append(actions);
+  const unavailable = node('p', 'Forhåndsvisningen er ikke startet. Du kan gennemgå ændringerne eller åbne Server og opstart i forhåndsvisningen.', 'hint result-preview-note');
+  unavailable.hidden = v === view && Boolean(current?.previewURL); box.append(unavailable);
+  if (result.skipped) box.append(node('p', 'Nogle filer er udeladt af oversigten på grund af filtype eller størrelse.', 'hint'));
+  if (result.task) {
+    const review = node('div', undefined, 'result-review-status');
+    const label = node('span', v.reviewedTask === result.task ? 'Du har markeret resultatet som gennemgået' : 'Ikke gennemgået af dig');
+    const mark = reviewButton('Marker som gennemgået', () => {
+      if (v !== view || review.parentNode !== box || running || v.running || v.undoneTasks?.has(result.task)) return;
+      v.reviewedTask = result.task; label.textContent = 'Du har markeret resultatet som gennemgået'; mark.disabled = true;
+      box.classList.add('is-reviewed');
+    });
+    mark.classList.add('text-button'); mark.disabled = v.reviewedTask === result.task || Boolean(v.undoneTasks?.has(result.task));
+    review.append(label, mark); box.append(review);
+  }
+  const undo = undoAction(result, 'Fortryd opgaven', 'Fortryd opgaven', v);
+  if (undo) { undo.classList.add('result-undo'); box.append(undo); }
+}
+
 const targetLine = (box, v = view) => { if (v.lastTarget) box.append(node('p', `Mål: ${v.lastTarget}`, 'review-target')); };
 function renderRunReview(result, v = view) {
-  const box = v.review; box.replaceChildren();
+  const box = v.review; box.replaceChildren(); box.classList.toggle('result-complete', false); box.classList.toggle('is-reviewed', false);
   const { lastCheckpoint, lastSentText, rejectedThisRun, lastRejection } = v;
   result = { files: [], tools: [], ...result };
   v.buildOffer = ['chat', 'plan'].includes(result.mode) && result.status === 'idle' && result.buildOffer === true && !v.plan && !v.waitingFor?.length;
   updatePlanOffer(v);
   const show = () => { box.hidden = false; if (v === view && v.followChat) requestAnimationFrame(() => box.scrollIntoView({ block: 'nearest' })); };
   const saved = result.files.length && lastCheckpoint?.status === 'saved';
+  if (result.task && v.undoneTasks?.has(result.task)) { show(); box.append(node('h3', 'Opgaven er fortrudt'), node('p', 'Opgavens ændringer er allerede gennemgået og fortrudt.')); return; }
   if (result.unavailable) { show(); box.append(node('h3', 'Ændringerne kunne ikke læses'), node('p', 'Gennemgå filerne under Kode, før du fortsætter.')); return; }
   if (result.status === 'error') {
     // Fejl: typen afgør forklaringen og handlingen. Den rå besked står under Se detaljer.
@@ -1899,10 +1956,7 @@ function renderRunReview(result, v = view) {
   if (!result.files.length) { box.hidden = true; return; }
   show();
   box.classList.toggle('is-reviewed', v.reviewedTask === result.task);
-  box.append(node('p', result.files.length ? `${result.files.length} ${result.files.length === 1 ? 'fil ændret' : 'filer ændret'}${saved ? ' · Gemt' : ''}` : 'Opgaven er afsluttet uden filændringer.', 'result-receipt'));
-  if (result.skipped) box.append(node('p', 'Nogle filer er udeladt af oversigten på grund af filtype eller størrelse.', 'hint'));
-  const actions = resultActions(result, v);
-  if (actions.children.length) box.append(actions);
+  completedResult(result, v);
 }
 
 
@@ -2006,3 +2060,10 @@ $('#history-load').onclick=()=>{
   if(!page.older.length)$('#history-load-status').focus({preventScroll:true});
   requestAnimationFrame(()=>{if(view===v){container.scrollTop=position;v.scrollTop=position;updateChatScroll();}});
 };
+
+window.PrivacyGate?.connect({
+  invoke: (method, value) => call(method, value, value?.scope === 'idea' ? null : selectedOwner()),
+  read: () => { const connection = state?.connections?.find(item => item.id === $('#connection-select').value); return { root: current?.root || '', chat: view.id || '', running: view.running, kind: connection?.kind, connectionName: connection?.name, modelID: $('#model-select').value, modelName: $('#model-select').selectedOptions[0]?.textContent || '' }; }
+});
+
+window.addEventListener('aura:privacy-revoke-previews',event=>{for(const root of event.detail?.roots||[]){previewFrames.get(root)?.remove();previewFrames.delete(root);previewRevisions.delete(root);}});

@@ -34,13 +34,17 @@ const questions = [
   // Modelserveren: første planlægning og "SPØRG IGEN" stiller spørgsmål med question-værktøjet; efter svaret kommer planen.
   // "Ret forslaget" giver en ny plan, "STOP" svarer aldrig færdigt, og bygning skriver siden.
   const server = http.createServer(async (req, res) => {
-    if (req.url === '/v1/models') { res.setHeader('content-type', 'application/json'); return res.end(JSON.stringify({ data: [{ id: 'plan-model', name: 'Kontrolleret planmodel' }] })); }
+    if (req.url === '/v1/models') { res.setHeader('content-type', 'application/json'); return res.end(JSON.stringify({ data: [{ id: 'plan-model', name: 'Kontrolleret planmodel', context_length: 262144 }] })); }
     let raw = ''; for await (const chunk of req) raw += chunk;
     const body = JSON.parse(raw); requests.push(body);
     const text = m => typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
     const lastUser = body.messages.findLastIndex(m => m.role === 'user'), last = lastUser >= 0 ? text(body.messages[lastUser]) : '';
     const toolsSince = body.messages.slice(lastUser).filter(m => m.role === 'tool').length;
-    const system = JSON.stringify(body.messages.filter(m => m.role === 'system'));
+    // V2 preserves the original system prompt and appends a trusted instruction
+    // update when Aura switches from planning to the approved build. Model the
+    // latest instruction, rather than treating superseded history as active.
+    const instructionUpdate = body.messages.findLast(m => /^<system-update>/.test(text(m)) && text(m).includes('aura-task'));
+    const system = instructionUpdate ? text(instructionUpdate) : JSON.stringify(body.messages.filter(m => m.role === 'system'));
     const planning = system.includes('PLANLÆGNING:'), building = system.includes('Byg efter denne plan');
     let step;
     if (!body.tools?.length) step = { text: 'Titel' };
@@ -50,7 +54,7 @@ const questions = [
     else if (planning && last.includes('SPØRG IGEN')) step = { text: plan(3) };
     else if (planning && last.includes('Ret forslaget')) step = { text: plan(2) };
     else if (planning) step = { text: plan(1) };
-    else if (building && toolsSince === 0) step = { tool: 'write', args: { filePath: path.join(project, 'public/index.html'), content: '<!doctype html><html lang="da"><meta charset="utf-8"><h1>Find et mødelokale</h1></html>' } };
+    else if (building && toolsSince === 0) step = { tool: 'write', args: { path: path.join(project, 'public/index.html'), content: '<!doctype html><html lang="da"><meta charset="utf-8"><h1>Find et mødelokale</h1></html>' } };
     else step = { text: 'Siden er bygget. Prøv filteret.' };
     res.writeHead(200, { 'content-type': 'text/event-stream' });
     const send = (delta, finish = null) => res.write('data: ' + JSON.stringify({ id: 'plan', object: 'chat.completion.chunk', created: 1, model: body.model, choices: [{ index: 0, delta, finish_reason: finish }], ...(finish ? { usage: { prompt_tokens: 40, completion_tokens: 10, total_tokens: 50 } } : {}) }) + '\n\n');
@@ -125,15 +129,15 @@ const questions = [
     await card.locator('.answer-choice').first().focus(); await page.keyboard.press('Enter');
     assert.equal(await card.locator('.question-step').textContent(), 'Spørgsmål 2 af 3 · Første version');
     assert.equal(await page.evaluate(() => document.activeElement.classList.contains('question-title')), true);
-    assert.equal(await card.locator('.primary').textContent(), 'Vælg mindst ét svar'); assert.equal(await card.locator('.primary').isDisabled(), true);
+    assert.equal(await card.locator(':scope > .primary').textContent(), 'Vælg mindst ét svar'); assert.equal(await card.locator(':scope > .primary').isDisabled(), true);
     await card.locator('.answer-choice', { hasText: 'Liste over lokaler' }).click(); await card.locator('.answer-choice', { hasText: 'Filter efter antal' }).click();
     assert.equal(await card.locator('.answer-choice[aria-pressed="true"]').count(), 2);
     await card.locator('.primary', { hasText: 'Fortsæt med 2 svar' }).click();
     assert.equal(await card.locator('.question-step').textContent(), 'Spørgsmål 3 af 3 · Data');
     await card.locator('.question-links button', { hasText: 'Tilbage' }).click();
     assert.equal(await card.locator('.answer-choice[aria-pressed="true"]').count(), 2, 'tilbage bevarer de valgte svar');
-    await card.locator('.primary').click();
-    await card.locator('.question-links button', { hasText: 'Skriv dit eget svar' }).click();
+    await card.locator(':scope > .primary').click();
+    assert.equal(await card.locator('textarea').isVisible(), true, 'eget svar er synligt uden et ekstra klik');
     await card.locator('textarea').fill('I kommunens bookingsystem senere');
     await card.locator('button[type="submit"]').click();
     await card.waitFor({ state: 'detached' });
@@ -148,7 +152,11 @@ const questions = [
     assert.match(JSON.stringify(answered.messages.filter(m => m.role === 'tool')), /Liste over lokaler/);
     assert.equal(await selected(), 'preview');
     assert.equal(await page.isVisible('#plan-badge'), true);
-    assert.equal(await page.locator('#plan-summary').textContent(), 'En side med tre fiktive mødelokaler og et felt til antal deltagere.');
+    assert.deepEqual(await page.locator('#plan-summary li').allTextContents(), [
+      'Det bygger vi: En side med tre fiktive mødelokaler og et felt til antal deltagere.',
+      'Sådan skal det se ud: Rolige kort med lokalets navn og antal pladser.',
+      'Det skal du prøve: Skriv 8 i feltet, og se, at kun de store lokaler vises. Prøv siden på mobilbredde.'
+    ]);
     await page.click('#plan-open'); assert.equal(await selected(), 'plan'); assert.equal(await page.isVisible('#plan-badge'), false);
     assert.deepEqual(await page.locator('#brief-list .brief-label').allTextContents(), ['Idé', 'Platform', 'Data', 'Brugere', 'Første version']);
     assert.equal(await page.locator('#brief-list dd .brief-value').nth(2).textContent(), 'I kommunens bookingsystem senere', 'eget svar erstatter dataønsket med samme overskrift');
@@ -249,5 +257,5 @@ const questions = [
     console.error(error);
     try { await page?.screenshot({ path: path.join(root, 'fejl.png'), animations: 'disabled' }); console.error('Skærmbillede:', path.join(root, 'fejl.png')); } catch {}
     process.exitCode = 1;
-  } finally { await app?.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
+  } finally { await fs.writeFile(path.join(root, 'synthetic-model-requests.json'), JSON.stringify(requests, null, 2)); await app?.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
 })();

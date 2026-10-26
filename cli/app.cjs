@@ -59,7 +59,7 @@ class Application {
       const status = { pending: 'venter', running: 'arbejder', completed: 'afsluttet', error: 'fejlede' }[tool.state?.status] || 'opdateret';
       this.ui.line(`\n${tool.tool} · ${status}`);
     }
-    if (['engine.error', 'history.error', 'session.error'].includes(event.type)) this.ui.line(`\n${event.message || event.properties?.error?.data?.message || 'Opgaven kunne ikke fortsætte.'}`);
+    if (['engine.error', 'history.error', 'session.error'].includes(event.type) && !event.permissionRejected) this.ui.line(`\n${event.message || event.properties?.error?.data?.message || 'Opgaven kunne ikke fortsætte.'}`);
     if (event.type === 'session.new') this.ui.line('Ny modelsession. Planlægning medtager afklaringen; /context kan medtage tidligere samtaletekst ved direkte arbejde.');
   }
   render(final = false) {

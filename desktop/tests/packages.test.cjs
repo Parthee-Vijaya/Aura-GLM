@@ -91,7 +91,7 @@ test('webguidens og FAQ-sidens lokale links findes i den samlede side, og alle s
   // Den samlede Pages-bygning giver forsiden som index.html og webguiden som pakker.html.
   const pages = await fs.mkdtemp(path.join(os.tmpdir(), 'harness-links-'));
   t.after(() => fs.rm(pages, { recursive: true, force: true }));
-  await require('../../scripts/build-pages.cjs').build([], { full_name: 'ai-alliancen-org/ai-harness', private: true }, pages);
+  await require('../../scripts/build-pages.cjs').build([], { full_name: require('../core/distribution.cjs').repository, private: true }, pages);
   for (const page of (await fs.readdir(pages)).filter(file => file.endsWith('.html'))) {
     const html = await fs.readFile(path.join(pages, page), 'utf8');
     assert.match(html, /lang="da"/);

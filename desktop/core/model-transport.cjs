@@ -14,7 +14,7 @@ function retryAfter(value, now = Date.now()) {
 // Retries belong to ONE immutable model request. Never replay an already delivered
 // stream: OpenCode may already have executed a tool from it. Heartbeats carry no
 // model content and can be consumed locally until the first actual SSE event.
-async function forwardModel({ url, headers, payload, res, signal, progress, onRecovery = () => {},
+async function forwardModel({ url, headers, payload, res, signal, progress, onRecovery = () => {}, dispatch,
   idleLimit = IDLE_LIMIT, graceLimit = GRACE_LIMIT, totalLimit = TOTAL_LIMIT, retryDelays = RETRY_DELAYS }) {
   const deadline = AbortSignal.timeout(totalLimit), lifetime = AbortSignal.any([signal, deadline]);
   let committed = false;
@@ -31,8 +31,12 @@ async function forwardModel({ url, headers, payload, res, signal, progress, onRe
       }, idleLimit);
     };
     try {
-      lifetime.throwIfAborted(); touch();
-      response = await fetch(url, { method: 'POST', headers, body: payload, redirect: 'error', signal: AbortSignal.any([lifetime, idle.signal]) });
+      lifetime.throwIfAborted();
+      const requestSignal = AbortSignal.any([lifetime, idle.signal]);
+      const send = (target, options) => { lifetime.throwIfAborted(); touch(); return fetch(target, options); };
+      // Every retry is re-inspected; review time is not provider idle time.
+      response = dispatch ? await dispatch({ url, headers, body: payload, signal: requestSignal }, send)
+        : await send(url, { method: 'POST', headers, body: payload, redirect: 'error', signal: requestSignal });
       if (!response.ok) {
         const suggested = retryAfter(response.headers.get('retry-after'));
         pause = Math.max(pause || 0, suggested);
@@ -50,7 +54,7 @@ async function forwardModel({ url, headers, payload, res, signal, progress, onRe
         res.write(chunk);
       };
       for await (const chunk of response.body) {
-        lifetime.throwIfAborted(); touch();
+        lifetime.throwIfAborted(); await response.privacyAssertCurrent?.(); touch();
         try { progress.write(chunk, sse); } catch { /* Progress is best effort. */ }
         if (!sse) { write(chunk); continue; }
         const text = decoder.decode(chunk, { stream: true });
@@ -80,6 +84,7 @@ async function forwardModel({ url, headers, payload, res, signal, progress, onRe
     } catch (cause) {
       clearTimeout(timer);
       if (signal.aborted) throw signal.reason;
+      if (typeof cause.code === 'string' && cause.code.startsWith('PRIVACY_')) throw cause;
       const error = cause.kind ? cause : transportError(idle.signal.aborted ? 'idle' : 'network');
       if (deadline.aborted) throw transportError('deadline');
       if (committed || attempt >= retryDelays.length || error.retryable === false) throw error;

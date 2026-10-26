@@ -15,6 +15,9 @@ async function files(directory, prefix = '') {
   }
   return result.sort();
 }
+async function privacyFiles() {
+  return (await files(path.join(root, 'privacy'), 'privacy/')).filter(name => !name.includes('/.runtime/') && !name.endsWith('/.gitignore') && !name.startsWith('privacy/isolation/notes/'));
+}
 async function verify(resources, target) {
   const archive = path.join(resources, 'app.asar'), source = require('../package.json');
   const packed = JSON.parse(asar.extractFile(archive, 'package.json').toString());
@@ -26,7 +29,7 @@ async function verify(resources, target) {
   const updateConfig = require('js-yaml').load(await fs.readFile(path.join(resources, 'app-update.yml'), 'utf8'));
   assert.equal(updateConfig.provider, 'generic');
   assert.equal(updateConfig.url, require('../core/distribution.cjs').feed);
-  const names = ['runtime-lock.json', 'main.cjs', 'preload.cjs', ...await files(path.join(root, 'core'), 'core/'), ...await files(path.join(root, 'ui'), 'ui/')];
+  const names = ['runtime-lock.json', 'main.cjs', 'preload.cjs', ...await files(path.join(root, 'core'), 'core/'), ...await files(path.join(root, 'ui'), 'ui/'), ...await privacyFiles()];
   assert.deepEqual(await fs.readFile(path.join(resources, 'LICENSE')), await fs.readFile(path.join(root, '../LICENSE')), 'Pakken skal bevare bibliotekets licens');
   const profileRoot = path.join(root, '../profiles');
   const profiles = ['grundregler.md', 'gitignore.txt', 'catalog.json', ...await files(path.join(profileRoot, 'skills'), 'skills/')];
@@ -52,4 +55,4 @@ if (require.main === module) {
   if (!resources || !target) { console.error('Angiv pakkens Resources/resources-mappe og runtime-platform.'); process.exitCode = 1; }
   else verify(path.resolve(resources), target).then(result => console.log(JSON.stringify(result))).catch(error => { console.error(error.message); process.exitCode = 1; });
 }
-module.exports = { verify, files };
+module.exports = { verify, files, privacyFiles };

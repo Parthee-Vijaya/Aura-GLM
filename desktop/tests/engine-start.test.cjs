@@ -29,25 +29,31 @@ test('en kontrolleret motor kontrolleres kun én gang pr. kørsel', unix, async 
   assert.equal(await findExecutable({ bundled: { opencode: file }, timeout: 5000 }), file);
   assert.equal((await fs.readFile(path.join(dir, 'kald'), 'utf8')).trim().split('\n').length, 1);
 });
-test('plugin-opstart bruger den bundtede SDK og et isoleret hjem uden installation på nettet', async t => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'aura-plugin-start-')); t.after(() => fs.rm(dir, { recursive: true, force: true }));
+test('V2 plugin-opstart installerer ingen SDK og bruger et isoleret hjem', async t => {
+  const dir = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'aura-plugin-start-'))); t.after(() => fs.rm(dir, { recursive: true, force: true }));
   await writePluginRuntime(dir); await writePluginRuntime(dir);
-  for (const folder of [path.join(dir, 'config'), path.join(dir, 'config', 'opencode')]) {
-    const manifest = JSON.parse(await fs.readFile(path.join(folder, 'package.json'), 'utf8'));
-    const lock = JSON.parse(await fs.readFile(path.join(folder, 'package-lock.json'), 'utf8'));
-    assert.equal(manifest.dependencies['@opencode-ai/plugin'], VERSION);
-    assert.deepEqual(lock.packages[''].dependencies, manifest.dependencies);
-    const sdk = JSON.parse(await fs.readFile(path.join(folder, 'node_modules', '@opencode-ai', 'plugin', 'package.json'), 'utf8'));
-    assert.equal(sdk.version, VERSION);
-  }
-  assert.ok((await pluginRuntimeFiles()).some(folder => folder.endsWith(path.join('@opencode-ai', 'sdk'))));
-  const env = isolatedEnv(dir, { plugin: ['file:///trusted-plugin.mjs'] }, 'syntetisk', { commandIsolation: true });
-  assert.equal(env.HOME, path.join(dir, 'home')); assert.equal(env.USERPROFILE, env.HOME); assert.equal(env.SHELL, '/bin/bash');
-  assert.equal(isolatedEnv(dir, { plugin: ['file:///read-guard.mjs'] }, 'syntetisk').SHELL, undefined);
+  assert.deepEqual(await fs.readdir(path.join(dir,'config')), []);
+  assert.deepEqual(await pluginRuntimeFiles(), []); assert.deepEqual(await pluginRuntimePatterns(), []);
+  const env = isolatedEnv(dir, {}, 'syntetisk', { commandIsolation: true });
+  assert.equal(env.HOME, path.join(dir, 'home')); assert.equal(env.USERPROFILE, env.HOME); assert.equal(env.OPENCODE_TEST_HOME, env.HOME); assert.equal(env.SHELL, '/bin/bash');
+  assert.equal(isolatedEnv(dir, {}, 'syntetisk').SHELL, undefined);
 });
-test('pakkereglerne bevarer SDK-afhængigheder, når electron-builder flytter nested moduler til roden', async () => {
-  const { minimatch } = require('minimatch'), patterns = await pluginRuntimePatterns();
-  for (const file of ['node_modules/which/which.js', 'node_modules/isexe/index.js', 'node_modules/cross-spawn/node_modules/which/which.js', 'node_modules/@opencode-ai/plugin/dist/index.js']) {
-    assert.equal(patterns.some(pattern => minimatch(file, pattern)), true, file + ' skal kunne læses af den eksterne motor');
+test('migrering fjerner kun Auras verificerede gamle SDK-links og efterlader ukendte data urørt', async t => {
+  const dir = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'aura-plugin-migration-'))); t.after(() => fs.rm(dir,{recursive:true,force:true}));
+  for (const folder of [path.join(dir,'config'),path.join(dir,'config','opencode')]) {
+    await fs.mkdir(folder,{recursive:true});
+    const dependencies={'@opencode-ai/plugin':'1.18.33'};
+    await fs.writeFile(path.join(folder,'package.json'),JSON.stringify({name:'aura-agent-plugins',private:true,dependencies}));
+    await fs.writeFile(path.join(folder,'package-lock.json'),JSON.stringify({name:'aura-agent-plugins',lockfileVersion:3,packages:{'':{dependencies},'node_modules/@opencode-ai/plugin':{version:'1.18.33'}}}));
+    await fs.symlink('/missing/desktop/node_modules',path.join(folder,'node_modules'));
   }
+  await writePluginRuntime(dir);
+  assert.deepEqual(await fs.readdir(path.join(dir,'config')),['opencode']);
+  await fs.writeFile(path.join(dir,'config','opencode.json'),'{"unexpected":true}');
+  await assert.rejects(writePluginRuntime(dir),/indstillinger afviger/);
+  assert.equal(await fs.readFile(path.join(dir,'config','opencode.json'),'utf8'),'{"unexpected":true}');
+});
+test('V2 versionsbanner accepteres kun med den præcise låste version', unix, async t => {
+  const {file}=await engine(t,`echo 'opencode v${VERSION}'`);
+  assert.equal(await findExecutable({bundled:{opencode:file}}),file);
 });

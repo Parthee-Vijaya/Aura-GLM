@@ -16,6 +16,11 @@ const { execFileSync } = require('node:child_process');
  assert.equal(execFileSync(runtime.opencode,['--version'],toolCheck).trim(),require('../runtime-lock.json').opencode);
  assert.match(execFileSync(runtime.node,['--version'],toolCheck),/v22\.23\.3/);
  assert.match(execFileSync(runtime.git,['--version'],toolCheck),/2\.53\.0/);
+ if (mac) {
+  const reaper = path.join(resources, 'runtime', 'privacy', 'aura-scope-reaper');
+  const support = await require('../privacy/isolation/engine-isolation.cjs').probeIsolationSupport({ runtimeRoot: path.join(resources, 'runtime'), reaperPath: reaper });
+  assert.equal(support.available, true, 'Pakkens Privacy Gate-procesbeskyttelse mangler');
+ }
  const npm = path.join(resources,'runtime/node',process.platform==='win32'?'node_modules/npm/bin/npm-cli.js':'lib/node_modules/npm/bin/npm-cli.js');
  assert.match(execFileSync(runtime.node,[npm,'--version'],toolCheck),/^\d+\./);
  let app,page;

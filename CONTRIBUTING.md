@@ -32,6 +32,10 @@ En integration skal have en ansvarlig kontakt, licens, kendte versioner og en re
 
 Appens afhængigheder og de lokale testkommandoer står i [desktop/README.md](desktop/README.md). Webguiden bygges med `node scripts/build-packages.cjs`; Pages-samlingen beskrives i [docs/website.md](docs/website.md).
 
+Kør `npm run check` fra repositoryets rod med Node 22.12 eller nyere og appens afhængigheder installeret. Kommandoen kører alle desktop- og CLI-enhedstests samt de eksisterende JavaScript-tests af eval-politikken og modelbroen. Den starter ingen rigtig AI-model, CI, release eller OpenEnv-benchmark. Gem eventuelt den faktiske testudskrift som bidragets bevis.
+
+Native isolationsprøver kræver `sandbox-exec` på Mac eller `bwrap` og `socat` på Linux. Manglende systemværktøjer giver en eksplicit skip-begrundelse; fejl i en installeret sandbox giver fortsat en fejlet test. En mappeadgangsprøve kræver en almindelig POSIX-bruger, fordi root og Windows ikke kan afprøve nægtet adgang via `chmod 000`. Særskilte motor- og Privacy Gate-prøver beholder deres eksisterende opt-in-flag. Den eksisterende npm-isolationsprøve henter en fast testpakke fra npm-registeret. Grøn lokal kontrol er ikke dokumentation for Windows, en rigtig models kvalitet eller en færdig installationspakke.
+
 GitHub Actions kører kun manuelt. Start eller genstart ikke workflows uden aftale med vedligeholderen om den konkrete kørsel. Et push, en pull request eller en release skal ikke starte CI/CD. Lokale resultater og deres begrænsninger vedlægges bidraget.
 
 ## Licens

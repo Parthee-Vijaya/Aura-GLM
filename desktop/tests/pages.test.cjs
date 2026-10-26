@@ -5,11 +5,12 @@ const {assertPublicPages}=require('../../scripts/pages-access.cjs');
 const fs=require('node:fs/promises');
 const os=require('node:os');
 const path=require('node:path');
-const meta={full_name:'ai-alliancen-org/ai-harness',private:true};
+const { repository, artifactPrefix }=require('../core/distribution.cjs');
+const meta={full_name:repository,private:true};
 const name='AI-Harness-0.2.0-beta.1-mac-arm64.dmg';
 const release={tag_name:'v0.2.0-beta.1',published_at:'2026-09-25T12:00:00Z',draft:false,prerelease:true,assets:[{name,size:1234,state:'uploaded',browser_download_url:`https://github.com/${meta.full_name}/releases/download/v0.2.0-beta.1/${name}`,digest:'sha256:'+'a'.repeat(64)}]};
-// Udgivelser fra før navneskiftet hedder AI-Harness-…, nye hedder Aura-…; begge vises.
-test('Pages viser installationsfiler med det nye og det tidligere navn',()=>{const aura='Aura-0.2.0-beta.4-mac-arm64.dmg';const html=render([{...release,tag_name:'v0.2.0-beta.4',assets:[{...release.assets[0],name:aura,browser_download_url:`https://github.com/${meta.full_name}/releases/download/v0.2.0-beta.4/${aura}`}]}],meta);assert.match(html,/Hent Mac · Apple-chip/);assert.match(html,new RegExp(aura.replace(/\./g,'\\.')));assert.match(render([release],meta),/AI-Harness-0\.2\.0-beta\.1/);});
+// Forkens nye navn og de tidligere navne kan læses; URL'en skal stadig tilhøre forken.
+test('Pages viser forkens installationsfiler og bevarer historiske navne',()=>{for(const prefix of [artifactPrefix,'Aura']){const aura=`${prefix}-0.2.0-beta.4-mac-arm64.dmg`;const html=render([{...release,tag_name:'v0.2.0-beta.4',assets:[{...release.assets[0],name:aura,browser_download_url:`https://github.com/${meta.full_name}/releases/download/v0.2.0-beta.4/${aura}`}]}],meta);assert.match(html,/Hent Mac · Apple-chip/);assert.match(html,new RegExp(aura.replace(/\./g,'\\.')));}assert.match(render([release],meta),/AI-Harness-0\.2\.0-beta\.1/);});
 test('Pages viser adgangskrav og ingen opdigtede downloads',()=>{assert.match(render([],meta),/kræver login/);assert.doesNotMatch(render([],meta),/Hent Mac/);assert.doesNotMatch(render([{...release,draft:true}],meta),/Hent Mac/);});
 test('Pages springer tomme udgivelser over og skjuler forkerte versioner, ZIP-apps og filer uden kontrolsum',()=>{
  const empty={...release,tag_name:'v0.2.0-beta.6',published_at:'2026-10-13T12:00:00Z',assets:[]};
@@ -38,7 +39,7 @@ test('Pages afviser privat, ukendt eller forkert repository før offentlig udgiv
   const pages = { public: true, build_type: 'workflow' };
   const publicMeta = { ...meta, private: false, visibility: 'public' };
   assert.doesNotThrow(() => assertPublicPages(publicMeta, pages));
-  for (const repository of [meta, {}, null, { ...publicMeta, private: 'false' }, { ...publicMeta, visibility: 'private' }, { ...publicMeta, full_name: 'other/repo' }]) {
+  for (const repository of [meta, {}, null, { ...publicMeta, private: 'false' }, { ...publicMeta, visibility: 'private' }, { ...publicMeta, full_name: 'other/repo' }, { ...publicMeta, full_name: 'ai-alliancen-org/ai-harness' }]) {
     assert.throws(() => assertPublicPages(repository, pages), /repositoryet skal være offentligt/);
   }
 });

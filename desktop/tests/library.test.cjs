@@ -116,6 +116,19 @@ test('skillsene overholder Agent Skills-formatet og indeholder ingen scripts', a
   }
 });
 
+test('afviser et ugyldigt skillnavn før filopslag på både casefølsomme og caseufølsomme diske', async t => {
+  for (const name of ['Harness-Not-On-Disk', '../outside', 'harness-a/../../outside', 'harness-a\\outside', '', 'harness-' + 'a'.repeat(65), null, 42]) {
+    const root = await fixture(t, { catalog: { skills: [{ ...skill, name }] } });
+    await assert.rejects(loadLibrary(root), error => {
+      assert.match(error.message, /små bogstaver/);
+      assert.equal(error.code, undefined, 'en filsystemfejl må ikke erstatte inputvalideringen');
+      return true;
+    });
+  }
+  const root = await fixture(t, { catalog: { skills: [{ ...skill, name: 'other-a' }] } });
+  await assert.rejects(loadLibrary(root), /begynde med harness-/);
+});
+
 test('afviser ugyldige skills, værktøjer og uoverensstemmelser', async t => {
   await loadLibrary(await fixture(t));
   const rejects = async (change, pattern) => assert.rejects(loadLibrary(await fixture(t, change)), pattern);
