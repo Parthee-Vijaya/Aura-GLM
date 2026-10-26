@@ -1,5 +1,7 @@
 # GPT-transportprøver — 25. oktober 2026
 
+> Historisk rapport om madapp-prøven før transportrettelserne. Den efterfølgende [prøve med fem kommunale landing pages](MUNICIPAL-LANDINGS-2026-10-25.md) gennemfører fem Aura-forløb med 79 modelkald uden timeout. Det er nye opgaver og en rettet evalueringsadapter, ikke en omklassificering af nedenstående fejlede kørsel eller bevis for generel modelstabilitet.
+
 **GPT-stabiliteten er fortsat ikke løst.** Den endelige adapter med typede argumenter frembragte en app, der består **26 browserkontroller på desktop og mobil**. Men selve Aura-kørslen blev afbrudt ved sin samlede 900-sekundersfrist efter to modeltimeouts, inden Auras automatiske kvalitetskontrol. Et fungerende kodeoutput er derfor ikke det samme som et bestået samlet agentforløb.
 
 Den eksperimentelle Codex CLI-bro er kun til evaluering. Den er ikke en ny produktforbindelse og indgår ikke som automatisk reserve i Aura.

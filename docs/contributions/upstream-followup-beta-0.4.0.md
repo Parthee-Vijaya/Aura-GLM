@@ -34,3 +34,13 @@ Navnet Aura 1, version `0.4.0-beta.2`, forkens releaseadresse og opdateringsfeed
 - [Release-noterne](../releases/aura-1-beta-0.4.0.md) adskiller beståede prøver, åbne fejl og afventende kontroller.
 
 Ved næste commit/push opdateres dette efterslæb med den faktiske produktcommit og eventuelle nye forskelle. En lokal release ændrer ikke i sig selv en upstream-PR’s status.
+
+## Opfølgning: designhjælp, fokusprøve og fem GPT-forløb
+
+Det efterfølgende arbejde er samlet på forkgrenen `fix/design-skills-and-quality-evidence`, med produktændringerne i commit `ca059dd` (25. oktober 2026). Originalens PR’er er ikke ændret af denne bestilling. Fordelingen ovenfor suppleres således:
+
+- **#23 / designmetoden:** Hovedskillen skal bruge relevante, faktisk tilgængelige designskills sammen med Aura-design. Det indlæses gennem den eksisterende grundpakke og følger med de 23 genbyggede eksportpakker. Det giver ingen adgang til GPT-/Claude-platformenes interne skills og importerer ingen nye pakker.
+- **Kandidat 6 / lokal appkontrol:** En konservativ prøve med rigtigt Tab-input undersøger op til 12 kontroller pr. viewport. En identisk opak fokusramme og ensfarvet baggrund kan udløse det eksisterende rettelsesforløb; alternative eller usikre markeringer må ikke blive falske fejl. Det er ikke en komplet tilgængelighedstest og ændrer ikke Auras UI.
+- **Kandidat 7 / evaluering:** Den rettede Codex-evalueringsbro afskærer implicit værtskontekst, registrerer forbrug og tidsmålinger og afviser ukendte fejl/native handlinger. Fem kommunale opgaver gennemfører nu hele Plan/Byg-forløbet. [Rapport og screenshots](../../evals/openenv/MUNICIPAL-LANDINGS-2026-10-25.md) adskiller første udkast, modelrettelser, bevarede historiske fejl og de 26 fejlede læsninger under de gennemførte episoder.
+
+Denne kildeændring er ikke en ny DMG, og den udgivne `0.4.0-beta.2` ændres ikke. Opdatering af originalens PR’er kræver fortsat en særskilt bestilling og en ny overlapkontrol mod originalens aktuelle kode.

@@ -110,6 +110,12 @@ Konfigurationen bruger `bridgeModule` til dette modul og kan bruge `bridgeDirect
 
 En afprøvet kompakt variant med JSON inde i en argumentstreng blev forkastet efter tre konkrete escape-fejl i genereret JavaScript. Se [GPT-transportprøven](GPT-TRANSPORT-2026-10-25.md). Den endelige adapter med typede objekter er afprøvet med rigtig GPT: appen består 26 browserkontroller, men agentforløbet ramte sin samlede frist efter to modeltimeouts og nåede ikke Auras egen kvalitetskontrol. GPT-stabilitet er derfor fortsat ikke løst.
 
+**Efterfølgende rettelse og prøve:** [Fem kommunale landing pages](MUNICIPAL-LANDINGS-2026-10-25.md) dokumenterer den rettede adapter med eksplicit deaktivering af værtens implicitte skills, plugins og hukommelse, streng kontrol af ukendte hændelser, korrekte procesafslutninger og indholdsfri tids-/størrelsesmålinger. Alle fem Plan/Byg-forløb gennemførte med Auras egne skills og godkendelser; 79 modelkald havde ingen timeout. Tidligere forsøg og modellens fejlede læsninger er fortsat dokumenteret.
+
+Modellens kendte ressourcestier skal kopieres præcist; broen omskriver ikke værktøjsargumenter og genafspiller ikke handlinger. Én kendt CLI-advarsel om et forældet konfigurationsnavn registreres som diagnostik; ukendte fejl eller native handlinger afvises. En afsluttet proces kan ikke efterfølgende markeres som afbrudt af klienten. Kaldets deadline forbliver afgrænset, og kun afsluttede, validerede svar giver evaldriveren fremdrift.
+
+Denne isolerede sammenligning tester Auras gennemgåede skillbibliotek. Tilladelsen til at kombinere tilgængelige designskills er dokumenteret i [designvejledningen](../../docs/aura-design-skill.md); den genaktiverer ikke computerens øvrige værktøjer eller skills i evalueringen og påstår ikke, at GPT/Claude-modeller automatisk medbringer platformens skills.
+
 ## Kommunale designkilder
 
 [Kommunal designprøve med Mistral og Corti](BRAND-MODELS-2026-10-25.md) sammenligner samme borgermødeopgave, 11 skills og Nyborgs originale logoer. Rapporten indeholder desktop-/mobilbilleder, konkrete flowfejl, sanitiserede JSON/CSV-resultater og afgrænsningen mellem officielle logoregler og modellernes egne designvalg. Mistrals reparationsforsøg blev stoppet af pilotens tilladelsesbedømmelse; det er en dokumenteret begrænsning, ikke en skjult eller rettet fejl.

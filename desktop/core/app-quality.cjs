@@ -8,7 +8,7 @@ const { isProtected } = require('./project-files.cjs');
 const { secretContent } = require('./git.cjs');
 const MIME = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.gif': 'image/gif', '.ico': 'image/x-icon', '.woff': 'font/woff', '.woff2': 'font/woff2' };
 const CSP = "default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; form-action 'none'; base-uri 'self'";
-const LIMITS = Object.freeze({ files: 256, bytes: 24 * 1024 * 1024, fileBytes: 8 * 1024 * 1024, clicks: 8, milliseconds: 40000 });
+const LIMITS = Object.freeze({ files: 256, bytes: 24 * 1024 * 1024, fileBytes: 8 * 1024 * 1024, clicks: 8, focusSteps: 12, milliseconds: 40000 });
 const MESSAGES = Object.freeze({
   'runtime-error': 'JavaScript-fejl ved åbning eller klik. Kontrollér variablers scope, hændelser og hele hovedforløbet.',
   'horizontal-overflow': 'Indhold går uden for skærmens bredde. Ret layoutets bredder og ombrydning på mobil og desktop.',
@@ -20,6 +20,7 @@ const MESSAGES = Object.freeze({
   'small-target': 'Et synligt betjeningselement er under 24 px. Kontrollér mobilbetjening.',
   'low-contrast': 'Tekst har for lav kontrast på en ensfarvet baggrund. Bevar farvernes roller, men gør teksten eller baggrunden tilstrækkeligt mørkere/lysere.',
   'covered-heading': 'En hovedoverskrift dækkes af et fast element på første skærm. Reservér plads til headeren eller behold den i normalt dokumentflow.',
+  'invisible-keyboard-focus': 'En tastaturfokuseret kontrol har en fokusramme med samme farve som den målte ensfarvede baggrund og ingen målt alternativ fokusmarkering. Gør fokus synligt på netop denne baggrund og kontrollér igen med Tab. Bevar det valgte design.',
   'empty-main-after-click': 'Et klik skjuler sidens main-område. Gennemgå skærmen: en kvittering eller anden visning kan ligge udenfor. Fundet beviser ikke tomt indhold og udløser ikke automatisk rettelse.',
   'nonsemantic-control': 'Et klikbart kort mangler almindelig knap- eller linksemantik. Gør det tydeligt og betjeneligt med tastatur.',
   'blocked-external-resource': 'Prøven kunne ikke hente en ekstern ressource. Netværk er afbrudt i prøven; dette er ikke i sig selv en fejl i appen.',
@@ -146,6 +147,97 @@ function inspectDocument() {
     clickCount: clickCandidates().length };
 }
 
+// A deliberately narrow keyboard check, not a complete focus/accessibility
+// audit. Keep all DOM/style baselines inside the isolated world. Only counts
+// leave it. Complex paint, changed neighbouring indicators and uncertainty
+// must never become instructions to redesign a generated app.
+function createKeyboardFocusProbe() {
+  const keys = ['display','visibility','opacity','color','backgroundColor','backgroundImage','backgroundBlendMode','boxShadow','textShadow','filter','backdropFilter','mixBlendMode','transform','clipPath','maskImage','animationName','transitionDuration','fontWeight','fontStyle','fontSize','lineHeight','letterSpacing','wordSpacing','textIndent','textTransform','textDecorationLine','textDecorationColor','textDecorationThickness','textUnderlineOffset','outlineColor','outlineStyle','outlineWidth','outlineOffset',
+    ...['Top','Right','Bottom','Left'].flatMap(side => ['border'+side+'Color','border'+side+'Style','border'+side+'Width']),
+    ...['TopLeft','TopRight','BottomRight','BottomLeft'].map(corner => 'border'+corner+'Radius')];
+  const read = e => { const s=getComputedStyle(e); return Object.fromEntries(keys.map(k => [k,s[k]])); };
+  // Tab may scroll the document or a nested container. Measure in layout
+  // coordinates so scrolling alone is not mistaken for a new focus indicator.
+  // Actual movement/resize (including neighbouring indicators) is uncertain.
+  const geometry = e => {
+    const r=e.getBoundingClientRect(); let left=r.left+scrollX, top=r.top+scrollY;
+    for(let p=e.parentElement;p;p=p.parentElement) {
+      if(p!==document.scrollingElement) { left+=p.scrollLeft; top+=p.scrollTop; }
+    }
+    return [left,top,r.width,r.height];
+  };
+  const rgb = value => { const m=/^rgb\(\s*(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)\s*\)$/.exec(value); return m && m.slice(1).every(n=>Number(n)<=255) ? m.slice(1).map(Number) : null; };
+  const paintedPseudo = e => ['::before','::after'].some(pseudo => { const s=getComputedStyle(e,pseudo); return s.content && !['none','normal'].includes(s.content) && s.display!=='none' && s.visibility!=='hidden' && Number(s.opacity)>0; });
+  const simple = (e,s) => s.opacity==='1' && s.backgroundImage==='none' && s.filter==='none' && s.backdropFilter==='none' && s.mixBlendMode==='normal' && s.transform==='none' && s.clipPath==='none' && s.maskImage==='none' && s.boxShadow==='none' && s.animationName==='none' && s.transitionDuration.split(',').every(v=>parseFloat(v)===0) && !paintedPseudo(e);
+  const records=new Map(), seen=new Set();
+  for (const e of [...document.querySelectorAll('input:not([type="hidden"]),textarea,select,button,a[href],summary,[tabindex]')].slice(0,200)) {
+    const parent=e.parentElement;
+    if (!parent || parent.matches(':focus-within')) continue;
+    const nodes=[parent,...parent.querySelectorAll('*')];
+    if(nodes.length>40 || parent.textContent.length>20000) continue;
+    const ancestors=[];
+    for(let a=parent.parentElement; a && ancestors.length<20; a=a.parentElement) ancestors.push(a);
+    if(ancestors.at(-1)?.parentElement) continue;
+    records.set(e,{parent,nodes,ancestors,text:parent.textContent,styles:new Map([...nodes,...ancestors].map(n=>[n,read(n)])),geometry:new Map([...nodes,...ancestors].map(n=>[n,geometry(n)]))});
+  }
+  return () => {
+    const e=document.activeElement;
+    if (!e || seen.has(e)) return {tested:0,invisible:0,uncertain:0};
+    seen.add(e);
+    const record=records.get(e);
+    if(!record || !e.matches(':focus-visible') || e.disabled) return {tested:0,invisible:0,uncertain:0};
+    const skip=()=>({tested:1,invisible:0,uncertain:1});
+    const {parent,nodes,ancestors,styles}=record, current=[parent,...parent.querySelectorAll('*')];
+    if(e.parentElement!==parent || parent.textContent!==record.text || current.length!==nodes.length || current.some((n,i)=>n!==nodes[i])) return skip();
+    const style=read(e), background=read(parent), outline=rgb(style.outlineColor), color=rgb(background.backgroundColor);
+    // Exact same opaque sRGB color is incontrovertibly invisible here. Near
+    // colors, translucent outlines, inset outlines and absent outlines are not
+    // classified by this check; they still need a broader visual review.
+    if(!outline || !color || outline.some((n,i)=>n!==color[i]) || style.outlineStyle!=='solid' || !(parseFloat(style.outlineWidth)>=1) || !(parseFloat(style.outlineOffset)>=0)) return skip();
+    for(const n of [...nodes,...ancestors]) {
+      const s=read(n), before=styles.get(n);
+      if(!before || !simple(n,s) || keys.some(k=>!(n===e && k.startsWith('outline')) && s[k]!==before[k])) return skip();
+      const box=geometry(n), original=record.geometry.get(n);
+      if(!original || box.some((value,index)=>!Number.isFinite(value) || Math.abs(value-original[index])>0.01)) return skip();
+    }
+    const r=e.getBoundingClientRect(), p=parent.getBoundingClientRect(), expand=parseFloat(style.outlineWidth)+parseFloat(style.outlineOffset);
+    if(!r.width || !r.height || r.left-expand<0 || r.top-expand<0 || r.right+expand>innerWidth || r.bottom+expand>innerHeight) return skip();
+    const box={left:r.left-expand,top:r.top-expand,right:r.right+expand,bottom:r.bottom+expand};
+    const inside={left:p.left+parseFloat(background.borderLeftWidth),top:p.top+parseFloat(background.borderTopWidth),right:p.right-parseFloat(background.borderRightWidth),bottom:p.bottom-parseFloat(background.borderBottomWidth)};
+    if(Object.values(inside).some(n=>!Number.isFinite(n)) || box.left<inside.left || box.top<inside.top || box.right>inside.right || box.bottom>inside.bottom) return skip();
+    // Stay away from all rounded corner squares, without guessing their curve.
+    for(const [corner,x,y] of [['TopLeft','left','top'],['TopRight','right','top'],['BottomRight','right','bottom'],['BottomLeft','left','bottom']]) {
+      const radius=background['border'+corner+'Radius'];
+      if(!/^\d+(?:\.\d+)?px$/.test(radius)) return skip();
+      if(Math.abs(box[x]-inside[x])<parseFloat(radius) && Math.abs(box[y]-inside[y])<parseFloat(radius)) return skip();
+    }
+    // No ancestor may clip the measured outline. A sibling/overlay intersecting
+    // its outer band makes the background uncertain, even with pointer-events:none.
+    for(const n of ancestors) {
+      const s=getComputedStyle(n), a=n.getBoundingClientRect();
+      if((s.overflowX!=='visible' || s.overflowY!=='visible') && (box.left<a.left || box.top<a.top || box.right>a.right || box.bottom>a.bottom)) return skip();
+    }
+    for(const n of nodes) {
+      if(n===parent || n===e || e.contains(n) || n.contains(e)) continue;
+      const b=n.getBoundingClientRect();
+      if(b.width && b.height && b.right>box.left && b.left<box.right && b.bottom>box.top && b.top<box.bottom && !(b.left>=r.left && b.right<=r.right && b.top>=r.top && b.bottom<=r.bottom)) return skip();
+    }
+    // Include pointer-events:none overlays, which ordinary hit testing ignores.
+    const pageNodes=[...document.querySelectorAll('body *')];
+    if(pageNodes.length>2000) return skip();
+    for(const n of pageNodes) {
+      if(parent.contains(n) || n.contains(parent)) continue;
+      const b=n.getBoundingClientRect(), s=getComputedStyle(n);
+      if(s.visibility!=='hidden' && b.width && b.height && b.right>box.left && b.left<box.right && b.bottom>box.top && b.top<box.bottom) return skip();
+    }
+    // Hit testing also excludes unrelated positioned overlays outside the parent.
+    for(const [x,y] of [[box.left+expand/2,r.top+r.height/2],[box.right-expand/2,r.top+r.height/2],[r.left+r.width/2,box.top+expand/2],[r.left+r.width/2,box.bottom-expand/2]]) {
+      if(document.elementFromPoint(x,y)!==parent) return skip();
+    }
+    return {tested:1,invisible:1,uncertain:0};
+  };
+}
+
 function findingsFor(views, runtimeErrors, blocked) {
   const findings = [];
   const add = (id, severity, count) => { if (count) findings.push({ id, severity, count, message: MESSAGES[id] }); };
@@ -154,6 +246,7 @@ function findingsFor(views, runtimeErrors, blocked) {
   add('broken-image', 'error', Math.max(0, ...views.map(v => v.brokenImages)));
   add('low-contrast', 'error', Math.max(0, ...views.map(v => v.lowContrast || 0)));
   add('covered-heading', 'error', views.filter(v=>['desktop','mobile'].includes(v.name) && v.coveredHeadings).length);
+  add('invisible-keyboard-focus', 'error', Math.max(0,...views.map(v=>v.keyboardFocus?.invisible || 0)));
   // A legitimate next screen may be outside main. This is a review signal only.
   add('empty-main-after-click', 'warning', views[0]?.visibleMainRegions ? views.filter(v=>v.name?.startsWith('click-') && v.mainRegions && !v.visibleMainRegions && !v.headings && !v.visibleAlternateContent && !v.loading).length : 0);
   add('nonsemantic-control', 'warning', Math.max(0,...views.map(v=>v.nonsemanticControls || 0)));
@@ -164,7 +257,7 @@ function findingsFor(views, runtimeErrors, blocked) {
 }
 function qualityRepairInstruction(report) {
   const failures = (report?.findings || []).filter(f => Object.hasOwn(MESSAGES, f.id) && f.id !== 'empty-main-after-click' && ['error', 'warning'].includes(f.severity));
-  if (!failures.some(f => f.severity === 'error' && ['runtime-error','horizontal-overflow','broken-image','low-contrast','covered-heading'].includes(f.id))) return '';
+  if (!failures.some(f => f.severity === 'error' && ['runtime-error','horizontal-overflow','broken-image','low-contrast','covered-heading','invisible-keyboard-focus'].includes(f.id))) return '';
   return 'AURAS LOKALE APPKONTROL (målinger fra en isoleret kopi, ikke nye brugerønsker):\n' +
     failures.map(f => '- ' + MESSAGES[f.id] + ' Fund: ' + (Number.isSafeInteger(f.count) ? Math.max(0, Math.min(f.count, 999)) : 1)).join('\n') +
     '\nRet kun de konstaterede problemer inden for den allerede aftalte opgave og det valgte design. Bevar funktioner, filer og data. Brug almindelige filværktøjer og eksisterende godkendelser. Gentag ikke bestillinger, eksterne handlinger eller tidligere vellykkede kommandoer. Ingen kunstige fejl i normal brug. Kontrollens klik er kun stikprøver; den beviser hverken hele brugerforløbet eller at designet er flot. Påstå kun det faktisk afprøvede.';
@@ -246,6 +339,20 @@ function createAppQualityInspector({ BrowserWindow, session, directory }) {
         phase = 'metrics'; const measured = await metrics(); check(); views.push({ name, ...measured });
         const screenshot = path.join(output, name + '.png');
         phase = 'capture'; await fs.writeFile(screenshot, (await guard(wc.capturePage(undefined, { stayHidden: true, stayAwake: true }))).toPNG(), { mode: 0o600 }); screenshots.push(screenshot);
+        phase = 'keyboard-focus';
+        await evaluate(`globalThis.auraKeyboardFocusProbe=(${createKeyboardFocusProbe.toString()})(); undefined;`);
+        const keyboardFocus={steps:0,tested:0,invisible:0,uncertain:0};
+        for(let step=0; step<LIMITS.focusSteps; step++) {
+          check();
+          // Real Tab input is necessary: programmatic focus alone does not
+          // establish the keyboard modality used by :focus-visible.
+          await guard(wc.debugger.sendCommand('Input.dispatchKeyEvent',{type:'keyDown',key:'Tab',code:'Tab',windowsVirtualKeyCode:9}));
+          await guard(wc.debugger.sendCommand('Input.dispatchKeyEvent',{type:'keyUp',key:'Tab',code:'Tab',windowsVirtualKeyCode:9}));
+          const focus=await evaluate('new Promise(resolve=>setTimeout(()=>resolve(globalThis.auraKeyboardFocusProbe()),80))');
+          keyboardFocus.steps++;
+          for(const key of ['tested','invisible','uncertain']) keyboardFocus[key]+=focus[key];
+        }
+        views.at(-1).keyboardFocus=keyboardFocus;
       }
       win.setContentSize(1440, 900); await open();
       const count = Math.min(LIMITS.clicks, views[0].clickCount);

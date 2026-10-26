@@ -16,6 +16,14 @@ Under **Tilpas instruktioner** kan du læse skillen, gemme en lokal projekttilpa
 
 Skillen følger også med de 23 instruktionspakker til kodeværktøjer. Den bruger hver adapters eksisterende skillplacering. Pakkerne indeholder nu 13 almindelige skills; de fire systemintegrationer er fortsat særskilte tilvalg. Eksport understøtter filplaceringen, men er ikke bevis for, at hvert kodeværktøj eller en bestemt model følger instruktionerne.
 
+### Sammen med andre designskills
+
+Aura-design instruerer modellen i også at bruge relevante design-, frontend-, komponent- og visuelle kvalitetsskills, som det aktuelle miljø faktisk tilbyder. Eksporten til eksempelvis Codex og Claude Code kan derfor arbejde sammen med deres installerede designskills. Modellen skal læse de relevante instruktioner, forene dem med brugerens design og kort angive, hvad den faktisk anvendte. Designgrundpakken, planer og tilladelser bevares.
+
+I selve Aura kommer skills fortsat fra det gennemgåede fælles bibliotek. Et valg af GPT eller Claude importerer ikke automatisk platformens eller computerens øvrige skills. Denne ændring er vejledning om samarbejde mellem tilgængelige skills; den tilføjer ingen eksterne skillpakker, værtsværktøjer eller ny API-integration. Nye konkrete skills skal gennemgås og indgå i biblioteket, før Aura kan tilbyde dem. Det samme materiale kan derefter bruges af Mistral og Corti, når det er kompatibelt.
+
+Det stemmer med leverandørernes skelnen mellem model og tilknyttede ressourcer: [OpenAI beskriver skills som eksplicit tilgængelige instruktioner og filer](https://developers.openai.com/api/docs/guides/tools-skills), og [Claude dokumenterer særskilt opsætning af API-skills](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview). Der påstås ikke adgang til interne designinstruktioner i ChatGPT eller Claude.
+
 Et eksempel på en opgave:
 
 > Byg en oversigt over vores mødelokaler. Brug den lokale designguide og de vedhæftede skitser. Vis en repræsentativ skærm, før vi beslutter designretningen. Bevar den nuværende navigation og funktioner.
