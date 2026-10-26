@@ -30,8 +30,7 @@ const { skipIntroduction, menuClick, taskOptions, selectMode } = require('./ui-t
   });
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   const launch=async()=>{
-    const bundle=process.env.HARNESS_TEST_PACKAGE ? path.resolve(process.env.HARNESS_TEST_PACKAGE) : null;
-    app=await electron.launch({executablePath:bundle?(bundle.endsWith('.app')?path.join(bundle,'Contents/MacOS',path.basename(bundle,'.app')):bundle):require('electron'),args:[...(bundle?[]:[path.join(__dirname,'..')]),'--user-data-dir='+path.join(root,'appdata')],env:{...process.env,ELECTRON_RUN_AS_NODE:undefined}});
+    ({app}=await require('./electron-test-launch.cjs').launchTestApp({electron,profile:path.join(root,'appdata')}));
     page=await app.firstWindow();await skipIntroduction(page);
     await app.evaluate(({dialog},project)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[project]});},project);await page.click('#open');await page.waitForSelector('#workspace:not([hidden])');
   };
@@ -49,12 +48,12 @@ const { skipIntroduction, menuClick, taskOptions, selectMode } = require('./ui-t
     await page.click('[data-close="restore-dialog"]'); assert.match(await fs.readFile(pageFile,'utf8'),/Ugemt/);
     await page.click('#version-restore');await page.waitForFunction(()=>!document.querySelector('#restore-confirm').disabled);await page.click('#restore-confirm');
     await page.locator('#run-review').filter({hasText:'1 fil er sat tilbage'}).waitFor();
-    await page.frameLocator('#preview').getByRole('heading',{name:'Godkendt version'}).waitFor();
+    await page.click('#tab-preview');await page.frameLocator('#preview').getByRole('heading',{name:'Godkendt version'}).waitFor();
     assert.equal((await git.status(project)).head,second.head); assert.equal(await fs.readFile(path.join(project,'.env'),'utf8'),'PRIVATE=kun-lokalt');
     await page.screenshot({path:path.join(root,'gendannet.png'),animations:'disabled'});
     await app.close();app=null;await launch();await menuClick(page,'#git-button');await page.click('#restore-undo');await page.waitForFunction(()=>!document.querySelector('#restore-confirm').disabled);await page.click('#restore-confirm');
     await page.locator('#run-review').filter({hasText:'er sat tilbage'}).waitFor();
-    await page.frameLocator('#preview').getByRole('heading',{name:'Ugemt forsøg'}).waitFor();
+    await page.click('#tab-preview');await page.frameLocator('#preview').getByRole('heading',{name:'Ugemt forsøg'}).waitFor();
     assert.equal((await git.status(project)).head,second.head);assert.equal(await fs.readFile(path.join(project,'noter.txt'),'utf8'),'Bevar denne fil');
     await require('./ui-test-helpers.cjs').addConnection(page,{name:'Kontrolleret fejlprøve',baseURL:`http://127.0.0.1:${server.address().port}/v1`});
     const state=await page.evaluate(()=>window.harness.connectionState());await taskOptions(page);await page.selectOption('#connection-select',state.value.connections[0].id);await page.locator('#model-shortlist button').first().click();await selectMode(page,'plan');

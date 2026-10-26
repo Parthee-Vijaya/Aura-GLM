@@ -1,5 +1,6 @@
 // Læser de endelige Mac-filer uden at signere, staple eller starte appen.
-// Brug: node scripts/verify-mac-artifacts.cjs ORIGINAL.app FINAL.dmg FINAL.zip darwin-arm64 [RAPPORT.json]
+// Brug: node scripts/verify-mac-artifacts.cjs ORIGINAL.app FINAL.dmg FINAL.zip darwin-arm64 [RAPPORT.json] [--local-ad-hoc]
+// Standard er notariseret udgivelse. Lokal ad-hoc-kontrol kvalificerer aldrig offentlig distribution.
 const fs = require('node:fs/promises');
 const { createReadStream } = require('node:fs');
 const path = require('node:path');
@@ -58,8 +59,31 @@ function validateZipEntries(text, appName) {
   }
 }
 const inside = (root, file) => file === root || file.startsWith(root + path.sep);
+function assertAdHocSignature(output) {
+  const lines = output.split(/\r?\n/);
+  const signatures = lines.filter(line => line.startsWith('Signature='));
+  const teams = lines.filter(line => line.startsWith('TeamIdentifier='));
+  if (signatures.length !== 1 || signatures[0] !== 'Signature=adhoc' || teams.length !== 1 || teams[0] !== 'TeamIdentifier=not set' || lines.some(line => line.startsWith('Authority='))) {
+    throw Error('Lokal ad-hoc-kontrol kræver en verificeret ad-hoc-signatur uden certifikat- eller teamidentitet.');
+  }
+  return { type: 'ad-hoc', teamIdentifier: null, certificateIdentity: null };
+}
+function parseArguments(args) {
+  const [app, dmg, zip, target, ...rest] = args;
+  if (!app || !dmg || !zip || !target || rest.length > 2) throw Error('Ugyldige argumenter.');
+  let mode = 'notarized-release', reportFile;
+  for (const value of rest) {
+    if (value === '--local-ad-hoc' && mode === 'notarized-release') mode = 'local-ad-hoc';
+    else if (!value.startsWith('--') && reportFile === undefined) reportFile = value;
+    else throw Error('Ugyldige argumenter.');
+  }
+  return { app, dmg, zip, target, reportFile, mode };
+}
 async function verifyMacArtifacts(input, options = {}) {
   const { platform = process.platform, run = runFile, sourceCheck = verifySource, tempParent = os.tmpdir(), log = () => {} } = options;
+  const mode = input.mode === undefined ? 'notarized-release' : input.mode;
+  if (!['notarized-release', 'local-ad-hoc'].includes(mode)) throw Error('Ukendt pakkekontrol. Vælg notarized-release eller local-ad-hoc eksplicit.');
+  const localAdHoc = mode === 'local-ad-hoc';
   if (platform !== 'darwin') throw Error('Mac-pakkekontrollen kræver macOS.');
   if (!['darwin-arm64', 'darwin-x64'].includes(input.target)) throw Error('Angiv darwin-arm64 eller darwin-x64.');
   for (const [key, suffix] of [['app', '.app'], ['dmg', '.dmg'], ['zip', '.zip']]) if (typeof input[key] !== 'string' || !input[key].endsWith(suffix)) throw Error('Angiv en gyldig ' + suffix + '-sti.');
@@ -73,20 +97,21 @@ async function verifyMacArtifacts(input, options = {}) {
     reportFile = path.join(parent, path.basename(input.reportFile));
     if (parent.split(path.sep).some(part => part.endsWith('.app')) || inside(app, reportFile) || reportFile === dmg || reportFile === zip || inside(mount, reportFile) || inside(unpack, reportFile)) throw Error('Rapporten skal ligge uden for apps og installationsfiler.');
   }
-  const report = { status: 'i gang', target: input.target, host: process.platform, startedAt: new Date().toISOString(), reportFile, temporaryDirectory: temp, inputs: { app, dmg, zip }, checks: [], apps: {}, cleanup: { detached: false, unpackRemoved: false }, limitations: ['Filindhold, symlinkmål og mode-bits kontrolleres; ejere, tider, ACL og øvrige xattrs sammenlignes ikke.', 'Signatur og staplet billet kontrolleres særskilt. ZIP-indsendelsens Apple-kvittering kontrolleres i udgivelsesforløbet.', 'Dette starter ikke appen og erstatter ikke en installations- eller opdateringsprøve.'] };
+  const report = { status: 'i gang', mode, scope: localAdHoc ? 'Kun lokal ad-hoc-kvalifikation; ikke notariseret og ikke til offentlig distribution.' : 'Notariseret udgivelseskontrol.', notarization: localAdHoc ? 'ikke notariseret' : 'afventer kontrol', distributionPolicyVerified: false, target: input.target, host: process.platform, startedAt: new Date().toISOString(), reportFile, temporaryDirectory: temp, inputs: { app, dmg, zip }, checks: [], apps: {}, cleanup: { detached: false, unpackRemoved: false }, limitations: ['Filindhold, symlinkmål og mode-bits kontrolleres; ejere, tider, ACL og øvrige xattrs sammenlignes ikke.', localAdHoc ? 'Apple-notarbilletter og distributionsgodkendelse kontrolleres ikke i den udtrykkeligt valgte lokale tilstand.' : 'Signatur og staplet billet kontrolleres særskilt. ZIP-indsendelsens Apple-kvittering kontrolleres i udgivelsesforløbet.', 'Dette starter ikke appen og erstatter ikke en installations- eller opdateringsprøve.'] };
   const failures = [], abort = new AbortController(); let attemptedMount = false, attached = false, reportWritten = false;
   const interrupted = () => abort.abort();
   process.on('SIGINT', interrupted); process.on('SIGTERM', interrupted);
-  const command = async (label, executable, args, cleanup = false) => {
+  const commandResult = async (label, executable, args, cleanup = false) => {
     log(label);
     try {
       const result = await run(executable, args, { timeout: 180000, maxBuffer: 16 * 1024 * 1024, ...(cleanup ? {} : { signal: abort.signal }) });
       report.checks.push({ name: label, status: 'bestået', output: [result.stdout, result.stderr].filter(Boolean).join('\n').trim().slice(-2000) });
-      return result.stdout || '';
+      return result;
     } catch (error) {
       report.checks.push({ name: label, status: 'fejlet', output: String(error.stderr || error.stdout || error.message).trim().slice(-2000) }); throw error;
     }
   };
+  const command = async (...args) => (await commandResult(...args)).stdout || '';
   try {
     // Opret aldrig rapporten oven i en tidligere kontrol eller et symbolsk link.
     await fs.writeFile(reportFile, JSON.stringify(report, null, 2), { flag: 'wx', mode: 0o600 }); reportWritten = true;
@@ -108,10 +133,20 @@ async function verifyMacArtifacts(input, options = {}) {
       log('Kildekontrol: ' + name);
       report.apps[name].source = await sourceCheck(path.join(bundle, 'Contents', 'Resources'), input.target);
       await command('Kodesignatur: ' + name, '/usr/bin/codesign', ['--verify', '--deep', '--strict', '--verbose=2', bundle]);
-      await command('Appens notarbillet: ' + name, '/usr/bin/xcrun', ['stapler', 'validate', bundle]);
-      await command('Distributionskontrol: ' + name, '/usr/bin/syspolicy_check', ['distribution', bundle]);
+      if (localAdHoc) {
+        const signature = await commandResult('Læs signaturidentitet: ' + name, '/usr/bin/codesign', ['--display', '--verbose=4', bundle]);
+        report.apps[name].signature = assertAdHocSignature([signature.stdout, signature.stderr].filter(Boolean).join('\n'));
+        report.checks.push({ name: 'Bekræft ad-hoc-signatur uden certifikatidentitet: ' + name, status: 'bestået' });
+      } else {
+        await command('Appens notarbillet: ' + name, '/usr/bin/xcrun', ['stapler', 'validate', bundle]);
+        await command('Distributionskontrol: ' + name, '/usr/bin/syspolicy_check', ['distribution', bundle]);
+      }
     }
-    await command('DMG-notarbillet', '/usr/bin/xcrun', ['stapler', 'validate', dmg]);
+    if (localAdHoc) report.checks.push({ name: 'Apple-notarbilletter og distributionskontrol', status: 'ikke udført', reason: 'Eksplicit lokal ad-hoc-kontrol. Pakken er ikke notariseret og er ikke kvalificeret til offentlig distribution.' });
+    else {
+      await command('DMG-notarbillet', '/usr/bin/xcrun', ['stapler', 'validate', dmg]);
+      report.notarization = 'staplede billetter verificeret'; report.distributionPolicyVerified = true;
+    }
     compareManifests(original, await appManifest(app), 'Original før og efter kontrollen');
     if (await sha256(dmg) !== report.artifacts.dmg.sha256 || await sha256(zip) !== report.artifacts.zip.sha256) throw Error('En installationsfil blev ændret under kontrollen.');
   } catch (error) { failures.push({ message: String(error.message).slice(0, 4000), ...(error.differences ? { differences: error.differences } : {}) }); }
@@ -143,8 +178,9 @@ async function verifyMacArtifacts(input, options = {}) {
   return report;
 }
 if (require.main === module) {
-  const [app, dmg, zip, target, reportFile, extra] = process.argv.slice(2);
-  if (!app || !dmg || !zip || !target || extra) { console.error('Brug: node scripts/verify-mac-artifacts.cjs ORIGINAL.app FINAL.dmg FINAL.zip darwin-arm64|darwin-x64 [RAPPORT.json]'); process.exitCode = 1; }
-  else verifyMacArtifacts({ app, dmg, zip, target, reportFile }, { log: message => console.error(message) }).then(report => console.log(JSON.stringify({ status: report.status, reportFile: report.reportFile, target: report.target, apps: report.apps, cleanup: report.cleanup }, null, 2))).catch(error => { console.error(error.message + (error.reportFile ? '\nRapport: ' + error.reportFile : '')); process.exitCode = 1; });
+  let input;
+  try { input = parseArguments(process.argv.slice(2)); }
+  catch { console.error('Brug: node scripts/verify-mac-artifacts.cjs ORIGINAL.app FINAL.dmg FINAL.zip darwin-arm64|darwin-x64 [RAPPORT.json] [--local-ad-hoc]'); process.exitCode = 1; }
+  if (input) verifyMacArtifacts(input, { log: message => console.error(message) }).then(report => console.log(JSON.stringify({ status: report.status, mode: report.mode, scope: report.scope, notarization: report.notarization, distributionPolicyVerified: report.distributionPolicyVerified, reportFile: report.reportFile, target: report.target, apps: report.apps, cleanup: report.cleanup }, null, 2))).catch(error => { console.error(error.message + (error.reportFile ? '\nRapport: ' + error.reportFile : '')); process.exitCode = 1; });
 }
-module.exports = { verifyMacArtifacts, appManifest, compareManifests, findApp, validateZipEntries };
+module.exports = { verifyMacArtifacts, appManifest, compareManifests, findApp, validateZipEntries, parseArguments };

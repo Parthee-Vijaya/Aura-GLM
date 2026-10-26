@@ -25,9 +25,7 @@ async function unreachable(url) { for (let i = 0; i < 40; i++) { try { await fet
   let app, page;
   const errors = [];
   async function launch() {
-    const bundle = process.env.HARNESS_TEST_PACKAGE;
-    const executablePath = bundle ? path.join(bundle, 'Contents/MacOS', path.basename(bundle, '.app')) : require('electron');
-    app = await electron.launch({ executablePath, args: [...(bundle ? [] : [path.join(__dirname, '..')]), '--user-data-dir=' + path.join(root, 'appdata')], env: { ...process.env, ...(bundle ? { PATH: '/usr/bin:/bin:/usr/sbin:/sbin' } : {}), ELECTRON_RUN_AS_NODE: undefined, OPENROUTER_API_KEY: 'SYNTHETIC_MUST_NOT_REACH_PROJECT' } });
+    ({ app } = await require('./electron-test-launch.cjs').launchTestApp({ electron, profile: path.join(root, 'appdata'), environment: { ...process.env, OPENROUTER_API_KEY: 'SYNTHETIC_MUST_NOT_REACH_PROJECT' } }));
     page = await app.firstWindow(); await skipIntroduction(page); page.on('pageerror', error => errors.push(error.message));
   }
   async function open(folder, framework = true) {
@@ -43,10 +41,14 @@ async function unreachable(url) { for (let i = 0; i < 40; i++) { try { await fet
     await page.waitForFunction(() => document.querySelector('#server-primary').textContent === 'Gennemgå opstart' && !document.querySelector('#server-primary').hidden, null, { timeout: 180000 });
   }
   async function start() {
-    await page.click('#server-primary'); await page.click('#server-confirm');
+    await reviewStart(); await page.click('#server-confirm');
     await page.locator('#server-status').filter({ hasText: 'Forhåndsvisningen kører' }).waitFor({ timeout: 60000 });
     await page.click('[data-close="preview-dialog"]');
     return await page.locator('#preview').getAttribute('src');
+  }
+  async function reviewStart() {
+    await page.click('#server-primary');
+    await page.waitForFunction(() => !document.querySelector('#server-review').hidden && !document.querySelector('#server-confirm').disabled && document.querySelector('#server-confirm').textContent === 'Start forhåndsvisning');
   }
   try {
     await fs.unlink(path.join(react, 'package.json'));
@@ -60,7 +62,7 @@ async function unreachable(url) { for (let i = 0; i < 40; i++) { try { await fet
     await page.click('#server-open'); await page.click('#server-primary'); await page.click('#server-cancel');
     await assert.rejects(fs.access(path.join(react, 'node_modules')));
     await install(); await assert.rejects(fs.access(path.join(react, 'script-kortslutning')));
-    await page.click('#server-primary');
+    await reviewStart();
     await fs.writeFile(path.join(react, 'package.json'), JSON.stringify({ ...pkg, description: 'Ændret efter gennemgang' }));
     await page.click('#server-confirm'); await page.locator('#preview-dialog .dialog-notice').filter({ hasText: 'opsætning er ændret' }).waitFor();
     assert.equal(await page.locator('#preview').getAttribute('src'), null);
@@ -82,10 +84,16 @@ async function unreachable(url) { for (let i = 0; i < 40; i++) { try { await fet
     await page.screenshot({ path: path.join(root, 'react-mobil.png') });
     await serverDialog(); await page.click('#server-stop'); await unreachable(url);
     await page.locator('#server-primary:not([hidden])').waitFor(); url = await start();
-    await open(astro); await unreachable(url); await page.click('#server-open'); await install();
+    const reactURL = url;
+    await open(astro);
+    assert.equal((await fetch(reactURL)).status, 200, 'Changing the selected project preserves its running preview.');
+    await open(react); await page.click('#tab-preview');
+    assert.equal(await page.locator('#preview').getAttribute('src'), reactURL);
+    await frame.locator('h1').filter({ hasText: 'Nye aktiviteter' }).waitFor();
+    await open(astro); await page.click('#server-open'); await install();
     // Fejl i den faktiske Astro-konfiguration skal stoppe processen og kunne rettes.
     await fs.writeFile(path.join(astro, 'astro.config.mjs'), `throw new Error('SYNTETISK KONFIGURATIONSFEJL');export default {};`);
-    await page.click('#server-primary'); await page.click('#server-confirm');
+    await reviewStart(); await page.click('#server-confirm');
     await page.locator('#server-status').filter({ hasText: 'Serveren stoppede' }).waitFor({ timeout: 60000 });
     assert.match(await page.locator('#server-log').textContent(), /SYNTETISK KONFIGURATIONSFEJL/);
     await fs.unlink(path.join(astro, 'astro.config.mjs'));
@@ -94,11 +102,11 @@ async function unreachable(url) { for (let i = 0; i < 40; i++) { try { await fet
     await fs.writeFile(path.join(astro, 'src/pages/index.astro'), '<h1>Opdateret kalender</h1>');
     await frame.locator('h1').filter({ hasText: 'Opdateret kalender' }).waitFor({ timeout: 20000 });
     await page.screenshot({ path: path.join(root, 'astro.png') });
-    await app.close(); app = null; await unreachable(url);
+    await app.close(); app = null; await unreachable(url); await unreachable(reactURL);
     await launch(); await open(astro);
     assert.equal(await page.locator('#preview').getAttribute('src'), null);
-    await unreachable(url);
+    await unreachable(url); await unreachable(reactURL);
     assert.deepEqual(errors, []);
-    console.log(JSON.stringify({ root, passed: ['genkendelse uden kørsel', 'forældet placeholder skjult', 'annullering', 'rigtig npm-installation uden pakkescripts', 'ændret opsætning afvist', 'React/TypeScript/Vite', 'klik og mobilvisning', 'HMR efter filændring', 'miljønøgler udeladt', 'stop og genstart', 'stop ved projektskift', 'Astro-fejl og rettelse', 'Astro-HMR', 'stop ved lukning', 'genåbning uden autostart'], versions: { vite: '8.3.1', react: '19.3.0', astro: '7.3.5' } }));
+    console.log(JSON.stringify({ root, passed: ['genkendelse uden kørsel', 'forældet placeholder skjult', 'annullering', 'rigtig npm-installation uden pakkescripts', 'ændret opsætning afvist', 'React/TypeScript/Vite', 'klik og mobilvisning', 'HMR efter filændring', 'miljønøgler udeladt', 'stop og genstart', 'bevaret preview ved projektskift', 'Astro-fejl og rettelse', 'Astro-HMR', 'begge servere stopper ved lukning', 'genåbning uden autostart'], versions: { vite: '8.3.1', react: '19.3.0', astro: '7.3.5' } }));
   } catch (error) { console.error(JSON.stringify({root, notice: await page?.locator('#message').textContent().catch(()=>''), server: await page?.locator('#server-status').textContent().catch(()=>''), log: await page?.locator('#server-log').textContent().catch(()=> '')})); await page?.screenshot({path:path.join(root,'fejl.png')}).catch(()=>{}); throw error; } finally { await app?.close().catch(() => {}); }
 })().catch(error => { console.error(error); process.exitCode = 1; });
