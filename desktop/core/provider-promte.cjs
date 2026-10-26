@@ -1,3 +1,4 @@
+const { ExternalEgress } = require('./privacy/external-egress.cjs');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const os = require('node:os');
@@ -6,6 +7,7 @@ const dns = require('node:dns/promises');
 const { isIP } = require('node:net');
 const { randomUUID, createHash } = require('node:crypto');
 const { zip } = require('./komplai-publish.cjs');
+const protectedPaths = require('./protected-paths.cjs');
 
 // Kontrakten følger den publicerede @promte/app-upload 0.2.0.
 // Aura logger selv ind gennem Promtes browsergodkendelse og gemmer adgangen krypteret pr. vært.
@@ -20,7 +22,7 @@ const PROMTE_SETUP = 'Promte udgiver kun apps, der er bygget til Promte. Projekt
 const SKIP_DIRS = new Set(['node_modules', 'bower_components', '.git', '.hg', '.svn', '.promte-source', '.cache', '.yarn', '.npm', '.pnpm-store', '.turbo', '.vite', '.parcel-cache', '.next', '.nuxt', '.output', 'dist', 'build', 'out', 'coverage', '__pycache__', '.pytest_cache', '.mypy_cache', '.venv', 'venv', '.ssh', '.aws', '.azure', '.gcloud', '.kube', '.docker', '__macosx', '.claude', '.agents', '.codex', '.cursor', '.idea', '.vscode']);
 const SKIP_FILE = /^(?:\.env(?:\..*)?|\.npmrc|\.pypirc|\.netrc|\.ds_store|\.yarnrc(?:\.yml)?|\.secrets?|credentials(?:\.[^.]+)?|secrets?\.(?:json|ya?ml|toml)|id_(?:rsa|dsa|ecdsa|ed25519)(?:\.pub)?|promte-app-upload\.config\.json|yarn\.lock|pnpm-lock\.yaml|vite\.config\.[cm]?[jt]s)$|\.(?:pem|key|p12|pfx|keystore|jks|zip|tar|tgz|gz|7z|rar|map|tsbuildinfo|log|pyc|o|so|dll|exe|class)$/i;
 const UNSUPPORTED_BUILD_FILE = /^(?:(?:postcss|tailwind|babel|webpack|rollup)\.config\..+|\.babelrc(?:\..*)?|\.postcssrc(?:\..*)?)$/i;
-const ignoredSource = file => file.split('/').some(p => SKIP_DIRS.has(p.toLowerCase())) || SKIP_FILE.test(path.posix.basename(file));
+const ignoredSource = file => protectedPaths.isProtected(file) || file.split('/').some(p => SKIP_DIRS.has(p.toLowerCase())) || SKIP_FILE.test(path.posix.basename(file));
 const runtimeDependencies = pkg => ({ ...pkg.dependencies, ...pkg.peerDependencies, ...pkg.optionalDependencies });
 function preparePromteArtifact(artifact) {
   let pkg;
@@ -142,43 +144,45 @@ function tokenClaims(token) {
   try { return JSON.parse(Buffer.from(String(token).split('.')[1], 'base64url').toString('utf8')) || {}; } catch { return {}; }
 }
 class PromteDeployment {
-  constructor({ store, fetcher, readCredentials: reader = readCredentials, lookup = dns.lookup } = {}) { this.id = 'promte'; this.store = store; this.fetcher = fetcher; this.reader = reader; this.lookup = lookup; }
+  constructor({ store, fetcher, readCredentials: reader = readCredentials, lookup = dns.lookup, getPrivacy } = {}) { this.egress = new ExternalEgress(getPrivacy); this.id = 'promte'; this.store = store; this.fetcher = fetcher; this.reader = reader; this.lookup = lookup; }
   async token(host) {
     const saved = await savedLogin(this.store, host);
     if (saved) return this.store.decrypt(saved);
     return (await this.reader(host))?.token;
   }
-  async call(host, route, { body, token, upload = false, contentType, anonymous = false, accept = [] } = {}) {
+  async call(host, route, { body, token, upload = false, contentType, anonymous = false, accept = [], root } = {}) {
+    const assertCurrent = await this.egress.legacyPermit(root);
     host = promteHost(host);
     const address = await addressFor(host, this.lookup);
     if (!token && !anonymous) token = await this.token(host);
     if (!token && !anonymous) throw Error('Log ind med Promte til den valgte installation.');
     const options = { method: body === undefined ? 'GET' : 'POST', redirect: 'error', credentials: 'omit', timeout: upload ? 120000 : 30000, headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), Accept: 'application/json', ...(body !== undefined ? { 'Content-Type': contentType || 'application/json' } : {}) }, body: body === undefined ? undefined : Buffer.isBuffer(body) ? body : JSON.stringify(body) };
     let response, value;
-    try { response = await (this.fetcher ? this.fetcher(host + route, { ...options, signal: AbortSignal.timeout(options.timeout) }) : pinnedRequest(host + route, options, address)); const text = await response.text(); if (Buffer.byteLength(text) > 2 * 1024 * 1024) throw Error(); value = JSON.parse(text); } catch { throw Error(UNREADABLE); }
+    try { assertCurrent(); response = await (this.fetcher ? this.fetcher(host + route, { ...options, signal: AbortSignal.timeout(options.timeout) }) : pinnedRequest(host + route, options, address)); const text = await response.text(); if (Buffer.byteLength(text) > 2 * 1024 * 1024) throw Error(); value = JSON.parse(text); } catch (error) { if (error.code?.startsWith('PRIVACY_')) throw error; throw Error(UNREADABLE); }
     if (accept.includes(response.status) && value && typeof value === 'object') return value;
     if (response.status === 401) throw Error('Promte-login er udløbet eller afvist. Log ind igen.');
     if (response.status === 403) throw Error('Du skal være administrator i Promte-arbejdsområdet for at udgive.');
     if (!response.ok || !value || typeof value !== 'object') throw Error('Promte kunne ikke gennemføre handlingen. Kontrollér arbejdsområde og udgivelser i Promte.');
     return value;
   }
-  async inspect(input) {
+  async inspect(input, artifact) {
     const c = promteConfiguration(input);
-    const capabilities = await this.call(c.host, '/api/app-upload/capabilities?workspaceId=' + encodeURIComponent(c.workspaceId));
+    const capabilities = await this.call(c.host, '/api/app-upload/capabilities?workspaceId=' + encodeURIComponent(c.workspaceId), { root: artifact?.root });
     // Aura sender kildekode, som Promte selv bygger (PR 12). Installationer, der kun tager færdigbyggede apps, får en klar besked.
     if (capabilities.available === true && capabilities.uploadMode === 'built') throw Error('Denne Promte-installation tager kun imod færdigbyggede apps. Aura sender kildekode, som Promte selv bygger, fx på https://kodning.promte.dk. Brug Promtes eget uploadværktøj her, eller vælg en anden Promte-adresse.');
     if (capabilities.available !== true || capabilities.uploadMode !== 'source') throw Error('Denne Promte-installation skal understøtte kildekodeupload. Kontakt administratoren om appbygning og din adgang.');
     // Appens navn vises, hvor Promte kan oplyse det. Ældre installationer viser ID'et.
     let name = c.workspaceId;
-    try { const found = (await this.call(c.host, '/api/app-upload/workspaces')).workspaces?.find(w => w?.id === c.workspaceId); if (typeof found?.name === 'string' && found.name.trim()) name = found.name.slice(0, 200); } catch {}
+    try { const found = (await this.call(c.host, '/api/app-upload/workspaces', { root: artifact?.root })).workspaces?.find(w => w?.id === c.workspaceId); if (typeof found?.name === 'string' && found.name.trim()) name = found.name.slice(0, 200); } catch {}
     return { id: c.workspaceId, name, owner: new URL(c.host).hostname, host: new URL(c.host).hostname, portal: `${c.host}/workspaces/${encodeURIComponent(c.workspaceId)}`, region: 'Afhænger af jeres Promte-installation og dens tjenester.', settings: { uploadMode: 'source' }, environmentKeys: [], access: 'Adgang styres i Promte-arbejdsområdet. Kontrollér den med den tilsigtede bruger.', accountRequired: ACCOUNT_REQUIRED, uploadDestinations: [...new Set([c.host, DEFAULT_HOST])], materialNote: 'Kildekoden sendes til den valgte Promte-installation eller Promtes fælles uploadtjeneste på app.promte.dk. Promte bygger og gennemgår versionen.' };
   }
   async deploy(input, artifact, target, { onUploaded = async () => {} } = {}) {
+    const assertCurrent = await this.egress.legacyPermit(artifact?.root);
     const c = promteConfiguration(input); validatePromteArtifact(artifact);
     if (target.id !== c.workspaceId || target.host !== new URL(c.host).hostname || target.settings?.uploadMode !== 'source') throw Error('Promte-destinationen har ændret sig. Gennemgå udgivelsen igen.');
-    const archive = zip(artifact.files);
+    assertCurrent(); const archive = zip(artifact.files);
     if (archive.length > 20 * 1024 * 1024) throw Error('Promte-kildepakken må højst fylde 20 MB.');
-    const prepared = await this.call(c.host, '/api/app-upload/prepare', { body: { workspaceId: c.workspaceId } });
+    const prepared = await this.call(c.host, '/api/app-upload/prepare', { root: artifact?.root, body: { workspaceId: c.workspaceId } });
     const version = Number(prepared.version);
     if (!Number.isSafeInteger(version) || version < 1) throw Error('Promte gav ikke et gyldigt versionsnummer. Kontrollér udgivelserne før et nyt forsøg.');
     const pending = { id: `version:${version}`, promteVersion: version, state: 'PREPARED', url: null };
@@ -187,9 +191,9 @@ class PromteDeployment {
     if (![c.host, DEFAULT_HOST].includes(uploadHost) || typeof prepared.uploadToken !== 'string' || !prepared.uploadToken || /[\r\n]/.test(prepared.uploadToken)) throw Error('Promte gav en uploadadresse eller adgang, som ikke var med i gennemgangen. Kontrollér versionen i Promte.');
     const boundary = 'aura-' + randomUUID();
     const multipart = Buffer.concat([Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="source"; filename="source.zip"\r\nContent-Type: application/zip\r\n\r\n`), archive, Buffer.from(`\r\n--${boundary}--\r\n`)]);
-    await this.call(uploadHost, '/api/upload-app?' + new URLSearchParams({ workspaceId: c.workspaceId, version: String(version) }), { body: multipart, token: prepared.uploadToken, upload: true, contentType: 'multipart/form-data; boundary=' + boundary });
+    await this.call(uploadHost, '/api/upload-app?' + new URLSearchParams({ workspaceId: c.workspaceId, version: String(version) }), { root: artifact?.root, body: multipart, token: prepared.uploadToken, upload: true, contentType: 'multipart/form-data; boundary=' + boundary });
     await onUploaded({ ...pending, state: 'UPLOADED' });
-    const finalized = await this.call(c.host, '/api/app-upload/finalize', { body: { workspaceId: c.workspaceId, version, zipName: 'source.zip', zipSize: archive.length } });
+    const finalized = await this.call(c.host, '/api/app-upload/finalize', { root: artifact?.root, body: { workspaceId: c.workspaceId, version, zipName: 'source.zip', zipSize: archive.length } });
     const result = { ...pending, state: releaseState(finalized.status), ...(typeof finalized.releaseId === 'string' ? { id: identifier(finalized.releaseId, 'versionens ID') } : {}) };
     await onUploaded(result);
     return result;

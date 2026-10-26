@@ -1,5 +1,5 @@
 const fs = require('node:fs/promises');
-const repository = 'ai-alliancen-org/ai-harness';
+const { repository } = require('./release-contract.cjs');
 
 // Begge svar skal være hentet fra GitHub umiddelbart før den handling, de beskytter.
 function assertPublicPages(metadata, pages) {

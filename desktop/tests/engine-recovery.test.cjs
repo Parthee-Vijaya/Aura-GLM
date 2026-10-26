@@ -12,7 +12,7 @@ async function fixture(t, options = {}) {
   const state = { messages: [message('Before')], status: { 'session-a': { type: 'busy' } }, permissions: [ask], questions: [] };
   const server = http.createServer(async (req, res) => {
     calls.push({ method: req.method, url: req.url });
-    if (req.url === '/event') { res.writeHead(200, { 'content-type': 'text/event-stream' }); res.write(': ready\n\n'); streams.push(res); return; }
+    if (req.url === '/api/event') { res.writeHead(200, { 'content-type': 'text/event-stream' }); res.write(': ready\n\n'); streams.push(res); return; }
     res.setHeader('content-type', 'application/json');
     if (req.url === '/session/session-a/abort') { state.status = {}; return res.end('true'); }
     const value = { '/permission': state.permissions, '/question': state.questions, '/session/status': state.status, '/session/session-a/message': state.messages }[req.url];
@@ -22,6 +22,8 @@ async function fixture(t, options = {}) {
   await new Promise(r => server.listen(0, '127.0.0.1', r));
   const engine = new OpenCodeEngine({ root: '/synthetic', model: { id: 'selected' }, onEvent: e => events.push(e), recovery: { delays: [5, 10, 15], idleLimit: 1000, ...options } });
   Object.assign(engine, { active: true, session: { id: 'session-a' }, url: `http://127.0.0.1:${server.address().port}`, auth: 'Basic test', promptID: 'msg-current', promptEpoch: 1 });
+  // Exercise the host event contract independently of the V2 wire adapter.
+  engine.request = engine.wire.bind(engine);
   const running = engine.listen(); await engine.eventStream.ready;
   t.after(async () => { await engine.close(); await running; server.closeAllConnections(); await new Promise(r => server.close(r)); });
   const emit = event => streams.at(-1).write('data: ' + JSON.stringify(event) + '\n\n');

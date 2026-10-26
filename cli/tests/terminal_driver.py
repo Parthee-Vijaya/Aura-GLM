@@ -78,6 +78,13 @@ def preview_check():
     return 'nej\n'
 
 
+def rejection_check():
+    # V2 suspends a declined tool instead of asking the model for another turn.
+    # Verify the data boundary, then require the ordinary prompt to return.
+    with open(os.path.join(project, 'public', 'index.html'), encoding='utf-8') as source:
+        assert source.read() == '<h1>Bygget i terminalen</h1>', 'En afvist handling ændrede filen'
+
+
 def stop_check():
     deadline = time.monotonic() + 100
     while not os.path.exists(os.path.join(state, 'test-wait')):
@@ -107,7 +114,7 @@ try:
         ('Åbn i browseren? (ja/NEJ): ', lambda: preview_check()),
         ('Dig: ', 'Afvis ændringen\n'),
         ('Tillad denne handling én gang? (ja/NEJ): ', 'nej\n'),
-        ('Der blev ikke ændret filer i denne opgave.', lambda: None),
+        ('Handlingen er afvist.', rejection_check),
         ('Dig: ', '/diff\n'),
         ('Vælg nummer, søg med tekst eller skriv tilbage: ', '1\n'),
         ('Dig: ', 'Vent på svar\n'),
@@ -115,7 +122,7 @@ try:
         ('Opgaven er stoppet.', lambda: None),
         ('Dig: ', 'Efter stop: Afvis ændringen\n'),
         ('Tillad denne handling én gang? (ja/NEJ): ', 'nej\n'),
-        ('Der blev ikke ændret filer i denne opgave.', lambda: None),
+        ('Handlingen er afvist.', rejection_check),
         ('Dig: ', '/exit\n'),
     ])
     session([
@@ -128,6 +135,7 @@ try:
     ])
     assert secret.encode() not in history, 'Nøglen må ikke blive skrevet i terminalen'
     assert password.encode() not in history, 'Adgangssætningen må ikke blive skrevet i terminalen'
+    assert b'Step interrupted' not in history, 'En afvist handling må ikke ligne en motorfejl'
     assert 'Agentmotoren stoppede'.encode() not in history, 'Ctrl+C må ikke slå motoren ned'
     assert 'hændelser blev afbrudt'.encode() not in history, 'Ctrl+C må ikke bryde hændelsesforbindelsen'
     print(json.dumps({'status': 'bestået', 'kontroller': ['login', 'skjult nøgle', 'krypteret genåbning', 'plan', 'byg', 'tilladelse', 'afvisning', 'preview', 'diff', 'stop', 'samtalehistorik', 'forbindelsesfejl']}))

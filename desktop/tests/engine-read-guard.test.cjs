@@ -49,13 +49,69 @@ test('den genererede plugin kvitterer for indlæsning og bevarer aktive skills r
   const skills = [{ name: 'harness-test', files: [{ path: 'SKILL.md', content: '# Prøve' }, { path: 'references/proeve.md', content: 'Offentlig skillreference' }] }];
   await writeSkills(directory, skills);
   const configured = await writeReadGuard(directory, root, ['references/valgt.txt'], skills);
-  const plugin = await import(configured.pluginURL), hooks = await plugin.AuraReadProtection();
+  const plugin = await import(require('node:url').pathToFileURL(path.join(configured.pluginURL, 'index.mjs')).href), hooks = {};
+  await plugin.default.setup({tool:{hook:async(name,fn)=>{ hooks[name]=fn; }}});
   assert.equal(JSON.parse(await fs.readFile(configured.readyPath, 'utf8')).token, configured.token);
   const skill = path.join(directory, 'config', 'skills', 'harness-test', 'references', 'proeve.md');
-  const output = { args: { filePath: skill } };
-  await hooks['tool.execute.before']({ tool: 'read' }, output); assert.equal(output.args.filePath, skill);
-  await assert.rejects(hooks['tool.execute.before']({ tool: 'read' }, { args: { filePath: path.join(root, '.env') } }), /Aura beskytter/);
-  const otherTool = { args: { filePath: path.join(root, '.env') } };
-  await hooks['tool.execute.before']({ tool: 'write' }, otherTool);
-  assert.equal(otherTool.args.filePath, path.join(root, '.env'), 'Andre værktøjer beholder deres eksisterende tilladelsesvej');
+  const output = { tool:'read', input: { path:skill } };
+  await hooks['execute.before'](output); assert.equal(output.input.path, skill);
+  await assert.rejects(hooks['execute.before']({ tool:'read', input:{path:path.join(root,'.env')} }), /Aura beskytter/);
+  await assert.rejects(hooks['execute.before']({ tool:'write', input:{path:path.join(root,'.ENV')} }), /Aura beskytter/);
+  const otherTool = { tool:'write', input: { path: path.join(root, 'ordinary-new.txt') } };
+  await hooks['execute.before'](otherTool);
+  assert.equal(otherTool.input.path, path.join(root, 'ordinary-new.txt'), 'Almindelig skrivning beholder sin eksisterende tilladelsesvej');
+});
+
+test('file tool guard rejects protected write/edit and every patch source or move target', async t => {
+  const { root, guard } = await fixture(t);
+  for (const tool of ['write', 'edit']) {
+    for (const name of ['.KUBE/config', 'PRIVATE.PEM', 'references/valgt.txt', 'public:credentials.json'])
+      await assert.rejects(guard({ tool }, { args: { filePath: name } }), /Aura beskytter/, tool + ':' + name);
+    const output = { args: { filePath: 'new/folder/page.html' } };
+    await guard({ tool }, output);
+    assert.equal(output.args.filePath, path.join(root, 'new/folder/page.html'));
+  }
+  for (const header of ['*** Add File: .KUBE/new.txt', '*** Update File: .KUBE/config', '*** Delete File: PRIVATE.PEM', '*** Update File: normal.txt\n*** Move to: .KUBE/moved.txt', '*** Update File: .KUBE/config\n*** Move to: normal.txt'])
+    await assert.rejects(guard({ tool: 'patch' }, { args: { patchText: '*** Begin Patch\n' + header + '\n@@\n-Old\n+New\n*** End Patch' } }), /Aura beskytter/, header);
+  const output = { args: { patchText: '*** Begin Patch\n*** Add File: new/page.html\n+<p>Ordinary</p>\n*** End Patch' } };
+  await guard({ tool: 'patch' }, output);
+  assert.equal(output.args.patchText, '*** Begin Patch\n*** Add File: ' + path.join(root, 'new/page.html') + '\n+<p>Ordinary</p>\n*** End Patch');
+  await assert.rejects(guard({ tool: 'patch' }, { args: { patchText: 'unknown patch format' } }), /Aura beskytter/);
+  for (const wrapper of [text => "<<'PATCH'\n" + text + '\nPATCH', text => 'cat <<"PATCH"\n' + text + '\nPATCH']) {
+    const wrapped = { args: { patchText: wrapper('*** Begin Patch\n*** Environment ID: synthetic\n*** Add File: new/wrapped.txt\n+Ordinary\n*** End Patch') } };
+    await guard({ tool: 'patch' }, wrapped);
+    assert.ok(wrapped.args.patchText.includes('*** Add File: ' + path.join(root, 'new/wrapped.txt')));
+    await assert.rejects(guard({ tool: 'patch' }, { args: { patchText: wrapper('*** Begin Patch\n*** Environment ID: synthetic\n*** Add File: .KUBE/new.txt\n+Private\n*** End Patch') } }), /Aura beskytter/);
+  }
+  for (const space of [' ', '\t', ' \t']) await assert.rejects(guard({ tool: 'patch' }, { args: {
+    patchText: '*** Begin Patch\n*** Add File: public/allowed.txt\n+Ordinary\n' + space + '*** Add File: .KUBE/new.txt\n+Private\n*** End Patch'
+  } }), /Aura beskytter/, 'native parser accepts indented headers: ' + JSON.stringify(space));
+});
+
+test('new file targets under symlinks are checked before any write approval', { skip: process.platform === 'win32' }, async t => {
+  const { root, guard } = await fixture(t);
+  await fs.mkdir(path.join(root, '.kube'));
+  await fs.symlink(path.join(root, '.kube'), path.join(root, 'alias'));
+  await assert.rejects(guard({ tool: 'write' }, { args: { filePath: 'alias/new/config' } }), /Aura beskytter/);
+  await assert.rejects(guard({ tool: 'patch' }, { args: { patchText: '*** Begin Patch\n*** Add File: alias/new/config\n+Private\n*** End Patch' } }), /Aura beskytter/);
+  await fs.symlink(path.join(root, '.kube/missing'), path.join(root, 'dangling'));
+  await assert.rejects(guard({ tool: 'write' }, { args: { filePath: 'dangling' } }), /Aura beskytter/);
+});
+
+test('patch deletion or movement of a final symlink cannot unlink its target instead', { skip: process.platform === 'win32' }, async t => {
+  const { root, guard } = await fixture(t);
+  await fs.symlink('normal.txt', path.join(root, 'alias.txt'));
+  for (const header of ['*** Delete File: alias.txt', '*** Update File: alias.txt\n*** Move to: moved.txt\n@@\n-Offentlig\n+Changed', '*** Update File: alias.txt\n*** End of File\n*** End of File\n*** Move to: moved.txt\n@@\n-Offentlig\n+Changed']) {
+    const output = { args: { patchText: '*** Begin Patch\n' + header + '\n*** End Patch' } };
+    await assert.rejects(guard({ tool: 'patch' }, output), /Aura beskytter/, header);
+    assert.equal(await fs.readFile(path.join(root, 'normal.txt'), 'utf8'), 'Offentlig');
+    assert.equal(await fs.readlink(path.join(root, 'alias.txt')), 'normal.txt');
+  }
+  // A directory alias does not change which final entry unlink removes.
+  await fs.mkdir(path.join(root, 'ordinary'));
+  await fs.writeFile(path.join(root, 'ordinary', 'page.txt'), 'Keep');
+  await fs.symlink('ordinary', path.join(root, 'folder-alias'));
+  const output = { args: { patchText: '*** Begin Patch\n*** Delete File: folder-alias/page.txt\n*** End Patch' } };
+  await guard({ tool: 'patch' }, output);
+  assert.match(output.args.patchText, new RegExp('Delete File: ' + path.join(root, 'ordinary', 'page.txt')));
 });

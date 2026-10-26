@@ -9,7 +9,12 @@ const run = promisify(execFile);
 const { EngineEvents } = require('./engine-events.cjs');
 const { setTimeout: delay } = require('node:timers/promises');
 // Skal svare til runtime-lock.json, som ikke kommer med i den pakkede app. En unit-test holder de to ens.
-const VERSION = '1.18.33';
+const VERSION = '2.1.4';
+const v2 = require('./engine-opencode2.cjs');
+const taskTools = require('./engine-opencode2-todos.cjs');
+const protectedPaths = require('./protected-paths.cjs');
+const { localMetrics, RunMeasurement } = require('./run-metrics.cjs');
+const parseOpenCodeVersion = value => /^(?:opencode v)?(\d+\.\d+\.\d+)\s*$/.exec(String(value).trim())?.[1] || null;
 
 // Første opstart kan være langsom, fordi macOS eller et antivirusprogram kontrollerer motoren, før den må køre.
 const VERSION_CHECK_MS = 120000;
@@ -23,7 +28,7 @@ async function findExecutable({ bundled = require('./runtime.cjs').get(), timeou
   let slow = false;
   for (const file of candidates) {
     if (file === verified) return file;
-    try { const result = await run(file, ['--version'], { timeout, windowsHide: true }); if (result.stdout.trim() === VERSION) return (verified = file); }
+    try { const result = await run(file, ['--version'], { timeout, windowsHide: true }); if (parseOpenCodeVersion(result.stdout) === VERSION) return (verified = file); }
     catch (error) { if (error.killed) slow = true; /* Prøv næste eksplicitte installationsplacering. */ }
   }
   // Den pakkede app har sin egen motor. Brugeren skal have en forklaring, de kan handle på, ikke en udviklerkommando.
@@ -36,17 +41,12 @@ const SKILL_NAME = /^harness-[a-z0-9]+(-[a-z0-9]+)*$/;
 const SKILL_FILE = /^(SKILL\.md|references\/[a-z0-9-]+\.md)$/;
 // OpenCode sammenligner fil- og læsetilladelser med stien i forhold til projektets Git-rod, eller til computerens rod uden Git.
 // En mappe spærres derfor både som "mappe/…" og "…/mappe/…"; en fuld sti ville aldrig blive ramt. Sidste regel, der passer, gælder.
-const everywhere = dir => [`${dir}/*`, `*/${dir}/*`];
 // Aktive skills ligger i motorens egen konfigurationsmappe uden for projektet. Mappens navn er projektets nøgle, så mønsteret kun rammer den.
 const skillPattern = directory => `*/${path.basename(directory)}/config/skills/*`;
 function permissions(root, references, mode = 'free', skills = null) {
-  const read = { '*': 'allow', '*.env': 'deny', '*.env.*': 'deny', '*.key': 'deny', '*.pem': 'deny', '*.env:*': 'deny', '*.key:*': 'deny', '*.pem:*': 'deny' };
-  // NTFS kan åbne samme fil via fx nøgle.key::$DATA. Et andet navn på dens
-  // datastrøm ophæver ikke beskyttelsen, heller ikke før Auras godkendelseskort.
-  for (const dir of ['.git', 'secrets', 'references', '.ssh', '.aws', '.gnupg', '.kube', '.azure']) for (const pattern of [...everywhere(dir), `${dir}:*`, `*/${dir}:*`]) read[pattern] = 'deny';
-  for (const file of ['.npmrc', '.pypirc']) for (const pattern of [file, `*/${file}`, `${file}:*`, `*/${file}:*`]) read[pattern] = 'deny';
+  const read = { '*': 'allow', ...Object.fromEntries(protectedPaths.toOpenCodeGlobs().map(pattern => [pattern, 'deny'])) };
   // Udvalgte referencer har et unikt filnavn fra appen, så mønsteret kun rammer den valgte fil.
-  for (const file of references) for (const pattern of [file, `*/${file}`]) read[pattern] = 'allow';
+  for (const file of references) if (!protectedPaths.isProtected(file, { references: false })) for (const pattern of [file, `*/${file}`]) read[pattern] = 'allow';
   const external = { '*': 'ask' };
   let skill = 'deny';
   if (skills?.names.length) {
@@ -56,8 +56,7 @@ function permissions(root, references, mode = 'free', skills = null) {
     skill = { '*': 'deny', ...Object.fromEntries(skills.names.map(name => [name, 'allow'])) };
   }
   if (['chat', 'plan'].includes(mode)) return { '*': 'deny', read, glob: 'allow', list: 'allow', grep: 'ask', webfetch: 'ask', external_directory: external, skill, question: 'allow' };
-  const edit = { '*': 'ask', '*.env*': 'deny', '*.key': 'deny', '*.pem': 'deny', '*.key:*': 'deny', '*.pem:*': 'deny' };
-  for (const pattern of [...everywhere('.git'), '.git:*', '*/.git:*']) edit[pattern] = 'deny';
+  const edit = { '*': 'ask', ...Object.fromEntries(protectedPaths.toOpenCodeGlobs().map(pattern => [pattern, 'deny'])) };
   if (skills?.names.length) edit[skillPattern(skills.directory)] = 'deny';
   return { '*': 'ask', read, glob: 'allow', grep: 'ask', list: 'allow', edit, bash: 'ask', external_directory: external, webfetch: 'ask', websearch: 'deny', task: 'deny', skill, lsp: 'deny', question: 'allow', todowrite: 'allow', todoread: 'allow' };
 }
@@ -89,7 +88,7 @@ function isolatedEnv(directory, config, password, { commandIsolation = false } =
   // OpenCode søger altid også i HOME/.opencode, selv med projektkonfiguration slået fra.
   // Motorens plugins, pakker og hjælpeprocesser må kun bruge Auras egne mapper.
   env.HOME = path.join(directory, 'home'); env.USERPROFILE = env.HOME;
-  Object.assign(env, { OPENCODE_CONFIG_CONTENT: JSON.stringify(config), OPENCODE_CONFIG_DIR: path.join(directory, 'config'), OPENCODE_SERVER_PASSWORD: password, OPENCODE_SERVER_USERNAME: 'harness', OPENCODE_CLIENT: 'harness' });
+  Object.assign(env, { OPENCODE_CONFIG_CONTENT: JSON.stringify(config), OPENCODE_CONFIG_DIR: path.join(directory, 'config'), OPENCODE_SERVER_PASSWORD: password, OPENCODE_SERVER_USERNAME: 'opencode', OPENCODE_TEST_HOME: env.HOME, OPENCODE_CLIENT: 'harness' });
   if (process.platform !== 'win32' && commandIsolation) env.SHELL = '/bin/bash';
   for (const flag of ['DISABLE_PROJECT_CONFIG', 'DISABLE_DEFAULT_PLUGINS', 'DISABLE_EXTERNAL_SKILLS', 'DISABLE_CLAUDE_CODE', 'DISABLE_AUTOUPDATE', 'DISABLE_MODELS_FETCH', 'DISABLE_LSP_DOWNLOAD', 'DISABLE_SHARE', 'DISABLE_EMBEDDED_WEB_UI']) env[`OPENCODE_${flag}`] = 'true';
   // OpenCode tilbyder kun spørgeværktøjet til sine egne klienter. Aura viser spørgsmålene selv, ét ad gangen med klikbare svar.
@@ -99,113 +98,249 @@ function isolatedEnv(directory, config, password, { commandIsolation = false } =
   env.OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX = String(require('./connections.cjs').OUTPUT_CEILING);
   return require('./runtime.cjs').gitEnvironment(env);
 }
-const pluginModules = () => path.join(__dirname, '..', 'node_modules').replace(/app\.asar([/\\])/, 'app.asar.unpacked$1');
-async function pluginRuntimeFiles() {
-  const seen = new Set(), modules = path.join(__dirname, '..', 'node_modules');
-  async function visit(folder) {
-    folder = await fs.realpath(folder); if (seen.has(folder)) return; seen.add(folder);
-    const manifest = JSON.parse(await fs.readFile(path.join(folder, 'package.json'), 'utf8'));
-    for (const name of Object.keys(manifest.dependencies || {})) {
-      let base = folder, target;
-      while (true) {
-        target = path.join(base, 'node_modules', name);
-        if (await fs.access(path.join(target, 'package.json')).then(() => true, () => false)) break;
-        const parent = path.dirname(base); if (parent === base) throw new Error('En låst plugin-afhængighed mangler: ' + name); base = parent;
-      }
-      await visit(target);
-    }
-  }
-  await visit(path.join(modules, '@opencode-ai', 'plugin'));
-  return [...seen];
-}
-async function pluginRuntimePatterns() {
-  const files = await pluginRuntimeFiles(), patterns = new Set();
-  for (const folder of files) {
-    const { name } = JSON.parse(await fs.readFile(path.join(folder, 'package.json'), 'utf8'));
-    // electron-builder kan flytte en nested afhængighed til node_modules-roden.
-    // Den eksterne motor kan ikke falde tilbage til en kopi inde i app.asar.
-    patterns.add(path.relative(path.join(__dirname, '..'), folder).split(path.sep).join('/') + '/**/*');
-    patterns.add(`node_modules/${name}/**/*`);
-    patterns.add(`node_modules/**/node_modules/${name}/**/*`);
-  }
-  return [...patterns];
-}
+// V2 loads its pinned built-in runtime; Aura's local plugins never install SDKs.
+async function pluginRuntimeFiles() { return []; }
+async function pluginRuntimePatterns() { return []; }
 async function writePluginRuntime(directory) {
-  const modules = await fs.realpath(pluginModules());
-  const sdk = JSON.parse(await fs.readFile(path.join(modules, '@opencode-ai', 'plugin', 'package.json'), 'utf8'));
-  if (sdk.version !== VERSION) throw new Error('Plugin-understøttelsen matcher ikke Auras AI-motor. Installer appen igen.');
-  // OpenCode venter på npm-installation før enhver lokal plugin. Den låste SDK følger med appen;
-  // et lokalt modul-link og en tilhørende lockfil gør denne opstart uafhængig af nettet.
+  directory = await fs.realpath(directory);
+  // Only retire the exact artifacts generated by Aura 1.x. Preserve unknown
+  // user material and reject discovery authority before starting the process.
   for (const folder of [path.join(directory, 'config'), path.join(directory, 'config', 'opencode')]) {
-    await fs.mkdir(folder, { recursive: true, mode: 0o700 });
-    const target = path.join(folder, 'node_modules');
-    const previous = await fs.lstat(target).catch(error => { if (error.code !== 'ENOENT') throw error; return null; });
-    if (previous && await fs.realpath(target).catch(() => null) !== modules) await fs.rm(target, { recursive: true, force: true });
-    if (!previous || await fs.realpath(target).catch(() => null) !== modules) await fs.symlink(modules, target, process.platform === 'win32' ? 'junction' : 'dir');
-    const dependencies = { '@opencode-ai/plugin': VERSION };
-    for (const name of ['package.json', 'package-lock.json']) await fs.readFile(path.join(folder, name), 'utf8').catch(error => { if (error.code !== 'ENOENT') throw error; });
-    await fs.writeFile(path.join(folder, 'package.json'), JSON.stringify({ name: 'aura-agent-plugins', private: true, dependencies }), { mode: 0o600 });
-    await fs.writeFile(path.join(folder, 'package-lock.json'), JSON.stringify({ name: 'aura-agent-plugins', lockfileVersion: 3, packages: { '': { dependencies }, 'node_modules/@opencode-ai/plugin': { version: VERSION } } }), { mode: 0o600 });
+    const manifestPath = path.join(folder, 'package.json');
+    const manifest = await fs.readFile(manifestPath, 'utf8').then(JSON.parse).catch(error => { if (error.code === 'ENOENT') return null; throw error; });
+    if (!manifest) continue;
+    const version = manifest.dependencies?.['@opencode-ai/plugin'];
+    const expected = { name: 'aura-agent-plugins', private: true, dependencies: { '@opencode-ai/plugin': version } };
+    if (!/^1\.\d+\.\d+$/.test(version || '') || !isDeepStrictEqual(manifest, expected)) throw new Error('Ukendt lokal motorkonfiguration er bevaret. Aura kan ikke migrere den automatisk.');
+    const lockPath = path.join(folder, 'package-lock.json');
+    const lock = await fs.readFile(lockPath, 'utf8').then(JSON.parse);
+    if (!isDeepStrictEqual(lock, { name: 'aura-agent-plugins', lockfileVersion: 3, packages: { '': { dependencies: expected.dependencies }, 'node_modules/@opencode-ai/plugin': { version } } })) throw new Error('Ukendt lokal plugin-lås er bevaret.');
+    const linkPath = path.join(folder, 'node_modules');
+    const link = await fs.lstat(linkPath).catch(error => { if (error.code === 'ENOENT') return null; throw error; });
+    if (link && !link.isSymbolicLink()) throw new Error('Ukendte lokale plugin-filer er bevaret.');
+    if (link) {
+      const target = await fs.readlink(linkPath);
+      if (!/[/\\]desktop[/\\]node_modules$/.test(target)) throw new Error('Ukendt lokal plugin-reference er bevaret.');
+      await fs.unlink(linkPath);
+    }
+    await fs.unlink(manifestPath); await fs.unlink(lockPath);
   }
+  await v2.validatePrivateConfigDirectory(directory);
 }
-// Funktionen indlejres i en lokal plugin, så kontrollen sker før OpenCodes read.
-// Den bruger kun Nodes indbyggede moduler og virker også uden kommandosandbox.
-function createReadGuard({ fs, path, root, references = [], selectedFiles = [] }) {
+// Embedded in a trusted plugin before file tools run, including diff preparation.
+// Keep the existing exported name/API; the guard now also protects mutation paths.
+function createReadGuard({ fs, path, root, references = [], selectedFiles = [], classify = protectedPaths.classify }) {
   const selected = new Set([...references.map(file => path.resolve(root, file)), ...selectedFiles]);
-  const protectedFile = file => file.split(/[\\/]/).some(component => {
-    const name = component.split(':')[0].replace(/[. ]+$/, '').toLowerCase();
-    return ['.git', 'secrets', 'references', '.ssh', '.aws', '.gnupg', '.kube', '.azure', '.npmrc', '.pypirc'].includes(name) || name.startsWith('.env') || /\.(key|pem)$/.test(name);
-  });
-  return async (input, output) => {
-    if (input.tool !== 'read') return;
-    const file = output.args?.filePath;
-    if (typeof file !== 'string' || !file || /[\0\r\n]/.test(file)) throw new Error('Aura beskytter denne fil: stien kan ikke læses sikkert.');
+  const protectedFile = file => { const result = classify(file); return result.invalid || result.credentials || result.metadata || result.references; };
+  const denied = (file, reading) => { const result = classify(file); return result.invalid || result.credentials || result.metadata || result.references && (!reading || !selected.has(file)); };
+  const canonical = async (file, allowMissing) => {
+    try { return await fs.realpath(file); }
+    catch (error) {
+      if (!allowMissing || error.code !== 'ENOENT') throw error;
+      // A dangling symlink is not a new ordinary file. Never follow its target
+      // after review. Resolve the nearest existing parent for new descendants.
+      const entry = await fs.lstat(file).catch(failure => { if (failure.code === 'ENOENT') return null; throw failure; });
+      if (entry) throw new Error('Aura beskytter denne fil: målet kan ikke kontrolleres sikkert.');
+      const parent = path.dirname(file);
+      if (parent === file) throw error;
+      return path.join(await canonical(parent, true), path.basename(file));
+    }
+  };
+  const checked = async (file, reading, unlinkSource = false) => {
+    if (typeof file !== 'string' || !file || /[\0\r\n]/.test(file)) throw new Error('Aura beskytter denne fil: stien kan ikke kontrolleres sikkert.');
     const requested = path.resolve(root, file);
-    // En valgt reference må kun åbne præcis den valgte fil, ikke et nyt linkmål.
-    if (protectedFile(requested) && !selected.has(requested)) throw new Error('Aura beskytter denne fil.');
-    const actual = await fs.realpath(requested);
-    if ((protectedFile(requested) || protectedFile(actual)) && !selected.has(actual)) throw new Error('Aura beskytter denne fil.');
-    // OpenCodes egen eksterne-mappekontrol og læsetilladelse ser det faktiske mål.
-    output.args.filePath = actual;
+    if (denied(requested, reading)) throw new Error('Aura beskytter denne fil.');
+    const actual = await canonical(requested, !reading);
+    if (denied(actual, reading) || reading && (protectedFile(requested) || protectedFile(actual)) && !selected.has(actual)) throw new Error('Aura beskytter denne fil.');
+    // Canonicalizing an unlink source would remove the target instead of its
+    // symlink. Keeping the link would reintroduce a target-change race before
+    // native patch reads it. Refuse only this ambiguous final-link operation.
+    if (unlinkSource && (await fs.lstat(requested).catch(error => { if (error.code === 'ENOENT') return null; throw error; }))?.isSymbolicLink()) throw new Error('Aura beskytter denne fil: sletning eller flytning gennem et symbolsk link kan ikke kontrolleres sikkert.');
+    return actual;
+  };
+  return async (input, output) => {
+    if (['read', 'write', 'edit'].includes(input.tool)) {
+      // OpenCode's own file/external-directory approval sees the actual target.
+      output.args.filePath = await checked(output.args?.filePath, input.tool === 'read');
+    } else if (input.tool === 'patch') {
+      const text = output.args?.patchText;
+      if (typeof text !== 'string' || text.includes('\0')) throw new Error('Aura beskytter denne fil: ændringsformatet kunne ikke kontrolleres.');
+      // These wrappers/optional metadata are supported by the pinned native
+      // parser. Unwrap once and emit canonical boundaries, never execute a shell.
+      const trimmed = text.trim();
+      const body = trimmed.match(/^(?:cat\s+)?<<(['"]?)(\w+)\1\s*\n([\s\S]*?)\n\2\s*$/)?.[3] ?? trimmed;
+      const lines = body.split(/\r?\n/);
+      if (lines[0]?.trim() !== '*** Begin Patch' || lines.at(-1)?.trim() !== '*** End Patch') throw new Error('Aura beskytter denne fil: ændringsformatet kunne ikke kontrolleres.');
+      lines[0] = '*** Begin Patch'; lines[lines.length - 1] = '*** End Patch';
+      let targets = 0;
+      for (let index = 1; index < lines.length - 1; index++) {
+        if (index === 1 && lines[index].trim().startsWith('*** Environment ID:') && lines[index].trim().slice(19).trim()) { lines[index] = lines[index].trim(); continue; }
+        // The native parser accepts whitespace around control lines. Refuse
+        // ambiguous spellings instead of letting an unreviewed second target
+        // hide as diff context. Ordinary +, - and other context remain data.
+        if (lines[index].trim().startsWith('*** ') && lines[index].trim() !== lines[index]) throw new Error('Aura beskytter denne fil: ændringsformatet kunne ikke kontrolleres.');
+        const match = /^(\*\*\* (?:(?:Add|Update|Delete) File|Move to): )(.*)$/.exec(lines[index]);
+        if (match) {
+          let nextHeader = index + 1;
+          while (lines[nextHeader] === '*** End of File') nextHeader++;
+          const unlinkSource = match[1] === '*** Delete File: ' || match[1] === '*** Update File: ' && lines[nextHeader]?.startsWith('*** Move to: ');
+          lines[index] = match[1] + await checked(match[2], false, unlinkSource); targets++;
+        }
+        else if (lines[index].startsWith('*** ') && lines[index] !== '*** End of File') throw new Error('Aura beskytter denne fil: ændringsformatet kunne ikke kontrolleres.');
+      }
+      if (!targets) throw new Error('Aura beskytter denne fil: ændringsformatet kunne ikke kontrolleres.');
+      // Check every source AND destination before returning any rewritten input.
+      output.args.patchText = lines.join('\n');
+    }
   };
 }
 async function writeReadGuard(directory, root, references, skills = []) {
   root = await fs.realpath(root);
-  const pluginPath = path.join(directory, 'read-guard.mjs'), readyPath = path.join(directory, 'read-guard-ready.json'), token = randomBytes(32).toString('hex');
+  const pluginDirectory = path.join(directory, 'read-protection'), pluginPath = path.join(pluginDirectory, 'index.mjs'), readyPath = path.join(directory, 'read-guard-ready.json'), token = randomBytes(32).toString('hex');
   const selectedFiles = skills.flatMap(skill => skill.files.map(file => path.join(directory, 'config', 'skills', skill.name, file.path)));
   await fs.rm(readyPath, { force: true });
-  const source = `import fs from 'node:fs/promises';\nimport path from 'node:path';\nconst guard = (${createReadGuard.toString()})({ fs, path, root: ${JSON.stringify(root)}, references: ${JSON.stringify(references)}, selectedFiles: ${JSON.stringify(selectedFiles)} });\nexport const AuraReadProtection = async () => {\n await fs.writeFile(${JSON.stringify(readyPath)}, ${JSON.stringify(JSON.stringify({ token }))}, { mode: 0o600 });\n return { 'tool.execute.before': guard };\n};\n`;
-  await fs.writeFile(pluginPath, source, { mode: 0o600 });
-  return { pluginURL: pathToFileURL(pluginPath).href, readyPath, token };
+  const source = `import fs from 'node:fs/promises';\nimport path from 'node:path';\nconst guard = (${createReadGuard.toString()})({ fs, path, root: ${JSON.stringify(root)}, references: ${JSON.stringify(references)}, selectedFiles: ${JSON.stringify(selectedFiles)}, classify: (${protectedPaths.createPathClassifier.toString()})(${JSON.stringify(protectedPaths.RULES)}) });\nexport default { id: 'aura.read-protection', async setup(ctx) {\n await ctx.tool.hook('execute.before', async event => { if (!['read', 'write', 'edit', 'patch'].includes(event.tool)) return; const output = { args: { filePath: event.input?.path, patchText: event.input?.patchText } }; await guard(event, output); if (event.tool === 'patch') event.input.patchText = output.args.patchText; else event.input.path = output.args.filePath; });\n await fs.writeFile(${JSON.stringify(readyPath)}, ${JSON.stringify(JSON.stringify({ token }))}, { mode: 0o600 });\n} };\n`;
+  await v2.writeTrustedPlugin(pluginDirectory, source);
+  return { pluginURL: pluginDirectory, readyPath, token };
+
 }
 class OpenCodeEngine {
   // resume: en tidligere OpenCode-session for samme samtale. Findes den ikke længere, oprettes en ny.
-  constructor({ root, directory, provider, model, references = [], mode = 'free', skills = [], resume = null, sandbox = null, detached = false, recovery = {}, onEvent = () => {} }) { Object.assign(this, { root, directory, provider, model, references, mode, skills, resume, sandbox, detached, recovery, onEvent }); this.promptEpoch = 0; this.closedPermissions = new Set(); this.closedQuestions = new Set(); this.pendingQuestions = new Map(); this.pending = new Map(); this.active = false; this.resumed = false; }
-  async request(url, method = 'GET', body, signal) {
+  constructor({ root, directory, provider, model, references = [], mode = 'free', skills = [], resume = null, sandbox = null, privacyIsolation = null, detached = false, recovery = {}, measurement = null, onEvent = () => {} }) { Object.assign(this, { root, directory, provider, model, references, mode, skills, resume, sandbox, privacyIsolation, detached, recovery, onEvent }); this.promptEpoch = 0; this.closedPermissions = new Set(); this.closedQuestions = new Set(); this.pendingQuestions = new Map(); this.pending = new Map(); this.active = false; this.resumed = false; this.adapter = new v2.EventAdapter(root); this.setRunMeasurement(measurement); }
+  setRunMeasurement(measurement) { this.pendingMeasurement = measurement instanceof RunMeasurement ? measurement : null; }
+  async wire(url, method = 'GET', body, signal) {
     const response = await fetch(`${this.url}${url}`, { method, headers: { authorization: this.auth, 'content-type': 'application/json', 'x-opencode-directory': encodeURIComponent(this.root) }, body: body === undefined ? undefined : JSON.stringify(body), signal: signal || AbortSignal.timeout(15000), redirect: 'error' });
     if (!response.ok) throw Object.assign(new Error(`Agentmotoren afviste handlingen (HTTP ${response.status}).`), { status: response.status });
     if (response.status === 204) return null;
     return response.json();
   }
+  // Keep the host approval/session contract stable while translating the wire API.
+  async request(url, method = 'GET', body, signal) {
+    if (url.startsWith('/api/')) return this.wire(url, method, body, signal);
+    const id = encodeURIComponent(this.session?.id || '');
+    const endpoint = `/api/session/${id}`;
+    if (url === '/global/health') return this.wire('/api/info', method, body, signal);
+    if (url === '/session' && method === 'POST') return (await this.wire('/api/session', method, { ...body, agent: ['chat','plan'].includes(this.mode) ? 'plan' : 'build', model: { providerID:'harness', id:this.model.id }, location:{ directory:this.root } }, signal))?.data;
+    if (url === '/session/status') {
+      const result = await this.wire('/api/session/active', method, body, signal);
+      if (!result?.data || typeof result.data !== 'object') throw new Error('Ugyldig sessionsstatus.');
+      return Object.fromEntries(Object.entries(result.data).map(([key,value]) => [key, { ...value, type: value.type === 'running' ? 'busy' : value.type }]));
+    }
+    if (url === '/permission' || url === '/question') {
+      if (!this.session) return [];
+      const kind = url === '/permission' ? 'permission' : 'form';
+      const result = await this.wire(`${endpoint}/${kind}`, method, body, signal);
+      if (!Array.isArray(result?.data)) throw new Error('Ugyldige ventende handlinger.');
+      return result.data.flatMap(item => this.adapter.normalize(kind === 'permission' ? { type:'permission.asked', data:item } : { type:'form.created', data:{ form:item } }).filter(event => event.type.endsWith('.asked')).map(event => event.properties));
+    }
+    let match;
+    if ((match = /^\/permission\/([^/]+)\/reply$/.exec(url))) return this.wire(`${endpoint}/permission/${match[1]}/reply`, method, { decision:body.reply, ...(body.message ? { message:body.message } : {}) }, signal);
+    if ((match = /^\/question\/([^/]+)\/reply$/.exec(url))) return this.answerQuestion(decodeURIComponent(match[1]), body.answers, signal);
+    if ((match = /^\/session\/([^/]+)(.*)$/.exec(url))) {
+      const base = `/api/session/${match[1]}`, suffix = match[2];
+      if (!suffix) return (await this.wire(base, method, body, signal))?.data;
+      if (suffix === '/message') return this.nativeMessages(signal);
+      if (suffix.startsWith('/message/')) {
+        const result = (await this.wire(base + suffix, method, body, signal))?.data;
+        return this.adapter.message(result, this.session.id);
+      }
+      if (suffix === '/abort') { this.adapter.expectUserInterrupt(this.session.id); return this.wire(base + '/interrupt?resume=false', method, undefined, signal); }
+      if (suffix === '/diff') return (await this.wire(base + suffix, method, body, signal))?.data || [];
+      if (suffix === '/summarize') {
+        const session = (await this.wire(base, 'GET', undefined, signal))?.data;
+        if (!session || session.id !== this.session.id) throw new Error('Sammenfatningens session kunne ikke kontrolleres.');
+        if (this.compaction) this.compaction.baseline = { idle:JSON.stringify(session.time?.idle ?? null) };
+        const result = await this.wire(base + '/compact', method, {}, signal);
+        if (this.compaction) this.compaction.inputID = result?.data?.id;
+        return result;
+      }
+      if (suffix === '/prompt_async') {
+        const epoch = this.promptEpoch;
+        const measurement = this.activeMeasurement;
+        const current = () => { if (epoch !== this.promptEpoch || !this.active || this.eventsAbort?.signal.aborted) throw new Error('Opgaven blev stoppet.'); };
+        current(); await this.wire(base + '/agent', 'POST', { agent:body.agent }, signal);
+        current(); await this.wire(base + '/model', 'POST', { model:{ providerID:body.model.providerID, id:body.model.modelID } }, signal);
+        current(); await this.wire(`/api/experimental/session/${match[1]}/instructions/entries/aura-task`, 'PUT', { value:String(body.system || '') }, signal);
+        current(); await this.captureBaseline(signal); current();
+        this.adapter.cancelExpectedInterrupt(this.session.id);
+        measurement?.dispatched();
+        const result = await this.wire(base + '/prompt', 'POST', { id:body.messageID, text:body.parts.map(part => part.text || '').join('\n'), resume:true }, signal);
+        measurement?.acknowledged('http');
+        return result;
+      }
+    }
+    throw new Error('Ukendt motorhandling.');
+  }
+  async nativeMessages(signal) {
+    const result = [], seen = new Set(); let cursor, bytes = 0, parent;
+    do {
+      const page = await this.wire(`/api/session/${encodeURIComponent(this.session.id)}/message?limit=100&${cursor ? `cursor=${encodeURIComponent(cursor)}` : 'order=asc'}`, 'GET', undefined, signal);
+      if (!Array.isArray(page?.data)) throw new Error('Agentmotorens samtale kunne ikke læses.');
+      bytes += Buffer.byteLength(JSON.stringify(page.data));
+      if (bytes > 32 * 1024 * 1024 || result.length + page.data.length > 10000) throw new Error('Samtalen er for stor til sikker genoptagelse.');
+      for (const native of page.data) {
+        const message = this.adapter.message(native, this.session.id);
+        if (message.info.role === 'user') parent = native.id;
+        else message.info.parentID = parent;
+        result.push(message);
+      }
+      cursor = page.data.length ? page.cursor?.next : null;
+      if (cursor && seen.has(cursor)) throw new Error('Ugyldig samtalepaginering.');
+      if (cursor) seen.add(cursor);
+    } while (cursor);
+    return result;
+  }
+  async captureBaseline(signal) {
+    const previous = this.turnBaseline; this.turnBaseline = null;
+    try {
+      const [messages, session, statuses] = await Promise.all([this.nativeMessages(signal), this.wire(`/api/session/${encodeURIComponent(this.session.id)}`, 'GET', undefined, signal), this.request('/session/status', 'GET', undefined, signal)]);
+      if (statuses[this.session.id]?.type === 'busy' || session?.data?.id !== this.session.id) throw new Error('Agenten arbejder allerede.');
+      this.turnBaseline = { ids:new Set(messages.map(message => message.info.id)), idle:JSON.stringify(session.data.time?.idle ?? null), suspended:JSON.stringify(session.data.time?.suspended ?? null) };
+    } catch (error) { this.turnBaseline = previous; throw error; }
+  }
+  async answerQuestion(id, answers, signal) {
+    const form = this.adapter.forms.get(id);
+    if (!form || !Array.isArray(answers) || answers.length !== form.fields.length) throw new Error('Spørgsmålet er ikke længere aktuelt.');
+    const answer = Object.fromEntries(form.fields.map((field,index) => [field.key, field.type === 'multiselect' ? answers[index] : answers[index]?.[0] || '']));
+    return this.wire(`/api/session/${encodeURIComponent(this.session.id)}/form/${encodeURIComponent(id)}/reply`, 'POST', { answer }, signal);
+  }
+  decodeEvent(event) {
+    if (!event.data) return [event]; // Host fixtures and already adapted events.
+    if ((event.data.sessionID || event.data.form?.sessionID) !== this.session?.id) return [];
+    const id = event.data.assistantMessageID;
+    if (id && this.turnBaseline?.ids.has(id)) return [];
+    return this.adapter.normalize(event).map(item => {
+      if (['session.execution.succeeded','session.execution.failed','session.execution.interrupted'].includes(event.type)) item.nativeTerminal = true;
+      if (event.type === 'session.execution.failed') this.nativeExecutionError = item.properties?.error;
+      if (item.type === 'message.updated' && item.properties.info.role === 'assistant') item.properties.info.parentID = this.promptID;
+      return item;
+    });
+  }
   // Fortsætter samtalens tidligere OpenCode-session, hvis motoren stadig kender den; ellers oprettes en ny.
   async openSession() {
     this.resumed = false;
     if (typeof this.resume === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(this.resume)) {
-      try { const session = await this.request(`/session/${this.resume}`); if (session?.id === this.resume) { this.session = session; this.resumed = true; } } catch { /* Sessionen findes ikke længere. */ }
+      try { const session = await this.request(`/session/${this.resume}`); if (session?.id === this.resume) { if (session.location?.directory && path.resolve(session.location.directory) !== path.resolve(this.root)) throw new Error('Den gemte session tilhører et andet arbejdsområde.'); this.session = session; this.resumed = true; } } catch (error) { if (error.status !== 404) throw error; }
     }
     if (!this.resumed) this.session = await this.request('/session', 'POST', { title: 'Aura' });
     return this.session;
   }
   async start() {
+    const measurement = this.pendingMeasurement ||= localMetrics.create({ mode: this.mode });
+    measurement.engineStarting();
+    try { const result = await this.startActual(); measurement.engineReady(); return result; }
+    catch (error) { measurement.finish('error'); throw error; }
+  }
+  async startActual() {
     const executable = await findExecutable();
     await fs.mkdir(this.directory, { recursive: true, mode: 0o700 });
     this.directory = await fs.realpath(this.directory);
     await fs.mkdir(path.join(this.directory, 'home'), { recursive: true, mode: 0o700 });
-    await writeSkills(this.directory, this.skills);
     await writePluginRuntime(this.directory);
+    await writeSkills(this.directory, this.skills);
     const readGuard = await writeReadGuard(this.directory, this.root, this.references, this.skills);
     const password = randomBytes(32).toString('hex');
-    this.auth = `Basic ${Buffer.from(`harness:${password}`).toString('base64')}`;
+    this.auth = `Basic ${Buffer.from(`opencode:${password}`).toString('base64')}`;
     const permission = permissions(this.root, this.references, this.mode, { directory: this.directory, names: this.skills.map(skill => skill.name) });
     if (this.sandbox) {
       const trustedPattern = `*/${path.basename(path.dirname(this.sandbox.policyPath))}/*`;
@@ -213,21 +348,44 @@ class OpenCodeEngine {
       if (typeof permission.edit === 'object') permission.edit[trustedPattern] = 'deny';
       permission.external_directory[trustedPattern] = 'deny';
     }
-    this.config = engineConfig(this.provider, this.model, permission);
-    this.config.plugin = [readGuard.pluginURL, ...(this.sandbox ? [this.sandbox.pluginURL] : [])];
+    const taskPlugin = path.join(this.directory, 'task-tools');
+    await taskTools.writeTrustedAsset(taskPlugin);
+    const plugins = [readGuard.pluginURL, taskPlugin, ...(this.sandbox ? [this.sandbox.pluginURL] : [])];
+    this.config = v2.nativeConfig(engineConfig(this.provider, this.model, permission), plugins);
     if (/\{(?:env|file):/.test(JSON.stringify(this.config))) throw new Error('Konfigurationen indeholder en ikke tilladt variabelhenvisning.');
     // Terminalklienten styrer Stop via API'et; dens Ctrl+C må ikke også ramme motorens procesgruppe.
-    const args = ['serve', '--hostname', '127.0.0.1', '--port', '0'];
+    let privacyPort = 0;
+    if (this.privacyIsolation) {
+      const probe = require('node:net').createServer();
+      await new Promise((resolve, reject) => { probe.once('error', reject); probe.listen(0, '127.0.0.1', resolve); });
+      privacyPort = probe.address().port; await new Promise(resolve => probe.close(resolve));
+    }
+    const args = ['serve', '--hostname', '127.0.0.1', '--port', String(privacyPort)];
     const environment = isolatedEnv(this.directory, this.config, password, { commandIsolation: Boolean(this.sandbox) });
+    if (this.privacyIsolation && process.platform !== 'darwin') throw new Error('Det beskyttede arbejdsmiljø er ikke tilgængeligt på denne platform. Ingen hostreserve er startet.');
     if (process.platform === 'win32') {
       // Windows has no POSIX process groups. Preserve its existing direct-owner
       // shutdown until a tested Job Object implementation is available.
       this.child = spawn(executable, args, { cwd:this.root, env:environment, detached:this.detached, windowsHide:true, stdio:['ignore','pipe','pipe'] });
     } else {
-      const guardianNode = require('./runtime.cjs').get()?.node || process.execPath;
+      const guardianNode = require('./runtime.cjs').get()?.node || (this.privacyIsolation ? path.join(__dirname, '..', '.runtime', `${process.platform}-${process.arch}`, 'node', 'bin', 'node') : process.execPath);
       const guardian = path.join(__dirname, 'engine-guardian.cjs').replace(/app\.asar([/\\])/, 'app.asar.unpacked$1');
       environment.ELECTRON_RUN_AS_NODE = '1';
-      this.child = spawn(guardianNode, [guardian, executable === 'opencode' ? executable : path.resolve(executable), ...args], { cwd:this.root, env:environment, detached:this.detached, windowsHide:true, stdio:['ignore','pipe','pipe','ipc'] });
+      const launchArgs = [guardian, executable === 'opencode' ? executable : path.resolve(executable), ...args];
+      const launchOptions = { cwd:this.root, env:environment, detached:this.detached, windowsHide:true, stdio:['ignore','pipe','pipe','ipc'] };
+      if (this.privacyIsolation) {
+        try {
+          this.privacyLease = await this.privacyIsolation({ executable, root:this.root, directory:this.directory, port:privacyPort, guardianNode, guardian, args, environment });
+          if (!this.privacyLease || typeof this.privacyLease.launchSpec !== 'function' || typeof this.privacyLease.attest !== 'function' || (await this.privacyLease.verify()).available !== true) throw new Error('Det beskyttede arbejdsmiljø kunne ikke bekræftes.');
+          const launch = await this.privacyLease.launchSpec(guardianNode, launchArgs, launchOptions);
+          this.child = spawn(launch.file, launch.args, launch.options);
+          await new Promise((resolve, reject) => { this.child.once('spawn', resolve); this.child.once('error', reject); });
+          await this.privacyLease.attest();
+        } catch (error) {
+          await this.privacyLease?.dispose(); this.privacyLease = null;
+          throw error;
+        }
+      } else this.child = spawn(guardianNode, launchArgs, launchOptions);
     }
     // Ingen rå proceslogs sendes til UI; de kan indeholde projektindhold.
     this.child.stderr.resume();
@@ -243,20 +401,31 @@ class OpenCodeEngine {
       });
       const health = await this.request('/global/health');
       if (health.version !== VERSION) throw new Error('Agentmotorens version matcher ikke den afprøvede version.');
-      const effective = await this.request('/config');
-      if (effective.small_model !== this.config.small_model || !isDeepStrictEqual(effective.enabled_providers, ['harness']) || effective.provider?.harness?.npm !== this.provider.npm || effective.provider?.harness?.options?.baseURL !== this.provider.options.baseURL || effective.provider?.harness?.options?.apiKey !== this.provider.options.apiKey || ['timeout', 'headerTimeout', 'chunkTimeout'].some(key => effective.provider?.harness?.options?.[key] !== this.provider.options[key]) || effective.model !== this.config.model || effective.share !== 'disabled' || effective.snapshot !== false || !isDeepStrictEqual(effective.permission, permission) || !isDeepStrictEqual(effective.agent?.plan?.permission, permission) || Object.keys(effective.mcp || {}).length || !isDeepStrictEqual(effective.plugin || [], this.config.plugin)) throw new Error('Agentens effektive indstillinger afviger. En lokal eller administreret konfiguration kan være årsagen.');
+      const effective = await this.wire(`/api/config?location[directory]=${encodeURIComponent(this.root)}`);
+      if (!v2.validateConfigEntries(effective, this.config, this.directory)) throw new Error('Agentens effektive indstillinger afviger. En lokal eller administreret konfiguration kan være årsagen.');
+      await this.openSession();
+      const expectedPlugins = new Map([['aura.read-protection', readGuard.pluginURL], ['aura.task-list.compatibility', taskPlugin], ...(this.sandbox ? [['aura.command-isolation', this.sandbox.pluginURL]] : [])]);
+      const deadline = Date.now() + 10000;
+      while (true) {
+        const installed = await this.wire(`/api/plugin?location[directory]=${encodeURIComponent(this.root)}`);
+        if (!Array.isArray(installed?.data)) throw new Error('Filbeskyttelsen kunne ikke bekræftes.');
+        const external = installed.data.filter(item => item.source?.type !== 'builtin');
+        if (external.some(item => !expectedPlugins.has(item.id) || item.source?.type !== 'local' || item.source.path !== path.join(expectedPlugins.get(item.id), 'index.mjs') || item.state?.status === 'failed')) throw new Error('Agentens plugins afviger fra Auras beskyttelse.');
+        if (external.length === expectedPlugins.size && external.every(item => item.state.status === 'active')) break;
+        if (Date.now() > deadline) throw new Error('Filbeskyttelsen blev ikke indlæst.');
+        await delay(50);
+      }
       const readReady = await fs.readFile(readGuard.readyPath, 'utf8').then(JSON.parse).catch(() => null);
       if (readReady?.token !== readGuard.token) throw new Error('Filbeskyttelsen blev ikke indlæst. Opgaven blev ikke startet.');
       if (this.sandbox) {
         const ready = await fs.readFile(this.sandbox.readyPath, 'utf8').then(JSON.parse).catch(() => null);
         if (ready?.token !== this.sandbox.readyToken || ready?.identity !== this.sandbox.identity) throw new Error('Kommandobeskyttelsen blev ikke indlæst. Opgaven blev ikke startet.');
       }
-      await this.openSession();
       this.active = true;
       this.listen();
       await this.eventStream.ready;
       return this.session.id;
-    } catch (error) { await this.close(); throw error; }
+    } catch (error) { this.pendingMeasurement?.finish('error'); await this.close(); throw error; }
   }
   async listen() {
     this.eventStream?.close();
@@ -298,20 +467,28 @@ class OpenCodeEngine {
     }
     if (event.type === 'question.asked') { if (this.pendingQuestions.has(props.id) || this.closedQuestions.has(props.id)) return; this.pendingQuestions.set(props.id, props); }
     if (['question.replied', 'question.rejected'].includes(event.type)) { this.pendingQuestions.delete(props.requestID || props.id); this.closedQuestions.add(props.requestID || props.id); }
-    if (event.type === 'permission.replied') { this.pending.delete(props.requestID); this.closedPermissions.add(props.requestID); }
+    if (event.type === 'permission.replied') {
+      if (props.reply === 'reject' && this.permissionRejection?.requestID === props.requestID && this.permissionRejection.sessionID === sessionID && this.permissionRejection.promptID === this.promptID && this.permissionRejection.epoch === this.promptEpoch) this.permissionRejection.accepted = true;
+      this.pending.delete(props.requestID); this.closedPermissions.add(props.requestID);
+    }
     const compaction = this.compaction;
     if (!compaction && event.type === 'message.updated' && props.info?.role === 'assistant') {
       if (props.info.time?.completed && props.info.finish && props.info.finish !== 'tool-calls') this.watchCompletion(props.info.id);
       else this.cancelCompletionCheck();
     }
     if (['session.idle', 'session.error', 'engine.error'].includes(event.type)) this.cancelCompletionCheck();
+    // Observe only events accepted by the existing turn/permission filters.
+    if (!compaction) this.activeMeasurement?.observe(event);
     this.onEvent(compaction ? { ...event, compacting: true } : event);
     if (compaction && event.type === 'session.idle') compaction.resolve();
     if (compaction && ['session.error', 'engine.error'].includes(event.type)) compaction.reject(new Error(event.message || props.error?.data?.message || 'Samtalen kunne ikke sammenfattes.'));
   }
   async send(text, system) {
     if (!this.active) throw new Error('Agenten er ikke startet.');
-    this.cancelCompletionCheck(); ++this.promptEpoch;
+    const measurement = this.pendingMeasurement || localMetrics.create({ mode: this.mode });
+    this.pendingMeasurement = null; this.activeMeasurement = measurement;
+    measurement.sending(text, system);
+    this.cancelCompletionCheck(); ++this.promptEpoch; this.adapter.cancelExpectedInterrupt(this.session.id); this.nativeExecutionError = null; this.permissionRejection = null;
     // OpenCode's IDs sort by their timestamp prefix. Supply an explicit ID so a
     // lost HTTP acknowledgement can be checked without posting the prompt twice.
     const time = ((BigInt(Date.now()) * 4096n) & ((1n << 48n) - 1n)).toString(16).padStart(12, '0');
@@ -321,9 +498,9 @@ class OpenCodeEngine {
     try {
       return await this.request(`/session/${this.session.id}/prompt_async`, 'POST', { messageID, model: { providerID: 'harness', modelID: this.model.id }, agent: ['chat', 'plan'].includes(this.mode) ? 'plan' : 'build', system, parts: [{ type: 'text', text }] });
     } catch (error) {
-      if (error.status && error.status < 500 || signal?.aborted) throw error;
+      if (error.status && error.status < 500 || signal?.aborted) { measurement.finish(signal?.aborted ? 'stopped' : 'error'); throw error; }
       for (const wait of this.recovery.delays || [500, 1500, 3000]) {
-        if (epoch !== this.promptEpoch || !this.active || signal?.aborted) throw error;
+        if (epoch !== this.promptEpoch || !this.active || signal?.aborted) { measurement.finish('stopped'); throw error; }
         this.handleEvent({ type: 'engine.recovery', recovery: { phase: 'checking' } });
         await delay(wait, undefined, { signal });
         try {
@@ -332,14 +509,27 @@ class OpenCodeEngine {
           if (messages.some(m => m.info?.id === messageID && m.info.role === 'user') &&
               (statuses?.[this.session.id]?.type === 'busy' || messages.some(m => m.info?.parentID === messageID && m.info?.time?.completed))) {
             if (this.eventStream) { this.eventStream.snapshotMode = true; await this.eventStream.reconcile(); }
+            measurement.acknowledged('reconciled');
             this.handleEvent({ type: 'engine.recovery', recovery: { phase: 'recovered' } }); return;
           }
         } catch { /* A failed read is not permission to repeat the POST. */ }
       }
+      measurement.finish('error');
       throw new Error('Det kunne ikke bekræftes, om agenten modtog beskeden. Aura sender den ikke igen automatisk, så handlinger ikke gentages.');
     }
   }
-  async abort() { ++this.promptEpoch; this.eventStream?.close(); this.cancelCompletionCheck(); this.cancelCompaction(); if (this.session && this.url) await this.request(`/session/${this.session.id}/abort`, 'POST'); this.pending.clear(); this.pendingQuestions.clear(); }
+  async abort() {
+    this.activeMeasurement?.finish('stopped');
+    this.pendingMeasurement?.finish('stopped');
+    ++this.promptEpoch; this.permissionRejection = null; this.eventStream?.close(); this.cancelCompletionCheck(); this.cancelCompaction();
+    if (this.session && this.url) {
+      this.adapter.expectUserInterrupt(this.session.id);
+      try { await this.request(`/session/${this.session.id}/abort`, 'POST'); }
+      catch (error) { this.adapter.cancelExpectedInterrupt(this.session.id); throw error; }
+    }
+    this.pending.clear(); this.pendingQuestions.clear();
+  }
+
   cancelCompletionCheck() { clearTimeout(this.completionTimer); this.completionTimer = null; this.completionCheck = null; }
   watchCompletion(message) {
     this.cancelCompletionCheck();
@@ -356,6 +546,7 @@ class OpenCodeEngine {
     this.completionTimer = setTimeout(poll, 1000);
   }
   async verifyCompletion(check) {
+    if (this.turnBaseline && this.eventStream) { await this.eventStream.settle(); return this.completedPromptID === this.promptID; }
     const statuses = await this.request('/session/status');
     if (!this.active || this.compaction || this.completionCheck !== check || this.pending.size || this.pendingQuestions.size) return false;
     if (!statuses || typeof statuses !== 'object' || Array.isArray(statuses)) throw new Error('Ugyldig sessionsstatus.');
@@ -366,7 +557,22 @@ class OpenCodeEngine {
     return false;
   }
   // En afvisning med en besked stopper ikke opgaven: AI'en får beskeden som rettelse og fortsætter.
-  async reply(id, allow, message) { if (!this.pending.has(id)) throw new Error('Godkendelsen findes ikke længere.'); await this.request(`/permission/${encodeURIComponent(id)}/reply`, 'POST', { reply: allow ? 'once' : 'reject', ...(!allow && message ? { message } : {}) }); this.pending.delete(id); this.closedPermissions.add(id); }
+  async reply(id, allow, message) {
+    const pending = this.pending.get(id);
+    if (!pending || pending.sessionID && pending.sessionID !== this.session?.id) throw new Error('Godkendelsen findes ikke længere.');
+    // Only an explicit, ordinary rejection of this exact pending permission can
+    // classify a later interruption as user denial. Feedback continues the task.
+    const rejection = !allow && !message && this.promptID ? { requestID:id, sessionID:this.session.id, promptID:this.promptID, epoch:this.promptEpoch, accepted:false } : null;
+    if (rejection) this.permissionRejection = rejection;
+    try {
+      await this.request(`/permission/${encodeURIComponent(id)}/reply`, 'POST', { reply: allow ? 'once' : 'reject', ...(!allow && message ? { message } : {}) });
+      if (rejection) rejection.accepted = true;
+    } catch (error) {
+      if (rejection && !rejection.accepted && this.permissionRejection === rejection) this.permissionRejection = null;
+      throw error;
+    }
+    this.pending.delete(id); this.closedPermissions.add(id);
+  }
   async messages() { return this.request(`/session/${this.session.id}/message`); }
   // OpenCode sammenfatter samtalen med samme model og fortsætter fra sammenfatningen. Planen og filerne røres ikke.
   async summarize({ timeout = SUMMARIZE_TIMEOUT_MS } = {}) {
@@ -375,6 +581,7 @@ class OpenCodeEngine {
     const controller = new AbortController(), operation = { controller };
     const idle = new Promise((resolve, reject) => { operation.resolve = resolve; operation.reject = reject; });
     this.compaction = operation;
+    const poll = setInterval(() => { if (operation.httpCompleted && operation.baseline) this.eventStream?.settle().catch(error => operation.reject(error)); }, 500);
     const timer = setTimeout(() => this.cancelCompaction(new Error('Sammenfatningen tog for lang tid. Prøv igen.')), timeout);
     try {
       // summarize er et modelkald, ikke en almindelig 15-sekunders kontrol. Begge kanaler skal være afsluttet,
@@ -386,10 +593,10 @@ class OpenCodeEngine {
       });
       const [result] = await Promise.all([request, idle]);
       return result;
-    } finally { clearTimeout(timer); controller.abort(); if (this.compaction === operation) this.compaction = null; }
+    } finally { clearTimeout(timer); clearInterval(poll); controller.abort(); if (this.compaction === operation) this.compaction = null; }
   }
   cancelCompaction(error = new Error('Sammenfatningen blev stoppet.')) { if (this.compaction) { this.compaction.controller.abort(error); this.compaction.reject(error); } }
   async diff() { return this.request(`/session/${this.session.id}/diff`); }
-  async close() { ++this.promptEpoch; this.eventStream?.close(); this.pendingQuestions.clear(); this.cancelCompletionCheck(); this.cancelCompaction(); this.active = false; this.eventsAbort?.abort(); this.pending.clear(); if (this.child && this.child.exitCode === null) { this.child.kill(); await new Promise(resolve => { const timer = setTimeout(() => { this.child.kill('SIGKILL'); resolve(); }, 3000); this.child.once('exit', () => { clearTimeout(timer); resolve(); }); }); } }
+  async close() { this.activeMeasurement?.finish('closed'); this.pendingMeasurement?.finish('closed'); try { ++this.promptEpoch; this.eventStream?.close(); this.pendingQuestions.clear(); this.cancelCompletionCheck(); this.cancelCompaction(); this.active = false; this.eventsAbort?.abort(); this.pending.clear(); if (this.child && this.child.exitCode === null) { this.child.kill(); await new Promise(resolve => { const timer = setTimeout(() => { this.child.kill('SIGKILL'); resolve(); }, 3000); this.child.once('exit', () => { clearTimeout(timer); resolve(); }); }); } } finally { await this.privacyLease?.dispose(); this.privacyLease = null; } }
 }
-module.exports = { OpenCodeEngine, findExecutable, isolatedEnv, permissions, engineConfig, writeSkills, writePluginRuntime, pluginRuntimeFiles, pluginRuntimePatterns, createReadGuard, writeReadGuard, VERSION, SUMMARIZE_TIMEOUT_MS };
+module.exports = { OpenCodeEngine, findExecutable, isolatedEnv, permissions, engineConfig, writeSkills, writePluginRuntime, pluginRuntimeFiles, pluginRuntimePatterns, createReadGuard, writeReadGuard, VERSION, SUMMARIZE_TIMEOUT_MS, parseOpenCodeVersion };

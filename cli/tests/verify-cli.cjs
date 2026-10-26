@@ -15,7 +15,7 @@ const { spawn } = require('node:child_process');
   const calls = [], modes = new Set();
   const server = http.createServer(async (req, res) => {
     if (req.headers.authorization !== 'Bearer aura_cli_synthetic_secret_12345') { res.writeHead(401); return res.end('{}'); }
-    if (req.url === '/v1/models') { res.setHeader('content-type', 'application/json'); return res.end(JSON.stringify({ data: [{ id: 'cli-test', name: 'Kontrolleret model', pricing: { prompt: '0', completion: '0' } }] })); }
+    if (req.url === '/v1/models') { res.setHeader('content-type', 'application/json'); return res.end(JSON.stringify({ data: [{ id: 'cli-test', name: 'Kontrolleret model', context_length: 200000, max_output_tokens: 8192, pricing: { prompt: '0', completion: '0' } }] })); }
     let raw = ''; for await (const chunk of req) raw += chunk;
     let body; try { body = JSON.parse(raw); } catch { res.writeHead(400); return res.end('{}'); }
     calls.push(body);
@@ -28,7 +28,7 @@ const { spawn } = require('node:child_process');
     const lastUser = body.messages.lastIndexOf(user);
     const hasResult = body.messages.slice(lastUser + 1).some(m => m.role === 'tool');
     const canWrite = body.tools?.some(t => t.function.name === 'write');
-    const tool = canWrite && !hasResult ? { id: 'call_cli_' + calls.length, type: 'function', function: { name: 'write', arguments: JSON.stringify({ filePath: path.join(project, 'public/index.html'), content: mode === 'reject' ? '<h1>Må ikke skrives</h1>' : '<h1>Bygget i terminalen</h1>' }) } } : null;
+    const tool = canWrite && !hasResult ? { id: 'call_cli_' + calls.length, type: 'function', function: { name: 'write', arguments: JSON.stringify({ path: path.join(project, 'public/index.html'), content: mode === 'reject' ? '<h1>Må ikke skrives</h1>' : '<h1>Bygget i terminalen</h1>' }) } } : null;
     const content = tool ? 'Jeg ændrer startsiden.\n' : canWrite ? 'Opgaven er behandlet.\nSe resultatet i browseren.' : '## Det bygger vi\nEn enkel startside.\n## Sådan skal det se ud\nEn tydelig overskrift.\n## Teknik og data\nHTML med syntetiske data.\n## Det skal du prøve\nSe resultatet i browseren.';
     if (body.stream) {
       res.setHeader('content-type', 'text/event-stream');

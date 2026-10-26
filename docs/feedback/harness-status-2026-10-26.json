@@ -1,0 +1,103 @@
+{
+  "date": "2026-10-26",
+  "repository": "Parthee-Vijaya/ai-harness",
+  "branch": "work/privacy-gate-followup",
+  "baseCommit": "1d48bc4ba8c84454ee219dc2617f5bd2e09a03ab",
+  "dirtyWorktree": true,
+  "order": "Feedbacken først, derefter harness-reviewet",
+  "report": "2026-10-26-backlog-followup.md",
+  "release": "Commit, push og merge er efterfølgende godkendt af ejeren. Ingen ny DMG, release eller CI-kørsel indgår.",
+  "items": [
+    {
+      "id": "P0-1",
+      "area": "Designfundament",
+      "status": "Afventer ejerbeslutning",
+      "scope": "Et fast obligatorisk Starter Kit er ikke indført. Brugerens valg af skill- og modelstyret design bevares."
+    },
+    {
+      "id": "P0-2",
+      "area": "Visuelt loop og diagnoser",
+      "status": "Åben",
+      "scope": "Eksisterende lokal browserkontrol bevares. Modeldelte screenshots kræver konkret datagennemgang; generel devserverkontrol er ikke leveret."
+    },
+    {
+      "id": "P0-3",
+      "area": "Tid til første indhold",
+      "status": "Delvist leveret",
+      "scope": "Lokale tids- og promptmålinger er tilkoblet. Identitetskontrolleret genbrug af Node-versionsprøven sparer 68,633 ms i median på den lokale sekvens med to supportkontroller og runtime-opslag. Den fulde isolationstest køres fortsat. Ingen generel katalogcache, ændret snapshot eller optimistisk UI-boble."
+    },
+    {
+      "id": "P0-4",
+      "area": "Eksplicit tilstand",
+      "status": "Delvist leveret",
+      "scope": "20 karakteriseringstests og rettelser af Stop/lukning/planbevaring. Ingen fuld tilstandsmaskine eller 10.000-sekvens-claim."
+    },
+    {
+      "id": "P0-5",
+      "area": "Automatisk sikkerhedsnet",
+      "status": "Delvist leveret",
+      "scope": "Samlet lokal checkkommando, fælles fake-provider og optagelser fra OpenCode 2.1.4. CI-triggere er uændrede og afventer ejerens ja."
+    },
+    {
+      "id": "P1-6",
+      "area": "Promptbudget",
+      "status": "Målegrundlag leveret",
+      "scope": "Byte- og tokenestimater pr. Aura-promptdel uden indhold/hemmeligheder. Ingen forkortelse uden evalgrundlag."
+    },
+    {
+      "id": "P1-7",
+      "area": "Beskyttede stier",
+      "status": "Implementeret og afprøvet lokalt",
+      "scope": "Fælles navnepolitik, native filværktøjer og macOS-isolation. Ikke native Windows/Linux-kvalifikation."
+    },
+    {
+      "id": "P1-8",
+      "area": "Fejlgendannelse",
+      "status": "Delvist allerede leveret",
+      "scope": "OpenCode 2.1.4 komprimerer og fortsætter samme session i den native kontraktprøve. Crash og delvis strøm fejler sikkert; automatisk crashgenoptagelse er stadig åben."
+    },
+    {
+      "id": "P1-9",
+      "area": "Holdbar hændelseslog",
+      "status": "Åben",
+      "scope": "Eksisterende historieskrivning og separat beskyttet hybrid-hukommelse bevares. Fuld append-only aktivitetslog og segmentarkiv er ikke leveret."
+    },
+    {
+      "id": "P1-10",
+      "area": "UI-tema og tokens",
+      "status": "Afventer konkret UI-preview",
+      "scope": "De specifikt godkendte feedbackændringer er implementeret. En generel tema-/tokenændring er ikke godkendt af dem."
+    },
+    {
+      "id": "P1-11",
+      "area": "Streaming-rendering",
+      "status": "Åben",
+      "scope": "Incremental rendering og ændret live-region skal gennem særskilt før/efter-kontrol."
+    },
+    {
+      "id": "P2-12",
+      "area": "Gradvis modularisering",
+      "status": "Åben",
+      "scope": "Ingen framework-omskrivning. Eksisterende offentlige APIer og indlæsningsorden bevares."
+    },
+    {
+      "id": "P2-13",
+      "area": "Gentagelig model-eval",
+      "status": "Udskudt efter brugerens valg",
+      "scope": "Eksisterende JS-politiktests indgår i lokal check. Ingen genoptaget OpenEnv-benchmark eller betalte modelprøver."
+    },
+    {
+      "id": "P2-14",
+      "area": "Dokumentation og beviser",
+      "status": "Delvist anvendt",
+      "scope": "Nye binære prøvebeviser ligger uden for Git. Eksisterende kildekode, rapporter og beskrivelser bevares. Ny CI-artefaktpolitik er ikke aktiveret."
+    },
+    {
+      "id": "P2-15",
+      "area": "Fork- og platformfejl",
+      "status": "Lokale rettelser leveret",
+      "scope": "Releaseidentitet hentes fra forkens distribution. Skillnavne kontrolleres før filopslag. Miljøafhængige tests har eksplicitte forudsætninger; native andre platforme afventer."
+    }
+  ],
+  "statusScope": "Backlogstatus efter den lokale afprøvning; integration og aktuelle testbeviser beskrives i 2026-10-26-merge-overview.md."
+}

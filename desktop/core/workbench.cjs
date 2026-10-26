@@ -14,6 +14,28 @@ const { Activity } = require('./activity.cjs');
 const { Copies } = require('./copies.cjs');
 const { capture } = require('./changes.cjs');
 const { ApprovalsPolicy } = require('./approvals-policy.cjs');
+// Registry project activation creates another Workbench with the same Store.
+// Keep host-only Git containment and uncontained-process provenance across that
+// transition, without persisting a capability or trusting renderer state.
+const gitSessions = new WeakMap();
+function gitSession(store) {
+  let session = gitSessions.get(store);
+  if (!session) { session = { freshRoots: new Map(), guard: new (require('./privacy/activation-guard.cjs').PrivacyActivationGuard)() }; gitSessions.set(store, session); }
+  return session;
+}
+function gitDirectoryIdentity(root) {
+  const fs = require('node:fs');
+  const stat = fs.lstatSync(root);
+  // Windows stat permission bits are not ACLs: a normal writable directory
+  // reports group/other write bits. Native isolation remains separately gated.
+  if (!stat.isDirectory() || stat.isSymbolicLink() || process.platform !== 'win32' && stat.mode & 0o022 || fs.realpathSync(root) !== root) throw new (require('./privacy/policy.cjs').PrivacyGateError)('PRIVACY_GIT_ISOLATION_REQUIRED', 'Projektets Git-mappe har ændret sig. Åbn projektet igen.');
+  return `${stat.dev}:${stat.ino}`;
+}
+function assertFreshGitRoot(root, identity) {
+  const path = require('node:path');
+  try { if (gitDirectoryIdentity(root) === identity.root && gitDirectoryIdentity(path.join(root, '.git')) === identity.git) return true; } catch {}
+  throw new (require('./privacy/policy.cjs').PrivacyGateError)('PRIVACY_GIT_ISOLATION_REQUIRED', 'Projektets Git-mappe har ændret sig. Åbn projektet igen.');
+}
 
 // Det, der hører til hele projektet: forbindelser, funktioner, skills, briefen, versioner og forhåndsvisningens valg,
 // og projektets samtaler. Hver samtale er en ChatSession med sin egen motor og opgave. Kun én samtale ad gangen kan
@@ -24,6 +46,33 @@ class Workbench {
     this.surface = surface; this.qualityInspector = typeof qualityInspector === 'function' ? qualityInspector : null;
     this.store = store || new Store(directory, safeStorage); this.history = history || new WorkspaceHistory(this.store); this.registry = registry || null;
     this.approvalsPolicy = new ApprovalsPolicy(this.store);
+    this.privacy = new (require('./privacy-service.cjs').PrivacyService)(this);
+    this.privacyRuntimeProvider = new (require('./privacy-runtime-provider.cjs').PrivacyRuntimeProvider)(this);
+    this.gitPrivacyRoots = new Map();
+    this.gitSession = gitSession(this.store);
+    this.privacyActivationGuard = this.gitSession.guard;
+    // A weak host registration also protects direct Git calls from history,
+    // checkpoints and restoration. Retain it across close()/activate(): close
+    // stops engines but does not destroy this workbench's project authority.
+    const privacyRef = new WeakRef(this.privacy);
+    this.releaseGitPrivacy = require('./git.cjs').registerGitPrivacyResolver(root => {
+      const service = privacyRef.deref(); if (!service) return null;
+      const fs = require('node:fs'), path = require('node:path');
+      const canonical = value => { try { return fs.realpathSync(value); } catch (error) { if (error.code === 'ENOENT') return path.resolve(value); throw error; } };
+      const requested = canonical(root), owned = [...service.bench.gitPrivacyRoots.keys(), ...service.bench.gitSession.freshRoots.keys(), service.bench.project?.root, ...[...service.bench.chats.values()].flatMap(chat => [chat.root, chat.project?.root])].filter(value => typeof value === 'string');
+      const owner = owned.find(value => { const candidate = canonical(value); return requested === candidate || requested.startsWith(candidate + path.sep); });
+      // A retired profile has no authority over another workbench's project.
+      // Keep fail-closed behavior for its own roots; skip unrelated roots
+      // before reading or validating any profile or encrypted history files.
+      if (!owner) return null;
+      try { const profile = fs.lstatSync(service.bench.store.root); if (!profile.isDirectory() || profile.isSymbolicLink() || process.platform !== 'win32' && profile.mode & 0o022) throw new Error(); }
+      catch { throw new (require('./privacy/policy.cjs').PrivacyGateError)('PRIVACY_CONTROL_FAILED', 'Privacy Gate kan ikke kontrollere projektets lokale profil.'); }
+      const egress = new (require('./privacy/external-egress.cjs').ExternalEgress)(() => service);
+      const freshIdentity = service.bench.gitSession.freshRoots.get(owner);
+      const scope = egress.scope(owner), binding = egress.binding(scope), protectedGit = egress.activeSync(owner) || service.bench.gitPrivacyRoots.get(owner)?.isolated === true || !!freshIdentity;
+      const assertCurrent = () => { if (freshIdentity) assertFreshGitRoot(owner, freshIdentity); if (egress.binding(scope) !== binding) throw new (require('./privacy/policy.cjs').PrivacyGateError)('PRIVACY_STALE', 'Projektets dataregler er ændret. Gentag Git-handlingen.'); return true; };
+      assertCurrent(); return { protected: protectedGit, assertCurrent, recordUncontained: () => service.bench.privacyActivationGuard.record(scope.root, 'git') };
+    });
     this.connectionRemovals = registry?.connectionRemovals || new Set();
     // Biblioteket indlæses én gang. Funktionerne afgør, hvilke af dets skills appens AI kan hente.
     let library = null;
@@ -42,6 +91,45 @@ class Workbench {
   get running() { return [...this.chats.values()].some(chat => chat.running || chat.sending || chat.starting || chat.finishing); }
   get finishing() { return [...this.chats.values()].find(chat => chat.finishing)?.finishing || null; }
   get workspace() { return this.chat?.data || null; }
+  // Main-process project creation uses this before the new project is active.
+  // A qualified fresh bootstrap is isolated from its first Git call, including
+  // status/commit, and therefore leaves no unknown background Git children.
+  async withGitPrivacyRoot(root, action) {
+    if (typeof action !== 'function') throw new TypeError('A host Git action is required.');
+    root = await require('node:fs/promises').realpath(root);
+    const fs = require('node:fs'), path = require('node:path');
+    const originalIdentity = gitDirectoryIdentity(root);
+    let fresh = false; try { fs.lstatSync(path.join(root, '.git')); } catch (error) { if (error.code !== 'ENOENT') throw error; fresh = true; }
+    let entry = this.gitPrivacyRoots.get(root);
+    if (!entry) {
+      const runtime = require('./privacy/git-isolation.cjs').runtimePaths();
+      const availability = await require('../privacy/isolation/engine-isolation.cjs').probeIsolationSupport({ runtimeRoot: runtime.root });
+      entry = this.gitPrivacyRoots.get(root) || { count: 0, isolated: availability.available === true };
+      this.gitPrivacyRoots.set(root, entry);
+    }
+    entry.count++;
+    try {
+      const result = await action();
+      if (fresh && entry.isolated && result?.started === true) {
+        if (gitDirectoryIdentity(root) !== originalIdentity) throw new (require('./privacy/policy.cjs').PrivacyGateError)('PRIVACY_GIT_ISOLATION_REQUIRED', 'Projektmappen ændrede sig under oprettelsen.');
+        this.gitSession.freshRoots.set(root, Object.freeze({ root: originalIdentity, git: gitDirectoryIdentity(path.join(root, '.git')) }));
+      }
+      return result;
+    }
+    finally { if (--entry.count === 0) this.gitPrivacyRoots.delete(root); }
+  }
+  // Only the host's already-reviewed Git publishing adapter calls this. A
+  // deliberate legacy network operation ends fresh-project containment, but
+  // permanently preserves the activation barrier before anything can spawn.
+  releaseFreshGitForPublishing(root, assertCurrent) {
+    if (typeof assertCurrent !== 'function' || assertCurrent() !== true) throw new (require('./privacy/policy.cjs').PrivacyGateError)('PRIVACY_STALE', 'Projektets dataregler er ændret.');
+    root = require('node:fs').realpathSync(root);
+    const egress = new (require('./privacy/external-egress.cjs').ExternalEgress)(() => this.privacy);
+    if (egress.activeSync(root) || this.gitPrivacyRoots.has(root)) throw new (require('./privacy/policy.cjs').PrivacyGateError)('PRIVACY_EXTERNAL_ADAPTER_REQUIRED', 'Git-publicering mangler en godkendt ekstern rute. Ingen data er sendt.');
+    const identity = this.gitSession.freshRoots.get(root);
+    if (identity) { assertFreshGitRoot(root, identity); this.privacyActivationGuard.record(root, 'git'); this.gitSession.freshRoots.delete(root); }
+    return true;
+  }
   // Motorer og forbindelser i brug, så forhåndsvisningen aldrig peger på dem.
   servers() { return [...this.chats.values()].flatMap(chat => [chat.engine?.url, chat.gateway?.url]).filter(Boolean); }
   chatFor(id) {
@@ -67,7 +155,10 @@ class Workbench {
       if (holder && holder !== chat) {
         const copy = await this.copies.create(this.project.root, chat.id);
         await chat.close(false);
-        try { chat.data = await this.history.updateChat(this.project.root, chat.id, data => { data.copy = { id: copy.id }; data.opencode = null; }); }
+        try {
+          await this.privacyRuntimeProvider.inheritCopyLabels(copy.projectRoot, copy.projectRoot, copy.root, { assertCurrent: () => this.project?.root === copy.projectRoot && this.chats.get(chat.id) === chat });
+          chat.data = await this.history.updateChat(this.project.root, chat.id, data => { data.copy = { id: copy.id }; data.opencode = null; });
+        }
         catch (error) { await this.copies.remove(copy); throw error; }
         chat.copy = copy; chat.root = copy.root; chat.prepared.root = copy.root;
         chat.changes.baseline = null; chat.changes.current = null; chat.changes.basis = null;
@@ -272,24 +363,31 @@ class Workbench {
   }
   async closeEngines() { for (const chat of this.chats.values()) if (!chat.running) await chat.close(false); }
   async connection(id) { const connection = (await this.store.read()).connections.find(c => c.id === id); if (!connection) throw new Error('Vælg en gemt forbindelse.'); return connection; }
-  async models(id) {
+  discoveryScope(trustedChatID) { return this.privacy.scope({ scope: this.project ? trustedChatID !== undefined || this.chat ? 'conversation' : 'project' : 'idea' }, trustedChatID); }
+  async models(id, trustedChatID) {
     const request = Symbol(); this.catalogRequests.set(id, request); this.catalogs.delete(id);
     const connection = await this.connection(id);
     connections.assertSupported(connection);
-    const models = await connections.listModels(connection, this.store.decrypt(connection));
+    const privacyCurrent = await this.privacy.discoveryPermit(this.discoveryScope(trustedChatID), connection);
+    const current = address => {
+      if (this.catalogRequests.get(id) !== request) throw new Error('Forbindelsen blev ændret eller kontrolleret igen. Hent modellerne på ny.');
+      return privacyCurrent(address);
+    };
+    const models = await connections.listModels(connection, this.store.decrypt(connection), { assertCurrent: current });
+    current();
     // Et sent katalogsvar må ikke genindføre adgang efter redigering, fjernelse eller en nyere kontrol.
     if (this.catalogRequests.get(id) !== request) throw new Error('Forbindelsen blev ændret eller kontrolleret igen. Hent modellerne på ny.');
     this.catalogs.set(id, models); this.catalogTimes.set(id, new Date().toISOString()); return models;
   }
-  async routes(id, modelID) { const connection = await this.connection(id); connections.assertSupported(connection); return connections.routes(connection, this.store.decrypt(connection), modelID); }
-  async selection(input) {
+  async routes(id, modelID, trustedChatID) { const connection = await this.connection(id); connections.assertSupported(connection); const current = await this.privacy.discoveryPermit(this.discoveryScope(trustedChatID), connection, { kind: 'routes', modelID }); const result = await connections.routes(connection, this.store.decrypt(connection), modelID, { assertCurrent: current }); current(); return result; }
+  async selection(input, trustedChatID) {
     if (!this.project) throw new Error('Åbn et projekt først.');
     if (typeof input.modelID !== 'string' || !/^[a-zA-Z0-9_./:@+-]{1,200}$/.test(input.modelID)) throw new Error('Vælg en gyldig model.');
     const connection = await this.connection(input.connectionID);
     // Kataloget hentes igen før afsendelse, så ændret pris/model giver nye oplysninger.
-    const model = (await this.models(connection.id)).find(m => m.id === input.modelID);
+    const model = (await this.models(connection.id, trustedChatID)).find(m => m.id === input.modelID);
     if (!model) throw new Error('Modellen findes ikke længere hos denne forbindelse.');
-    const routes = await this.routes(connection.id, model.id);
+    const routes = await this.routes(connection.id, model.id, trustedChatID);
     const route = routes.find(r => r.id === input.routeID);
     if (connection.kind === 'openrouter' && !route) throw new Error('Vælg en konkret OpenRouter-udbyder.');
     if ((await this.connection(connection.id)).revision !== connection.revision) throw new Error('Forbindelsen blev ændret. Gennemgå oplysningerne igen.');
@@ -350,6 +448,9 @@ class Workbench {
       if (files.length) savedFirst = await this.git.commit(root, { token: status.token, files, message: 'Dine ændringer før indfletningen' });
       token = (await this.restoration.review(root, pending.request)).token;
     }
+    const copyRoot = chat.root, copyID = chat.copy.id;
+    await this.privacyRuntimeProvider.inheritCopyLabels(root, copyRoot, root, { assertCurrent: () => this.project?.root === root && chat.root === copyRoot && chat.copy?.id === copyID && !this.busyRoot(root) && !this.busyRoot(copyRoot) });
+    if (JSON.stringify(await this.copies.diff(chat.copy)) !== pending.source) throw new Error('Kopien har ændret sig. Gennemgå den igen.');
     const baseline = await capture(root);
     const restored = pending.request.merge.files.length && pending.signature !== '[]' ? await this.restoration.apply(root, token, input.choices || {}) : { files: 0, paths: [], changes: [] };
     if (auto && restored.paths.length) {
@@ -369,6 +470,7 @@ class Workbench {
   }
   // Lukker samtalernes motorer og afbryder en opgave i gang. Projektet og samtalerne forbliver åbne; activate skifter dem.
   async close() {
+    this.privacy.cancelScope();
     for (const chat of this.chats.values()) await chat.close();
     clearTimeout(this.chatsTimer); this.chatsTimer = null;
     await this.history.queue;

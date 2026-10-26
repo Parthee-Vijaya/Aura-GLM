@@ -46,7 +46,7 @@ Ved fejl fra modelserveren stopper forbindelsen, så agentmotorens genforsøg ik
 
 ## Start fra kildekoden
 
-Kræver Node.js 22.12 eller nyere og npm. Kør `npm run runtime:prepare` én gang; det henter og kontrollerer den OpenCode-version, som står i `runtime-lock.json` (i dag 1.18.33), til `desktop/.runtime`. Appen søger i `HARNESS_OPENCODE_PATH`, i `desktop/.runtime`, i `~/.opencode/bin/` og på PATH og bruger kun den låste version. Den installerer eller opgraderer ikke OpenCode. Kør fra `desktop/`:
+Kræver Node.js 22.12 eller nyere og npm. Kør `npm run runtime:prepare` én gang; det henter og kontrollerer den OpenCode-version, som står i `runtime-lock.json`, til `desktop/.runtime`. Den aktuelle 2.x-integration er beskrevet i [opgraderingsnotatet](../docs/opencode-2-upgrade.md). Appen søger i `HARNESS_OPENCODE_PATH`, i `desktop/.runtime`, i `~/.opencode/bin/` og på PATH og bruger kun den låste version. Den installerer eller opgraderer ikke OpenCode. Kør fra `desktop/`:
 
 ```bash
 npm ci
@@ -95,7 +95,7 @@ Under projektindstillingerne kan **Auto-godkend filændringer** gemmes for proje
 
 På en platform uden understøttet kommandoisolation kan almindelige byggeopgaver og filændringer fortsætte. Kommandoer kræver enkeltgodkendelse, og **Tillad altid i projektet** vises ikke for kommandoer. En tidligere gemt kommandotilladelse aktiverer ikke automatisk kørsel dér. Hvis **Byg og kontrollér automatisk** udtrykkeligt er slået til, stopper opgaven med en forklaring, når isolation ikke kan etableres.
 
-Tekniske aktiviteter står under fanen **Aktivitet**; samtalen viser én linje pr. opgave med antallet af værktøjer og **Se Aktivitet**. Resultatkortet viser antal ændrede filer og **Se ændringer**, som bliver til **Ændringer gennemgået** efter brug. **Fortryd opgaven** ligger under **Flere valg** og fjernes efter fortrydelsen. Projektmenuen **•••** indeholder versionsgemning og sikkerhedskopi. **Nyt projekt** står øverst i sidepanelets handlinger; en ny samtale startes med **+** ved projektet. Preview har skærmstørrelse, genindlæsning og en menu til skalering, egne mål og lokal server.
+Tekniske aktiviteter står under fanen **Aktivitet**. Den aktuelle arbejdsstatus vises tæt ved skrivefeltet med adgang til **Følg arbejdet**. Menuen ved skrivefeltet forklarer **Samtale**, **Planlæg** og **Byg**. Resultatkortet prioriterer **Afprøv resultatet** og samler filoversigt og diff under **Ændringer**. **Marker som gennemgået** kræver et særskilt klik; åbning af ændringer godkender dem ikke automatisk. **Fortryd opgaven** bevarer den eksisterende konkrete gennemgang og fjernes efter fortrydelsen. Projektmenuen **•••** indeholder versionsgemning og sikkerhedskopi. **Nyt projekt** står øverst i sidepanelets handlinger; en ny samtale startes med **+** ved projektet. Preview har skærmstørrelse, genindlæsning og en menu til skalering, egne mål og lokal server.
 
 Farver, afstande, typografi og principper for synlige valg er beskrevet i [designstandarden](DESIGN.md).
 

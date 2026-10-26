@@ -16,12 +16,30 @@ async function fixture({ caseSensitive = false } = {}) {
   add(paths.join(root, 'link'), true, 'D:\\Andet');
   const entry = async file => { const value = entries.get(key(file)); if (!value) throw Object.assign(new Error('Ikke fundet'), { code: 'ENOENT' }); return value; };
   const fileSystem = { lstat: entry, stat: entry, realpath: async file => (await entry(file)).real };
-  const module = { exports: {} }, source = await fs.readFile(path.join(__dirname, '../core/approvals-policy.cjs'), 'utf8');
-  vm.runInNewContext(source, { module, exports: module.exports, require: name => name === 'node:path' ? paths : name === 'node:fs/promises' ? fileSystem : name === 'node:os' ? { homedir: () => 'C:\\Brugere\\Zoë', tmpdir: () => 'C:\\Temp' } : require(name) });
+  const core = path.join(__dirname, '../core');
+  const sources = new Map(await Promise.all(['approvals-policy.cjs', 'protected-paths.cjs'].map(async name => [path.join(core, name), await fs.readFile(path.join(core, name), 'utf8')])));
+  const modules = new Map();
+  function loadCore(filename) {
+    if (modules.has(filename)) return modules.get(filename).exports;
+    const module = { exports: {} }, resolve = require('node:module').createRequire(filename);
+    modules.set(filename, module);
+    // Dependencies share the policy's Win32 paths and modeled filesystem.
+    // Relative modules resolve from their own source file, not the test folder.
+    const injectedRequire = name => {
+      if (name === 'node:path') return paths;
+      if (name === 'node:fs/promises') return fileSystem;
+      if (name === 'node:os') return { homedir: () => 'C:\\Brugere\\Zoë', tmpdir: () => 'C:\\Temp' };
+      const dependency = resolve.resolve(name);
+      return sources.has(dependency) ? loadCore(dependency) : resolve(name);
+    };
+    vm.runInNewContext(sources.get(filename), { module, exports: module.exports, require: injectedRequire }, { filename });
+    return module.exports;
+  }
+  const policyModule = loadCore(path.join(core, 'approvals-policy.cjs'));
   const data = { approvals: { version: 1, autoProjectFiles: true, autoCommands: false, rules: [] } };
   const store = { project: async () => data };
-  const policy = new module.exports.ApprovalsPolicy(store), context = { projectRoot: root, workspaceRoot: root, mode: 'free', commandSandboxSupported: false };
-  return { paths, root, share, policy, context, add, data, canonicalPath: module.exports.canonicalPath };
+  const policy = new policyModule.ApprovalsPolicy(store), context = { projectRoot: root, workspaceRoot: root, mode: 'free', commandSandboxSupported: false };
+  return { paths, root, share, policy, context, add, data, canonicalPath: policyModule.canonicalPath };
 }
 const edit = (file, patterns = [], input = file) => ({ id: 'fil', permission: 'edit', patterns, metadata: { filepath: file }, toolInput: { tool: 'write', filePath: input } });
 

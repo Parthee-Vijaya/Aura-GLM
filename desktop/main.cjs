@@ -1,3 +1,7 @@
+// A packaged offscreen worker must bypass every normal app/user-data bootstrap.
+if (process.argv.includes('--aura-privacy-offline-renderer')) {
+  require('./privacy/isolation/offline-renderer-worker.cjs');
+} else {
 const { app, BrowserWindow, ipcMain, dialog, protocol, session, safeStorage, Menu, shell, webFrameMain, nativeImage } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs/promises');
@@ -34,7 +38,8 @@ let assets = [];
 let github, publishing, deployments, deploymentSetup, restoration, promtePreview, komplaiPreview;
 let registry, history, images;
 let ownTools, updates, updating = false;
-const requests = new AsyncLocalStorage(), operations = new Set(), spaces = new Map();
+const requests = new AsyncLocalStorage(), operations = new Set(), spaces = new Map(), externalRequests = new Map();
+const privacyActivation = new (require('./core/privacy/activation-guard.cjs').PrivacyActivationGuard)();
 let selectedRoot = null;
 function currentWorkbench() { return requests.getStore()?.bench || registry?.selected; }
 // En IPC-handling beholder projektets ejer, også hvis brugeren skifter fane under et await.
@@ -50,9 +55,10 @@ function saveSpace() { /* Hver arbejdsmappe ejer nu sin tilstand direkte. */ }
 function spaceFor(root = workspaceRoot()) { return spaces.get(root); }
 function ownerFor(root) { return spaces.get(root)?.owner || [...registry.values()].find(bench => bench.project?.root === root || [...bench.chats.values()].some(chat => chat.root === root)); }
 function makeServer(ctx) {
-  return new DevServer({ runner: app.isPackaged ? path.join(process.resourcesPath, 'app.asar.unpacked/core/dev-server-runner.cjs') : undefined, komplaiScript: komplaiScript(ctx.root),
+  return new DevServer({ getPrivacy:()=>ctx.owner.privacy, runner: app.isPackaged ? path.join(process.resourcesPath, 'app.asar.unpacked/core/dev-server-runner.cjs') : undefined, komplaiScript: komplaiScript(ctx.root),
     getRuntimeConfig: async () => { return normalizeRuntimeConfig((await ctx.owner.store.project(ctx.owner.project.root)).runtime || {}); },
     emit: state => {
+      if (['installing', 'starting'].includes(state.state)) privacyActivation.record(ctx.owner.project.root, state.state === 'installing' ? 'installation' : 'preview');
       if (state.state === 'error') recordFailure('forhaandsvisning', 'server');
       if (state.state === 'running') { const old = ctx.preview; ctx.preview = null; void old?.close(); ctx.externalPreview = state.url; }
       else if (['starting', 'stopping', 'stopped', 'error'].includes(state.state)) ctx.externalPreview = null;
@@ -72,7 +78,7 @@ async function selectSpace(root, owner = currentWorkbench()) {
       ctx.runtimeConfig = normalizeRuntimeConfig((await owner.store.project(owner.project.root)).runtime || {});
       ctx.detectedRuntime = await inspectRuntime(root, ctx.runtimeConfig).catch(error => ({ kind: 'unknown', supported: false, reason: error.message }));
       ctx.devServer = makeServer(ctx); await ctx.devServer.activate(root);
-      if (!['vite','astro','services'].includes(ctx.detectedRuntime.kind) && (await openProject(root)).staticPreview) ctx.preview = previewSession.staticPreview(ctx);
+      if (!(await new (require('./core/privacy/external-egress.cjs').ExternalEgress)(()=>ctx.owner.privacy).active(root)) && !['vite','astro','services'].includes(ctx.detectedRuntime.kind) && (await openProject(root)).staticPreview) ctx.preview = previewSession.staticPreview(ctx);
     })();
     ctx.ready.catch(() => { if (spaces.get(root) === ctx) spaces.delete(root); });
   }
@@ -130,7 +136,13 @@ function handle(channel, action) {
       const chatID = value && typeof value === 'object' && value.chat || selection?.chat;
       const chat = chatID ? owner.chatFor(chatID) : owner.chat;
       const context = { bench: owner, chat: chat?.id, workspaceRoot: chat?.root || owner.project?.root, channel };
-      return { ok: true, value: await requests.run(context, () => action(value)) };
+      return { ok: true, value: await requests.run(context, async () => {
+        const boundary=require('./core/privacy-product-boundary.cjs');
+        const external=boundary.EXTERNAL.has(channel), token=Symbol();
+        if(external)externalRequests.set(token,owner);
+        try{const allowed=await boundary.authorize(channel,owner.privacy,context.workspaceRoot);allowed();return await action(value);}
+        finally{externalRequests.delete(token);}
+      }) };
     }
     catch (error) {
       recordFailure(channel.startsWith('git:') ? 'git' : channel.startsWith('connections:') ? 'forbindelse' : 'app', ['EACCES','EPERM'].includes(error.code) ? 'adgang' : error.code === 'ENOENT' ? 'mangler-fil' : 'handling');
@@ -139,7 +151,12 @@ function handle(channel, action) {
     }
   });
 }
-handle('links:open', value => shell.openExternal(require('./core/external-links.cjs').externalURL(value)));
+handle('privacy:get', value => workbench.privacy.get(value, requests.getStore()?.chat));
+handle('privacy:configure', value => workbench.privacy.configure(value, requests.getStore()?.chat));
+// Reviews belong to their original workbench even while another project is open.
+handle('privacy:review', value => { const owner = [registry.empty, ...registry.values()].find(bench => bench.privacy.pending.has(value?.id)); if (!owner) throw new Error('Delingsgennemgangen er udløbet.'); return owner.privacy.review(value); });
+handle('privacy:decide', value => { const owner = [registry.empty, ...registry.values()].find(bench => bench.privacy.pending.has(value?.id)); if (!owner) throw new Error('Delingsgennemgangen er udløbet.'); return owner.privacy.decide(value); });
+handle('links:open', async value => { const current=await new (require('./core/privacy/external-egress.cjs').ExternalEgress)(()=>workbench.privacy).legacyPermit(workspaceRoot());current();return shell.openExternal(require('./core/external-links.cjs').externalURL(value)); });
 handle('history:search', value => require('./core/history-search.cjs').searchHistory(workbench.history, value));
 handle('updates:state', () => updates.snapshot());
 handle('updates:check', () => updates.check());
@@ -178,14 +195,15 @@ handle('project:create', input => exclusive(async () => {
   if (!chosenParent) await fs.mkdir(parent, { recursive: true });
   // Uden funktionen Design og tilgængelighed bruges hverken designpakke, logo eller inspiration fra startsiden.
   const features = (await workbench.features.get()).effective;
-  const created = await createProject(parent, features.design ? input : { ...input, color: null, links: [] }, features.design ? assets : [], profileRoot);
+  const inheritIdeaPrivacy = await workbench.privacy.prepareIdeaProjectInheritance();
+  const created = await createProject(parent, features.design ? input : { ...input, color: null, links: [] }, features.design ? assets : [], profileRoot, { beforeWrite: inheritIdeaPrivacy });
   // Med Versioner og fortryd får nye projekter Git fra start og en version efter hver AI-opgave, så de altid kan fortrydes.
   // Et hostingønske eller en designpakke under en slået fra funktion følger ikke med projektet. Brugerens gemte standarder bevares.
   const projectStartup = { ...startup.values, ...(features.deling ? {} : { hosting: '' }), ...(features.design ? {} : { designID: '' }) };
   await workbench.store.saveProject(created.root, { startup: projectStartup, ...(features.versioner ? { autoCheckpoint: true } : {}) });
   let versionWarning = '';
   if (features.versioner) {
-    try { await workbench.git.startProject(created.root); }
+    try { await workbench.withGitPrivacyRoot(created.root, () => workbench.git.startProject(created.root)); }
     catch (error) { versionWarning = `Versioner kunne ikke slås til: ${error.message} Projektet er oprettet, og du kan gemme versioner senere.`; }
   }
   // De seneste valg er udgangspunktet for næste projekt. Brugeren kan glemme dem under Flere valg.
@@ -276,6 +294,7 @@ handle('assets:remove', id => {
 });
 // Den statiske forhåndsvisning starter, når projektet har sin første version. Kun én start ad gangen.
 async function startStatic(root) {
+  const owner=ownerFor(root);if(owner && await new (require('./core/privacy/external-egress.cjs').ExternalEgress)(()=>owner.privacy).active(root))return false;
   const ctx = spaceFor(root); if (!ctx) return false;
   if (ctx.preview) return true;
   if (!ctx.staticStart) ctx.staticStart = (async () => {
@@ -528,7 +547,7 @@ handle('deployment:setup-cancel', input => {
   if (input?.provider !== 'promte') throw new Error('Denne loginhandling kan ikke afbrydes herfra.');
   return deploymentSetup.promte.cancel({ host: input.host, owner: requireProject() });
 });
-handle('deployment:setup-open', async input => shell.openExternal(await deploymentSetup.open(requireProject(), input)));
+handle('deployment:setup-open', async input => {const permit=await new (require('./core/privacy/external-egress.cjs').ExternalEgress)(()=>workbench.privacy).legacyPermit(requireProject());permit();return shell.openExternal(await deploymentSetup.open(requireProject(), input));});
 handle('deployment:tracking', async input => {
   if (!currentProject()) return null;
   const root = currentProject().root;
@@ -600,8 +619,8 @@ handle('connections:remove', value => exclusive(() => workbench.removeConnection
 handle('idea:prepare', value => { if (currentProject()) throw new Error('Brug idéhjælpen før projektoprettelse.'); return ideaRefinement.prepare(value); });
 handle('idea:send', value => { if (currentProject()) throw new Error('Idéhjælpen er lukket.'); return ideaRefinement.send(value); });
 handle('idea:stop', () => ideaRefinement.stop());
-handle('connections:models', value => workbench.models(value));
-handle('connections:routes', value => workbench.routes(value.connectionID, value.modelID));
+handle('connections:models', value => workbench.models(value, requests.getStore()?.chat));
+handle('connections:routes', value => workbench.routes(value.connectionID, value.modelID, requests.getStore()?.chat));
 require('./core/chat-materials-ipc.cjs').installChatMaterials({ getWorkbench:currentWorkbench, isSelected:bench => registry.selected === bench, register:handle, dialog, exclusive, normalizeImage:require('./core/screenshot-normalizer.cjs').createImageNormalizer({ nativeImage }), emit:event => sendEvent(event) });
 handle('agent:prepare', value => exclusive(() => workbench.prepare(chatInput(value))));
 handle('agent:send', value => {
@@ -687,7 +706,8 @@ handle('features:save', value => exclusive(async () => {
 }));
 handle('preview:attach', value => exclusive(async () => {
   if (!currentProject()) throw new Error('Åbn et projekt først.');
-  if (!value) { await currentSpace().devServer.stop(); currentSpace().forceStatic = true; currentSpace().externalPreview = null; if (currentSpace().preview) await currentSpace().preview.close(); const next = await openProject(workspaceRoot()); currentSpace().preview = next.staticPreview ? previewSession.staticPreview(currentSpace()) : null; return currentSpace().preview?.url || null; }
+  if (!value) { if(await new (require('./core/privacy/external-egress.cjs').ExternalEgress)(()=>workbench.privacy).active(workspaceRoot()))throw new Error('Den almindelige liveforhåndsvisning er lukket af projektets dataregler. Filer og lokal visuel afprøvning bevares.'); await currentSpace().devServer.stop(); currentSpace().forceStatic = true; currentSpace().externalPreview = null; if (currentSpace().preview) await currentSpace().preview.close(); const next = await openProject(workspaceRoot()); currentSpace().preview = next.staticPreview ? previewSession.staticPreview(currentSpace()) : null; return currentSpace().preview?.url || null; }
+  const permit=await new (require('./core/privacy/external-egress.cjs').ExternalEgress)(()=>workbench.privacy).legacyPermit(workspaceRoot());permit();
   let url; try { url = new URL(value); } catch { throw new Error('Angiv en lokal serveradresse.'); }
   if (!['http:', 'https:'].includes(url.protocol) || !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) || url.username || url.password || url.search || url.hash) throw new Error('Brug en lokal http- eller https-adresse uden login eller parametre.');
   if (registry.servers().some(server => server === url.origin || server.startsWith(url.origin + '/'))) throw new Error('Agentens interne server kan ikke bruges som forhåndsvisning.');
@@ -895,6 +915,20 @@ app.whenReady().then(async () => {
     qualityInspector: require('./core/app-quality.cjs').createAppQualityInspector({ BrowserWindow, session, directory: path.join(app.getPath('userData'), 'harness', 'quality-reports') }),
     emit: event => { if (['session.error','engine.error'].includes(event.type)) recordFailure('agent', 'model'); sendEvent(event); },
     configure: bench => {
+      const normalEngineFactory=bench.engineFactory;
+      bench.engineFactory=options=>privacyActivation.trackEngine(normalEngineFactory(options),()=>bench.project?.root||options.root);
+      bench.privacyRuntimeProvider.beforeConfigure=async (scope,{settings}={})=>{
+        const activationCurrent=privacyActivation.activation(scope.root,{enabled:settings?.enabled!==false});
+        if([...externalRequests.values()].includes(bench))throw new Error('Vent på den eksterne handling, før du ændrer datareglerne.');
+        // Destroy existing unprotected preview documents before activating the
+        // new rule. A resource-request filter cannot revoke an existing socket.
+        const affected=scope.root ? [...spaces.values()].filter(ctx=>ctx.owner===bench) : [];
+        if(affected.length && window&&!window.isDestroyed())await window.webContents.executeJavaScript(`window.dispatchEvent(new CustomEvent('aura:privacy-revoke-previews',{detail:${JSON.stringify({roots:affected.map(ctx=>ctx.root)})}}))`);
+        for(const ctx of affected){
+          await ctx.ready;await ctx.devServer?.stop();await ctx.preview?.close();ctx.preview=null;ctx.externalPreview=null;
+        }
+        activationCurrent();return activationCurrent;
+      };
       bench.restoration = new (require('./core/restoration.cjs').Restoration)(bench.git, bench.store);
       bench.imageHook = async (role, task, extra = {}) => {
         const root = task.root;
@@ -916,8 +950,8 @@ app.whenReady().then(async () => {
   restoration = new Proxy({}, { get(_target, key) { const owner = currentWorkbench().restoration, value = owner[key]; return typeof value === 'function' ? value.bind(owner) : value; } });
   history = new History(registry.store); images = new PreviewImages(registry.store);
   await workbench.copies.cleanup();
-  github = new GitHub(workbench.store); publishing = new Publishing({ store: workbench.store, git: workbench.git, provider: github });
-  deployments = new Deployments(workbench.store, { github });
+  github = new GitHub(workbench.store); publishing = new Publishing({ store: workbench.store, git: workbench.git, provider: github, getPrivacy:()=>workbench.privacy });
+  deployments = new Deployments(workbench.store, { github, getPrivacy:()=>workbench.privacy });
   deploymentSetup = new (require('./core/deployment-setup.cjs').DeploymentSetup)(workbench.store, github, deployments);
   promtePreview = new (require('./core/promte-preview.cjs').PromtePreview)(workbench.store, { setup: deploymentSetup.promte, enabled: async root => (await workbench.features.get(root)).effective['integration-promte'] === true });
   komplaiPreview = new (require('./core/komplai-preview.cjs').KomplaiPreview)(workbench.store, { provider: deployments.providers.komplai, enabled: async root => (await workbench.features.get(root)).effective['integration-komplai-run'] === true });
@@ -940,7 +974,7 @@ app.whenReady().then(async () => {
     const name = url.pathname.slice(1);
     const providerAsset = /^provider-(alexandra|anthropic|azure|compatible|corti|komplai|mistral|ollama|openai|openrouter|zen|promte|github-pages|cloudflare|vercel)\.svg$/.test(name);
     const onboardingAsset = ['onboarding-aura-mark.svg', 'onboarding-provider-claude.svg', 'onboarding-provider-mistral.svg'].includes(name);
-    if (url.host !== 'app' || (!providerAsset && !onboardingAsset && name !== 'provider-cloudflare.png' && !['app-version.js', 'preview-working.js', 'preview-working.css', 'idea-refinement.css', 'conversation-permission.css', 'workspace-calm.js', 'workspace-calm.css', 'idea-refinement.js', 'conversation-permission.js', 'onboarding-compact.css', 'history-pages.js', 'chat-materials.js', 'chat-materials.css', 'index.html', 'history-search.js', 'markdown.js', 'project-settings.js', 'aura-icon.png', 'app.js', 'updates.js', 'workspace.js', 'plan-view.js', 'planning.js', 'approval-view.js', 'approvals.js', 'preview-edit.js', 'history.js', 'chats.js', 'palette.js', 'model-advice.js', 'provider-brand.js', 'connection-overview.js', 'chat-display.js', 'context-display.js', 'conversation-mode.js', 'live-work.js', 'server.js', 'viewport.js', 'share-view.js', 'hosting.js', 'deployment-setup.js', 'promte-preview.js', 'komplai-preview.js', 'deployment.js', 'styles.css', 'demo.css', 'onboarding-b.js', 'onboarding-b.css'].includes(name))) return new Response('Ikke fundet', { status: 404 });
+    if (url.host !== 'app' || (!providerAsset && !onboardingAsset && name !== 'provider-cloudflare.png' && !['feedback-layout.js', 'feedback-layout.css', 'connection-removal.js', 'privacy-gate.js', 'privacy-gate.css', 'app-version.js', 'preview-working.js', 'preview-working.css', 'idea-refinement.css', 'conversation-permission.css', 'workspace-calm.js', 'workspace-calm.css', 'idea-refinement.js', 'conversation-permission.js', 'onboarding-compact.css', 'history-pages.js', 'chat-materials.js', 'chat-materials.css', 'index.html', 'history-search.js', 'markdown.js', 'project-settings.js', 'aura-icon.png', 'app.js', 'updates.js', 'workspace.js', 'plan-view.js', 'planning.js', 'approval-view.js', 'approvals.js', 'preview-edit.js', 'history.js', 'chats.js', 'palette.js', 'model-advice.js', 'provider-brand.js', 'connection-overview.js', 'chat-display.js', 'context-display.js', 'conversation-mode.js', 'live-work.js', 'server.js', 'viewport.js', 'share-view.js', 'hosting.js', 'deployment-setup.js', 'promte-preview.js', 'komplai-preview.js', 'deployment.js', 'styles.css', 'demo.css', 'onboarding-b.js', 'onboarding-b.css'].includes(name))) return new Response('Ikke fundet', { status: 404 });
     return new Response(await fs.readFile(path.join(__dirname, 'ui', name)), { headers: { 'Content-Type': name === 'aura-icon.png' ? 'image/png' : providerAsset || onboardingAsset ? 'image/svg+xml' : name.endsWith('.js') ? 'text/javascript' : name.endsWith('.css') ? 'text/css' : 'text/html; charset=utf-8' } });
   });
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
@@ -987,3 +1021,5 @@ app.whenReady().then(async () => {
 });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
 app.on('before-quit', event => { credentialEntry.close(); komplaiLogin.cancel(); if (quitReady) return; event.preventDefault(); shutdown().finally(() => { quitReady = true; app.quit(); }); });
+
+}

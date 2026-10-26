@@ -1,5 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 const methods = {
+  privacyGet:'privacy:get', privacyConfigure:'privacy:configure', privacyReview:'privacy:review', privacyDecide:'privacy:decide',
   openExternalLink: 'links:open',
   historySearch: 'history:search',
   chatMaterialsState:'chat-materials:state', chatMaterialsChooseFolder:'chat-materials:choose-folder', chatMaterialsChooseFiles:'chat-materials:choose-files', chatMaterialsPreview:'chat-materials:preview', chatMaterialsAttach:'chat-materials:attach', chatMaterialsRemove:'chat-materials:remove',

@@ -9,7 +9,7 @@ const run = promisify(execFile);
 const { Terminal, safeText } = require('../terminal.cjs');
 const { Vault, privateDirectory, lock, separateState, dataDirectory } = require('../storage.cjs');
 const { browserCommand } = require('../browser.cjs');
-const { packageName } = require('../runtime.cjs');
+const { packageName, configure } = require('../runtime.cjs');
 const { Application } = require('../app.cjs');
 const { parse, HELP, logout } = require('../aura.cjs');
 const { disclose, login, selectModel, unlockConnection } = require('../connections.cjs');
@@ -92,9 +92,37 @@ test('browserkommando og motorvalg er eksplicitte for macOS, Linux og Windows', 
   assert.equal(browserCommand(url, 'linux')[0], 'xdg-open');
   assert.equal(browserCommand(url, 'darwin')[0], '/usr/bin/open');
   assert.throws(() => browserCommand('file:///etc/passwd')); assert.throws(() => browserCommand('https://user:pass@example.com'));
-  assert.equal(packageName('linux', 'x64', true), 'opencode-linux-x64-baseline-musl');
-  assert.equal(packageName('win32', 'arm64'), 'opencode-windows-arm64');
+  assert.equal(packageName('linux', 'x64', true), '@opencode/cli-linux-x64-baseline-musl');
+  assert.equal(packageName('win32', 'arm64'), '@opencode/cli-windows-arm64');
   assert.throws(() => packageName('freebsd', 'x64'));
+});
+test('CLI selects a pinned OpenCode V2 package for every supported platform without changing an explicit engine', () => {
+  const { optionalDependencies } = require('../../package.json');
+  const versions = require('../../desktop/runtime-lock.json');
+  const expected = [
+    ['darwin', 'arm64', false, '@opencode/cli-darwin-arm64'],
+    ['darwin', 'x64', false, '@opencode/cli-darwin-x64-baseline'],
+    ['win32', 'arm64', false, '@opencode/cli-windows-arm64'],
+    ['win32', 'x64', false, '@opencode/cli-windows-x64-baseline'],
+    ['linux', 'arm64', false, '@opencode/cli-linux-arm64'],
+    ['linux', 'arm64', true, '@opencode/cli-linux-arm64-musl'],
+    ['linux', 'x64', false, '@opencode/cli-linux-x64-baseline'],
+    ['linux', 'x64', true, '@opencode/cli-linux-x64-baseline-musl'],
+  ];
+  for (const [platform, arch, musl, name] of expected) {
+    assert.equal(packageName(platform, arch, musl), name);
+    assert.equal(optionalDependencies[name], versions.opencode);
+  }
+  assert.match(versions.opencode, /^2\./);
+  const previous = process.env.HARNESS_OPENCODE_PATH;
+  try {
+    process.env.HARNESS_OPENCODE_PATH = '/explicit/aura-engine';
+    configure();
+    assert.equal(process.env.HARNESS_OPENCODE_PATH, '/explicit/aura-engine');
+  } finally {
+    if (previous === undefined) delete process.env.HARNESS_OPENCODE_PATH;
+    else process.env.HARNESS_OPENCODE_PATH = previous;
+  }
 });
 test('eksisterende mappe uden manifest genåbner kladde og skills uden at ændre projektet', async t => {
   const { project, app, ui } = await fixture(t);
@@ -246,4 +274,17 @@ test('CLI sends the same message and context binding that were prepared and disc
  app.bench.prepare=async input=>{prepared=input;return {accepted:true,fingerprint:'recipient',contextBinding:'reviewed-context'};};
  app.bench.send=async input=>{sent=input;};await app.submit('Syntetisk besked');
  assert.equal(prepared.text,'Syntetisk besked');assert.deepEqual(sent,{text:prepared.text,fingerprint:'recipient',contextBinding:'reviewed-context'});
+});
+
+
+test('CLI suppresses only the owned permission-rejection error and preserves real failures', async t => {
+  const { app, project, ui } = await fixture(t); await app.open(project); ui.output = '';
+  app.event({ type: 'session.error', chat: app.bench.chatID, permissionRejected: true, properties: { error: { data: { message: 'Step interrupted' } } } });
+  assert.equal(ui.output, '');
+  for (const type of ['session.error', 'engine.error', 'history.error']) {
+    app.event({ type, chat: app.bench.chatID, properties: { error: { data: { message: `Actual ${type}` } } } });
+    assert.match(ui.output, new RegExp(`Actual ${type.replace('.', '\\.')}`));
+  }
+  app.event({ type: 'session.error', chat: app.bench.chatID, properties: { error: { data: { message: 'Step interrupted' } } } });
+  assert.match(ui.output, /Step interrupted/, 'An interruption without the owned rejection marker remains visible');
 });

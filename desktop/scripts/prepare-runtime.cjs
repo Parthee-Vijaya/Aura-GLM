@@ -31,6 +31,10 @@ async function prepare(target = `${process.platform}-${process.arch}`) {
   const sources = path.join(output, 'sources'); await fs.mkdir(sources);
   for (const entry of lock.sources || []) await download(entry, path.join(sources, entry.name));
   await fs.cp(path.join(root, 'packaging', 'licenses'), path.join(output, 'licenses'), { recursive: true });
+  if (target.startsWith('darwin-')) {
+    if (process.platform !== 'darwin') throw new Error('macOS Privacy Gate-helperen skal klargøres på macOS.');
+    await require('../privacy/isolation/prepare-helper.cjs').prepareHelper(path.join(output, 'privacy', 'aura-scope-reaper'), { arch: target.slice('darwin-'.length) });
+  }
   const payloads = await require('./runtime-integrity.cjs').inventory(output);
   await fs.writeFile(path.join(output, 'manifest.json'), JSON.stringify({ target, versions: {opencode:lock.opencode,git:lock.git,node:lock.node}, sources:lock.sources || [], archives:entries, payloads }, null, 2));
   return output;

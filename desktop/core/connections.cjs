@@ -116,23 +116,30 @@ function azureEndpoint(value) {
   return `${url.origin}/openai/v1`;
 }
 function usesResponses(connection) { return (connection.protocol || definitions[connection.kind]?.protocol) === 'responses'; }
-async function requestJSON(url, { key = '', kind, method = 'GET', body, signal } = {}) {
+async function requestJSON(url, { key = '', kind, method = 'GET', body, signal, assertCurrent = () => true } = {}) {
   const headers = { accept: 'application/json' };
   if (key) Object.assign(headers, kind === 'anthropic' ? { 'x-api-key': key, 'anthropic-version': '2023-06-01' } : kind === 'azure' ? { 'api-key': key } : { Authorization: `Bearer ${key}` });
   if (body) headers['content-type'] = 'application/json';
+  const current = () => { const result = assertCurrent(url); if (result && typeof result.then === 'function') { void result.catch?.(() => {}); throw new Error('Katalogets dataregler kunne ikke genvalideres.'); } if (result !== true) throw new Error('Katalogets dataregler er ændret.'); };
   let response;
+  // A lease is checked after any keychain work, immediately before fetch.
+  // No await can admit a changed recipient/policy between this check and I/O.
+  current();
   try { response = await fetch(url, { method, headers, body: body && JSON.stringify(body), signal: signal || AbortSignal.timeout(15000), redirect: 'error' }); }
   catch { throw new Error('Serveren svarer ikke. Kontrollér adresse, port, netværk og eventuelt Tailscale.'); }
+  try { current(); } catch (error) { await response.body?.cancel(); throw error; }
   // En Corti-nøgle virker kun i sit eget miljø. Beskeden siger, hvilken adresse appen prøvede, så testeren ved, hvad der skal tjekkes.
   if (!response.ok && kind === 'corti' && (response.status === 401 || response.status === 403)) throw new Error(`Corti afviste nøglen på ${url.startsWith(CORTI.fr) ? 'adressen i Frankrig' : url.startsWith(CORTI['eu-s']) ? 'adressen i EU-S (Sovereign)' : 'adressen i EU'}. Brug en nøgle fra Corti Models i et projekt i EU, EU-S eller Frankrig; en nøgle virker kun i sit eget miljø.`);
   if (!response.ok) throw new Error(response.status === 401 || response.status === 403 ? 'Serveren afviste adgangen. Kontrollér API-nøglen og tilladelserne.' : `Serveren svarede med HTTP ${response.status}. Ingen anden forbindelse blev valgt.`);
   const chunks = []; let size = 0;
   for await (const chunk of response.body) {
+    current();
     size += chunk.length;
     if (size > 8_000_000) throw new Error('Serverens svar er for stort.');
     chunks.push(chunk);
   }
   const text = Buffer.concat(chunks).toString('utf8');
+  current();
   try { return JSON.parse(text); } catch { throw new Error('Serveren returnerede ikke gyldige modeloplysninger.'); }
 }
 // Tænkning og indsatsniveauer fra kataloget: Corti oplyser capabilities.reasoning og effort.levels, OpenRouter supported_parameters.
@@ -144,11 +151,11 @@ function catalogReasoning(model) {
   else if (out.reasoning && Array.isArray(model.supported_parameters)) out.effort = ['low', 'medium', 'high'];
   return out;
 }
-async function listModels(connection, key) {
+async function listModels(connection, key, { assertCurrent } = {}) {
   assertSupported(connection);
   if (definitions[connection.kind].keyRequired && !key) throw new Error('Denne forbindelse kræver en API-nøgle.');
   const ollama = connection.kind === 'ollama';
-  const response = await requestJSON(`${connection.baseURL}${ollama ? '/api/tags' : '/models'}`, { key, kind: connection.kind });
+  const response = await requestJSON(`${connection.baseURL}${ollama ? '/api/tags' : '/models'}`, { key, kind: connection.kind, assertCurrent });
   const models = response[ollama ? 'models' : 'data'];
   if (!Array.isArray(models)) throw new Error('Serveren returnerede ingen læsbar modelliste.');
   // Azures katalog beskriver modeller, ikke kundens deployment-navne. Vi sender kun til navnet, brugeren har angivet.
@@ -160,10 +167,10 @@ async function listModels(connection, key) {
     local: ollama && !model.remote_host && !/:.*cloud/.test(model.name) ? 'Ikke verificeret' : null
   })).filter(model => typeof model.id === 'string');
 }
-async function routes(connection, key, model) {
+async function routes(connection, key, model, { assertCurrent } = {}) {
   assertSupported(connection);
   if (connection.kind !== 'openrouter') return [];
-  const data = await requestJSON(`${connection.baseURL}/models/${model.split('/').map(encodeURIComponent).join('/')}/endpoints`, { key });
+  const data = await requestJSON(`${connection.baseURL}/models/${model.split('/').map(encodeURIComponent).join('/')}/endpoints`, { key, assertCurrent });
   return (data.data?.endpoints || []).map(item => ({ id: item.tag || item.provider_name, name: item.provider_name, price: item.pricing || null, policy: item.data_policy || null, capabilities: { tools: item.supported_parameters?.includes('tools') ?? null, vision: typeof item.capabilities?.vision === 'boolean' ? item.capabilities.vision : Array.isArray(item.input_modalities) ? item.input_modalities.includes('image') : null } })).filter(route => route.id);
 }
 function disclosure(connection, model, route = null) {

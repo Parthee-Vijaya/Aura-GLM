@@ -6,7 +6,7 @@ const profileResources = [{ from: '../LICENSE', to: 'LICENSE' }, { from: '../pro
 module.exports = {
   appId: 'org.ai-alliancen.harness', productName: 'Aura 1',
   directories: { output: 'release', buildResources: 'packaging' },
-  files: ['main.cjs', 'preload.cjs', 'core/**/*', 'ui/**/*', 'package.json', 'runtime-lock.json'],
+  files: ['main.cjs', 'preload.cjs', 'core/**/*', 'privacy/**/*', '!privacy/isolation/.runtime/**/*', '!privacy/isolation/notes/**/*', '!privacy/**/.gitignore', 'ui/**/*', 'package.json', 'runtime-lock.json'],
   asar: true, asarUnpack: ['core/engine-guardian.cjs', 'core/pdf-text-worker.cjs', 'node_modules/pdfjs-dist/**/*', 'node_modules/@napi-rs/**/*', 'core/dev-server-runner.cjs', 'core/command-sandbox-runner.mjs', 'core/command-dispatch.cjs', 'node_modules/@anthropic-ai/sandbox-runtime/**/*', 'node_modules/@pondwader/socks5-server/**/*', 'node_modules/commander/**/*', 'node_modules/node-forge/**/*', 'node_modules/zod/**/*'], npmRebuild: false,
   extraResources: profileResources,
   artifactName: 'Aura-1-${version}-${os}-${arch}.${ext}',
@@ -27,6 +27,13 @@ module.exports = {
     if (manifest.target !== target) throw new Error('Forkert runtime til pakningen.');
     if (manifest.payloads?.schemaVersion !== 1) throw new Error('Forbered runtime igen med npm run runtime:prepare før pakning.');
     await require('./scripts/runtime-integrity.cjs').verifyRuntime(folder, manifest, manifest, require('./runtime-lock.json'), target);
+    if (target.startsWith('darwin-')) {
+      const helper = path.join(folder, 'privacy', 'aura-scope-reaper');
+      const metadata = JSON.parse(await require('node:fs/promises').readFile(helper + '.json', 'utf8'));
+      const source = await require('node:fs/promises').readFile(require('./privacy/isolation/prepare-helper.cjs').sourcePath);
+      const binary = await require('node:fs/promises').readFile(helper);
+      if (metadata.version !== 2 || metadata.platform !== 'darwin' || metadata.arch !== Arch[context.arch] || metadata.sourceSha256 !== require('node:crypto').createHash('sha256').update(source).digest('hex') || metadata.executableSha256 !== require('./privacy/isolation/helper-integrity.cjs').executableDigest(binary)) throw new Error('Privacy Gate-helperen skal klargøres igen før pakning.');
+    }
     const proof = path.join(__dirname, '.runtime', `source-proof-${target}.json`);
     await require('./scripts/package-source-proof.cjs').create(__dirname, proof);
     context.packager.config.extraResources = [...profileResources, { from: folder, to: 'runtime' }, { from: proof, to: 'source-proof.json' }];

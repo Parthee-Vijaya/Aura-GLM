@@ -36,6 +36,17 @@ async function executableMetadata(file, archive, version) {
 function namesIn(archive) { return asar.listPackage(archive).map(name => name.replaceAll('\\', '/').replace(/^\//, '')); }
 async function pluginClosure(archive) {
   const names = namesIn(archive), known = new Set(names), visited = new Set(), packages = [];
+  // V2 loads Aura's generated, dependency-free hooks inside the pinned engine.
+  // Old packages still require the complete, unpacked V1 SDK closure below.
+  if (known.has('runtime-lock.json')) {
+    const lock = JSON.parse(asar.extractFile(archive, 'runtime-lock.json'));
+    if (semver.major(lock.opencode) >= 2) {
+      const pkg = JSON.parse(asar.extractFile(archive, 'package.json'));
+      assert.equal(pkg.dependencies?.['@opencode-ai/plugin'], undefined, 'V2-pakken må ikke indeholde den gamle plugin-afhængighed');
+      assert.ok(!names.some(name => /^node_modules\/@opencode-ai\/(plugin|sdk)\//.test(name)), 'V1-pluginfiler må ikke følge med V2-pakken');
+      return [];
+    }
+  }
   function manifest(folder) { return JSON.parse(asar.extractFile(archive, folder + '/package.json')); }
   async function visit(folder) {
     if (visited.has(folder)) return; visited.add(folder);

@@ -20,7 +20,7 @@ node cli/aura.cjs chat "/sti/til/mit projekt"
 
 På Windows erstattes projektstien med fx `C:\Projekter\Min app`. Både CMD og PowerShell kan køre programmet. Hvis PowerShell blokerer npm-scriptet, brug `npm.cmd` i stedet for `npm`; der er ingen grund til at ændre maskinens scriptpolitik.
 
-Installationen henter den relevante, versionslåste OpenCode-motor som en valgfri npm-afhængighed. Aura ændrer ikke din øvrige OpenCode-opsætning. `doctor` kontrollerer, at motorversionen er præcis den forventede, og forklarer, hvis npm har udeladt den. Du kan også angive en eksisterende motor med `HARNESS_OPENCODE_PATH`. Node, Git, Docker og projektets pakker installeres ikke ved opstart.
+Installationen henter den relevante OpenCode 2.1.4-motor som en versionslåst `@opencode/cli-*`-afhængighed. Opdateringen bruger V2-pakkerne; en eksisterende global V1-installation bliver hverken overskrevet eller brugt som automatisk reserve. Aura ændrer ikke din øvrige OpenCode-opsætning. `doctor` kontrollerer, at motorversionen er præcis den forventede, og forklarer, hvis npm har udeladt den. Du kan også angive en eksisterende motor med `HARNESS_OPENCODE_PATH`. Node, Git, Docker og projektets pakker installeres ikke ved opstart.
 
 Hvis du vil have kommandoen `aura` til rådighed fra andre mapper, kan du efter den lokale installation køre:
 

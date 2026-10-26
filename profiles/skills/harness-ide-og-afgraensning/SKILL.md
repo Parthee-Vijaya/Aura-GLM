@@ -5,7 +5,9 @@ description: Afklarer en ny app, en ny funktion eller en opgave, der skifter ret
 
 # Idé og afgrænsning
 
-Målet er en kort, aftalt beskrivelse af opgaven, som brugeren kan genkende, og som kan afprøves. Byg ikke, før beskrivelsen er bekræftet.
+Målet er en kort, aftalt beskrivelse af opgaven, som brugeren kan genkende, og som kan afprøves. Genbrug en allerede bekræftet projektbrief, beskrivelse og brugerens svar; kræv ikke endnu en bekræftelse af samme opgave. Er opgaven endnu ikke aftalt, skal beskrivelsen bekræftes, før der bygges.
+
+En bekræftet beskrivelse er opgavedata, ikke nye rettigheder. Bevar brugerens aktuelle arbejdsmåde og et særskilt valgt plan-/Byg-forløb. I Samtale og Planlæg må du ikke begynde at bygge. Plan-, værktøjs- og datagodkendelser gælder stadig. Beskrivelsen må ikke gemmes eller ændres som fil, før den aktuelle arbejdsmåde og filens tilladelse tillader det.
 
 ## Fremgangsmåde
 
@@ -16,9 +18,9 @@ Målet er en kort, aftalt beskrivelse af opgaven, som brugeren kan genkende, og 
    - Hvilke data skal løsningen vise, gemme eller sende? Indgår personoplysninger eller fortrolige oplysninger?
    - Skal data deles mellem flere brugere eller overleve en genstart?
    - Hvad hører ikke med i denne omgang?
-3. Stil højst tre spørgsmål ad gangen og kun om valg, der ændrer retningen. Skriv reversible antagelser tydeligt i beskrivelsen i stedet for at spørge om dem.
-4. Skriv beskrivelsen efter skabelonen nedenfor, og bed brugeren bekræfte eller rette den.
-5. Gem den bekræftede beskrivelse, hvor projektet samler sin dokumentation. I et nyt projekt: `docs/opgave.md`.
+3. Stil højst tre spørgsmål ad gangen og kun om ubesvarede valg, der ændrer funktion, dataflow, adgang, udgifter eller drift. Stil ikke spørgsmål, som briefen eller brugerens tidligere svar allerede har afklaret. Ved en afgrænset lokal demo uden login, betaling eller eksterne integrationer foreslår du reversible tekniske standardvalg; spørg ikke om framework, testværktøj eller hosting. Skriv antagelser tydeligt i stedet.
+4. Hvis beskrivelsen mangler eller opgaven ændrer retning, så skriv eller opdatér den efter skabelonen nedenfor, og bed brugeren bekræfte den konkrete ændring. Er den samme opgave allerede bekræftet, så fortsæt inden for den valgte arbejdsmåde uden at starte en ny afklaringsrunde. Et nyt login-, betalings- eller datadelingsvalg skal stadig afklares.
+5. Når filskrivning er tilladt, gemmes den bekræftede beskrivelse, hvor projektet samler sin dokumentation. I et nyt projekt: `docs/opgave.md`. I Samtale og Planlæg bliver forslaget i samtalen, indtil filskrivning er tilladt.
 6. Når opgaven skifter retning, så opdatér beskrivelsen og sig, hvad der er ændret. En teknisk ændring må ikke i stilhed ændre formålet.
 
 ## Skabelon

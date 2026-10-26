@@ -62,6 +62,25 @@ test('quality repair keeps one session, task, plan, context, checkpoint and usag
   assert.equal(f.events.filter(e => e.type === 'run.review').length, 1); assert.equal(f.events.find(e => e.type === 'run.review').quality.repairs, 1);
 });
 
+test('protected outputs never enter an inspector without native isolation capability', async t => {
+  const f = await fixture(t); await f.send('build');
+  f.chat.runPrivacy = { scope: { kind: 'conversation', root: f.root, chat: f.chat.id } };
+  await f.change(); await f.idle();
+  assert.equal(f.inspections.length, 0);
+  assert.equal(f.engines[0].sent.length, 1);
+  assert.equal(f.chat.running, false);
+  assert.equal(f.chat.plan.id, 'chosen-plan');
+});
+
+test('qualified inspector receives the trusted protected conversation scope', async t => {
+  const f = await fixture(t, async ({ root }) => ({ status: 'checked', fingerprint: (await snapshotApp(root)).fingerprint, findings: [] }));
+  await f.send('build'); f.bench.qualityInspector.supportsPrivacyIsolation = true;
+  const privacy = f.chat.runPrivacy = { scope: { kind: 'conversation', root: f.root, chat: f.chat.id } };
+  await f.change(); await f.idle();
+  assert.equal(f.inspections.length, 1); assert.equal(f.inspections[0].privacy, privacy);
+  assert.equal(f.chat.running, false);
+});
+
 test('at most two repair prompts are sent even when each revision still has errors', async t => {
   const f = await fixture(t); await f.send('build'); const plan = f.chat.plan;
   for (let i = 0; i < 3; i++) { await f.change(`Revision ${i}`); await f.idle(); }

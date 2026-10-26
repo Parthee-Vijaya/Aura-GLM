@@ -12,6 +12,7 @@
     $('#idea-refine-stop').hidden=!value;$('#idea-refine-stop').disabled=false;
     $('#idea-refine-open').disabled=value;syncCreateAvailability();
   }
+  window.harness.onEvent(event=>{if(busy&&!current&&event?.type==='idea.local-processing')status.textContent='Lokal model '+event.model+' forfiner din idé på denne computer …';});
   const input = () => ({name:$('#name').value,idea:$('#purpose').value,message:$('#idea-refine-answer').value,connectionID:connection.value,modelID:model.value,routeID:route.value});
   async function loadModelsForIdea(){
     const ticket=++generation,id=connection.value;accepted=null;review=null;
@@ -57,10 +58,12 @@
     const item=review;if(!item||item.ticket!==generation||current)return;review=null;dialog.close();working(true,'AI’en forfiner din idé og foreslår en plan …');
     try{
       const result=await call('ideaSend',{token:item.token},null);if(item.ticket!==generation||current)return;
-      answer={...result,selection:{connectionID:connection.value,modelID:model.value,routeID:route.value}};accepted=null;
+      if(result.processing?.locality==='device'&&result.selection){connection.value=result.selection.connectionID;model.replaceChildren(option(result.selection.modelID,result.processing.model));model.value=result.selection.modelID;route.replaceChildren();$('#idea-route-row').hidden=true;}
+      answer={...result,selection:result.selection||{connectionID:connection.value,modelID:model.value,routeID:route.value}};accepted=null;
       $('#idea-refine-description').value=result.description;$('#idea-refine-plan').textContent=result.plan||'Bed AI’en om et planforslag, når de sidste valg er afklaret.';
       const questions=$('#idea-refine-questions');questions.replaceChildren();if(result.questions.length){questions.append(node('h3','Lad os afklare det sidste'));const list=node('ol');for(const q of result.questions)list.append(node('li',q));questions.append(list);}
       $('#idea-refine-answer').value='';$('#idea-refine-result').hidden=false;status.textContent=result.questions.length?'AI’en afventer dine svar. Du kan skrive frit nedenfor.':'Forslaget er klar. Ret teksten, eller brug beskrivelsen.';
+      if(result.processing?.locality==='device')status.textContent='Lokal model '+result.processing.model+' · '+status.textContent;
       $('#idea-refine-send').hidden=true;
     }catch(error){if(item.ticket===generation)status.textContent=error.message;}
     finally{if(item.ticket===generation)working(false,status.textContent);}

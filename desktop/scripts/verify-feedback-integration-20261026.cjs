@@ -1,0 +1,74 @@
+// Native Electron UI integration with synthetic local files and controlled engine events.
+// No provider, credential, source generation, install, Git write, or production profile is used.
+const { _electron: electron } = require('playwright');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const os = require('node:os');
+const assert = require('node:assert/strict');
+const helpers = require('./ui-test-helpers.cjs');
+(async () => {
+  const output = process.env.AURA_FEEDBACK_OUTPUT || path.join(os.homedir(), 'Library/Application Support/Aura1/ReleaseReports/feedback-20261026/integration');
+  await fs.mkdir(output, { recursive: true });
+  const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'aura-feedback-integrated-'))), project = path.join(root, 'Borgermoeder');
+  await fs.mkdir(path.join(project, 'public'), { recursive: true });
+  await fs.writeFile(path.join(project, 'public/index.html'), '<!doctype html><html lang="da"><meta charset="utf-8"><title>Borgermøder</title><style>body{font:18px system-ui;padding:36px;background:#f7faf8;color:#21382e}h1{font:44px Georgia}button{padding:12px 20px;background:#275c48;color:white;border:0;border-radius:8px}</style><p>SYNTETISK VISNING TIL PRØVEN</p><h1>Borgermøder i din kommune</h1><p>Find et møde, og vær med til at forme lokalsamfundet.</p><button>Se kommende møder</button></html>');
+  let app, page;
+  const checks = [], screenshots = [], errors = [], failedResources = [];
+  const pass = (id, evidence) => { checks.push({ id, evidence }); console.log('PASS ' + id); };
+  const capture = async name => { await page.waitForFunction(() => [...document.querySelectorAll('dialog[open]')].every(el => !el.getAnimations().some(a => a.playState === 'running'))); await page.evaluate(() => getSelection()?.removeAllRanges()); const file = path.join(output, name + '.png'); await page.screenshot({ path: file }); screenshots.push(file); };
+  const emit = (owner, event) => app.evaluate(({ BrowserWindow }, data) => BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).webContents.send('harness:event', { ...data.event, ...data.owner }), { owner, event });
+  const resize = async (width, height) => { await app.evaluate(({ BrowserWindow }, size) => { const w = BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')); w.setMinimumSize(380, 400); w.setContentSize(size.width, size.height); }, { width, height }); await page.waitForFunction(width => innerWidth === width, width); };
+  const theme = async () => { await page.click('#project-menu-toggle'); await page.click('#workspace-theme'); if (await page.locator('#project-menu').evaluate(el => el.matches(':popover-open'))) await page.click('#project-menu-toggle'); };
+  try {
+    app = await electron.launch({ executablePath: require('electron'), args: [path.join(__dirname, '..'), '--user-data-dir=' + path.join(root, 'appdata')], env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined } });
+    page = await app.firstWindow(); page.on('pageerror', error => errors.push(error.message)); page.on('response', response => { if (response.url().startsWith('harness://') && response.status() >= 400) failedResources.push(response.url()); });
+    await app.evaluate(({ app, session }, root) => { app.setPath('documents', root); session.defaultSession.webRequest.onBeforeRequest((details, callback) => callback({ cancel: /^https?:/.test(details.url) })); global.fetch = async () => { throw Error('Feedback integration forbids external/model requests.'); }; }, root);
+    await helpers.forbidGitWrites(app); await helpers.skipIntroduction(page); await helpers.openExistingProject(app, page, project); await resize(1280, 800);
+    await page.evaluate(() => { appendMessage('En app til at melde sig til borgermøder i kommunen.', 'user'); appendMessage('Jeg undersøger, hvordan første version kan vise møder og tilmelding. Eksempeldata markeres tydeligt.', 'assistant'); document.querySelector('#project-intro').hidden = true; document.querySelector('#start-idea').hidden = true; });
+    const owner = await page.evaluate(() => selectedOwner());
+    await emit(owner, { type: 'run.status', status: 'working' });
+    await page.waitForFunction(() => document.querySelector('#chat-form').dataset.metalState === 'working');
+    await page.waitForFunction(() => document.querySelector('#chat-form').getBoundingClientRect().height < 100);
+    const dimensions = await page.evaluate(() => Object.fromEntries(['.sidebar', '.chat', '#chat-form', '#prompt', '#agent-activity', '.chat-content'].map(selector => { const r = document.querySelector(selector).getBoundingClientRect(); return [selector, { x:r.x, y:r.y, width:r.width, height:r.height }]; })));
+    assert.ok(dimensions['#chat-form'].height < 100); assert.ok(dimensions['.chat-content'].height > 445.9); pass('compact-composer-and-more-chat-space', dimensions);
+    assert.ok(Math.abs(dimensions['#agent-activity'].y + dimensions['#agent-activity'].height - dimensions['#chat-form'].y) < 12); pass('work-status-adjacent-to-composer');
+    const angle = await page.locator('#chat-form').evaluate(el => getComputedStyle(el, '::before').getPropertyValue('--aura-metal-angle'));
+    await page.waitForTimeout(700); assert.notEqual(await page.locator('#chat-form').evaluate(el => getComputedStyle(el, '::before').getPropertyValue('--aura-metal-angle')), angle); pass('actual-working-state-animates-glow');
+    await capture('01-working-dark-1280x800'); await theme(); await capture('02-working-light-1280x800');
+    await page.fill('#prompt', Array(9).fill('Min kladde bliver bevaret.').join('\n'));
+    assert.ok((await page.locator('#prompt').boundingBox()).height > 100); pass('composer-grows-for-multiline-draft');
+    await page.fill('#prompt', 'Kort kladde'); assert.ok((await page.locator('#prompt').boundingBox()).height < 60); pass('composer-shrinks-and-preserves-text');
+    await page.fill('#prompt', ''); await page.click('.section-title h2');
+    const sidebar = page.locator('#sidebar-divider'); await sidebar.focus(); await sidebar.press('ArrowRight'); assert.equal(await sidebar.getAttribute('aria-valuenow'), '218');
+    await sidebar.press('Home'); assert.equal(await sidebar.getAttribute('aria-valuenow'), '180'); await sidebar.press('End'); assert.equal(await sidebar.getAttribute('aria-valuenow'), '320'); pass('sidebar-keyboard-and-width-bounds');
+    const handle = await sidebar.boundingBox(); await page.mouse.move(handle.x + 3, 350); await page.mouse.down(); await page.mouse.move(250, 350, {steps:5}); await page.mouse.up(); assert.equal(await sidebar.getAttribute('aria-valuenow'), '250'); pass('sidebar-pointer-resize');
+    assert.equal(await page.evaluate(() => localStorage.getItem('aura-sidebar-width-v1')), '250'); pass('sidebar-width-persists-locally');
+    await page.click('#sidebar-toggle'); assert.equal(await sidebar.isVisible(), false); await page.click('#sidebar-toggle'); assert.equal(await sidebar.isVisible(), true); pass('sidebar-collapse-preserved');
+    await sidebar.dblclick(); assert.equal(await sidebar.getAttribute('aria-valuenow'), '208'); pass('sidebar-double-click-reset');
+    await resize(1440, 900); await capture('03-working-light-1440x900'); await theme(); await capture('04-working-dark-1440x900');
+    const question = {id:'feedback-question', questions:[{header:'Første version',question:'Skal første version bruge eksempeldata eller rigtige møder?',options:[{label:'Eksempeldata (anbefalet)',description:'Afprøv idéen uden at sende en rigtig tilmelding.'},{label:'Rigtige møder',description:'Vi skal aftale datakilde og tilmelding.'}],custom:true}]};
+    await emit(owner, {type:'question.asked', properties:question}); await page.locator('.question-card textarea').waitFor(); await page.locator('.question-card').scrollIntoViewIfNeeded();
+    await page.waitForFunction(() => document.querySelector('#agent-activity').hidden); assert.equal(await page.locator('#chat-form').getAttribute('data-metal-state'), 'waiting'); pass('visible-question-needs-no-duplicate-banner');
+    await capture('05-question-dark-1440x900');
+    await page.evaluate(() => { const spacer = document.createElement('div'); spacer.id='test-scroll-spacer'; spacer.style.height='900px'; document.querySelector('#messages').prepend(spacer); view.followChat=false; document.querySelector('#chat-content').scrollTop=0; });
+    await page.waitForFunction(() => !document.querySelector('#agent-activity').hidden); assert.equal(await page.locator('#agent-activity').getAttribute('role'), 'status'); assert.equal(await page.locator('#agent-activity').getAttribute('tabindex'), null); pass('offscreen-question-shows-actionable-banner');
+    await page.locator('#agent-activity-jump').focus(); await page.keyboard.press('Enter');
+    await page.waitForFunction(() => document.querySelector('.question-card').contains(document.activeElement)); pass('whole-banner-keyboard-opens-question');
+    await page.waitForFunction(() => document.querySelector('#agent-activity').hidden); await page.evaluate(() => document.querySelector('#test-scroll-spacer').remove());
+    await emit(owner, {type:'question.rejected',properties:{requestID:'feedback-question'}}); await emit(owner, {type:'run.status',status:'idle'});
+    await page.waitForFunction(() => document.querySelector('#chat-form').dataset.metalState === 'idle'); assert.equal(await page.locator('#agent-activity').isVisible(), false); pass('idle-clears-activity');
+    await emit(owner, {type:'plan.ready',plan:{id:'feedback-plan',text:'## Det bygger vi\nEn oversigt over borgermøder med søgning og en tydelig tilmelding.\n\n## Sådan skal det se ud\nEn rolig, mobilvenlig side med læsbare møder og én tydelig hovedhandling.\n\n## Teknik og data\nLokale eksempeldata i public/index.html. Ingen rigtige tilmeldinger.\n\n## Det skal du prøve\nFind et møde, vælg deltagere og se bekræftelsen.',source:'ai'}});
+    await page.locator('#plan-card').scrollIntoViewIfNeeded(); assert.equal(await page.locator('#plan-card h3').innerText(), 'Kort byggeplan'); assert.ok((await page.locator('#plan-summary').innerText()).includes('borgermøder')); assert.equal(await page.locator('#build-plan').isVisible(), true);
+    assert.equal(await page.evaluate(() => view.running), false); pass('short-plan-does-not-start-build'); await capture('06-plan-dark-1440x900');
+    await page.click('#plan-open'); assert.equal(await page.locator('#panel-plan').isVisible(),true); await page.locator('#panel-plan .plan-teknik summary').click(); assert.ok((await page.locator('#panel-plan').innerText()).includes('Lokale eksempeldata')); pass('complete-plan-and-technical-details-retained');
+    await page.click('#tab-preview');
+    await resize(1024,768); assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1),false); pass('workspace-fits-1024'); await capture('07-working-dark-1024x768');
+    await resize(390,844); assert.equal(await sidebar.isVisible(),false); assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1),false); pass('mobile-keeps-drawer-and-no-page-overflow'); await capture('08-mobile-chat-390x844');
+    await resize(1280,800); await emit(owner,{type:'run.status',status:'working'}); await page.emulateMedia({reducedMotion:'reduce'}); assert.equal(await page.locator('#chat-form').evaluate(el => getComputedStyle(el,'::before').animationName),'none'); pass('reduced-motion-preserved');
+    await emit(owner,{type:'run.status',status:'idle'}); await page.emulateMedia({reducedMotion:'no-preference'});
+    await helpers.assertNoGitWrites(app); assert.deepEqual(errors,[]); assert.deepEqual(failedResources,[]); pass('no-renderer-errors-or-missing-ui-assets');
+    await fs.writeFile(path.join(output,'report.json'), JSON.stringify({checks,screenshots,errors,failedResources,profile:root,platform:process.platform,electron:await app.evaluate(()=>process.versions.electron),limits:['Controlled events, no real model.','macOS only, not a native Windows test.','No automatic server start, permissions change or release.']},null,2)+'\n');
+    console.log(JSON.stringify({output,passed:checks.length}));
+  } catch(error) { await capture('failure').catch(()=>{}); await fs.writeFile(path.join(output,'error.json'),JSON.stringify({message:error.message,stack:error.stack,checks,errors,failedResources,profile:root},null,2)); throw error; }
+  finally { await app?.close(); }
+})().catch(error=>{console.error(error);process.exitCode=1;});

@@ -24,7 +24,8 @@ function folderSlug(name) {
     .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60).replace(/-$/, '') || 'projekt';
 }
 
-async function createProject(parent, input, assets = [], profileRoot) {
+async function createProject(parent, input, assets = [], profileRoot, { beforeWrite } = {}) {
+  if (beforeWrite !== undefined && typeof beforeWrite !== 'function') throw new TypeError('beforeWrite must be a trusted function.');
   const values = validate(input);
   await checkProjectAccess(parent);
   const base = path.join(await fs.realpath(parent), `projekt-${folderSlug(values.name)}`);
@@ -36,6 +37,10 @@ async function createProject(parent, input, assets = [], profileRoot) {
     catch (error) { if (error.code !== 'EEXIST' || number >= 99) throw error; }
   }
   try {
+    // The main process establishes inherited data protection before derived
+    // idea text or attachments become project files. A failed transfer leaves
+    // only the reserved empty directory, never an unlabelled private project.
+    await beforeWrite?.(root);
     await fs.mkdir(path.join(root, 'public', 'assets'), { recursive: true });
     await fs.mkdir(path.join(root, 'references'));
     const copied = [];

@@ -10,6 +10,10 @@ Dette er **Parthee-Vijayas fork af Aura Harness**. Udgaven samler forbedret desi
 
 **Efterfølgende kildearbejde — endnu ikke i DMG’en:** [Fem kommunale landing pages med GPT-6.1 Sol](evals/openenv/MUNICIPAL-LANDINGS-2026-10-25.md) gennemfører nu Auras Plan/Byg-forløb med 331 browserkontroller, 60 visuelle kontrolpunkter og screenshots fra både første og sidste udkast. De 79 modelkald i denne runde havde ingen timeout; tidligere fejlede forsøg, resterende advarsler og 26 fejlede modellæsninger er dokumenteret. Designvejledningen opfordrer desuden til at kombinere Aura-design med relevante designskills, som det aktuelle miljø faktisk tilbyder. Det installerer ingen eksterne skills og ændrer ingen udgivet app.
 
+**Privacy Gate i kildearbejdet — ikke udgivet:** Den aktuelle arbejdsgren indeholder kontrol af hele modelkaldet, separate lokale/cloudbaserede sessioner, native procesisolation og sikker genoptagelse efter Stop. Se [opsætning, sikkerhedsgrænser og afprøvning](docs/privacy-gate.md). Dette ændrer ikke den eksisterende DMG eller dens dokumenterede egenskaber. Videre OpenEnv-/OpenSandbox-arbejde er [gemt til senere](docs/deferred-openenv-sandbox.md).
+
+**Godkendt feedback og robusthed i kildekoden:** Kompakt skrivefelt, status tæt ved samtalen, justerbar sidebar, direkte svar på AI-spørgsmål, forklaring af arbejdsformer og et enklere resultatkort. OpenCode er opgraderet til 2.1.4; fælles filbeskyttelse og Stop/genoptagelse er styrket. [Samlet ændringsoverblik, afprøvning og begrænsninger](docs/feedback/2026-10-26-merge-overview.md). Disse ændringer følger ikke med den eksisterende 0.4.0-DMG.
+
 ## Det nye i 0.4.0
 
 - **Design gennem skills og den valgte model.** Aura indlæser designmetoden fra første idé- og byggeforsøg. Modellen skaber designet ud fra opgaven, brugerens valg og dokumenterede designguides, logoer og farver. Aura påtvinger ikke alle apps den samme palette eller layoutopskrift. Se [designskillen](docs/aura-design-skill.md).
@@ -158,6 +162,8 @@ Se [installation, opsætning og lokale testkommandoer](https://github.com/ai-all
 ## Teknologi, data og betastatus
 
 Aura er en Electron-app til Mac og Windows med OpenCode som lokal kodeagent. Vi bruger en fast version gennem en adapter; AI-modellen er et separat valg. Grundregler og skills kommer fra det samme bibliotek, uanset om du bruger Aura eller dit eget kodeværktøj.
+
+Motoren i den aktuelle arbejdsgren er opgraderet til den stabile OpenCode **2.1.4** fra V2-kanalen. Versionen er låst; appstart opdaterer den ikke automatisk. Opgraderingen er endnu ikke udgivet i en DMG. Se [V2-opgraderingen, samtalemigrationen og testgrundlaget](docs/opencode-2-upgrade.md).
 
 På macOS og Linux følger oprydningen af OpenCodes procesgruppe også brat lukning af Aura eller terminalklienten. Se [procesoprydning, afgrænsning og den reproducerbare prøve](docs/contributions/r05.md). Windows beholder sin hidtidige nedlukning.
 

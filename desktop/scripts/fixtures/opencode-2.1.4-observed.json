@@ -1,0 +1,2188 @@
+{
+  "schemaVersion": 1,
+  "provenance": {
+    "engine": "OpenCode",
+    "version": "2.1.4",
+    "platform": "darwin",
+    "architecture": "arm64",
+    "syntheticOnly": true,
+    "externalModelCalls": 0,
+    "source": "Observed HTTP JSON responses and SSE data from the actual pinned native engine; model responses are scripted localhost fixtures.",
+    "automaticCrashResumeTested": false
+  },
+  "scenarios": [
+    {
+      "name": "approved-write",
+      "injectedResponses": [
+        {
+          "status": 200
+        },
+        {
+          "status": 200
+        }
+      ],
+      "observations": [
+        {
+          "transport": "http-json",
+          "method": "GET",
+          "path": "/api/info",
+          "response": {
+            "version": "2.1.4",
+            "pid": 54055,
+            "urls": [
+              "http://127.0.0.1:PORT"
+            ],
+            "paths": {
+              "tmp": "/synthetic/paths/tmp"
+            },
+            "capabilities": {
+              "persistentPty": true
+            }
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "POST",
+          "path": "/api/session",
+          "request": {
+            "title": "Aura",
+            "agent": "build",
+            "model": {
+              "providerID": "harness",
+              "id": "fixture-model"
+            },
+            "location": {
+              "directory": "/synthetic/contract/project"
+            }
+          },
+          "response": {
+            "data": {
+              "id": "ses_recorded_1",
+              "projectID": "project_recorded",
+              "agent": "build",
+              "model": {
+                "id": "fixture-model",
+                "providerID": "harness",
+                "variant": "default"
+              },
+              "cost": 0,
+              "tokens": {
+                "input": 0,
+                "output": 0,
+                "reasoning": 0,
+                "cache": {
+                  "read": 0,
+                  "write": 0
+                }
+              },
+              "time": {
+                "created": 1000,
+                "updated": 1000
+              },
+              "title": "Aura",
+              "location": {
+                "directory": "/synthetic/contract/project"
+              }
+            }
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "GET",
+          "path": "/api/session/ses_recorded_1/message?limit=100&order=asc",
+          "response": {
+            "data": [
+              {
+                "id": "msg_recorded_2",
+                "time": {
+                  "created": 1001
+                },
+                "type": "agent-switched",
+                "agent": "build",
+                "previous": "build"
+              }
+            ],
+            "cursor": {
+              "previous": "cursor_recorded_1",
+              "next": "cursor_recorded_2"
+            }
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "GET",
+          "path": "/api/session/ses_recorded_1",
+          "response": {
+            "data": {
+              "id": "ses_recorded_1",
+              "projectID": "project_recorded",
+              "agent": "build",
+              "model": {
+                "id": "fixture-model",
+                "providerID": "harness",
+                "variant": "default"
+              },
+              "cost": 0,
+              "tokens": {
+                "input": 0,
+                "output": 0,
+                "reasoning": 0,
+                "cache": {
+                  "read": 0,
+                  "write": 0
+                }
+              },
+              "time": {
+                "created": 1000,
+                "updated": 1001
+              },
+              "title": "Aura",
+              "location": {
+                "directory": "/synthetic/contract/project"
+              }
+            }
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "GET",
+          "path": "/api/session/active",
+          "response": {
+            "data": {}
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "GET",
+          "path": "/api/session/ses_recorded_1/message?limit=100&cursor=cursor_recorded_2",
+          "response": {
+            "data": [],
+            "cursor": {
+              "previous": null,
+              "next": null
+            }
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "POST",
+          "path": "/api/session/ses_recorded_1/prompt",
+          "request": {
+            "id": "msg_recorded_3",
+            "text": "SYNTHETIC_CONTRACT_PROMPT",
+            "resume": true
+          },
+          "response": {
+            "data": {
+              "id": "msg_recorded_3",
+              "sessionID": "ses_recorded_1",
+              "time": {
+                "created": 1002
+              },
+              "type": "user",
+              "payload": {
+                "text": "SYNTHETIC_CONTRACT_PROMPT"
+              },
+              "delivery": "steer"
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_4",
+            "created": 1002,
+            "type": "session.inbox.enqueued",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "inboxID": "msg_recorded_3",
+              "sessionID": "ses_recorded_1",
+              "item": {
+                "type": "user",
+                "payload": {
+                  "text": "SYNTHETIC_CONTRACT_PROMPT"
+                },
+                "delivery": "steer"
+              }
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 2,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_5",
+            "created": 1003,
+            "type": "session.execution.started",
+            "data": {
+              "sessionID": "ses_recorded_1"
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 3,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_6",
+            "created": 1004,
+            "type": "session.inbox.delivered",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "inboxID": "msg_recorded_3"
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 5,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_7",
+            "created": 1005,
+            "type": "session.step.started",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "agent": "build",
+              "model": {
+                "id": "fixture-model",
+                "providerID": "harness",
+                "variant": "default"
+              },
+              "assistantMessageID": "msg_recorded_8",
+              "started": 1006
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 6,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_9",
+            "created": 1007,
+            "type": "session.tool.input.started",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "assistantMessageID": "msg_recorded_8",
+              "id": "call_contract_write",
+              "name": "write"
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 7,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_10",
+            "created": 1008,
+            "type": "session.tool.input.ended",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "assistantMessageID": "msg_recorded_8",
+              "id": "call_contract_write",
+              "text": "{\"path\":\"/synthetic/contract/project/result.txt\",\"content\":\"SYNTHETIC_APPROVED_RESULT\\n\"}"
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 8,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_11",
+            "created": 1008,
+            "type": "session.tool.called",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "assistantMessageID": "msg_recorded_8",
+              "id": "call_contract_write",
+              "input": {
+                "path": "/synthetic/contract/project/result.txt",
+                "content": "SYNTHETIC_APPROVED_RESULT\n"
+              },
+              "executed": false
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 9,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_12",
+            "created": 1009,
+            "type": "session.step.streamed",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "assistantMessageID": "msg_recorded_8"
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 10,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_13",
+            "created": 1010,
+            "type": "permission.asked",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "id": "per_recorded_14",
+              "sessionID": "ses_recorded_1",
+              "action": "edit",
+              "resources": [
+                "result.txt"
+              ],
+              "save": [
+                "*"
+              ],
+              "metadata": {
+                "files": [
+                  {
+                    "file": "result.txt",
+                    "patch": "Index: result.txt\n===================================================================\n--- result.txt\n+++ result.txt\n@@ -0,0 +1,1 @@\n+SYNTHETIC_APPROVED_RESULT\n",
+                    "status": "added",
+                    "additions": 1,
+                    "deletions": 0
+                  }
+                ]
+              },
+              "source": {
+                "type": "tool",
+                "messageID": "msg_recorded_8",
+                "id": "call_contract_write"
+              }
+            }
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "POST",
+          "path": "/api/session/ses_recorded_1/permission/per_recorded_14/reply",
+          "request": {
+            "decision": "once"
+          },
+          "response": null
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_15",
+            "created": 1011,
+            "type": "permission.replied",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "requestID": "per_recorded_14",
+              "reply": "once"
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_16",
+            "created": 1012,
+            "type": "session.tool.success",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "assistantMessageID": "msg_recorded_8",
+              "id": "call_contract_write",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Created file successfully: result.txt"
+                }
+              ],
+              "metadata": {
+                "truncated": false
+              },
+              "executed": false
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 11,
+              "version": 2
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_17",
+            "created": 1013,
+            "type": "session.step.ended",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "assistantMessageID": "msg_recorded_8",
+              "finish": "tool-calls",
+              "rawFinish": "tool_calls",
+              "cost": 0,
+              "tokens": {
+                "input": 10,
+                "output": 5,
+                "reasoning": 0,
+                "cache": {
+                  "read": 0,
+                  "write": 0
+                }
+              }
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 12,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_18",
+            "created": 1014,
+            "type": "session.usage.updated",
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "cost": 0,
+              "tokens": {
+                "input": 10,
+                "output": 5,
+                "reasoning": 0,
+                "cache": {
+                  "read": 0,
+                  "write": 0
+                }
+              }
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_19",
+            "created": 1015,
+            "type": "session.step.started",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "agent": "build",
+              "model": {
+                "id": "fixture-model",
+                "providerID": "harness",
+                "variant": "default"
+              },
+              "assistantMessageID": "msg_recorded_20",
+              "started": 1016
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 13,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_21",
+            "created": 1017,
+            "type": "session.text.started",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "assistantMessageID": "msg_recorded_20",
+              "ordinal": 0
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 14,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_22",
+            "created": 1018,
+            "type": "session.text.delta",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "assistantMessageID": "msg_recorded_20",
+              "ordinal": 0,
+              "delta": "SYNTHETIC_CONTRACT_DONE"
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_23",
+            "created": 1018,
+            "type": "session.text.ended",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "assistantMessageID": "msg_recorded_20",
+              "ordinal": 0,
+              "text": "SYNTHETIC_CONTRACT_DONE"
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 15,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_24",
+            "created": 1018,
+            "type": "session.step.streamed",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "assistantMessageID": "msg_recorded_20"
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 16,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_25",
+            "created": 1019,
+            "type": "session.step.ended",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "assistantMessageID": "msg_recorded_20",
+              "finish": "stop",
+              "rawFinish": "stop",
+              "cost": 0,
+              "tokens": {
+                "input": 10,
+                "output": 5,
+                "reasoning": 0,
+                "cache": {
+                  "read": 0,
+                  "write": 0
+                }
+              }
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 17,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_26",
+            "created": 1019,
+            "type": "session.usage.updated",
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "cost": 0,
+              "tokens": {
+                "input": 20,
+                "output": 10,
+                "reasoning": 0,
+                "cache": {
+                  "read": 0,
+                  "write": 0
+                }
+              }
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_27",
+            "created": 1019,
+            "type": "session.execution.succeeded",
+            "data": {
+              "sessionID": "ses_recorded_1"
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 18,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "GET",
+          "path": "/api/session/ses_recorded_1",
+          "response": {
+            "data": {
+              "id": "ses_recorded_1",
+              "projectID": "project_recorded",
+              "agent": "build",
+              "model": {
+                "id": "fixture-model",
+                "providerID": "harness",
+                "variant": "default"
+              },
+              "cost": 0,
+              "tokens": {
+                "input": 20,
+                "output": 10,
+                "reasoning": 0,
+                "cache": {
+                  "read": 0,
+                  "write": 0
+                }
+              },
+              "outcome": "succeeded",
+              "time": {
+                "created": 1000,
+                "updated": 1019,
+                "idle": 1019
+              },
+              "title": "Aura",
+              "location": {
+                "directory": "/synthetic/contract/project"
+              }
+            }
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "GET",
+          "path": "/api/session/active",
+          "response": {
+            "data": {}
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "GET",
+          "path": "/api/session/ses_recorded_1/permission",
+          "response": {
+            "data": []
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "GET",
+          "path": "/api/session/ses_recorded_1/form",
+          "response": {
+            "data": []
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "GET",
+          "path": "/api/session/ses_recorded_1/message?limit=100&order=asc",
+          "response": {
+            "data": [
+              {
+                "id": "msg_recorded_2",
+                "time": {
+                  "created": 1001
+                },
+                "type": "agent-switched",
+                "agent": "build",
+                "previous": "build"
+              },
+              {
+                "id": "msg_recorded_3",
+                "time": {
+                  "created": 1004
+                },
+                "text": "SYNTHETIC_CONTRACT_PROMPT",
+                "type": "user"
+              },
+              {
+                "id": "msg_recorded_8",
+                "time": {
+                  "created": 1006,
+                  "streamed": 1009,
+                  "completed": 1013
+                },
+                "type": "assistant",
+                "agent": "build",
+                "model": {
+                  "id": "fixture-model",
+                  "providerID": "harness",
+                  "variant": "default"
+                },
+                "content": [
+                  {
+                    "type": "tool",
+                    "id": "call_contract_write",
+                    "name": "write",
+                    "executed": false,
+                    "state": {
+                      "status": "completed",
+                      "input": {
+                        "path": "/synthetic/contract/project/result.txt",
+                        "content": "SYNTHETIC_APPROVED_RESULT\n"
+                      },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Created file successfully: result.txt"
+                        }
+                      ],
+                      "metadata": {
+                        "truncated": false
+                      }
+                    },
+                    "time": {
+                      "created": 1007,
+                      "ran": 1008,
+                      "completed": 1012
+                    }
+                  }
+                ],
+                "finish": "tool-calls",
+                "rawFinish": "tool_calls",
+                "cost": 0,
+                "tokens": {
+                  "input": 10,
+                  "output": 5,
+                  "reasoning": 0,
+                  "cache": {
+                    "read": 0,
+                    "write": 0
+                  }
+                }
+              },
+              {
+                "id": "msg_recorded_20",
+                "time": {
+                  "created": 1016,
+                  "streamed": 1018,
+                  "completed": 1019
+                },
+                "type": "assistant",
+                "agent": "build",
+                "model": {
+                  "id": "fixture-model",
+                  "providerID": "harness",
+                  "variant": "default"
+                },
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "SYNTHETIC_CONTRACT_DONE"
+                  }
+                ],
+                "finish": "stop",
+                "rawFinish": "stop",
+                "cost": 0,
+                "tokens": {
+                  "input": 10,
+                  "output": 5,
+                  "reasoning": 0,
+                  "cache": {
+                    "read": 0,
+                    "write": 0
+                  }
+                }
+              },
+              {
+                "id": "msg_recorded_28",
+                "time": {
+                  "created": 1019
+                },
+                "type": "idle",
+                "outcome": "succeeded"
+              }
+            ],
+            "cursor": {
+              "previous": "cursor_recorded_1",
+              "next": "cursor_recorded_3"
+            }
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "GET",
+          "path": "/api/session/ses_recorded_1/message?limit=100&cursor=cursor_recorded_3",
+          "response": {
+            "data": [],
+            "cursor": {
+              "previous": null,
+              "next": null
+            }
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "GET",
+          "path": "/api/session/ses_recorded_1/message?limit=100&order=asc",
+          "response": {
+            "data": [
+              {
+                "id": "msg_recorded_2",
+                "time": {
+                  "created": 1001
+                },
+                "type": "agent-switched",
+                "agent": "build",
+                "previous": "build"
+              },
+              {
+                "id": "msg_recorded_3",
+                "time": {
+                  "created": 1004
+                },
+                "text": "SYNTHETIC_CONTRACT_PROMPT",
+                "type": "user"
+              },
+              {
+                "id": "msg_recorded_8",
+                "time": {
+                  "created": 1006,
+                  "streamed": 1009,
+                  "completed": 1013
+                },
+                "type": "assistant",
+                "agent": "build",
+                "model": {
+                  "id": "fixture-model",
+                  "providerID": "harness",
+                  "variant": "default"
+                },
+                "content": [
+                  {
+                    "type": "tool",
+                    "id": "call_contract_write",
+                    "name": "write",
+                    "executed": false,
+                    "state": {
+                      "status": "completed",
+                      "input": {
+                        "path": "/synthetic/contract/project/result.txt",
+                        "content": "SYNTHETIC_APPROVED_RESULT\n"
+                      },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Created file successfully: result.txt"
+                        }
+                      ],
+                      "metadata": {
+                        "truncated": false
+                      }
+                    },
+                    "time": {
+                      "created": 1007,
+                      "ran": 1008,
+                      "completed": 1012
+                    }
+                  }
+                ],
+                "finish": "tool-calls",
+                "rawFinish": "tool_calls",
+                "cost": 0,
+                "tokens": {
+                  "input": 10,
+                  "output": 5,
+                  "reasoning": 0,
+                  "cache": {
+                    "read": 0,
+                    "write": 0
+                  }
+                }
+              },
+              {
+                "id": "msg_recorded_20",
+                "time": {
+                  "created": 1016,
+                  "streamed": 1018,
+                  "completed": 1019
+                },
+                "type": "assistant",
+                "agent": "build",
+                "model": {
+                  "id": "fixture-model",
+                  "providerID": "harness",
+                  "variant": "default"
+                },
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "SYNTHETIC_CONTRACT_DONE"
+                  }
+                ],
+                "finish": "stop",
+                "rawFinish": "stop",
+                "cost": 0,
+                "tokens": {
+                  "input": 10,
+                  "output": 5,
+                  "reasoning": 0,
+                  "cache": {
+                    "read": 0,
+                    "write": 0
+                  }
+                }
+              },
+              {
+                "id": "msg_recorded_28",
+                "time": {
+                  "created": 1019
+                },
+                "type": "idle",
+                "outcome": "succeeded"
+              }
+            ],
+            "cursor": {
+              "previous": "cursor_recorded_1",
+              "next": "cursor_recorded_3"
+            }
+          }
+        }
+      ],
+      "hostTerminals": [
+        {
+          "type": "session.idle",
+          "recovered": true,
+          "properties": {
+            "sessionID": "ses_recorded_1"
+          }
+        }
+      ],
+      "approvals": [
+        {
+          "id": "per_recorded_14",
+          "allow": true
+        }
+      ],
+      "modelRequests": [
+        {
+          "index": 1,
+          "protocol": "chat",
+          "model": "fixture-model",
+          "summary": false,
+          "toolResults": 0
+        },
+        {
+          "index": 2,
+          "protocol": "chat",
+          "model": "fixture-model",
+          "summary": false,
+          "toolResults": 1
+        }
+      ]
+    },
+    {
+      "name": "context-rejection",
+      "injectedResponses": [
+        {
+          "status": 413,
+          "errorCode": "context_length_exceeded"
+        },
+        {
+          "status": 200
+        },
+        {
+          "status": 200
+        }
+      ],
+      "observations": [
+        {
+          "transport": "http-json",
+          "method": "GET",
+          "path": "/api/info",
+          "response": {
+            "version": "2.1.4",
+            "pid": 54068,
+            "urls": [
+              "http://127.0.0.1:PORT"
+            ],
+            "paths": {
+              "tmp": "/synthetic/paths/tmp"
+            },
+            "capabilities": {
+              "persistentPty": true
+            }
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "POST",
+          "path": "/api/session",
+          "request": {
+            "title": "Aura",
+            "agent": "build",
+            "model": {
+              "providerID": "harness",
+              "id": "fixture-model"
+            },
+            "location": {
+              "directory": "/synthetic/contract/project"
+            }
+          },
+          "response": {
+            "data": {
+              "id": "ses_recorded_1",
+              "projectID": "project_recorded",
+              "agent": "build",
+              "model": {
+                "id": "fixture-model",
+                "providerID": "harness",
+                "variant": "default"
+              },
+              "cost": 0,
+              "tokens": {
+                "input": 0,
+                "output": 0,
+                "reasoning": 0,
+                "cache": {
+                  "read": 0,
+                  "write": 0
+                }
+              },
+              "time": {
+                "created": 1000,
+                "updated": 1000
+              },
+              "title": "Aura",
+              "location": {
+                "directory": "/synthetic/contract/project"
+              }
+            }
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "GET",
+          "path": "/api/session/ses_recorded_1/message?limit=100&order=asc",
+          "response": {
+            "data": [
+              {
+                "id": "msg_recorded_2",
+                "time": {
+                  "created": 1001
+                },
+                "type": "agent-switched",
+                "agent": "build",
+                "previous": "build"
+              }
+            ],
+            "cursor": {
+              "previous": "cursor_recorded_1",
+              "next": "cursor_recorded_2"
+            }
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "GET",
+          "path": "/api/session/ses_recorded_1",
+          "response": {
+            "data": {
+              "id": "ses_recorded_1",
+              "projectID": "project_recorded",
+              "agent": "build",
+              "model": {
+                "id": "fixture-model",
+                "providerID": "harness",
+                "variant": "default"
+              },
+              "cost": 0,
+              "tokens": {
+                "input": 0,
+                "output": 0,
+                "reasoning": 0,
+                "cache": {
+                  "read": 0,
+                  "write": 0
+                }
+              },
+              "time": {
+                "created": 1000,
+                "updated": 1001
+              },
+              "title": "Aura",
+              "location": {
+                "directory": "/synthetic/contract/project"
+              }
+            }
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "GET",
+          "path": "/api/session/active",
+          "response": {
+            "data": {}
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "GET",
+          "path": "/api/session/ses_recorded_1/message?limit=100&cursor=cursor_recorded_2",
+          "response": {
+            "data": [],
+            "cursor": {
+              "previous": null,
+              "next": null
+            }
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "POST",
+          "path": "/api/session/ses_recorded_1/prompt",
+          "request": {
+            "id": "msg_recorded_3",
+            "text": "SYNTHETIC_CONTRACT_PROMPT",
+            "resume": true
+          },
+          "response": {
+            "data": {
+              "id": "msg_recorded_3",
+              "sessionID": "ses_recorded_1",
+              "time": {
+                "created": 1002
+              },
+              "type": "user",
+              "payload": {
+                "text": "SYNTHETIC_CONTRACT_PROMPT"
+              },
+              "delivery": "steer"
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_4",
+            "created": 1002,
+            "type": "session.inbox.enqueued",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "inboxID": "msg_recorded_3",
+              "sessionID": "ses_recorded_1",
+              "item": {
+                "type": "user",
+                "payload": {
+                  "text": "SYNTHETIC_CONTRACT_PROMPT"
+                },
+                "delivery": "steer"
+              }
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 2,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_5",
+            "created": 1003,
+            "type": "session.execution.started",
+            "data": {
+              "sessionID": "ses_recorded_1"
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 3,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_6",
+            "created": 1004,
+            "type": "session.inbox.delivered",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "inboxID": "msg_recorded_3"
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 5,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_7",
+            "created": 1005,
+            "type": "session.compaction.started",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "reason": "auto"
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 6,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_8",
+            "created": 1006,
+            "type": "session.compaction.delta",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "text": "## Objective\n- Preserve SYNTHETIC_CONTRACT_PROMPT.\n\n## Requirements\n- Keep the selected model and approvals.\n\n## Decisions\n- No additional file changes.\n\n## Work State\n### Completed\n- Context rejection.\n### Active\n- Answer the current prompt.\n### Blocked\n- (none)\n\n## Next Move\n1. Answer the current prompt.\n\n## Relevant Files\n- (none)\n\n## Important Context\n- SYNTHETIC_CONTRACT_PROMPT remains relevant."
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_9",
+            "created": 1007,
+            "type": "session.usage.updated",
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "cost": 0,
+              "tokens": {
+                "input": 10,
+                "output": 5,
+                "reasoning": 0,
+                "cache": {
+                  "read": 0,
+                  "write": 0
+                }
+              }
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_10",
+            "created": 1007,
+            "type": "session.compaction.ended",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "reason": "auto",
+              "model": {
+                "id": "fixture-model",
+                "providerID": "harness",
+                "variant": "default"
+              },
+              "text": "## Objective\n- Preserve SYNTHETIC_CONTRACT_PROMPT.\n\n## Requirements\n- Keep the selected model and approvals.\n\n## Decisions\n- No additional file changes.\n\n## Work State\n### Completed\n- Context rejection.\n### Active\n- Answer the current prompt.\n### Blocked\n- (none)\n\n## Next Move\n1. Answer the current prompt.\n\n## Relevant Files\n- (none)\n\n## Important Context\n- SYNTHETIC_CONTRACT_PROMPT remains relevant.",
+              "tokens": {
+                "input": 10,
+                "output": 5,
+                "reasoning": 0,
+                "cache": {
+                  "read": 0,
+                  "write": 0
+                }
+              },
+              "cost": 0
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 8,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_11",
+            "created": 1008,
+            "type": "session.step.started",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "agent": "build",
+              "model": {
+                "id": "fixture-model",
+                "providerID": "harness",
+                "variant": "default"
+              },
+              "assistantMessageID": "msg_recorded_12",
+              "started": 1009
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 9,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_13",
+            "created": 1010,
+            "type": "session.text.started",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "assistantMessageID": "msg_recorded_12",
+              "ordinal": 0
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 10,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_14",
+            "created": 1011,
+            "type": "session.text.delta",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "assistantMessageID": "msg_recorded_12",
+              "ordinal": 0,
+              "delta": "SYNTHETIC_CONTEXT_RECOVERED"
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_15",
+            "created": 1011,
+            "type": "session.text.ended",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "assistantMessageID": "msg_recorded_12",
+              "ordinal": 0,
+              "text": "SYNTHETIC_CONTEXT_RECOVERED"
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 11,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_16",
+            "created": 1012,
+            "type": "session.step.streamed",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "assistantMessageID": "msg_recorded_12"
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 12,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_17",
+            "created": 1012,
+            "type": "session.step.ended",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "assistantMessageID": "msg_recorded_12",
+              "finish": "stop",
+              "rawFinish": "stop",
+              "cost": 0,
+              "tokens": {
+                "input": 10,
+                "output": 5,
+                "reasoning": 0,
+                "cache": {
+                  "read": 0,
+                  "write": 0
+                }
+              }
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 13,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_18",
+            "created": 1013,
+            "type": "session.usage.updated",
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "cost": 0,
+              "tokens": {
+                "input": 20,
+                "output": 10,
+                "reasoning": 0,
+                "cache": {
+                  "read": 0,
+                  "write": 0
+                }
+              }
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_19",
+            "created": 1013,
+            "type": "session.execution.succeeded",
+            "data": {
+              "sessionID": "ses_recorded_1"
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 14,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "GET",
+          "path": "/api/session/ses_recorded_1",
+          "response": {
+            "data": {
+              "id": "ses_recorded_1",
+              "projectID": "project_recorded",
+              "agent": "build",
+              "model": {
+                "id": "fixture-model",
+                "providerID": "harness",
+                "variant": "default"
+              },
+              "cost": 0,
+              "tokens": {
+                "input": 20,
+                "output": 10,
+                "reasoning": 0,
+                "cache": {
+                  "read": 0,
+                  "write": 0
+                }
+              },
+              "outcome": "succeeded",
+              "time": {
+                "created": 1000,
+                "updated": 1012,
+                "idle": 1013
+              },
+              "title": "Aura",
+              "location": {
+                "directory": "/synthetic/contract/project"
+              }
+            }
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "GET",
+          "path": "/api/session/active",
+          "response": {
+            "data": {}
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "GET",
+          "path": "/api/session/ses_recorded_1/permission",
+          "response": {
+            "data": []
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "GET",
+          "path": "/api/session/ses_recorded_1/form",
+          "response": {
+            "data": []
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "GET",
+          "path": "/api/session/ses_recorded_1/message?limit=100&order=asc",
+          "response": {
+            "data": [
+              {
+                "id": "msg_recorded_2",
+                "time": {
+                  "created": 1001
+                },
+                "type": "agent-switched",
+                "agent": "build",
+                "previous": "build"
+              },
+              {
+                "id": "msg_recorded_3",
+                "time": {
+                  "created": 1004
+                },
+                "text": "SYNTHETIC_CONTRACT_PROMPT",
+                "type": "user"
+              },
+              {
+                "type": "compaction",
+                "id": "msg_recorded_20",
+                "time": {
+                  "created": 1005
+                },
+                "status": "completed",
+                "reason": "auto",
+                "model": {
+                  "id": "fixture-model",
+                  "providerID": "harness",
+                  "variant": "default"
+                },
+                "summary": "## Objective\n- Preserve SYNTHETIC_CONTRACT_PROMPT.\n\n## Requirements\n- Keep the selected model and approvals.\n\n## Decisions\n- No additional file changes.\n\n## Work State\n### Completed\n- Context rejection.\n### Active\n- Answer the current prompt.\n### Blocked\n- (none)\n\n## Next Move\n1. Answer the current prompt.\n\n## Relevant Files\n- (none)\n\n## Important Context\n- SYNTHETIC_CONTRACT_PROMPT remains relevant.",
+                "cost": 0,
+                "tokens": {
+                  "input": 10,
+                  "output": 5,
+                  "reasoning": 0,
+                  "cache": {
+                    "read": 0,
+                    "write": 0
+                  }
+                }
+              },
+              {
+                "id": "msg_recorded_12",
+                "time": {
+                  "created": 1009,
+                  "streamed": 1012,
+                  "completed": 1012
+                },
+                "type": "assistant",
+                "agent": "build",
+                "model": {
+                  "id": "fixture-model",
+                  "providerID": "harness",
+                  "variant": "default"
+                },
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "SYNTHETIC_CONTEXT_RECOVERED"
+                  }
+                ],
+                "finish": "stop",
+                "rawFinish": "stop",
+                "cost": 0,
+                "tokens": {
+                  "input": 10,
+                  "output": 5,
+                  "reasoning": 0,
+                  "cache": {
+                    "read": 0,
+                    "write": 0
+                  }
+                }
+              },
+              {
+                "id": "msg_recorded_21",
+                "time": {
+                  "created": 1013
+                },
+                "type": "idle",
+                "outcome": "succeeded"
+              }
+            ],
+            "cursor": {
+              "previous": "cursor_recorded_1",
+              "next": "cursor_recorded_3"
+            }
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "GET",
+          "path": "/api/session/ses_recorded_1/message?limit=100&cursor=cursor_recorded_3",
+          "response": {
+            "data": [],
+            "cursor": {
+              "previous": null,
+              "next": null
+            }
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "GET",
+          "path": "/api/session/ses_recorded_1/message?limit=100&order=asc",
+          "response": {
+            "data": [
+              {
+                "id": "msg_recorded_2",
+                "time": {
+                  "created": 1001
+                },
+                "type": "agent-switched",
+                "agent": "build",
+                "previous": "build"
+              },
+              {
+                "id": "msg_recorded_3",
+                "time": {
+                  "created": 1004
+                },
+                "text": "SYNTHETIC_CONTRACT_PROMPT",
+                "type": "user"
+              },
+              {
+                "type": "compaction",
+                "id": "msg_recorded_20",
+                "time": {
+                  "created": 1005
+                },
+                "status": "completed",
+                "reason": "auto",
+                "model": {
+                  "id": "fixture-model",
+                  "providerID": "harness",
+                  "variant": "default"
+                },
+                "summary": "## Objective\n- Preserve SYNTHETIC_CONTRACT_PROMPT.\n\n## Requirements\n- Keep the selected model and approvals.\n\n## Decisions\n- No additional file changes.\n\n## Work State\n### Completed\n- Context rejection.\n### Active\n- Answer the current prompt.\n### Blocked\n- (none)\n\n## Next Move\n1. Answer the current prompt.\n\n## Relevant Files\n- (none)\n\n## Important Context\n- SYNTHETIC_CONTRACT_PROMPT remains relevant.",
+                "cost": 0,
+                "tokens": {
+                  "input": 10,
+                  "output": 5,
+                  "reasoning": 0,
+                  "cache": {
+                    "read": 0,
+                    "write": 0
+                  }
+                }
+              },
+              {
+                "id": "msg_recorded_12",
+                "time": {
+                  "created": 1009,
+                  "streamed": 1012,
+                  "completed": 1012
+                },
+                "type": "assistant",
+                "agent": "build",
+                "model": {
+                  "id": "fixture-model",
+                  "providerID": "harness",
+                  "variant": "default"
+                },
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "SYNTHETIC_CONTEXT_RECOVERED"
+                  }
+                ],
+                "finish": "stop",
+                "rawFinish": "stop",
+                "cost": 0,
+                "tokens": {
+                  "input": 10,
+                  "output": 5,
+                  "reasoning": 0,
+                  "cache": {
+                    "read": 0,
+                    "write": 0
+                  }
+                }
+              },
+              {
+                "id": "msg_recorded_21",
+                "time": {
+                  "created": 1013
+                },
+                "type": "idle",
+                "outcome": "succeeded"
+              }
+            ],
+            "cursor": {
+              "previous": "cursor_recorded_1",
+              "next": "cursor_recorded_3"
+            }
+          }
+        }
+      ],
+      "hostTerminals": [
+        {
+          "type": "session.idle",
+          "recovered": true,
+          "properties": {
+            "sessionID": "ses_recorded_1"
+          }
+        }
+      ],
+      "approvals": [],
+      "modelRequests": [
+        {
+          "index": 1,
+          "protocol": "chat",
+          "model": "fixture-model",
+          "summary": false,
+          "toolResults": 0
+        },
+        {
+          "index": 2,
+          "protocol": "chat",
+          "model": "fixture-model",
+          "summary": true,
+          "toolResults": 0
+        },
+        {
+          "index": 3,
+          "protocol": "chat",
+          "model": "fixture-model",
+          "summary": false,
+          "toolResults": 0
+        }
+      ]
+    },
+    {
+      "name": "engine-crash",
+      "injectedResponses": [
+        {
+          "status": 200,
+          "pauseAfterContentMs": 60000
+        }
+      ],
+      "observations": [
+        {
+          "transport": "http-json",
+          "method": "GET",
+          "path": "/api/info",
+          "response": {
+            "version": "2.1.4",
+            "pid": 54071,
+            "urls": [
+              "http://127.0.0.1:PORT"
+            ],
+            "paths": {
+              "tmp": "/synthetic/paths/tmp"
+            },
+            "capabilities": {
+              "persistentPty": true
+            }
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "POST",
+          "path": "/api/session",
+          "request": {
+            "title": "Aura",
+            "agent": "build",
+            "model": {
+              "providerID": "harness",
+              "id": "fixture-model"
+            },
+            "location": {
+              "directory": "/synthetic/contract/project"
+            }
+          },
+          "response": {
+            "data": {
+              "id": "ses_recorded_1",
+              "projectID": "project_recorded",
+              "agent": "build",
+              "model": {
+                "id": "fixture-model",
+                "providerID": "harness",
+                "variant": "default"
+              },
+              "cost": 0,
+              "tokens": {
+                "input": 0,
+                "output": 0,
+                "reasoning": 0,
+                "cache": {
+                  "read": 0,
+                  "write": 0
+                }
+              },
+              "time": {
+                "created": 1000,
+                "updated": 1000
+              },
+              "title": "Aura",
+              "location": {
+                "directory": "/synthetic/contract/project"
+              }
+            }
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "GET",
+          "path": "/api/session/ses_recorded_1/message?limit=100&order=asc",
+          "response": {
+            "data": [
+              {
+                "id": "msg_recorded_2",
+                "time": {
+                  "created": 1001
+                },
+                "type": "agent-switched",
+                "agent": "build",
+                "previous": "build"
+              }
+            ],
+            "cursor": {
+              "previous": "cursor_recorded_1",
+              "next": "cursor_recorded_2"
+            }
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "GET",
+          "path": "/api/session/ses_recorded_1",
+          "response": {
+            "data": {
+              "id": "ses_recorded_1",
+              "projectID": "project_recorded",
+              "agent": "build",
+              "model": {
+                "id": "fixture-model",
+                "providerID": "harness",
+                "variant": "default"
+              },
+              "cost": 0,
+              "tokens": {
+                "input": 0,
+                "output": 0,
+                "reasoning": 0,
+                "cache": {
+                  "read": 0,
+                  "write": 0
+                }
+              },
+              "time": {
+                "created": 1000,
+                "updated": 1001
+              },
+              "title": "Aura",
+              "location": {
+                "directory": "/synthetic/contract/project"
+              }
+            }
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "GET",
+          "path": "/api/session/active",
+          "response": {
+            "data": {}
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "GET",
+          "path": "/api/session/ses_recorded_1/message?limit=100&cursor=cursor_recorded_2",
+          "response": {
+            "data": [],
+            "cursor": {
+              "previous": null,
+              "next": null
+            }
+          }
+        },
+        {
+          "transport": "http-json",
+          "method": "POST",
+          "path": "/api/session/ses_recorded_1/prompt",
+          "request": {
+            "id": "msg_recorded_3",
+            "text": "SYNTHETIC_CONTRACT_PROMPT",
+            "resume": true
+          },
+          "response": {
+            "data": {
+              "id": "msg_recorded_3",
+              "sessionID": "ses_recorded_1",
+              "time": {
+                "created": 1002
+              },
+              "type": "user",
+              "payload": {
+                "text": "SYNTHETIC_CONTRACT_PROMPT"
+              },
+              "delivery": "steer"
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_4",
+            "created": 1002,
+            "type": "session.inbox.enqueued",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "inboxID": "msg_recorded_3",
+              "sessionID": "ses_recorded_1",
+              "item": {
+                "type": "user",
+                "payload": {
+                  "text": "SYNTHETIC_CONTRACT_PROMPT"
+                },
+                "delivery": "steer"
+              }
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 2,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_5",
+            "created": 1003,
+            "type": "session.execution.started",
+            "data": {
+              "sessionID": "ses_recorded_1"
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 3,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_6",
+            "created": 1004,
+            "type": "session.inbox.delivered",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "inboxID": "msg_recorded_3"
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 5,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_7",
+            "created": 1005,
+            "type": "session.step.started",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "agent": "build",
+              "model": {
+                "id": "fixture-model",
+                "providerID": "harness",
+                "variant": "default"
+              },
+              "assistantMessageID": "msg_recorded_8",
+              "started": 1006
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 6,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_9",
+            "created": 1007,
+            "type": "session.text.started",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "assistantMessageID": "msg_recorded_8",
+              "ordinal": 0
+            },
+            "durable": {
+              "aggregateID": "ses_recorded_1",
+              "seq": 7,
+              "version": 1
+            }
+          }
+        },
+        {
+          "transport": "sse-data",
+          "event": {
+            "id": "evt_recorded_10",
+            "created": 1008,
+            "type": "session.text.delta",
+            "location": {
+              "directory": "/synthetic/contract/project"
+            },
+            "data": {
+              "sessionID": "ses_recorded_1",
+              "assistantMessageID": "msg_recorded_8",
+              "ordinal": 0,
+              "delta": "SYNTHETIC_PARTIAL_BEFORE_CRASH"
+            }
+          }
+        }
+      ],
+      "hostTerminals": [
+        {
+          "type": "engine.error",
+          "message": "Agentmotoren stoppede. Start opgaven igen for at oprette en ny session.",
+          "failure": {
+            "kind": "engine"
+          }
+        }
+      ],
+      "approvals": [],
+      "modelRequests": [
+        {
+          "index": 1,
+          "protocol": "chat",
+          "model": "fixture-model",
+          "summary": false,
+          "toolResults": 0
+        }
+      ]
+    }
+  ]
+}

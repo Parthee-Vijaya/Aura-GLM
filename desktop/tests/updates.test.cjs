@@ -7,6 +7,7 @@ const os = require('node:os');
 const { createHash } = require('node:crypto');
 const { Updates, validateInfo, RELEASES } = require('../core/updates.cjs');
 const { Store } = require('../core/store.cjs');
+const distribution = require('../core/distribution.cjs');
 const { releaseBinaries, assetURL, updateFeeds, validateRelease } = require('../../scripts/release-contract.cjs');
 const { buildUpdateFeeds } = require('../../scripts/build-pages.cjs');
 const version = '0.3.0-beta.1';
@@ -87,7 +88,7 @@ test('Udgivelsen binder Mac-ZIP og Windows-installation til faktiske hashes og p
   await buildUpdateFeeds([f.release], output, async () => new Response(f.data));
   for (const platform of ['darwin-arm64', 'darwin-x64', 'win32-x64']) {
     const feed = JSON.parse(await fs.readFile(path.join(output, 'updates/beta', platform, platform.startsWith('darwin') ? 'beta-mac.yml' : 'beta.yml')));
-    assert.doesNotThrow(() => validateInfo(feed, { version: '0.2.0-beta.6', platform: platform.split('-')[0], arch: platform.split('-')[1] }));
+    assert.doesNotThrow(() => validateInfo(feed, { ...distribution, version: '0.2.0-beta.6', platform: platform.split('-')[0], arch: platform.split('-')[1] }));
   }
   await assert.rejects(buildUpdateFeeds([f.release], output, async () => new Response('ændret')), /kontrolsum/);
   const altered = structuredClone(f.manifest); altered.files.find(f => f.name.endsWith('.zip')).notarized = false;

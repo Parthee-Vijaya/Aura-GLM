@@ -4,7 +4,7 @@ const run = promisify(execFile);
 const { VERSION, findExecutable } = require('../desktop/core/engine.cjs');
 function packageName(platform, arch, musl = false) {
   if (!['linux', 'darwin', 'win32'].includes(platform) || !['x64', 'arm64'].includes(arch)) throw new Error('Aura CLI understøtter Linux, macOS og Windows på x64 og arm64.');
-  return `opencode-${platform === 'win32' ? 'windows' : platform}-${arch}${arch === 'x64' ? '-baseline' : ''}${platform === 'linux' && musl ? '-musl' : ''}`;
+  return `@opencode/cli-${platform === 'win32' ? 'windows' : platform}-${arch}${arch === 'x64' ? '-baseline' : ''}${platform === 'linux' && musl ? '-musl' : ''}`;
 }
 function configure() {
   // En eksplicit sti har forrang. Der ændres ikke i brugerens OpenCode-installation.

@@ -91,7 +91,9 @@ test('en ny startside indeholder ingen valgt brandfarve eller Georgia', async t 
   assert.equal(designContext(await openProject(chosen.root)).primaryColor, null, 'en ældre automatisk farve bliver ikke bekræftet');
 });
 
-test('mappeadgang kontrolleres ved åbning og kan prøves igen uden filændringer', { skip: process.platform === 'win32' }, async t => {
+test('mappeadgang kontrolleres ved åbning og kan prøves igen uden filændringer', async t => {
+  if (process.platform === 'win32') return t.skip('Windows bruger ikke POSIX chmod til at nægte mappeadgang.');
+  if (process.getuid?.() === 0) return t.skip('Root kan læse chmod 000-mapper; prøven kræver en almindelig POSIX-bruger.');
   const parent = await temporary(t), folder = path.join(parent, 'Lukket mappe'); await fs.mkdir(folder);
   await fs.chmod(folder, 0);
   try { await assert.rejects(openProject(folder), /Tillad mappeadgang/); }

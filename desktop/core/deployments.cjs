@@ -1,3 +1,4 @@
+const { ExternalEgress } = require('./privacy/external-egress.cjs');
 const { randomUUID, createHash } = require('node:crypto');
 const path = require('node:path');
 const { deploymentArtifact } = require('./deployment-artifact.cjs');
@@ -55,7 +56,7 @@ function validateArtifact(c,a) {
   if(c.mode==='functions'&&!names.includes(c.api+'/host.json')) throw Error('Functions-mappen mangler host.json. API’et skal være færdigbygget og selvstændigt; appen kører ingen lokal npm-installation.');
 }
 class Deployments {
-  constructor(store,{providers,github,fetcher,artifact=deploymentArtifact,builder=buildSaved}={}) { this.store=store; this.providers=providers||{komplai:new KomplaiDeployment(store),vercel:new VercelDeployment(),azure:new AzureDeployment(),promte:new PromteDeployment({store}), 'github-pages':new GitHubPagesDeployment(github), cloudflare:new CloudflarePagesDeployment(github)}; this.fetcher=fetcher||((...args)=>fetch(...args));this.pagesFetcher=fetcher||fetchSite;this.artifact=artifact;this.builder=builder;this.builds=new Map();this.reviews=new Map(); }
+  constructor(store,{providers,github,fetcher,artifact=deploymentArtifact,builder=buildSaved,getPrivacy}={}) { this.store=store; this.egress=new ExternalEgress(getPrivacy); this.getPrivacy=getPrivacy; this.providers=providers||{komplai:new KomplaiDeployment(store),vercel:new VercelDeployment(),azure:new AzureDeployment(),promte:new PromteDeployment({store,getPrivacy}), 'github-pages':new GitHubPagesDeployment(github), cloudflare:new CloudflarePagesDeployment(github)}; this.fetcher=fetcher||((...args)=>fetch(...args));this.pagesFetcher=fetcher||fetchSite;this.artifact=artifact;this.builder=builder;this.builds=new Map();this.reviews=new Map(); }
   async state(root) { const p=await this.store.project(root); return {config:p.deploymentConfig||null,preference:p.startup?.hosting||'',last:p.deploymentLast||null}; }
   /** Hvad komplai-udgivelsen bruger: projektets gemte opsætning, ellers en gemt byggemappe, en bygning eller public. */
   async source(root) {
@@ -65,10 +66,11 @@ class Deployments {
   }
   async material(root,config) {
     if(config.provider==='komplai'&&config.build) {
+      const assertCurrent=await this.egress.legacyPermit(root);
       // Den byggede app hører til præcis den gemte version. Gennemgang og upload bruger samme bygning.
       const source=await this.artifact(root,'.'), cached=this.builds.get(root);
       if(cached?.head===source.head&&cached.sourceHash===source.hash) return cached.artifact;
-      const artifact=await this.builder(source);
+      assertCurrent(); const artifact=await this.builder(source,{getPrivacy:this.getPrivacy});
       validateArtifact(config,artifact); this.builds.set(root,{head:source.head,sourceHash:source.hash,artifact});
       return artifact;
     }
@@ -79,10 +81,11 @@ class Deployments {
     return artifact;
   }
   async review(root,input) {
+    const assertCurrent=await this.egress.legacyPermit(root);
     const config=configuration(input), artifact=await this.material(root,config);
     if(config.build) config.directory=artifact.directory;
     if(config.provider==='komplai') { const refused=refusedFiles(artifact.files); if(refused.length) throw Error(`komplai Run kan ikke modtage ${refused.length===1?'denne fil':'disse filer'}: ${refused.slice(0,5).join(', ')}${refused.length>5?' …':''}. Filnavne må kun have a-z, tal, bindestreg og punktum, og filtypen skal være en webside, et billede, en skrifttype eller lignende.`); }
-    const target=await this.providers[config.provider].inspect(config,artifact);
+    assertCurrent(); const target=await this.providers[config.provider].inspect(config,artifact);
     const token=randomUUID(); this.reviews.clear(); this.reviews.set(token,{root,config,head:artifact.head,hash:artifact.hash,targetHash:hash(target),expires:Date.now()+300000});
     const project = await this.store.project(root);
     const version = { name: project.versionNames?.[artifact.head] || defaultName(artifact.version?.name || 'Gemt version'), at: artifact.version?.at || null };
@@ -93,22 +96,26 @@ class Deployments {
     return {token,config,target,version,head:artifact.head,hash:artifact.hash,bytes:artifact.bytes,files:artifact.files.map(f=>f.file),excludedFiles:artifact.excludedFiles||[],built:artifact.built||null,environment:komplai?'komplai.run':config.provider==='azure'?'harness-test':pages?'production':config.provider==='promte'?'arbejdsområde':'preview',cost:komplai?'Forbruget følger organisationens aftale med komplai.':config.provider==='promte'?'Kræver en betalt aftale med Promte. Forbruget følger organisationens aftale.':'Forbrug og eventuelle omkostninger følger din hostingkonto. Appen har ingen verificeret pris eller automatisk udgiftsgrænse.',build:artifact.built?`Aura byggede appen på din computer fra den gemte version med ${artifact.built.install} og ${artifact.built.script}, uden pakkernes installationsscripts. Kun de færdige filer uploades.`:pages?'Starter én GitHub Actions-kørsel, som kontrollerer version og filer før udgivelse. Ingen automatisk udgivelse ved nye ændringer.':config.mode==='source'?'Udbyderen bygger kildekoden. Kontrollér afhængigheder og miljøværdier før udgivelsen.':'Færdige filer uploades. Der køres ingen projektkommando lokalt.',material:target.materialNote||(komplai&&artifact.built?'De viste filer er bygget fra denne Git-version og sendes til organisationens appmiljø hos komplai. Hemmelighedskontrollen er heuristisk og finder ikke alt.':komplai?'De viste filer fra denne Git-version sendes til organisationens appmiljø hos komplai. Hemmelighedskontrollen er heuristisk og finder ikke alt.':'De viste filer fra denne Git-version sendes til hostingudbyderen. Hemmelighedskontrollen er heuristisk og finder ikke alt.')};
   }
   async settings(root) {
+    const assertCurrent=await this.egress.legacyPermit(root);
     const {config}=await this.state(root);
     if(!config) throw Error('Gennemgå en destination først.');
-    return (await this.providers[config.provider].inspect(config)).portal;
+    assertCurrent(); return (await this.providers[config.provider].inspect(config)).portal;
   }
   async deploy(root,token) {
+    const assertCurrent=await this.egress.legacyPermit(root);
     const r=this.reviews.get(token);this.reviews.delete(token);
     if(!r||r.root!==root||r.expires<Date.now()) throw Error('Gennemgå udgivelsen igen.');
-    const a=await this.material(root,r.config), provider=this.providers[r.config.provider], target=await provider.inspect(r.config,a);
+    const a=await this.material(root,r.config), provider=this.providers[r.config.provider];
+    assertCurrent(); const target=await provider.inspect(r.config,a);
     if(a.head!==r.head||a.hash!==r.hash||hash(target)!==r.targetHash) throw Error('Version eller destination har ændret sig. Gennemgå udgivelsen igen.');
     const receipt={config:r.config,target,version:r.version,head:a.head,hash:a.hash,startedAt:new Date().toISOString(),state:'SUBMITTING',id:null,url:null,checks:null,indexHash:r.config.mode!=='source'?a.files.find(f=>f.file===(r.config.provider==='azure'&&r.config.frontend!=='.'?r.config.frontend+'/':'')+'index.html')?.sha256:null};
     await this.store.saveProject(root,{deploymentLast:receipt,deploymentTrackingSource:'manual'});
     // En ny komplai-app gemmes straks, så et nyt forsøg opdaterer den samme app i stedet for at oprette endnu en.
     const onCreated=async appId=>{ receipt.appId=appId; await this.store.saveProject(root,{deploymentConfig:{...r.config,appId,name:undefined,slug:undefined},deploymentLast:receipt}); };
     const onUploaded=async result=>{ Object.assign(receipt,result); await this.store.saveProject(root,{deploymentLast:receipt}); };
-    try { Object.assign(receipt,await provider.deploy(r.config,a,target,{onCreated,onUploaded})); }
-    catch {
+    try { assertCurrent(); Object.assign(receipt,await provider.deploy(r.config,a,target,{onCreated,onUploaded})); }
+    catch (error) {
+      if(error.code?.startsWith('PRIVACY_')) throw error;
       if(receipt.id) {
         if(r.config.provider==='promte'&&receipt.state==='PREPARED') receipt.verification='Versionen er oprettet hos Promte, men upload er ikke bekræftet. Kontrollér versionen i Promte før et nyt forsøg.';
         else if(r.config.provider==='promte'&&receipt.state==='UPLOADED') receipt.verification='Promte har modtaget filerne, men den videre behandling er ikke bekræftet. Kontrollér versionen i Promte.';
@@ -136,6 +143,7 @@ class Deployments {
     await this.store.saveProject(root,{deploymentLast:structuredClone(receipt)}); return true;
   }
   async check(root) {
+    const assertCurrent=await this.egress.legacyPermit(root);
     let receipt=(await this.store.project(root)).deploymentLast;
     if(!receipt?.id) throw Error('Der er ingen kendt udgivelse at kontrollere. Se udbyderens oversigt ved ukendt uploadresultat.');
     let expected=hash(receipt);
@@ -146,7 +154,7 @@ class Deployments {
     receipt = { ...receipt, checkedAt: at, checks: { id: randomUUID(), at, provider: { status: 'unknown' }, site: { status: 'skipped' }, content: { status: 'skipped' } }, verification: 'Udbyderens status kunne ikke kontrolleres. Se oversigten hos udbyderen.' };
     if(!await save()) return latest();
     try {
-      const result = await this.providers[receipt.config.provider].status(receipt.config, receipt);
+      assertCurrent(); const result = await this.providers[receipt.config.provider].status(receipt.config, receipt);
       Object.assign(receipt, result);
       receipt.checks.provider = { status: 'checked', state: receipt.state, ...(receipt.config.provider === 'komplai' && ['public','private'].includes(result.visibility) ? { visibility: result.visibility } : {}) };
       receipt.verification = 'Udbyderens status er kontrolleret; siden er endnu ikke verificeret.';
@@ -159,7 +167,7 @@ class Deployments {
         if(['github-pages','cloudflare'].includes(receipt.config.provider)) siteURL(receipt.url);
         else publicURL(receipt.url, { vercel: '.vercel.app', azure: '.azurestaticapps.net', komplai: '.komplai.run' }[receipt.config.provider]);
         const request=['github-pages','cloudflare'].includes(receipt.config.provider)?this.pagesFetcher:this.fetcher;
-        const response = await request(receipt.url, { redirect: 'manual', credentials: 'omit', signal: AbortSignal.timeout(15000) });
+        assertCurrent(); const response = await request(receipt.url, { redirect: 'manual', credentials: 'omit', signal: AbortSignal.timeout(15000) });
         receipt.checks.site = { status: 'answered', http: response.status };
         if (!response.ok) await response.body?.cancel();
         if ((response.status === 401 || response.status === 403) && receipt.config.provider === 'komplai' && receipt.checks.provider.visibility === 'private') receipt.verification = 'Appen kræver login med komplai. Åbn linket og log ind for at se den.';

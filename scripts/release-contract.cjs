@@ -1,15 +1,18 @@
 // Fælles fil- og versionskontrol for lokale pakker, Releases og Pages.
-const repository = 'ai-alliancen-org/ai-harness';
+const { repository, artifactPrefix } = require('../desktop/core/distribution.cjs');
+// Historical names remain readable; new releases use the configured distribution prefix.
+const escapedPrefix = artifactPrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const installerPattern = new RegExp(`^(${escapedPrefix}|Aura|AI-Harness)-(\\d+\\.\\d+\\.\\d+(?:-beta\\.\\d+)?)-(mac|win)-(arm64|x64)\\.(dmg|zip|exe)$`);
 const versionPattern = /^\d+\.\d+\.\d+(?:-beta\.\d+)?$/;
 const submissionIdPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 function installer(name) {
-  const match = /^(Aura|AI-Harness)-(\d+\.\d+\.\d+(?:-beta\.\d+)?)-(mac|win)-(arm64|x64)\.(dmg|zip|exe)$/.exec(name || '');
+  const match = installerPattern.exec(name || '');
   if (!match || (match[3] === 'mac' ? !['dmg', 'zip'].includes(match[5]) : match[5] !== 'exe')) return null;
   return { version: match[2], os: match[3], arch: match[4], extension: match[5], target: `${match[3]}-${match[4]}` };
 }
 function expectedFiles(version) {
   if (!versionPattern.test(version)) throw new Error('Ugyldigt versionsnummer.');
-  return [`Aura-${version}-mac-arm64.dmg`, `Aura-${version}-mac-x64.dmg`, `Aura-${version}-win-x64.exe`];
+  return [`${artifactPrefix}-${version}-mac-arm64.dmg`, `${artifactPrefix}-${version}-mac-x64.dmg`, `${artifactPrefix}-${version}-win-x64.exe`];
 }
 function hasUpdater(version) {
   if (!versionPattern.test(version)) return false;
@@ -17,7 +20,7 @@ function hasUpdater(version) {
   return major > 0 || minor >= 3;
 }
 function releaseBinaries(version) {
-  return [...expectedFiles(version), ...(hasUpdater(version) ? [`Aura-${version}-mac-arm64.zip`, `Aura-${version}-mac-x64.zip`] : [])];
+  return [...expectedFiles(version), ...(hasUpdater(version) ? [`${artifactPrefix}-${version}-mac-arm64.zip`, `${artifactPrefix}-${version}-mac-x64.zip`] : [])];
 }
 function updateFeeds(manifest) {
   const version = manifest.version, channel = version.includes('-beta.') ? 'beta' : 'latest';
@@ -25,7 +28,7 @@ function updateFeeds(manifest) {
   if (typeof manifest.update?.critical !== 'boolean' || typeof manifest.update?.message !== 'string' || manifest.update.message.length > 500 || manifest.update.critical && !manifest.update.message.trim()) throw new Error('Ugyldig meddelelse om opdateringen.');
   return ['darwin-arm64', 'darwin-x64', 'win32-x64'].map(target => {
     const mac = target.startsWith('darwin'), arch = target.split('-')[1];
-    const name = `Aura-${version}-${mac ? 'mac' : 'win'}-${arch}.${mac ? 'zip' : 'exe'}`;
+    const name = `${artifactPrefix}-${version}-${mac ? 'mac' : 'win'}-${arch}.${mac ? 'zip' : 'exe'}`;
     const file = manifest.files.find(f => f.name === name);
     if (!file || !/^[A-Za-z0-9+/]{86}==$/.test(file.sha512 || '') || !Number.isSafeInteger(file.bytes) || file.bytes <= 0) throw new Error('Opdateringen mangler en fil med størrelse og SHA-512.');
     const url = assetURL('v' + version, name);

@@ -5,7 +5,7 @@ const { StreamProgress } = require('./stream-progress.cjs');
 
 const { forwardModel, IDLE_LIMIT, GRACE_LIMIT, TOTAL_LIMIT, RETRY_DELAYS } = require('./model-transport.cjs');
 // Kun agentmotoren får en midlertidig adgangskode. Den rigtige modelnøgle bliver i hovedprocessen.
-async function startGateway(connection, model, key, route, onFailure = () => {}, { idleLimit = IDLE_LIMIT, graceLimit = GRACE_LIMIT, totalLimit = TOTAL_LIMIT, retryDelays = RETRY_DELAYS, onRecovery = () => {}, onProgress = () => {}, root = '', effort: initialEffort = null } = {}) {
+async function startGateway(connection, model, key, route, onFailure = () => {}, { idleLimit = IDLE_LIMIT, graceLimit = GRACE_LIMIT, totalLimit = TOTAL_LIMIT, retryDelays = RETRY_DELAYS, onRecovery = () => {}, onProgress = () => {}, root = '', effort: initialEffort = null, dispatch } = {}) {
   // Brugerens valgte indsats kan skifte mellem beskeder uden at starte en ny modelsession.
   let effort = initialEffort, images = [];
   assertSupported(connection);
@@ -56,9 +56,15 @@ async function startGateway(connection, model, key, route, onFailure = () => {},
       // Serialize once: every attempt uses exactly the same model, route, history,
       // attachments and effort. Only this transport can retry a model request.
       await forwardModel({ url: `${base}${responses ? '/responses' : anthropic ? '/messages' : '/chat/completions'}`, headers, payload: JSON.stringify(body), res, signal: controller.signal,
-        progress: new StreamProgress({ emit: onProgress, root }), idleLimit, graceLimit, totalLimit, retryDelays, onRecovery });
+        progress: new StreamProgress({ emit: onProgress, root }), idleLimit, graceLimit, totalLimit, retryDelays, onRecovery, dispatch });
     } catch (error) {
       if (controller.signal.aborted || stopped) { res.destroy(); return; }
+      if (typeof error.code === 'string' && error.code.startsWith('PRIVACY_')) {
+        fail(error.message, 'privacy', 403);
+        if (res.headersSent) { res.destroy(); return; }
+        res.writeHead(403, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ error: { message: error.message, type: 'privacy_error' } })); return;
+      }
       const status = error.status || null;
       const kind = { 401: 'key', 403: 'access', 402: 'quota', 404: 'notfound', 429: 'limit' }[status] || (status >= 500 ? 'server' : error.kind || 'network');
       const advice = { 401: 'API-nøglen blev afvist. Kontrollér eller udskift den under AI-forbindelser.', 403: 'Din konto har ikke adgang til modellen. Kontrollér adgangen hos udbyderen.', 402: 'Udbyderen afviste kaldet på grund af saldo eller kvote. Kontrollér kontoen; appen vælger ikke en betalt erstatning.', 404: 'Modellen eller adressen blev ikke fundet. Hent modellisten igen, og kontrollér forbindelsen.', 429: 'Udbyderens forbrugsgrænse er nået. Prøv igen, når kvoten er tilgængelig.' }[status];

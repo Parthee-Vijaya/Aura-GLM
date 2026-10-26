@@ -1,0 +1,543 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-26",
+  "source": {
+    "document": "Feedback til Aura.pdf",
+    "pages": 8,
+    "reportedPlatform": "Windows",
+    "reportedVersion": "0.3.0-beta.1",
+    "eventDate": "2026-10-23",
+    "privacy": "Den personidentificerende PDF og originale screenshots er ikke kopieret til repository."
+  },
+  "baseline": {
+    "head": "1d48bc4ba8c84454ee219dc2617f5bd2e09a03ab",
+    "appMetadataVersion": "0.4.0-beta.2",
+    "dirtyWorktree": true,
+    "scope": "Kodegennemgang af eksisterende lokale OpenCode 2- og Privacy Gate-ændringer; HEAD alene identificerer ikke disse bytes.",
+    "nativeWindows": "Ikke afprøvet i denne matrix.",
+    "nativeMac": "Native Electron 44.4.4; syntetiske filer og kontrollerede IPC-hændelser; 16 observationer og ni screenshots. Ingen rigtig model eller menneskelig brugertest.",
+    "realUserStudy": "Ikke gennemført.",
+    "productChangesInThisDeliverable": "Ingen. Målefunktionen er ikke tilkoblet produktet.",
+    "nativeEvidence": "Aura1/ReleaseReports/feedback-20261026/baseline/baseline-report.json",
+    "nativeSourceHashes": {
+      "ui/app.js": "1e6b0f273fdcec63d2043f1855c8a7f7695e3cf99a70a6c82ca2723bd269fc8c",
+      "ui/planning.js": "bc151626d5156539816d802cb0383508354b87082d413bf0fef563e596170f5e",
+      "ui/workspace-calm.css": "4d4c040c2974fab5a11ca4184ba0c0fd7a9afb699a0d54c7d980d64f8e8ea97c",
+      "main.cjs": "13b2c847b5fc553078a222405b0f04b63e2dc9a28f44d78312aecdf598f8fd29"
+    }
+  },
+  "items": [
+    {
+      "id": "FB01",
+      "priority": "P2",
+      "area": "Navigation",
+      "sourcePage": 1,
+      "problem": "Ctrl+plus zoomer ikke på Windows.",
+      "currentEvidence": "main.cjs har Electron-menurollerne zoomIn, zoomOut og resetZoom. Det beviser ikke genvejen på dansk Windows-tastatur.",
+      "code": [
+        "desktop/main.cjs"
+      ],
+      "status": "Afventer native Windows og senere brugertest",
+      "proposal": "Ret eventuel tastaturbinding efter reproduktion og bevar menuens zoomhandlinger.",
+      "acceptance": [
+        "Ctrl+plus, Ctrl+minus og nulstilling virker på dansk Windows-tastatur.",
+        "Macs tilsvarende Command-genveje virker.",
+        "Zoom bevarer indhold, fokus og kladde, og der er ingen vandret afskæring ved relevante størrelser."
+      ],
+      "approval": "Konkret ændret interaktion vises før integration.",
+      "dependencies": [
+        "Native Windows-miljø"
+      ],
+      "nativeMac": {
+        "observation": "zoom",
+        "status": "mac-only",
+        "detail": "Playwright Cmd+= gav uændret zoom. CDP-input kan omgå Electron-menuacceleratorer; resultatet er ikke bevis for en produktfejl. Windows Ctrl++ er ikke afprøvet."
+      },
+      "implementation": "Testpakken er klar til senere efter brugerens valg. Mac-menuens zoom/nulstilling er verificeret; dansk Windows-genvej er ikke."
+    },
+    {
+      "id": "FB02",
+      "priority": "P1",
+      "area": "Navigation",
+      "sourcePage": 1,
+      "problem": "Sidebarens bredde kan ikke justeres.",
+      "currentEvidence": "workspace-calm.css bruger faste --sidebar-værdier og har kollapset/mobiltilstand. En eksisterende trækfunktion er ikke verificeret.",
+      "code": [
+        "desktop/ui/workspace-calm.css"
+      ],
+      "status": "Genskabt i native Mac-prøve; Windows afventer",
+      "proposal": "En justerbar kant med rimelige minimums-/maksimumsbredder og tastaturbetjening.",
+      "acceptance": [
+        "Sidebar kan gøres bredere og smallere med mus og tastatur.",
+        "Minimumsbredder beskytter samtale og preview.",
+        "Kollaps, mobilvisning og fokus fungerer fortsat."
+      ],
+      "approval": "Før/efter-preview kræves.",
+      "dependencies": [
+        "FB05"
+      ],
+      "nativeMac": {
+        "observation": "sidebar-resize",
+        "status": "reproduced",
+        "detail": "Træk i kanten af venstre sidebar ændrer ikke bredden. Skillelinjen mellem samtale og preview er en anden kontrol."
+      },
+      "implementation": "Implementeret og nativeprøvet på Mac: træk, piletaster, Home/End, nulstilling, lokal lagring og bevaret mobil/kollaps."
+    },
+    {
+      "id": "FB03",
+      "priority": "P2",
+      "area": "Dialoger",
+      "sourcePage": 1,
+      "problem": "Dialoger lukker ikke ved klik udenfor.",
+      "currentEvidence": "HTML-dialoger har egne lukkeknapper. En fælles korrekt klik-udenfor-adfærd er ikke verificeret.",
+      "code": [
+        "desktop/ui/index.html",
+        "desktop/ui/app.js"
+      ],
+      "status": "Genskabt i native Mac-prøve; Windows afventer",
+      "proposal": "Luk almindelige læsedialoger ved baggrundsklik. Beskyt ufærdige formularer og afventende sikkerhedsvalg.",
+      "acceptance": [
+        "Baggrundsklik lukker en ren informationsdialog og returnerer fokus.",
+        "Klik inde i dialogen lukker den ikke.",
+        "Indtastninger mistes ikke lydløst; sikkerhedsvalg bliver aldrig godkendt ved lukning."
+      ],
+      "approval": "Godkend konkret dialogpolitik før fælles handler.",
+      "dependencies": [],
+      "nativeMac": {
+        "observation": "dialog-outside",
+        "status": "reproduced",
+        "detail": "Klik uden for forbindelsesdialogen lukker den ikke."
+      },
+      "implementation": "Afgrænset forbedring nativeprøvet: Hjælp og feedback kan lukkes udenfor. Følsomme formularer og godkendelser har ingen generel backdrop-lukning."
+    },
+    {
+      "id": "FB04",
+      "priority": "P1",
+      "area": "Forbindelser",
+      "sourcePage": 2,
+      "problem": "AI-forbindelse kan fjernes uden bekræftelse.",
+      "currentEvidence": "#connection-remove kalder removeSavedConnection, som straks kalder removeConnection.",
+      "code": [
+        "desktop/ui/app.js",
+        "desktop/main.cjs"
+      ],
+      "status": "Genskabt i native Mac-prøve; Windows afventer",
+      "proposal": "Kort konkret bekræftelse med forbindelsens navn og Annuller som sikkert standardvalg.",
+      "acceptance": [
+        "Annuller bevarer forbindelsen og nøglen.",
+        "Bekræftelse fjerner kun den viste forbindelse.",
+        "Ingen nøgle vises i dialog, screenshot eller log.",
+        "En ændret forbindelse kan ikke fjernes via en forældet bekræftelse."
+      ],
+      "approval": "Bekræftelsesdialog vises i preview.",
+      "dependencies": [],
+      "nativeMac": {
+        "observation": "connection-remove",
+        "status": "reproduced",
+        "detail": "En nøglefri prøveforbindelse blev fjernet ved første klik uden bekræftelse."
+      },
+      "implementation": "Implementeret og nativeprøvet med konkret dialog, Annuller-fokus, genvalidering og ét backendkald."
+    },
+    {
+      "id": "FB05",
+      "priority": "P1",
+      "area": "Samtale",
+      "sourcePage": 2,
+      "problem": "Samtalen klemmes mellem stort skrivefelt og bannere.",
+      "currentEvidence": "Historisk screenshot viser problemet. Den aktuelle layoutadfærd skal måles ved flere vindueshøjder og zoomniveauer.",
+      "code": [
+        "desktop/ui/workspace-calm.css",
+        "desktop/ui/styles.css",
+        "desktop/ui/index.html"
+      ],
+      "status": "Native Mac-baseline målt; Windows afventer",
+      "proposal": "Kompakt skrivefelt, der vokser med teksten, og færre samtidige statusflader.",
+      "acceptance": [
+        "Seneste svar og aktivt input er synlige i et vindue på 1280×800 ved 100 %.",
+        "Lang kladde kan redigeres uden at miste tekst.",
+        "Model, tokens, pris og nødvendige godkendelser kan stadig findes og læses.",
+        "200 % zoom og tastaturnavigation efterprøves særskilt."
+      ],
+      "approval": "Før/efter-preview kræves.",
+      "dependencies": [
+        "FB06",
+        "FB08"
+      ],
+      "nativeMac": {
+        "observation": "chat-space",
+        "status": "measured-current",
+        "detail": "Skrivefelt og status er målt i faktisk Electron-renderer ved 1280×800."
+      },
+      "implementation": "Implementeret og nativeprøvet: hvilefelt cirka85px mod130px; lange kladder vokser og bevares."
+    },
+    {
+      "id": "FB06",
+      "priority": "P1",
+      "area": "Arbejdsstatus",
+      "sourcePage": 3,
+      "problem": "Statusbjælken er langt fra skrivefeltet.",
+      "currentEvidence": "app.js styrer #agent-activity; placering og synlighed skal genafprøves i den aktuelle arbejdsvisning.",
+      "code": [
+        "desktop/ui/app.js",
+        "desktop/ui/index.html"
+      ],
+      "status": "Genskabt i native Mac-prøve; Windows afventer",
+      "proposal": "Én primær status tæt på skrivefeltet med adgang til faktisk aktivitet.",
+      "acceptance": [
+        "Aktuel status kan læses uden at scrolle væk fra skrivefeltet.",
+        "Status gælder kun den valgte samtale.",
+        "Fejl, stop og ventende valg kan skelnes med tekst uden animation."
+      ],
+      "approval": "Før/efter-preview kræves.",
+      "dependencies": [
+        "FB07",
+        "FB08"
+      ],
+      "nativeMac": {
+        "observation": "status-location",
+        "status": "reproduced",
+        "detail": "Arbejdsstatus står øverst i chatten, 522 px over skrivefeltets top i denne vinduesstørrelse."
+      },
+      "implementation": "Implementeret og nativeprøvet: faktisk arbejdsstatus direkte over skrivefeltet."
+    },
+    {
+      "id": "FB07",
+      "priority": "P1",
+      "area": "Arbejdsstatus",
+      "sourcePage": 4,
+      "problem": "Tæller alene fortæller ikke, om AI arbejder eller er gået i stå.",
+      "currentEvidence": "live-work.js har allerede konkrete aktivitetsrækker og ventetilstande; app.js og stream-progress styrer signaler. Det er nyere end det rapporterede screenshot.",
+      "code": [
+        "desktop/ui/live-work.js",
+        "desktop/core/stream-progress.cjs",
+        "desktop/ui/app.js"
+      ],
+      "status": "Kontrolleret native forløb består; rigtig model og Windows afventer",
+      "proposal": "Brug eksisterende faktiske hændelser til klar status og korrekt rolig ventebesked.",
+      "acceptance": [
+        "Ingen status påstår et værktøjstrin, der ikke er begyndt.",
+        "Langsom model, genforbindelse, brugerstop, fejl og ventende godkendelse har forskellige tilstande.",
+        "Glow følger faktisk arbejde og respekterer reduceret bevægelse.",
+        "Perioder uden meningsfuld synlig status måles uden at tælle timer/glow som fremdrift."
+      ],
+      "approval": "Visuelle ændringer indgår i preview; statuslogik kan testes separat.",
+      "dependencies": [],
+      "nativeMac": {
+        "observation": "working-feedback",
+        "status": "improved-current",
+        "detail": "Den aktuelle version har arbejdsstatus, preview-overlejring og animeret lyskant. Dette er ikke en modeltest."
+      },
+      "implementation": "Rigtig Electron + OpenCode 2.1.4 med lokal scriptet model: 15 sekunders stilhed giver ærlig ventestatus; Stop afslutter arbejdsstatus/glow uden ekstra afsendelse. Ingen cloudmodelkvalitet målt."
+    },
+    {
+      "id": "FB08",
+      "priority": "P1",
+      "area": "Spørgsmål",
+      "sourcePage": 4,
+      "problem": "Ventebanner bliver stående, og kun den lille Vis-knap kan klikkes.",
+      "currentEvidence": "renderStatus baserer banneret på waitingFor. #agent-activity-jump har egen onclick; der er ingen synlighedsafstemning i den undersøgte kode.",
+      "code": [
+        "desktop/ui/app.js"
+      ],
+      "status": "Genskabt i native Mac-prøve; Windows afventer",
+      "proposal": "Gør bannerets relevante flade til en tilgængelig handling og skjul dobbeltbanner, når spørgsmålet allerede ses.",
+      "acceptance": [
+        "Hele handlingen virker med mus, Enter og Space.",
+        "Banner skjules, når det aktuelle spørgsmål er synligt, og kan komme igen ved bortscrollning.",
+        "waitingFor, selve spørgsmålet og krav om svar bevares; synlighed besvarer aldrig et spørgsmål."
+      ],
+      "approval": "Før/efter-preview kræves.",
+      "dependencies": [
+        "FB06",
+        "FB09"
+      ],
+      "nativeMac": {
+        "observation": "waiting-banner",
+        "status": "reproduced",
+        "detail": "Banneret står fortsat, når spørgsmålet er synligt; kun Vis-knappen har klikhandling."
+      },
+      "implementation": "Implementeret og nativeprøvet: én fuldt klikbar/tastaturbetjent række, skjult når spørgsmålet er synligt; ingen auto-svar."
+    },
+    {
+      "id": "FB09",
+      "priority": "P1",
+      "area": "Spørgsmål",
+      "sourcePage": 5,
+      "problem": "Eget svar kræver et ekstra klik før indtastning.",
+      "currentEvidence": "questionCard opretter textarea kun når state.own er sand; linket Skriv dit eget svar sætter flaget.",
+      "code": [
+        "desktop/ui/planning.js"
+      ],
+      "status": "Genskabt i native Mac-prøve; Windows afventer",
+      "proposal": "Vis et mærket felt fra start, når spørgsmålet tillader eget svar.",
+      "acceptance": [
+        "Feltet kan modtage svar uden ekstra linkklik.",
+        "custom:false, flervalg, tidligere svar og tilbage-navigation bevares.",
+        "Tomt svar sendes ikke, og et valg/svar afleveres højst én gang."
+      ],
+      "approval": "Før/efter-preview kræves.",
+      "dependencies": [
+        "FB16"
+      ],
+      "nativeMac": {
+        "observation": "free-answer",
+        "status": "reproduced",
+        "detail": "Det frie tekstfelt findes først efter klik på Skriv dit eget svar."
+      },
+      "implementation": "Implementeret og nativeprøvet: frit svar synligt straks, når question-kontrakten tillader det."
+    },
+    {
+      "id": "FB10",
+      "priority": "P1",
+      "area": "Planlægning",
+      "sourcePage": 5,
+      "problem": "Bekræftet beskrivelse fører til endnu en teknisk afklaringsrunde.",
+      "currentEvidence": "chat-session kræver allerede nødvendige spørgsmål uden gentagelse; idé- og arkitekturskills har generelle bekræftelses-/spørgekrav. Det konkrete gamle modeloutput er ikke reproduceret.",
+      "code": [
+        "desktop/core/chat-session.cjs",
+        "desktop/core/idea-refinement.cjs",
+        "profiles/skills/harness-ide-og-afgraensning/SKILL.md",
+        "profiles/skills/harness-arkitektur-og-teknologi/SKILL.md"
+      ],
+      "status": "Instruktion rettet og pakker genereret; rigtig modelefterlevelse afventer",
+      "proposal": "Genbrug briefen og begræns tekniske spørgsmål til reelle ændringer i funktion, data, rettigheder, pris eller drift.",
+      "acceptance": [
+        "En fuldt beskrevet lokal demo får ikke spørgsmål om framework eller testværktøj.",
+        "Spørgsmål om allerede besvarede forhold tælles og undgås.",
+        "Nye login-, betalings- og datadelingsvalg afklares stadig.",
+        "Særskilt valgt plan/Byg og værktøjsgodkendelser bevares."
+      ],
+      "approval": "Snæver promptpræcisering foreslås i protokollen; flowændringer kræver preview.",
+      "dependencies": [
+        "Målt modelbaseline"
+      ],
+      "nativeMac": {
+        "observation": "planning",
+        "status": "not-reproduced",
+        "detail": "Dobbelt planlægning afhænger af modelsvaret og er ikke reproduceret med rigtig AI her."
+      },
+      "implementation": "Idéskill og arkitekturskill genbruger brief og svar uden en obligatorisk gentagen bekræftelse. Plan-, værktøjs- og datagodkendelser bevares. Unit- og eksporttests består."
+    },
+    {
+      "id": "FB11",
+      "priority": "P2",
+      "area": "Arbejdsmåde",
+      "sourcePage": 6,
+      "problem": "Valget Byg/Planlæg/Samtale opleves teknisk.",
+      "currentEvidence": "Arbejdsmåder er stadig eksplicitte. #start-idea vælger nu Byg, medmindre brugeren har valgt noget andet eller har en kladde.",
+      "code": [
+        "desktop/ui/app.js",
+        "desktop/ui/conversation-mode.js",
+        "desktop/ui/index.html"
+      ],
+      "status": "Godkendt, implementeret og nativeprøvet på Mac; brugertest afventer",
+      "proposal": "Afprøv en enklere standardvisning og behold øvrige muligheder under flere valg.",
+      "acceptance": [
+        "Brugeren kan stadig vælge Samtale og Planlæg.",
+        "Et spørgsmål eller citeret byggesætning må ikke udløse skrivning.",
+        "Eksisterende valg/kladde overstyres ikke af en automatisk tilstand."
+      ],
+      "approval": "Ingen automatisk tilstandsændring uden konkret accept.",
+      "dependencies": [
+        "FB10"
+      ],
+      "nativeMac": {
+        "observation": "work-mode",
+        "status": "source-confirmed",
+        "detail": "Byg, Planlæg og Samtale findes fortsat. At fjerne valget er et produktforslag og ikke en konstateret programfejl."
+      },
+      "implementation": "Godkendt 26. oktober 2026: korte forklaringer ved Samtale, Planlæg og Byg; eksisterende modes, planvalg og YOLO-advarsel bevares. Integreret: 18/18 native kontroller og 23/23 relaterede unit-tests; ingen automatisk serverstart, modelkald eller Git-skrivninger."
+    },
+    {
+      "id": "FB12",
+      "priority": "P2",
+      "area": "Første resultat",
+      "sourcePage": 6,
+      "problem": "Brugeren vil se en lille første version frem for lange planer.",
+      "currentEvidence": "Den aktuelle første projektidé kan gå direkte til Byg; en eksplicit valgt plan har fortsat plan-id og særskilt byggevalg.",
+      "code": [
+        "desktop/ui/app.js",
+        "desktop/core/chat-session.cjs"
+      ],
+      "status": "Kontrolleret native plan/byg/preview/fortryd består; brugertest afventer",
+      "proposal": "Afgrænset første demo og kort læsbar plan, med tidlig verificeret preview.",
+      "acceptance": [
+        "Tid til første fungerende hovedforløb måles.",
+        "Ingen løfte om rigtig drift eller integration, når der kun findes en demo.",
+        "Brugerens eksplicit valgte plan og stop bevares.",
+        "Designskills er aktive i første udkast."
+      ],
+      "approval": "Enklere planpræsentation vises; planrettigheder fjernes ikke.",
+      "dependencies": [
+        "FB10",
+        "FB14"
+      ],
+      "nativeMac": {
+        "observation": "plan-first",
+        "status": "source-confirmed",
+        "detail": "Planvalg findes fortsat, men direkte arbejde findes også. Automatisk at fjerne planvalg er ikke aktiveret i denne prøve."
+      },
+      "implementation": "Native forløb gennemfører plan, engangsgodkendte filskrivninger, fungerende preview og byte-identisk fortrydelse. Lokal scriptet model; ikke måling af et rigtigt første udkasts designkvalitet."
+    },
+    {
+      "id": "FB13",
+      "priority": "P1",
+      "area": "Tilladelser",
+      "sourcePage": 6,
+      "problem": "Slutbrugeren kan ikke vurdere tekniske kommandogodkendelser.",
+      "currentEvidence": "Samtale-YOLO og projektets autoCommands findes med teknisk isolation og faste grænser. Det er ikke central kommunal administration.",
+      "code": [
+        "desktop/core/chat-session.cjs",
+        "desktop/core/command-sandbox.cjs",
+        "desktop/core/conversation-permission.cjs"
+      ],
+      "status": "Eksisterende afgrænsede muligheder; central politik ikke bevist",
+      "proposal": "Undersøg præcist afgrænsede rutinehandlinger og enklere forklaring; ingen generel automatisk tilladelse.",
+      "acceptance": [
+        "Tilladelsen bindes til konkret handling, arbejdsområde og gældende regler.",
+        "Planvalg, Privacy Gate, beskyttede filer og isolation kan ikke tilsidesættes.",
+        "YOLO kræver eksisterende advarsel, gælder kun samtalen og kan tilbagekaldes.",
+        "Afvist/ukendt handling stopper sikkert og forklarer næste mulige trin."
+      ],
+      "approval": "Adgangsudvidelser er ikke indeholdt i et kosmetisk UI-samtykke.",
+      "dependencies": [
+        "Tidlig isolationstest",
+        "FB14"
+      ],
+      "nativeMac": {
+        "observation": "commands",
+        "status": "source-confirmed",
+        "detail": "Godkendelser og YOLO bevares; automatisk godkendelse er ikke aktiveret af denne prøve."
+      },
+      "implementation": "Eksisterende godkendelser og YOLO-semantik bevaret og native regression bestået. Ingen generel auto-godkendelse."
+    },
+    {
+      "id": "FB14",
+      "priority": "P1",
+      "area": "Forhåndsvisning",
+      "sourcePage": 7,
+      "problem": "Preview kræver forståelse af localhost, serverstart og sandbox.",
+      "currentEvidence": "DevServer.prepare/execute bruger engangstoken og genvaliderer projektfingerprint før start. En enklere dialog kan ikke alene bevise serverisolering.",
+      "code": [
+        "desktop/core/dev-server.cjs",
+        "desktop/core/preview-session.cjs",
+        "desktop/main.cjs"
+      ],
+      "status": "Manuel previewgennemgang styrket; isoleret automatisk serverstart mangler",
+      "proposal": "Skeln mellem kendt statisk preview, kontrolleret serverproces og vilkårlig projektkommando; forenkl den sikre vej.",
+      "acceptance": [
+        "En kendt statisk demo kan vises uden terminalvalg.",
+        "Serverprocessens faktiske fil- og netværksgrænser afprøves før automatisk opstart.",
+        "Ændrede scripts, afhængigheder eller rettigheder invaliderer tidligere gennemgang.",
+        "Forklaringen lover ikke isolation, som processen ikke har."
+      ],
+      "approval": "Ny rettigheds-/serverpolitik kræver konkret accept og teknisk bevis.",
+      "dependencies": [
+        "Tidlig isolationstest"
+      ],
+      "nativeMac": {
+        "observation": "preview",
+        "status": "separate-probe",
+        "detail": "Statisk preview åbner i dette projekt. Dynamisk preview vurderes i separat backendprøve."
+      },
+      "implementation": "DevServer genvaliderer mappeidentitet, kontrolfiler, regler, konfiguration, udløb og engangstoken. Stop/projektskift afbryder klargøring og forhindrer sen processtart eller gammel installationsstatus. Ingen automatisk serverstart eller ny procesisolation."
+    },
+    {
+      "id": "FB15",
+      "priority": "P2",
+      "area": "Resultat",
+      "sourcePage": 8,
+      "problem": "Kort med filantal og ændringshandlinger støjer i samtalen.",
+      "currentEvidence": "UI har både #run-review og særskilt ændringsvisning. Funktionen til gennemgang/fortrydelse skal bevares.",
+      "code": [
+        "desktop/ui/app.js",
+        "desktop/ui/index.html"
+      ],
+      "status": "Godkendt, implementeret og nativeprøvet på Mac; brugertest afventer",
+      "proposal": "Kort forståeligt resultat i chatten, teknisk gennemgang samlet under Ændringer.",
+      "acceptance": [
+        "Deltageren kan forstå, hvad der blev bygget, uden filantal.",
+        "Diff, gennemgået-status og fortrydelse er stadig tilgængelige.",
+        "Flytning af præsentation markerer ikke ændringer som gennemgået automatisk."
+      ],
+      "approval": "Før/efter-preview kræves.",
+      "dependencies": [
+        "FB05"
+      ],
+      "nativeMac": {
+        "observation": "change-card",
+        "status": "source-confirmed",
+        "detail": "run-review findes fortsat; et rigtigt ændringsforløb er ikke kørt i denne visningsprøve."
+      },
+      "implementation": "Godkendt 26. oktober 2026: Afprøv resultatet som hovedhandling, Ændringer, eksplicit gennemgang og Fortryd. Ingen automatisk godkendelse eller serverstart. Integreret: 18/18 native kontroller og 23/23 relaterede unit-tests; ingen automatisk serverstart, modelkald eller Git-skrivninger."
+    },
+    {
+      "id": "FB16",
+      "priority": "P1",
+      "area": "Tastatur",
+      "sourcePage": 8,
+      "problem": "Enter sender ikke konsekvent i AI-spørgsmålets svarfelt.",
+      "currentEvidence": "Det undersøgte answer-own-felt har form.onsubmit, men ingen tilsvarende Enter/Shift+Enter-håndtering.",
+      "code": [
+        "desktop/ui/planning.js",
+        "desktop/ui/app.js"
+      ],
+      "status": "Genskabt i native Mac-prøve; Windows afventer",
+      "proposal": "Ens Enter/Shift+Enter i chat og fritekstsvar, med hensyn til tekstsammensætning og tilgængelighed.",
+      "acceptance": [
+        "Enter sender et gyldigt svar præcis én gang.",
+        "Shift+Enter indsætter linjeskift.",
+        "IME/composition, tom tekst og allerede igangværende afsendelse udløser ikke utilsigtet send.",
+        "Der er fortsat en tydelig knap for mus og hjælpemidler."
+      ],
+      "approval": "Konkret tastaturadfærd vises før integration.",
+      "dependencies": [
+        "FB09"
+      ],
+      "nativeMac": {
+        "observation": "enter-answer",
+        "status": "reproduced",
+        "detail": "Enter indsætter en ny linje i det frie AI-svar og sender ikke svaret."
+      },
+      "implementation": "Implementeret og nativeprøvet: Enter sender, Shift+Enter linjeskift, IME/229 og dobbeltsend beskyttet."
+    }
+  ],
+  "integration": {
+    "date": "2026-10-26",
+    "approval": "Godkend og byg det ind",
+    "product": "Godkendte layout-, spørgsmål-, plan- og forbindelsesændringer integreret i lokal kilde.",
+    "nativeEvidence": "Aura1/ReleaseReports/feedback-20261026/integration-final/report.json",
+    "scope": "20 samlede native UI-kontroller, 13 spørgsmål/plan og 17 forbindelseskontroller; kontrolleret modelstatus, ingen rigtig model.",
+    "userStudy": "Testpakke klar til senere efter brugerens valg. Ingen deltagere kontaktet.",
+    "release": "Ingen ny commit, push, CI eller DMG i denne ændring."
+  },
+  "followup": {
+    "date": "2026-10-26",
+    "order": "Feedbacken først, derefter harness-reviewet",
+    "uiApproval": "Godkend og byg begge ind (FB11 og FB15)",
+    "prototype": "https://mac-studio-tilhrende-parthee.tailefb5b1.ts.net/aura-ui/feedback-rest-20261026/",
+    "report": "2026-10-26-backlog-followup.md",
+    "unitEvidence": "Aura1/ReleaseReports/feedback-20261026/backlog-followup/check-followup-final-2.tap",
+    "nativeEvidence": "Aura1/ReleaseReports/feedback-rest-20261026/live-controlled-all-final/rapport.json",
+    "release": "Kun lokal kilde; ingen commit, push, CI, DMG eller release.",
+    "remainingUiEvidence": "Aura1/ReleaseReports/feedback-rest-20261026/native-focus-after/report.json",
+    "lifecycleEvidence": "Aura1/ReleaseReports/feedback-20261026/backlog-followup/session-lifecycle-after-3.tap",
+    "protectedToolsEvidence": "Aura1/ReleaseReports/feedback-20261026/backlog-followup/protected-tools-native-regression-symlink.tap",
+    "unitResult": {
+      "total": 1668,
+      "passed": 1637,
+      "failed": 0,
+      "cancelled": 0,
+      "skipped": 31
+    },
+    "sandboxProbeEvidence": "Aura1/ReleaseReports/feedback-20261026/backlog-followup/sandbox-probe-cache-2.tap",
+    "isolatedRendererEvidence": "Aura1/ReleaseReports/feedback-20261026/backlog-followup/renderer-standalone-after.tap",
+    "privacyNativeEvidence": "Aura1/ReleaseReports/feedback-20261026/backlog-followup/privacy-native-preservation-final.tap",
+    "privacyNativeResult": {
+      "selected": 6,
+      "passed": 6,
+      "failed": 0,
+      "realModel": false
+    }
+  }
+}

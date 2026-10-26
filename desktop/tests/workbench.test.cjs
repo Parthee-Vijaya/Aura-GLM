@@ -344,7 +344,7 @@ test('en samtale fortsætter sin AI-session, når forbindelse, model og regler e
 test('motoren fortsætter en kendt session og opretter en ny, når den gamle ikke findes', async () => {
  const { OpenCodeEngine } = require('../core/engine.cjs');
  const calls = [];
- const engine = (resume, known) => Object.assign(new OpenCodeEngine({ root: '/tmp/x', resume }), { request: async (url, method) => { calls.push([url, method || 'GET']); if (url === '/session' && method === 'POST') return { id: 'ny' }; if (url === `/session/${known}`) return { id: known }; throw new Error('404'); } });
+ const engine = (resume, known) => Object.assign(new OpenCodeEngine({ root: '/tmp/x', resume }), { request: async (url, method) => { calls.push([url, method || 'GET']); if (url === '/session' && method === 'POST') return { id: 'ny' }; if (url === `/session/${known}`) return { id: known }; throw Object.assign(new Error('404'),{status:404}); } });
  const kept = engine('ses_gammel', 'ses_gammel'); assert.equal((await kept.openSession()).id, 'ses_gammel'); assert.equal(kept.resumed, true);
  const gone = engine('ses_borte', 'andet'); assert.equal((await gone.openSession()).id, 'ny'); assert.equal(gone.resumed, false);
  const unsafe = engine('../../config', 'x'); assert.equal((await unsafe.openSession()).id, 'ny');
@@ -442,5 +442,20 @@ test('Gør samtalen kortere sammenfatter samtalen, før beskeden sendes, og spri
  assert.deepEqual(calls, ['send']);
  calls.length = 0; engine.messages = async () => []; await send(bench.chat, 'Tom', 'regler-1', { compact: true }); bench.chat.event({ type: 'session.idle' }); await bench.finishing;
  assert.deepEqual(calls, ['send']);
+ await bench.close();
+});
+
+
+test('en sikkert bundet værktøjsafvisning bevarer afvisningsforklaring, plan og ingen automatisk rettelse', async t => {
+ const root=await temp(t), events=[];
+ const bench=new Workbench({directory:await temp(t),profiles,emit:event=>events.push(event),safeStorage:{}});
+ await bench.activate({root,name:'Afvisningsprøve'});const chat=bench.chat;
+ const plan={id:'approved-plan',text:'Keep the approved plan',builtAt:null};chat.plan=plan;chat.running=true;chat.runMode='build';chat.runFailure=null;
+ let finished,qualityCancelled=false;chat.finishRun=status=>{finished=status;chat.running=false;};chat.cancelQuality=()=>{qualityCancelled=true;};chat.startQualityCheck=()=>assert.fail('Denial must not start automatic repair');
+ chat.event({type:'session.error',permissionRejected:true,properties:{sessionID:'ses_owned',requestID:'per_owned',error:{name:'aborted',data:{message:'Step interrupted'}}}});
+ clearTimeout(chat.historyTimer);chat.historyTimer=null;
+ assert.equal(finished,'rejected');assert.equal(chat.runFailure,null);assert.equal(qualityCancelled,true);assert.equal(chat.plan,plan);assert.equal(plan.builtAt,null);
+ const review=chat.runReview(finished,{files:[],skipped:0},null);assert.equal(review.status,'rejected');assert.equal(review.failure,null);
+ assert.equal(bench.activityList().some(entry=>entry.kind==='error'),false,'A user rejection is not logged as an AI connection error');
  await bench.close();
 });

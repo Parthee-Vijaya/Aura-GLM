@@ -1,3 +1,4 @@
+const { ExternalEgress } = require('./privacy/external-egress.cjs');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
@@ -54,7 +55,8 @@ async function collect(base) {
 }
 
 /** Bygger den gemte version i en midlertidig mappe og giver de byggede filer som en udgivelse. */
-async function buildSaved(source, { runtime = nodeRuntime, timeout = STEP_TIMEOUT } = {}) {
+async function buildSaved(source, { runtime = nodeRuntime, timeout = STEP_TIMEOUT, getPrivacy } = {}) {
+  const assertCurrent = await new ExternalEgress(getPrivacy).legacyPermit(source.root);
   const pkgFile = source.files.find(f => f.file === 'package.json');
   let pkg = null;
   try { pkg = pkgFile && JSON.parse(pkgFile.data.toString('utf8')); } catch { throw Error('package.json i den gemte version kan ikke læses.'); }
@@ -69,7 +71,7 @@ async function buildSaved(source, { runtime = nodeRuntime, timeout = STEP_TIMEOU
   const step = (args, failure, installing = false) => new Promise((resolve, reject) => {
     let log = '';
     const env = environment(); env.PATH = [path.dirname(executables.node), env.PATH || ''].join(path.delimiter);
-    const child = spawn(executables.node, [executables.npm, ...args], { cwd: directory, env, shell: false, detached: process.platform !== 'win32', windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+    assertCurrent(); const child = spawn(executables.node, [executables.npm, ...args], { cwd: directory, env, shell: false, detached: process.platform !== 'win32', windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
     const timer = setTimeout(() => { void terminate(child); reject(Error(`${failure} Det tog over ${Math.round(timeout / 60000)} minutter.`)); }, timeout);
     const output = chunk => { log = cleanOutput(log + chunk.toString()).slice(-16000); };
     child.stdout.on('data', output); child.stderr.on('data', output);

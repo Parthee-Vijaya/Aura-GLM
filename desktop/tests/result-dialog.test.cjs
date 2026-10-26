@@ -35,7 +35,7 @@ function environment(call) {
   const inputs = new Map();
   const document = { querySelector(selector) { if (!inputs.has(selector)) { const input = new Element('input'); input.value = 'ours'; const parent = new Element('label'); parent.append(input, new Element('span')); inputs.set(selector, input); } return inputs.get(selector); }, createTextNode: text => text };
   const view = { id: 'chat', root: '/projekt', review: new Element('section'), log: new Element(), lastSentText: 'Byg siden', followChat: false };
-  const context = { $, document, node: (tag, text, classes) => new Element(tag, text, classes), view, current: { root: '/projekt' }, call, selectedOwner: () => ({ root: '/projekt', chat: 'chat' }), action: fn => fn(), versionTime: () => '', shortLabel: value => value, featureOn: () => true, info: () => new Element(), requestAnimationFrame: fn => fn(), message: () => {}, displayProject: async () => {}, showChat: async () => {}, refreshRecent: async () => {} };
+  const context = { $, document, node: (tag, text, classes) => new Element(tag, text, classes), view, current: { root: '/projekt', previewURL: 'aura-preview://test/index.html' }, running: false, call, selectedOwner: () => ({ root: '/projekt', chat: 'chat' }), action: fn => fn(), versionTime: () => '', shortLabel: value => value, featureOn: () => true, info: () => new Element(), requestAnimationFrame: fn => fn(), message: () => {}, displayProject: async () => {}, showChat: async () => {}, refreshRecent: async () => {} };
   context.viewFor = () => view;
   context.window = { harness: { onEvent() {} }, workspace: { showChange: async () => {}, show() {} }, previewViewSize: () => null, ApprovalView: require('../ui/approval-view.js') };
   vm.createContext(context); return { context, $, view, dialog };
@@ -69,16 +69,65 @@ test('et sent svar efter Annuller åbner ikke dialogen eller aktiverer gendannel
   assert.equal(dialog.getAttribute('aria-busy'), 'false');
 });
 
-test('resultatet er en kvittering uden Kontroller og kommandooutput; ændringer markeres gennemgået', async () => {
+test('resultatet prioriterer afprøvning; kun et særskilt klik markerer gennemgået', async () => {
   const { context, view } = environment(); resultUI(context);
+  const shown = [];
+  context.window.workspace.show = name => shown.push(name);
   view.lastCheckpoint = { status: 'saved', head: 'version' };
   context.renderRunReview({ task: 'opgave', mode: 'build', status: 'idle', files: ['a', 'b'], tools: [{ tool: 'bash', title: 'node logic-test.js', output: 'TEKNISK OUTPUT', status: 'completed' }] }, view);
-  assert.match(view.review.textContent, /2 filer ændret · Gemt/);
-  assert.doesNotMatch(view.review.textContent, /Kontroller|logic-test|TEKNISK OUTPUT/);
-  const options = view.review.querySelector('details'); assert.equal(options.open, undefined);
-  assert.equal(options.querySelector('button').textContent, 'Fortryd opgaven');
-  const changes = view.review.querySelectorAll('button').find(button => button.textContent === 'Se ændringer');
-  await changes.onclick(); assert.equal(changes.textContent, 'Ændringer gennemgået'); assert.equal(view.review.classList.contains('is-reviewed'), true);
+  assert.match(view.review.textContent, /Prøv resultatet/);
+  assert.doesNotMatch(view.review.textContent, /2 filer ændret|Kontroller|logic-test|TEKNISK OUTPUT|bestået/);
+  assert.match(view.review.textContent, /Ikke gennemgået af dig/);
+  const buttons = view.review.querySelectorAll('button');
+  await buttons.find(button => button.textContent === 'Afprøv resultatet').onclick();
+  assert.deepEqual(shown, ['preview']); assert.equal(view.reviewedTask, undefined);
+  await buttons.find(button => button.textContent === 'Ændringer').onclick();
+  assert.equal(view.reviewedTask, undefined); assert.equal(view.review.classList.contains('is-reviewed'), false);
+  await buttons.find(button => button.textContent === 'Marker som gennemgået').onclick();
+  assert.equal(view.reviewedTask, 'opgave'); assert.equal(view.review.classList.contains('is-reviewed'), true);
+  assert.match(view.review.textContent, /Du har markeret resultatet som gennemgået/);
+  assert.ok(buttons.find(button => button.textContent === 'Fortryd opgaven'));
+});
+
+test('afprøvning starter ingen server, og gamle knapper ændrer ikke en anden samtale', async () => {
+  const { context, view } = environment(); resultUI(context);
+  let shown = 0; context.window.workspace.show = () => { shown++; };
+  context.current.previewURL = null;
+  context.renderRunReview({ task: 'opgave', status: 'idle', files: ['a'] }, view);
+  const tryResult = view.review.querySelectorAll('button').find(b => b.textContent === 'Afprøv resultatet');
+  assert.equal(tryResult.disabled, true); await tryResult.onclick(); assert.equal(shown, 0);
+  context.current.previewURL = 'aura-preview://test/index.html'; context.syncResultPreview(); assert.equal(tryResult.disabled, false);
+  context.view = { id: 'other' };
+  await tryResult.onclick();
+  await view.review.querySelectorAll('button').find(b => b.textContent === 'Marker som gennemgået').onclick();
+  assert.equal(shown, 0); assert.equal(view.reviewedTask, undefined);
+});
+
+test('Stop, afvisning og kvalitetsfejl kan aldrig vises som færdigt udkast', async () => {
+  const { context, view } = environment(); context.state = { connections: [] }; resultUI(context);
+  const rows = [
+    [{ status: 'stopped' }, /Du stoppede opgaven/],
+    [{ status: 'error', failure: { kind: 'quality', message: 'Lokalt fund' } }, /Den lokale kontrol fandt fejl/],
+    [{ status: 'idle', unavailable: true }, /Ændringerne kunne ikke læses/]
+  ];
+  for (const [input, title] of rows) {
+    context.renderRunReview({ task: 'opgave', files: ['a'], ...input }, view);
+    assert.match(view.review.textContent, title); assert.doesNotMatch(view.review.textContent, /Prøv resultatet|Marker som gennemgået/);
+  }
+  view.rejectedThisRun = true; context.renderRunReview({ task: 'opgave', files: ['a'], status: 'idle' }, view);
+  assert.match(view.review.textContent, /Du afviste en handling/); assert.doesNotMatch(view.review.textContent, /Prøv resultatet/);
+});
+
+test('knapper fra et erstattet resultat kan ikke markere den næste opgave', async () => {
+  const { context, view } = environment(); resultUI(context);
+  let shown = 0; context.window.workspace.show = () => { shown++; };
+  context.renderRunReview({ task: 'previous', status: 'idle', files: ['a'] }, view);
+  const old = view.review.querySelectorAll('button');
+  context.renderRunReview({ task: 'next', status: 'idle', files: ['b'] }, view);
+  await old.find(button => button.textContent === 'Marker som gennemgået').onclick();
+  await old.find(button => button.textContent === 'Afprøv resultatet').onclick();
+  assert.equal(view.reviewedTask, undefined); assert.equal(shown, 0);
+  assert.match(view.review.textContent, /Ikke gennemgået af dig/);
 });
 
 test('fortrydelse kvitterer én gang og fjerner opgavens mulighed for at blive fortrudt igen', async () => {
@@ -90,7 +139,8 @@ test('fortrydelse kvitterer én gang og fjerner opgavens mulighed for at blive f
   assert.equal(dialog.open, false); assert.match(view.review.textContent, /^Opgaven er fortrudt/); assert.equal(view.review.querySelectorAll('button').length, 0);
   assert.equal(view.undoneTasks.has('opgave'), true);
   context.renderRunReview({ task: 'opgave', mode: 'build', status: 'idle', files: ['a'] }, view);
-  assert.doesNotMatch(view.review.textContent, /Fortryd opgaven/);
+  assert.match(view.review.textContent, /^Opgaven er fortrudt/);
+  assert.doesNotMatch(view.review.textContent, /Fortryd opgaven|Prøv resultatet|Marker som gennemgået/);
 });
 
 test('kun et udtrykkeligt byggeforslag giver Byg videre; almindelig samtale og ventende spørgsmål gør ikke', () => {
