@@ -1,5 +1,7 @@
 # Aura 1 beta 0.4.0
 
+**Næste lokale testpakke: Aura 1 beta 0.5.0** (`0.5.0-beta.4`). Kildekoden er versionsmærket til særskilt kvalifikation af OpenCode 2, Privacy Gate og de godkendte feedbackændringer. Den eksisterende offentlige udgivelse er fortsat 0.4.0; [status og afgrænsning for 0.5.0](docs/releases/aura-1-beta-0.5.0.md) opdateres efter pakkeprøverne.
+
 Dette er **Parthee-Vijayas fork af Aura Harness**. Udgaven samler forbedret designhjælp, en lokal kontrol af genererede webapps og den godkendte aktivitetsvisning. Onboarding B, øvrige funktioner, planer og godkendelser bevares. Bidrag til AI Alliancens original håndteres i særskilte PR’er.
 
 **Udgivet 25. oktober 2026** til macOS på Apple Silicon. Teknisk version: `0.4.0-beta.2`. Pakken og lokale native prøver er verificeret. Den er ad hoc-signeret og ikke notariseret af Apple; GitHub CI har ingen kørsler for denne fork.

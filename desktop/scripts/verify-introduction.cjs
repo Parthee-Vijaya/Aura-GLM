@@ -7,8 +7,7 @@ const { run } = require('../core/git.cjs');
 (async () => {
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'harness-introduction-'));let app;const errors=[];
  try {
-  const bundle=process.env.HARNESS_TEST_PACKAGE ? path.resolve(process.env.HARNESS_TEST_PACKAGE) : null;
-  app=await electron.launch({executablePath:bundle?(bundle.endsWith('.app')?path.join(bundle,'Contents/MacOS',path.basename(bundle,'.app')):bundle):require('electron'),args:[...(bundle?[]:[path.join(__dirname,'..')]),'--user-data-dir='+path.join(root,'appdata')],env:{...process.env,ELECTRON_RUN_AS_NODE:undefined}});
+  ({app}=await require('./electron-test-launch.cjs').launchTestApp({electron,profile:path.join(root,'appdata')}));
   await require('./ui-test-helpers.cjs').isolateDocuments(app,path.join(root,'Dokumenter'));
   const page=await app.firstWindow();page.on('pageerror',e=>errors.push(e.message));
   await page.locator('#welcome-build').waitFor({state:'attached',timeout:60000});
@@ -40,8 +39,11 @@ const { run } = require('../core/git.cjs');
   await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).setSize(980,720));
   assert.ok(await page.locator('#setup-local').evaluate(el=>el.getBoundingClientRect().bottom<=innerHeight));
   await page.screenshot({path:path.join(root,'ai-valg-lille.png'),animations:'disabled'});
-  await page.locator('#setup-title').focus();await page.keyboard.press('Tab');
-  assert.equal(await page.evaluate(()=>document.activeElement.id),'setup-add-provider');
+  await page.locator('#setup-title').focus();
+  // The approved compact onboarding puts both quick actions before the cards.
+  for (const id of ['setup-local','setup-advanced','setup-add-provider']) {
+   await page.keyboard.press('Tab');assert.equal(await page.evaluate(()=>document.activeElement.id),id);
+  }
   await page.keyboard.press('Enter');
   assert.equal(await page.locator('#setup-provider').evaluate(el=>getComputedStyle(el).animationName),'none');
   assert.equal(await page.locator('#setup').evaluate(el=>el.scrollWidth<=el.clientWidth+1),true);
@@ -72,7 +74,7 @@ const { run } = require('../core/git.cjs');
   assert.equal((await page.evaluate(()=>window.harness.connectionState())).value.connections.length,1);
   await page.click('#setup-back');await page.click('#setup-back');assert.equal(await page.locator('#welcome-dialog').evaluate(el=>el.open),true);await page.click('#welcome-build');await page.click('#setup-local');
   // Første start: ét spørgsmål om funktioner med to valg. Hele pakken står først og er markeret som anbefalet.
-  await page.locator('#setup-title').filter({hasText:'Hvad skal Aura hjælpe med?'}).waitFor();
+  await page.locator('#setup-title').filter({hasText:'Hvad skal Aura 1 hjælpe med?'}).waitFor();
   assert.equal(await page.locator('#setup-feature-choice button:visible').count(),2);
   assert.equal(await page.locator('#setup-feature-choice button').first().locator('.recommended').textContent(),'Anbefalet');
   assert.equal(await page.locator('#setup-eyebrow').textContent(),'FUNKTIONER');

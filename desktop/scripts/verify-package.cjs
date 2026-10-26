@@ -13,7 +13,7 @@ const { execFileSync } = require('node:child_process');
  const platformPath = process.platform==='win32' ? path.join(process.env.SystemRoot,'System32') : '/usr/bin:/bin:/usr/sbin:/sbin';
  const env={...process.env,PATH:platformPath,HARNESS_OPENCODE_PATH:'',ELECTRON_RUN_AS_NODE:undefined};
  const toolCheck={env,encoding:'utf8',timeout:30000};
- assert.equal(execFileSync(runtime.opencode,['--version'],toolCheck).trim(),require('../runtime-lock.json').opencode);
+ assert.equal(require('../core/engine.cjs').parseOpenCodeVersion(execFileSync(runtime.opencode,['--version'],toolCheck)),require('../runtime-lock.json').opencode);
  assert.match(execFileSync(runtime.node,['--version'],toolCheck),/v22\.23\.3/);
  assert.match(execFileSync(runtime.git,['--version'],toolCheck),/2\.53\.0/);
  if (mac) {

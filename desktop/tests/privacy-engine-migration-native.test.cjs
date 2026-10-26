@@ -12,9 +12,10 @@ const net = require('node:net');
 const { spawn, execFile } = require('node:child_process');
 const { promisify } = require('node:util');
 const { createHash, randomUUID } = require('node:crypto');
-const { createEngineIsolation } = require('../privacy/isolation/engine-isolation.cjs');
-const { preserveLegacyEngine } = require('../core/privacy/hybrid-seatbelt-workspaces.cjs');
-const { stable } = require('../core/privacy/policy.cjs');
+const product = require('../scripts/native-test-product.cjs').nativeTestProduct();
+const { createEngineIsolation } = product.require('./privacy/isolation/engine-isolation.cjs');
+const { preserveLegacyEngine } = product.require('./core/privacy/hybrid-seatbelt-workspaces.cjs');
+const { stable } = product.require('./core/privacy/policy.cjs');
 const run = promisify(execFile), pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const enabled = process.platform === 'darwin' && process.arch === 'arm64' && process.env.AURA_PRIVACY_NATIVE === '1';
 const legacyIntegrity = 'sha512-rZm4Phz7eu/kVz2lynergU/LzKS/L0ofErB2fRXfaoAH528b3EnVcISZ/13dwk78FPxVhop7hWXshowT88C8Yw==';
@@ -22,6 +23,7 @@ async function freePort() { const server = net.createServer(); await new Promise
 async function until(check, message) { const end = Date.now() + 30_000; while (Date.now() < end) { if (await check()) return; await pause(40); } throw new Error(message); }
 
 test('native protected V1 partition resumes in V2 with the same session and only its own historical context', { skip: !enabled, timeout: 120_000 }, async t => {
+  if(product.identity.packaged)t.diagnostic(JSON.stringify({qualification:product.identity}));
   const archive = process.env.AURA_OPENCODE_V1_ARCHIVE || path.resolve(__dirname, '../.cache/runtime/opencode-darwin-arm64-1.18.33.tgz');
   const archiveBytes = await fs.readFile(archive);
   assert.equal('sha512-' + createHash('sha512').update(archiveBytes).digest('base64'), legacyIntegrity, 'Historical fixture binary must match the original locked release.');
@@ -45,7 +47,7 @@ test('native protected V1 partition resumes in V2 with the same session and only
   });
   await new Promise(resolve => modelServer.listen(0, '127.0.0.1', resolve));
   const gatewayURL = 'http://127.0.0.1:' + modelServer.address().port;
-  const { OpenCodeEngine, pluginRuntimeFiles, VERSION } = require('../core/engine.cjs');
+  const { OpenCodeEngine, pluginRuntimeFiles, VERSION } = product.require('./core/engine.cjs');
   const model = { id: 'private-migration', name: 'Private migration', limits: { context: 8192, output: 2048 } };
   const provider = { npm: '@ai-sdk/openai-compatible', name: 'Controlled migration model', options: { baseURL: gatewayURL + '/v1', apiKey: 'synthetic-loopback-token' }, models: { [model.id]: { id: model.id, name: model.name, tool_call: true, limit: { context: 8192, output: 2048 } } } };
   const permission = { '*': 'deny' };
@@ -69,7 +71,7 @@ test('native protected V1 partition resumes in V2 with the same session and only
   const beforeFiles = await fs.readdir(state, { recursive: true });
   for (const name of beforeFiles) if ((await fs.lstat(path.join(state, name))).isFile()) assert.deepEqual(await fs.readFile(path.join(backup, 'payload', name)), await fs.readFile(path.join(state, name)), 'Every original history/config byte is retained: ' + name);
   const retainedManifest = await fs.readFile(path.join(backup, 'manifest.json'));
-  const before = wire.length, modernRuntime = await fs.realpath(path.resolve(__dirname, '../.runtime/darwin-arm64'));
+  const before = wire.length, modernRuntime = await fs.realpath(product.runtimeRoot);
   modern = new OpenCodeEngine({ root, directory: state, provider, model, mode: 'chat', resume: session.id, onEvent: event => events.push(event), privacyIsolation: async ({ port, guardian }) => {
     const lease = await createEngineIsolation({ workspaceRoot: root, stateRoot: state, runtimeRoot: modernRuntime, gatewayURL, enginePort: port, trustedReadRoots: await pluginRuntimeFiles(), trustedReadFiles: [guardian] });
     return lease;

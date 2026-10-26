@@ -10,11 +10,30 @@ const path = require('node:path');
 const os = require('node:os');
 const http = require('node:http');
 const { randomBytes, createCipheriv, createDecipheriv, randomUUID } = require('node:crypto');
-const { Workbench } = require('../core/workbench.cjs');
-const { PrivacyRuntimeProvider } = require('../core/privacy-runtime-provider.cjs');
-const { startGateway } = require('../core/gateway.cjs');
+const product = require('../scripts/native-test-product.cjs').nativeTestProduct();
+const { Workbench } = product.require('./core/workbench.cjs');
+const { PrivacyRuntimeProvider } = product.require('./core/privacy-runtime-provider.cjs');
+const { startGateway } = product.require('./core/gateway.cjs');
 const enabled = process.platform === 'darwin' && process.env.AURA_PRIVACY_NATIVE === '1';
 const native = { skip: enabled ? false : 'Set AURA_PRIVACY_NATIVE=1 on a qualified macOS host.', timeout: 150_000 };
+if (enabled && process.env.AURA_PRIVACY_NATIVE_TRACE === '1') {
+  // Test-only diagnostics retain the original exception before the production
+  // boundary replaces it with a safe Privacy Gate error. These fixtures use no
+  // real provider credentials; never log method arguments, headers or bodies.
+  const { OpenCodeEngine } = product.require('./core/engine.cjs');
+  const identities = new WeakMap(); let nextIdentity = 0;
+  for (const method of ['start', 'send', 'close']) {
+    const original = OpenCodeEngine.prototype[method];
+    OpenCodeEngine.prototype[method] = async function (...args) {
+      if (!identities.has(this)) identities.set(this, ++nextIdentity);
+      const engine = identities.get(this), started = Date.now();
+      const trace = details => process.stderr.write(JSON.stringify({ nativeEngineTrace: { engine, method, elapsedMs: Date.now() - started, ...details } }) + '\n');
+      trace({ phase: 'begin' });
+      try { const result = await original.apply(this, args); trace({ phase: 'complete' }); return result; }
+      catch (error) { trace({ phase: 'failed', code: error.code, status: error.status, message: String(error.message || '').slice(0, 600), stack: String(error.stack || '').split('\n').slice(1, 7) }); throw error; }
+    };
+  }
+}
 function safeStorage() {
   const key = randomBytes(32);
   return { isEncryptionAvailable: () => true, encryptString(text) { const iv = randomBytes(12), cipher = createCipheriv('aes-256-gcm', key, iv); return Buffer.concat([iv, cipher.update(text), cipher.final(), cipher.getAuthTag()]); },
@@ -29,6 +48,7 @@ function send(res, body, { content = 'Controlled model completed this stage.', t
   chunk({},tool?'tool_calls':'stop'); res.end('data: [DONE]\n\n');
 }
 async function fixture(t,{mode='cloud-controlled',response,privateSources=false,appInterface=false,decision=()=> 'approve'}={}) {
+  if(product.identity.packaged)t.diagnostic(JSON.stringify({qualification:product.identity}));
   const root=await fs.mkdtemp(path.join(await fs.realpath(os.tmpdir()),'aura native privacy-'));
   const projectRoot=path.join(root,'project'), profile=path.join(root,'profile');
   await fs.mkdir(projectRoot,{mode:0o700}); await fs.mkdir(profile,{mode:0o700}); await fs.mkdir(path.join(projectRoot,'public'));
@@ -39,7 +59,7 @@ async function fixture(t,{mode='cloud-controlled',response,privateSources=false,
   const server=http.createServer(async(req,res)=>{try{if(req.method==='GET'&&/^\/(local|cloud)\/v1\/models$/.test(req.url)){res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify({data:[{id:model.id,name:model.name,context_length:262144,max_output_tokens:4096,capabilities:{function_calling:true}}]}));return;}const buffers=[];for await(const chunk of req)buffers.push(chunk);const body=JSON.parse(Buffer.concat(buffers).toString());const request={path:req.url,body};wire.push(request);if(process.env.AURA_PRIVACY_NATIVE_TRACE==='1')t.diagnostic(JSON.stringify({path:request.path,activeInstructions:systemText(body),toolNames:body.tools?.map(v=>v.function?.name),messageCount:body.messages?.length}));response?await response(request,res,wire):send(res,body);}catch{res.writeHead(500);res.end('Controlled fixture error');}});
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const origin='http://127.0.0.1:'+server.address().port;
   const storage=safeStorage();let engine;
-  const makeBench=()=>new Workbench({directory:profile,safeStorage:storage,library:appInterface?()=>require('../core/library.cjs').loadLibrary(path.resolve(__dirname,'../../profiles')):async()=>({rules:'Use only synthetic fixtures. Preserve concrete tool approvals and the approved plan.',skills:[],features:[]}),emit(event){events.push(event);if(process.env.AURA_PRIVACY_NATIVE_TRACE==='1'&&['session.error','engine.error'].includes(event.type))t.diagnostic(JSON.stringify(event));if(event.type==='privacy.review')setImmediate(()=>bench.privacy.decide({id:event.id,decision:decision(event,wire)}));if(appInterface&&event.type==='permission.asked'){permissions.push(event.properties);const answer=new Promise(resolve=>setImmediate(resolve)).then(()=>bench.reply({chat:event.chat,id:event.properties.id,allow:true,scope:'once'}));pending.push(answer);answer.catch(error=>t.diagnostic('Concrete approval failed: '+error.message));}}});
+  const makeBench=()=>new Workbench({directory:profile,safeStorage:storage,library:appInterface?()=>product.require('./core/library.cjs').loadLibrary(product.profilesRoot):async()=>({rules:'Use only synthetic fixtures. Preserve concrete tool approvals and the approved plan.',skills:[],features:[]}),emit(event){events.push(event);if(process.env.AURA_PRIVACY_NATIVE_TRACE==='1'&&['session.error','engine.error'].includes(event.type))t.diagnostic(JSON.stringify(event));if(event.type==='privacy.review')setImmediate(()=>bench.privacy.decide({id:event.id,decision:decision(event,wire)}));if(appInterface&&event.type==='permission.asked'){permissions.push(event.properties);const answer=new Promise(resolve=>setImmediate(resolve)).then(()=>bench.reply({chat:event.chat,id:event.properties.id,allow:true,scope:'once'}));pending.push(answer);answer.catch(error=>t.diagnostic('Concrete approval failed: '+error.message));}}});
   let bench=makeBench();const project={root:projectRoot,name:'Synthetic privacy project',purpose:'Controlled transport acceptance'};bench.project=project;
   const connections=['local','cloud'].map(id=>({id,kind:'compatible',name:id,baseURL:origin+'/'+id+'/v1'}));
   await bench.store.update(state=>{state.connections=connections;});for(const connection of connections)bench.catalogs.set(connection.id,[model]);
@@ -54,7 +74,7 @@ async function fixture(t,{mode='cloud-controlled',response,privateSources=false,
     await fs.writeFile(path.join(profile,'privacy/organization-policy.json'),JSON.stringify({enabled:true,version:'org-1',workMode:'hybrid',maxClass:'internal',allowedDestinationIds:['local','cloud'],hybridReleaseRules:[{id:'csv',version:'1',transform:'csv-generic-schema-v1',projectRoot,sourceIds:['cases'],destinationIds:['cloud'],purposes:['hybrid-cloud-help'],sourceClasses:['confidential'],allowPersonalData:true,maxColumns:16,ttlMs:300000}]}),{mode:0o600});
     await fs.writeFile(path.join(profile,'privacy/hybrid-sources.json'),JSON.stringify({sources:[{id:'cases',path:'citizens.csv',projectRoot,classification:'confidential',attributes:{personalData:true}}]}),{mode:0o600});
   }
-  if(appInterface){bench.chats.clear();bench.chatID=null;await bench.activate(await require('../core/projects.cjs').openProject(projectRoot));assert.ok(bench.chat,'The real Workbench opens a ChatSession');chat=bench.chat;}
+  if(appInterface){bench.chats.clear();bench.chatID=null;await bench.activate(await product.require('./core/projects.cjs').openProject(projectRoot));assert.ok(bench.chat,'The real Workbench opens a ChatSession');chat=bench.chat;}
   const open=async()=>{
     bench.privacyRuntimeProvider=new PrivacyRuntimeProvider(bench,{createGateway:(c,m,k,r,f,o)=>startGateway(c,m,k,r,(message,info)=>{t.diagnostic(JSON.stringify({gatewayFailure:message,...info,wireCount:wire.length}));f(message,info);},{...o,dispatch:async(...args)=>{try{return await o.dispatch(...args);}catch(error){if(process.env.AURA_PRIVACY_NATIVE_TRACE==='1')t.diagnostic(JSON.stringify({dispatchFailure:error.message,code:error.code,details:error.details}));throw error;}}})});
     chat.data=await bench.history.readChat(projectRoot,chat.id);
@@ -149,7 +169,7 @@ test('native V2 protected foreground shell obeys Stop and never publishes its in
     const body=request.body;assert.ok(body.tools?.some(tool=>tool.function?.name==='shell'),'V2 exposes its actual shell contract.');
     workerRoot=/actual writable workspace is (.+?)\nUse only this workspace/.exec(systemText(body))?.[1];assert.ok(workerRoot);
     const code="const fs=require('node:fs');const tick=()=>fs.appendFileSync('public/running.txt','.');tick();setInterval(tick,5);";
-    const node=path.resolve(__dirname,'../.runtime/darwin-arm64/node/bin/node');
+    const node=path.join(product.runtimeRoot,'node/bin/node');
     send(res,body,{tool:{id:'foreground_stop',name:'shell',input:{command:quote(node)+' -e '+quote(code),workdir:workerRoot,background:false,timeout:30000}}});observed();
   }});
   const engine=await f.open(),running=engine.send('Start one explicitly approved synthetic foreground command, then stop it.','Do not publish unfinished files.');void running.catch(()=>{});
@@ -209,7 +229,7 @@ test('native Workbench rejects private first-message content before any cloud mo
 });
 test('native Workbench keeps a reviewed private attachment local even when the typed prompt is public',native,async t=>{
   const f=await fixture(t,{appInterface:true});const chat=f.bench.chat;
-  f.bench.chatMaterials=new (require('../core/chat-materials.cjs').ChatMaterials)({onChange:event=>f.bench.emit(event)});
+  f.bench.chatMaterials=new (product.require('./core/chat-materials.cjs').ChatMaterials)({onChange:event=>f.bench.emit(event)});
   const source=path.join(f.root,'selected-cases.csv');await fs.writeFile(source,'Name,Email\nPRIVATE_ATTACHMENT_CANARY,attachment.canary@example.invalid\n');
   const offered=await f.bench.chatMaterials.offerFiles(chat,[source]);
   const review=await f.bench.chatMaterials.preview(chat,{scope:offered.scope,revision:offered.revision,ids:offered.candidates.map(file=>file.id)});

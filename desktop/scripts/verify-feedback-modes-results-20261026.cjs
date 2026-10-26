@@ -5,6 +5,7 @@ const path = require('node:path');
 const os = require('node:os');
 const assert = require('node:assert/strict');
 const helpers = require('./ui-test-helpers.cjs');
+const { launchTestApp } = require('./electron-test-launch.cjs');
 (async () => {
   const output = process.env.AURA_FEEDBACK_OUTPUT || path.join(os.homedir(), 'Library/Application Support/Aura1/ReleaseReports/feedback-rest-20261026/native');
   await fs.mkdir(output, { recursive: true });
@@ -12,14 +13,14 @@ const helpers = require('./ui-test-helpers.cjs');
   const before = '<!doctype html><html lang="da"><meta charset="utf-8"><title>Fjordby prøve</title><style>body{font:18px system-ui;padding:40px;background:#f7faf8;color:#21382e}h1{font:42px Georgia}button{padding:12px 20px;background:#275c48;color:white;border:0;border-radius:8px}</style><p>OPDIGTET INDHOLD TIL UI-PRØVE</p><h1>Borgermøder i Fjordby</h1><p>Find et møde og deltag i samtalen.</p><button>Se kommende møder</button></html>';
   const after = before.replace('Find et møde og deltag i samtalen.', 'Find det næste borgermøde og vær med til at forme din by.');
   await fs.mkdir(path.join(project, 'public'), { recursive: true }); await fs.writeFile(path.join(project, 'public/index.html'), before);
-  let app, page; const checks = [], screenshots = [], errors = [], failedResources = [];
+  let app, page, launch; const checks = [], screenshots = [], errors = [], failedResources = [];
   const pass = (id, evidence) => { checks.push({ id, evidence }); console.log('PASS ' + id); };
   const emit = (owner, event) => app.evaluate(({ BrowserWindow }, data) => BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).webContents.send('harness:event', { ...data.event, ...data.owner }), { owner, event });
   const capture = async name => { await page.waitForFunction(() => [...document.querySelectorAll('dialog[open]')].every(el => !el.getAnimations().some(a => a.playState === 'running'))); const file = path.join(output, name + '.png'); await page.screenshot({ path: file, animations:'disabled' }); screenshots.push(file); };
   const resize = async (width, height) => { await app.evaluate(({ BrowserWindow }, size) => { const w = BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')); w.setMinimumSize(380, 400); w.setContentSize(size.width, size.height); }, { width, height }); await page.waitForFunction(width => innerWidth === width, width); };
   const menu = async () => { await page.click('#composer-mode'); await page.waitForFunction(() => document.querySelector('#composer-mode-menu').matches(':popover-open')); };
   try {
-    app = await electron.launch({ executablePath: require('electron'), args: [path.join(__dirname, '..'), '--user-data-dir=' + path.join(root, 'appdata')], env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined } });
+    ({ app, evidence: launch } = await launchTestApp({ electron, profile: path.join(root, 'appdata') }));
     page = await app.firstWindow(); page.on('pageerror', error => errors.push(error.message)); page.on('response', response => { if (response.url().startsWith('harness://') && response.status() >= 400) failedResources.push(response.url()); });
     await app.evaluate(({ app, session }, root) => {
       app.setPath('documents', root); session.defaultSession.webRequest.onBeforeRequest((details, callback) => callback({ cancel: /^https?:/.test(details.url) })); global.fetch = async () => { throw Error('Native feedback check forbids external/model requests.'); };
@@ -86,7 +87,7 @@ const helpers = require('./ui-test-helpers.cjs');
     assert.equal(await fs.readFile(path.join(project,'public/index.html'),'utf8'),before); assert.equal(await fs.readFile(path.join(project,'my-notes.txt'),'utf8'),'User-owned later notes stay intact.'); assert.equal(await page.locator('#run-review .result-undo').count(),0); await page.frameLocator('#preview').getByText('Find et møde og deltag i samtalen.',{exact:true}).waitFor(); pass('real-local-undo-restores-exact-change-and-preserves-other-files'); await capture('09-restored-result-1440x900');
     await emit(owner,{type:'run.review',...result}); await page.waitForFunction(() => document.querySelector('#run-review').textContent.startsWith('Opgaven er fortrudt')); assert.equal(await page.locator('#run-review .result-try').count(),0); pass('late-completion-does-not-resurrect-undone-result');
     await helpers.assertNoGitWrites(app); assert.deepEqual(errors,[]); assert.deepEqual(failedResources,[]); assert.equal(await app.evaluate(() => globalThis.feedbackServerStarts),0); pass('no-renderer-errors-or-missing-assets-or-server-start-or-git-write');
-    await fs.writeFile(path.join(output,'report.json'),JSON.stringify({checks,screenshots,errors,failedResources,profile:root,platform:process.platform,electron:await app.evaluate(()=>process.versions.electron),limits:['Controlled engine events and actual native UI. No AI generation, provider call or credential.','Real synthetic local file restoration; no user project.','macOS only; Windows remains deferred.','No automatic server start, release, Git write or upstream change.']},null,2)+'\n'); console.log(JSON.stringify({output,passed:checks.length}));
-  } catch(error) { await capture('failure').catch(()=>{}); await fs.writeFile(path.join(output,'error.json'),JSON.stringify({message:error.message,stack:error.stack,checks,errors,failedResources,profile:root},null,2)); throw error; }
+    await fs.writeFile(path.join(output,'report.json'),JSON.stringify({launch,checks,screenshots,errors,failedResources,profile:root,platform:process.platform,electron:await app.evaluate(()=>process.versions.electron),limits:['Controlled engine events and actual native UI. No AI generation, provider call or credential.','Real synthetic local file restoration; no user project.','macOS only; Windows remains deferred.','No automatic server start, release, Git write or upstream change.']},null,2)+'\n'); console.log(JSON.stringify({output,passed:checks.length}));
+  } catch(error) { await capture('failure').catch(()=>{}); await fs.writeFile(path.join(output,'error.json'),JSON.stringify({message:error.message,stack:error.stack,launch:launch||error.testLaunch,checks,errors,failedResources,profile:root},null,2)); throw error; }
   finally { await app?.close(); }
 })().catch(error=>{console.error(error);process.exitCode=1;});
