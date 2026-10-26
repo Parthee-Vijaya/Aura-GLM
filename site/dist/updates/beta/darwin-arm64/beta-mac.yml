@@ -1,13 +1,13 @@
 {
-  "version": "0.4.0-beta.2",
+  "version": "0.5.0-beta.4",
   "files": [
     {
-      "url": "https://github.com/Parthee-Vijaya/ai-harness/releases/download/v0.4.0-beta.2/Aura-1-0.4.0-beta.2-mac-arm64.zip",
-      "sha512": "p2qoV+hzYgvvzpFHT2UPhxyi6S9NXS05LOYjX6Ml9l6sgo5TVGrkyu5gHp81icvpEQ7AwDX6DDm7swJTn4ibBA==",
-      "size": 339580889
+      "url": "https://github.com/Parthee-Vijaya/ai-harness/releases/download/v0.5.0-beta.4/Aura-1-0.5.0-beta.4-mac-arm64.zip",
+      "sha512": "VAIkkytOstBl/22Wm2yElIN6OH9ikguDdU5V3fBJJf1Mmpwyszt10YeeBgPW6909CFINaak8px1jVut8V9bMRw==",
+      "size": 384615094
     }
   ],
-  "releaseDate": "2026-10-25T16:14:24Z",
+  "releaseDate": "2026-10-26T16:15:02Z",
   "critical": false,
-  "message": "Designhjælp gennem skills, lokal appkontrol og tydelig aktivitet. Se udgivelsesnoterne for teststatus og kendte begrænsninger."
+  "message": "OpenCode 2, Privacy Gate og godkendte feedbackændringer. Testbeta; den samlede brugerfladeprøve afventer nøgleringen. Se udgivelsesnoterne."
 }
