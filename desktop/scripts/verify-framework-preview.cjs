@@ -87,7 +87,8 @@ async function unreachable(url) { for (let i = 0; i < 40; i++) { try { await fet
     const reactURL = url;
     await open(astro);
     assert.equal((await fetch(reactURL)).status, 200, 'Changing the selected project preserves its running preview.');
-    await open(react); await page.click('#tab-preview');
+    // En kørende forhåndsvisning skjuler opstartsknappen; URL og indhold kontrolleres nedenfor.
+    await open(react, false); await page.click('#tab-preview');
     assert.equal(await page.locator('#preview').getAttribute('src'), reactURL);
     await frame.locator('h1').filter({ hasText: 'Nye aktiviteter' }).waitFor();
     await open(astro); await page.click('#server-open'); await install();

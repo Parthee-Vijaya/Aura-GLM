@@ -1,0 +1,126 @@
+{
+  "generatedAt": "2026-10-26T17:00:20.992694+00:00",
+  "version": "0.5.0-beta.4",
+  "productSourceCommit": "320a2ae433e1b3e64130d448e43c7a2491b62605",
+  "packageQualification": "passed-selected-suite",
+  "results": [
+    {
+      "name": "source",
+      "exitCode": 0,
+      "seconds": 5.747,
+      "log": "r3-keychain-approved/source.log",
+      "logSha256": "8dac30f0352f0031b8f72b45c5438d7293bfcf9313f0c734f6999c482bd7fe25"
+    },
+    {
+      "name": "package",
+      "exitCode": 0,
+      "seconds": 3.64,
+      "log": "r3-keychain-approved/package.log",
+      "logSha256": "a971c80d1625f8eefaac9fbf2c3465e19257945154c497440d385af57411a647"
+    },
+    {
+      "name": "introduction",
+      "exitCode": 0,
+      "seconds": 9.795,
+      "log": "r3-keychain-approved/introduction.log",
+      "logSha256": "b641f846e83ca94cd72ca099c18745ccf446cbd873621392826a26577044a3a6"
+    },
+    {
+      "name": "workflow",
+      "exitCode": 0,
+      "seconds": 61.831,
+      "log": "r3-keychain-approved/workflow.log",
+      "logSha256": "2c55efeaa08c2951a77c9ebe415140cb87846b51b9850fbb8f228134bcd0902a"
+    },
+    {
+      "name": "recovery",
+      "exitCode": 0,
+      "seconds": 16.706,
+      "log": "r7-recovery-strict/recovery.log",
+      "logSha256": "cadeaa7a14acca91f0e4b21eb1fa25c40ff3aa0e2835c18906d105a9718c29ed"
+    },
+    {
+      "name": "framework",
+      "exitCode": 0,
+      "seconds": 22.929,
+      "log": "r4-framework/framework.log",
+      "logSha256": "187a9c0ec88759cea31a61581fc9615dec07528e1bef753106303c05b476e230"
+    },
+    {
+      "name": "privacy-ui",
+      "exitCode": 0,
+      "seconds": 7.052,
+      "log": "r3-privacy-feedback/privacy-ui.log",
+      "logSha256": "38d61a26375e86e75db8c9a00bb2ad054b3a917df76aab30aab22c45d67a90c3"
+    },
+    {
+      "name": "privacy-review",
+      "exitCode": 0,
+      "seconds": 3.786,
+      "log": "r3-privacy-feedback/privacy-review.log",
+      "logSha256": "d604d7d8cdf5c75c3275e8883a7a36609557280028cf9064e60df4e99cf7beb5"
+    },
+    {
+      "name": "feedback",
+      "exitCode": 0,
+      "seconds": 4.0,
+      "log": "r3-privacy-feedback/feedback.log",
+      "logSha256": "4e469e9b39cbd1c0aa60610674ae8384932ab70a71a1fc3946b7746e758ee288"
+    },
+    {
+      "name": "results",
+      "exitCode": 0,
+      "seconds": 7.651,
+      "log": "r3-privacy-feedback/results.log",
+      "logSha256": "42d191cb3f04683fc8e9d6032383d889b4a38da42b3a5367f40bac321014f81e"
+    }
+  ],
+  "recovery": {
+    "requests": 8,
+    "summaryRequests": 7,
+    "continuationRequests": 4,
+    "checks": [
+      "gendan og fortryd gennem UI og genstart",
+      "HEAD og private filer bevaret",
+      "forkert nøgle og kvote med kladde bevaret",
+      "afbrudt HTTP-strøm bliver en fejl",
+      "ny plan efter hver fejl og stop",
+      "fejlrapport gennem filvælger uden projektindhold",
+      "feedback til kontakten i package.json"
+    ],
+    "limitation": "Kontrolleret modelserver; ingen vurdering af en rigtig models svar. V2 foretager et ekstra modelkald med planpåmindelsen efter sammenfatning og et vellykket svar; det er ekstra modelarbejde, ikke en genafsendt brugerbesked."
+  },
+  "targetedTests": {
+    "passed": 28,
+    "failed": 0,
+    "tapSha256": "de771a2a85757a3c850055a297325bea5f3777a7cafe9bf0068c9e23c4de11b4"
+  },
+  "verifiedSourceBeforeCopySha256": "8dac30f0352f0031b8f72b45c5438d7293bfcf9313f0c734f6999c482bd7fe25",
+  "scriptSha256": {
+    "verify-recovery.cjs": "0df0f063f8c4bc3de839efda0b8c89c118acb19e4bdb2f326b8f85053c2b802e",
+    "verify-framework-preview.cjs": "a533b8b0aa26df1582bbb0d73771af814196414623ba9c70f1e1631f596129a5"
+  },
+  "copyVerification": {
+    "passed": true,
+    "scope": "Packaged backend with the exact changed source renderer module loaded for the after screenshot; not a full source-app launch.",
+    "newText": "Projektkode og frameworkets konfiguration køres på din computer. Serveren bindes til 127.0.0.1. Den fortsætter ved projektskift og stoppes, når du stopper forhåndsvisningen eller lukker appen.",
+    "authorityPreserved": true,
+    "noServerStarted": true,
+    "includedInReleasedPackage": false
+  },
+  "limits": [
+    "Controlled local model responses; no paid or production AI test.",
+    "Apple Silicon on this Mac; no clean-machine, Windows, Linux or Intel qualification.",
+    "Ad hoc signing; no Apple notarization or GitHub CI.",
+    "Earlier intermittent native startup failure remains unresolved.",
+    "Three known high dependency advisories remain documented.",
+    "A source-app-only copy attempt waited in macOS keychain and was stopped; isolated renderer verification then passed."
+  ],
+  "priorFailuresPreserved": [
+    "r2",
+    "r3-keychain-approved",
+    "r3-remaining",
+    "r4-recovery",
+    "r5-recovery-wire-triage"
+  ]
+}
