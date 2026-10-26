@@ -206,10 +206,11 @@ async function writeReadGuard(directory, root, references, skills = []) {
 }
 class OpenCodeEngine {
   // resume: en tidligere OpenCode-session for samme samtale. Findes den ikke længere, oprettes en ny.
-  constructor({ root, directory, provider, model, references = [], mode = 'free', skills = [], resume = null, sandbox = null, privacyIsolation = null, detached = false, recovery = {}, measurement = null, onEvent = () => {} }) { Object.assign(this, { root, directory, provider, model, references, mode, skills, resume, sandbox, privacyIsolation, detached, recovery, onEvent }); this.promptEpoch = 0; this.closedPermissions = new Set(); this.closedQuestions = new Set(); this.pendingQuestions = new Map(); this.pending = new Map(); this.active = false; this.resumed = false; this.adapter = new v2.EventAdapter(root); this.setRunMeasurement(measurement); }
+  constructor({ root, directory, provider, model, references = [], mode = 'free', skills = [], resume = null, sandbox = null, privacyIsolation = null, detached = false, recovery = {}, measurement = null, onEvent = () => {} }) { Object.assign(this, { root, directory, provider, model, references, mode, skills, resume, sandbox, privacyIsolation, detached, recovery, onEvent }); this.promptEpoch = 0; this.lifecycle = new AbortController(); this.closed = false; this.closedPermissions = new Set(); this.closedQuestions = new Set(); this.pendingQuestions = new Map(); this.pending = new Map(); this.active = false; this.resumed = false; this.adapter = new v2.EventAdapter(root); this.setRunMeasurement(measurement); }
   setRunMeasurement(measurement) { this.pendingMeasurement = measurement instanceof RunMeasurement ? measurement : null; }
   async wire(url, method = 'GET', body, signal) {
-    const response = await fetch(`${this.url}${url}`, { method, headers: { authorization: this.auth, 'content-type': 'application/json', 'x-opencode-directory': encodeURIComponent(this.root) }, body: body === undefined ? undefined : JSON.stringify(body), signal: signal || AbortSignal.timeout(15000), redirect: 'error' });
+    this.lifecycle.signal.throwIfAborted();
+    const response = await fetch(`${this.url}${url}`, { method, headers: { authorization: this.auth, 'content-type': 'application/json', 'x-opencode-directory': encodeURIComponent(this.root) }, body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.any([this.lifecycle.signal, signal || AbortSignal.timeout(15000)]), redirect: 'error' });
     if (!response.ok) throw Object.assign(new Error(`Agentmotoren afviste handlingen (HTTP ${response.status}).`), { status: response.status });
     if (response.status === 204) return null;
     return response.json();
@@ -325,14 +326,31 @@ class OpenCodeEngine {
     if (!this.resumed) this.session = await this.request('/session', 'POST', { title: 'Aura' });
     return this.session;
   }
-  async start() {
+  start() {
+    if (this.closed) return Promise.reject(new Error('Agentmotoren er lukket.'));
+    if (this.startPromise) return this.startPromise;
     const measurement = this.pendingMeasurement ||= localMetrics.create({ mode: this.mode });
     measurement.engineStarting();
-    try { const result = await this.startActual(); measurement.engineReady(); return result; }
-    catch (error) { measurement.finish('error'); throw error; }
+    this.startPromise = (async () => {
+      try { const result = await this.startActual(); this.assertStarting(); measurement.engineReady(); return result; }
+      catch (error) { measurement.finish('error'); this.stopLifecycle(); await this.retireOwnedResources(); throw error; }
+    })();
+    return this.startPromise;
+  }
+  assertStarting() {
+    if (this.closed) throw new Error('Agentmotorens opstart blev stoppet.');
+    if (this.childStartFailed || this.child && (this.child.exitCode !== null || this.child.signalCode != null)) throw new Error('Agentmotoren afsluttede under opstart.');
+  }
+  ownChild(child) {
+    this.child = child;
+    // An error can arrive while isolation attestation is awaited, before the
+    // startup URL listener exists. Keep it handled and check before proceeding.
+    child.on('error', () => { this.childStartFailed = true; });
+    return child;
   }
   async startActual() {
     const executable = await findExecutable();
+    this.assertStarting();
     await fs.mkdir(this.directory, { recursive: true, mode: 0o700 });
     this.directory = await fs.realpath(this.directory);
     await fs.mkdir(path.join(this.directory, 'home'), { recursive: true, mode: 0o700 });
@@ -360,13 +378,14 @@ class OpenCodeEngine {
       await new Promise((resolve, reject) => { probe.once('error', reject); probe.listen(0, '127.0.0.1', resolve); });
       privacyPort = probe.address().port; await new Promise(resolve => probe.close(resolve));
     }
+    this.assertStarting();
     const args = ['serve', '--hostname', '127.0.0.1', '--port', String(privacyPort)];
     const environment = isolatedEnv(this.directory, this.config, password, { commandIsolation: Boolean(this.sandbox) });
     if (this.privacyIsolation && process.platform !== 'darwin') throw new Error('Det beskyttede arbejdsmiljø er ikke tilgængeligt på denne platform. Ingen hostreserve er startet.');
     if (process.platform === 'win32') {
       // Windows has no POSIX process groups. Preserve its existing direct-owner
       // shutdown until a tested Job Object implementation is available.
-      this.child = spawn(executable, args, { cwd:this.root, env:environment, detached:this.detached, windowsHide:true, stdio:['ignore','pipe','pipe'] });
+      this.ownChild(spawn(executable, args, { cwd:this.root, env:environment, detached:this.detached, windowsHide:true, stdio:['ignore','pipe','pipe'] }));
     } else {
       const guardianNode = require('./runtime.cjs').get()?.node || (this.privacyIsolation ? path.join(__dirname, '..', '.runtime', `${process.platform}-${process.arch}`, 'node', 'bin', 'node') : process.execPath);
       const guardian = path.join(__dirname, 'engine-guardian.cjs').replace(/app\.asar([/\\])/, 'app.asar.unpacked$1');
@@ -374,31 +393,38 @@ class OpenCodeEngine {
       const launchArgs = [guardian, executable === 'opencode' ? executable : path.resolve(executable), ...args];
       const launchOptions = { cwd:this.root, env:environment, detached:this.detached, windowsHide:true, stdio:['ignore','pipe','pipe','ipc'] };
       if (this.privacyIsolation) {
-        try {
-          this.privacyLease = await this.privacyIsolation({ executable, root:this.root, directory:this.directory, port:privacyPort, guardianNode, guardian, args, environment });
-          if (!this.privacyLease || typeof this.privacyLease.launchSpec !== 'function' || typeof this.privacyLease.attest !== 'function' || (await this.privacyLease.verify()).available !== true) throw new Error('Det beskyttede arbejdsmiljø kunne ikke bekræftes.');
-          const launch = await this.privacyLease.launchSpec(guardianNode, launchArgs, launchOptions);
-          this.child = spawn(launch.file, launch.args, launch.options);
-          await new Promise((resolve, reject) => { this.child.once('spawn', resolve); this.child.once('error', reject); });
-          await this.privacyLease.attest();
-        } catch (error) {
-          await this.privacyLease?.dispose(); this.privacyLease = null;
-          throw error;
-        }
-      } else this.child = spawn(guardianNode, launchArgs, launchOptions);
+        const lease = this.privacyLease = await this.privacyIsolation({ executable, root:this.root, directory:this.directory, port:privacyPort, guardianNode, guardian, args, environment });
+        this.assertStarting();
+        if (!lease || typeof lease.launchSpec !== 'function' || typeof lease.attest !== 'function' || (await lease.verify()).available !== true) throw new Error('Det beskyttede arbejdsmiljø kunne ikke bekræftes.');
+        this.assertStarting();
+        const launch = await lease.launchSpec(guardianNode, launchArgs, launchOptions);
+        this.assertStarting();
+        const child = this.ownChild(spawn(launch.file, launch.args, launch.options));
+        await new Promise((resolve, reject) => {
+          const done = error => { child.removeListener('spawn', spawned); child.removeListener('error', failed); child.removeListener('exit', stopped); this.lifecycle.signal.removeEventListener('abort', stopped); error ? reject(error) : resolve(); };
+          const spawned = () => done(), failed = () => done(new Error('Agentmotoren kunne ikke startes.')), stopped = () => done(new Error('Agentmotorens opstart blev stoppet.'));
+          child.once('spawn', spawned); child.once('error', failed); child.once('exit', stopped); this.lifecycle.signal.addEventListener('abort', stopped, { once: true });
+        });
+        this.assertStarting();
+        await lease.attest();
+        this.assertStarting();
+      } else this.ownChild(spawn(guardianNode, launchArgs, launchOptions));
     }
     // Ingen rå proceslogs sendes til UI; de kan indeholde projektindhold.
     this.child.stderr.resume();
     this.child.on('exit', () => { if (this.active) { this.active = false; this.handleEvent({ type: 'engine.error', message: 'Agentmotoren stoppede. Start opgaven igen for at oprette en ny session.', failure: { kind: 'engine' } }); } });
     try {
       this.url = await new Promise((resolve, reject) => {
-        const timer = setTimeout(() => reject(new Error('Agentmotoren kunne ikke starte. Kontrollér installationen.')), 30000);
+        const child = this.child, signal = this.lifecycle.signal;
+        const timer = setTimeout(() => done(new Error('Agentmotoren kunne ikke starte. Kontrollér installationen.')), 30000);
         let output = '';
-        const done = callback => value => { clearTimeout(timer); callback(value); };
-        this.child.once('error', done(() => reject(new Error('Agentmotoren kunne ikke startes.'))));
-        this.child.once('exit', done(() => reject(new Error('Agentmotoren afsluttede under opstart.'))));
-        this.child.stdout.on('data', chunk => { output = (output + chunk.toString()).slice(-8000); const found = output.match(/http:\/\/127\.0\.0\.1:\d+/); if (found) done(resolve)(found[0]); });
+        const done = (error, url) => { clearTimeout(timer); child.removeListener('error', failed); child.removeListener('exit', stopped); child.stdout.removeListener('data', received); signal.removeEventListener('abort', stopped); error ? reject(error) : resolve(url); };
+        const failed = () => done(new Error('Agentmotoren kunne ikke startes.')), stopped = () => done(new Error('Agentmotoren afsluttede under opstart.'));
+        const received = chunk => { output = (output + chunk.toString()).slice(-8000); const found = output.match(/http:\/\/127\.0\.0\.1:\d+/); if (found) done(null, found[0]); };
+        child.once('error', failed); child.once('exit', stopped); child.stdout.on('data', received); signal.addEventListener('abort', stopped, { once: true });
+        if (signal.aborted) stopped();
       });
+      this.assertStarting();
       const health = await this.request('/global/health');
       if (health.version !== VERSION) throw new Error('Agentmotorens version matcher ikke den afprøvede version.');
       const effective = await this.wire(`/api/config?location[directory]=${encodeURIComponent(this.root)}`);
@@ -421,11 +447,13 @@ class OpenCodeEngine {
         const ready = await fs.readFile(this.sandbox.readyPath, 'utf8').then(JSON.parse).catch(() => null);
         if (ready?.token !== this.sandbox.readyToken || ready?.identity !== this.sandbox.identity) throw new Error('Kommandobeskyttelsen blev ikke indlæst. Opgaven blev ikke startet.');
       }
+      this.assertStarting();
       this.active = true;
       this.listen();
       await this.eventStream.ready;
+      this.assertStarting();
       return this.session.id;
-    } catch (error) { this.pendingMeasurement?.finish('error'); await this.close(); throw error; }
+    } catch (error) { this.pendingMeasurement?.finish('error'); throw error; }
   }
   async listen() {
     this.eventStream?.close();
@@ -434,6 +462,7 @@ class OpenCodeEngine {
     return this.eventStream.run();
   }
   handleEvent(event) {
+    if (this.closed) return;
     const props = event.properties || {}, sessionID = props.sessionID || props.part?.sessionID || props.info?.sessionID;
     if (sessionID && sessionID !== this.session?.id) return;
     if (!this.compaction && event.type === 'session.status' && props.status?.type === 'idle') return this.handleEvent({ type: 'session.idle', properties: props });
@@ -597,6 +626,42 @@ class OpenCodeEngine {
   }
   cancelCompaction(error = new Error('Sammenfatningen blev stoppet.')) { if (this.compaction) { this.compaction.controller.abort(error); this.compaction.reject(error); } }
   async diff() { return this.request(`/session/${this.session.id}/diff`); }
-  async close() { this.activeMeasurement?.finish('closed'); this.pendingMeasurement?.finish('closed'); try { ++this.promptEpoch; this.eventStream?.close(); this.pendingQuestions.clear(); this.cancelCompletionCheck(); this.cancelCompaction(); this.active = false; this.eventsAbort?.abort(); this.pending.clear(); if (this.child && this.child.exitCode === null) { this.child.kill(); await new Promise(resolve => { const timer = setTimeout(() => { this.child.kill('SIGKILL'); resolve(); }, 3000); this.child.once('exit', () => { clearTimeout(timer); resolve(); }); }); } } finally { await this.privacyLease?.dispose(); this.privacyLease = null; } }
+  stopLifecycle() {
+    if (this.closed) return;
+    this.closed = true; ++this.promptEpoch; this.lifecycle.abort(); this.eventStream?.close(); this.pendingQuestions.clear();
+    this.cancelCompletionCheck(); this.cancelCompaction(); this.active = false; this.eventsAbort?.abort(); this.pending.clear();
+  }
+  async retireOwnedResources() {
+    const child = this.child, lease = this.privacyLease;
+    try {
+      if (child && !this.childRetirement) this.childRetirement = new Promise(resolve => {
+        if (child.exitCode !== null || child.signalCode != null) return resolve();
+        const done = () => { clearTimeout(timer); child.removeListener('exit', done); resolve(); };
+        const timer = setTimeout(() => { child.kill('SIGKILL'); done(); }, 3000);
+        child.once('exit', done); child.kill();
+      });
+      await this.childRetirement;
+    } finally {
+      if (lease) {
+        this.leaseRetirement ||= Promise.resolve().then(() => lease.dispose());
+        await this.leaseRetirement;
+        if (this.privacyLease === lease) this.privacyLease = null;
+      }
+    }
+  }
+  close() {
+    if (this.closePromise) return this.closePromise;
+    this.activeMeasurement?.finish('closed'); this.pendingMeasurement?.finish('closed'); this.stopLifecycle();
+    this.closePromise = (async () => {
+      try { await this.retireOwnedResources(); }
+      finally {
+        // Startup may own a lease that had not resolved when close began. Join
+        // it, then retire any late resource before acknowledging closed.
+        await this.startPromise?.catch(() => {});
+        await this.retireOwnedResources();
+      }
+    })();
+    return this.closePromise;
+  }
 }
 module.exports = { OpenCodeEngine, findExecutable, isolatedEnv, permissions, engineConfig, writeSkills, writePluginRuntime, pluginRuntimeFiles, pluginRuntimePatterns, createReadGuard, writeReadGuard, VERSION, SUMMARIZE_TIMEOUT_MS, parseOpenCodeVersion };
