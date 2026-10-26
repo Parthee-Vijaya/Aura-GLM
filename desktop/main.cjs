@@ -2,6 +2,7 @@
 if (process.argv.includes('--aura-privacy-offline-renderer')) {
   require('./privacy/isolation/offline-renderer-worker.cjs');
 } else {
+require('./core/http-runtime.cjs').install();
 const { app, BrowserWindow, ipcMain, dialog, protocol, session, safeStorage, Menu, shell, webFrameMain, nativeImage } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs/promises');
