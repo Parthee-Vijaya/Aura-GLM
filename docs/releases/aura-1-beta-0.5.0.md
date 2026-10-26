@@ -1,8 +1,12 @@
-# Aura 1 beta 0.5.0 — lokal testpakke
+# Aura 1 beta 0.5.0
 
 Teknisk version: `0.5.0-beta.4`. Iteration 4 er valgt, fordi de tre tidligere 0.5.0-tags findes fra originalens gamle versionsrække. Ingen eksisterende tags flyttes. Den synlige version er **Aura 1 beta 0.5.0**.
 
-Status: lokal r2-app, DMG og ZIP er bygget fra `320a2ae433e1b3e64130d448e43c7a2491b62605` på macOS/Apple Silicon. Filindhold, signaturer og pakkens 20 native coreprøver består. Den samlede brugerfladeprøve afventer macOS-nøgleringen; pakken er derfor endnu ikke færdigkvalificeret. Der er ikke offentliggjort en ny release, ændret opdateringsfeed eller erstattet en installeret app.
+Denne testbeta til macOS/Apple Silicon samler OpenCode 2, Privacy Gate og de godkendte feedbackændringer. DMG og opdaterings-ZIP er bygget fra `320a2ae433e1b3e64130d448e43c7a2491b62605`. Efterfølgende merge- og releasecommits ændrer dokumentation og distributionsmetadata, ikke de pakkede produktfiler.
+
+**Afgrænsning ved udgivelse:** Filindhold, ad-hoc-signaturer og pakkens 20 native coreprøver består. Den samlede brugerfladeprøve afventer stadig macOS-nøgleringen. Den fulde pakke er derfor ikke færdigkvalificeret, og denne udgave publiceres som prerelease til afprøvning. Den er ikke Apple-notariseret. En tidligere sporadisk motoropstartsfejl er fortsat uafklaret. Brug et separat testprojekt med opdigtede data.
+
+[Hent DMG](https://github.com/Parthee-Vijaya/ai-harness/releases/download/v0.5.0-beta.4/Aura-1-0.5.0-beta.4-mac-arm64.dmg) · [Release, ZIP og kontrolsummer](https://github.com/Parthee-Vijaya/ai-harness/releases/tag/v0.5.0-beta.4). Udgivelsen erstatter ikke en installeret app eller brugerens data automatisk.
 
 ## Indhold
 
@@ -28,8 +32,10 @@ Artefaktkontrollen bekræfter identiske filer, symbolske links og rettigheder i 
 | DMG | `136c62fe918b97f051c259526589007bc19b043f4a9a0e0dcca8aab33c6b454a` |
 | ZIP | `e82d026dd86f9e711792097f698d69db1aa48d23700f215d68799f4512876fb4` |
 
-Lokal signering er ad hoc; der påstås ikke Apple-notarisering, GitHub CI, en rigtig AI-prøve eller kvalifikation af Windows, Linux eller Intel-Mac. OpenEnv-/OpenSandbox-piloter og nye betalte modelprøver er fortsat udskudt. Ingen ny UI-retning tilføjes som del af pakkekvalifikationen.
+Lokal signering er ad hoc; der påstås ikke Apple-notarisering, GitHub CI, en rigtig AI-prøve eller kvalifikation af Windows, Linux eller Intel-Mac. De tre kendte høje afhængighedsmarkeringer i sandbox-runtime, node-forge og Zod er dokumenteret og ikke fjernet fra rapporteringen. [Vurdering og afgrænsning](../feedback/2026-10-26-dependency-boundaries.md). OpenEnv-/OpenSandbox-piloter og nye betalte modelprøver er fortsat udskudt. Ingen ny UI-retning tilføjes som del af pakkekvalifikationen.
+
+Den generiske flerplatform-/notariseringskontrol anvendes ikke som udgivelsesbevis for denne afgrænsede fork-beta. Den manuelle udgivelseskontrol kræver præcis DMG, ZIP og SHA256SUMS.txt, matcher GitHub-digests og downloadede bytes og kontrollerer forkens opdateringsfeed med produktets egen validator. Download- og feedkontrol er ikke en udført automatisk installation.
 
 ## Beviser og oprydning
 
-Rapporter og screenshots gemmes lokalt i `ReleaseReports/package-beta-0.5.0-20261026/`; de skal knytte den faktiske pakke til kildecommit og kontrolsummer. Den offentlige 0.4.0-release og dens beskrivelser bevares. Kun verificeret ubrugte byggeprodukter, caches og syntetiske testdata må ryddes op; lokal kode og brugerdata bevares.
+Rapporter og screenshots bevares lokalt i `ReleaseReports/package-beta-0.5.0-20261026/`, inklusive de faktiske TAP-filer, den uafsluttede GUI-rapport, kildebevis, artefaktkontrol og publiceringsrapport. PR #28–31 er flettet i egen fork. Originalens PR'er og GitHub Actions er uændrede. De offentlige 0.3.1- og 0.4.0-releases og deres beskrivelser bevares. Kun verificeret ubrugte byggeprodukter, caches og syntetiske testdata må ryddes op; lokal kode og brugerdata bevares.

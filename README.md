@@ -1,22 +1,20 @@
-# Aura 1 beta 0.4.0
+# Aura 1 beta 0.5.0
 
-**Næste lokale testpakke: Aura 1 beta 0.5.0** (`0.5.0-beta.4`). Kildekoden er versionsmærket til særskilt kvalifikation af OpenCode 2, Privacy Gate og de godkendte feedbackændringer. Den eksisterende offentlige udgivelse er fortsat 0.4.0; [status og afgrænsning for 0.5.0](docs/releases/aura-1-beta-0.5.0.md) opdateres efter pakkeprøverne.
+Dette er **Parthee-Vijayas fork af Aura Harness**. Udgaven samler OpenCode 2, Privacy Gate, designhjælp og de godkendte forbedringer af samtale og arbejdsområde. Onboarding B, øvrige funktioner, planer og godkendelser bevares. Bidrag til AI Alliancens original håndteres i særskilte PR’er.
 
-Dette er **Parthee-Vijayas fork af Aura Harness**. Udgaven samler forbedret designhjælp, en lokal kontrol af genererede webapps og den godkendte aktivitetsvisning. Onboarding B, øvrige funktioner, planer og godkendelser bevares. Bidrag til AI Alliancens original håndteres i særskilte PR’er.
+**Testbeta af 26. oktober 2026** til macOS på Apple Silicon. Teknisk version: `0.5.0-beta.4`. 2.051 kildeprøver og 20 native coreprøver af den faktiske pakke består. Den fulde brugerfladeprøve afventer macOS-nøgleringen, så pakken er endnu ikke færdigkvalificeret. Appen er ad hoc-signeret og ikke Apple-notariseret. GitHub CI er ikke kørt for denne udgivelse.
 
-**Udgivet 25. oktober 2026** til macOS på Apple Silicon. Teknisk version: `0.4.0-beta.2`. Pakken og lokale native prøver er verificeret. Den er ad hoc-signeret og ikke notariseret af Apple; GitHub CI har ingen kørsler for denne fork.
+[Hent Aura 1 beta 0.5.0 til Apple Silicon](https://github.com/Parthee-Vijaya/ai-harness/releases/download/v0.5.0-beta.4/Aura-1-0.5.0-beta.4-mac-arm64.dmg) · [Release og kontrolsummer](https://github.com/Parthee-Vijaya/ai-harness/releases/tag/v0.5.0-beta.4) · [0.5.0-noter og teststatus](docs/releases/aura-1-beta-0.5.0.md) · [Originalprojektet](https://github.com/ai-alliancen-org/ai-harness)
 
-[Hent Aura 1 beta 0.4.0 til Apple Silicon](https://github.com/Parthee-Vijaya/ai-harness/releases/download/v0.4.0-beta.2/Aura-1-0.4.0-beta.2-mac-arm64.dmg) · [Release og kontrolsummer](https://github.com/Parthee-Vijaya/ai-harness/releases/tag/v0.4.0-beta.2) · [0.4.0-noter og teststatus](docs/releases/aura-1-beta-0.4.0.md) · [Originalprojektet](https://github.com/ai-alliancen-org/ai-harness)
+Prøverne bruger rigtig OpenCode og macOS-isolation med kontrollerede modelservere. Der er ikke kørt en ny betalt AI-prøve af denne DMG. En tidligere sporadisk motoropstartsfejl og tre høje afhængighedsmarkeringer er fortsat dokumenteret som åbne forhold. Brug et separat testprojekt med opdigtede data; se udgivelsesnoterne.
 
-840 desktop-, 27 CLI- og 24 evalueringstests samt syv native regressioner består. Et helt forløb med rigtig Mistral fra kildekoden består; en ekstra rigtig AI-prøve direkte fra DMG’en afventer macOS-nøgleringen. GPT-prøven har fortsat transporttimeouts. Se de konkrete begrænsninger i udgivelsesnoterne.
+**Tidligere modelprøver:** [Fem kommunale landing pages med GPT-6.1 Sol](evals/openenv/MUNICIPAL-LANDINGS-2026-10-25.md) gennemførte Auras Plan/Byg-forløb med 331 browserkontroller, 60 visuelle kontrolpunkter og screenshots fra både første og sidste udkast. De 79 modelkald i denne runde havde ingen timeout; tidligere fejlede forsøg, resterende advarsler og 26 fejlede modellæsninger er dokumenteret. Dette er historisk kilde-/modelevidens, ikke en ny prøve af 0.5.0-pakken. Designvejledningen i appen opfordrer til at kombinere Aura-design med relevante designskills, som det aktuelle miljø faktisk tilbyder; den installerer ingen eksterne skills.
 
-**Efterfølgende kildearbejde — endnu ikke i DMG’en:** [Fem kommunale landing pages med GPT-6.1 Sol](evals/openenv/MUNICIPAL-LANDINGS-2026-10-25.md) gennemfører nu Auras Plan/Byg-forløb med 331 browserkontroller, 60 visuelle kontrolpunkter og screenshots fra både første og sidste udkast. De 79 modelkald i denne runde havde ingen timeout; tidligere fejlede forsøg, resterende advarsler og 26 fejlede modellæsninger er dokumenteret. Designvejledningen opfordrer desuden til at kombinere Aura-design med relevante designskills, som det aktuelle miljø faktisk tilbyder. Det installerer ingen eksterne skills og ændrer ingen udgivet app.
+**Privacy Gate i denne pakke:** Kontrol af hele modelkaldet, separate lokale/cloudbaserede sessioner, native procesisolation og kontrolleret genoptagelse efter Stop. Se [opsætning, sikkerhedsgrænser og afprøvning](docs/privacy-gate.md). Videre OpenEnv-/OpenSandbox-arbejde er [gemt til senere](docs/deferred-openenv-sandbox.md).
 
-**Privacy Gate i kildearbejdet — ikke udgivet:** Den aktuelle arbejdsgren indeholder kontrol af hele modelkaldet, separate lokale/cloudbaserede sessioner, native procesisolation og sikker genoptagelse efter Stop. Se [opsætning, sikkerhedsgrænser og afprøvning](docs/privacy-gate.md). Dette ændrer ikke den eksisterende DMG eller dens dokumenterede egenskaber. Videre OpenEnv-/OpenSandbox-arbejde er [gemt til senere](docs/deferred-openenv-sandbox.md).
+**Godkendt feedback og robusthed i denne pakke:** Kompakt skrivefelt, status tæt ved samtalen, justerbar sidebar, direkte svar på AI-spørgsmål, forklaring af arbejdsformer og et enklere resultatkort. OpenCode er opgraderet til 2.1.4; fælles filbeskyttelse og Stop/genoptagelse er styrket. [Samlet ændringsoverblik, afprøvning og begrænsninger](docs/feedback/2026-10-26-merge-overview.md). Stop under motoropstart og opdatering af en allerede godkendt statisk forhåndsvisning efter gendannelse har desuden afgrænsede rettelser og regressionstests.
 
-**Godkendt feedback og robusthed i kildekoden:** Kompakt skrivefelt, status tæt ved samtalen, justerbar sidebar, direkte svar på AI-spørgsmål, forklaring af arbejdsformer og et enklere resultatkort. OpenCode er opgraderet til 2.1.4; fælles filbeskyttelse og Stop/genoptagelse er styrket. [Samlet ændringsoverblik, afprøvning og begrænsninger](docs/feedback/2026-10-26-merge-overview.md). Disse ændringer følger ikke med den eksisterende 0.4.0-DMG.
-
-## Det nye i 0.4.0
+## Design- og arbejdsfunktioner, der videreføres
 
 - **Design gennem skills og den valgte model.** Aura indlæser designmetoden fra første idé- og byggeforsøg. Modellen skaber designet ud fra opgaven, brugerens valg og dokumenterede designguides, logoer og farver. Aura påtvinger ikke alle apps den samme palette eller layoutopskrift. Se [designskillen](docs/aura-design-skill.md).
 - **Mere robust idéhjælp.** Et afsluttet svar med ugyldigt format kan få én formatrettelse hos samme model under samme samlede tidsfrist. Stop, den gennemgåede afsendelse og modelvalget bevares. Forslaget er stadig ikke en godkendt byggeplan.
@@ -34,13 +32,13 @@ Design-skills er vejledning, ikke en garanti for et flot eller fejlfrit første 
 - Den allerede implementerede **YOLO**-indstilling under **Byg**: efter advarsel gælder den kun den aktuelle samtale, indtil den slås fra eller appen lukkes. Planer, datadeling, beskyttede filer og tekniske adgangsgrænser består. Se [YOLO og samtaletilladelser](docs/yolo.md).
 - Appnavnet **Aura 1**, synlig version fra den kørende app, eksisterende data- og nøgleringsidentiteter samt forkens opdateringskanal.
 
-Udgivelsen er verificeret til **macOS på Apple Silicon**. Pakken stammer fra produktcommit `95c7056b18cf8ec22df51ac45e460404faabf483`; kildebevis, testtal, pakkeintegritet, signering og downloadfiler er dokumenteret i [release-noterne](docs/releases/aura-1-beta-0.4.0.md). Der påstås ikke Developer ID-notarisering, grøn GitHub CI, Intel-/Windows-afprøvning, fuld Privacy Gate eller modeluafhængig designkvalitet. Denne fork er særskilt fra det Code-OSS-baserede Aura-1-projekt.
+Pakken stammer fra produktcommit `320a2ae433e1b3e64130d448e43c7a2491b62605`; kildebevis, testtal, pakkeintegritet og de uafsluttede prøver er dokumenteret i [release-noterne](docs/releases/aura-1-beta-0.5.0.md). Der påstås ikke Apple-notarisering, grøn GitHub CI, Intel-/Windows-afprøvning, færdig GUI-kvalifikation eller modeluafhængig designkvalitet. Denne fork er særskilt fra det Code-OSS-baserede Aura-1-projekt.
 
 [Versions- og oprydningsregel](docs/releases/POLICY.md): kun tre seneste færdige lokale DMG-versioner beholdes; lokal kildekode, worktrees, beskrivelser og brugerdata bevares. Brug en separat profil ved afprøvning.
 
 ![Tidligere udgivet Aura 1 beta 0.3.1 med synligt versionsnummer](docs/images/aura-1-beta-0.3.1/workspace.png)
 
-*Billedet viser den udgivne 0.3.1 og dokumenterer ikke 0.4.0. Historiske skærmbilleder og originalens vejledninger følger nedenfor.*
+*Billedet viser den udgivne 0.3.1 og dokumenterer ikke 0.5.0. Historiske skærmbilleder og originalens vejledninger følger nedenfor.*
 
 ---
 
@@ -137,7 +135,7 @@ Når du har en Aura-installation, kan du vælge **Prøv et eksempel** ved opstar
 
 *Et lokalt eksempel, der viser samspillet mellem besked og forhåndsvisning. Der foretages ingen modelkald.*
 
-Originalprojektets [downloads til Mac og Windows](https://ai-alliancen-org.github.io/ai-harness/desktop.html) har deres egne versions- og signeringsoplysninger. Forkens senest udgivne version er [Aura 1 beta 0.4.0](https://github.com/Parthee-Vijaya/ai-harness/releases/tag/v0.4.0-beta.2), som ikke er notariseret. Se [test- og udgivelsesstatus](docs/releases/aura-1-beta-0.4.0.md), før du vælger en pakke.
+Originalprojektets [downloads til Mac og Windows](https://ai-alliancen-org.github.io/ai-harness/desktop.html) har deres egne versions- og signeringsoplysninger. Forkens aktuelle testbeta er [Aura 1 beta 0.5.0](https://github.com/Parthee-Vijaya/ai-harness/releases/tag/v0.5.0-beta.4), som ikke er notariseret. Se [test- og udgivelsesstatus](docs/releases/aura-1-beta-0.5.0.md), før du vælger en pakke.
 
 ### Start fra kildekoden
 
