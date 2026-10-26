@@ -16,21 +16,56 @@ const { PrivacyRuntimeProvider } = product.require('./core/privacy-runtime-provi
 const { startGateway } = product.require('./core/gateway.cjs');
 const enabled = process.platform === 'darwin' && process.env.AURA_PRIVACY_NATIVE === '1';
 const native = { skip: enabled ? false : 'Set AURA_PRIVACY_NATIVE=1 on a qualified macOS host.', timeout: 150_000 };
-if (enabled && process.env.AURA_PRIVACY_NATIVE_TRACE === '1') {
-  // Test-only diagnostics retain the original exception before the production
-  // boundary replaces it with a safe Privacy Gate error. These fixtures use no
-  // real provider credentials; never log method arguments, headers or bodies.
+if (enabled) {
+  // Observe failures before the production boundary replaces them with a safe
+  // Privacy Gate error. Return each original promise unchanged: no additional
+  // awaited step, retry, or success logging in the default diagnostic mode.
+  // Fixtures are synthetic; never log method arguments, credentials or bodies.
   const { OpenCodeEngine } = product.require('./core/engine.cjs');
-  const identities = new WeakMap(); let nextIdentity = 0;
-  for (const method of ['start', 'send', 'close']) {
+  const identities = new WeakMap(), plugins = new WeakMap(); let nextIdentity = 0;
+  const verbose = process.env.AURA_PRIVACY_NATIVE_TRACE === '1';
+  if (verbose) {
+    const originalWire = OpenCodeEngine.prototype.wire;
+    OpenCodeEngine.prototype.wire = function (...args) {
+      const result = originalWire.apply(this, args);
+      if (typeof args[0] === 'string' && args[0].startsWith('/api/plugin?')) {
+        // Opt-in only: even a passive success observer adds a microtask. The
+        // default failure probe leaves every wire request completely untouched.
+        void result.then(value => plugins.set(this, value), () => {});
+      }
+      return result;
+    };
+  }
+  const sourcePath = (engine, value) => {
+    if (typeof value !== 'string') return undefined;
+    for (const [root, label] of [[engine.directory, '[engine-state]'], [engine.root, '[workspace]']]) {
+      if (typeof root === 'string' && (value === root || value.startsWith(root + path.sep))) return label + value.slice(root.length);
+    }
+    return '[external]/' + path.basename(value);
+  };
+  for (const method of ['startActual', 'start', 'send', 'close']) {
     const original = OpenCodeEngine.prototype[method];
-    OpenCodeEngine.prototype[method] = async function (...args) {
-      if (!identities.has(this)) identities.set(this, ++nextIdentity);
-      const engine = identities.get(this), started = Date.now();
-      const trace = details => process.stderr.write(JSON.stringify({ nativeEngineTrace: { engine, method, elapsedMs: Date.now() - started, ...details } }) + '\n');
-      trace({ phase: 'begin' });
-      try { const result = await original.apply(this, args); trace({ phase: 'complete' }); return result; }
-      catch (error) { trace({ phase: 'failed', code: error.code, status: error.status, message: String(error.message || '').slice(0, 600), stack: String(error.stack || '').split('\n').slice(1, 7) }); throw error; }
+    OpenCodeEngine.prototype[method] = function (...args) {
+      const started = verbose ? Date.now() : 0;
+      const trace = details => {
+        if (!identities.has(this)) identities.set(this, ++nextIdentity);
+        process.stderr.write(JSON.stringify({ nativeEngineTrace: { engine: identities.get(this), method, ...(verbose ? { elapsedMs: Date.now() - started } : {}), ...details } }) + '\n');
+      };
+      const failed = error => {
+        try {
+          trace({ phase: 'failed', code: error.code, status: error.status, name: error.name,
+            message: String(error.message || '').slice(0, 600), stack: String(error.stack || '').split('\n').slice(1, 7),
+            state: { active: this.active, closed: this.closed, hasSession: Boolean(this.session?.id), hasURL: Boolean(this.url), hasLease: Boolean(this.privacyLease),
+              child: this.child ? { pid: this.child.pid, exitCode: this.child.exitCode, signalCode: this.child.signalCode, startupFailed: Boolean(this.childStartFailed) } : null },
+            plugins: Array.isArray(plugins.get(this)?.data) ? plugins.get(this).data.map(item => ({ id: item.id, source: { type: item.source?.type, path: sourcePath(this, item.source?.path) }, state: { status: item.state?.status } })) : undefined });
+        } catch { /* Diagnostics must not replace the original product error. */ }
+      };
+      if (verbose) trace({ phase: 'begin' });
+      try {
+        const result = original.apply(this, args);
+        void result.then(verbose ? () => trace({ phase: 'complete' }) : undefined, failed);
+        return result;
+      } catch (error) { failed(error); throw error; }
     };
   }
 }
