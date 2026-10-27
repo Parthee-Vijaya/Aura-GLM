@@ -1295,3 +1295,11 @@ details.plan-detail > .plan-detail-body { padding: 0 14px 12px 14px; font-size: 
 .viewport-icon svg { width: 20px; height: 20px; stroke: var(--muted); }
 .viewport-icon[aria-pressed="true"] { background: var(--tint); border-color: var(--accent); }
 .viewport-icon[aria-pressed="true"] svg { stroke: var(--accent); }
+
+/* Model-picker: kompact popover ved chatboksen (som Codex/Claude) */
+#model-picker { border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: var(--surface); box-shadow: 0 8px 24px #00000025; max-width: 340px; margin: 0; position: fixed; inset: auto; }
+#model-picker .mode-menu-title { margin: 0 0 8px; font-size: 10px; font-weight: 700; letter-spacing: .06em; color: var(--muted); }
+#model-picker-list button { display: block; width: 100%; text-align: left; padding: 8px 12px; border: none; background: transparent; border-radius: 8px; font-size: 13px; cursor: pointer; color: var(--ink); }
+#model-picker-list button:hover { background: var(--tint); }
+#model-picker-list button[aria-checked="true"] { background: var(--tint); font-weight: 600; }
+#model-picker .mode-menu-footer { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }

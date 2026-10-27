@@ -66,9 +66,9 @@
     const current = Number(divider.getAttribute('aria-valuenow'));
     settings.chat = split(event.key === 'Home' ? 280 : event.key === 'End' ? grid.clientWidth : current + (event.key === 'ArrowLeft' ? -1 : 1) * (event.shiftKey ? 50 : 10)); save();
   });
-  preset.addEventListener('change', () => {
-    settings.preset = preset.value;
-    if (sizes[preset.value]) [settings.width, settings.height] = sizes[preset.value];
+  for (const btn of preset.querySelectorAll('.viewport-icon')) btn.addEventListener('click', () => {
+    settings.preset = btn.dataset.preset;
+    if (sizes[btn.dataset.preset]) [settings.width, settings.height] = sizes[btn.dataset.preset];
     controls(); render(); save();
   });
   for (const input of [width, height]) input.addEventListener('change', () => {

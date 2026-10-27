@@ -2078,7 +2078,30 @@ function openTaskSettings() {
   if (!state?.connections?.length) { showSetup('Tilslut en AI for at bygge videre. Din kladde er bevaret.'); return; }
   $('#model-options').open = true; if (!$('#task-dialog').open) $('#task-dialog').showModal();
 }
-$('#model-chip').onclick = openTaskSettings;
+$('#model-chip').onclick = () => { buildModelPicker(); document.getElementById('model-picker').showPopover(); };
+function buildModelPicker() {
+  const list = document.getElementById('model-picker-list');
+  const conn = $('#connection-select'), connModel = $('#model-select');
+  // Genindbyg listen: forbindelse + modelnavn + indsatsstatus
+  const names = [];
+  if (conn?.value && connModel?.value) {
+    names.push({ id: connModel.value, label: `${connModel.value} · ${conn.selectedOptions[conn.selectedIndex]?.text || ''}`, model: true });
+  }
+  // Senest brugte modeller fra workspaces (kortliste)
+  if (state?.connections?.length) for (const c of state.connections.slice(0, 5)) {
+    if (c.id === conn?.value) continue;
+    names.push({ id: c.id, label: c.name || c.id, connection: c.id });
+  }
+  list.replaceChildren(...names.map(item => {
+    const btn = node('button', item.label); btn.type = 'button'; btn.setAttribute('role', 'radio');
+    btn.setAttribute('aria-checked', item.model ? 'true' : 'false');
+    btn.onclick = async () => { document.getElementById('model-picker').hidePopover(); if (item.connection) { $('#connection-select').value = item.connection; if (connModel) { connModel.value = ''; } await loadModels(); } updateModelSummary(); $('#prompt').focus(); };
+    return btn;
+  }));
+  if (!names.length) list.replaceChildren(node('p', 'Ingen forbindelse valgt endnu.', 'hint'));
+}
+$('#model-picker-more').onclick = () => { document.getElementById('model-picker').hidePopover(); openTaskSettings(); };
+$('#model-picker-done').onclick = () => document.getElementById('model-picker').hidePopover();
 // En valgt indsats hører til modellen. Et skift af model eller forbindelse vender tilbage til udbyderens standard.
 const resetEffort = () => { if (view) view.effort = null; updateModelSummary(); };
 $('#model-effort-reset').onclick = resetEffort;
