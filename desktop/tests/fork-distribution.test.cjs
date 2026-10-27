@@ -47,7 +47,7 @@ test('fork updates accept only its own versioned artifact and require explicit d
   const controller = new Updates({ ...options, updater, store: { read: async () => ({ updates: { automatic: false } }) } });
   t.after(() => controller.close());
   await controller.start();
-  assert.equal(feed.url, distribution.feed + 'beta/darwin-arm64/');
+  assert.equal(feed.provider, 'github'); assert.equal(feed.owner, 'Parthee-Vijaya'); assert.equal(feed.repo, 'Aura-GLM'); assert.equal(feed.channel, 'beta');
   assert.equal(updater.autoDownload, false);
   assert.equal(updater.autoInstallOnAppQuit, false);
   await controller.check();

@@ -1,7 +1,7 @@
 {
   "name": "aura-desktop",
   "productName": "Aura GLM",
-  "version": "1.0.0-beta.3",
+  "version": "1.0.0-beta.5",
   "private": true,
   "license": "EUPL-1.2",
   "feedback": {

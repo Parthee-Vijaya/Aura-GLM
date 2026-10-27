@@ -22,7 +22,7 @@
 <main id="setup" class="onboarding-b" aria-labelledby="setup-title" hidden>
   <div class="setup-topbar"><button id="setup-back" class="text-button">← Tilbage</button><span class="aura-brand"><img class="aura-logo" src="aura-icon.png" width="36" height="36" alt=""><span class="brand-copy">Aura GLM<small class="app-version" data-app-version></small></span></span></div>
   <div class="setup-heading"><p id="setup-eyebrow" class="eyebrow">DIN AI</p><h1 id="setup-title" tabindex="-1">Hvordan vil du forbinde din AI?</h1><p id="setup-subtitle">Vælg den adgang, du allerede har.</p></div>
-  <div class="setup-quick-actions"><button id="setup-local" class="text-button">Vælg senere</button><button id="setup-advanced" class="text-button">Avanceret opsætning</button></div>
+  <div class="setup-quick-actions"><button id="setup-local" class="text-button">Vælg senere</button><button id="setup-advanced" class="text-button">Avanceret opsætning</button><button id="setup-remove-all" class="text-button" hidden>Fjern alle gemte nøgler …</button></div>
   <ol class="onboarding-b-progress" aria-label="Din opsætning"><li data-phase="provider"><span>1</span>Udbyder</li><li data-phase="connection"><span>2</span>Forbindelse</li><li data-phase="features"><span>3</span>Funktioner</li><li data-phase="idea"><span>4</span>Din idé</li></ol>
   <p id="setup-reason" role="status" hidden></p>
   <div class="onboarding-b-layout"><div class="onboarding-b-content">
@@ -111,7 +111,7 @@
 
 
 
-    <div id="connection-warning" role="status" hidden><p id="connection-warning-text"></p><button id="repair-connection">Gennemgå AI-forbindelse</button><button id="dismiss-connection">Fortsæt uden AI</button></div>
+    <div id="connection-warning" role="status" hidden><span class="warning-icon" aria-hidden="true">⚠</span><div class="warning-content"><strong>AI-forbindelsen skal gennemgås</strong><p id="connection-warning-text"></p></div><div class="warning-actions"><button id="repair-connection">Gennemgå AI-forbindelse</button><button id="dismiss-connection">Fortsæt uden AI</button></div></div>
     <div class="chat-content" id="chat-content"><details id="resume-notice" hidden><summary>Tidligere samtale</summary><p id="resume-text"></p><label class="check-label"><input id="include-history" type="checkbox"> Medsend en ekstra kopi af tidligere samtale</label><p class="hint">Kan indeholde tidligere delte referencer. Indholdet vises før afsendelse.</p></details><div id="project-intro"><h3>Hvad vil du tale om?</h3><p id="project-purpose"></p><details id="idea-options"><summary>Ønsker til løsningen · valgfrit</summary>
 <p class="hint" id="idea-options-hint">Valgene kommer i projektbriefen under Plan. Du kan rette dem der.</p>
 <label for="idea-platform">Hvor skal den bruges?</label><select id="idea-platform"><option value="">Lad AI’en foreslå det</option><option>Browser</option><option>Installerbar webapp med offlinebehov</option><option>Windows og macOS</option><option>iOS og Android</option></select>

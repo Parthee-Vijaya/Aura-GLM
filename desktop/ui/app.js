@@ -251,6 +251,9 @@ function renderSetup() {
   else verifiedConnection = '';
   $('#setup-use-saved').hidden = !state?.connections.length;
   $('#setup-saved-hint').textContent = state?.connections.length === 1 ? state.connections[0].name : 'Vælg blandt dine gemte forbindelser.';
+  const removeAll = (state?.connections || []).slice();
+  $('#setup-remove-all').hidden = removeAll.length === 0;
+  $('#setup-remove-all').textContent = removeAll.length === 1 ? 'Fjern den gemte nøgle …' : `Fjern alle gemte nøgler (${removeAll.length}) …`;
   if (!verifiedConnection) $('#setup-ai').textContent = $('#setup-connection').value ? 'Gemt opsætning · endnu ikke kontrolleret i denne session.' : 'Tilføj en forbindelse, eller fortsæt uden AI.';
   setupControls();
 }
@@ -296,6 +299,47 @@ async function leaveSetup(useAI) {
   if (returningToConnections && !useAI) $('#connections-button').click();
 }
 $('#setup-local').onclick = () => action(() => leaveSetup(false));
+$('#setup-remove-all').onclick = () => action(async () => {
+  const removeAll = (state?.connections || []).slice();
+  if (!removeAll.length) return;
+  const make = (tag, text, className) => { const element = document.createElement(tag); if (text) element.textContent = text; if (className) element.className = className; return element; };
+  const dialog = make('dialog', '', 'connection-removal-dialog'); dialog.id = 'remove-all-dialog';
+  const heading = make('h2', 'Fjern alle gemte nøgler?'); heading.id = 'remove-all-title'; dialog.setAttribute('aria-labelledby', 'remove-all-title');
+  const description = make('p');
+  description.append(make('strong', removeAll.length === 1 ? '1 forbindelse' : `${removeAll.length} forbindelser`), document.createTextNode(' og deres gemte adgangsoplysninger fjernes fra Aura GLM. Dine projekter og samtaler bevares.'));
+  const names = make('ul', '', 'hint'); for (const connection of removeAll) names.append(make('li', connection.name || 'Forbindelse'));
+  const details = make('p', 'API-nøgler tilbagekaldes ikke hos udbyderne. De kan stadig bruges i andre programmer, og du kan altid tilføje dem igen i Aura GLM.', 'hint');
+  const status = make('p', '', 'connection-removal-status hint'); status.setAttribute('role', 'status'); status.hidden = true;
+  const buttons = make('div', '', 'dialog-actions');
+  const cancel = make('button', 'Annuller'); cancel.type = 'button'; cancel.dataset.action = 'cancel'; cancel.autofocus = true;
+  const confirm = make('button', 'Fjern alle', 'danger'); confirm.type = 'button'; confirm.dataset.action = 'confirm';
+  buttons.append(cancel, confirm); dialog.append(heading, description, names, details, status, buttons);
+  let busy = false, settled = false;
+  const dismiss = () => { if (!busy) { settled = true; dialog.close(); } };
+  cancel.addEventListener('click', dismiss);
+  dialog.addEventListener('cancel', event => { event.preventDefault(); dismiss(); });
+  dialog.addEventListener('close', () => dialog.remove());
+  confirm.addEventListener('click', async () => {
+    if (busy || settled) return;
+    busy = true; cancel.disabled = confirm.disabled = true; dialog.setAttribute('aria-busy', 'true'); status.hidden = false;
+    let removed = 0;
+    for (const connection of removeAll) {
+      status.textContent = `Fjerner ${removed + 1} af ${removeAll.length} · ${connection.name || 'forbindelse'} …`;
+      try { await call('removeConnection', connection.id); removed++; }
+      catch (error) { if (removed === 0) { status.textContent = error?.message || 'Ingen forbindelser kunne fjernes. Prøv igen.'; busy = false; cancel.disabled = false; cancel.focus(); return; } break; }
+    }
+    status.textContent = removed === removeAll.length ? `Alle ${removed} forbindelser er fjernet.` : `${removed} af ${removeAll.length} forbindelser er fjernet. Resten kunne ikke fjernes — prøv igen for de resterende.`;
+    setTimeout(async () => {
+      settled = true; dialog.close();
+      try { state = await call('connectionState'); renderConnections(); } catch {}
+      renderSetup();
+      const still = (state?.connections || []).length;
+      $('#setup-remove-all').hidden = still === 0;
+      $('#setup-remove-all').textContent = still === 0 ? 'Fjern alle gemte nøgler …' : still === 1 ? 'Fjern den gemte nøgle …' : `Fjern alle gemte nøgler (${still}) …`;
+    }, 900);
+  });
+  document.body.append(dialog); dialog.showModal(); cancel.focus();
+});
 $('#setup-add-another').onclick = () => setupProvider();
 $('#setup-continue').onclick = () => action(() => leaveSetup(true));
 $('#setup-manage').onclick = () => $('#connections-button').click();
@@ -826,7 +870,7 @@ function renderStatus() {
   const v = view, waiting = v.running && v.waitingFor.length > 0;
   // Lyskanten følger kun den aktive samtale; ventende valg står stille.
   $('#chat-form').dataset.metalState = v.running ? (waiting ? 'waiting' : 'working') : 'idle';
-  $('#agent-activity').hidden = !v.running; $('#agent-activity').classList.toggle('is-waiting', waiting);
+  $('#agent-activity').classList.toggle('is-idle', !v.running); $('#agent-activity').classList.toggle('is-waiting', waiting);
   $('#agent-activity-text').textContent = waiting ? `Venter på dig: ${v.waitingFor[0].title}${v.waitingFor.length > 1 ? ` Og ${v.waitingFor.length - 1} mere.` : ''}` : window.ChatDisplay.phase(v) || v.statusDetail;
   $('#agent-activity-jump').hidden = !waiting; $('#agent-follow').hidden = waiting;
   window.liveWork?.render();

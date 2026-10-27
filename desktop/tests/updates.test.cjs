@@ -28,7 +28,7 @@ test('Opdatering kræver to særskilte valg og bevarer automatiske installatione
   const f = await fixture(t); await f.controller.check();
   assert.deepEqual(f.counts(), { checks: 1, downloads: 0, installs: 0 });
   assert.equal(f.updater.autoDownload, false); assert.equal(f.updater.autoInstallOnAppQuit, false); assert.equal(f.updater.allowDowngrade, false);
-  assert.match(f.updater.feed.url, /beta\/darwin-arm64\/$/);
+  assert.equal(f.updater.feed.provider, 'github'); assert.equal(f.updater.feed.owner, 'Parthee-Vijaya'); assert.equal(f.updater.feed.repo, 'Aura-GLM'); assert.equal(f.updater.feed.channel, 'beta');
   await f.controller.download(); assert.equal(f.controller.snapshot().phase, 'ready');
   assert.equal(f.events.find(e => e.percent === 57).phase, 'downloading'); assert.equal(f.counts().installs, 0);
   await f.controller.restart(); assert.equal(f.counts().installs, 1);
