@@ -863,7 +863,20 @@ const elapsedText = ms => { const seconds = Math.floor(ms / 1000); return second
 // Én status for opgaven. Overskriften i samtalen siger kort, hvor opgaven er; linjen under siger, hvad der sker, og
 // om AI'en venter på brugeren. Efter Stop og fejl står vejen videre på resultatkortet, ikke i flere bokse.
 // Status pr. samtale. Godkendelser og spørgsmål i en samtale i baggrunden vises i sidepanelet og venter, til den åbnes.
-function setStatusDetail(text, v = view) { v.statusDetail = text; if (v === view) renderStatus(); }
+
+// Status-badge farvning: grøn = færdig, rød = fejl, blå = arbejder, grå = stoppet
+function updateBadgeClass(text) {
+  const badge = document.getElementById('run-status');
+  if (!badge) return;
+  badge.classList.remove('run-idle', 'run-error', 'run-working', 'run-stopped');
+  if (!text) return;
+  if (/arbejder|kører|skriver|forbereder/i.test(text)) badge.classList.add('run-working');
+  else if (/fejl|afvist|stop/i.test(text)) badge.classList.add('run-error');
+  else if (/venter/i.test(text)) badge.classList.add('run-stopped');
+  else if (/færdig|klar|completed/i.test(text)) badge.classList.add('run-idle');
+}
+
+function setStatusDetail(text, v = view) { v.statusDetail = text; if (v === view) { renderStatus(); updateBadgeClass(text); } }
 function waitFor(id, title, element, v = view) { v.waitingFor = [...v.waitingFor.filter(item => item.id !== id), { id, title, element }]; if (v === view) renderStatus(); window.chats?.render(); }
 function doneWaiting(id, v = view) { v.waitingFor = v.waitingFor.filter(item => item.id !== id); if (v === view) renderStatus(); window.chats?.render(); }
 function renderStatus() {

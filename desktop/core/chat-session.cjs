@@ -551,7 +551,7 @@ class ChatSession {
     const statuses = { idle: 'completed', error: 'error', stopped: 'stopped', interrupted: 'stopped', rejected: 'rejected' };
     this.log({ id: `run-${task.id}`, status: statuses[status] || status, ended: task.endedAt });
     const titles = { idle: 'Opgaven er færdig', error: 'Opgaven fejlede', stopped: 'Opgaven blev stoppet', interrupted: 'Opgaven blev afbrudt', rejected: 'Du afviste en handling, så AI’en stoppede' };
-    const parts = [diff ? (files.length ? `${files.length === 1 ? '1 fil ændret' : `${files.length} filer ændret`}` : 'Ingen filer ændret') : 'Ændringerne kunne ikke læses'];
+    const parts = [diff ? (files.length ? `${files.length === 1 ? '1 fil' : `${files.length} filer`} <span class="diff-stat-badge"><span class="added">+${files.length}</span></span>` : 'Ingen filer ændret') : 'Ændringerne kunne ikke læses'];
     if (summary.totals.others) parts.push(`${summary.totals.others} af dem ikke af AI'ens filværktøjer`);
     parts.push(task.commands ? `${task.commands === 1 ? '1 kommando kørt' : `${task.commands} kommandoer kørt`}` : 'ingen kommandoer kørt');
     this.log({ id: `result-${task.id}`, kind: 'result', task: task.id, title: titles[status] || 'Opgaven sluttede', detail: parts.join(' · '), status: statuses[status] || status, at: task.endedAt });

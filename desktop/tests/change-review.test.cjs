@@ -97,7 +97,7 @@ test('arbejdsbænken husker opgavens ændringer og tilskriver dem efter AI’ens
   // Aktivitet: værktøjet står én gang med sin endelige status, og resultatet nævner filen, der ikke var AI’ens.
   const activity = bench.activityList();
   assert.deepEqual(activity.filter(entry => entry.kind === 'tool').map(entry => [entry.target, entry.status]), [['public/index.html', 'completed']]);
-  assert.match(activity.find(entry => entry.kind === 'result').detail, /2 filer ændret · 1 af dem ikke af AI'ens filværktøjer · ingen kommandoer kørt/);
+  assert.match(activity.find(entry => entry.kind === 'result').detail, /2 filer <span class="diff-stat-badge"><span class="added">\+2<\/span><\/span> · 1 af dem ikke af AI'ens filværktøjer · ingen kommandoer kørt/);
   assert.ok(events.some(event => event.type === 'changes.updated' && event.task === 'opgave-1'));
   // Brugeren retter AI’ens fil bagefter: samtalen viser den som blandet, men opgaven er stadig AI’ens.
   await fs.writeFile(path.join(root, 'public/index.html'), '<h1>Efter, rettet</h1>\n');

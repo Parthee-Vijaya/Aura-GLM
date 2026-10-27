@@ -1303,3 +1303,32 @@ details.plan-detail > .plan-detail-body { padding: 0 14px 12px 14px; font-size: 
 #model-picker-list button:hover { background: var(--tint); }
 #model-picker-list button[aria-checked="true"] { background: var(--tint); font-weight: 600; }
 #model-picker .mode-menu-footer { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+
+/* Status-badges: farve-kodede piller for agenttilstande (Paradev-mønster) */
+.badge.run-idle { background: #e6f7ef; color: #1d6b43; border: 1px solid #b8e4d2; }
+.badge.run-error { background: #fdf0ef; color: #9c2a27; border: 1px solid #f2c7c5; }
+.badge.run-working { background: var(--tint); color: var(--accent); border: 1px solid #b5c8e4; animation: badge-pulse 2s ease-in-out infinite; }
+.badge.run-stopped { background: #e8ecf2; color: var(--muted); border: 1px solid var(--line); }
+@keyframes badge-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .6; } }
+@media (prefers-color-scheme: dark) {
+  .badge.run-idle { background: #12271a; color: #6ecf8f; border-color: #1d3a2a; }
+  .badge.run-error { background: #3d1f1c; color: #f0a8a5; border-color: #4a2825; }
+  .badge.run-working { background: #1e2a3c; color: #4f8ff7; border-color: #2a4a6e; }
+  .badge.run-stopped { background: #233043; color: #9aa8bd; border-color: var(--line); }
+}
+
+/* D: Flydende scroll-til-bund-knap (Paradev ScrollToBottomButton-mønster) */
+.chat-latest { position: absolute; bottom: 68px; right: 20px; z-index: 10; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--accent); font-size: 12px; font-weight: 550; box-shadow: 0 4px 12px #00000021; transition: background var(--motion-fast), border-color var(--motion-fast); cursor: pointer; }
+.chat-latest:hover { background: var(--tint); border-color: var(--accent); }
+
+/* B: Kompakte diff-stats-badge i opgave-resultater */
+.diff-stat-badge { display: inline-grid; place-items: center; gap: 4px; padding: 2px 6px; border-radius: 999px; background: var(--tint); font-size: 10px; font-weight: 600; color: var(--muted); margin-left: 6px; }
+.diff-stat-badge .added { color: #1d6b43; }
+.diff-stat-badge .removed { color: #9c2a27; }
+@media (prefers-color-scheme: dark) {
+  .diff-stat-badge { background: #233043; }
+  .diff-stat-badge .added { color: #6ecf8f; }
+  .diff-stat-badge .removed { color: #f0a8a5; }
+}
+
+.chat.panel { position: relative; }
