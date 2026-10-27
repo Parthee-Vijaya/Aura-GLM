@@ -164,7 +164,8 @@ html:has(#workspace:not([hidden])), body:has(#workspace:not([hidden])) { height:
 #project-path { font: 11px/1.6 ui-monospace, monospace; overflow-wrap: anywhere; }
 #idea-options { padding: 12px; background: var(--canvas); border: 1px solid var(--line); border-radius: 10px; }
 #start-idea { margin-top: 14px; padding: 9px 12px; background: var(--tint); color: var(--accent); }
-.agent-activity { margin: 0; padding: 9px 18px; background: var(--tint); color: #214f91; border-bottom: 1px solid var(--line); font-size: 11px; }
+.agent-activity { margin: 0; padding: 9px 18px; background: var(--tint); color: #214f91; border-bottom: 1px solid var(--line); font-size: 11px; min-height: 36px; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; }
+.agent-activity.is-idle { opacity: 0; visibility: hidden; pointer-events: none; min-height: 36px; border-bottom: none; }
 .journey-card { padding: 16px; margin: 18px 0; border: 1px solid var(--line); border-radius: 12px; background: #f8faff; animation: step-arrive var(--motion-step) var(--ease-out); overflow-wrap: anywhere; }
 .journey-card h3 { margin: 0 0 8px; }
 .journey-card pre { white-space: pre-wrap; font: inherit; }
