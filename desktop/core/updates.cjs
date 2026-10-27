@@ -1,7 +1,7 @@
 // Opdateringer bruger en særskilt netforbindelse. Projektfiler og AI-nøgler sendes ikke med.
 const semver = require('semver');
-const FEED = 'https://ai-alliancen-org.github.io/ai-harness/updates/';
-const RELEASES = 'https://github.com/ai-alliancen-org/ai-harness/releases/';
+const FEED = 'https://github.com/Parthee-Vijaya/Aura-GLM/releases/';
+const RELEASES = 'https://github.com/Parthee-Vijaya/Aura-GLM/releases/';
 const interval = 6 * 60 * 60 * 1000;
 function channelFor(version) { return semver.prerelease(version)?.[0] === 'beta' ? 'beta' : 'latest'; }
 function validateInfo(info, { version, platform, arch, releases = RELEASES, artifactPrefix = 'Aura' }) {
@@ -27,7 +27,7 @@ class Updates {
     updater.autoDownload = false; updater.autoInstallOnAppQuit = false; updater.autoRunAppAfterInstall = true;
     updater.allowPrerelease = this.state.channel === 'beta'; updater.channel = this.state.channel; updater.allowDowngrade = false;
     updater.disableDifferentialDownload = true; updater.disableWebInstaller = true; updater.logger = null;
-    updater.setFeedURL({ provider: 'generic', url: `${this.feed}${this.state.channel}/${this.platform}-${this.arch}/`, channel: this.state.channel, useMultipleRangeRequest: false });
+    updater.setFeedURL({ provider: 'github', owner: 'Parthee-Vijaya', repo: 'Aura-GLM', channel: this.state.channel, useMultipleRangeRequest: false });
     updater.on('download-progress', progress => {
       if (this.state.phase === 'downloading') this.set({ percent: Math.max(0, Math.min(100, Math.round(progress.percent || 0))), transferred: progress.transferred, bytes: progress.total });
     });

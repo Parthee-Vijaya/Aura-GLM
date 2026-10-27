@@ -14,8 +14,8 @@ module.exports = {
   dmg: { sign: false },
   win: { icon: 'packaging/icon.png', target: ['nsis'], signAndEditExecutable: true },
   nsis: { oneClick: false, perMachine: false, allowToChangeInstallationDirectory: true, createDesktopShortcut: true, deleteAppDataOnUninstall: false, language: '1030' },
-  publish: { provider: 'generic', url: 'https://raw.githubusercontent.com/Parthee-Vijaya/ai-harness/main/site/dist/updates/', channel: 'beta' },
-  generateUpdatesFilesForAllChannels: false,
+  publish: { provider: 'github', owner: 'Parthee-Vijaya', repo: 'Aura-GLM', channel: 'beta' },
+  generateUpdatesFilesForAllChannels: true,
   beforePack: async context => {
     await require('./scripts/create-icon.cjs').syncAuraIcons();
     const pluginPatterns = await require('./core/engine.cjs').pluginRuntimePatterns();
