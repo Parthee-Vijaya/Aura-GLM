@@ -23,5 +23,5 @@
     "test:cli": "node --test --test-concurrency=1 cli/tests/*.test.cjs",
     "test:cli-live": "node cli/tests/verify-cli.cjs"
   },
-  "dependencies": { "undici": "7.30.1" }
+  "dependencies": { "undici": "8.12.3" }
 }
