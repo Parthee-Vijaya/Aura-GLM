@@ -55,7 +55,7 @@ test('en ledig samtale viser ingen arbejdsmarkering og bevarer status og kladde'
   f.$('#run-status').textContent = 'Klar';
   f.context.renderStatus();
   assert.equal(f.state(), 'idle'); assert.equal(f.busy(), 'false');
-  assert.equal(f.$('#agent-activity').hidden, true);
+  assert.equal(f.$('#agent-activity').classList.contains('is-idle'), true);
   assert.equal(f.$('#run-status').textContent, 'Klar');
   assert.equal(f.$('#prompt').value, 'Bevar min kladde og den godkendte plan.');
 });
@@ -67,7 +67,7 @@ test('en faktisk kørende opgave markerer skrivefeltet og bevarer den læsbare f
   f.context.view.receivedChars = 230;
   f.context.renderStatus();
   assert.equal(f.state(), 'working'); assert.equal(f.busy(), 'true');
-  assert.equal(f.$('#agent-activity').hidden, false);
+  assert.equal(f.$('#agent-activity').classList.contains('is-idle'), false);
   assert.equal(f.$('#agent-activity-text').textContent, 'AI’en skriver et svar …');
   assert.equal(f.$('#agent-progress').textContent, '230 tegn modtaget');
   assert.equal(f.$('#run-status').textContent, 'Arbejder 0 s');
@@ -112,7 +112,7 @@ test('en gammel ventende godkendelse giver ikke en ledig samtale arbejdsmarkerin
   f.context.view.waitingFor = [{ id: 'old', title: 'Tidligere godkendelse' }];
   f.context.renderStatus();
   assert.equal(f.state(), 'idle'); assert.equal(f.busy(), 'false');
-  assert.equal(f.$('#agent-activity').hidden, true);
+  assert.equal(f.$('#agent-activity').classList.contains('is-idle'), true);
   assert.equal(f.$('#agent-activity').classList.contains('is-waiting'), false);
 });
 
