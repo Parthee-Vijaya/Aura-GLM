@@ -136,7 +136,7 @@
       record(v, `${allow}:${scope || 'once'}:${key}:${message || ''}`, { count: ids.length, label: folder || p.policy?.label || label, allow, scope, message });
       setStatusDetail(!allow ? (message ? 'AI’en har fået din besked og fortsætter …' : 'Handlingen er afvist. AI’en stopper.') : 'Godkendelsen er sendt. AI’en fortsætter …', v);
     });
-    for (const [text, allow, scope] of choices) { const button = node('button', text); button.type = 'button'; button.onclick = () => reply(allow, scope); row.append(button); }
+    for (const [index, [text, allow, scope]] of choices.entries()) { const button = node('button', text, index === 0 ? 'primary' : 'text-button'); button.type = 'button'; button.onclick = () => reply(allow, scope); row.append(button); }
     box.append(row);
     if (p.policy?.conversationEligible) {
       const full = node('button', 'Tillad og kør med YOLO …', 'text-button');
