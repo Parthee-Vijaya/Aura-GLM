@@ -72,7 +72,7 @@ class Updates {
       }
       this.info = structuredClone(info);
       return this.set({ phase: 'available', available, checkedAt: new Date().toISOString() });
-    } catch { this.info = null; return this.fail('Opdateringer kunne ikke kontrolleres. Tjek forbindelsen, og prøv igen.'); }
+    } catch (updateError) { this.info = null; return this.fail('Opdateringer kunne ikke kontrolleres. Tjek forbindelsen, og prøv igen.' + (updateError?.message ? ' — Teknisk: ' + updateError.message : '')); }
   }
   async download() {
     if (!this.enabled || !this.state.available || !['available', 'error'].includes(this.state.phase)) throw new Error('Kontrollér først, om der er en opdatering.');
