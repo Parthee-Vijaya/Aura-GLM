@@ -14,6 +14,7 @@ const v2 = require('./engine-opencode2.cjs');
 const taskTools = require('./engine-opencode2-todos.cjs');
 const protectedPaths = require('./protected-paths.cjs');
 const { localMetrics, RunMeasurement } = require('./run-metrics.cjs');
+const { createStartupRecord } = require('./engine-startup.cjs');
 const parseOpenCodeVersion = value => /^(?:opencode v)?(\d+\.\d+\.\d+)\s*$/.exec(String(value).trim())?.[1] || null;
 
 // Første opstart kan være langsom, fordi macOS eller et antivirusprogram kontrollerer motoren, før den må køre.
@@ -206,7 +207,7 @@ async function writeReadGuard(directory, root, references, skills = []) {
 }
 class OpenCodeEngine {
   // resume: en tidligere OpenCode-session for samme samtale. Findes den ikke længere, oprettes en ny.
-  constructor({ root, directory, provider, model, references = [], mode = 'free', skills = [], resume = null, sandbox = null, privacyIsolation = null, detached = false, recovery = {}, measurement = null, onEvent = () => {} }) { Object.assign(this, { root, directory, provider, model, references, mode, skills, resume, sandbox, privacyIsolation, detached, recovery, onEvent }); this.promptEpoch = 0; this.lifecycle = new AbortController(); this.closed = false; this.closedPermissions = new Set(); this.closedQuestions = new Set(); this.pendingQuestions = new Map(); this.pending = new Map(); this.active = false; this.resumed = false; this.adapter = new v2.EventAdapter(root); this.setRunMeasurement(measurement); }
+  constructor({ root, directory, provider, model, references = [], mode = 'free', skills = [], resume = null, sandbox = null, privacyIsolation = null, detached = false, recovery = {}, measurement = null, onEvent = () => {} }) { Object.assign(this, { root, directory, provider, model, references, mode, skills, resume, sandbox, privacyIsolation, detached, recovery, onEvent }); this.promptEpoch = 0; this.lifecycle = new AbortController(); this.closed = false; this.closedPermissions = new Set(); this.closedQuestions = new Set(); this.pendingQuestions = new Map(); this.pending = new Map(); this.active = false; this.resumed = false; this.adapter = new v2.EventAdapter(root); this.startup = createStartupRecord({ mode, privacyIsolation: Boolean(privacyIsolation), sandbox: Boolean(sandbox), detached }); this.setRunMeasurement(measurement); }
   setRunMeasurement(measurement) { this.pendingMeasurement = measurement instanceof RunMeasurement ? measurement : null; }
   async wire(url, method = 'GET', body, signal) {
     this.lifecycle.signal.throwIfAborted();
@@ -333,7 +334,7 @@ class OpenCodeEngine {
     measurement.engineStarting();
     this.startPromise = (async () => {
       try { const result = await this.startActual(); this.assertStarting(); measurement.engineReady(); return result; }
-      catch (error) { measurement.finish('error'); this.stopLifecycle(); await this.retireOwnedResources(); throw error; }
+      catch (error) { this.startup.fail(error); this.startup.finalize(); measurement.finish('error'); this.stopLifecycle(); await this.retireOwnedResources(); throw error; }
     })();
     return this.startPromise;
   }
@@ -343,20 +344,26 @@ class OpenCodeEngine {
   }
   ownChild(child) {
     this.child = child;
+    this.startup.child(child);
     // An error can arrive while isolation attestation is awaited, before the
     // startup URL listener exists. Keep it handled and check before proceeding.
-    child.on('error', () => { this.childStartFailed = true; });
+    child.on('error', error => { this.childStartFailed = true; if (error) this.startup.fail(error); });
     return child;
   }
   async startActual() {
+    const startup = this.startup;
+    startup.phase('find-executable');
     const executable = await findExecutable();
     this.assertStarting();
     await fs.mkdir(this.directory, { recursive: true, mode: 0o700 });
     this.directory = await fs.realpath(this.directory);
     await fs.mkdir(path.join(this.directory, 'home'), { recursive: true, mode: 0o700 });
     await writePluginRuntime(this.directory);
+    startup.phase('prepare-dirs');
     await writeSkills(this.directory, this.skills);
+    startup.phase('skills');
     const readGuard = await writeReadGuard(this.directory, this.root, this.references, this.skills);
+    startup.phase('read-guard');
     const password = randomBytes(32).toString('hex');
     this.auth = `Basic ${Buffer.from(`opencode:${password}`).toString('base64')}`;
     const permission = permissions(this.root, this.references, this.mode, { directory: this.directory, names: this.skills.map(skill => skill.name) });
@@ -368,6 +375,7 @@ class OpenCodeEngine {
     }
     const taskPlugin = path.join(this.directory, 'task-tools');
     await taskTools.writeTrustedAsset(taskPlugin);
+    startup.phase('command-isolation');
     const plugins = [readGuard.pluginURL, taskPlugin, ...(this.sandbox ? [this.sandbox.pluginURL] : [])];
     this.config = v2.nativeConfig(engineConfig(this.provider, this.model, permission), plugins);
     if (/\{(?:env|file):/.test(JSON.stringify(this.config))) throw new Error('Konfigurationen indeholder en ikke tilladt variabelhenvisning.');
@@ -386,6 +394,7 @@ class OpenCodeEngine {
       // Windows has no POSIX process groups. Preserve its existing direct-owner
       // shutdown until a tested Job Object implementation is available.
       this.ownChild(spawn(executable, args, { cwd:this.root, env:environment, detached:this.detached, windowsHide:true, stdio:['ignore','pipe','pipe'] }));
+      startup.phase('spawn');
     } else {
       const guardianNode = require('./runtime.cjs').get()?.node || (this.privacyIsolation ? path.join(__dirname, '..', '.runtime', `${process.platform}-${process.arch}`, 'node', 'bin', 'node') : process.execPath);
       const guardian = path.join(__dirname, 'engine-guardian.cjs').replace(/app\.asar([/\\])/, 'app.asar.unpacked$1');
@@ -406,30 +415,40 @@ class OpenCodeEngine {
           child.once('spawn', spawned); child.once('error', failed); child.once('exit', stopped); this.lifecycle.signal.addEventListener('abort', stopped, { once: true });
         });
         this.assertStarting();
+        startup.phase('spawn');
         await lease.attest();
+        startup.phase('privacy-attestation');
         this.assertStarting();
-      } else this.ownChild(spawn(guardianNode, launchArgs, launchOptions));
+      } else { this.ownChild(spawn(guardianNode, launchArgs, launchOptions)); startup.phase('spawn'); }
     }
     // Ingen rå proceslogs sendes til UI; de kan indeholde projektindhold.
     this.child.stderr.resume();
-    this.child.on('exit', () => { if (this.active) { this.active = false; this.handleEvent({ type: 'engine.error', message: 'Agentmotoren stoppede. Start opgaven igen for at oprette en ny session.', failure: { kind: 'engine' } }); } });
+    let startupStdoutBytes = 0, startupStderrBytes = 0;
+    this.child.stdout.on('data', chunk => { startupStdoutBytes += chunk.length; });
+    this.child.stderr.on('data', chunk => { startupStderrBytes += chunk.length; });
+    this.child.on('exit', () => { startup.child({ pid: this.child.pid, exitCode: this.child.exitCode, signal: this.child.signalCode }); if (this.active) { this.active = false; this.handleEvent({ type: 'engine.error', message: 'Agentmotoren stoppede. Start opgaven igen for at oprette en ny session.', failure: { kind: 'engine' } }); } });
     try {
       this.url = await new Promise((resolve, reject) => {
         const child = this.child, signal = this.lifecycle.signal;
-        const timer = setTimeout(() => done(new Error('Agentmotoren kunne ikke starte. Kontrollér installationen.')), 30000);
+        const timer = setTimeout(() => { startup.urlProgress({ timedOut: true, stdoutBytes: startupStdoutBytes, stderrBytes: startupStderrBytes }); done(new Error('Agentmotoren kunne ikke starte. Kontrollér installationen.')); }, 30000);
         let output = '';
         const done = (error, url) => { clearTimeout(timer); child.removeListener('error', failed); child.removeListener('exit', stopped); child.stdout.removeListener('data', received); signal.removeEventListener('abort', stopped); error ? reject(error) : resolve(url); };
         const failed = () => done(new Error('Agentmotoren kunne ikke startes.')), stopped = () => done(new Error('Agentmotoren afsluttede under opstart.'));
-        const received = chunk => { output = (output + chunk.toString()).slice(-8000); const found = output.match(/http:\/\/127\.0\.0\.1:\d+/); if (found) done(null, found[0]); };
+        const received = chunk => { output = (output + chunk.toString()).slice(-8000); const found = output.match(/http:\/\/127\.0\.0\.1:\d+/); if (found) { startup.urlProgress({ found: true, stdoutBytes: startupStdoutBytes, stderrBytes: startupStderrBytes }); done(null, found[0]); } };
         child.once('error', failed); child.once('exit', stopped); child.stdout.on('data', received); signal.addEventListener('abort', stopped, { once: true });
         if (signal.aborted) stopped();
       });
+      startup.phase('url');
+      startup.urlProgress({ stdoutBytes: startupStdoutBytes, stderrBytes: startupStderrBytes });
       this.assertStarting();
       const health = await this.request('/global/health');
       if (health.version !== VERSION) throw new Error('Agentmotorens version matcher ikke den afprøvede version.');
+      startup.phase('health');
       const effective = await this.wire(`/api/config?location[directory]=${encodeURIComponent(this.root)}`);
       if (!v2.validateConfigEntries(effective, this.config, this.directory)) throw new Error('Agentens effektive indstillinger afviger. En lokal eller administreret konfiguration kan være årsagen.');
+      startup.phase('config');
       await this.openSession();
+      startup.phase('session');
       const expectedPlugins = new Map([['aura.read-protection', readGuard.pluginURL], ['aura.task-list.compatibility', taskPlugin], ...(this.sandbox ? [['aura.command-isolation', this.sandbox.pluginURL]] : [])]);
       const deadline = Date.now() + 10000;
       while (true) {
@@ -447,13 +466,17 @@ class OpenCodeEngine {
         const ready = await fs.readFile(this.sandbox.readyPath, 'utf8').then(JSON.parse).catch(() => null);
         if (ready?.token !== this.sandbox.readyToken || ready?.identity !== this.sandbox.identity) throw new Error('Kommandobeskyttelsen blev ikke indlæst. Opgaven blev ikke startet.');
       }
+      startup.phase('plugins');
       this.assertStarting();
       this.active = true;
       this.listen();
       await this.eventStream.ready;
       this.assertStarting();
+      startup.phase('ready');
+      startup.ready();
+      startup.finalize();
       return this.session.id;
-    } catch (error) { this.pendingMeasurement?.finish('error'); throw error; }
+    } catch (error) { startup.fail(error); startup.finalize(); this.pendingMeasurement?.finish('error'); throw error; }
   }
   async listen() {
     this.eventStream?.close();
