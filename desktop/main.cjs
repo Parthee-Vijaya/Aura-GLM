@@ -23,6 +23,8 @@ const previewEdit = require('./core/preview-edit.cjs');
 const { History, PreviewImages, kindOf } = require('./core/history.cjs');
 const { fileDetail } = require('./core/change-review.cjs');
 const { OwnTools } = require('./core/own-tools.cjs');
+const { buildAboutInfo } = require('./core/about-info.cjs');
+const runtimeLock = require('./runtime-lock.json');
 
 // Appen hedder Aura 1. Datamappen og navnet i nøgleringen bevares fra før navneskiftet; se core/app-identity.cjs.
 const { appIdentity, rememberKeychain, projectParent, DISPLAY_NAME } = require('./core/app-identity.cjs');
@@ -885,12 +887,13 @@ handle('preview:execute', token => exclusive(async () => {
   return currentSpace().devServer.execute(token);
 }));
 handle('preview:stop', () => currentSpace().devServer.stop().then(() => currentSpace().devServer.snapshot()));
+handle('about:info', () => buildAboutInfo({ appVersion: app.getVersion(), opencode: runtimeLock.opencode, electron: process.versions.electron, chromium: process.versions.chrome, nodeEmbedded: process.versions.node, nodeRuntime: runtimeLock.node, git: runtimeLock.git, platform: process.platform, arch: process.arch, osRelease: require('node:os').release() }));
 
 app.whenReady().then(async () => {
-  app.setAboutPanelOptions({ applicationName: DISPLAY_NAME, applicationVersion: app.getVersion() });
+  app.setAboutPanelOptions({ applicationName: DISPLAY_NAME, applicationVersion: app.getVersion(), credits: `OpenCode ${runtimeLock.opencode} · Electron ${process.versions.electron} · Chromium ${process.versions.chrome} · Node ${process.versions.node}` });
   Menu.setApplicationMenu(Menu.buildFromTemplate([
     { label: DISPLAY_NAME, submenu: [
-      { label: `Om ${DISPLAY_NAME}`, role: 'about' },
+      { label: `Om ${DISPLAY_NAME} …`, click: () => sendEvent({ type: 'about.open' }) },
       { label: 'Opdateringer …', click: () => sendEvent({ type: 'updates.open' }) },
       ...(process.platform === 'darwin' ? [
         { type: 'separator' }, { label: 'Tjenester', role: 'services' },
