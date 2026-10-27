@@ -257,7 +257,7 @@
     if (!reviewing) return;
     const review = reviewing, allowed = allowedDecisions(review), expired = allowed.length === 0;
     sharingDialog.replaceChildren(heading(sharingDialog, t('Gennemgå denne deling', 'Review this sharing')));
-    sharingDialog.append(make('p', t('Aura 1 vil sende følgende kontrollerede modelkald. Godkendelsen gælder kun dette indhold, denne modtager og dette formål.', 'Aura 1 will send the following checked model call. Approval applies only to this content, recipient and purpose.'), 'privacy-lead'));
+    sharingDialog.append(make('p', t('Aura GLM vil sende følgende kontrollerede modelkald. Godkendelsen gælder kun dette indhold, denne modtager og dette formål.', 'Aura GLM will send the following checked model call. Approval applies only to this content, recipient and purpose.'), 'privacy-lead'));
     const details = make('dl', undefined, 'privacy-review-meta');
     const recipient = review.destination?.name || review.destination?.label || (typeof review.recipient === 'string' ? review.recipient : review.recipient?.label || review.recipient?.name || '');
     const fields = [[t('Modtager', 'Recipient'), recipient], [t('Model', 'Model'), textValue(review.destination?.model) || textValue(review.model)], [t('Formål', 'Purpose'), textValue(review.purpose)], [t('Regelversion', 'Policy version'), textValue(review.policyVersion)]];

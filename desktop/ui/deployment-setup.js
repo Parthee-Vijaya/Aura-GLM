@@ -58,7 +58,7 @@
       let items = [], note = '', linked = null, suggested = '';
       try { ({ link: linked, suggestedName: suggested } = await act('promte-link')); } catch (error) { if (error.stale) throw error; }
       if (!host || normalizedHost(linked?.host) !== host) linked = null;
-      try { items = await act('promte-workspaces'); note = items.length ? 'Den nye version erstatter appens udgivne version, når den er godkendt.' : 'Du har endnu ingen apps. Aura 1 opretter en ny app til projektet.'; }
+      try { items = await act('promte-workspaces'); note = items.length ? 'Den nye version erstatter appens udgivne version, når den er godkendt.' : 'Du har endnu ingen apps. Aura GLM opretter en ny app til projektet.'; }
       catch (error) { if (error.stale) throw error; note = `${error.message} Du kan indtaste arbejdsområdets ID i stedet.`; }
       // Projektets app fra forhåndsvisningen eller en tidligere udgivelse vælges, også når den ikke står på listen.
       if (linked?.workspaceId && !items.some(item => item.id === linked.workspaceId)) items.unshift({ id: linked.workspaceId, name: linked.name, activeAppVersion: null });
@@ -160,7 +160,7 @@
       $('#deployment-connect').hidden = toolsMissing || auth === 'github' && !state.browserLogin && !state.localLogin;
       $('#deployment-connect').textContent = auth === 'github' && state.localLogin ? 'Brug dit GitHub-login på computeren' : 'Log ind i browseren';
       $('#deployment-connection-note').textContent = connectionError || (toolsMissing ? 'Installér udbyderens værktøj, og vælg Kontrollér igen.' : auth === 'github' && !state.browserLogin && !state.localLogin ? 'Log ind med GitHub CLI på computeren, eller brug en adgangsnøgle under hjælpen.' : state.status === 'no-subscriptions' ? 'Ingen Azure-abonnementer med adgang. Prøv en anden konto, eller bed jeres administrator om adgang.' : state.status === 'no-teams' ? 'Ingen Vercel-teams med adgang. Kontrollér din konto hos Vercel.' : 'Fortsæt med din konto hos udbyderen.');
-      $('#deployment-install-note').textContent = auth === 'azure' ? 'Azure CLI bruges til login. SWA CLI bruges til udgivelse.' : auth === 'github' ? 'GitHub CLI kan logge ind i browseren. Aura 1 bruger først kontoen, når du vælger det.' : auth === 'promte' ? 'Aura 1 åbner Promte i browseren. Log ind, og godkend Aura 1. Du skal være administrator i appens arbejdsområde for at udgive.' : 'Vercels værktøj åbner login i browseren.';
+      $('#deployment-install-note').textContent = auth === 'azure' ? 'Azure CLI bruges til login. SWA CLI bruges til udgivelse.' : auth === 'github' ? 'GitHub CLI kan logge ind i browseren. Aura GLM bruger først kontoen, når du vælger det.' : auth === 'promte' ? 'Aura GLM åbner Promte i browseren. Log ind, og godkend Aura GLM. Du skal være administrator i appens arbejdsområde for at udgive.' : 'Vercels værktøj åbner login i browseren.';
       $('#deployment-install').hidden = auth === 'promte';
       $('#deployment-install').textContent = auth === 'azure' && state.tools?.azureCli ? 'Installér SWA CLI' : auth === 'github' ? 'Se login med GitHub CLI' : 'Installér udbyderens værktøj';
       $('#deployment-github-token').hidden = auth !== 'github';
@@ -175,7 +175,7 @@
         await api('hostingBrowser');
         polling = setTimeout(() => pollLogin(r.id), Math.max(1000, r.retryAfter)); return;
       }
-      $('#deployment-connection-note').textContent = provider() === 'promte' ? 'Godkend Aura 1 i browseren.' : 'Fortsæt i browseren.';
+      $('#deployment-connection-note').textContent = provider() === 'promte' ? 'Godkend Aura GLM i browseren.' : 'Fortsæt i browseren.';
       await loadConnection(true);
     });
     async function pollLogin(id) {
@@ -226,10 +226,10 @@
       $('#deployment-config-guide').replaceChildren(...(cf ? [
         'Brug et eksisterende Pages-projekt med Direct Upload og samme produktionsbranch som valgt her. Automatisk Git-build skal være slået fra i Cloudflare.',
         'Opret et Cloudflare-token med Pages Edit for kun den valgte konto. Gem det i GitHub-projektets Actions-hemmeligheder som CLOUDFLARE_API_TOKEN.',
-        'Gem og send de gennemgåede opsætningsfiler og hjemmesidens filer til GitHub. Kontrollér derefter opsætningen i Aura 1.'
+        'Gem og send de gennemgåede opsætningsfiler og hjemmesidens filer til GitHub. Kontrollér derefter opsætningen i Aura GLM.'
       ] : [
         'Vælg GitHub Actions som kilde under projektets Settings → Pages.',
-        'Gem og send de gennemgåede opsætningsfiler og hjemmesidens filer til GitHub. Kontrollér derefter opsætningen i Aura 1.',
+        'Gem og send de gennemgåede opsætningsfiler og hjemmesidens filer til GitHub. Kontrollér derefter opsætningen i Aura GLM.',
         'GitHub Pages kan bruge /repository/ i adressen. Billeder, links og navigation skal fungere på den sti.'
       ]).map(line => text('li', line)));
       go('setupConfiguration');

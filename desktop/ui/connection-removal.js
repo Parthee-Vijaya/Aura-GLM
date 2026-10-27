@@ -8,7 +8,7 @@
     const dialog = make('dialog', '', 'connection-removal-dialog'), heading = make('h2', 'Fjern AI-forbindelsen?'), description = make('p');
     dialog.id = 'connection-removal-dialog'; heading.id = 'connection-removal-title'; description.id = 'connection-removal-description';
     dialog.setAttribute('aria-labelledby', heading.id); dialog.setAttribute('aria-describedby', description.id);
-    description.append(make('strong', connection.name || 'Den valgte forbindelse'), document.createTextNode(' og dens gemte adgangsoplysninger fjernes fra Aura 1. Dine projekter og samtaler bevares.'));
+    description.append(make('strong', connection.name || 'Den valgte forbindelse'), document.createTextNode(' og dens gemte adgangsoplysninger fjernes fra Aura GLM. Dine projekter og samtaler bevares.'));
     const details = make('p', connection.retiredOAuth ? 'Den tidligere komplai-loginadgang tilbagekaldes. komplai Run bevares.' : 'En API-nøgle tilbagekaldes ikke hos udbyderen. Den kan stadig bruges i andre programmer.', 'hint');
     const status = make('p', '', 'connection-removal-status hint'); status.setAttribute('role', 'status'); status.hidden = true;
     const buttons = make('div', '', 'dialog-actions'), cancel = make('button', 'Annuller'), confirm = make('button', 'Fjern forbindelse', 'danger');

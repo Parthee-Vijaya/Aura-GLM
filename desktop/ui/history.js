@@ -89,7 +89,7 @@
       $('#git-name').readOnly = Boolean(result.identity?.name); $('#git-email').readOnly = Boolean(result.identity?.email);
       $('#git-settings').hidden = !result.initialized || result.wrongRoot; $('#git-auto').checked = result.autoCheckpoint;
       const canSave = result.initialized && !result.block && !result.busy;
-      if (result.busy) $('#git-summary').textContent += result.autoCheckpoint ? ' Aura 1 gemmer en version efter opgaven.' : ' Du kan gemme, når opgaven er afsluttet.';
+      if (result.busy) $('#git-summary').textContent += result.autoCheckpoint ? ' Aura GLM gemmer en version efter opgaven.' : ' Du kan gemme, når opgaven er afsluttet.';
       $('#git-init').disabled = result.busy;
       $('#git-identity').hidden ||= result.busy;
       $('#git-quick').hidden = !canSave || !result.changes;
@@ -129,8 +129,8 @@
     $('#version-meta').textContent = `${data.kindLabel} · ${versionTime(data.at)} · ${count(files, 'fil', 'filer')}${data.renamed ? ` · oprindeligt »${shortLabel(data.message, 60)}«` : ''}`;
     const has = await fillCompare($('#version-compare'), data.images);
     const note = $('#version-images'); note.replaceChildren();
-    if (has) { note.append(`Billeder af ${viewText(data.images.view)}.${data.images.before ? '' : ' Der er intet billede fra før.'}`); note.append(info('billederne', 'Aura 1 tager selv billederne af forhåndsvisningen i baggrunden, når en version gemmes, og når du går tilbage. De gemmes kun i Aura 1 på denne computer, ikke i projektet, og sendes ikke til AI’en.')); }
-    else note.textContent = 'Der er ingen billeder af denne version. Aura 1 tager dem, når en version gemmes, mens forhåndsvisningen kører.';
+    if (has) { note.append(`Billeder af ${viewText(data.images.view)}.${data.images.before ? '' : ' Der er intet billede fra før.'}`); note.append(info('billederne', 'Aura GLM tager selv billederne af forhåndsvisningen i baggrunden, når en version gemmes, og når du går tilbage. De gemmes kun i Aura GLM på denne computer, ikke i projektet, og sendes ikke til AI’en.')); }
+    else note.textContent = 'Der er ingen billeder af denne version. Aura GLM tager dem, når en version gemmes, mens forhåndsvisningen kører.';
     const latest = status?.history?.[0]?.commit === commit && !status.changes;
     $('#version-restore').hidden = latest; $('#version-revert').hidden = !data.parent;
     busyControls(status);
@@ -147,7 +147,7 @@
     if (!version) return;
     const { name } = await call('historyRename', { commit: version.commit, name: $('#version-name').value });
     await open(version.commit);
-    $('#git-feedback').textContent = name ? `Versionen hedder nu »${name}«. Navnet gemmes kun i Aura 1 på denne computer.` : 'Versionen har fået sit oprindelige navn igen.';
+    $('#git-feedback').textContent = name ? `Versionen hedder nu »${name}«. Navnet gemmes kun i Aura GLM på denne computer.` : 'Versionen har fået sit oprindelige navn igen.';
   }); };
   $('#git-more').onclick = () => { showAll = true; renderList(); $('#git-history li:nth-child(9) button')?.focus(); };
   // Versioner i projektmenuen åbner historikken under Ændringer.
@@ -211,7 +211,7 @@
     $('#restore-summary').textContent = !files.length ? 'Filerne svarer allerede til det, du vil tilbage til.'
       : `${changing ? `${count(changing, 'fil sættes', 'filer sættes')} tilbage.` : ''}${kept ? ` Dine senere rettelser i ${count(kept, 'fil', 'filer')} bevares.` : ''}${conflicts.length ? ` I ${count(conflicts.length, 'fil', 'filer')} har I begge rettet de samme linjer; du vælger nedenfor.` : ''}`.trim();
     if (review.kind === 'merge') $('#restore-summary').textContent = files.length ? `${count(files.length, 'fil', 'filer')} fra kopien gennemgås. ${kept ? 'Projektets øvrige rettelser bevares. ' : ''}${conflicts.length ? `${count(conflicts.length, 'fil har', 'filer har')} konflikter; dine linjer er anbefalet.` : 'Ændringerne kan flettes ind.'}` : 'Kopien har ingen ændringer at flette ind. Du kan afslutte kopien og fortsætte i projektet.';
-    // Billederne: forhåndsvisningen nu og det, den går tilbage til, hvis Aura 1 har et billede af det.
+    // Billederne: forhåndsvisningen nu og det, den går tilbage til, hvis Aura GLM har et billede af det.
     const imgs = review.images || {};
     if (imgs.now || imgs.target) {
       const [nowFigure, targetFigure] = $('#restore-compare').querySelectorAll('figure');
@@ -222,8 +222,8 @@
       $('#restore-compare').classList.toggle('single', !imgs.now || !imgs.target); $('#restore-compare').hidden = false;
     }
     // Et billede uden sit modstykke siges højt, så det ene billede ikke ligner en sammenligning.
-    const imageNote = imgs.now && !imgs.target ? (review.kind === 'merge' ? 'Aura 1 har intet billede af samtalens kopi.' : `Aura 1 har intet billede af, hvordan det så ud ${review.kind === 'restore' ? 'i versionen' : 'før'}.`)
-      : imgs.target && !imgs.now ? `Aura 1 har intet billede af ${review.kind === 'merge' ? 'projektets' : 'den aktuelle'} forhåndsvisning nu.` : '';
+    const imageNote = imgs.now && !imgs.target ? (review.kind === 'merge' ? 'Aura GLM har intet billede af samtalens kopi.' : `Aura GLM har intet billede af, hvordan det så ud ${review.kind === 'restore' ? 'i versionen' : 'før'}.`)
+      : imgs.target && !imgs.now ? `Aura GLM har intet billede af ${review.kind === 'merge' ? 'projektets' : 'den aktuelle'} forhåndsvisning nu.` : '';
     $('#restore-images-note').textContent = imageNote;
     $('#restore-images-note').hidden = !imageNote;
     for (const file of files) { const item = node('li'); item.append(node('code', file.file), ` · ${review.kind === 'merge' ? (file.outcome === 'conflict' ? 'Du vælger linjerne' : file.outcome === 'kept' ? 'Flettes ind; projektets øvrige linjer bevares' : file.action) : outcomeText(file)}`); $('#restore-outcomes').append(item); }
@@ -243,7 +243,7 @@
     }
     // Hvad der ellers berøres, i almindeligt dansk. Filernes indhold står nederst.
     const data = [
-      'Aura 1 gemmer først en kopi af filerne, som de er nu.',
+      'Aura GLM gemmer først en kopi af filerne, som de er nu.',
       review.untracked ? `${count(review.untracked, 'fil', 'filer')} uden for versionerne bevares.` : '',
       'Nøgler, .env-filer, private referencer og installerede pakker røres ikke.',
       review.kind === 'merge' ? 'Samtalen, briefen og projektets historik bevares. Kopien slettes efter indfletning; nye opgaver arbejder i projektet.' : 'Samtalen og briefen bevares. Planen skal laves igen, fordi den beskriver en anden version.',

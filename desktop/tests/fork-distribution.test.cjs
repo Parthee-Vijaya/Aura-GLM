@@ -17,7 +17,7 @@ test('fork branding preserves the existing packaged profile and keychain', async
   await fs.writeFile(path.join(existing, 'harness/noeglering.json'), '{"navn":"Aura"}\n');
   const options = { appData: root, packaged: true, customUserData: false, userData: path.join(root, 'Aura 1'), sessionData: path.join(root, 'Aura 1') };
   const result = appIdentity(options);
-  assert.equal(DISPLAY_NAME, 'Aura 1');
+  assert.equal(DISPLAY_NAME, 'Aura GLM');
   assert.equal(result.userData, existing);
   assert.equal(result.sessionData, existing);
   assert.equal(result.keychainName, 'Aura');

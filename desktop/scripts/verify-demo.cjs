@@ -58,7 +58,7 @@ const { auditUI } = require('./ui-audit.cjs');
     await helpers.menuClick(page, '#git-button'); await snapshot('versioner', '#panel-changes');
     await page.click('#tab-preview');
     await helpers.menuClick(page, '#support-button'); await snapshot('hjaelp', '#support-dialog');
-    check(await page.locator('#support-version').textContent().then(text => /Aura \d+\.\d+/.test(text)), 'Feedback viser appens faktiske version');
+    check(await page.locator('#support-version').textContent().then(text => /Aura GLM \d+\.\d+/.test(text)), 'Feedback viser appens faktiske version');
     const report = JSON.parse(await page.locator('#support-report').textContent());
     check(!JSON.stringify(report).includes(root) && !JSON.stringify(report).includes(draft), 'Fejlrapporten medtager ikke projektsti eller kladde');
     await page.keyboard.press('Escape');

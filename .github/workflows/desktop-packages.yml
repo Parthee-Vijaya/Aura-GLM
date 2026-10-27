@@ -16,19 +16,19 @@ jobs:
             target: darwin-arm64
             command: package:mac
             arch: arm64
-            app: release/mac-arm64/Aura.app
-            resources: release/mac-arm64/Aura.app/Contents/Resources
+            app: release/mac-arm64/Aura GLM.app
+            resources: release/mac-arm64/Aura GLM.app/Contents/Resources
           - os: macos-15-intel
             target: darwin-x64
             command: package:mac
             arch: x64
-            app: release/mac/Aura.app
-            resources: release/mac/Aura.app/Contents/Resources
+            app: release/mac/Aura GLM.app
+            resources: release/mac/Aura GLM.app/Contents/Resources
           - os: windows-latest
             target: win32-x64
             command: package:windows
             arch: x64
-            app: release/win-unpacked/Aura.exe
+            app: release/win-unpacked/Aura GLM.exe
             resources: release/win-unpacked/resources
     runs-on: ${{ matrix.os }}
     defaults:
