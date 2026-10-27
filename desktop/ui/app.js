@@ -2115,6 +2115,26 @@ function buildModelPicker() {
 }
 $('#model-picker-more').onclick = () => { document.getElementById('model-picker').hidePopover(); openTaskSettings(); };
 $('#model-picker-done').onclick = () => document.getElementById('model-picker').hidePopover();
+
+// Drag-and-drop: træk filer ind i chatboksen — de gennemgås gennem den samme sikre vej som filvælgeren
+const chatForm = $('#chat-form');
+['dragenter', 'dragover'].forEach(type => chatForm.addEventListener(type, event => { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; chatForm.classList.add('composer-dragging'); }));
+chatForm.addEventListener('dragleave', event => { if (!chatForm.contains(event.relatedTarget)) chatForm.classList.remove('composer-dragging'); });
+chatForm.addEventListener('drop', async event => {
+  event.preventDefault(); chatForm.classList.remove('composer-dragging');
+  const files = [...event.dataTransfer?.files || []];
+  if (!files.length) return;
+  const paths = files.map(file => file.path).filter(Boolean);
+  if (!paths.length) { message('Filerne kunne ikke læses fra træk-og-drop. Brug + knappen.', true); return; }
+  try {
+    // offerFiles gennemgår filerne (type, størrelse, indhold) og viser dem til godkendelse
+    const result = await window.harness.chatMaterialsOffer({ paths });
+    if (result?.ok !== true) { message(result?.error || 'Filerne kunne ikke vedhæftes.', true); return; }
+    // Hvis gennemgangen gav et anbringelse afventes: standard-tekst
+    if (result.value?.cancelled) { /* Brugeren annullerede */ }
+  } catch (err) { message(`Filerne kunne ikke vedhæftes: ${err.message}`, true); }
+});
+
 // En valgt indsats hører til modellen. Et skift af model eller forbindelse vender tilbage til udbyderens standard.
 const resetEffort = () => { if (view) view.effort = null; updateModelSummary(); };
 $('#model-effort-reset').onclick = resetEffort;

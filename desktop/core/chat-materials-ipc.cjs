@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: EUPL-1.2
 // Native dialogs are the only source of paths. A renderer may submit opaque IDs.
 const { ChatMaterials, EXTENSIONS } = require('./chat-materials.cjs');
-const METHODS = Object.freeze({ chatMaterialsState:'chat-materials:state', chatMaterialsChooseFolder:'chat-materials:choose-folder', chatMaterialsChooseFiles:'chat-materials:choose-files', chatMaterialsPreview:'chat-materials:preview', chatMaterialsAttach:'chat-materials:attach', chatMaterialsRemove:'chat-materials:remove' });
+const METHODS = Object.freeze({ chatMaterialsState:'chat-materials:state', chatMaterialsChooseFolder:'chat-materials:choose-folder', chatMaterialsChooseFiles:'chat-materials:choose-files', chatMaterialsOffer:'chat-materials:offer', chatMaterialsPreview:'chat-materials:preview', chatMaterialsAttach:'chat-materials:attach', chatMaterialsRemove:'chat-materials:remove' });
 function installChatMaterials({ getWorkbench, isSelected = () => true, register, dialog, exclusive, normalizeImage, emit = () => {} }) {
   function owner(value, fields = []) {
     if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).some(key => !['chat', ...fields].includes(key)) || typeof value.chat !== 'string') throw new Error('Brug filvalget i den aktuelle samtale. Der modtages ingen filstier.');
@@ -26,6 +26,14 @@ function installChatMaterials({ getWorkbench, isSelected = () => true, register,
     if (folder && result.filePaths.length !== 1) throw new Error('Vælg én konkret referencemappe.');
     const selected = folder ? await o.materials.offerFolder(o.chat, result.filePaths[0]) : await o.materials.offerFiles(o.chat, result.filePaths); current(o); return selected;
   }));
+  handle('chatMaterialsOffer', value => exclusive(async () => {
+    // Drag-and-drop: filstier fra drag eventet; samme sikre gennemgang som filvælgeren (type, størrelse, indhold, bekræftelse).
+    const o = owner(value, []); current(o);
+    const paths = Array.isArray(value?.paths) ? value.paths.filter(item => typeof item === 'string' && item) : [];
+    if (!paths.length) throw new Error('Ingen filer at vedhæfte.');
+    const selected = await o.materials.offerFiles(o.chat, paths); current(o); return selected;
+  }));
+
   for (const [method, fields, action] of [
     ['chatMaterialsPreview',['scope','revision','ids'],'preview'],
     ['chatMaterialsAttach',['scope','revision','token'],'attach'],

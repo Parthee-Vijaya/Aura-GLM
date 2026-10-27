@@ -3,7 +3,7 @@ const methods = {
   privacyGet:'privacy:get', privacyConfigure:'privacy:configure', privacyReview:'privacy:review', privacyDecide:'privacy:decide',
   openExternalLink: 'links:open',
   historySearch: 'history:search',
-  chatMaterialsState:'chat-materials:state', chatMaterialsChooseFolder:'chat-materials:choose-folder', chatMaterialsChooseFiles:'chat-materials:choose-files', chatMaterialsPreview:'chat-materials:preview', chatMaterialsAttach:'chat-materials:attach', chatMaterialsRemove:'chat-materials:remove',
+  chatMaterialsState:'chat-materials:state', chatMaterialsChooseFolder:'chat-materials:choose-folder', chatMaterialsChooseFiles:'chat-materials:choose-files', chatMaterialsOffer:'chat-materials:offer', chatMaterialsPreview:'chat-materials:preview', chatMaterialsAttach:'chat-materials:attach', chatMaterialsRemove:'chat-materials:remove',
   credentialEntry:'credential:entry', credentialCancel:'credential:cancel',
   deploymentCancelSetup: 'deployment:setup-cancel',
   projectSettings: 'project:settings', saveProjectSettings: 'project:settings-save', chatArchive: 'chat:archive',
