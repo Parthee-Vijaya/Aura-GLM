@@ -1350,5 +1350,8 @@ details.plan-detail > .plan-detail-body { padding: 0 14px 12px 14px; font-size: 
   .code-viewer { color: var(--ink); }
   button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline-color: var(--accent); }
   /* Onboarding-B: hero-plade og orbit-kort (mørke varianter ligger i onboarding-b.css, som indlæses senere) */
+  .segmented { background: #1c232e; }
+  .segmented button[aria-pressed="true"] { box-shadow: 0 1px 2px #00000066; }
+  .chat-more { background: #1c2432; }
 }
 
