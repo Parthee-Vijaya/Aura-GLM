@@ -9,7 +9,7 @@ const methods = {
   projectSettings: 'project:settings', saveProjectSettings: 'project:settings-save', chatArchive: 'chat:archive',
   updatesState: 'updates:state', updatesCheck: 'updates:check', updatesDownload: 'updates:download', updatesRestart: 'updates:restart', updatesAutomatic: 'updates:automatic', updatesWebsite: 'updates:website', updatesNotes: 'updates:notes',
   chatMergeReview: 'chat:merge-review', chatMerge: 'chat:merge',
-  supportReport: 'support:report', supportSave: 'support:save', supportFeedback: 'support:feedback', supportContact: 'support:contact',
+  supportReport: 'support:report', supportSave: 'support:save', supportFeedback: 'support:feedback', supportContact: 'support:contact', about: 'about:info',
   restoreReview: 'git:restore-review', restoreVersion: 'git:restore', historyVersion: 'history:version', historyRename: 'history:rename', historyImage: 'history:image',
   promtePreviewConnect: 'promte:preview-connect', promtePreviewLogin: 'promte:preview-login', promtePreviewCreate: 'promte:preview-create', promtePreviewFetch: 'promte:preview-fetch', komplaiPreviewState: 'komplai:preview-state', komplaiPreviewCreate: 'komplai:preview-create', komplaiPreviewCall: 'komplai:preview-call',
   previewRuntime: 'preview:runtime', previewCheck: 'preview:check', previewPick: 'preview:pick', previewEditText: 'preview:edit-text', previewContains: 'preview:contains', changesUndo: 'changes:undo', previewPrepare: 'preview:prepare', previewExecute: 'preview:execute', previewStop: 'preview:stop',

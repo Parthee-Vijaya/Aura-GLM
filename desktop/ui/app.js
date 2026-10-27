@@ -894,8 +894,27 @@ function partElement(id, role, v = view) {
   if (!v.parts.has(id)) v.parts.set(id, appendMessage('', role, v));
   return v.parts.get(id);
 }
+async function openAbout() {
+  const list = document.getElementById('about-list');
+  let info = null;
+  try { const response = await window.harness.about(); info = response?.ok === true ? (response.value || null) : null; } catch { info = null; }
+  const value = key => info?.[key] || 'ikke tilgængelig';
+  const rows = [
+    ['Appversion', value('app')],
+    ['OpenCode (låst)', value('opencode')],
+    ['Electron', value('electron')],
+    ['Chromium', value('chromium')],
+    ['Node (indbygget)', value('nodeEmbedded')],
+    ['Node til agenten (låst)', value('nodeRuntime')],
+    ['Git til agenten (låst)', value('git')],
+  ];
+  const machine = [info?.platform, info?.arch, info?.osRelease].filter(Boolean).join(' ');
+  list.innerHTML = rows.map(([label, text]) => `<dt>${label}</dt><dd>${text}</dd>`).join('') + `<dt>Maskine</dt><dd>${machine || 'ikke tilgængelig'}</dd>`;
+  document.getElementById('about-dialog').showModal();
+}
 // Hændelser fra en samtales opgave vises i dens egen visning, også når en anden samtale er åben.
 window.harness.onEvent(event => {
+  if (event.type === 'about.open') { openAbout(); return; }
   window.PrivacyGate?.onEvent(event);
   const p = event.properties || {};
   if (event.type === 'chat.copy-removed') { previewFrames.get(event.workspaceRoot)?.remove(); previewFrames.delete(event.workspaceRoot); previewRevisions.delete(event.workspaceRoot); return; }
