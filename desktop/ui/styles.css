@@ -7,50 +7,6 @@
   --radius: 10px; --sidebar: 216px; --motion-fast: 140ms; --motion-step: 220ms;
   --ease-out: cubic-bezier(.2,.7,.2,1);
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --ink: #e2e8f0; --muted: #9aa8bd; --accent: #4f8ff7; --accent-hover: #6ba1ff;
-    --tint: #1d2a3d; --surface: #141c26; --canvas: #0d1219; --line: #2a3648;
-  }
-  body { background: var(--canvas); }
-  #setup-reason, #connection-warning { background: #3a2f18; color: #f4d9a6; border-color: #5c451f; }
-  .composer-wait { color: #e0b34d; }
-  .composer:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--tint); }
-  .preview-toolbar, .viewport-toolbar { background: var(--surface); }
-  #preview-stage, iframe { background: var(--surface); }
-  :is(#setup-choice, #setup-feature-choice) button { background: var(--surface); }
-  /* Funktionelle signalfarver i darkmode */
-  .chat-message.user { background: #1e2a3c; }
-  .chat-message.error { color: #f0a8a5; background: #3d1f1c; }
-  .markdown code { background: #1a2433; }
-  .markdown pre { background: #182230; }
-  .project-item.active { background: #1e2a3c; }
-  .startup-summary, .journey-card { background: var(--surface); }
-  .approval pre, #changes-list pre, #git-files pre { background: #111823; }
-  .question-card { background: #16202d; border-color: var(--line); }
-  .answer-record { border-left-color: #3a4d63; }
-  .change-tag { background: #233043; color: #c4d2e0; }
-  .change-tag.change-ny { background: #1d3a2a; color: #6ecf8f; }
-  .tools-ops-konflikt { border-color: #5c4a1f; background: #31291a; }
-  .panel-warning { background: #31291a; border-color: #5c4a1f; color: #e0c9a0; }
-  #data-warning { color: #e0c9a0; background: #31291a; }
-  .data-summary { background: #182030; }
-  .dialog-notice { background: #31291a; }
-  .key-guide { background: #1a2433; }
-  .ref-chip { background: #233043; border-color: var(--line); color: var(--ink); }
-  .work-tab[aria-selected="true"] { background: #1e2a3c; border-color: var(--line); }
-  .sidebar { background: linear-gradient(165deg, #0f151e, #141c26 60%); }
-  .agent-activity { background: #1a2433; }
-  .diff-row.add { background: #1d3a2a22; }
-  .diff-row.del { background: #4a1c1c22; }
-  .badge { background: #233043; color: #c4d2e0; }
-  .empty-code { color: var(--muted); border-color: var(--line); }
-  .activity-entry { border-bottom: 1px solid var(--line); }
-  .pick-hint { background: var(--ink); color: var(--canvas); }
-  .code-browser { background: var(--surface); }
-  .code-viewer { color: var(--ink); }
-  button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline-color: var(--accent); }
-}
 
 * { box-sizing: border-box; }
 body { margin: 0; }
@@ -1332,3 +1288,67 @@ details.plan-detail > .plan-detail-body { padding: 0 14px 12px 14px; font-size: 
 }
 
 .chat.panel { position: relative; }
+
+/* ============================================================================
+   DARKMODE · samlet afslutningsblok (skal ligge SIDST i filen, så disse
+   regler vinder kildeordens-kaskaden over alle tidligere baseregler).
+   Teknik: :root-variabler gensættes her, og flader/signalfarver der har
+   hårdkodede lyse værdier i tidligere baseregler overskrives på ny.
+   ============================================================================ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #e2e8f0; --muted: #9aa8bd; --accent: #4f8ff7; --accent-hover: #6ba1ff;
+    --tint: #1d2a3d; --surface: #141c26; --canvas: #0d1219; --line: #2a3648;
+    --soft: #1c232e; --accent-soft: #1d2a3d; --calm-veil: rgba(13, 18, 25, .85);
+  }
+  body { background: var(--canvas); }
+  #setup-reason, #connection-warning { background: #3a2f18; color: #f4d9a6; border-color: #5c451f; }
+  .composer-wait { color: #e0b34d; }
+  .composer:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--tint); }
+  .preview-toolbar, .viewport-toolbar { background: var(--surface); }
+  #preview-stage, iframe { background: var(--surface); }
+  :is(#setup-choice, #setup-feature-choice) button { background: var(--surface); }
+  /* Notificeringer og kort */
+  .updates-notice { background: #1d2433; border-bottom-color: var(--line); color: var(--ink); }
+  .updates-notice.critical, .updates-warning { background: #3a2f18; color: #f4d9a6; }
+  #resume-notice { background: #1d2942; }
+  .copy-notice { background: var(--accent-soft); }
+  .journey-card, .startup-summary { background: var(--surface); }
+  /* Switch-kontakter: mørke spor med lys knop */
+  input[type=checkbox][role=switch] { background: #2a3648; }
+  input[type=checkbox][role=switch]::before { background: #9aa8bd; box-shadow: none; }
+  input[type=checkbox][role=switch]:checked { background: var(--accent); }
+  input[type=checkbox][role=switch]:checked::before { background: var(--canvas); }
+  /* Funktionelle signalfarver */
+  .chat-message.user { background: #1e2a3c; }
+  .chat-message.error { color: #f0a8a5; background: #3d1f1c; }
+  .markdown code { background: #1a2433; }
+  .markdown pre { background: #182230; }
+  .project-item.active { background: #1e2a3c; }
+  .approval pre, #changes-list pre, #git-files pre { background: #111823; }
+  .question-card { background: #16202d; border-color: var(--line); }
+  .answer-record { border-left-color: #3a4d63; }
+  .change-tag { background: #233043; color: #c4d2e0; }
+  .change-tag.change-ny { background: #1d3a2a; color: #6ecf8f; }
+  .tools-ops-konflikt { border-color: #5c4a1f; background: #31291a; }
+  .panel-warning { background: #31291a; border-color: #5c4a1f; color: #e0c9a0; }
+  #data-warning { color: #e0c9a0; background: #31291a; }
+  .data-summary { background: #182030; }
+  .dialog-notice { background: #31291a; }
+  .key-guide { background: #1a2433; }
+  .ref-chip { background: #233043; border-color: var(--line); color: var(--ink); }
+  .work-tab[aria-selected="true"] { background: #1e2a3c; border-color: var(--line); }
+  .sidebar { background: linear-gradient(165deg, #0f151e, #141c26 60%); }
+  .agent-activity { background: #1a2433; }
+  .diff-row.add { background: #1d3a2a22; }
+  .diff-row.del { background: #4a1c1c22; }
+  .badge { background: #233043; color: #c4d2e0; }
+  .empty-code { color: var(--muted); border-color: var(--line); }
+  .activity-entry { border-bottom: 1px solid var(--line); }
+  .pick-hint { background: var(--ink); color: var(--canvas); }
+  .code-browser { background: var(--surface); }
+  .code-viewer { color: var(--ink); }
+  button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline-color: var(--accent); }
+  /* Onboarding-B: hero-plade og orbit-kort (mørke varianter ligger i onboarding-b.css, som indlæses senere) */
+}
+

@@ -3,7 +3,7 @@ if (process.argv.includes('--aura-privacy-offline-renderer')) {
   require('./privacy/isolation/offline-renderer-worker.cjs');
 } else {
 require('./core/http-runtime.cjs').install();
-const { app, BrowserWindow, ipcMain, dialog, protocol, session, safeStorage, Menu, shell, webFrameMain, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, protocol, session, safeStorage, Menu, shell, webFrameMain, nativeImage, nativeTheme } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const crypto = require('node:crypto');
@@ -992,7 +992,7 @@ app.whenReady().then(async () => {
     if (details.resourceType === 'subFrame' && previewAllowed(details.url)) remember(previewLog.documents, { at: Date.now(), status: details.statusCode, url: details.url });
   });
   function createWindow() {
-    window = new BrowserWindow({ width: 1440, height: 940, minWidth: 980, minHeight: 720, backgroundColor: '#F8FAFC', title: DISPLAY_NAME, icon: appIcon, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, webviewTag: false } });
+    window = new BrowserWindow({ width: 1440, height: 940, minWidth: 980, minHeight: 720, backgroundColor: nativeTheme.shouldUseDarkColors ? '#0d1219' : '#F8FAFC', title: DISPLAY_NAME, icon: appIcon, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, webviewTag: false } });
     window.maximize(); // Almindeligt maksimeret vindue, ikke macOS-fuldskærm.
     window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     // Fejl, som forhåndsvisningens side selv skriver i konsollen. Kun previewets ramme; appens egne meddelelser tælles ikke.

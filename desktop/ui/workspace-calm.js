@@ -6,8 +6,10 @@
   const narrow = matchMedia('(max-width: 720px)');
   const overlaySidebar = matchMedia('(max-width: 900px)');
   const themeKey = 'harness-workspace-theme-v1';
-  let theme = 'dark', mobileSurface = false;
-  try { if (localStorage.getItem(themeKey) === 'light') theme = 'light'; } catch { /* Presentation only. */ }
+  const systemDark = matchMedia('(prefers-color-scheme: dark)');
+  // Gemt manuel valg vinder; uden gemt valg følger appen systemets lys/mørke-tilstand.
+  function storedChoice() { try { const v = localStorage.getItem(themeKey); return v === 'light' || v === 'dark' ? v : null; } catch { return null; } }
+  let theme = storedChoice() ?? (systemDark.matches ? 'dark' : 'light'), mobileSurface = false;
 
   const themeButton = node('button', 'Mørk arbejdsvisning');
   themeButton.id = 'workspace-theme'; themeButton.type = 'button';
@@ -35,6 +37,8 @@
     theme = theme === 'dark' ? 'light' : 'dark'; applyTheme();
     try { localStorage.setItem(themeKey, theme); } catch { /* Presentation only. */ }
   };
+  // Følger live med når systemet skifter lys/mørke, medmindre brugeren har valgt manuelt.
+  systemDark.addEventListener('change', () => { theme = storedChoice() ?? (systemDark.matches ? 'dark' : 'light'); applyTheme(); });
   function closeSidebar() {
     body.classList.remove('calm-sidebar-open'); navigation.setAttribute('aria-expanded', 'false');
   }

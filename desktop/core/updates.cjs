@@ -72,7 +72,14 @@ class Updates {
       }
       this.info = structuredClone(info);
       return this.set({ phase: 'available', available, checkedAt: new Date().toISOString() });
-    } catch (updateError) { this.info = null; return this.fail('Opdateringer kunne ikke kontrolleres. Tjek forbindelsen, og prøv igen.' + (updateError?.message ? ' — Teknisk: ' + updateError.message : '')); }
+    } catch (updateError) {
+      // Teknisk hint hjælper fejlfindingen, men rå fejltekst kan indeholde private adresser og nøgler.
+      // Derfor vises kun en kurateret fejlkode (fx ENOTFOUND, ETIMEDOUT, 404) — aldrig rå fejltekst.
+      const raw = String(updateError?.code || updateError?.message || '');
+      const code = /(EN[A-Z]+|ET[A-Z]+|ECONN[A-Z]+|[45]\d{2})/.exec(raw)?.[1] || updateError?.code || '';
+      const hint = code ? ` — Teknisk: ${String(code).slice(0, 24)}` : '';
+      this.info = null; return this.fail('Opdateringer kunne ikke kontrolleres. Tjek forbindelsen, og prøv igen.' + hint);
+    }
   }
   async download() {
     if (!this.enabled || !this.state.available || !['available', 'error'].includes(this.state.phase)) throw new Error('Kontrollér først, om der er en opdatering.');
