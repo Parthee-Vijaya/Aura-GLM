@@ -7,6 +7,20 @@
   --radius: 10px; --sidebar: 216px; --motion-fast: 140ms; --motion-step: 220ms;
   --ease-out: cubic-bezier(.2,.7,.2,1);
 }
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #e2e8f0; --muted: #9aa8bd; --accent: #4f8ff7; --accent-hover: #6ba1ff;
+    --tint: #1d2a3d; --surface: #141c26; --canvas: #0d1219; --line: #2a3648;
+  }
+  body { background: var(--canvas); }
+  #setup-reason, #connection-warning { background: #3a2f18; color: #f4d9a6; border-color: #5c451f; }
+  .composer-wait { color: #e0b34d; }
+  .composer:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--tint); }
+  .preview-toolbar, .viewport-toolbar { background: var(--surface); }
+  #preview-stage, iframe { background: var(--surface); }
+  :is(#setup-choice, #setup-feature-choice) button { background: var(--surface); }
+}
+
 * { box-sizing: border-box; }
 body { margin: 0; }
 [hidden] { display: none !important; }
@@ -15,7 +29,7 @@ button { border: 1px solid var(--line); border-radius: 8px; background: var(--su
 button:hover:not(:disabled) { border-color: #b5c8e4; background: #f2f6fc; }
 button:active:not(:disabled) { background: #e8effa; }
 button:disabled { cursor: not-allowed; opacity: .5; }
-:where(button, input, textarea, select, summary, [tabindex]):focus-visible { outline: 3px solid #0052cc; outline-offset: 3px; }
+:where(button, input, textarea, select, summary, [tabindex]):focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 .primary, #send, #build-plan, #deploy-button { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 2px 4px #0052cc14; }
 .primary:hover:not(:disabled), #send:hover:not(:disabled), #build-plan:hover:not(:disabled), #deploy-button:hover:not(:disabled) { background: var(--accent-hover); color: #fff; border-color: var(--accent-hover); }
 .text-button { border-color: transparent; background: transparent; color: var(--accent); padding: 6px 8px; font-size: 12px; }
@@ -27,14 +41,14 @@ p { line-height: 1.65; }
 .hint, .muted { font-size: 12px; line-height: 1.6; color: var(--muted); }
 .hint { margin: 8px 0; }
 label { display: block; font-size: 12px; font-weight: 550; margin: 16px 0 7px; }
-input:not([type=color]):not([type=checkbox]), textarea, select { width: 100%; padding: 10px 12px; border: 1px solid #ccd7e6; border-radius: 8px; background: #fff; color: var(--ink); line-height: 1.5; }
+input:not([type=color]):not([type=checkbox]), textarea, select { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); line-height: 1.5; }
 input::placeholder, textarea::placeholder { color: #69788e; }
 textarea { resize: vertical; }
 input[type=checkbox] { accent-color: var(--accent); width: 16px; height: 16px; flex-shrink: 0; }
 summary { cursor: pointer; font-size: 12px; font-weight: 550; color: var(--muted); line-height: 1.6; }
 details[open] > summary { margin-bottom: 12px; }
 .check-label { display: flex; gap: 9px; align-items: flex-start; font-weight: 400; line-height: 1.6; }
-.sidebar { width: var(--sidebar); position: fixed; inset: 0 auto 0 0; background: linear-gradient(165deg,#f2f6fd,#f8fafc 60%); border-right: 1px solid var(--line); padding: 28px 14px 16px; display: flex; flex-direction: column; }
+.sidebar { width: var(--sidebar); position: fixed; inset: 0 auto 0 0; background: linear-gradient(165deg, color-mix(in srgb, var(--canvas) 92%, var(--surface)) , var(--surface) 60%); border-right: 1px solid var(--line); padding: 28px 14px 16px; display: flex; flex-direction: column; }
 .brand { display: flex; align-items: center; gap: 10px; padding: 0 8px 30px; font-size: 16px; font-weight: 650; letter-spacing: -.02em; }
 .brand-copy, .brand-name { min-width: 0; }
 .app-version { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; font-weight: 500; line-height: 1.25; letter-spacing: 0; white-space: nowrap; }
@@ -83,7 +97,7 @@ form > section.panel { margin-bottom: 24px; }
 .create-footer { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 28px; }
 .create-footer p { margin: 0; font-size: 12px; color: var(--muted); }
 .section-title { display: flex; align-items: center; gap: 12px; }
-#workspace { height: 100dvh; display: flex; flex-direction: column; background: #fff; overflow: clip; }
+#workspace { height: 100dvh; display: flex; flex-direction: column; background: var(--canvas); overflow: clip; }
 .app-content:has(#workspace:not([hidden])) > header { display: none; }
 /* Arbejdsområdet har faste vinduesgrænser. Kun de indre paneler ruller.
    Opstartens formularer og dialoger beholder deres egen rulning. */
@@ -137,7 +151,7 @@ html:has(#workspace:not([hidden])), body:has(#workspace:not([hidden])) { height:
 .workflow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .workflow select { padding: 5px 8px; font-size: 12px; flex: 1; width: auto; }
 .workflow .hint { width: 100%; margin: 0; font-size: 11px; }
-.composer { margin: 8px 16px 6px; border: 1px solid #ccd9ec; border-radius: 14px; padding: 10px; background: white; box-shadow: 0 3px 12px #1b3a6410; text-align: right; }
+.composer { margin: 8px 16px 6px; border: 1px solid var(--line); border-radius: 14px; padding: 10px; background: var(--surface); box-shadow: 0 3px 12px #1b3a6410; text-align: right; }
 .composer:focus-within { border-color: #73a4e8; box-shadow: 0 0 0 3px #e8f1ff; }
 .composer textarea { border: 0; border-radius: 6px; background: transparent; resize: none; min-height: 68px; font-size: 13px; padding: 7px; }
 .composer textarea:focus-visible { outline: none; }
@@ -217,7 +231,7 @@ iframe { border: 0; width: 100%; height: 100%; background: #fff; }
 .empty-state h2:empty { display: none; }
 .empty-code { display: block; margin-bottom: 10px; font: 600 22px/1 ui-monospace, SFMono-Regular, Menlo, monospace; color: #9aa6b6; }
 #preview-empty { text-align: center; }
-.setup-row { border: 1px solid var(--line); border-radius: 12px; padding: 20px; background: white; margin: 14px 0; }
+.setup-row { border: 1px solid var(--line); border-radius: 12px; padding: 20px; background: var(--surface); margin: 14px 0; }
 .setup-row h2 { margin-bottom: 10px; }
 .setup-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 0; }
 #setup-reason, #connection-warning { background: #fff9f0; color: #5c3d14; padding: 14px 16px; border: 1px solid #f0d9b5; font-size: 13px; border-radius: 10px; }
@@ -438,7 +452,7 @@ body.setup-guided .app-content { margin-left: 0; }
 .key-steps { margin: 8px 0 12px; padding-left: 22px; }
 .key-steps li { margin: 6px 0; line-height: 1.6; }
 .key-steps .text-button { padding: 0 4px; }
-.composer-status { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 11px; color: var(--muted); margin: 0 20px 8px; min-height: 15px; }
+.composer-status { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 11px; color: var(--muted); margin: 0 16px 6px; min-height: 15px; }
 .composer-status #draft-status { margin: 0; }
 /* Funktioner: én kontakt pr. funktion som i en cookie-dialog. Anbefalet står først og er markeret. */
 #setup-feature-choice .recommended { display: inline-block; width: auto; margin: 0 0 10px; padding: 2px 9px; border-radius: 999px; background: var(--tint); color: var(--accent); font-size: 11px; font-weight: 650; letter-spacing: .02em; }
@@ -462,7 +476,7 @@ input[type=checkbox][role=switch]:disabled { cursor: not-allowed; opacity: .5; }
 .features-scope label:has(input:checked) { background: var(--surface); box-shadow: 0 1px 3px #14263b1f; color: var(--accent); }
 /* [type=radio] giver samme vægt som den generelle input-regel, så bredden på 1 px vinder og radioknappen ikke gør dialogen bredere. */
 .features-scope input[type=radio] { position: absolute; top: 0; left: 0; width: 1px; height: 1px; margin: 0; padding: 0; border: 0; opacity: 0; pointer-events: none; }
-.features-scope label:has(input:focus-visible) { outline: 3px solid #0052cc; outline-offset: 2px; }
+.features-scope label:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 2px; }
 .features-always, #features-advanced { margin-top: 14px; }
 @media (prefers-reduced-motion: reduce) { .feature-toggle input[role=switch], input[type=checkbox][role=switch]::before { transition: none; } }
 /* ⓘ: lille rund knap med en forklaring i en boble. Forklaringen åbnes med et klik, aldrig kun ved at holde musen over. */
@@ -470,7 +484,7 @@ input[type=checkbox][role=switch]:disabled { cursor: not-allowed; opacity: .5; }
 .info:hover:not(:disabled) { background: var(--tint); border-color: var(--accent); }
 .info[aria-expanded="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
 .info-pop { position: fixed; inset: auto; margin: 0; padding: 10px 12px; border: 1px solid #ccd7e6; border-radius: 10px; background: #fff; color: var(--ink); box-shadow: 0 10px 30px #1836581f; font-size: 12px; line-height: 1.6; white-space: pre-line; }
-.info-pop:focus-visible { outline: 3px solid #0052cc; outline-offset: 2px; }
+.info-pop:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .label-row { display: flex; align-items: center; margin: 16px 0 7px; }
 .label-row label { margin: 0; }
 .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 12px 0; padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); font-size: 13px; font-weight: 500; cursor: pointer; }
@@ -1042,7 +1056,7 @@ kbd { font: 600 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
 .visibility-card span { color: var(--muted); font-size: 12px; line-height: 1.5; }
 .visibility-card:hover { border-color: #b5c8e4; }
 .visibility-card:has(input:checked) { border-color: var(--accent); background: var(--tint); box-shadow: inset 0 0 0 1px var(--accent); }
-.visibility-card:has(input:focus-visible) { outline: 3px solid #0052cc; outline-offset: 2px; }
+.visibility-card:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 2px; }
 @media (max-width: 560px) { .visibility-choice { grid-template-columns: 1fr; } }
 
 /* Udgiv viser kun det aktuelle spørgsmål. */
@@ -1168,10 +1182,10 @@ kbd { font: 600 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
 #deployment-copy { margin-bottom: 16px; }
 @media (prefers-reduced-motion: reduce) { .operation-spinner { animation: none; } }
 
-.composer-shortcut { margin: 0 14px 4px; color: var(--muted); font-size: 11px; line-height: 1.4; }
+.composer-shortcut { margin: 0 16px 4px; color: var(--muted); font-size: 11px; line-height: 1.4; }
 
 /* F07: sidste observerede kontekst er adskilt fra den eksisterende forbrugslinje. */
-.context-status { padding: 0 20px; color: var(--muted); font-size: 10px; overflow-wrap: anywhere; }
+.context-status { padding: 0 16px; color: var(--muted); font-size: 10px; overflow-wrap: anywhere; }
 #context-meter { display: block; width: min(180px, 100%); height: 4px; margin-top: 3px; }
 #context-meter[hidden], .context-status[hidden] { display: none; }
 #context-meter::-webkit-meter-bar { background: var(--line); border: 0; border-radius: 3px; }
