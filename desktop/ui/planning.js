@@ -79,12 +79,16 @@
       for (const key of ['bygger', 'design', 'proev']) {
         const section = parsed.sections.find(part => part.key === key);
         if (!section?.body.trim()) continue;
-        const item = node('li');
-        item.append(node('strong', `${section.title}: `), document.createTextNode(view.planSummary(section.body, 180)));
+        const item = node('details', '', 'plan-detail');
+        const head = node('summary'); head.append(node('strong', section.title));
+        item.append(head);
+        const body = node('div', '', 'plan-detail-body');
+        body.append(document.createTextNode(view.planSummary(section.body, 300)));
+        item.append(body);
         summary.push(item);
       }
-      // Frie planformater beholder deres eksisterende resumé; vi opfinder ikke manglende afsnit.
-      if (!summary.length) summary.push(node('li', view.planSummary(plan.text)));
+      // Frie planformater bevarer deres eksisterende resumé som ét åbent punkt.
+      if (!summary.length) { const item = node('details', '', 'plan-detail'); item.open = true; item.append(node('summary', view.planSummary(plan.text, 180))); summary.push(item); }
     }
     $('#plan-summary').replaceChildren(...summary);
     // Fanen vises, når planlægning er slået til, eller når der findes en plan.
