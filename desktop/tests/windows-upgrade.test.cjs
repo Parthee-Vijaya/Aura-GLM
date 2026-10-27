@@ -39,6 +39,8 @@ test('NSIS-identiteten og databevarelsen er stadig kompatibel med den eksisteren
   assert.equal(config.nsis.perMachine, false);
   assert.equal(config.nsis.deleteAppDataOnUninstall, false);
   assert.equal(config.nsis.oneClick, false);
-  assert.equal(config.publish.url, 'https://raw.githubusercontent.com/Parthee-Vijaya/ai-harness/main/site/dist/updates/');
+  assert.equal(config.publish.provider, 'github');
+  assert.equal(config.publish.owner, 'Parthee-Vijaya');
+  assert.equal(config.publish.repo, 'Aura-GLM');
   assert.equal(config.publish.channel, 'beta');
 });
