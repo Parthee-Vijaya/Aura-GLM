@@ -32,6 +32,9 @@ rememberKeychain(identity);
 app.setName(identity.keychainName);
 app.setPath('userData', identity.userData);
 app.setPath('sessionData', identity.sessionData);
+// Opstartsregistrer for agentmotoren skriver kun faste felter uden indhold,
+// stier eller hemmeligheder og er bevidst adskilt fra samtale- og projektdata.
+require('./core/engine-startup.cjs').install({ directory: path.join(identity.userData, 'harness', 'diagnostics') });
 
 protocol.registerSchemesAsPrivileged(['harness', 'aura-preview'].map(scheme => ({ scheme, privileges: { standard: true, secure: true, supportFetchAPI: true } })));
 let window, chosenParent = null;
