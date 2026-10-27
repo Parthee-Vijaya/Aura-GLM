@@ -76,7 +76,7 @@
     const values = previous || settingsInput(snapshot?.settings), locked = snapshot?.rulesLocked === true, qualified = snapshot?.capabilities?.hybrid === true && snapshot?.capabilities?.isolation === true;
     settingsDialog.replaceChildren(heading(settingsDialog, t('Arbejdsform og datakontrol', 'Work mode and data control'), () => closeDialog(settingsDialog)));
     settingsDialog.append(make('p', t('Modelvalg og datatilladelser er to forskellige valg. Planer og værktøjsgodkendelser gælder fortsat.', 'Model choice and data permissions are separate choices. Plans and tool approvals still apply.'), 'privacy-lead'));
-    const limitation = make('p', qualified ? t('Lokal og ekstern behandling holdes adskilt. Hver deling kontrolleres efter de gældende dataregler.', 'Local and external processing stay separate. Every sharing is checked against the current data rules.') : t('Leverance 1 · kontrol af modelkald. Hybridarbejde og isolation af terminal, preview og underprocesser er ikke aktiveret.', 'Delivery 1 · model-call control. Hybrid work and isolation of terminals, previews and subprocesses are not enabled.'), 'privacy-scope');
+    const limitation = make('p', qualified ? t('Lokal og ekstern behandling holdes adskilt. Hver deling kontrolleres efter de gældende dataregler.', 'Local and external processing stay separate. Every sharing is checked against the current data rules.') : t('Fra version 1 og fremover kontrollerer Aura GLM alle modelkald og delinger.', 'From version 1 and onwards Aura GLM controls all model calls and sharing.'), 'privacy-scope');
     settingsDialog.append(limitation);
     const scopeSelect = make('select'); scopeSelect.id = 'privacy-scope';
     const state = api.read();

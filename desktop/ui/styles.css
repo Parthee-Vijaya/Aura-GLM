@@ -1277,3 +1277,21 @@ details.plan-detail > summary { cursor: pointer; padding: 10px 14px; font-size: 
 details.plan-detail > summary::before { content: "▸"; transition: transform var(--motion-fast) var(--ease-out); font-size: 11px; color: var(--muted); flex-shrink: 0; }
 details.plan-detail[open] > summary::before { transform: rotate(90deg); }
 details.plan-detail > .plan-detail-body { padding: 0 14px 12px 14px; font-size: 12px; line-height: 1.6; color: var(--muted); }
+
+/* Indsatsvalg: kompakte valgknapper (som Claude/Codex) */
+.effort-row { display: flex; align-items: center; gap: 8px; margin: 8px 0 4px; flex-wrap: wrap; }
+.effort-label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.effort-choices { display: inline-flex; gap: 4px; border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+.effort-chip { border: none; background: transparent; border-radius: 999px; padding: 4px 12px; font-size: 12px; font-weight: 550; color: var(--muted); cursor: pointer; transition: background var(--motion-fast), color var(--motion-fast); }
+.effort-chip:hover { background: var(--tint); color: var(--ink); }
+.effort-chip[aria-checked="true"] { background: var(--accent); color: #fff; }
+
+/* Dark/light-ikon (halvmåne/sol) */
+.theme-icon { width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: 50%; padding: 2px; cursor: pointer; }
+.theme-icon svg { width: 14px; height: 14px; }
+
+/* Viewport-ikoner */
+.viewport-icon { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
+.viewport-icon svg { width: 20px; height: 20px; stroke: var(--muted); }
+.viewport-icon[aria-pressed="true"] { background: var(--tint); border-color: var(--accent); }
+.viewport-icon[aria-pressed="true"] svg { stroke: var(--accent); }

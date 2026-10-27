@@ -26,7 +26,7 @@
     return actual;
   }
   function controls() {
-    preset.value = settings.preset; width.value = settings.width; height.value = settings.height; zoom.value = settings.zoom;
+    for (const btn of preset.querySelectorAll('.viewport-icon')) btn.setAttribute('aria-pressed', btn.dataset.preset === settings.preset ? 'true' : 'false'); width.value = settings.width; height.value = settings.height; zoom.value = settings.zoom;
     el('viewport-dimensions').hidden = settings.preset === 'fluid'; zoom.disabled = settings.preset === 'fluid';
   }
   function render() {

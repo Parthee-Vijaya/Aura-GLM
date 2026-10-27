@@ -1201,7 +1201,8 @@ function updateModelSummary() {
   const chosen = model.value && view?.effort ? effortNames[view.effort] || view.effort : null;
   const effort = model.value && window.ModelAdvice.effort(connection?.kind, model.value);
   const effortLabel = chosen ? `${chosen} indsats` : effort ? `${effort} indsats` : connection?.kind === 'mistral' ? 'standardindsats' : '';
-  $('#model-effort').hidden = !chosen; $('#model-effort-text').textContent = chosen ? `Du har valgt ${chosen} indsats i denne samtale.` : '';
+  $('#model-effort-text').textContent = chosen ? `Valgt i denne samtale.` : effort ? `Standard: ${effort}.` : '';
+  if (typeof document !== 'undefined' && document.querySelectorAll) for (const chip of document.querySelectorAll('.effort-chip')) { const active = chip.dataset.effort === view?.effort; chip.setAttribute('aria-checked', active ? 'true' : 'false'); }
   const label = model.value ? [model.selectedOptions[0].textContent, provider, effortLabel].filter(Boolean).join(' · ') : 'Vælg AI';
   $('#model-summary').textContent = model.value ? model.selectedOptions[0].textContent : 'Vælg din AI';
   const brand = view.running && view.activeModelSummary ? view.activeModelBrand : { kind: connection?.kind, modelID: model.value };
@@ -2081,6 +2082,8 @@ $('#model-chip').onclick = openTaskSettings;
 // En valgt indsats hører til modellen. Et skift af model eller forbindelse vender tilbage til udbyderens standard.
 const resetEffort = () => { if (view) view.effort = null; updateModelSummary(); };
 $('#model-effort-reset').onclick = resetEffort;
+// Indsats-knapperne i Vælg AI-dialogen
+for (const chip of document.querySelectorAll('.effort-chip')) { chip.onclick = () => { setEffort(chip.dataset.effort); }; }
 for (const id of ['#connection-select', '#model-select']) $(id).addEventListener('change', () => { if (view?.effort) resetEffort(); });
 for (const id of ['settings-menu', 'project-menu', 'preview-menu']) {
   document.getElementById(id).addEventListener('click', event => { if (event.target.closest('button') && (id !== 'preview-menu' || event.target.closest('#attach-preview'))) document.getElementById(id).hidePopover(); });
