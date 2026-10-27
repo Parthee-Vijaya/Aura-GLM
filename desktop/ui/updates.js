@@ -9,13 +9,13 @@
   function render(next) {
     state = next;
     const status = {
-      idle: 'Søg efter en ny version af Aura 1.', checking: 'Søger efter opdateringer …',
-      current: 'Du har den nyeste version.', available: `Aura 1 ${state.available?.version} er klar.`,
+      idle: 'Søg efter en ny version af Aura GLM.', checking: 'Søger efter opdateringer …',
+      current: 'Du har den nyeste version.', available: `Aura GLM ${state.available?.version} er klar.`,
       downloading: `Henter opdateringen · ${state.percent} %`, ready: 'Opdateringen er hentet.',
       installing: 'Gør klar til genstart …', error: 'Opdateringen kunne ikke gennemføres.',
       unavailable: 'Denne udgave opdateres med en installationsfil.'
     };
-    $('#updates-version').textContent = `Aura 1 ${state.current}${state.channel === 'beta' ? ' · Beta' : ''}`;
+    $('#updates-version').textContent = `Aura GLM ${state.current}${state.channel === 'beta' ? ' · Beta' : ''}`;
     $('#updates-status').textContent = status[state.phase];
     $('#updates-error').textContent = state.error || '';
     $('#updates-warning').hidden = !state.warning;
@@ -32,7 +32,7 @@
     const notice = $('#updates-notice');
     notice.hidden = !state.warning && !state.available;
     notice.classList.toggle('critical', Boolean(state.warning));
-    $('#updates-notice-text').textContent = state.warning ? 'Sikkerhedsopdatering til Aura 1' : state.phase === 'ready' ? 'Opdatering klar til genstart' : `Aura 1 ${state.available?.version} er klar`;
+    $('#updates-notice-text').textContent = state.warning ? 'Sikkerhedsopdatering til Aura GLM' : state.phase === 'ready' ? 'Opdatering klar til genstart' : `Aura GLM ${state.available?.version} er klar`;
   }
   async function action(callback) {
     try { $('#updates-error').textContent = ''; const result = await callback(); if (result?.phase) render(result); }

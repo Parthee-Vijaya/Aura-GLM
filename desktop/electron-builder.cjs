@@ -4,7 +4,7 @@ const localBetaSigning = !process.env.HARNESS_SIGN_IDENTITY || process.env.HARNE
 const macEntitlements = localBetaSigning ? 'packaging/entitlements.adhoc.mac.plist' : 'packaging/entitlements.mac.plist';
 const profileResources = [{ from: '../LICENSE', to: 'LICENSE' }, { from: '../profiles', to: 'profiles', filter: ['grundregler.md','gitignore.txt','catalog.json','skills/**/*'] }];
 module.exports = {
-  appId: 'org.ai-alliancen.harness', productName: 'Aura 1',
+  appId: 'org.ai-alliancen.harness', productName: 'Aura GLM',
   directories: { output: 'release', buildResources: 'packaging' },
   files: ['main.cjs', 'preload.cjs', 'core/**/*', 'privacy/**/*', '!privacy/isolation/.runtime/**/*', '!privacy/isolation/notes/**/*', '!privacy/**/.gitignore', 'ui/**/*', 'package.json', 'runtime-lock.json'],
   asar: true, asarUnpack: ['core/engine-guardian.cjs', 'core/pdf-text-worker.cjs', 'node_modules/pdfjs-dist/**/*', 'node_modules/@napi-rs/**/*', 'core/dev-server-runner.cjs', 'core/command-sandbox-runner.mjs', 'core/command-sandbox-policy.cjs', 'core/protected-paths.cjs', 'core/command-dispatch.cjs', 'node_modules/@anthropic-ai/sandbox-runtime/**/*', 'node_modules/@pondwader/socks5-server/**/*', 'node_modules/commander/**/*', 'node_modules/node-forge/**/*', 'node_modules/zod/**/*'], npmRebuild: false,

@@ -1,4 +1,4 @@
-// Modelkort pr. udbyder. Aura 1 anbefaler ikke udbydere eller modeller. Første kort er udbyderens eget udgangspunkt,
+// Modelkort pr. udbyder. Aura GLM anbefaler ikke udbydere eller modeller. Første kort er udbyderens eget udgangspunkt,
 // som udbyderen selv angiver det i sin dokumentation; det bruges som standard og kan skiftes med ét klik.
 // Teksterne er faktuelle. Kontrolleret hos udbyderne 29. september 2026. Bruges af brugerfladen og af unit-testene.
 (function (root) {

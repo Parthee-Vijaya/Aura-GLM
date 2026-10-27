@@ -32,9 +32,9 @@
     // Prevent keyboard interaction with the obscured preview, never alter its sandbox.
     surface.inert = covered;
     area.dataset.state = waiting ? 'waiting' : active ? 'working' : 'idle';
-    setText(statusText, waiting ? `Venter på dig: ${view.waitingFor[0].title}` : window.ChatDisplay.phase(view) || view.statusDetail || 'Aura 1 arbejder …');
+    setText(statusText, waiting ? `Venter på dig: ${view.waitingFor[0].title}` : window.ChatDisplay.phase(view) || view.statusDetail || 'Aura GLM arbejder …');
     setText(heading, waiting ? 'Et valg, før vi fortsætter' : 'Din idé tager form');
-    setText(note, waiting ? 'Aura 1 venter på dit svar i samtalen. Planer og godkendelser gælder fortsat.' : 'Aura 1 arbejder på næste skridt. Du kan se forhåndsvisningen imens; den kan ændre sig under arbejdet.');
+    setText(note, waiting ? 'Aura GLM venter på dit svar i samtalen. Planer og godkendelser gælder fortsat.' : 'Aura GLM arbejder på næste skridt. Du kan se forhåndsvisningen imens; den kan ændre sig under arbejdet.');
     waitingButton.hidden = !waiting;
     setText(statusAction, waiting ? 'Se dit valg' : covered ? 'Se aktivitet' : 'Vis arbejdsstatus');
     statusAction.setAttribute('aria-controls', waiting ? 'chat-panel' : covered ? 'panel-activity' : 'preview-work-veil');
