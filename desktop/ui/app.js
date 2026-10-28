@@ -2093,7 +2093,24 @@ function openTaskSettings() {
   if (!state?.connections?.length) { showSetup('Tilslut en AI for at bygge videre. Din kladde er bevaret.'); return; }
   $('#model-options').open = true; if (!$('#task-dialog').open) $('#task-dialog').showModal();
 }
-$('#model-chip').onclick = async () => { await buildModelPicker(); document.getElementById('model-picker').showPopover(); document.getElementById('model-picker-search')?.focus(); };
+// Codex 1:1: vælgeren anker ved Vælg AI-knappen inde i chatvinduet — ikke ved siden af eller centreret.
+function placerModelVaelger() {
+  const p = document.getElementById('model-picker');
+  const r = document.getElementById('model-chip')?.getBoundingClientRect();
+  const chatLeft = document.getElementById('chat-panel')?.getBoundingClientRect().left || 10;
+  if (!p || !r) return;
+  p.style.width = '340px'; p.style.maxWidth = '340px';
+  const bredde = p.offsetWidth, marg = 8;
+  const hoyde = p.offsetHeight || 380;
+  let venstre = Math.max(chatLeft + 4, r.right - bredde);
+  venstre = Math.min(venstre, innerWidth - bredde - 10);
+  let topp;
+  if (r.top - hoyde - marg > 50) topp = r.top - hoyde - marg;
+  else topp = Math.min(innerHeight - hoyde - 10, r.bottom + marg);
+  p.style.left = `${Math.round(venstre)}px`; p.style.top = `${Math.round(topp)}px`;
+}
+$('#model-chip').onclick = async () => { await buildModelPicker(); document.getElementById('model-picker').showPopover(); placerModelVaelger(); document.getElementById('model-picker-search')?.focus(); };
+addEventListener('resize', () => { if (document.getElementById('model-picker')?.matches(':popover-open')) placerModelVaelger(); });
 let pickerEntries = [];
 function syncPickerEffort() { for (const chip of document.querySelectorAll('#picker-effort .effort-chip')) chip.setAttribute('aria-checked', String(chip.dataset.effort === (view?.effort ?? null))); }
 async function buildModelPicker() {
@@ -2115,6 +2132,8 @@ async function buildModelPicker() {
       } else if (event.key === 'Enter') {
         event.preventDefault();
         (poster.find(b => b.dataset.aktiv === '1') || poster[0]).click();
+      } else if (event.key === 'Escape') {
+        event.preventDefault(); document.getElementById('model-picker').hidePopover();
       }
     });
   }
@@ -2151,7 +2170,6 @@ function renderModelPicker(term = '') {
   }) : [node('p', 'Ingen model matcher søgningen.', 'hint')]));
 }
 $('#model-picker-more').onclick = () => { document.getElementById('model-picker').hidePopover(); openTaskSettings(); };
-$('#model-picker-done').onclick = () => document.getElementById('model-picker').hidePopover();
 
 // Drag-and-drop: træk filer ind i chatboksen — de gennemgås gennem den samme sikre vej som filvælgeren
 const chatForm = $('#chat-form');
