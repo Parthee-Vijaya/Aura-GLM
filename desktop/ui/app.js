@@ -2091,27 +2091,42 @@ function openTaskSettings() {
   if (!state?.connections?.length) { showSetup('Tilslut en AI for at bygge videre. Din kladde er bevaret.'); return; }
   $('#model-options').open = true; if (!$('#task-dialog').open) $('#task-dialog').showModal();
 }
-$('#model-chip').onclick = () => { buildModelPicker(); document.getElementById('model-picker').showPopover(); };
-function buildModelPicker() {
+$('#model-chip').onclick = async () => { await buildModelPicker(); document.getElementById('model-picker').showPopover(); document.getElementById('model-picker-search')?.focus(); };
+let pickerEntries = [];
+async function buildModelPicker() {
   const list = document.getElementById('model-picker-list');
+  const search = document.getElementById('model-picker-search');
+  if (search && !search.dataset.bound) { search.dataset.bound = '1'; search.addEventListener('input', () => renderModelPicker(search.value)); }
   const conn = $('#connection-select'), connModel = $('#model-select');
-  // Genindbyg listen: forbindelse + modelnavn + indsatsstatus
-  const names = [];
-  if (conn?.value && connModel?.value) {
-    names.push({ id: connModel.value, label: `${connModel.value} · ${conn.selectedOptions[conn.selectedIndex]?.text || ''}`, model: true });
+  if (!conn?.value) { pickerEntries = []; if (search) search.value = ''; list.replaceChildren(node('p', 'Ingen forbindelse valgt endnu.', 'hint')); return; }
+  const currentID = connModel?.value ?? '';
+  // Hele forbindelsens modelkatalog vises med søgning; hvis kataloget mangler, hentes det først.
+  if (!modelCatalog?.length) { list.replaceChildren(node('p', 'Henter modeller …', 'hint')); try { await loadModels(); } catch { /* Netværksfejl vises som 'Ingen modeller' nedenfor. */ } }
+  pickerEntries = [];
+  if (currentID && connModel.selectedOptions?.[0]?.textContent) pickerEntries.push({ modelID: currentID, label: connModel.selectedOptions[0].textContent, current: true });
+  for (const model of modelCatalog || []) {
+    if (model.id === currentID) continue;
+    const free = model.price && model.price.prompt != null && model.price.completion != null && Number(model.price.prompt) === 0 && Number(model.price.completion) === 0;
+    pickerEntries.push({ modelID: model.id, label: `${model.name || model.id}${free ? ' · gratis*' : ''}` });
   }
-  // Senest brugte modeller fra workspaces (kortliste)
-  if (state?.connections?.length) for (const c of state.connections.slice(0, 5)) {
-    if (c.id === conn?.value) continue;
-    names.push({ id: c.id, label: c.name || c.id, connection: c.id });
-  }
-  list.replaceChildren(...names.map(item => {
+  if (!pickerEntries.length) { if (search) search.value = ''; list.replaceChildren(node('p', 'Ingen modeller fundet hos forbindelsen.', 'hint')); return; }
+  if (search) search.value = '';
+  renderModelPicker('');
+}
+function renderModelPicker(term = '') {
+  const list = document.getElementById('model-picker-list');
+  const needle = term.trim().toLowerCase();
+  const matches = needle ? pickerEntries.filter(e => e.label.toLowerCase().includes(needle) || e.modelID.toLowerCase().includes(needle)) : pickerEntries;
+  list.replaceChildren(...(matches.length ? matches.map(item => {
     const btn = node('button', item.label); btn.type = 'button'; btn.setAttribute('role', 'radio');
-    btn.setAttribute('aria-checked', item.model ? 'true' : 'false');
-    btn.onclick = async () => { document.getElementById('model-picker').hidePopover(); if (item.connection) { $('#connection-select').value = item.connection; if (connModel) { connModel.value = ''; } await loadModels(); } updateModelSummary(); $('#prompt').focus(); };
+    btn.setAttribute('aria-checked', String(!!item.current));
+    btn.onclick = () => {
+      document.getElementById('model-picker').hidePopover();
+      const select = $('#model-select'); if (item.modelID && select && select.value !== item.modelID) { select.value = item.modelID; select.dispatchEvent(new Event('change', { bubbles: true })); }
+      $('#prompt').focus();
+    };
     return btn;
-  }));
-  if (!names.length) list.replaceChildren(node('p', 'Ingen forbindelse valgt endnu.', 'hint'));
+  }) : [node('p', 'Ingen model matcher søgningen.', 'hint')]));
 }
 $('#model-picker-more').onclick = () => { document.getElementById('model-picker').hidePopover(); openTaskSettings(); };
 $('#model-picker-done').onclick = () => document.getElementById('model-picker').hidePopover();
@@ -2138,7 +2153,8 @@ chatForm.addEventListener('drop', async event => {
 // En valgt indsats hører til modellen. Et skift af model eller forbindelse vender tilbage til udbyderens standard.
 const resetEffort = () => { if (view) view.effort = null; updateModelSummary(); };
 $('#model-effort-reset').onclick = resetEffort;
-// Indsats-knapperne i Vælg AI-dialogen
+// Indsats-knapperne i Vælg AI-dialogen: gem niveauet til samtalen og visning hvorefter.
+function setEffort(level) { if (!view) return; view.effort = level || null; updateModelSummary(); }
 for (const chip of document.querySelectorAll('.effort-chip')) { chip.onclick = () => { setEffort(chip.dataset.effort); }; }
 for (const id of ['#connection-select', '#model-select']) $(id).addEventListener('change', () => { if (view?.effort) resetEffort(); });
 for (const id of ['settings-menu', 'project-menu', 'preview-menu']) {
