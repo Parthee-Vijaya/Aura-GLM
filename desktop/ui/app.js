@@ -881,6 +881,8 @@ function waitFor(id, title, element, v = view) { v.waitingFor = [...v.waitingFor
 function doneWaiting(id, v = view) { v.waitingFor = v.waitingFor.filter(item => item.id !== id); if (v === view) renderStatus(); window.chats?.render(); }
 function renderStatus() {
   const v = view, waiting = v.running && v.waitingFor.length > 0;
+  // Båndet hører til samtalefladen; idle skjules medopacity, så pladsen altid er reserveret.
+  $('#agent-activity').hidden = false;
   // Lyskanten følger kun den aktive samtale; ventende valg står stille.
   $('#chat-form').dataset.metalState = v.running ? (waiting ? 'waiting' : 'working') : 'idle';
   $('#agent-activity').classList.toggle('is-idle', !v.running); $('#agent-activity').classList.toggle('is-waiting', waiting);
@@ -2093,14 +2095,34 @@ function openTaskSettings() {
 }
 $('#model-chip').onclick = async () => { await buildModelPicker(); document.getElementById('model-picker').showPopover(); document.getElementById('model-picker-search')?.focus(); };
 let pickerEntries = [];
+function syncPickerEffort() { for (const chip of document.querySelectorAll('#picker-effort .effort-chip')) chip.setAttribute('aria-checked', String(chip.dataset.effort === (view?.effort ?? null))); }
 async function buildModelPicker() {
   const list = document.getElementById('model-picker-list');
   const search = document.getElementById('model-picker-search');
-  if (search && !search.dataset.bound) { search.dataset.bound = '1'; search.addEventListener('input', () => renderModelPicker(search.value)); }
+  if (search && !search.dataset.bound) {
+    search.dataset.bound = '1';
+    // Tastaturnavigation som i Codex: pilene bevæger sig gennem listen, Enter vælger.
+    search.addEventListener('input', () => renderModelPicker(search.value));
+    search.addEventListener('keydown', event => {
+      const poster = [...list.querySelectorAll('button')];
+      if (!poster.length) return;
+      const aktiv = poster.findIndex(b => b.dataset.aktiv === '1');
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        const neste = event.key === 'ArrowDown' ? Math.min(poster.length - 1, aktiv + 1) : Math.max(0, aktiv < 0 ? 0 : aktiv - 1);
+        poster.forEach(b => delete b.dataset.aktiv); poster[neste].dataset.aktiv = '1';
+        poster[neste].scrollIntoView({ block: 'nearest' });
+      } else if (event.key === 'Enter') {
+        event.preventDefault();
+        (poster.find(b => b.dataset.aktiv === '1') || poster[0]).click();
+      }
+    });
+  }
   const conn = $('#connection-select'), connModel = $('#model-select');
-  if (!conn?.value) { pickerEntries = []; if (search) search.value = ''; list.replaceChildren(node('p', 'Ingen forbindelse valgt endnu.', 'hint')); return; }
+  syncPickerEffort();
+  if (!conn?.value) { pickerEntries = []; if (search) search.value = ''; renderModelPicker(''); list.replaceChildren(node('p', 'Ingen forbindelse valgt endnu.', 'hint')); return; }
   const currentID = connModel?.value ?? '';
-  // Hele forbindelsens modelkatalog vises med søgning; hvis kataloget mangler, hentes det først.
+  // Hele forbindelsens modelkatalog vises med søgning og indsats, som modelvælgeren i Codex.
   if (!modelCatalog?.length) { list.replaceChildren(node('p', 'Henter modeller …', 'hint')); try { await loadModels(); } catch { /* Netværksfejl vises som 'Ingen modeller' nedenfor. */ } }
   pickerEntries = [];
   if (currentID && connModel.selectedOptions?.[0]?.textContent) pickerEntries.push({ modelID: currentID, label: connModel.selectedOptions[0].textContent, current: true });
@@ -2109,7 +2131,7 @@ async function buildModelPicker() {
     const free = model.price && model.price.prompt != null && model.price.completion != null && Number(model.price.prompt) === 0 && Number(model.price.completion) === 0;
     pickerEntries.push({ modelID: model.id, label: `${model.name || model.id}${free ? ' · gratis*' : ''}` });
   }
-  if (!pickerEntries.length) { if (search) search.value = ''; list.replaceChildren(node('p', 'Ingen modeller fundet hos forbindelsen.', 'hint')); return; }
+  if (!pickerEntries.length) { if (search) search.value = ''; renderModelPicker(''); list.replaceChildren(node('p', 'Ingen modeller fundet hos forbindelsen.', 'hint')); return; }
   if (search) search.value = '';
   renderModelPicker('');
 }

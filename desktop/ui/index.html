@@ -126,7 +126,8 @@
 <label class="mode-menu-title" for="model-picker-search">VÆLG MODEL</label>
 <input id="model-picker-search" type="search" placeholder="Søg model …" aria-label="Søg model" autocomplete="off" spellcheck="false">
 <div id="model-picker-list" role="radiogroup" aria-label="Model"></div>
-<div class="mode-menu-footer"><button id="model-picker-more" type="button" class="text-button">Flere indstillinger …</button><button id="model-picker-done" type="button">Luk</button></div>
+<div id="picker-effort" class="effort-row picker-effort" role="radiogroup" aria-label="Indsats i denne samtale"><span class="effort-label">Indsats</span><div class="effort-choices picker-effort-choices"><button type="button" role="radio" data-effort="low" class="effort-chip">Lav</button><button type="button" role="radio" data-effort="medium" class="effort-chip">Mellem</button><button type="button" role="radio" data-effort="high" class="effort-chip">Høj</button><button type="button" role="radio" data-effort="xhigh" class="effort-chip">Ultra</button></div></div>
+<div class="mode-menu-footer"><button id="model-picker-more" type="button" class="text-button">Flere indstillinger …</button><button id="model-picker-done" type="button" class="text-button">Luk</button></div>
 </div>
 <div id="context-status" class="context-status" hidden><span id="context-label"></span><meter id="context-meter" min="0" max="100" hidden></meter></div><div class="composer-status"><span id="usage-status" aria-live="polite">Intet forbrug i denne samtale endnu</span><span id="draft-status" role="status"></span></div>
   </section>

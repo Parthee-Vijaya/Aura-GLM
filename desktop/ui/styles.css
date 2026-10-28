@@ -1258,6 +1258,10 @@ details.plan-detail > .plan-detail-body { padding: 0 14px 12px 14px; font-size: 
 #model-picker-search:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--tint); }
 #model-picker-list { max-height: 300px; overflow-y: auto; display: grid; gap: 2px; }
 #model-picker .mode-menu-title { display: block; margin: 0 0 8px; font-size: 10px; font-weight: 700; letter-spacing: .06em; color: var(--muted); }
+/* Codex-modelvælger: indsatsvalg ligger i popoveren sammen med listen */
+#picker-effort { margin: 10px 0 2px; font-size: 12px; }
+#picker-effort .effort-chip { padding: 3px 10px; font-size: 11px; }
+#model-picker-list button[data-aktiv] { background: var(--tint); }
 #model-picker-list button { display: block; width: 100%; text-align: left; padding: 8px 12px; border: none; background: transparent; border-radius: 8px; font-size: 13px; cursor: pointer; color: var(--ink); }
 #model-picker-list button:hover { background: var(--tint); }
 #model-picker-list button[aria-checked="true"] { background: var(--tint); font-weight: 600; }

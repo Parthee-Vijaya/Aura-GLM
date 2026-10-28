@@ -57,7 +57,9 @@
   }
   function refreshBanner() {
     const waiting = Boolean(presentation.waitingTarget?.isConnected);
-    banner.hidden = !presentation.running || (waiting && visibleQuestion(presentation.waitingTarget) && !banner.contains(document.activeElement));
+    // Båndet beholder altid sin faste plads i samtalen; idle skjules med opacity via is-idle,
+    // så beskederne aldrig rykker sig, når arbejdet starter eller holder op.
+    banner.hidden = false;
     banner.classList.toggle('is-actionable', waiting);
     banner.setAttribute('role', 'status');
     const jump = el('agent-activity-jump');

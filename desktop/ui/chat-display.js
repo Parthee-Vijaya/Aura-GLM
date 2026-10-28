@@ -26,7 +26,9 @@
     return ({ waiting: 'Venter på udbyderen …', reasoning: 'Modellen forbereder næste skridt …', text: 'AI’en skriver et svar …', tool: p.draft ? 'Forbereder en filændring …' : 'Modellen forbereder en handling …' })[p.phase] || '';
   }
   function progress(view, now = Date.now()) {
-    const silence = Math.max(0, Math.floor((now - (view.lastSignalAt || view.runStartedAt)) / 1000));
+    // Uden et gyldigt tidsanker (ingen kørsel endnu) vises der ingen urimelig ventetid.
+    const anchor = view.lastSignalAt || view.runStartedAt;
+    const silence = anchor ? Math.max(0, Math.floor((now - anchor) / 1000)) : 0;
     if (view.waitingFor?.length) return { quiet: false, text: '' };
     const p = view.modelProgress;
     if (p && silence < 15 && p.phase === 'reasoning') return { quiet: false, text: 'Der kommer fortsat signaler fra modellen. Intet nyt svar eller filindhold endnu.' };
