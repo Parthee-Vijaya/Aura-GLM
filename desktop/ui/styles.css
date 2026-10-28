@@ -1254,8 +1254,24 @@ details.plan-detail > .plan-detail-body { padding: 0 14px 12px 14px; font-size: 
 .viewport-icon[aria-pressed="true"] svg { stroke: var(--accent); }
 
 /* Model-picker: kompact popover ved chatboksen (som Codex/Claude) */
-/* Codex 1:1: vælgeren anker ved chippen inde i chatvinduet (JS sætter left/top),
-   filterfelt øverst, liste med › på det valgte valg, indsats separated nederst. */
+/* Animeret indsats-slider: glidende fyld, svajende glød og pæren ved ny værdi. */
+.picker-effort-slider { margin: 10px 2px 0; padding-top: 8px; border-top: 1px solid var(--line); }
+.picker-effort-slider .effort-heading { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+.picker-effort-slider .effort-label { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.picker-effort-slider .effort-value { font-size: 12.5px; font-weight: 650; color: var(--ink); }
+.picker-effort-slider .effort-slider { position: relative; height: 28px; }
+.picker-effort-slider #picker-effort-range { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; margin: 0; }
+.picker-effort-slider .effort-slider-track { position: absolute; left: 11px; right: 11px; top: 16px; height: 6px; border-radius: 999px; background: var(--tint); overflow: hidden; }
+.picker-effort-slider .effort-slider-fill { position: absolute; inset: 0 auto 0 0; width: 0%; border-radius: 999px; background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #fff)); background-size: 200% 100%; animation: effortShimmer 2.8s linear infinite; transition: width .3s cubic-bezier(.2,.7,.2,1); }
+.picker-effort-slider .effort-slider-thumb { position: absolute; top: 19px; left: 0%; width: 22px; height: 22px; transform: translate(-50%, -50%) scale(1); border-radius: 999px; background: var(--accent); border: 3px solid var(--surface); box-shadow: 0 2px 10px #00000038; display: grid; place-items: center; transition: left .3s cubic-bezier(.2,.7,.2,1); }
+.picker-effort-slider .effort-slider-thumb-dot { width: 6px; height: 6px; border-radius: 999px; background: var(--surface); animation: effortPuls 2.2s ease-in-out infinite; }
+.picker-effort-slider .effort-slider-thumb.pop { animation: effortPop .34s cubic-bezier(.3,1.4,.4,1); }
+.picker-effort-slider .effort-slider-labels { position: absolute; left: 11px; right: 11px; bottom: -3px; display: flex; justify-content: space-between; pointer-events: none; }
+.picker-effort-slider .effort-slider-labels span { font-size: 10px; color: var(--muted); border-radius: 6px; padding: 0 2px; pointer-events: auto; cursor: pointer; }
+.picker-effort-slider .effort-slider-labels span:hover { color: var(--ink); }
+@keyframes effortShimmer { 0% { background-position: 0% 0; } 100% { background-position: 200% 0; } }
+@keyframes effortPuls { 0%, 100% { opacity: .45; transform: scale(.75); } 50% { opacity: 1; transform: scale(1.18); } }
+@keyframes effortPop { 0% { transform: translate(-50%, -50%) scale(1); } 55% { transform: translate(-50%, -50%) scale(1.26); } 100% { transform: translate(-50%, -50%) scale(1); } }
 #model-picker { position: fixed; left: 220px; bottom: 120px; width: 340px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); box-shadow: 0 12px 32px #00000030; margin: 0; }
 #model-picker-search { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--canvas); color: var(--ink); font: inherit; margin: 0; }
 #model-picker-search:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--tint); }
@@ -1266,8 +1282,6 @@ details.plan-detail > .plan-detail-body { padding: 0 14px 12px 14px; font-size: 
 #model-picker-list button[aria-checked="true"]::before { content: '›  '; color: var(--accent); }
 #model-picker-list button[data-aktiv] { background: var(--tint); }
 #model-picker-list p.hint { margin: 0; padding: 7px 10px; font-size: 12px; color: var(--muted); }
-#picker-effort { margin: 8px 0 0; font-size: 12px; border-top: 1px solid var(--line); padding-top: 8px; }
-#picker-effort .effort-chip { padding: 3px 10px; font-size: 11px; }
 #model-picker .mode-menu-footer { display: flex; justify-content: flex-end; gap: 8px; margin: 8px 0 0; padding: 0; }
 #model-picker-list button { display: block; width: 100%; text-align: left; padding: 8px 12px; border: none; background: transparent; border-radius: 8px; font-size: 13px; cursor: pointer; color: var(--ink); }
 #model-picker-list button:hover { background: var(--tint); }
@@ -1288,8 +1302,10 @@ details.plan-detail > .plan-detail-body { padding: 0 14px 12px 14px; font-size: 
 }
 
 /* D: Flydende scroll-til-bund-knap (Paradev ScrollToBottomButton-mønster) */
-.chat-latest { position: absolute; bottom: 68px; right: 20px; z-index: 10; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--accent); font-size: 12px; font-weight: 550; box-shadow: 0 4px 12px #00000021; transition: background var(--motion-fast), border-color var(--motion-fast); cursor: pointer; }
-.chat-latest:hover { background: var(--tint); border-color: var(--accent); }
+/* 'Seneste svar' ligger i aktivitetsbåndets anden række med fast plads — flydende og ALDRIG oven på beskedtekst. */
+.chat-latest { justify-self: end; margin-left: 8px; padding: 2px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--tint); color: var(--ink); font-size: 11px; font-weight: 600; cursor: pointer; }
+.chat-latest:hover { border-color: var(--accent); color: var(--accent); }
+#agent-activity .chat-latest { grid-column: 3; grid-row: 2; }
 
 /* B: Kompakte diff-stats-badge i opgave-resultater */
 .diff-stat-badge { display: inline-grid; place-items: center; gap: 4px; padding: 2px 6px; border-radius: 999px; background: var(--tint); font-size: 10px; font-weight: 600; color: var(--muted); margin-left: 6px; }

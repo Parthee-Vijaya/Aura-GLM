@@ -767,7 +767,7 @@ async function loadModels(saved = {}) {
     $('#model-select').replaceChildren(option('', 'Vælg model'));
     for (const model of models) {
       const free = model.price && model.price.prompt != null && model.price.completion != null && Number(model.price.prompt) === 0 && Number(model.price.completion) === 0;
-      $('#model-select').append(option(model.id, `${model.name}${free ? ' · gratis*' : ''}`));
+      $('#model-select').append(option(model.id, `${pentModelNavn(model.id, model.name)}${free ? ' · gratis*' : ''}`));
     }
     if (saved.modelID && models.some(m => m.id === saved.modelID)) { $('#model-select').value = saved.modelID; await loadRoutes(saved.routeID); }
     else preselectRecommended(id);
@@ -1208,6 +1208,22 @@ function versionTime(at) {
 // Enkel adgang uden at skjule datagodkendelse eller ændre model automatisk.
 // Under skrivefeltet står altid den aktive model, udbyderen og indsatsen, ligesom i Claude Code.
 const effortNames = { minimal: 'minimal', low: 'lav', medium: 'middel', high: 'høj', xhigh: 'meget høj', max: 'maksimal' };
+
+// Korte, læsbare modelnavne — 'mistral-large-4' → 'Mistral Large 4', 'corti-s1' → 'Corti S1'.
+// Allerede læsbare navne med mellemrum og uden maskintegn røres ikke.
+function pentModelNavn(modelID, navn) {
+  const raa = String(navn || modelID || '').trim();
+  if (!raa) return 'Uden navn';
+  if (/\s/.test(raa) && !/[:/]/.test(raa) && !/-/.test(raa)) return raa;
+  const merke = { gpt: 'GPT', um: 'UM', ai: 'AI', eu: 'EU', io: 'IO', os: 'OS', llm: 'LLM', php: 'PHP', sql: 'SQL', html: 'HTML', css: 'CSS', ui: 'UI', oss: 'OSS' };
+  const ord = raa.replace(/[:/]/g, ' ').replace(/-/g, ' ').replace(/([a-zA-Z]{2,})(?=\d)/g, '$1 ').split(/\s+/).filter(Boolean);
+  return ord.map(o => {
+    const kendt = merke[o.toLowerCase()];
+    if (kendt) return kendt;
+    if (/[0-9]/.test(o[0])) return o.toUpperCase();
+    return o[0].toUpperCase() + o.slice(1);
+  }).join(' ');
+}
 function updateModelSummary() {
   window.PrivacyGate?.sync();
   const model = $('#model-select');
@@ -1218,8 +1234,8 @@ function updateModelSummary() {
   const effortLabel = chosen ? `${chosen} indsats` : effort ? `${effort} indsats` : connection?.kind === 'mistral' ? 'standardindsats' : '';
   $('#model-effort-text').textContent = chosen ? `Valgt i denne samtale.` : effort ? `Standard: ${effort}.` : '';
   if (typeof document !== 'undefined' && document.querySelectorAll) for (const chip of document.querySelectorAll('.effort-chip')) { const active = chip.dataset.effort === view?.effort; chip.setAttribute('aria-checked', active ? 'true' : 'false'); }
-  const label = model.value ? [model.selectedOptions[0].textContent, provider, effortLabel].filter(Boolean).join(' · ') : 'Vælg AI';
-  $('#model-summary').textContent = model.value ? model.selectedOptions[0].textContent : 'Vælg din AI';
+  const label = model.value ? [pentModelNavn(model.value, model.selectedOptions[0]?.textContent), provider, effortLabel].filter(Boolean).join(' · ') : 'Vælg AI';
+  $('#model-summary').textContent = model.value ? pentModelNavn(model.value, model.selectedOptions[0]?.textContent) : 'Vælg din AI';
   const brand = view.running && view.activeModelSummary ? view.activeModelBrand : { kind: connection?.kind, modelID: model.value };
   window.ProviderBrand.decorate($('#model-chip'), { ...brand, label: view.running && view.activeModelSummary ? view.activeModelSummary : label });
   $('#model-chip').title = chosen ? `Du har valgt ${chosen} indsats i denne samtale. Klik for at skifte model eller indsats.` : effort ? `${effort[0].toUpperCase()}${effort.slice(1)} indsats er udbyderens standard for modellen. Klik for at skifte model.` : connection?.kind === 'mistral' ? 'Aura GLM sender ikke et valg af indsats. Mistrals standard gælder; niveauet er ikke verificeret. Klik for at skifte model eller forbindelse.' : 'Klik for at skifte model eller forbindelse.';
@@ -2112,7 +2128,36 @@ function placerModelVaelger() {
 $('#model-chip').onclick = async () => { await buildModelPicker(); document.getElementById('model-picker').showPopover(); placerModelVaelger(); document.getElementById('model-picker-search')?.focus(); };
 addEventListener('resize', () => { if (document.getElementById('model-picker')?.matches(':popover-open')) placerModelVaelger(); });
 let pickerEntries = [];
-function syncPickerEffort() { for (const chip of document.querySelectorAll('#picker-effort .effort-chip')) chip.setAttribute('aria-checked', String(chip.dataset.effort === (view?.effort ?? null))); }
+function syncPickerEffort() {
+  // Kort og klart navn som 'Mistral Large 4' eller 'Corti S1' i stedet for katalog-id'er.
+  const effortNivaa = ['Standard', 'Lav', 'Mellem', 'Høj', 'Ultra'];
+  const effortKey = [null, 'low', 'medium', 'high', 'xhigh'];
+  const range = document.getElementById('picker-effort-range');
+  const valueEl = document.getElementById('picker-effort-value');
+  if (range && !range.dataset.bound) {
+    range.dataset.bound = '1';
+    range.addEventListener('input', () => { setEffort(effortKey[Number(range.value)] ?? null); oppdaterEffortSlider(true); });
+    range.addEventListener('keydown', event => { if (event.key === 'Escape') { event.preventDefault(); document.getElementById('model-picker').hidePopover(); } });
+    for (const etiquet of document.querySelectorAll('.effort-slider-labels span')) etiquet.addEventListener('click', () => { const n = Number(etiquet.dataset.effortLevel); range.value = n; range.dispatchEvent(new Event('input', { bubbles: true })); });
+  }
+  const ind = Math.max(0, effortKey.indexOf(view?.effort ?? null));
+  range.value = ind; valueEl.textContent = effortNivaa[ind];
+  oppdaterEffortSlider(false);
+  // Vækker animationen: fyldet glider ind fra venstre, når vælgeren åbnes.
+  requestAnimationFrame(() => requestAnimationFrame(() => oppdaterEffortSlider(false)));
+}
+function oppdaterEffortSlider(pop = false) {
+  const range = document.getElementById('picker-effort-range');
+  const fill = document.querySelector('.picker-effort-slider .effort-slider-fill');
+  const thumb = document.querySelector('.picker-effort-slider .effort-slider-thumb');
+  const valueEl = document.getElementById('picker-effort-value');
+  if (!range || !fill || !thumb) return;
+  const prosent = (Number(range.value) / 4) * 100;
+  fill.style.width = `${prosent}%`; thumb.style.left = `${prosent}%`;
+  valueEl.textContent = ['Standard', 'Lav', 'Mellem', 'Høj', 'Ultra'][Number(range.value)];
+  if (pop) { thumb.classList.remove('pop'); void thumb.offsetWidth; thumb.classList.add('pop'); }
+}
+
 async function buildModelPicker() {
   const list = document.getElementById('model-picker-list');
   const search = document.getElementById('model-picker-search');
@@ -2144,11 +2189,11 @@ async function buildModelPicker() {
   // Hele forbindelsens modelkatalog vises med søgning og indsats, som modelvælgeren i Codex.
   if (!modelCatalog?.length) { list.replaceChildren(node('p', 'Henter modeller …', 'hint')); try { await loadModels(); } catch { /* Netværksfejl vises som 'Ingen modeller' nedenfor. */ } }
   pickerEntries = [];
-  if (currentID && connModel.selectedOptions?.[0]?.textContent) pickerEntries.push({ modelID: currentID, label: connModel.selectedOptions[0].textContent, current: true });
+  if (currentID && connModel.selectedOptions?.[0]?.textContent) pickerEntries.push({ modelID: currentID, label: pentModelNavn(currentID, connModel.selectedOptions[0].textContent), current: true });
   for (const model of modelCatalog || []) {
     if (model.id === currentID) continue;
     const free = model.price && model.price.prompt != null && model.price.completion != null && Number(model.price.prompt) === 0 && Number(model.price.completion) === 0;
-    pickerEntries.push({ modelID: model.id, label: `${model.name || model.id}${free ? ' · gratis*' : ''}` });
+    pickerEntries.push({ modelID: model.id, label: `${pentModelNavn(model.id, model.name)}${free ? ' · gratis*' : ''}` });
   }
   if (!pickerEntries.length) { if (search) search.value = ''; renderModelPicker(''); list.replaceChildren(node('p', 'Ingen modeller fundet hos forbindelsen.', 'hint')); return; }
   if (search) search.value = '';

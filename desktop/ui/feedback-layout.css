@@ -31,7 +31,7 @@
 .workspace-calm #agent-activity .activity-spinner { grid-column:1; grid-row:1; }
 .workspace-calm #agent-activity-text { grid-column:2; grid-row:1; }
 .workspace-calm #agent-activity :is(#agent-follow,#agent-activity-jump) { grid-column:3; grid-row:1; }
-.workspace-calm #agent-progress { grid-column:2 / 4; grid-row:2; padding-left:0; }
+.workspace-calm #agent-progress { grid-column:2 / 3; grid-row:2; padding-left:0; }
 .workspace-calm .question-card .answer-footer { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px 12px; margin-top:8px; }
 .workspace-calm .question-card .answer-footer small { font-size:11px; }
 .workspace-calm #plan-summary { padding-left:18px; margin:8px 0 12px; }
