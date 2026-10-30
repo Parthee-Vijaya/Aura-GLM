@@ -9,6 +9,8 @@ const { Workbench } = require('../../desktop/core/workbench.cjs');
 const { Store } = require('../../desktop/core/store.cjs');
 const { createProject } = require('../../desktop/core/projects.cjs');
 const { reviewPermission, modelCallBudgetReached } = require('./policy.cjs');
+const { replyPermission } = require('./permission-control.cjs');
+const handledPermissions = new Set();
 const { createAppQualityInspector } = require('../../desktop/core/app-quality.cjs');
 const { OpenCodeEngine } = require('../../desktop/core/engine.cjs');
 const connections = require('../../desktop/core/connections.cjs');
@@ -91,16 +93,18 @@ function createRecordedInspector() {
 function event(event) {
   if (event.type === 'permission.asked') {
     const p = event.properties;
-    permissionQueue = permissionQueue.then(async () => {
-      // Use Aura's validated canonical targets, not OpenCode's display paths.
-      const record = bench.chat.approvals.get(p.id);
-      const descriptor = record?.descriptor;
-      const paths = descriptor?.match?.targets?.map(item => item.path) || [];
-      const allow = await reviewPermission(bench.project.root, record, mode);
-      audit.push({ stage, kind: 'tool', permission: p.permission, paths: paths.map(file => path.relative(bench.project.root, file)), allow, scope: 'once' });
-      out({ event: 'approval', permission: p.permission, allow });
-      await bench.reply({ id: p.id, allow, scope: 'once', message: allow ? undefined : 'Pilotens ramme tillader kun gennemgåede filændringer i public/ under Byg og read/grep med en konkret, sikker sti i public/. Ingen shell, Git, eksterne filer eller netværk.' });
-    }).catch(() => { faults.push('permission_reply_failed'); });
+    permissionQueue = permissionQueue.then(() => replyPermission({ bench, id: p.id, seen: handledPermissions,
+      review: record => reviewPermission(bench.project.root, record, mode),
+      message: 'Pilotens ramme tillader kun gennemgåede filændringer i public/ under Byg og read/grep med en konkret, sikker sti i public/. Ingen shell, Git, eksterne filer eller netværk.',
+      onDecision(record, allow) {
+        const paths = record.descriptor?.match?.targets?.map(item => item.path) || [];
+        audit.push({ stage, kind: 'tool', permission: p.permission, paths: paths.map(file => path.relative(bench.project.root, file)), allow, scope: 'once' });
+        out({ event: 'approval', permission: p.permission, allow });
+      }
+    })).then(result => audit.push({ stage, kind: 'permission-callback', ...result })).catch(error => {
+      audit.push({ stage, kind: 'permission-callback-error', statusCode: Number.isInteger(error.status) ? error.status : null });
+      faults.push('permission_reply_failed');
+    });
   }
   if (event.type === 'question.asked') {
     const p = event.properties;

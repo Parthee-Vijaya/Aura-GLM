@@ -6,6 +6,76 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { ApprovalsPolicy } = require('../../desktop/core/approvals-policy.cjs');
 const policy = require('./policy.cjs');
+const { replyPermission } = require('./permission-control.cjs');
+
+function replyFixture() {
+  const request = { id: 'per_fixture', sessionID: 'ses_fixture', permission: 'grep', tool: { messageID: 'msg_fixture', callID: 'call_fixture' } }, events = [], calls = [];
+  const message = { id: 'msg_fixture', type: 'assistant', content: [{ type: 'tool', id: 'call_fixture', name: 'grep', state: { status: 'error', error: { type: 'permission.rejected' } } }] };
+  const pending = [];
+  const engine = { session: { id: 'ses_fixture' }, promptID: 'user_fixture', promptEpoch: 1, pending: new Map([['per_fixture', request]]),
+    async request(url) { calls.push({ method: 'GET', url }); return pending; },
+    async wire(url) { calls.push({ method: 'GET', url }); return { data: message }; },
+    handleEvent(event) { events.push(event); engine.pending.delete(event.properties.requestID); chat.approvals.delete(event.properties.requestID); }
+  };
+  const record = { engine, request, generation: 1, p: { permission: 'grep', tool: { messageID: 'msg_fixture', callID: 'call_fixture' } } };
+  const chat = { engine, running: true, generation: 1, runStopped: false, approvals: new Map([['per_fixture', record]]) };
+  const error = Object.assign(Error('Agentmotoren afviste handlingen (HTTP 404).'), { status: 404 });
+  const bench = { chat, async reply(input) { calls.push({ method: 'POST', input }); throw error; } };
+  const options = { bench, id: 'per_fixture', seen: new Set(), review: async () => false, message: 'Synthetic rejection feedback.' };
+  return { engine, chat, bench, record, message, pending, error, calls, events, options, run: () => replyPermission(options) };
+}
+
+test('already rejected exact read is reconciled after HTTP 404 without replay or grant', async () => {
+  const x = replyFixture(), result = await x.run();
+  assert.equal(result.status, 'already-rejected'); assert.equal(x.calls.filter(c => c.method === 'POST').length, 1);
+  assert.equal(x.calls.find(c => c.method === 'POST').input.allow, false);
+  assert.equal(x.calls.find(c => c.method === 'POST').input.scope, 'once');
+  assert.equal(x.engine.pending.size, 0); assert.equal(x.chat.approvals.size, 0);
+  assert.equal(x.events.length, 1); assert.equal(x.events[0].recovered, true); assert.equal(x.events[0].properties.reply, undefined);
+});
+test('a vanished local read callback also needs authoritative rejection proof', async () => {
+  const x = replyFixture(); x.record.p.permission = 'read'; x.record.request.permission = 'read'; x.message.content[0].name = 'read';
+  delete x.error.status; x.error.message = 'Godkendelsen findes ikke længere.';
+  x.bench.reply = async input => { x.calls.push({ method: 'POST', input }); x.engine.pending.delete('per_fixture'); throw x.error; };
+  assert.equal((await x.run()).status, 'already-rejected'); assert.equal(x.events.length, 1);
+  const y = replyFixture(); delete y.error.status; y.error.message = 'Godkendelsen findes ikke længere.'; y.message.content[0].state.error.type = 'tool.failed';
+  await assert.rejects(y.run(), error => error === y.error);
+});
+for (const [name, mutate] of [
+  ['allow decision', x => { x.options.review = async () => true; }],
+  ['write permission', x => { x.record.p.permission = 'edit'; }],
+  ['still pending', x => { x.pending.push({ id: 'per_fixture', sessionID: 'ses_fixture' }); }],
+  ['malformed pending snapshot', x => { x.engine.request = async () => null; }],
+  ['foreign pending snapshot', x => { x.pending.push({ id: 'other', sessionID: 'ses_other' }); }],
+  ['wrong message', x => { x.message.id = 'msg_other'; }],
+  ['foreign message', x => { x.message.sessionID = 'ses_other'; }],
+  ['wrong tool', x => { x.message.content[0].id = 'call_other'; }],
+  ['wrong tool type', x => { x.message.content[0].name = 'write'; }],
+  ['changed source binding', x => { x.record.request.tool.callID = 'call_other'; }],
+  ['completed tool', x => { x.message.content[0].state.status = 'completed'; }],
+  ['unrelated tool failure', x => { x.message.content[0].state.error.type = 'tool.failed'; }],
+  ['duplicate tool', x => { x.message.content.push(structuredClone(x.message.content[0])); }],
+  ['missing source', x => { delete x.record.p.tool; }],
+  ['untrusted HTTP text', x => { delete x.error.status; }],
+  ['server failure', x => { x.error.status = 500; }],
+  ['snapshot failure', x => { x.engine.request = async () => { throw Error('snapshot unavailable'); }; }],
+  ['Stop during reconciliation', x => { x.engine.request = async () => { x.chat.runStopped = true; return []; }; }],
+  ['new generation during reconciliation', x => { x.engine.request = async () => { x.chat.generation++; return []; }; }],
+  ['new prompt during reconciliation', x => { x.engine.request = async () => { x.engine.promptEpoch++; return []; }; }],
+  ['new session during reconciliation', x => { x.engine.request = async () => { x.engine.session.id = 'ses_other'; return []; }; }],
+  ['changed engine during reconciliation', x => { x.engine.request = async () => { x.chat.engine = {}; return []; }; }],
+  ['replaced request during reconciliation', x => { x.engine.request = async () => { x.engine.pending.set('per_fixture', {}); return []; }; }],
+]) test(`404 remains a real driver failure for ${name}`, async () => {
+  const x = replyFixture(); mutate(x); await assert.rejects(x.run(), error => error === x.error);
+  assert.equal(x.calls.filter(c => c.method === 'POST').length, 1); assert.deepEqual(x.events, []);
+});
+test('duplicate callbacks and changed policy-review bindings cause no extra reply', async () => {
+  const x = replyFixture(); x.bench.reply = async input => x.calls.push({ method: 'POST', input });
+  assert.equal((await x.run()).status, 'answered'); assert.equal((await x.run()).status, 'skipped');
+  assert.equal(x.calls.length, 1);
+  const y = replyFixture(); y.options.review = async () => { y.chat.generation++; return true; };
+  assert.equal((await y.run()).status, 'skipped'); assert.deepEqual(y.calls, []);
+});
 const { reviewWrite, reviewPermission, modelCallBudgetReached } = policy;
 
 test('pilot approves only explicit public writes in build mode, with no links or broad grants', async t => {
@@ -122,12 +192,15 @@ for (const worker of ['worker.cjs', 'codex_comparison_worker.cjs']) test(`${work
   const source = await fs.readFile(path.join(__dirname, worker), 'utf8');
   const replies = [], stops = [], imports = [];
   const approval = await record(grep(path.join(root, 'public')));
-  const bench = { project: { root }, chat: { approvals: new Map([['grep', approval]]) }, reply: async input => replies.push(input), stop: async () => stops.push(true) };
+  const request = {}, engine = { session: { id: 'ses_fixture' }, promptEpoch: 1, promptID: 'user_fixture', pending: new Map([['grep', request]]) };
+  Object.assign(approval, { engine, request, generation: 1 });
+  const bench = { project: { root }, chat: { engine, running: true, generation: 1, approvals: new Map([['grep', approval]]) }, reply: async input => replies.push(input), stop: async () => stops.push(true) };
   const context = vm.createContext({ benchFixture: bench, console, setTimeout, clearTimeout, structuredClone, Buffer,
     process: { argv: ['', '', '', '', root], stdout: { write() {} }, on() {} },
     require(name) {
       imports.push(name);
       if (name === './policy.cjs') return policy;
+      if (name === './permission-control.cjs') return { replyPermission };
       if (name.startsWith('node:')) return require(name);
       if (name === 'electron') return { app: { setName() {}, setPath() {}, on() {}, whenReady() { return { then() {} }; } } };
       if (name.endsWith('/store.cjs')) return { Store: class {} };
@@ -142,16 +215,72 @@ for (const worker of ['worker.cjs', 'codex_comparison_worker.cjs']) test(`${work
   assert.equal(replies[0].allow, true);
   assert.equal(replies[0].scope, 'once');
   assert.equal(vm.runInContext('audit[0].allow', context), true);
-  bench.chat.approvals.set('outside', await record(grep(path.join(root, 'private.js'))));
+  const outsideRequest = {};
+  bench.chat.approvals.set('outside', { ...await record(grep(path.join(root, 'private.js'))), engine, request: outsideRequest, generation: 1 }); engine.pending.set('outside', outsideRequest);
   vm.runInContext('event({ type: "permission.asked", properties: { id: "outside", permission: "grep" } }); event({ type: "permission.asked", properties: { id: "missing", permission: "read" } });', context);
   await vm.runInContext('permissionQueue', context);
-  assert.equal(replies.length, 3);
+  assert.equal(replies.length, 2);
   assert.equal(replies[1].allow, false, 'worker does not expand the safe scope');
-  assert.equal(replies[2].allow, false, 'missing validated approval record fails closed');
+  assert.equal(vm.runInContext('audit.at(-1).status', context), 'skipped', 'missing validated approval record sends no stale reply');
   assert.ok(replies.every(reply => reply.scope === 'once'));
   vm.runInContext('event({ type: "usage", usage: { calls: 63 } });', context);
   assert.equal(stops.length, 0);
   vm.runInContext('event({ type: "usage", usage: { calls: 64 } }); event({ type: "usage", usage: { calls: 65 } });', context);
   assert.equal(stops.length, 1);
   assert.deepEqual(Array.from(vm.runInContext('faults', context)), ['model_call_budget']);
+});
+
+test('parallel native rejected reads reconcile delayed events without replay', { skip: process.env.AURA_ENGINE_NATIVE !== '1' && 'Set AURA_ENGINE_NATIVE=1 for the pinned native engine, localhost models only.' }, async t => {
+  const { OpenCodeEngine } = require('../../desktop/core/engine.cjs');
+  const { ChatSession } = require('../../desktop/core/chat-session.cjs');
+  const { startFakeProvider } = require('../../desktop/scripts/fixtures/fake-provider.cjs');
+  const { setTimeout: delay } = require('node:timers/promises');
+  const base = await fs.realpath(await fs.mkdtemp(path.join(process.env.AURA_PERMISSION_EVIDENCE || os.tmpdir(), 'aura-denied-reads-')));
+  const root = path.join(base, 'project'); await fs.mkdir(path.join(root, 'public'), { recursive: true });
+  for (const file of ['app.js', 'styles.css']) await fs.writeFile(path.join(root, 'public', file), 'SYNTHETIC_SAFE_CONTENT\n');
+  const original = await Promise.all(['app.js', 'styles.css'].map(file => fs.readFile(path.join(root, 'public', file), 'utf8')));
+  const fake = await startFakeProvider({ synthetic: true, script: [
+    { toolCalls: ['public/app.js', 'public/styles.css', 'public'].map((file, index) => ({ id: 'call_denied_' + index, name: 'grep', arguments: JSON.stringify({ path: file, pattern: 'SYNTHETIC_SAFE_CONTENT' }) })) },
+    { text: 'Synthetic read denials handled.', delayMs: 1000 }
+  ] });
+  const events = [], outcomes = [], faults = [], calls = [], held = [], parts = new Map(), seen = new Set(); let queue = Promise.resolve();
+  const until = async (check, label) => { const end = Date.now() + 20000; while (Date.now() < end) { if (await check()) return; await delay(10); } assert.fail('Native denied-read timeout: ' + label); };
+  const approvalsPolicy = new ApprovalsPolicy({ read: async () => ({ version: 1, projects: {} }), update: async () => { throw Error('No persistent grant is allowed'); } });
+  const chat = { root, running: true, generation: 1, runStopped: false, runTools: parts, approvals: new Map(), questions: new Map(),
+    approvalContext: () => ({ projectRoot: root, workspaceRoot: root, mode: 'build' }), log() {},
+    emit(event) { if (event.type === 'permission.asked') queue = queue.then(() => replyPermission({ bench, id: event.properties.id, seen,
+      review: async () => { if (!outcomes.length) await until(() => chat.approvals.size === 3, 'three concurrent reads'); return false; },
+      message: 'Synthetic test: these reads are denied. Continue without reading them.'
+    })).then(result => outcomes.push(result)).catch(error => faults.push({ status: error.status || null, name: error.name })); }
+  };
+  const bench = { chat, approvalsPolicy, chatsChanged() {}, reply: input => ChatSession.prototype.reply.call(chat, input) }; chat.bench = bench;
+  const provider = { npm: '@ai-sdk/openai-compatible', name: 'Synthetic denied reads', options: { baseURL: fake.url, apiKey: fake.key }, models: { [fake.model]: { name: 'Synthetic', tool_call: true, limit: { context: 32768, output: 4096 } } } };
+  const engine = new OpenCodeEngine({ root, directory: path.join(base, 'runtime'), provider, model: { id: fake.model }, onEvent(event) {
+    events.push(event); const p = event.properties, part = p?.part; if (part?.type === 'tool') parts.set(part.id, part);
+    if (event.type === 'permission.asked') ChatSession.prototype.permissionAsked.call(chat, event).catch(error => faults.push({ name: error.name }));
+    if (event.type === 'permission.replied') chat.approvals.delete(p.requestID);
+  } }); chat.engine = engine;
+  const handle = engine.handleEvent.bind(engine), wire = engine.wire.bind(engine);
+  // Reproduce the observed race deterministically: the server has rejected all
+  // three tools, but the evaluator has not yet received its SSE notifications.
+  engine.handleEvent = event => event.type === 'permission.replied' && !event.recovered ? held.push(event) : handle(event);
+  engine.wire = async (url, method = 'GET', ...args) => { const record = { method, url }; calls.push(record); try { const value = await wire(url, method, ...args); record.status = 200; return value; } catch (error) { record.status = error.status || null; throw error; } };
+  t.after(async () => { chat.running = false; await engine.close(); await fake.close(); });
+  await engine.start(); const sessionID = engine.session.id; await engine.send('Perform the three fixed synthetic grep calls.', 'Use only the localhost fixture. No file writes.');
+  await until(() => outcomes.length + faults.length === 3, 'all callbacks'); await queue;
+  for (const event of held) handle(event);
+  await until(() => events.some(event => ['session.idle', 'session.error', 'engine.error'].includes(event.type)), 'native completion');
+  assert.deepEqual(faults, []); assert.equal(outcomes.filter(x => x.status === 'already-rejected').length, 2);
+  assert.equal(events.some(event => ['session.error', 'engine.error'].includes(event.type)), false);
+  const replies = calls.filter(call => call.method === 'POST' && call.url.includes('/permission/'));
+  assert.equal(replies.length, 3); assert.equal(replies.filter(call => call.status === 404).length, 2);
+  assert.equal(engine.pending.size, 0); assert.equal(chat.approvals.size, 0); assert.equal(fake.requests.length, 2); assert.equal(engine.session.id, sessionID);
+  const messages = (await engine.wire(`/api/session/${sessionID}/message?limit=100&order=asc`)).data;
+  const tools = messages.flatMap(message => message.content || []).filter(part => part?.type === 'tool');
+  assert.equal(messages.filter(message => message.type === 'user').length, 1);
+  assert.equal(tools.length, 3); assert.ok(tools.every(part => part.state.status === 'error' && part.state.error?.type === 'permission.rejected'));
+  assert.deepEqual(await Promise.all(['app.js', 'styles.css'].map(file => fs.readFile(path.join(root, 'public', file), 'utf8'))), original);
+  const result = { synthetic: true, pinnedEngine: '2.1.4', delayedPermissionNotifications: true, callbacks: outcomes, faults,
+    permissionPosts: 3, expectedStale404s: 2, deniedReads: 3, prompts: 1, modelCalls: 2, sameSession: true, filesUnchanged: true, persistentGrants: 0 };
+  await fs.writeFile(path.join(base, 'result.json'), JSON.stringify(result, null, 2)); t.diagnostic('Retained native evidence: ' + base);
 });

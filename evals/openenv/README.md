@@ -64,6 +64,27 @@ En target kan sætte `"effort": "low"`, hvis Auras aktuelle modelkatalog underst
 
 `functional.cjs` giver exitkode 1 ved fejlede brugeropgaver. Det er et resultat om den genererede app, ikke nødvendigvis en fejl i OpenEnv-adapteren. Kontrollerede adapter-/politiktests står for sig selv. Browserprøverne tilpasser selectors til de observerede HTML-varianter; ingen genereret kode eller lagrede data ændres for at få et resultat til at bestå.
 
+### Parallelle afviste læseanmodninger
+
+Når en afvisning afbryder flere samtidige læseværktøjer, kan motoren allerede have fjernet de øvrige anmodninger, før driveren modtager deres hændelser. Et forsinket svar får da HTTP 404. Det skete i den rigtige Corti-prøve 30. oktober 2026; motorloggen viser 404 på svar til en konkret tilladelse, og alle tre berørte grep-værktøjer er gemt som `permission.rejected`.
+
+`permission-control.cjs` bruges af både den almindelige pilot og Codex-sammenligningen. Den besvarer hvert konkret ID højst én gang gennem Auras uændrede godkendelseskontrol. Ved en afvist read/grep-anmodning med 404 eller den kendte fejl om en forsvundet godkendelse læser driveren motorens aktuelle tilstand. Kun hvis samme session, prompt, generation og anmodning stadig er bundet, ID'et er væk fra motorens venteliste, og præcis det tilknyttede værktøj er gemt som afvist, registreres svaret som `already-rejected`. Eventuel gammel lokal ventetilstand afstemmes via den eksisterende hændelseshåndtering, uden at opfinde en tilladelse eller en ny brugerafvisning.
+
+Der sendes intet nyt svar, modelkald eller værktøj som genforsøg. En 404 på en tilladelse, en skrivehandling, en anden session, ændrede bindinger eller utilstrækkeligt bevis giver fortsat en fejlet prøve. Det samme gælder transportfejl og fejl under aflæsning. Manglende eller dobbelte callbacks medfører intet nyt svar. Fejlsporet gemmer statuskode og kategori, ingen rå exceptionstekst eller credentials.
+
+Regressionstests kører i `policy.test.cjs`. Den særskilte native prøve bruger rigtig, låst OpenCode og den uændrede `ChatSession.reply` med en kontrolleret localhost-model. Den forsinker tilladelseshændelser for at fremkalde to reelle 404-svar, kontrollerer tre afviste læsninger, én brugerbesked, ingen genafsendelser, ingen vedvarende tilladelser og uændrede filer. Prøven gemmes til inspektion og bruger ingen ekstern AI:
+
+```sh
+AURA_ENGINE_NATIVE=1 AURA_PERMISSION_EVIDENCE=/absolut/sti/til/eksisterende/testmappe \
+  ../../desktop/.runtime/darwin-arm64/node/bin/node --test policy.test.cjs
+```
+
+En rigtig Corti-kontrol skal rapporteres særskilt fra denne kontrollerede fejlprøve. Historiske fejlede episoder ændres ikke til beståede efter en senere rettelse. Funktioner, UI, onboarding, planer og produktets godkendelsesregler ændres ikke af testdriveren.
+
+Afprøvet 30. oktober 2026: Den målrettede regression fejlede før rettelsen. Efter rettelsen består 36 af 36 politik- og native tests med opt-in; den samlede lokale kildekontrol består med 2.061 beståede, 33 eksplicit oversprungne og ingen fejl. En særskilt prøve med rigtig Corti S1 bruger den indtjekkede `worker.cjs`, native Electron, Workbench, Privacy Gate og OpenCode 2.1.4. Tre syntetiske filer ligger uden for pilotens tilladte læseområde. Første svar forsinkes 300 ms og motorens tilladelseshændelser 500 ms i en lokal testwrapper, så rækkefølgefejlen kan gentages uden at simulere modellen eller ændre politikken.
+
+Corti-prøven afslutter normalt på 9,06 sekunder med to rigtige modelkald og et rapporteret prisestimat på 0,0468084 USD. Tre læsninger afvises; to forsinkede svar giver reelle HTTP 404 og afstemmes med præcis afvisningsdokumentation. Ingen driverfejl, én brugerbesked, ingen gentaget værktøjshandling, ingen vedvarende tilladelser og ingen ventende anmodninger. Prøvefiler og oprindelige forbindelsesindstillinger er uændrede. Dette er en målrettet callback-prøve, ikke en ny fuld appbygning, Windows-prøve, CI-kørsel eller DMG-kvalifikation. Råudskrifter og native kørselsspor bevares lokalt under `Aura1/Diagnostics/permission-driver-20261030/` på JARVIS.
+
 ### Produktets automatiske kontrol med en rigtig model
 
 `food_first_draft.py --quality-loop` tilslutter produktets `createAppQualityInspector` til den rigtige Workbench. Driveren sender fortsat kun idéforløbet, godkendelsen af den konkrete plan og én byggeanmodning. Produktet bestemmer selv, om en lokal kontrol skal føre til et af højst to rettelsesforsøg i samme opgave og samtale. Ingen ekstra testagent eller håndskrevet kode retter det genererede resultat. Hver filændring kræver stadig pilotens almindelige engangsgodkendelse.
