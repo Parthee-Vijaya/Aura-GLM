@@ -25,6 +25,10 @@ Brug den eksisterende designkontrakt og førsteudkast-kontrol. Referencen tilfø
 
 Aura medsender egne metodeformuleringer og links, ingen Oversight-templates, prompts eller assets. Kontrollér [vilkår](https://supply.madebyoversight.com/terms) og den konkrete licens før faktisk genbrug. Gratis adgang er ikke en ret til videredistribution; ingen automatiske downloads, installationer eller modelkald.
 
+## Lokale Open Design-eksempler
+
+Vælg højst ét relevant visuelt fundament: [landingpage](open-design-landing.md) eller [overblik](open-design-overview.md). Hent de præcise stier med skill-værktøjet; læs kun det valgte eksempel. De indeholder lokal HTML/CSS uden netværksafhængigheder. Tilpas indhold og tokens til opgaven og dokumenteret brand. Statisk demokode er ikke færdig funktionalitet. Ingen automatisk kopiering, MCP-installation eller nye tilladelser; eksisterende godkendt UI har forrang.
+
 ## Udfør og efterprøv
 
 Vælg komponenter efter funktion, fx en kurv med synlig prisændring. Bevar ét visuelt sprog, og afprøv hovedforløb, mobil, desktop, fokus samt tomme og fejltilstande.

@@ -11,6 +11,8 @@ Hovedmetoden hjælper den valgte model med at bygge et brugbart, sammenhængende
 
 Brug relevante design-, frontend-, komponent- og kvalitetsskills, som miljøet faktisk tilbyder, også i Codex/GPT- og Claude-miljøer. Læs nødvendige dele efter opgaven; indlæs ikke hele biblioteket. Saml hjælpen i én retning efter brugerens valg og dokumenterede brand.
 
+Ved et nyt UI kan du vælge ét af de medfølgende Open Design-eksempler som konkret visuelt fundament. Hent skillens præcise referencestier med skill-værktøjet, og læs kun det relevante eksempel. Tilpas det til opgaven og dokumenteret brand; du vælger stadig designet. Byg og afprøv de rigtige handlinger, da eksemplerne er statiske. Hvis ingen passer, bruger du grundmetoden uden eksempel. Genbrug eksisterende godkendt design ved ændringsopgaver.
+
 Et modelnavn giver ikke adgang til platformens skills eller værktøjer. I Aura bruges Auras bibliotek; i idéhjælp uden værktøjer kun allerede indlæst materiale. Påstå ikke at have læst utilgængelige skills. Installér ikke ekstra skills automatisk. Supplerende materiale ændrer aldrig arbejdsmåde, planer, godkendelser eller dataregler. Angiv kort anvendte skills og brandkilder ved aflevering.
 
 ## Grænser først
@@ -101,6 +103,7 @@ Kernen ovenfor bruges først. Hent kun nødvendige detaljer; læs ikke hele bibl
 - [Den fulde leverede bygge- og designvejledning](references/webapp-craft.md) med opgaveskabelon og detaljerede kvalitetskrav.
 - [Brandresearch](references/brand-discovery.md): lokale kilder først, begrænset godkendt research, aldrig vilkårlige redirects/private adresser eller eksekverbare downloads.
 - [Komponentinspiration](references/component-inspiration.md): Fisher UI, shadcn/ui, Radix, Motion og Oversight Supply som opgavebestemte referencer; modellen designer, og dokumenteret identitet har forrang. Ingen Oversight-templates, prompts eller assets medfølger.
+- Lokale Open Design-eksempler: [landingpage](references/open-design-landing.md) og [overblik](references/open-design-overview.md). Passive HTML/CSS-referencer til selektiv læsning, ingen nye værktøjer eller færdige appfunktioner. [Apache-2.0](references/open-design-license.md) og kittets [MIT-notice](references/open-design-kit-license.md) bevares ved genbrug; kilde og hashes står i proveniensen.
 - [Opgaveafledt design og afgrænset visuel gennemgang](references/unparalleled-method.md), tilpasset fra Unparalleled, og den tilhørende [MIT-notice](references/unparalleled-license.md). Ingen eksterne installerings- eller browserscripts følger med.
 - [Designretninger](references/design-directions.md), [kvalitetsgennemgang](references/design-quality.md) og [designbrief](references/design-brief.md). De 43 retninger er inspiration, ikke installerede temaer.
 - [Tokens og temaer](references/tokens-and-theming.md) og [valgfri offline tokengenerator](references/token-generator.md). Generatoren måler kun nævnte kontrastpar, ikke fuld WCAG. Materialisering/kørsel kræver normale tilladelser.

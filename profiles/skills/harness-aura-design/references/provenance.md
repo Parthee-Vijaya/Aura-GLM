@@ -92,3 +92,23 @@ Kildens demoer er ikke bevis for samme resultat med andre modeller. Kvalitet, fu
 Bibliotekets [vilkår](https://supply.madebyoversight.com/terms) blev kontrolleret 30. oktober 2026. De tillader projektbrug af oplåste templates under den konkrete licens, men forbyder videredistribution af templatefiler og adgangslinks. Kontrollér aktuelle vilkår og rettigheder før senere konkret import. Gratis adgang eller et synligt preview dokumenterer ikke en ret til at medlevere materialet i Aura.
 
 Referencen hjælper modellen med at vælge og forklare relevante principper inden for opgaven og dokumenteret brand. Den bruger den eksisterende designkontrakt og kontrol, uden nye værktøjer, reviewrunder eller automatisk research. En biblioteksdemo er ikke bevis for et tilsvarende resultat med brugerens model. Auras eget UI, planer, dataregler og godkendelser er uændrede.
+
+## Open Design Agent Kit: to lokale eksempler, 30. oktober 2026
+
+To statiske HTML/CSS-eksempler er med som Markdown-referencer: `saas-landing` er uændret, og `dating-web` er tilpasset offlinebrug som et redaktionelt overblik. Kilde: [feimacode/open-design-agent-kit](https://github.com/feimacode/open-design-agent-kit), låst revision `1c19ab3b6257761f96c94c7cba43b85d9354673a`. Kittets indholdsmanifest angiver Open Design `open-design-v0.24.1`, revision `89e64d813bb1c7a11519b3f668f011f7017637d7`.
+
+Eksempelindholdet er Apache-2.0 fra [nexu-io/open-design](https://github.com/nexu-io/open-design). Den fulde licens følger uændret som [open-design-license.md](open-design-license.md). Kittets MIT-notice, Copyright (c) 2026 Iven Xu, følger også uændret som [open-design-kit-license.md](open-design-kit-license.md). EUPL-1.2 ændrer ikke disse materialers oprindelige licenser. Bevar licenser og kildehenvisning ved faktisk genbrug. Der blev ikke fundet en rod-NOTICE ved den låste Open Design-revision; eksisterende meddelelser i de kopierede filer er bevaret.
+
+Filstierne i tabellen er relative til `packages/content/assets/open-design`, bortset fra licenserne.
+
+| Fil ved kit-revisionen | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `examples/saas-landing/example.html` | 7659 | `91714935ba5bc47c20f394ab254e3f091f4fd3a3206001b919ad648350f941b9` |
+| `examples/dating-web/example.html`, original | 12405 | `9811c221dfff8e548758469c8bf2d0561fe38bfc15f8d205f28ad43c5c47c32d` |
+| Samme fil, Auras offline-tilpasning | 12035 | `617448df358d1658a1cc7bb431baef98ad1f539b273e017a14b13011e2368190` |
+| Open Design `LICENSE` | 11296 | `9d95806a26532623360eb84bb17d298f394b55ef73fb4c0796d99b4319b2b0da` |
+| Kit `LICENSE` | 1064 | `6dd7352a4368f2d39410164c21759111df7855d4fc21ab0b92f89e8a7f38246f` |
+
+Aura vælger ingen opskrift ud fra modelnavn eller nøgleord. Det korte katalog er med i den eksisterende afgrænsede referencepakke; modellen kan læse ét relevant eksempel via skillens allerede tilladte referencefiler. Hele eksemplerne indlæses ikke automatisk i hver forespørgsel. Der installeres ingen MCP-server, CLI, scripts, assets eller nye afhængigheder. Eksemplerne har ingen JavaScript eller eksterne ressourceafhængigheder. I dating-web er tre Google Fonts-links og de tre tilhørende fontnavne fjernet; de allerede angivne lokale fallback-fonte bevares. Øvrig HTML/CSS er uændret. Et andet undersøgt artikel-eksempel blev fravalgt, fordi det krævede CDN-script og eksterne fonte.
+
+Eksemplerne er visuelt materiale med fiktivt indhold og uimplementerede handlinger. De er hverken færdige apps, officielle kommunale designguides eller dokumentation for tilgængelighed. Modellen tilpasser design og bygger rigtig funktionalitet gennem Auras normale planer, filgodkendelser og afprøvning. Kittets egne skillinstruktioner, automatiske opsætning, publicering og stilforbud er ikke importeret.

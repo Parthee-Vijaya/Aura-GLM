@@ -39,7 +39,9 @@ Kernen er udvidet med brugerens metode til at omsætte en enkelt sætning til et
 - Læsbare HTML-/CSS-eksempler og en valgfri offline tokengenerator med målte kontrastpar og inputvalidering.
 - Kontrol af reelle brugerhandlinger, små skærme, zoom, tastatur, temaer og bevægelse med ærlig angivelse af, hvad der ikke er afprøvet.
 
-Biblioteket indeholder **20 Markdown-filer**, herunder valgfri komponentinspiration fra Fisher UI og andre moderne komponentkilder. Unparalleled bidrager med en tilpasset metode til konkret designbrief, ét færdigt brugerforløb og afgrænset review. Oversight Supply indgår som inspirationsreference med egne metodeformuleringer og links; ingen proprietære templates, prompts eller assets medfølger. Eksempelkode køres ikke ved indlæsning. Hvis den materialiseres eller køres i et brugerprojekt, gælder de normale fil- og værktøjsgodkendelser. Python er alene et valgfrit projektværktøj til generatoren og bliver ikke en afhængighed for Aura.
+Biblioteket indeholder **24 Markdown-filer**, herunder valgfri komponentinspiration fra Fisher UI og andre moderne komponentkilder. Unparalleled bidrager med en tilpasset metode til konkret designbrief, ét færdigt brugerforløb og afgrænset review. Oversight Supply indgår som inspirationsreference med egne metodeformuleringer og links; ingen proprietære templates, prompts eller assets medfølger. Eksempelkode køres ikke ved indlæsning. Hvis den materialiseres eller køres i et brugerprojekt, gælder de normale fil- og værktøjsgodkendelser. Python er alene et valgfrit projektværktøj til generatoren og bliver ikke en afhængighed for Aura.
+
+Open Design Agent Kit bidrager med to lokale, passive HTML/CSS-eksempler: en landingpage og et redaktionelt overblik. Modellen kan vælge højst ét relevant eksempel og hente det via de eksisterende skillreferencer. Google Fonts-afhængigheder er fjernet fra overblikseksemplet. Fuld Apache-2.0-licens, kittets MIT-notice og låste kildehashes følger med. Eksemplerne har statiske demohandlinger, som modellen selv skal implementere og afprøve. Ingen MCP-server, CLI, scripts eller automatisk installation medfølger.
 
 Skillen ændrer ikke Auras egen brugerflade, onboarding, planer, godkendelser, modelvalg eller adgang til data og netværk. Den indfører ingen Privacy Gate eller sandbox. Et godkendt design i brugerprojektet må heller ikke udskiftes uden brugerens konkrete ønske og accept. Instruktioner er vejledning, ikke teknisk håndhævelse eller garanti for en models adfærd.
 
@@ -54,6 +56,8 @@ Kildens `brand_scan.py` og `qa.py` medfølger ikke: de kan henholdsvis hente vil
 [Proveniensreferencen](../profiles/skills/harness-aura-design/references/provenance.md) fastholder alle 18 kildefilers SHA-256, tilpasninger og licensoplysninger. EUPL-1.2 og den medfølgende MIT-notice bevares. Organisationers logoer og fonte samt SkillsUI-materiale får ingen ny licens gennem denne skill.
 
 ## Afprøvning
+
+Se [Open Design-prøven med samme opgave og budget](open-design-examples-20261030.md) for fire nye AI-forløb, funktionskontroller, tid og pris. Efter-prøverne modtog kataloget, men ingen læsninger af de to nye eksempelfiler blev registreret. Der er derfor endnu ikke dokumentation for, at eksemplerne løfter designkvaliteten.
 
 Se [Unparalleled/Oversight-prøven med rigtig Mistral og Corti](design-methods-20261030.md) for samme opgave og budget, faktiske funktionsudfald, tid, pris og begrænsninger. Integration af en metode er ikke i sig selv dokumentation for bedre design.
 
