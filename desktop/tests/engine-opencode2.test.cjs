@@ -14,6 +14,21 @@ function fixture(mode = 'free') {
 }
 const wire = (type, data) => ({ id: 'evt_released_contract', created: 1, type, data });
 
+test('V2 skill IDs retain their native value and reach legacy activity in live events and recovered snapshots', () => {
+  const adapter = new EventAdapter('/synthetic/project');
+  const call = { sessionID: 'ses_skill', assistantMessageID: 'msg_skill', id: 'call_skill' };
+  adapter.normalize(wire('session.tool.input.started', { ...call, name: 'skill' }));
+  const nativeInput = { id: 'harness-aura-design' };
+  const running = adapter.normalize(wire('session.tool.called', { ...call, input: nativeInput, executed: true }))[0].properties.part;
+  assert.equal(running.state.input.id, nativeInput.id);
+  assert.equal(running.state.input.name, nativeInput.id);
+  assert.deepEqual(nativeInput, { id: 'harness-aura-design' }, 'normalization never mutates native input');
+  const done = adapter.normalize(wire('session.tool.success', { ...call, content: [{ type: 'text', text: 'Loaded active skill' }] }))[0].properties.part;
+  assert.equal(done.state.input.name, nativeInput.id);
+  const recovered = adapter.message({ id: 'msg_skill', type: 'assistant', content: [{ type: 'tool', id: 'call_skill', name: 'skill', state: { status: 'completed', input: nativeInput } }] }, 'ses_skill');
+  assert.equal(recovered.parts.find(part => part.type === 'tool').state.input.name, nativeInput.id);
+});
+
 test('V2 permissions preserve order, explicit external review and no-write planning; new code mode is denied', () => {
   assert.deepEqual(nativePermissions({ '*': 'deny', bash: { '*': 'ask', 'git status': 'allow' }, task: 'deny', write: 'ask' }), [
     { action: '*', resource: '*', effect: 'deny' }, { action: 'shell', resource: '*', effect: 'ask' }, { action: 'shell', resource: 'git status', effect: 'allow' }, { action: 'subagent', resource: '*', effect: 'deny' }, { action: 'edit', resource: '*', effect: 'ask' },

@@ -19,6 +19,27 @@ async function fixture(t) {
   const store = new Store(path.join(root, 'data')), features = new Features(store, async () => library);
   return { root, library, store, features, skills: new Skills(async () => library, store, features) };
 }
+test('new UI guidance puts a concrete native skill and example-reading step before the already-loaded core', async t => {
+  const f = await fixture(t), context = await f.skills.context(null), before = JSON.stringify(context);
+  for (const mode of ['plan', 'build', 'free']) {
+    const text = primaryBuildGuidance(context, mode, { newInterface: true });
+    assert.match(text, /LÆS ÉT DESIGNEKSEMPEL FØRST/);
+    const step = text.slice(text.indexOf('LÆS ÉT DESIGNEKSEMPEL FØRST'), text.indexOf('## Brug den tilgængelige designhjælp sammen'));
+    assert.match(step, /\{"id":"harness-aura-design"\}/);
+    assert.match(step, /read-værktøjet/);
+    assert.match(step, /præcise filsti/);
+    assert.match(step, /open-design-landing\.md/);
+    assert.match(step, /open-design-overview\.md/);
+    assert.match(step, /allerede læst i denne samtale/);
+    assert.match(step, /ingen nye tilladelser/);
+  }
+  for (const mode of ['idea', 'chat']) assert.doesNotMatch(primaryBuildGuidance(context, mode, { newInterface: true }), /LÆS ÉT DESIGNEKSEMPEL FØRST/);
+  for (const mode of ['plan', 'build', 'free']) assert.doesNotMatch(primaryBuildGuidance(context, mode, { newInterface: false }), /LÆS ÉT DESIGNEKSEMPEL FØRST/);
+  const oldContext = structuredClone(context);
+  oldContext.skills.find(skill => skill.name === name).files = oldContext.skills.find(skill => skill.name === name).files.filter(file => !/open-design-(landing|overview)\.md$/.test(file.path));
+  assert.doesNotMatch(primaryBuildGuidance(oldContext, 'build', { newInterface: true }), /LÆS ÉT DESIGNEKSEMPEL FØRST/);
+  assert.equal(JSON.stringify(context), before);
+});
 test('mandatory core is loaded in every building mode; ordinary chat stays scoped', async t => {
   const f = await fixture(t), context = await f.skills.context(f.root);
   const main = context.skills.find(s => s.name === name).files.find(f => f.path === 'SKILL.md').content;

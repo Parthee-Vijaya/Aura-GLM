@@ -1,0 +1,5 @@
+"trial","historical_baseline","model","status","agent_seconds","wall_seconds","known_estimate_usd","estimated_total_usd","attempts_without_usage","model_transport_attempts","function_passed","function_failed","function_not_applicable","function_not_run","confirmed_references","skill_calls"
+"mistral-before","true","mistral-large-4-0","failed","744.228","782.224","0.6469926399999999","","2","40","8","3","1","0","",""
+"mistral-after","false","mistral-large-4-0","completed","621.67","665.108","0.6717256000000001","0.6717256000000001","0","32","11","0","1","0","open-design-landing.md","harness-aura-design"
+"corti-before","true","corti-s1","failed","902.079","963.07","1.528601","","3","20","12","0","0","0","",""
+"corti-after","false","corti-s1","failed","840.358","1066.509","1.4973178","","4","17","1","11","0","0","open-design-landing.md","harness-aura-design"

@@ -111,6 +111,9 @@ async function writeTrustedPlugin(directory, source) {
 function inputForLegacy(tool, input, root) {
   const result = { ...(input || {}) };
   if (['read', 'write', 'edit'].includes(tool) && typeof result.path === 'string') result.filePath = path.resolve(root, result.path);
+  // Native V2 loads skills by ID. Keep it intact while supplying the name
+  // expected by Aura's existing activity and observational audit consumers.
+  if (tool === 'skill' && typeof result.id === 'string') result.name = result.id;
   return result;
 }
 const textContent = content => (content || []).filter(item => item.type === 'text').map(item => item.text || '').join('\n');

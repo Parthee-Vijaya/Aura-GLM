@@ -27,7 +27,7 @@ Aura medsender egne metodeformuleringer og links, ingen Oversight-templates, pro
 
 ## Lokale Open Design-eksempler
 
-Vælg højst ét relevant visuelt fundament: [landingpage](open-design-landing.md) eller [overblik](open-design-overview.md). Hent de præcise stier med skill-værktøjet; læs kun det valgte eksempel. De indeholder lokal HTML/CSS uden netværksafhængigheder. Tilpas indhold og tokens til opgaven og dokumenteret brand. Statisk demokode er ikke færdig funktionalitet. Ingen automatisk kopiering, MCP-installation eller nye tilladelser; eksisterende godkendt UI har forrang.
+Ved nyt UI: læs ét eksempel før designet, [landingpage](open-design-landing.md) eller [overblik](open-design-overview.md). Hent præcise stier med skill-værktøjet; brug read på den valgte fil. Genbrug allerede læst indhold. Tilpas efter opgaven og dokumenteret brand. Statisk kode er ikke færdig funktionalitet. Ingen automatisk kopiering, MCP-installation eller nye tilladelser; eksisterende godkendt UI har forrang.
 
 ## Udfør og efterprøv
 
