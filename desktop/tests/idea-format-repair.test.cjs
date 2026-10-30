@@ -10,6 +10,8 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function fixture(t,{kind='corti',timeout=2000}={}){
   const sent=[];let respond=async()=>({body:envelope(JSON.stringify(valid))}),instructions='';
   const server=http.createServer(async(req,res)=>{
+    // Keep split multibyte Danish characters intact in long reviewed prompts.
+    req.setEncoding('utf8');
     let raw='';for await(const part of req)raw+=part;
     sent.push({url:req.url,body:JSON.parse(raw)});
     const response=await respond(sent.length);
