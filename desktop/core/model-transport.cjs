@@ -3,6 +3,18 @@ const { setTimeout: delay } = require('node:timers/promises');
 const IDLE_LIMIT = 120_000, GRACE_LIMIT = 180_000, TOTAL_LIMIT = 20 * 60_000;
 const RETRY_DELAYS = [1000, 3000];
 const TRANSIENT = new Set([408, 429, 500, 502, 503, 504]);
+const REASONING_BUFFER_LIMIT = 4_000_000;
+// Only known, non-actionable Chat Completions fields may stay undelivered.
+// Unknown content must commit the stream, so it can never be silently replayed.
+function reasoningOnly(event) {
+  if (!event || !Array.isArray(event.choices) || Object.keys(event).some(key => !['id', 'object', 'created', 'model', 'system_fingerprint', 'usage', 'service_tier', 'choices'].includes(key) && !(['prompt_token_ids', 'prompt_text'].includes(key) && event[key] === null))) return false;
+  return event.choices.every(choice => choice && (choice.finish_reason === undefined || choice.finish_reason === null) && choice.delta &&
+    Object.keys(choice).every(key => ['index', 'delta', 'finish_reason', 'logprobs'].includes(key) || key === 'token_ids' && choice[key] === null) &&
+    Object.keys(choice.delta).every(key => ['role', 'content', 'reasoning', 'reasoning_content'].includes(key)) &&
+    (choice.delta.role === undefined || choice.delta.role === 'assistant') &&
+    (choice.delta.content === undefined || choice.delta.content === null || choice.delta.content === '') &&
+    ['reasoning', 'reasoning_content'].every(key => choice.delta[key] === undefined || typeof choice.delta[key] === 'string'));
+}
 function transportError(kind, status = null) { return Object.assign(new Error('Model transport failed'), { kind, status }); }
 function retryAfter(value, now = Date.now()) {
   if (!value) return 0;
@@ -15,7 +27,7 @@ function retryAfter(value, now = Date.now()) {
 // stream: OpenCode may already have executed a tool from it. Heartbeats carry no
 // model content and can be consumed locally until the first actual SSE event.
 async function forwardModel({ url, headers, payload, res, signal, progress, onRecovery = () => {}, dispatch,
-  idleLimit = IDLE_LIMIT, graceLimit = GRACE_LIMIT, totalLimit = TOTAL_LIMIT, retryDelays = RETRY_DELAYS }) {
+  idleLimit = IDLE_LIMIT, graceLimit = GRACE_LIMIT, totalLimit = TOTAL_LIMIT, retryDelays = RETRY_DELAYS, bufferReasoning = false }) {
   const deadline = AbortSignal.timeout(totalLimit), lifetime = AbortSignal.any([signal, deadline]);
   let committed = false;
   const notify = state => { try { onRecovery(state); } catch { /* Observers cannot affect delivery. */ } };
@@ -47,7 +59,7 @@ async function forwardModel({ url, headers, payload, res, signal, progress, onRe
         throw error;
       }
       const type = response.headers.get('content-type') || 'application/json', sse = type.includes('text/event-stream');
-      let prefix = '', terminal = false, scan = '';
+      let prefix = '', prefixBytes = 0, terminal = false, scan = '', endFrame = false, ended = false, bufferable = bufferReasoning;
       const decoder = new TextDecoder();
       const write = chunk => {
         if (!committed) { res.writeHead(200, { 'content-type': type, 'cache-control': 'no-store' }); committed = true; }
@@ -60,21 +72,38 @@ async function forwardModel({ url, headers, payload, res, signal, progress, onRe
         const text = decoder.decode(chunk, { stream: true });
         scan += text;
         const lines = scan.split(/\r?\n/); scan = lines.pop();
-        for (const line of lines) if (line.startsWith('data:')) {
+        for (const line of lines) {
+          if (!line && endFrame) { ended = true; break; }
+          if (!line) endFrame = false;
+          if (!line.startsWith('data:')) { if (line && !line.startsWith(':')) bufferable = false; continue; }
+          endFrame = false;
           const data = line.slice(5).trim();
-          if (data === '[DONE]') terminal = true;
-          else { try { const event = JSON.parse(data); if (event.type === 'message_stop' || ['response.completed', 'response.incomplete'].includes(event.type) || event.choices?.some(choice => choice.finish_reason)) terminal = true; } catch {} }
+          if (data === '[DONE]') { terminal = true; endFrame = true; bufferable = false; }
+          else { try {
+            const event = JSON.parse(data);
+            if (!reasoningOnly(event)) bufferable = false;
+            if (event.type === 'message_stop' || ['response.completed', 'response.incomplete'].includes(event.type)) { terminal = true; endFrame = true; }
+            else if (event.choices?.some(choice => choice.finish_reason)) terminal = true;
+          } catch { bufferable = false; } }
         }
         if (scan.length > 4_000_000) throw transportError('stream');
         if (!committed) {
-          prefix += text;
+          prefix += text; prefixBytes += Buffer.byteLength(text);
           // Only discard complete comment/blank frames. Unknown frames are content.
           while (/^(?:(?::[^\r\n]*)?\r?\n)*\r?\n/.test(prefix)) prefix = prefix.replace(/^(?:(?::[^\r\n]*)?\r?\n)*\r?\n/, '');
           if (!prefix) continue;
+          // Corti can reset while reasoning, before producing any text/tool.
+          // Keep that prefix away from the engine so a checked retry has no
+          // delivered actions to repeat. Progress exposes counters, not content.
+          if (bufferable && prefixBytes < REASONING_BUFFER_LIMIT) continue;
           if (!prefix.includes('\n\n') && !prefix.includes('\r\n\r\n') && prefix.length < 65_536) continue;
           write(prefix); prefix = '';
         } else write(text);
+        // A complete protocol terminator finishes delivery; the HTTP tail is
+        // irrelevant. A finish_reason alone still waits for usage and DONE/EOF.
+        if (ended) break;
       }
+      lifetime.throwIfAborted();
       if (sse && (!committed || !terminal)) throw transportError('stream');
       if (!committed) throw transportError('network');
       try { progress.end(sse); } catch {}

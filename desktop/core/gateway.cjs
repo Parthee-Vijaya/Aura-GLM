@@ -56,7 +56,7 @@ async function startGateway(connection, model, key, route, onFailure = () => {},
       // Serialize once: every attempt uses exactly the same model, route, history,
       // attachments and effort. Only this transport can retry a model request.
       await forwardModel({ url: `${base}${responses ? '/responses' : anthropic ? '/messages' : '/chat/completions'}`, headers, payload: JSON.stringify(body), res, signal: controller.signal,
-        progress: new StreamProgress({ emit: onProgress, root }), idleLimit, graceLimit, totalLimit, retryDelays, onRecovery, dispatch });
+        progress: new StreamProgress({ emit: onProgress, root }), idleLimit, graceLimit, totalLimit, retryDelays, onRecovery, dispatch, bufferReasoning: connection.kind === 'corti' });
     } catch (error) {
       if (controller.signal.aborted || stopped) { res.destroy(); return; }
       if (typeof error.code === 'string' && error.code.startsWith('PRIVACY_')) {
