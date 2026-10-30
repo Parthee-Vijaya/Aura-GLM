@@ -62,9 +62,11 @@ test('alle Aura-design-referencer når motoren som passive Markdown-filer og bev
   const context = await skills.context(project), selected = context.skills.find(skill => skill.name === name);
   assert.ok(selected);
   const references = selected.files.filter(file => file.path !== 'SKILL.md').map(file => file.path);
-  for (const required of ['references/brand-discovery.md', 'references/app-patterns.md', 'references/token-generator.md', 'references/provenance.md', 'references/webapp-craft.md']) {
+  for (const required of ['references/brand-discovery.md', 'references/app-patterns.md', 'references/token-generator.md', 'references/provenance.md', 'references/webapp-craft.md', 'references/component-inspiration.md', 'references/unparalleled-method.md', 'references/unparalleled-license.md']) {
     assert.ok(references.includes(required), `${required} er med som en gennemgået reference`);
   }
+  const notice = selected.files.find(file => file.path === 'references/unparalleled-license.md');
+  assert.equal(require('node:crypto').createHash('sha256').update(notice.content).digest('hex'), 'e0b4c3399c5ec2867bbfa3ec5cb61f19539e169c73905953637867b32f883992', 'den uændrede MIT-notice følger den tilpassede metode til motoren');
   assert.equal(new Set(selected.files.map(file => file.path)).size, selected.files.length);
 
   await writeSkills(directory, context.skills);

@@ -5,15 +5,13 @@ description: Hovedskill til at planlægge og bygge gennemarbejdede webapps, hjem
 
 # Design og byg gennemarbejdede produkter
 
-Dette er hovedmetoden ved byggeopgaver. Målet er et brugbart, sammenhængende produkt fra brugerens egne ord. Andre relevante skills supplerer; `harness-design-og-tilgaengelighed`, hvis den er installeret, uddyber tilgængelighed. Metoden gælder på tværs af modeller, også Mistral og Corti. Den lover ikke ens resultater fra forskellige modeller.
-
-Den valgte model udarbejder og udfører designet gennem disse skills. Aura aktiverer metoden og stiller tilladt projektkontekst og værktøjer til rådighed; appen vælger ikke en palette eller layoutopskrift ud fra opgavetypen. Brugeren ejer beslutningerne om brand, retning og godkendt design.
+Hovedmetoden hjælper den valgte model med at bygge et brugbart, sammenhængende produkt. Aura leverer skills, tilladt kontekst og værktøjer; modellen designer, og brugeren ejer brandvalg og godkendelser. Ingen palette eller layoutopskrift vælges af Aura. Metoden bruges også med Mistral og Corti, uden at love ens resultater. `harness-design-og-tilgaengelighed` supplerer, hvis den er installeret.
 
 ## Brug den tilgængelige designhjælp sammen
 
-Supplér Aura-design med relevante design-, frontend-, komponent- og visuelle kvalitetsskills, som det aktuelle arbejdsmiljø faktisk tilbyder. Det gælder også designskills i Codex/GPT- og Claude-miljøer. Vælg efter opgaven og den konkrete beskrivelse, læs de nødvendige instruktioner, og kombiner deres faglige hjælp med denne grundmetode. Indlæs ikke hele skillbiblioteket på forhånd. Saml forslagene i ét sammenhængende design, der følger brugerens valg og dokumenterede brand; bland ikke modstridende skabeloner.
+Brug relevante design-, frontend-, komponent- og kvalitetsskills, som miljøet faktisk tilbyder, også i Codex/GPT- og Claude-miljøer. Læs nødvendige dele efter opgaven; indlæs ikke hele biblioteket. Saml hjælpen i én retning efter brugerens valg og dokumenterede brand.
 
-Et modelnavn giver ikke i sig selv adgang til platformens skills, filer eller værktøjer. I Aura bruges de skills, der er tilbudt gennem Auras bibliotek; i et andet kodeværktøj kan dets installerede designskills også bruges. I idéhjælp uden værktøjer bruges kun allerede indlæst materiale. Påstå ikke at have brugt en skill, du ikke kunne læse. Hent eller installér ikke ekstra skills automatisk, og omgå ikke miljøets begrænsninger for at finde dem. Supplerende skills ændrer aldrig arbejdsmåde, planer, godkendelser eller dataregler. Angiv kort i afleveringen, hvilke designskills og brandkilder der faktisk blev anvendt.
+Et modelnavn giver ikke adgang til platformens skills eller værktøjer. I Aura bruges Auras bibliotek; i idéhjælp uden værktøjer kun allerede indlæst materiale. Påstå ikke at have læst utilgængelige skills. Installér ikke ekstra skills automatisk. Supplerende materiale ændrer aldrig arbejdsmåde, planer, godkendelser eller dataregler. Angiv kort anvendte skills og brandkilder ved aflevering.
 
 ## Grænser først
 
@@ -29,35 +27,31 @@ Udled produkt, målgruppe og vigtigste handling af brugerens besked. Undersøg e
 
 Vælg selv reversible detaljer som afstande, typografisk hierarki og en passende første komposition. Skriv antagelser kort. Stil højst tre nødvendige spørgsmål, når svaret ændrer løsningen væsentligt: fx fælles data, login, målplatform eller adgang til rigtige systemer. Giv ikke brugeren et teknisk spørgeskema. Antag aldrig rettigheder til data, identitet eller publicering.
 
-Et ønske som “En app til at melde sig til borgermøder i Nyborg Kommune” giver et konkret forslag: oversigt, søgning/filtrering, mødedetaljer, tilmelding og egne tilmeldinger med afmelding. Afklar delt lagring, før du kalder en tilmelding reel. Hvis en lokal demonstration passer til opgaven, brug tydeligt mærkede fiktive møder og sig, at intet sendes til kommunen. Opfind ikke officielle møder, logoer eller statistik.
+“En app til at melde sig til borgermøder” giver fx oversigt, søgning, detaljer, tilmelding og egne tilmeldinger med afmelding. En lokal demo skal mærkes med fiktive møder og lokal lagring; den sender intet til kommunen. Afklar delt lagring før reel tilmelding. Opfind ikke officielle møder, logoer eller statistik.
 
 For en opgave uden brugerflade: brug samme metode til formål, funktion, data, vedligeholdelse og test. Tilføj ikke en hjemmeside eller dekoration uden behov.
 
 ## 2. Vælg én retning, der passer til produktet
 
-Skriv et kort designbrief: formål, målgruppe, primær handling, hovedvisninger, 3–5 ord for udtrykket, brandkilder, data og vigtigste afprøvning. Et nyt projekt får et begrundet designforslag; det eksisterende plan-/godkendelsesforløb bestemmer, hvornår det må bygges. En godkendt plan er stadig ikke en værktøjstilladelse.
+Begynd med, hvad skærmen skal hjælpe brugeren med: **arbejde, vælge, læse eller udforske**. En app prioriterer handlinger, beslutninger og bevaret kontekst. En landingpage prioriterer et konkret budskab, troværdigt indhold og næste handling. Blandede løsninger deler identitet, men behøver ikke samme komposition på alle skærme. Lad opgaven bestemme formen; en hero, et kortgitter eller en sidebar er aldrig automatisk nødvendig.
 
-Designbriefet skal være konkret nok til at bygge det første udkast ud fra: farver med roller, typografisk hierarki, første skærms komposition, passende billed- eller illustrationsvalg, primær handling, mobiladfærd og vigtige tomme-/vente-/fejltilstande. Knyt valgene til produktets hovedforløb. Skriv dem i det synlige idéforslag og før dem videre i planen; de må ikke forsvinde som interne overvejelser eller erstattes af ordene “moderne og responsivt”. Forslag er ikke brugerbeslutninger. Vælg reversible detaljer selv inden for opgaven, og bevar et allerede godkendt design.
+Skriv en kort, konkret designkontrakt i idéforslaget, og før den videre i planen: **brugerens opgave → første skærms læserækkefølge → farver med roller, typografi og tæthed → nyttigt særkende → hele forløbet og mobiladfærd → bevis for kvalitet**. Brug [designbriefet](references/design-brief.md). Vælg én begrundet retning; der kræves ikke fem varianter, en stilafstemning eller et ekstra stop. Det eksisterende plan-/godkendelsesforløb gælder stadig. Forslag er ikke brugerbeslutninger, og en godkendt plan er ikke en værktøjstilladelse.
 
-- Brug en leveret designguide og rigtige, rettighedsafklarede assets først. Uden guide er designet dit forslag, ikke organisationens officielle identitet. Antag ikke, at en startside eller et screenshot er brugerens bindende brand.
-- Dokumentér brandkilder kort: lokal fil eller officiel URL, hvad du faktisk har kontrolleret, og hvad der fortsat er et forslag. En lokal `BRAND.md` eller designguide kan beskrive brugerens valgte identitet; kald først et logo eller en farve officiel, når kilden er verificeret. Kommunens navn alene beviser ingen identitet. I idéhjælp uden læse-/researchværktøjer må du ikke påstå at have undersøgt links eller logoer.
-- Brugerens komponentreferencer, fx Jakob Fiskers UI-komponenter, kan inspirere interaktion, hierarki og detaljer. Undersøg kun nødvendigt materiale med tilladte værktøjer; kontrollér oprindelse og licens før kopiering. En reference er ikke et krav om at kopiere hele sidens layout eller importere et komponentbibliotek.
-- Tilpas kompositionen til opgaven: et arbejdsredskab har fokus på handlinger og data; et website på indhold og navigation. Ikke alle apps skal have en stor hero, kortgitter, dashboard eller sidepanel.
-- Skab ét tydeligt visuelt hovedgreb med relevant typografi, rytme, farver og evt. illustration. Ingen standardpakke med lilla gradienter, glas, ens kort eller overdreven afrunding.
-- Brug originale, enkle illustrationer, når de forklarer emnet. Emoji er ikke primært billedindhold, produktfoto eller en færdig illustration. Ingen falske officielle logoer, dekorativ statistik eller tilfældige stockfotos. Et neutralt tekstnavn er bedre end et opdigtet kommunevåben.
-- En madbestilling kan fx have en appetitlig menuoversigt med rolig baggrund, tydelige priser, passende madbilleder og en kurv, der er let at finde. Et tidsregistreringsværktøj skal derimod prioritere timer, projekt og registreringer. Det er eksempler på sammenhæng mellem opgave og komposition, ikke faste temaer. Hvis relevante billeder ikke er tilgængelige, vælg en bevidst tekstbaseret komposition eller en passende original illustration; vis ikke tomme billedbokse som færdigt design.
+Gør første skærm konkret: hvad ser brugeren først, dernæst og til sidst, og hvorfor? Knyt et særkende til produktets indhold eller brug, fx en sammenligning der bevarer de valgte kriterier. Ingen effekt skal tilføjes blot for at skille sig ud. Hvis navnet kan udskiftes med en helt anden opgave, uden at hierarki og adfærd ændres, er begrundelsen for generisk. Bevar dog velkendte betjeningsmønstre og et godkendt design.
+
+Brug den leverede designguide og rettighedsafklarede assets først. Registrér faktisk kontrollerede kilder og erstatninger; uden verificeret kilde er identiteten et forslag. I idéhjælp uden værktøjer er brandresearch et kommende trin, ikke noget du har udført. Komponentreferencer som Fisher UI kan inspirere en konkret interaktion; de er hverken brandbevis eller en installationstilladelse.
+
+Kort, afrundede knapper, sans-serif, serif, gradienter og stærke farver er tilladte valg, når de gavner opgaven eller følger godkendt brand. Vurder deres rolle frem for at følge et stilforbud. Gentagne dekorative bokse og ens primære handlinger må ikke udviske hierarkiet. Vælg relevante billeder eller en original illustration, når de forklarer noget; ellers en bevidst komposition med tekst og data. Ingen tomme billedbokse, opdigtede officielle logoer, dekorativ statistik eller emoji som primært billedindhold.
 
 ## 3. Et lille, konsekvent designsystem
 
-Det første udkast, brugeren ser, skal allerede have et gennemarbejdet visuelt udtryk. Udskyd ikke typografi, farver, afstande, ikoner og responsivt layout til en senere omgang. En kort bestilling er nok til et begrundet designforslag, ikke en anledning til at levere en generisk skabelon. Afstem det med eksisterende godkendt design og plan.
+Målet er et godt første fundament, som brugeren kan arbejde videre fra. Det må gerne kræve flere planlagte arbejds- og rettelsestrin før aflevering. Typografi, farver, afstande, ikoner og responsivt layout hører til fundamentet; de udskydes ikke som pynt. Byg først ét komplet repræsentativt forløb med rigtigt indhold eller tydeligt mærkede, sammenhængende demodata. Kontrollér det, før samme mønster spredes til resten af appen.
 
 Definér semantiske tokens for baggrund, flade, tekst, dæmpet tekst, kant, primær handling, fokus og status. Vælg farver fra brand eller begrundet forslag; den grønne palette i vejledningen er kun et eksempel, aldrig standard for alle projekter.
 
 Brug en tydelig typografisk skala, få skrifter med tilladt lokal levering, læsbar brødtekst omkring 16 px og linjehøjde 1,5–1,7. Hold læsetekst omkring 45–75 tegn pr. linje. Vælg konsistente afstande fra fx 4/8/12/16/24/32/48/64/96 px og få radier/skygger. Genbrug eksisterende komponenter og tokens frem for parallelle systemer. Temaer følger projektets behov og godkendte design.
 
-Før første UI-kode skal der være en lille designkontrakt i beskrivelsen eller planen: **formål og primær handling → første skærms indholdshierarki → farver med roller og tekstskala → afstandsrytme og komponenter → mobiladfærd**. Konkrete valg erstatter adjektiver som “flot” og “poleret”. I et eksisterende projekt beskriver kontrakten, hvilke kendte mønstre der genbruges, og præcis hvad opgaven ændrer. Det er arbejdsgrundlag, ikke en ekstra godkendelse eller en ny, fast skabelon. Undgå at lægge samme vægt på alle elementer: handlinger, indhold og hjælpetekst skal kunne skelnes fra første blik.
-
-Vælg selv de konkrete værdier og kompositionen ud fra opgaven, det aktiverede skillbibliotek og verificerede brandkilder. Der medsendes ingen fast madapp-palette, skriftpakke eller HTML/CSS-opskrift fra Aura. En udtrykkeligt valgt primærfarve, header eller godkendt designretning skal bevares. Referencernes eksempler er valgfri inspiration; de er ikke en standard for alle produkter. Store mættede farvefelter, samme kort rundt om alt og primitive emoji-/figurmotiver bliver ikke polerede alene af at bruge tokens. Vurdér den faktisk renderede skærm, og antag ikke, at der følger komponenter eller assets med en skill-eksport.
+Vælg selv de konkrete værdier og kompositionen gennem de aktiverede skills og verificerede brandkilder. Aura medsender ingen fast palette, skriftpakke eller HTML/CSS-opskrift. Bevar en udtrykkeligt valgt primærfarve, header og godkendt retning. Kontrollér faktiske fontfiler og indlæsning; en bevidst, tydeligt angivet systemfont er en legitim erstatning. Antag ikke, at komponenter eller assets følger med en skill-eksport.
 
 ## 4. Byg hele brugerforløbet
 
@@ -79,9 +73,13 @@ Brug semantisk HTML, korrekt overskriftshierarki, tastaturadgang, synligt fokus 
 
 ## 6. Se, afprøv og ret før aflevering
 
-Brug projektets tilladte preview- og testværktøjer. Se det renderede resultat; kodegennemgang alene er ikke en visuel test. Installer ikke testværktøjer eller hent scripts fra CDN automatisk. Servér kun tilladte previewfiler, aldrig hele projekt-/profilmapper eller credentials.
+Brug tilladte preview- og testværktøjer. Kodegennemgang er ikke en visuel test. Ingen automatisk installation eller CDN-scripts. Servér kun tilladte previewfiler, aldrig projekt-/profilmapper eller credentials.
 
-Kontrollér det vigtigste forløb fra start til slut, alle synlige handlinger, validering, tomme/fejltilstande, tastatur, dialoger, relevante temaer, mobil/tablet/desktop og zoom. Kontrollér browserfejl og uventede netkald. Sammenlign med godkendt reference. Ret konkrete fejl i læsbarhed, hierarki, inkonsistens og funktion; omskriv ikke designet vilkårligt.
+Når ét komplet forløb er bygget, gennemgå den faktiske første skærm, resten af siden og de vigtigste tilstande. Prioritér opgavens hierarki, sammenhæng, mobilkomposition og præcision: fx tydelig afstand mellem label og værdi, lange titler, tekst i knapper, fontindlæsning og elementer, der overlapper. En mobilvisning skal omkomponeres efter indholdets betydning, ikke blot gøre desktop mindre. Kontrollér også browserfejl, uventede netkald, tastatur, validering, tilbage og gentaget handling.
+
+Brug et afgrænset **se → ret → se igen**-forløb: notér højst tre konkrete fund med skærm/tilstand, observation og ønsket resultat; ret den vigtigste samlede årsag; tag en ny prøve og gentag de berørte funktionstests. Bevar screenshots fra før og efter, når det er tilladt. Hver runde skal løse et navngivet problem. Brug højst to rettelsesrunder eller miljøets lavere grænse inden for det aftalte budget. Stop ved manglende tilladelse, brugerens Stop/afvisning, opbrugt budget eller ingen væsentlige fund. Start ikke en ekstra serie for at omgå grænsen. Beskriv resterende problemer og næste skridt frem for at fortsætte på ubestemt tid.
+
+Et lokalt screenshot er ikke automatisk tilgængeligt for modellen. Visuel vurdering kræver, at den valgte model faktisk kan se det gennem en tilladt billedvej. Deling følger projektets dataregler og konkrete godkendelser; ingen automatisk reserve-model eller ekstra upload. Uden billedadgang bruges tilgængelige strukturerede målinger og funktionstests, og visuel kvalitet markeres **ikke visuelt vurderet af modellen**. Opfind ikke screenshotobservationer ud fra kode eller en bestået rapport.
 
 Brug **FØRSTEUDKAST-kontrollen**. I idéhjælp og planlægning beskrives kontrollen kun; den kræver ingen ekstra godkendelsesdialog. Under bygning gennemføres den inden for den godkendte opgave og de normale tilladelser:
 
@@ -94,11 +92,7 @@ Brug **FØRSTEUDKAST-kontrollen**. I idéhjælp og planlægning beskrives kontro
 | `responsive` · Vindue og betjening | Se appen ved fx 390 × 844 og 1440 × 900 samt projektets relevante størrelser. Ingen vandret siderulning eller afskårne nødvendige handlinger. Prøv tastatur og 200 % zoom. |
 | `evidence` · Bevis og rettelse | Notér observationer som bestået, fejl eller ikke afprøvet. Ret de observerede problemer inden for opgaven, og gentag den berørte kontrol. Angiv resterende begrænsninger før aflevering. |
 
-Målinger og browserkontrol kan afsløre fejl; de beviser ikke i sig selv, at designet er flot. Se også den faktiske komposition, billedkvalitet, balance og læsbarhed. Et fungerende klikforløb og en flot kodebeskrivelse er ikke bevis for et poleret skærmbillede. Udfør kun relevante kontroller ved opgaver uden brugerflade.
-
-Hvis værktøjer mangler, skriv præcist hvad der ikke er afprøvet. En exitkode, et genereret screenshot eller din egen beskrivelse er ikke alene et testbevis. Skeln mellem statisk kontrol, visuel test, interaktion og rigtig integration.
-
-Aflever kort: hvad der er bygget, designvalg/antagelser, faktisk testede forløb og væsentlige begrænsninger. Bevar funktioner og data, og lov ikke produktionsegnethed uden bevis.
+Målinger og fungerende klik beviser ikke i sig selv et flot design. Aflever kort: resultat, designvalg, faktisk testede forløb og begrænsninger. Skeln mellem statisk kontrol, visuel vurdering, interaktion og rigtig integration; en exitkode eller en screenshotfil er ikke alle fire. Udfør kun relevante kontroller ved opgaver uden UI, og lov ikke produktionsegnethed uden bevis.
 
 ## Referencer efter behov
 
@@ -106,7 +100,8 @@ Kernen ovenfor bruges først. Hent kun nødvendige detaljer; læs ikke hele bibl
 
 - [Den fulde leverede bygge- og designvejledning](references/webapp-craft.md) med opgaveskabelon og detaljerede kvalitetskrav.
 - [Brandresearch](references/brand-discovery.md): lokale kilder først, begrænset godkendt research, aldrig vilkårlige redirects/private adresser eller eksekverbare downloads.
-- [Komponentinspiration](references/component-inspiration.md): Fisher UI, shadcn/ui, Radix og Motion som opgavebestemte muligheder; den valgte model udfører designet, og organisationens dokumenterede identitet har forrang.
+- [Komponentinspiration](references/component-inspiration.md): Fisher UI, shadcn/ui, Radix, Motion og Oversight Supply som opgavebestemte referencer; modellen designer, og dokumenteret identitet har forrang. Ingen Oversight-templates, prompts eller assets medfølger.
+- [Opgaveafledt design og afgrænset visuel gennemgang](references/unparalleled-method.md), tilpasset fra Unparalleled, og den tilhørende [MIT-notice](references/unparalleled-license.md). Ingen eksterne installerings- eller browserscripts følger med.
 - [Designretninger](references/design-directions.md), [kvalitetsgennemgang](references/design-quality.md) og [designbrief](references/design-brief.md). De 43 retninger er inspiration, ikke installerede temaer.
 - [Tokens og temaer](references/tokens-and-theming.md) og [valgfri offline tokengenerator](references/token-generator.md). Generatoren måler kun nævnte kontrastpar, ikke fuld WCAG. Materialisering/kørsel kræver normale tilladelser.
 - [Appmønstre](references/app-patterns.md), [HTML](references/starter-html.md), [CSS](references/starter-css.md) og [valgfrie kompositioner](references/starter-design-css.md). Startere er mærkede demoer, ikke færdige backends.

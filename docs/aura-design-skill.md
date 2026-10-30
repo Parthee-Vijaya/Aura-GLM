@@ -6,13 +6,13 @@
 
 **Design og tilgængelighed er altid slået til i Aura 1.** Under **Indstillinger → Funktioner → Altid slået til** står Aura-design og byggevejledningen som del af grundpakken. Tidligere globale fravalg og projektundtagelser deaktiverer dem ikke. Det gælder også efter genstart og ved Vælg selv i opsætningen.
 
-Hovedskillens kerne indlæses automatisk før det første modelkald i idéhjælp, Planlæg, Byg og Byg den valgte plan, uanset modeludbyder. Den kræver et gennemarbejdet første udkast med en konkret designretning, typografi, farver, sammenhængende brugerforløb og visuel kontrol. Længere referencer og design- og tilgængelighedsskillen kan hentes efter behov. Almindelig samtale tilføjes ikke automatisk byggeinstruktioner.
+Hovedskillens kerne og tre korte referencer indlæses automatisk før det første modelkald i idéhjælp, Planlæg, Byg og Byg den valgte plan, uanset modeludbyder. Referencerne dækker designbrief, brandresearch og komponentinspiration. De leveres som hele filer inden for et samlet loft på 12 KiB; manglende eller for store filer angives som udeladte. Metoden kræver et gennemarbejdet første udkast med en konkret designretning, typografi, farver, sammenhængende brugerforløb og visuel kontrol. Længere referencer og design- og tilgængelighedsskillen kan hentes efter behov. Almindelig samtale tilføjes ikke automatisk byggeinstruktioner.
 
 Den valgte model står for design og udførelse gennem de aktive skills. Aura vælger ikke faste farver eller layoutopskrifter ud fra, om opgaven handler om mad, tidsregistrering eller en hjemmeside. Brugerens godkendte design, valgte primærfarve og dokumenterede brandkilder har forrang. En lokal designguide eller `BRAND.md`, rettighedsafklarede logoer og verificerede officielle kilder kan indgå. Kommunens navn er ikke i sig selv dokumentation for et logo eller en farve.
 
 I idéhjælpen er hovedskillen indlæst, men modellen har ingen værktøjer til at åbne links eller læse ekstra referencer. Derfor skal usete kilder og foreslåede designvalg markeres ærligt. Brugerens komponentinspiration kan undersøges under det efterfølgende arbejde med de normale tilladelser; inspiration giver ikke automatisk ret til kopiering eller installation.
 
-Under **Tilpas instruktioner** kan du læse skillen, gemme en lokal projekttilpasning og gendanne bibliotekets fælles version. Projekttilpasningen supplerer den obligatoriske designkerne; den erstatter den ikke. Hele den indlæste tekst er med i gennemgangen før afsendelse. De eksisterende projektfiler og regler bevares.
+Under **Tilpas instruktioner** kan du læse skillen, gemme en lokal projekttilpasning og gendanne bibliotekets fælles version. Projekttilpasningen supplerer den obligatoriske designkerne; den erstatter den ikke. Ældre tilpasninger kan fortsat åbnes og gemmes uden at få brugerens tekst omskrevet, når biblioteket får nye grundreferencer. Ukendte referencer afvises stadig. Hele den indlæste tekst er med i gennemgangen før afsendelse. De eksisterende projektfiler og regler bevares.
 
 Skillen følger også med de 23 instruktionspakker til kodeværktøjer. Den bruger hver adapters eksisterende skillplacering. Pakkerne indeholder nu 13 almindelige skills; de fire systemintegrationer er fortsat særskilte tilvalg. Eksport understøtter filplaceringen, men er ikke bevis for, at hvert kodeværktøj eller en bestemt model følger instruktionerne.
 
@@ -39,7 +39,7 @@ Kernen er udvidet med brugerens metode til at omsætte en enkelt sætning til et
 - Læsbare HTML-/CSS-eksempler og en valgfri offline tokengenerator med målte kontrastpar og inputvalidering.
 - Kontrol af reelle brugerhandlinger, små skærme, zoom, tastatur, temaer og bevægelse med ærlig angivelse af, hvad der ikke er afprøvet.
 
-Biblioteket indeholder **18 Markdown-filer**, herunder valgfri komponentinspiration fra Fisher UI og andre moderne komponentkilder. Eksempelkode køres ikke ved indlæsning. Hvis den materialiseres eller køres i et brugerprojekt, gælder de normale fil- og værktøjsgodkendelser. Python er alene et valgfrit projektværktøj til generatoren og bliver ikke en afhængighed for Aura.
+Biblioteket indeholder **20 Markdown-filer**, herunder valgfri komponentinspiration fra Fisher UI og andre moderne komponentkilder. Unparalleled bidrager med en tilpasset metode til konkret designbrief, ét færdigt brugerforløb og afgrænset review. Oversight Supply indgår som inspirationsreference med egne metodeformuleringer og links; ingen proprietære templates, prompts eller assets medfølger. Eksempelkode køres ikke ved indlæsning. Hvis den materialiseres eller køres i et brugerprojekt, gælder de normale fil- og værktøjsgodkendelser. Python er alene et valgfrit projektværktøj til generatoren og bliver ikke en afhængighed for Aura.
 
 Skillen ændrer ikke Auras egen brugerflade, onboarding, planer, godkendelser, modelvalg eller adgang til data og netværk. Den indfører ingen Privacy Gate eller sandbox. Et godkendt design i brugerprojektet må heller ikke udskiftes uden brugerens konkrete ønske og accept. Instruktioner er vejledning, ikke teknisk håndhævelse eller garanti for en models adfærd.
 
@@ -54,6 +54,8 @@ Kildens `brand_scan.py` og `qa.py` medfølger ikke: de kan henholdsvis hente vil
 [Proveniensreferencen](../profiles/skills/harness-aura-design/references/provenance.md) fastholder alle 18 kildefilers SHA-256, tilpasninger og licensoplysninger. EUPL-1.2 og den medfølgende MIT-notice bevares. Organisationers logoer og fonte samt SkillsUI-materiale får ingen ny licens gennem denne skill.
 
 ## Afprøvning
+
+Se [Unparalleled/Oversight-prøven med rigtig Mistral og Corti](design-methods-20261030.md) for samme opgave og budget, faktiske funktionsudfald, tid, pris og begrænsninger. Integration af en metode er ikke i sig selv dokumentation for bedre design.
 
 Se [det oprindelige bidrags før/eftervisninger og begrænsninger](contributions/aura-design-pr.md) og [grundpakkens implementering og prøver](design-baseline.md). Eksport til andre kodeværktøjer bevarer fortsat brugerens eksplicitte skilludvalg; Aura 1s faste grundpakke gælder appens egne byggeforløb.
 

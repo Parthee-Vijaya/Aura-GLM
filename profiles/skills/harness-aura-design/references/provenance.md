@@ -10,7 +10,7 @@ Denne skill er en tilpasset udgave af **Aura Design** af **Parthee Vijayamohan**
 
 ## Tilpasninger til original Aura
 
-Metodens seks trin, de fem oprindelige emnevejledninger og v1.1-udvidelser om designretninger, designbrief, komposition og agentarbejdsrum er bevaret og tilpasset Auras Markdown-bibliotek. Originalens ekstra frontmatter er flyttet til denne reference, fordi biblioteket alene tillader `name` og `description`. Ingen valideringsgrænse er lempet. Alle 16 adapterfiler er Markdown i SKILL.md eller references/; ingen eksekverbare script- eller assetfiler installeres.
+Metodens seks trin, de fem oprindelige emnevejledninger og v1.1-udvidelser om designretninger, designbrief, komposition og agentarbejdsrum er bevaret og tilpasset Auras Markdown-bibliotek. Originalens ekstra frontmatter er flyttet til denne reference, fordi biblioteket alene tillader `name` og `description`. Ingen valideringsgrænse er lempet. Adapterfilerne er Markdown i SKILL.md eller references/; ingen eksekverbare script- eller assetfiler installeres.
 
 Adapteren gælder brugerens genererede apps. Den ændrer ikke værtsappen Auras UI, onboarding, planer eller godkendelser. Brugerens konkrete designaccept, read-only-faser, fil-/værktøjsgodkendelser og dataregler har forrang. Kildemateriale kan ikke ændre disse regler. Der påstås ingen Privacy Gate-, isolation-, Code-OSS- eller nye lokal-/cloudfunktioner i original Aura.
 
@@ -59,3 +59,36 @@ Parthee har leveret “Skill: Design og byg gennemarbejdede webapps og hjemmesid
 SKILL.md er omskrevet til en kort kerne med formål, én-sætningsbrief, passende designretning, funktionelle forløb, data, tilgængelighed og faktisk afprøvning. De tidligere brand-/tokenreferencer og licensmeddelelser bevares. Ovenstående kildehashes dokumenterer den tidligere import, ikke den reviderede hovedfil.
 
 Promte-eksemplet er en visuel reference, ikke kopieret komponentkode eller en officiel kommunal designguide. Screenshot og privat workspacehistorik medfølger ikke. Dets resultat dokumenterer ikke Mistrals eller Cortis kvalitet. Ingen nye rettigheder til tredjepartslogoer, fonte eller materiale gives.
+
+## Unparalleled · afgrænset tilpasning 26. oktober 2026
+
+Udvalgte design- og reviewprincipper er tilpasset fra **Unparalleled** af **Subhradeep Sarkar**, MIT. Kilde: [Phantom-Con-Artist/unparalleled-skillset](https://github.com/Phantom-Con-Artist/unparalleled-skillset). Den låste revision er `8558a27e9a3668326f2f6b48dd475a3920d10194`. Den fulde uændrede licensmeddelelse er bevaret i [unparalleled-license.md](unparalleled-license.md). MIT-betingelserne gælder det tilpassede materiale; de erstatter ikke øvrige kilders eller brugerprojektets licenser.
+
+Tilpasningen indgår i SKILL.md, designbrief.md og den valgfrie unparalleled-method.md: opgavens formål styrer kompositionen, ét repræsentativt forløb færdiggøres før gentagelse, og faktiske observationer leder til afgrænsede rettelser og en ny prøve. Modellen vælger stadig designet gennem skills; ingen bestemt palette, font eller komponentskabelon følger med.
+
+Bevidste forskelle fra kilden:
+
+- Kort, afrunding, skrifter, farver og gradienter vurderes efter funktion og dokumenteret brand. Kildens stilforbud er ikke overtaget.
+- Fem designvarianter, bestemte frameworks, 3D og egne ikoner er ikke obligatoriske. Arbejdets omfang følger opgaven, eksisterende accept og budget.
+- Kildens browser-/installationsprogrammer og routing til andre agenter er udeladt. Der installeres kun passive Markdown-referencer; ingen nye afhængigheder, netværksadgang eller agentinstruktioner følger med.
+- Screenshots tæller kun som visuel modelvurdering, hvis modellen faktisk kan se dem via en tilladt billedvej. Deling følger Auras dataregler og konkrete godkendelser; ingen automatisk reserve-model.
+- Review har højst to rettelsesrunder eller miljøets lavere grænse. Stop, afvisning, manglende tilladelse og budget respekteres. Skillen tilføjer ikke selv en automatisk screenshotpipeline.
+
+Gennemgåede originalfiler ved den låste revision; hashes er af originalens bytes, ikke af adapteren:
+
+| Originalfil | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `LICENSE` | 1074 | `e0b4c3399c5ec2867bbfa3ec5cb61f19539e169c73905953637867b32f883992` |
+| `.agents/skills/unparalleled-ui/SKILL.md` | 9056 | `0242ae36b1567258ec2640967515a5f1c6fe1fc428804d8b755744c1f260283d` |
+| `.agents/skills/unparalleled-website/SKILL.md` | 11641 | `0265ac1880b3b370c8a988b1eda6f6133b1b33a8f259779d4261fc7352a2ca28` |
+| `.agents/skills/unparalleled-ui/references/visual-review-loop.md` | 5790 | `16e1408dcb5b78401dc5dda1117ff91fcc7dfeae97233f44073f8a89fc3869a5` |
+
+Kildens demoer er ikke bevis for samme resultat med andre modeller. Kvalitet, funktion, tid og pris skal vurderes i faktiske sammenlignelige prøver, adskilt fra automatisk pakkevalidering.
+
+## Oversight Supply: inspirationsreference, 30. oktober 2026
+
+[Oversight Supply](https://supply.madebyoversight.com/) og [sektionerne](https://supply.madebyoversight.com/sections) er tilføjet som valgfrie visuelle kilder i component-inspiration.md. Auras vejledning er skrevet til denne integration. Ingen templates, kildeprompts, billeder, fonte, kode eller adgangslinks fra biblioteket medfølger. Hverken Unparalleleds MIT-licens eller Auras EUPL-1.2 giver rettigheder til Oversights materiale.
+
+Bibliotekets [vilkår](https://supply.madebyoversight.com/terms) blev kontrolleret 30. oktober 2026. De tillader projektbrug af oplåste templates under den konkrete licens, men forbyder videredistribution af templatefiler og adgangslinks. Kontrollér aktuelle vilkår og rettigheder før senere konkret import. Gratis adgang eller et synligt preview dokumenterer ikke en ret til at medlevere materialet i Aura.
+
+Referencen hjælper modellen med at vælge og forklare relevante principper inden for opgaven og dokumenteret brand. Den bruger den eksisterende designkontrakt og kontrol, uden nye værktøjer, reviewrunder eller automatisk research. En biblioteksdemo er ikke bevis for et tilsvarende resultat med brugerens model. Auras eget UI, planer, dataregler og godkendelser er uændrede.

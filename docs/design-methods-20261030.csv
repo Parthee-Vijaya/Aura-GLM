@@ -1,0 +1,5 @@
+"trial","status","model","agent_seconds","wall_seconds","driver_pause_seconds","known_estimate_usd","estimated_total_usd","cost_complete","transport_attempts","usage_calls","attempts_without_usage","input_tokens","output_tokens","reasoning_tokens","cache_read_tokens","cache_write_tokens","test_passed","test_failed","test_not_applicable","test_not_run","browser_status","inline_reference_count"
+"mistral-before","failed","mistral-large-4-0","548.403","726.366","175.869","0.5794831","0.5794831","true","21","21","0","507532","75535","0","936960","0","12","0","0","0","passed","0"
+"mistral-after","failed","mistral-large-4-0","607.413","716.774","106.515","0.5526564399999999","","false","40","39","1","355366","81636","0","1892352","0","11","0","1","0","passed","3"
+"corti-before","failed","corti-s1","326.644","438.504","109.248","0.726112","","false","12","11","1","153581","4295","40101","318910","0","1","11","0","0","failed","0"
+"corti-after","failed","corti-s1","900.083","902.635","0","1.6447406","","false","18","15","3","263821","25718","97797","644893","0","1","11","0","0","failed","3"

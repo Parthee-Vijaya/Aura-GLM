@@ -44,6 +44,15 @@ Se referencen i fuld størrelse. Logoets negative variant kan se tom ud på hvid
 - Selvhost fontfiler med kendt licens. En Typekit-/købt font må ikke kopieres eller hotlinkes uden rettigheder. Brug en åben erstatning med lignende proportioner og beskriv afvigelsen.
 - Afhængigheds- eller fontinstallation er en særskilt godkendt handling. Der følger ingen logofiler eller fonte med denne skill.
 
+## Klar før første UI-kode
+
+Fastlæg kildestatus, før brandet formes i det første udkast. I idéhjælp uden værktøjer beskrives kontrollen som et kommende trin; påstå ikke at have udført den. I plan og byg bruges kun de eksisterende, tilladte læse- og researchværktøjer.
+
+- **Farver:** Knyt hver valgt tokenrolle til en faktisk læst kilde eller mærk den som dit forslag. En logofarve alene dokumenterer ikke hele organisationens palette.
+- **Logo:** Kontrollér den konkrete lokale fil og dens udseende i relevant størrelse og baggrund. Mangler en tilladt fil, brug et ærligt tekstnavn; et farvet initial bliver ikke et officielt logo.
+- **Typografi:** Et familienavn i CSS leverer ingen font. Kontrollér licens, lokal fil, korrekt `@font-face`, indlæsning og faktisk anvendt font i previewet. Ellers brug en bevidst systemfont og angiv den som erstatning.
+- **Aflevering:** Angiv kort anvendte kilder, leverede assets og kendte erstatninger. Ingen automatiske downloads, nye netværkstilladelser eller gættet officiel identitet.
+
 ## Organisation og anvendelse
 
 Interne apps følger normalt organisationens godkendte identitet. Ved selvbetjening til borgere/virksomheder skal behovet for Det Fælles Designsystem afklares. Sundhed, økonomi og sagsbehandling kan kræve særlige farve-, data- og adgangsregler; gæt dem ikke. Hvis afsenderen ikke er organisationen selv, skal en prototype tydeligt mærkes, så den ikke forveksles med officiel login-, betalings- eller myndighedsbetjening.

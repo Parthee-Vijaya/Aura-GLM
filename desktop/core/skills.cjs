@@ -1,9 +1,26 @@
-const { validateSkillFiles, validateSkillLinks } = require('./library.cjs');
+const { validateSkillFiles, validateSkillLinks, validateSkillText } = require('./library.cjs');
+const { PRIMARY_BUILD_SKILL } = require('./build-design.cjs');
 // Appens AI bruger det fælles skillbibliotek. Funktionerne afgør, hvilke skills AI’en kan hente, og grundreglerne gælder altid.
 // Teksten kan tilpasses pr. projekt; tilpasningen gemmes i appens datamappe og ændrer ikke biblioteket.
 const RULES = 'faelles-grundregler';
 // Tidligere versioner gemte grundreglerne med et YAML-felt øverst. Feltet hører ikke til reglerne.
 const plainRules = text => text.replace(/^---\n[\s\S]*?\n---\n+/, '');
+
+function effectiveSkillFiles(entry, librarySkill, content, where) {
+  const references = librarySkill.files.filter(file => file.path !== 'SKILL.md');
+  const main = { path: 'SKILL.md', content }, files = [main, ...references];
+  if (entry.id === PRIMARY_BUILD_SKILL && entry.alwaysOn && content !== entry.original) {
+    // The mandatory, current library baseline already declares every shipped
+    // reference and is included alongside the saved customization. An older
+    // customization need not know reference names added by a later release.
+    // Validate both sources independently; never rewrite the user's text or
+    // accept an unknown reference. Optional skills keep their strict contract.
+    validateSkillFiles(entry.id, [{ path: 'SKILL.md', content: entry.original }, ...references], where);
+    const { body } = validateSkillText(entry.id, content, where);
+    validateSkillFiles(entry.id, [main, ...references.filter(file => body.includes(file.path))], where);
+  } else validateSkillFiles(entry.id, files, where);
+  return files;
+}
 
 class Skills {
   constructor(library, store, features) { this.library = library; this.store = store; this.features = features; }
@@ -28,8 +45,7 @@ class Skills {
       if (entry.id === RULES) { if (!input.content.trim()) throw new Error('Grundreglerne kan ikke være tomme.'); }
       else {
         const library = await this.library();
-        const files = [{ path: 'SKILL.md', content: input.content }, ...library.skills.find(skill => skill.name === entry.id).files.filter(file => file.path !== 'SKILL.md')];
-        validateSkillFiles(entry.id, files, 'Instruktionerne');
+        const files = effectiveSkillFiles(entry, library.skills.find(skill => skill.name === entry.id), input.content, 'Instruktionerne');
         validateSkillLinks([{ name: entry.id, files }], new Set(library.skills.map(skill => skill.name)));
       }
     }
@@ -44,8 +60,7 @@ class Skills {
   async context(projectRoot) {
     const library = await this.library(), list = await this.list(projectRoot), features = (await this.features.get(projectRoot)).effective;
     const enabled = list.filter(skill => skill.id !== RULES && skill.enabled);
-    const skills = enabled.map(skill => ({ name: skill.id, ...(skill.alwaysOn && skill.customized ? { baseline: skill.original } : {}), files: [{ path: 'SKILL.md', content: skill.content }, ...library.skills.find(item => item.name === skill.id).files.filter(file => file.path !== 'SKILL.md')] }));
-    for (const skill of skills) validateSkillFiles(skill.name, skill.files);
+    const skills = enabled.map(skill => ({ name: skill.id, ...(skill.alwaysOn && skill.customized ? { baseline: skill.original } : {}), files: effectiveSkillFiles(skill, library.skills.find(item => item.name === skill.id), skill.content) }));
     validateSkillLinks(skills, new Set(library.skills.map(skill => skill.name)));
     const integrations = library.features.filter(feature => feature.group === 'integrationer' && features[feature.id]).map(feature => feature.title);
     return { rules: list.find(skill => skill.id === RULES).content, skills, titles: enabled.map(skill => skill.title), features, integrations };

@@ -1,0 +1,761 @@
+{
+  "schema": 1,
+  "generatedAt": "2026-10-30T18:15:53.530Z",
+  "sourceTests": {
+    "tests": 2039,
+    "passed": 2007,
+    "failed": 0,
+    "skipped": 32
+  },
+  "resumeVerification": [
+    {
+      "trial": "mistral-before",
+      "checks": 13,
+      "passed": 13
+    },
+    {
+      "trial": "corti-before",
+      "checks": 13,
+      "passed": 13
+    },
+    {
+      "trial": "mistral-after",
+      "checks": 13,
+      "passed": 13
+    }
+  ],
+  "provisional": false,
+  "scope": "Sanitized evidence summary. No model calls or source edits.",
+  "trials": [
+    {
+      "tag": "mistral-before",
+      "provider": "Mistral",
+      "arm": "before",
+      "model": "mistral-large-4-0",
+      "status": "failed",
+      "generatedAt": "2026-10-30T18:15:53.530Z",
+      "provisional": false,
+      "sourceCommit": "45fdfc99c9a8675d41805ce7851735620474d977",
+      "scenarioSHA256": "f198ecba1ef840795f75d41b8aecb1eb733582159a6300ae986bdf572a26bbe3",
+      "profileManifestSHA256": "063b8c6771e02b87926d09bfe9824360d1a22d933fb00ef3ecf17a9b13e3ba62",
+      "preservation": {
+        "settingsUnchanged": true,
+        "sourceCodeUnchanged": true
+      },
+      "failureKind": "quality",
+      "timing": {
+        "agentSeconds": 548.403,
+        "agentComplete": true,
+        "agentMeasurement": "Cumulative episodeSeconds from the last completed stage, including preparation and previous plan; not a sum of usage snapshots.",
+        "wallSeconds": 726.366,
+        "wallComplete": true,
+        "driverPauseSeconds": 175.869,
+        "pauseMeasurement": "Gap between the first worker ending and the resumed worker starting; initial calls and agent time remain in the budget."
+      },
+      "usage": {
+        "transportAttempts": 21,
+        "reportedUsageCalls": 21,
+        "attemptsWithoutReportedUsage": 0,
+        "tokens": {
+          "input": 507532,
+          "output": 75535,
+          "reasoning": 0,
+          "cacheRead": 936960,
+          "cacheWrite": 0
+        },
+        "knownEstimateUSD": 0.5794831,
+        "estimatedTotalUSD": 0.5794831,
+        "costComplete": true,
+        "costMeaning": "Estimate from reported usage and current public rates, not an invoice.",
+        "priceCheckedAt": "2026-10-30",
+        "priceSource": "https://docs.mistral.ai/inference/pricing"
+      },
+      "driverResume": {
+        "occurred": true,
+        "initialPlanFaultCount": 2,
+        "exactBindingRecorded": true,
+        "previousCalls": 8,
+        "previousAgentSeconds": 70.513
+      },
+      "delivery": {
+        "firstSystemBytes": 46648,
+        "firstSystemSHA256": "c1819054f9a95219a59194c2b164cb1b455cd53933711b360ebe02374ba943e5",
+        "inlineReferences": [],
+        "inlineReferenceCount": 0,
+        "designSkillFileCount": 18,
+        "qualityPasses": 1,
+        "qualityFindings": [
+          {
+            "id": "low-contrast",
+            "severity": "error",
+            "count": 1
+          },
+          {
+            "id": "small-text",
+            "severity": "warning",
+            "count": 2
+          },
+          {
+            "id": "small-target",
+            "severity": "warning",
+            "count": 2
+          }
+        ],
+        "qualityStatuses": [
+          "checked"
+        ]
+      },
+      "browser": {
+        "checks": [
+          {
+            "id": "demo",
+            "title": "Tydelig lokal demo",
+            "criterion": "Synlig forklaring om fiktive aktiviteter og at tilmeldinger ikke sendes til kommunen.",
+            "status": "passed"
+          },
+          {
+            "id": "search-match",
+            "title": "Søgning med match",
+            "criterion": "En søgning efter en vist aktivitet giver de forventede matches og udelukker irrelevante aktiviteter.",
+            "status": "passed"
+          },
+          {
+            "id": "search-empty",
+            "title": "Søgning uden match",
+            "criterion": "Et ikke-eksisterende søgeord giver ingen aktivitetsresultater og en forståelig tom tilstand.",
+            "status": "passed"
+          },
+          {
+            "id": "combined-filters",
+            "title": "Kategori og alder samtidig",
+            "criterion": "To filtre kombineres, og viste aktiviteter opfylder begge kriterier. Fiktive datasæt må variere mellem modellerne.",
+            "status": "passed"
+          },
+          {
+            "id": "reset",
+            "title": "Nulstilling",
+            "criterion": "Nulstilling rydder søgning og filtervalg og gendanner den oprindelige aktivitetsoversigt.",
+            "status": "passed"
+          },
+          {
+            "id": "details",
+            "title": "Aktivitetsdetaljer",
+            "criterion": "Den valgte aktivitets korrekte detaljer åbnes og kan forlades via den synlige tilbage- eller lukhandling.",
+            "status": "passed"
+          },
+          {
+            "id": "required-validation",
+            "title": "Validering af påkrævede felter",
+            "criterion": "Hvis tilmelding har en formular, afvises tomme påkrævede felter uden gemt tilmelding. Uden formular markeres kontrollen ikke relevant, aldrig bestået.",
+            "status": "passed"
+          },
+          {
+            "id": "registration",
+            "title": "Lokal demotilmelding",
+            "criterion": "En gyldig demotilmelding giver en tydelig kvittering og vises under egne tilmeldinger. Kun fiktive testoplysninger må bruges.",
+            "status": "passed"
+          },
+          {
+            "id": "reload",
+            "title": "Tilmelding efter genindlæsning",
+            "criterion": "Den samme demotilmelding findes efter genindlæsning med korrekte aktivitets- og deltageroplysninger.",
+            "status": "passed"
+          },
+          {
+            "id": "cancellation",
+            "title": "Afmelding",
+            "criterion": "Afmelding fjerner den valgte tilmelding, og ændringen er stadig korrekt efter genindlæsning.",
+            "status": "passed"
+          },
+          {
+            "id": "mobile-layout",
+            "title": "Mobilforløb og layout",
+            "criterion": "Søgning og detaljer kan bruges ved 390 × 844. Hverken 390 × 844 eller 1440 × 900 har vandret siderulning; nødvendige handlinger er ikke afskåret.",
+            "status": "passed"
+          },
+          {
+            "id": "runtime-network",
+            "title": "Runtime og netværk",
+            "criterion": "Der forekommer ingen JavaScript-/konsolfejl eller forsøg på eksterne netkald i det afprøvede forløb.",
+            "status": "passed"
+          }
+        ],
+        "counts": {
+          "passed": 12,
+          "failed": 0,
+          "not-applicable": 0,
+          "not-run": 0
+        },
+        "status": "passed",
+        "placeholderOnly": false,
+        "placeholderHasLogoAsset": false,
+        "sourceUnchanged": true,
+        "completedEvidenceUnchanged": true,
+        "consoleErrorCount": 0,
+        "blockedExternalRequests": 0,
+        "screenshots": [
+          {
+            "href": "browser-evidence/mistral-before-functional/desktop-top.png",
+            "width": 1440,
+            "height": 900,
+            "sha256": "9f509957e0e9feb2d01702895df76842f8fbe081c8820612e48793098c1b46d7",
+            "label": "Desktop, 1440 × 900"
+          },
+          {
+            "href": "browser-evidence/mistral-before-functional/mobile-top.png",
+            "width": 390,
+            "height": 844,
+            "sha256": "d4c7dd36b5e4bc3417b6d98be91a1730fc292ea85a716c00d73bb3e1f130cbc2",
+            "label": "Mobil, 390 × 844"
+          }
+        ]
+      },
+      "output": {
+        "firstDraftSHA256": "bac118adc5c576d349db4ac49952bdd31dba04532aea754d428347eadfec1a7f",
+        "finalSHA256": "bac118adc5c576d349db4ac49952bdd31dba04532aea754d428347eadfec1a7f",
+        "firstDraftMatchesFinal": true,
+        "automaticRepairs": 0,
+        "automaticRepairBlockedByRejection": true,
+        "rejectedBuildPermissions": [
+          "external_directory"
+        ]
+      },
+      "aestheticAssessment": "Manuel vurdering af de faktiske desktop- og mobilbilleder: Et konsekvent orange udtryk, tydelig demomarkering og genkendelige datoer, filtre og tilmeldingsknapper. Den store indledning skubber aktiviteterne langt ned, især på mobil. De gentagne kort har næsten samme vægt, og mobilnavigationen ombrydes klodset. Et brugbart fundament, men begrænset visuelt særpræg og polering. De 12 beståede funktionstjek ophæver ikke Auras registrerede kontrastfejl."
+    },
+    {
+      "tag": "mistral-after",
+      "provider": "Mistral",
+      "arm": "after",
+      "model": "mistral-large-4-0",
+      "status": "failed",
+      "generatedAt": "2026-10-30T18:15:53.530Z",
+      "provisional": false,
+      "sourceCommit": "45fdfc99c9a8675d41805ce7851735620474d977",
+      "scenarioSHA256": "f198ecba1ef840795f75d41b8aecb1eb733582159a6300ae986bdf572a26bbe3",
+      "profileManifestSHA256": "a89e37081a3c2f037b295e91a54d810970eb56c7c4d4c0aa1e209b56d8823615",
+      "preservation": {
+        "settingsUnchanged": true,
+        "sourceCodeUnchanged": true
+      },
+      "failureKind": "evaluation-call-limit",
+      "timing": {
+        "agentSeconds": 607.413,
+        "agentComplete": true,
+        "agentMeasurement": "Cumulative episodeSeconds from the last completed stage, including preparation and previous plan; not a sum of usage snapshots.",
+        "wallSeconds": 716.774,
+        "wallComplete": true,
+        "driverPauseSeconds": 106.515,
+        "pauseMeasurement": "Gap between the first worker ending and the resumed worker starting; initial calls and agent time remain in the budget."
+      },
+      "usage": {
+        "transportAttempts": 40,
+        "reportedUsageCalls": 39,
+        "attemptsWithoutReportedUsage": 1,
+        "tokens": {
+          "input": 355366,
+          "output": 81636,
+          "reasoning": 0,
+          "cacheRead": 1892352,
+          "cacheWrite": 0
+        },
+        "knownEstimateUSD": 0.5526564399999999,
+        "estimatedTotalUSD": null,
+        "costComplete": false,
+        "costMeaning": "Known reported usage only. Total cost is unknown; incomplete calls can be billed.",
+        "priceCheckedAt": "2026-10-30",
+        "priceSource": "https://docs.mistral.ai/inference/pricing"
+      },
+      "driverResume": {
+        "occurred": true,
+        "initialPlanFaultCount": 1,
+        "exactBindingRecorded": true,
+        "previousCalls": 9,
+        "previousAgentSeconds": 100.157
+      },
+      "delivery": {
+        "firstSystemBytes": 56976,
+        "firstSystemSHA256": "c9d131851b5b1b3a7bf0c6d4f041ffdd9c938cad6d064fd98ff370339ae88f14",
+        "inlineReferences": [
+          "design-brief.md",
+          "brand-discovery.md",
+          "component-inspiration.md"
+        ],
+        "inlineReferenceCount": 3,
+        "designSkillFileCount": 20,
+        "qualityPasses": 0,
+        "qualityFindings": [],
+        "qualityStatuses": []
+      },
+      "browser": {
+        "checks": [
+          {
+            "id": "demo",
+            "title": "Tydelig lokal demo",
+            "criterion": "Synlig forklaring om fiktive aktiviteter og at tilmeldinger ikke sendes til kommunen.",
+            "status": "passed"
+          },
+          {
+            "id": "search-match",
+            "title": "Søgning med match",
+            "criterion": "En søgning efter en vist aktivitet giver de forventede matches og udelukker irrelevante aktiviteter.",
+            "status": "passed"
+          },
+          {
+            "id": "search-empty",
+            "title": "Søgning uden match",
+            "criterion": "Et ikke-eksisterende søgeord giver ingen aktivitetsresultater og en forståelig tom tilstand.",
+            "status": "passed"
+          },
+          {
+            "id": "combined-filters",
+            "title": "Kategori og alder samtidig",
+            "criterion": "To filtre kombineres, og viste aktiviteter opfylder begge kriterier. Fiktive datasæt må variere mellem modellerne.",
+            "status": "passed"
+          },
+          {
+            "id": "reset",
+            "title": "Nulstilling",
+            "criterion": "Nulstilling rydder søgning og filtervalg og gendanner den oprindelige aktivitetsoversigt.",
+            "status": "passed"
+          },
+          {
+            "id": "details",
+            "title": "Aktivitetsdetaljer",
+            "criterion": "Den valgte aktivitets korrekte detaljer åbnes og kan forlades via den synlige tilbage- eller lukhandling.",
+            "status": "passed"
+          },
+          {
+            "id": "required-validation",
+            "title": "Validering af påkrævede felter",
+            "criterion": "Hvis tilmelding har en formular, afvises tomme påkrævede felter uden gemt tilmelding. Uden formular markeres kontrollen ikke relevant, aldrig bestået.",
+            "status": "not-applicable"
+          },
+          {
+            "id": "registration",
+            "title": "Lokal demotilmelding",
+            "criterion": "En gyldig demotilmelding giver en tydelig kvittering og vises under egne tilmeldinger. Kun fiktive testoplysninger må bruges.",
+            "status": "passed"
+          },
+          {
+            "id": "reload",
+            "title": "Tilmelding efter genindlæsning",
+            "criterion": "Den samme demotilmelding findes efter genindlæsning med korrekte aktivitets- og deltageroplysninger.",
+            "status": "passed"
+          },
+          {
+            "id": "cancellation",
+            "title": "Afmelding",
+            "criterion": "Afmelding fjerner den valgte tilmelding, og ændringen er stadig korrekt efter genindlæsning.",
+            "status": "passed"
+          },
+          {
+            "id": "mobile-layout",
+            "title": "Mobilforløb og layout",
+            "criterion": "Søgning og detaljer kan bruges ved 390 × 844. Hverken 390 × 844 eller 1440 × 900 har vandret siderulning; nødvendige handlinger er ikke afskåret.",
+            "status": "passed"
+          },
+          {
+            "id": "runtime-network",
+            "title": "Runtime og netværk",
+            "criterion": "Der forekommer ingen JavaScript-/konsolfejl eller forsøg på eksterne netkald i det afprøvede forløb.",
+            "status": "passed"
+          }
+        ],
+        "counts": {
+          "passed": 11,
+          "failed": 0,
+          "not-applicable": 1,
+          "not-run": 0
+        },
+        "status": "passed",
+        "placeholderOnly": false,
+        "placeholderHasLogoAsset": false,
+        "sourceUnchanged": true,
+        "completedEvidenceUnchanged": true,
+        "consoleErrorCount": 0,
+        "blockedExternalRequests": 0,
+        "screenshots": [
+          {
+            "href": "browser-evidence/mistral-after-functional/desktop-top.png",
+            "width": 1440,
+            "height": 900,
+            "sha256": "94563bdeee0e3592218335450902de904be7c84b440676530c14a3c3cba21d19",
+            "label": "Desktop, 1440 × 900"
+          },
+          {
+            "href": "browser-evidence/mistral-after-functional/mobile-top.png",
+            "width": 390,
+            "height": 844,
+            "sha256": "3c5e22dfbc10aad841b593e091a13ec2a714f6c3195950062943ebb4faa49f75",
+            "label": "Mobil, 390 × 844"
+          }
+        ]
+      },
+      "output": {
+        "firstDraftSHA256": null,
+        "finalSHA256": "3fb1881cc41a453c26a609a9c831946b38feb90bf639b4a6d890213b8f264ed1",
+        "firstDraftMatchesFinal": null,
+        "automaticRepairs": null,
+        "automaticRepairBlockedByRejection": false,
+        "rejectedBuildPermissions": []
+      },
+      "aestheticAssessment": "Manuel vurdering af de faktiske desktop- og mobilbilleder: Indledningen er kortere, søgningen er tydelig, og aktiviteterne bliver synlige tidligere på desktop. Mere afdæmpede flader og mindre afrunding giver et tættere udtryk. Det er en konkret forbedring af overblikket, men layoutet er stadig et konventionelt kortgitter uden et stærkt visuelt særkende. Demotekst, header og filtre fylder fortsat meget på mobil. Dette ene forsøg beviser ikke generelt bedre design. Den leverede app består 11 relevante funktionstjek; formularvalidering er ikke relevant. Modellen ramte kaldsloftet, før Auras indbyggede kvalitetskontrol blev kørt, så polering og kontrast er ikke færdigkvalificeret."
+    },
+    {
+      "tag": "corti-before",
+      "provider": "Corti",
+      "arm": "before",
+      "model": "corti-s1",
+      "status": "failed",
+      "generatedAt": "2026-10-30T18:15:53.530Z",
+      "provisional": false,
+      "sourceCommit": "45fdfc99c9a8675d41805ce7851735620474d977",
+      "scenarioSHA256": "f198ecba1ef840795f75d41b8aecb1eb733582159a6300ae986bdf572a26bbe3",
+      "profileManifestSHA256": "063b8c6771e02b87926d09bfe9824360d1a22d933fb00ef3ecf17a9b13e3ba62",
+      "preservation": {
+        "settingsUnchanged": true,
+        "sourceCodeUnchanged": true
+      },
+      "failureKind": "network",
+      "timing": {
+        "agentSeconds": 326.644,
+        "agentComplete": true,
+        "agentMeasurement": "Cumulative episodeSeconds from the last completed stage, including preparation and previous plan; not a sum of usage snapshots.",
+        "wallSeconds": 438.504,
+        "wallComplete": true,
+        "driverPauseSeconds": 109.248,
+        "pauseMeasurement": "Gap between the first worker ending and the resumed worker starting; initial calls and agent time remain in the budget."
+      },
+      "usage": {
+        "transportAttempts": 12,
+        "reportedUsageCalls": 11,
+        "attemptsWithoutReportedUsage": 1,
+        "tokens": {
+          "input": 153581,
+          "output": 4295,
+          "reasoning": 40101,
+          "cacheRead": 318910,
+          "cacheWrite": 0
+        },
+        "knownEstimateUSD": 0.726112,
+        "estimatedTotalUSD": null,
+        "costComplete": false,
+        "costMeaning": "Known reported usage only. Total cost is unknown; incomplete calls can be billed.",
+        "priceCheckedAt": "2026-10-30",
+        "priceSource": "https://docs.corti.ai/models/models"
+      },
+      "driverResume": {
+        "occurred": true,
+        "initialPlanFaultCount": 1,
+        "exactBindingRecorded": true,
+        "previousCalls": 9,
+        "previousAgentSeconds": 110.91
+      },
+      "delivery": {
+        "firstSystemBytes": 46646,
+        "firstSystemSHA256": "5d512fe205ba28fa92d72819d13fb6760dd3d229c5230dbfa22c4f71ae79245c",
+        "inlineReferences": [],
+        "inlineReferenceCount": 0,
+        "designSkillFileCount": 18,
+        "qualityPasses": 0,
+        "qualityFindings": [],
+        "qualityStatuses": []
+      },
+      "browser": {
+        "checks": [
+          {
+            "id": "demo",
+            "title": "Tydelig lokal demo",
+            "criterion": "Synlig forklaring om fiktive aktiviteter og at tilmeldinger ikke sendes til kommunen.",
+            "status": "failed"
+          },
+          {
+            "id": "search-match",
+            "title": "Søgning med match",
+            "criterion": "En søgning efter en vist aktivitet giver de forventede matches og udelukker irrelevante aktiviteter.",
+            "status": "failed"
+          },
+          {
+            "id": "search-empty",
+            "title": "Søgning uden match",
+            "criterion": "Et ikke-eksisterende søgeord giver ingen aktivitetsresultater og en forståelig tom tilstand.",
+            "status": "failed"
+          },
+          {
+            "id": "combined-filters",
+            "title": "Kategori og alder samtidig",
+            "criterion": "To filtre kombineres, og viste aktiviteter opfylder begge kriterier. Fiktive datasæt må variere mellem modellerne.",
+            "status": "failed"
+          },
+          {
+            "id": "reset",
+            "title": "Nulstilling",
+            "criterion": "Nulstilling rydder søgning og filtervalg og gendanner den oprindelige aktivitetsoversigt.",
+            "status": "failed"
+          },
+          {
+            "id": "details",
+            "title": "Aktivitetsdetaljer",
+            "criterion": "Den valgte aktivitets korrekte detaljer åbnes og kan forlades via den synlige tilbage- eller lukhandling.",
+            "status": "failed"
+          },
+          {
+            "id": "required-validation",
+            "title": "Validering af påkrævede felter",
+            "criterion": "Hvis tilmelding har en formular, afvises tomme påkrævede felter uden gemt tilmelding. Uden formular markeres kontrollen ikke relevant, aldrig bestået.",
+            "status": "failed"
+          },
+          {
+            "id": "registration",
+            "title": "Lokal demotilmelding",
+            "criterion": "En gyldig demotilmelding giver en tydelig kvittering og vises under egne tilmeldinger. Kun fiktive testoplysninger må bruges.",
+            "status": "failed"
+          },
+          {
+            "id": "reload",
+            "title": "Tilmelding efter genindlæsning",
+            "criterion": "Den samme demotilmelding findes efter genindlæsning med korrekte aktivitets- og deltageroplysninger.",
+            "status": "failed"
+          },
+          {
+            "id": "cancellation",
+            "title": "Afmelding",
+            "criterion": "Afmelding fjerner den valgte tilmelding, og ændringen er stadig korrekt efter genindlæsning.",
+            "status": "failed"
+          },
+          {
+            "id": "mobile-layout",
+            "title": "Mobilforløb og layout",
+            "criterion": "Søgning og detaljer kan bruges ved 390 × 844. Hverken 390 × 844 eller 1440 × 900 har vandret siderulning; nødvendige handlinger er ikke afskåret.",
+            "status": "failed"
+          },
+          {
+            "id": "runtime-network",
+            "title": "Runtime og netværk",
+            "criterion": "Der forekommer ingen JavaScript-/konsolfejl eller forsøg på eksterne netkald i det afprøvede forløb.",
+            "status": "passed"
+          }
+        ],
+        "counts": {
+          "passed": 1,
+          "failed": 11,
+          "not-applicable": 0,
+          "not-run": 0
+        },
+        "status": "failed",
+        "placeholderOnly": true,
+        "placeholderHasLogoAsset": false,
+        "sourceUnchanged": true,
+        "completedEvidenceUnchanged": true,
+        "consoleErrorCount": 0,
+        "blockedExternalRequests": 0,
+        "screenshots": [
+          {
+            "href": "browser-evidence/corti-before-functional/desktop-top.png",
+            "width": 1440,
+            "height": 900,
+            "sha256": "0f3eb2a3d033751c6415b463fcd665781425bacb715585ae228669821e173c00",
+            "label": "Desktop, 1440 × 900"
+          },
+          {
+            "href": "browser-evidence/corti-before-functional/mobile-top.png",
+            "width": 390,
+            "height": 844,
+            "sha256": "7b332f2cf710da40ac2df9535135511eb15798f105667663af21d524e0d50bf7",
+            "label": "Mobil, 390 × 844"
+          }
+        ]
+      },
+      "output": {
+        "firstDraftSHA256": null,
+        "finalSHA256": "b55f74327cdf35be13f0bd7612249547eab128f127aef24d8f8bf16857166ed7",
+        "firstDraftMatchesFinal": null,
+        "automaticRepairs": null,
+        "automaticRepairBlockedByRejection": false,
+        "rejectedBuildPermissions": [
+          "bash"
+        ]
+      },
+      "aestheticAssessment": "Ingen modelbygget app blev leveret. Billedet viser Auras oprindelige pladsholder efter en afbrudt modelstrøm. Der kan derfor ikke gives en visuel vurdering af et Corti-design eller udledes en før/efter-gevinst fra dette billede."
+    },
+    {
+      "tag": "corti-after",
+      "provider": "Corti",
+      "arm": "after",
+      "model": "corti-s1",
+      "status": "failed",
+      "generatedAt": "2026-10-30T18:15:53.530Z",
+      "provisional": false,
+      "sourceCommit": "45fdfc99c9a8675d41805ce7851735620474d977",
+      "scenarioSHA256": "f198ecba1ef840795f75d41b8aecb1eb733582159a6300ae986bdf572a26bbe3",
+      "profileManifestSHA256": "a89e37081a3c2f037b295e91a54d810970eb56c7c4d4c0aa1e209b56d8823615",
+      "preservation": {
+        "settingsUnchanged": true,
+        "sourceCodeUnchanged": true
+      },
+      "failureKind": "evaluation-deadline",
+      "timing": {
+        "agentSeconds": 900.083,
+        "agentComplete": true,
+        "agentMeasurement": "Cumulative episodeSeconds from the last completed stage, including preparation and previous plan; not a sum of usage snapshots.",
+        "wallSeconds": 902.635,
+        "wallComplete": true,
+        "driverPauseSeconds": 0,
+        "pauseMeasurement": "No driver resume pause."
+      },
+      "usage": {
+        "transportAttempts": 18,
+        "reportedUsageCalls": 15,
+        "attemptsWithoutReportedUsage": 3,
+        "tokens": {
+          "input": 263821,
+          "output": 25718,
+          "reasoning": 97797,
+          "cacheRead": 644893,
+          "cacheWrite": 0
+        },
+        "knownEstimateUSD": 1.6447406,
+        "estimatedTotalUSD": null,
+        "costComplete": false,
+        "costMeaning": "Known reported usage only. Total cost is unknown; incomplete calls can be billed.",
+        "priceCheckedAt": "2026-10-30",
+        "priceSource": "https://docs.corti.ai/models/models"
+      },
+      "driverResume": {
+        "occurred": false,
+        "initialPlanFaultCount": 0,
+        "exactBindingRecorded": false,
+        "previousCalls": null,
+        "previousAgentSeconds": null
+      },
+      "delivery": {
+        "firstSystemBytes": 56974,
+        "firstSystemSHA256": "f3f87e2a280a91a6db824964339af5be9911205d7b9328262c2324a34bc45659",
+        "inlineReferences": [
+          "design-brief.md",
+          "brand-discovery.md",
+          "component-inspiration.md"
+        ],
+        "inlineReferenceCount": 3,
+        "designSkillFileCount": 20,
+        "qualityPasses": 0,
+        "qualityFindings": [],
+        "qualityStatuses": []
+      },
+      "browser": {
+        "checks": [
+          {
+            "id": "demo",
+            "title": "Tydelig lokal demo",
+            "criterion": "Synlig forklaring om fiktive aktiviteter og at tilmeldinger ikke sendes til kommunen.",
+            "status": "failed"
+          },
+          {
+            "id": "search-match",
+            "title": "Søgning med match",
+            "criterion": "En søgning efter en vist aktivitet giver de forventede matches og udelukker irrelevante aktiviteter.",
+            "status": "failed"
+          },
+          {
+            "id": "search-empty",
+            "title": "Søgning uden match",
+            "criterion": "Et ikke-eksisterende søgeord giver ingen aktivitetsresultater og en forståelig tom tilstand.",
+            "status": "failed"
+          },
+          {
+            "id": "combined-filters",
+            "title": "Kategori og alder samtidig",
+            "criterion": "To filtre kombineres, og viste aktiviteter opfylder begge kriterier. Fiktive datasæt må variere mellem modellerne.",
+            "status": "failed"
+          },
+          {
+            "id": "reset",
+            "title": "Nulstilling",
+            "criterion": "Nulstilling rydder søgning og filtervalg og gendanner den oprindelige aktivitetsoversigt.",
+            "status": "failed"
+          },
+          {
+            "id": "details",
+            "title": "Aktivitetsdetaljer",
+            "criterion": "Den valgte aktivitets korrekte detaljer åbnes og kan forlades via den synlige tilbage- eller lukhandling.",
+            "status": "failed"
+          },
+          {
+            "id": "required-validation",
+            "title": "Validering af påkrævede felter",
+            "criterion": "Hvis tilmelding har en formular, afvises tomme påkrævede felter uden gemt tilmelding. Uden formular markeres kontrollen ikke relevant, aldrig bestået.",
+            "status": "failed"
+          },
+          {
+            "id": "registration",
+            "title": "Lokal demotilmelding",
+            "criterion": "En gyldig demotilmelding giver en tydelig kvittering og vises under egne tilmeldinger. Kun fiktive testoplysninger må bruges.",
+            "status": "failed"
+          },
+          {
+            "id": "reload",
+            "title": "Tilmelding efter genindlæsning",
+            "criterion": "Den samme demotilmelding findes efter genindlæsning med korrekte aktivitets- og deltageroplysninger.",
+            "status": "failed"
+          },
+          {
+            "id": "cancellation",
+            "title": "Afmelding",
+            "criterion": "Afmelding fjerner den valgte tilmelding, og ændringen er stadig korrekt efter genindlæsning.",
+            "status": "failed"
+          },
+          {
+            "id": "mobile-layout",
+            "title": "Mobilforløb og layout",
+            "criterion": "Søgning og detaljer kan bruges ved 390 × 844. Hverken 390 × 844 eller 1440 × 900 har vandret siderulning; nødvendige handlinger er ikke afskåret.",
+            "status": "failed"
+          },
+          {
+            "id": "runtime-network",
+            "title": "Runtime og netværk",
+            "criterion": "Der forekommer ingen JavaScript-/konsolfejl eller forsøg på eksterne netkald i det afprøvede forløb.",
+            "status": "passed"
+          }
+        ],
+        "counts": {
+          "passed": 1,
+          "failed": 11,
+          "not-applicable": 0,
+          "not-run": 0
+        },
+        "status": "failed",
+        "placeholderOnly": true,
+        "placeholderHasLogoAsset": true,
+        "sourceUnchanged": true,
+        "completedEvidenceUnchanged": true,
+        "consoleErrorCount": 0,
+        "blockedExternalRequests": 0,
+        "screenshots": [
+          {
+            "href": "browser-evidence/corti-after-functional/desktop-top.png",
+            "width": 1440,
+            "height": 900,
+            "sha256": "0f3eb2a3d033751c6415b463fcd665781425bacb715585ae228669821e173c00",
+            "label": "Desktop, 1440 × 900"
+          },
+          {
+            "href": "browser-evidence/corti-after-functional/mobile-top.png",
+            "width": 390,
+            "height": 844,
+            "sha256": "7b332f2cf710da40ac2df9535135511eb15798f105667663af21d524e0d50bf7",
+            "label": "Mobil, 390 × 844"
+          }
+        ]
+      },
+      "output": {
+        "firstDraftSHA256": null,
+        "finalSHA256": "b716a58d2392aaed9a04598de071d1e7548c6d645f17c646d0432237d7158609",
+        "firstDraftMatchesFinal": null,
+        "automaticRepairs": null,
+        "automaticRepairBlockedByRejection": false,
+        "rejectedBuildPermissions": []
+      },
+      "aestheticAssessment": "Ingen modelbygget app blev leveret inden for 900 sekunder. Desktopbilledet er set og viser samme startside som før. Modellen tilføjede et lokalt logo, men index.html og styles.css er uændrede, og startsiden bruger ikke logoet. Der foreligger derfor hverken et nyt UI at vurdere eller bevis for bedre Corti-design."
+    }
+  ]
+}
