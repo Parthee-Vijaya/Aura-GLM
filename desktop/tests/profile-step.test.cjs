@@ -151,7 +151,7 @@ function runSetup({ profile = blank(), suggestion = 'Parthee', repeat = null } =
     showIntroduction: () => { context.introductions = (context.introductions || 0) + 1; }
   };
   vm.runInNewContext(setupCode, context);
-  return { context, $, document: dom.document, registry: dom.registry, progress: dom.progress, saves, calls, visuals };
+  return { context, $, document: dom.document, registry: dom.registry, progress: dom.progress, harness, saves, calls, visuals };
 }
 const progressItem = (fixture, phase) => fixture.progress.children.find(item => item.dataset.phase === phase);
 // Objects created inside the vm context belong to another realm; a JSON round
@@ -241,6 +241,20 @@ test('repeat-opsætning med tom profil starter på profil-trinnet — andre indg
   await add.context.showSetup();
   assert.equal(add.context.setupStep, 'choice', 'tilføj forbindelse og reparation går direkte til valget');
   assert.equal(add.registry.get('setup-profile').hidden, true);
+});
+
+test('profil-trinnet står på skærmen, før navneforslaget lander', async () => {
+  const f = runSetup();
+  let release; const gate = new Promise(resolve => { release = resolve; });
+  f.harness.profileSuggest = async () => { f.calls.push('profileSuggest'); await gate; return 'Parthee'; };
+  const entering = f.context.showSetup('', true);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(f.context.setupStep, 'profile', 'profil-trinnet er valgt, så snart skærmen vises');
+  assert.equal(f.registry.get('setup-profile').hidden, false, 'valgskærmen når aldrig at vignette først');
+  assert.equal(f.registry.get('profile-name').value, '', 'navnefeltet udfyldes progressivt, når forslaget lander');
+  release();
+  await entering;
+  assert.equal(f.registry.get('profile-name').value, 'Parthee');
 });
 
 test('en gemt profil vises i trinnet, og forslaget bruges kun, når navnet er tomt', async () => {
@@ -337,6 +351,23 @@ test('fremgangslinjen mærker profil og forbindelse separat med numrene 1-4', as
   assert.equal(progressItem(f, 'connection').querySelector('span').textContent, '2');
   assert.equal(progressItem(f, 'features').querySelector('span').textContent, '3');
   assert.equal(progressItem(f, 'idea').querySelector('span').textContent, '4');
+});
+
+test('forbindelsespunktet får først ✓, når forbindelsen er kontrolleret', async () => {
+  const f = runSetup();
+  await f.context.showSetup('', true);
+  await f.registry.get('profile-continue').onclick();
+  f.context.state = { connections: [{ id: 'forbindelse-1', kind: 'corti', name: 'Testforbindelse' }], features: { chosen: true } };
+  f.registry.get('setup-connection').value = 'forbindelse-1';
+  f.context.setupStep = 'saved';
+  f.context.syncOnboardingVisuals();
+  assert.equal(progressItem(f, 'connection').dataset.complete, 'false', 'en valgt forbindelse uden kontrol giver ikke ✓');
+  assert.equal(progressItem(f, 'connection').querySelector('span').textContent, '2');
+  f.context.verifiedConnection = 'forbindelse-1';
+  f.context.connectionChecks = { get: () => ({ status: 'ok', count: 3 }) };
+  f.context.syncOnboardingVisuals();
+  assert.equal(progressItem(f, 'connection').dataset.complete, 'true', 'den kontrollerede forbindelse fuldfører punkt 2');
+  assert.equal(progressItem(f, 'connection').querySelector('span').textContent, '✓');
 });
 
 test('Tilbage fra forbindelsesvalget vender til profil-trinnet, når det blev vist', async () => {

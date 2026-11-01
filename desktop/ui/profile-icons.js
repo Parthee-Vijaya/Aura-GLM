@@ -3,6 +3,7 @@
 // core/profile.cjs; the core module validates every saved icon id, and the
 // test suite asserts the two lists stay identical. The profile itself is pure
 // UI state: names and icons never reach prompts, the model log or diagnostics.
+// Glyph paths adapted from Lucide (ISC license, https://lucide.dev), redrawn to the DSH stroke style.
 (function (scope, factory) {
   const api = factory();
   if (typeof module === 'object' && module.exports) module.exports = api;

@@ -144,8 +144,9 @@ function syncOnboardingVisuals() {
   const checked = Boolean(setupConnection && setupConnection.kind === kind && verifiedConnection === setupConnection.id && setupCheck?.status === 'ok' && setupCheck.count);
   window.OnboardingB.render($('#setup-visual'), { kind, phase, preview: setupStep === 'provider' && !details, connectionName: setupConnection?.name || '', saved: Boolean(setupConnection), checked, error: setupCheck?.status === 'error', pending: setupCheck?.status === 'checking' });
   for (const step of document.querySelectorAll('#setup .onboarding-b-progress li')) {
-    // Provider and connection are one logical choice: both setup phases mark item 2.
-    const complete = step.dataset.phase === 'profile' ? profileStepDone : step.dataset.phase === 'connection' && Boolean(details || setupConnection);
+    // Provider and connection are one logical choice: both setup phases mark item 2,
+    // which only completes once the connection has been verified.
+    const complete = step.dataset.phase === 'profile' ? profileStepDone : step.dataset.phase === 'connection' && checked;
     step.dataset.complete = String(complete);
     step.querySelector('span').textContent = complete ? '✓' : String(['profile', 'connection', 'features', 'idea'].indexOf(step.dataset.phase) + 1);
     const active = step.dataset.phase === (phase === 'profile' ? 'profile' : phase === 'features' ? 'features' : 'connection');
@@ -317,8 +318,9 @@ async function showSetup(reason = '', fromIntroduction = false) {
   setupActive = true; $('#setup').hidden = false; $('#workspace').hidden = true; $('#onboarding').hidden = true;
   $('#view-title').textContent = 'Opsætning'; $('#setup-reason').textContent = reason; $('#setup-reason').hidden = !reason;
   renderSetup(); profileStepShown = readProfile && !profile?.name && !profile?.icon; profileStepDone = false;
-  if (profileStepShown) await prepareProfileStep(profile);
+  // The step is on screen before the name suggestion lands; the field fills in when it does.
   setupPage(profileStepShown ? 'profile' : 'choice'); action(discoverLocal);
+  if (profileStepShown) await prepareProfileStep(profile);
 }
 function connectionFailed(reason) {
   invalidateConnection($('#connection-select').value, reason);
