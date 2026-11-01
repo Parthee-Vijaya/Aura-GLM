@@ -269,6 +269,9 @@
     const bodyTitle = make('h3', t('Præcis, hvad der sendes', 'Exactly what will be sent')); bodyTitle.id = 'privacy-body-title';
     const body = make('pre', typeof review.body === 'string' ? review.body : t('Indholdet kan ikke vises. Delingen kan ikke godkendes.', 'Contents cannot be displayed. Sharing cannot be approved.'), 'privacy-payload'); body.id = 'privacy-payload'; body.tabIndex = 0; body.setAttribute('aria-labelledby', bodyTitle.id);
     sharingDialog.append(bodyTitle, body);
+    // Størrelsen af det gennemgåede indhold, så brugeren kan se omfanget før rulningen.
+    const measured = typeof review.body === 'string' ? `${review.body.length.toLocaleString('da-DK')} tegn` : '';
+    if (measured) sharingDialog.append(make('p', `${t('Omfang af det viste indhold', 'Size of the shown content')}: ${measured}`, 'privacy-scope'));
     sharingDialog.append(make('p', t('Dette ændrer hverken din plan, filrettigheder eller Auras værktøjsgodkendelser. En ændret forespørgsel eller modtager skal vurderes igen.', 'This does not change your plan, file permissions or Aura’s tool approvals. A changed request or recipient must be assessed again.'), 'privacy-footnote'));
     const expiry = make('p', expired ? t('Vurderingen er udløbet eller ufuldstændig. Ingen afsendelse er godkendt.', 'The assessment expired or is incomplete. No sending was approved.') : t('Denne konkrete deling afventer dit valg.', 'This specific sharing awaits your choice.'), 'privacy-feedback'); expiry.id = 'privacy-review-feedback'; expiry.setAttribute('role', 'status'); sharingDialog.append(expiry);
     const actions = make('div', undefined, 'privacy-actions');
