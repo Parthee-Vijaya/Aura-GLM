@@ -538,8 +538,14 @@ class ChatSession {
     const tail = text => typeof text === 'string' && text ? cleanOutput(text).trim().split('\n').slice(-3).join('\n').slice(-400) : '';
     const contract = require('./run-contract.cjs');
     // Bevisblok: Auras egne målinger af opgaven — filer læst på disken, kommandoudfald og lokal kontrol —
-    // adskilt fra modellens egen tekst. Intet felt opfindes; manglende viden er 'ukendt'.
-    const measured = contract.evidence({ files: { count: diff?.files?.length || 0, source: 'disk' }, commands: contract.commandEvidence(this.runTools?.values() || []), quality: { ran: Boolean(this.runQuality), findings: Array.isArray(this.runQuality?.findings) ? this.runQuality.findings.length : null } });
+    // adskilt fra modellens egen tekst. Manglende viden er 'ukendt': en ulæselig diff er ikke '0 filer',
+    // og en kontrol, der ikke nåede at køre, er ikke 'gennemført'.
+    const qualityStatus = this.runQuality?.status;
+    const measured = contract.evidence({
+      files: { count: diff ? diff.files.length : null, source: 'disk' },
+      commands: contract.commandEvidence(this.runTools?.values() || []),
+      quality: { ran: ['checked', 'unsupported'].includes(qualityStatus), findings: qualityStatus === 'checked' ? (this.runQuality?.findings?.length ?? null) : null }
+    });
     return { type: 'run.review', quality: this.runQuality || null, task: task?.id, workspaceRoot: this.root, isolated: Boolean(this.copy), chat: this.id, mode: this.runMode, status, finish: this.runFinish || null, failure: this.runFailure || null, files: diff?.files.map(f => f.file) || [], skipped: diff?.skipped || 0, unavailable: !diff, evidence: measured,
       tools: [...(this.runTools?.values() || [])].map(p => ({ tool: p.tool, status: p.state?.status, title: p.state?.title || p.state?.input?.command || '', exit: Number.isInteger(p.state?.metadata?.exit) ? p.state.metadata.exit : null, output: p.tool === 'bash' ? tail(p.state?.output ?? p.state?.metadata?.output) : '', error: p.state?.status === 'error' ? cleanOutput(String(p.state?.error || '')).slice(0, 300) : '' })), ...extra };
   }
