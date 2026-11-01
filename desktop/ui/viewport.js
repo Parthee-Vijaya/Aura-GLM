@@ -51,13 +51,14 @@
   let pointer = null;
   divider.addEventListener('pointerdown', event => {
     if (event.button !== 0) return;
-    pointer = event.pointerId; divider.setPointerCapture(pointer); divider.focus(); document.body.classList.add('resizing-workspace'); event.preventDefault();
+    pointer = event.pointerId; divider.setPointerCapture(pointer); divider.focus(); document.body.classList.add('resizing-workspace');
+    grid.dataset.dragging = 'true'; event.preventDefault();
   });
   divider.addEventListener('pointermove', event => {
     if (event.pointerId !== pointer) return;
     settings.chat = split(event.clientX - grid.getBoundingClientRect().left - 3.5); render();
   });
-  function finish() { if (pointer === null) return; pointer = null; document.body.classList.remove('resizing-workspace'); save(); }
+  function finish() { if (pointer === null) return; pointer = null; document.body.classList.remove('resizing-workspace'); delete grid.dataset.dragging; save(); }
   divider.addEventListener('pointerup', finish); divider.addEventListener('pointercancel', finish); divider.addEventListener('lostpointercapture', finish); window.addEventListener('blur', finish);
   divider.addEventListener('dblclick', () => { settings.chat = 420; split(); save(); });
   divider.addEventListener('keydown', event => {

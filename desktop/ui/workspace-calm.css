@@ -44,8 +44,10 @@ body.workspace-calm[data-workspace-theme="light"] {
 .workspace-calm .work-grid[data-surface="off"] #workspace-divider { display: none; }
 .workspace-calm .work-grid[data-surface="off"] #work-surface { display: none; }
 .workspace-calm .work-grid[data-surface="off"] #chat-panel { max-width: 900px; margin: 0 auto; width: 100%; }
-/* Panelet åbnes: normal grid med chat venstre + panel højre. */
+/* Panelet åbnes: normal grid med chat venstre + panel højre. Kun diskrete åbn/luk ændringer
+   animeres; træk i skillelinjen skal følge pointeren uden easing (DSH: data-dragging). */
 .workspace-calm .work-grid { transition: grid-template-columns var(--aura-transition-duration-slow) var(--aura-ease-in-out); }
+.workspace-calm .work-grid[data-dragging] { transition: none; }
 .workspace-calm :is(.chat,.work-panel,.panel-bar,.work-tabs,.preview-toolbar,.code-browser) { background:var(--surface); }
 .workspace-calm .chat .section-title { padding:0 16px; min-height:46px; gap:8px; }
 .workspace-calm #run-status { font-size:10px; font-weight:400; white-space:nowrap; }
