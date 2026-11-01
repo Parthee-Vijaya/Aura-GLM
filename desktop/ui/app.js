@@ -864,19 +864,17 @@ const elapsedText = ms => { const seconds = Math.floor(ms / 1000); return second
 // om AI'en venter på brugeren. Efter Stop og fejl står vejen videre på resultatkortet, ikke i flere bokse.
 // Status pr. samtale. Godkendelser og spørgsmål i en samtale i baggrunden vises i sidepanelet og venter, til den åbnes.
 
-// Status-badge farvning: grøn = færdig, rød = fejl, blå = arbejder, grå = stoppet
-function updateBadgeClass(text) {
+// Status-badge farvning følger tilstanden fra run-state — ikke teksten, så 'Stoppet' er
+// aldrig rødt som en fejl, og 'Venter på dig' er aldrig gråt.
+function updateBadgeClass() {
+  if (typeof document === 'undefined' || !document.getElementById) return;
   const badge = document.getElementById('run-status');
   if (!badge) return;
   badge.classList.remove('run-idle', 'run-error', 'run-working', 'run-stopped');
-  if (!text) return;
-  if (/arbejder|kører|skriver|forbereder/i.test(text)) badge.classList.add('run-working');
-  else if (/fejl|afvist|stop/i.test(text)) badge.classList.add('run-error');
-  else if (/venter/i.test(text)) badge.classList.add('run-stopped');
-  else if (/færdig|klar|completed/i.test(text)) badge.classList.add('run-idle');
+  badge.classList.add(window.RunState.badgeClass(view));
 }
 
-function setStatusDetail(text, v = view) { v.statusDetail = text; if (v === view) { renderStatus(); updateBadgeClass(text); } }
+function setStatusDetail(text, v = view) { v.statusDetail = text; if (v === view) { renderStatus(); updateBadgeClass(); } }
 function waitFor(id, title, element, v = view) { v.waitingFor = [...v.waitingFor.filter(item => item.id !== id), { id, title, element }]; if (v === view) renderStatus(); window.chats?.render(); }
 function doneWaiting(id, v = view) { v.waitingFor = v.waitingFor.filter(item => item.id !== id); if (v === view) renderStatus(); window.chats?.render(); }
 function renderStatus() {
@@ -899,14 +897,14 @@ function renderStatus() {
 }
 $('#agent-activity-jump').onclick = () => { const item = view.waitingFor[0]; if (!item?.element?.isConnected) return; item.element.scrollIntoView({ block: 'nearest' }); item.element.querySelector('button, textarea, input')?.focus(); };
 function setRunning(value, status, v = view) {
-  if (value && !v.running) { v.runStartedAt = Date.now(); v.lastSignalAt = v.runStartedAt; v.receivedChars = 0; v.modelProgress = null; v.todos = []; }
+  if (value && !v.running) { v.runStartedAt = Date.now(); v.lastSignalAt = v.runStartedAt; v.receivedChars = 0; v.modelProgress = null; v.todos = []; v.lastReview = null; }
   if (!value) v.waitingFor = [];
   v.running = value; v.runLabel = status;
   // Skærmlæseren holder sig fra den løbende genopbygning under arbejdet; svaret annonceres,
   // når statuslinjen og resultatkortet (aria-live) siger, at opgaven er færdig.
   v.log.setAttribute('aria-busy', value ? 'true' : 'false');
   if (value) v.statusDetail = status.startsWith('Starter') ? 'Aura Prime starter AI’en …' : $('#work-mode').value === 'plan' ? 'Venter på modellens forslag …' : 'Venter på modellen …';
-  if (v === view) { running = value; $('#run-status').textContent = status; updateModelSummary(); }
+  if (v === view) { running = value; $('#run-status').textContent = status; updateBadgeClass(); updateModelSummary(); }
   applyRunning(); window.chats?.render();
   if (!anyRunning() && recovery) { const reason = recovery; recovery = ''; showConnectionWarning(reason); }
 }
@@ -1982,6 +1980,8 @@ function completedResult(result, v = view) {
 const targetLine = (box, v = view) => { if (v.lastTarget) box.append(node('p', `Mål: ${v.lastTarget}`, 'review-target')); };
 function renderRunReview(result, v = view) {
   const box = v.review; box.replaceChildren(); box.classList.toggle('result-complete', false); box.classList.toggle('is-reviewed', false);
+  // Resultatkortet er afslutningsbeviset for turen; statusafledningen (run-state) læser det.
+  v.lastReview = result;
   const { lastCheckpoint, lastSentText, rejectedThisRun, lastRejection } = v;
   result = { files: [], tools: [], ...result };
   v.buildOffer = ['chat', 'plan'].includes(result.mode) && result.status === 'idle' && result.buildOffer === true && !v.plan && !v.waitingFor?.length;

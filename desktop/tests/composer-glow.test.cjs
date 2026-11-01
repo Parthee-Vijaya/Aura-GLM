@@ -37,9 +37,11 @@ function fixture() {
     Date: class extends Date { static now() { return 20000; } },
     clearInterval() {}, setInterval: () => 1, elapsedText: ms => `${Math.floor(ms / 1000)} s`,
     anyRunning: () => [...views.values()].some(view => view.running),
-    updateModelSummary() { calls.model++; }, setupControls() {}, showConnectionWarning() {},
+    updateModelSummary() { calls.model++; }, setupControls() {}, showConnectionWarning() {}, updateBadgeClass() {},
     document: { querySelectorAll: () => [] },
-    window: { ChatDisplay: { phase: ChatDisplay.phase, progress: view => ChatDisplay.progress(view, 20000) }, liveWork: { render() { calls.liveWork++; } },
+    window: { ChatDisplay: { phase: ChatDisplay.phase, progress: view => ChatDisplay.progress(view, 20000) },
+      liveWork: { render() { calls.liveWork++; } },
+      RunState: { badgeClass: () => 'run-idle', derive: () => ({ key: 'idle', label: 'Klar', detail: '' }) },
       chats: { render() { calls.sidebar++; }, projects: () => [] }, previewEdit: { available() {} } } };
   $('#work-mode').value = 'plan';
   $('#prompt').value = 'Bevar min kladde og den godkendte plan.';
