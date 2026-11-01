@@ -39,7 +39,13 @@ body.workspace-calm[data-workspace-theme="light"] {
 .workspace-calm .workspace-bar h1 { font-size:13px; font-weight:500; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .workspace-calm .workspace-bar .actions { gap:5px; }
 .workspace-calm .workspace-bar button { font-size:11px; padding:5px 9px; }
-.workspace-calm .work-grid { grid-template-columns:var(--chat-width,380px) 5px minmax(0,1fr); }
+/* DSH-stil: chat er fuld bredde, når panelet er lukket (data-surface="off"). */
+.workspace-calm .work-grid[data-surface="off"] { grid-template-columns: 1fr; }
+.workspace-calm .work-grid[data-surface="off"] #workspace-divider { display: none; }
+.workspace-calm .work-grid[data-surface="off"] #work-surface { display: none; }
+.workspace-calm .work-grid[data-surface="off"] #chat-panel { max-width: 900px; margin: 0 auto; width: 100%; }
+/* Panelet åbnes: normal grid med chat venstre + panel højre. */
+.workspace-calm .work-grid { transition: grid-template-columns var(--aura-transition-duration-slow) var(--aura-ease-in-out); }
 .workspace-calm :is(.chat,.work-panel,.panel-bar,.work-tabs,.preview-toolbar,.code-browser) { background:var(--surface); }
 .workspace-calm .chat .section-title { padding:0 16px; min-height:46px; gap:8px; }
 .workspace-calm #run-status { font-size:10px; font-weight:400; white-space:nowrap; }

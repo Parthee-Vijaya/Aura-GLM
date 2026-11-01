@@ -13,7 +13,9 @@
     const tab = /^tab-([1-5])$/.exec(id);
     if (!tab) return null;
     if (state.overlay) return null;
-    return state.hiddenTab === TABS[tab[1]] ? null : 'tab:' + TABS[tab[1]];
+    // ⌘1-5 åbner panelet, hvis det er lukket — DSH-stil chat-først.
+    if (state.hiddenTab === TABS[tab[1]]) return null;
+    return 'tab:' + TABS[tab[1]];
   }
 
   function apply(decision) {
@@ -36,7 +38,9 @@
     apply(decide(id, {
       running: !document.getElementById('stop')?.hidden,
       overlay: overlayOpen(),
-      hiddenTab: document.getElementById('tab-plan')?.offsetParent === null ? 'plan' : null
+      hiddenTab: document.getElementById('tab-plan')?.offsetParent === null ? 'plan' : null,
+      // Panelet er altid tilgængeligt: ⌘1-5 åbner det, hvis det er lukket.
+      panelClosed: document.querySelector('.work-grid')?.dataset?.surface === 'off'
     }));
   }
 

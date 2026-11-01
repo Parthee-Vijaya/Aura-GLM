@@ -10,8 +10,31 @@
   const clock = at => new Date(at).toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   const duration = ms => !Number.isFinite(ms) || ms < 0 ? '' : ms < 1000 ? 'under 1 s' : elapsedText(ms);
 
+  // ── DSH-stil: arbejdsfladen er et valgfrit højrepanel ──
+  // Lukket panel giver en centreret chat (chat-først). Åbnes med knappen eller ⌘1-5.
+  // Panelet åbner aldrig af sig selv; AI-hændelser opdaterer kun badges.
+  const surfaceKey = 'aura-surface-open';
+  function surfaceOpen(open, { select } = {}) {
+    const grid = document.querySelector('.work-grid');
+    if (!grid) return;
+    grid.dataset.surface = open ? 'on' : 'off';
+    const toggle = document.getElementById('surface-toggle');
+    if (toggle) { toggle.setAttribute('aria-pressed', String(open)); toggle.textContent = open ? '◧ Arbejdsflade' : '◨ Arbejdsflade'; }
+    try { localStorage.setItem(surfaceKey, String(open)); } catch { /* Kunne ikke gemme valget. */ }
+    if (open && select) show(select, { focus: true });
+  }
+  document.getElementById('surface-toggle')?.addEventListener('click', () => {
+    const grid = document.querySelector('.work-grid');
+    surfaceOpen(grid?.dataset.surface !== 'on');
+  });
+  // Genopret brugerens valg ved start (panel åbent som standard).
+  try { if (localStorage.getItem(surfaceKey) === 'false') surfaceOpen(false); else surfaceOpen(true); } catch { surfaceOpen(true); }
+
   function show(name, { focus = false } = {}) {
     if (!tabs.includes(name)) return;
+    // Åbn panelet, hvis en fane vælges mens det er lukket.
+    const grid = document.querySelector('.work-grid');
+    if (grid?.dataset.surface === 'off') surfaceOpen(true, { select: name });
     active = name;
     for (const item of tabs) {
       const selected = item === name;
