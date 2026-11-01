@@ -17,6 +17,7 @@ const { GitHub } = require('./core/github.cjs');
 const { Deployments } = require('./core/deployments.cjs');
 const { Publishing } = require('./core/publishing.cjs');
 const { Preferences } = require('./core/preferences.cjs');
+const { Profile } = require('./core/profile.cjs');
 const { Designs } = require('./core/designs.cjs');
 const projectFiles = require('./core/project-files.cjs');
 const previewEdit = require('./core/preview-edit.cjs');
@@ -230,7 +231,14 @@ handle('project:choose-location', () => exclusive(async () => {
   return projectLocation();
 }));
 handle('project:create', input => exclusive(async () => {
-  const startup = await new Preferences(workbench.store).available({ ...input.startup, tests: input.tests });
+  // New projects start from the profile's standards; the renderer's filled-in choices win.
+  const standards = (await profileStore().get()).profile.projectDefaults;
+  const startup = await new Preferences(workbench.store).available({
+    hosting: input.startup?.hosting || standards.hosting,
+    connectionID: input.startup?.connectionID,
+    designID: input.startup?.designID || standards.designID,
+    tests: input.tests || standards.tests,
+  });
   const parent = chosenParent || defaultProjectParent();
   if (!chosenParent) await fs.mkdir(parent, { recursive: true });
   // Uden funktionen Design og tilgængelighed bruges hverken designpakke, logo eller inspiration fra startsiden.
@@ -246,8 +254,7 @@ handle('project:create', input => exclusive(async () => {
     try { await workbench.withGitPrivacyRoot(created.root, () => workbench.git.startProject(created.root)); }
     catch (error) { versionWarning = `Versioner kunne ikke slås til: ${error.message} Projektet er oprettet, og du kan gemme versioner senere.`; }
   }
-  // De seneste valg er udgangspunktet for næste projekt. Brugeren kan glemme dem under Flere valg.
-  await new Preferences(workbench.store).save(startup.values);
+  // The profile's standards are an explicit choice; creating a project never writes them back.
   const opened = await openProject(created.root);
   if (versionWarning) opened.warnings.push(versionWarning);
   return activate(opened);
@@ -380,6 +387,12 @@ handle('preview:revision', async () => {
 
 handle('preferences:get', () => new Preferences(workbench.store).get());
 handle('preferences:save', input => exclusive(() => new Preferences(workbench.store).save(input)));
+// The profile is app-owned UI state; name and icon never reach prompts, model log, diagnostics or feedback.
+const profileStore = () => new Profile(workbench.store);
+handle('profile:get', () => profileStore().get());
+handle('profile:save', input => exclusive(() => profileStore().save(input)));
+handle('profile:migrate', input => exclusive(() => profileStore().migrate(input)));
+handle('profile:suggest', () => { try { return require('node:os').userInfo().username || ''; } catch { return ''; } });
 handle('designs:clear', () => exclusive(() => { assets = []; return []; }));
 handle('designs:list', () => new Designs(workbench.store).list());
 handle('designs:save', input => exclusive(() => new Designs(workbench.store).save(input, assets)));

@@ -355,7 +355,11 @@ class Workbench {
         // Et indsat token kan også bruges i andre programmer. Fjernelse her tilbagekalder kun Auras egne loginadgange.
         if (connection.account?.authMethod !== 'token') await require('./komplai.cjs').disconnect(connection, this.store.decrypt(connection));
       }
-      await this.store.update(state => { this.assertConnectionIdle(id); state.connections = state.connections.filter(c => c.id !== id); });
+      await this.store.update(state => {
+        this.assertConnectionIdle(id); state.connections = state.connections.filter(c => c.id !== id);
+        // The profile's standard AI dies with its connection; clear it in the same atomic write.
+        if (state.profile?.standardAI?.connectionID === id) state.profile.standardAI = { connectionID: '', modelID: '' };
+      });
       await this.invalidateConnection(id); return this.state();
     } finally { this.connectionRemovals.delete(id); }
   }

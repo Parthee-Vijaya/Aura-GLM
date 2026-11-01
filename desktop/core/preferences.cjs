@@ -15,10 +15,22 @@ class Preferences {
     if (values.designID && !(state.designs || []).some(d => d.id === values.designID)) { values.designID = ''; warnings.push('Den tidligere designpakke findes ikke længere.'); }
     return { values, warnings };
   }
-  async get() { return this.available((await this.store.read()).startupDefaults); }
+  async get() {
+    const state = await this.store.read();
+    // Project standards live in the profile; until it exists, the legacy
+    // startup defaults still answer so nothing is lost before migration.
+    const standards = state.profile && typeof state.profile === 'object' && !Array.isArray(state.profile) ? state.profile.projectDefaults : state.startupDefaults;
+    return this.available(standards);
+  }
   async save(input) {
     const result = await this.available(input);
-    await this.store.update(state => { state.startupDefaults = result.values; });
+    // profile.cjs requires this module for the project-defaults rules; the
+    // require stays inside the method so the modules never load each other.
+    const { blank } = require('./profile.cjs');
+    await this.store.update(state => {
+      if (!state.profile || typeof state.profile !== 'object' || Array.isArray(state.profile)) state.profile = blank();
+      state.profile.projectDefaults = result.values;
+    });
     return result;
   }
 }
