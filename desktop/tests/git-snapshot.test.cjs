@@ -89,3 +89,12 @@ test('beskyttet indhold i arbejdsområdet gør snapshottet utilgiveligt', async 
   await fs.unlink(path.join(project, '.env'));
   assert.ok(await snapshot(project, { directory: private }), 'uden .env igen: snapshottet virker');
 });
+
+test('beskyttede forældremapper gør også snapshottet utilgiveligt', async t => {
+  const { project, private } = await fixture(t);
+  const secrets = path.join(project, 'secrets'); await fs.mkdir(secrets);
+  await fs.writeFile(path.join(secrets, 'data.json'), '{"hemmelighed": 1}');
+  assert.equal(await snapshot(project, { directory: private }), null, 'secrets/data.json: tilbagefald til fillæsning');
+  await fs.rm(secrets, { recursive: true });
+  assert.ok(await snapshot(project, { directory: private }), 'uden secrets-mappen: snapshottet virker igen');
+});

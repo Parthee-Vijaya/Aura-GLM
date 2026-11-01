@@ -25,11 +25,12 @@ async function filterBlock(root) {
 }
 
 // Beskyttet indhold må aldrig indgå i et snapshot: `git add --all` ville ellers gemme fx
-// trackte .env-filer i scratchmappen. Findes én beskyttet fil, bruges fillæsning i stedet.
+// trackte .env-filer i scratchmappen. Hele den relative sti klassificeres — også beskyttede
+// forældremapper som secrets/ og references/. Findes én beskyttet fil, bruges fillæsning i stedet.
 async function protectedContent(root) {
   const protectedPaths = require('./protected-paths.cjs');
   const files = (await git.run(root, ['ls-files', '-z', '--cached', '--others', '--exclude-standard'])).toString().split('\0').filter(Boolean);
-  return files.some(file => protectedPaths.isProtected(path.basename(file)));
+  return files.some(file => protectedPaths.isProtected(file));
 }
 
 // Et øjebliksbillede af arbejdsfilerne. Kaldet med en privat 0700-mappe (fx under appens
