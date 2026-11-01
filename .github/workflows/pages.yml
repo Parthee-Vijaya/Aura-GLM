@@ -30,21 +30,21 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh api repos/ai-alliancen-org/ai-harness > "$RUNNER_TEMP/repository.json"
-          gh api repos/ai-alliancen-org/ai-harness/pages > "$RUNNER_TEMP/pages.json"
+          gh api repos/Parthee-Vijaya/Aura-GLM > "$RUNNER_TEMP/repository.json"
+          gh api repos/Parthee-Vijaya/Aura-GLM/pages > "$RUNNER_TEMP/pages.json"
           node scripts/pages-access.cjs "$RUNNER_TEMP/repository.json" "$RUNNER_TEMP/pages.json"
       - name: Hent faktiske udgivelser og byg siden
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh api --paginate --slurp 'repos/ai-alliancen-org/ai-harness/releases?per_page=100' | jq 'add' > "$RUNNER_TEMP/releases.json"
+          gh api --paginate --slurp 'repos/Parthee-Vijaya/Aura-GLM/releases?per_page=100' | jq 'add' > "$RUNNER_TEMP/releases.json"
           node scripts/build-pages.cjs "$RUNNER_TEMP/releases.json" "$RUNNER_TEMP/repository.json"
       - name: Kontrollér adgang igen før upload
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh api repos/ai-alliancen-org/ai-harness > "$RUNNER_TEMP/repository.json"
-          gh api repos/ai-alliancen-org/ai-harness/pages > "$RUNNER_TEMP/pages.json"
+          gh api repos/Parthee-Vijaya/Aura-GLM > "$RUNNER_TEMP/repository.json"
+          gh api repos/Parthee-Vijaya/Aura-GLM/pages > "$RUNNER_TEMP/pages.json"
           node scripts/pages-access.cjs "$RUNNER_TEMP/repository.json" "$RUNNER_TEMP/pages.json"
       # Downloadpakkernes .gitignore-filer skal med; v4 og nyere udelader ellers filer, der starter med punktum.
       - uses: actions/upload-pages-artifact@v5
@@ -72,8 +72,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh api repos/ai-alliancen-org/ai-harness > "$RUNNER_TEMP/repository.json"
-          gh api repos/ai-alliancen-org/ai-harness/pages > "$RUNNER_TEMP/pages.json"
+          gh api repos/Parthee-Vijaya/Aura-GLM > "$RUNNER_TEMP/repository.json"
+          gh api repos/Parthee-Vijaya/Aura-GLM/pages > "$RUNNER_TEMP/pages.json"
           node scripts/pages-access.cjs "$RUNNER_TEMP/repository.json" "$RUNNER_TEMP/pages.json"
       - uses: actions/configure-pages@v6
       - uses: actions/deploy-pages@v5

@@ -27,8 +27,12 @@ async function verify(resources, target) {
     assert.equal(JSON.parse(asar.extractFile(archive, `node_modules/${name}/package.json`).toString()).version, version, `Forkert pakket version af ${name}`);
   }
   const updateConfig = require('js-yaml').load(await fs.readFile(path.join(resources, 'app-update.yml'), 'utf8'));
-  assert.equal(updateConfig.provider, 'generic');
-  assert.equal(updateConfig.url, require('../core/distribution.cjs').feed);
+  const distribution = require('../core/distribution.cjs');
+  const [owner, repo] = distribution.repository.split('/');
+  assert.equal(updateConfig.provider, 'github');
+  assert.equal(updateConfig.owner, owner);
+  assert.equal(updateConfig.repo, repo);
+  assert.equal(updateConfig.channel, 'beta');
   const names = ['runtime-lock.json', 'main.cjs', 'preload.cjs', ...await files(path.join(root, 'core'), 'core/'), ...await files(path.join(root, 'ui'), 'ui/'), ...await privacyFiles()];
   assert.deepEqual(await fs.readFile(path.join(resources, 'LICENSE')), await fs.readFile(path.join(root, '../LICENSE')), 'Pakken skal bevare bibliotekets licens');
   const profileRoot = path.join(root, '../profiles');

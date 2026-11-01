@@ -11,7 +11,7 @@ const distribution = require('../core/distribution.cjs');
 const { releaseBinaries, assetURL, updateFeeds, validateRelease } = require('../../scripts/release-contract.cjs');
 const { buildUpdateFeeds } = require('../../scripts/build-pages.cjs');
 const version = '0.3.0-beta.1';
-const info = () => ({ version: '0.3.0-beta.2', files: [{ url: RELEASES + 'download/v0.3.0-beta.2/Aura-0.3.0-beta.2-mac-arm64.zip', sha512: createHash('sha512').update('test').digest('base64'), size: 4 }], critical: false, message: '' });
+const info = () => ({ version: '0.3.0-beta.2', files: [{ url: RELEASES + `download/v0.3.0-beta.2/${distribution.artifactPrefix}-0.3.0-beta.2-mac-arm64.zip`, sha512: createHash('sha512').update('test').digest('base64'), size: 4 }], critical: false, message: '' });
 async function fixture(t, options = {}) {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'aura-updates-test-'));
   const store = new Store(directory), updater = new EventEmitter(), events = []; let downloads = 0, installs = 0, checks = 0;

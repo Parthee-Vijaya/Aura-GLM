@@ -91,8 +91,9 @@ async function inspect(directory, { candidate = false } = {}) {
     const file = path.join(directory, name); assert.equal(await peMachine(file), machine, 'Forkert Windows-arkitektur: ' + name);
     binaries[name] = { bytes: (await fs.stat(file)).size, sha256: await sha256(file) };
   }
-  assert.equal(metadata.name, 'aura-desktop'); assert.equal(metadata.productName, 'Aura');
-  assert.equal(update.provider, 'generic'); assert.equal(update.url, 'https://ai-alliancen-org.github.io/ai-harness/updates/'); assert.equal(update.channel, 'beta');
+  const distribution = require('../core/distribution.cjs'); const [owner, repo] = distribution.repository.split('/');
+  assert.equal(metadata.name, 'aura-desktop'); assert.equal(metadata.productName, distribution.displayName);
+  assert.equal(update.provider, 'github'); assert.equal(update.owner, owner); assert.equal(update.repo, repo); assert.equal(update.channel, 'beta');
   const executable = await executableMetadata(path.join(directory, 'Aura.exe'), archive, metadata.version);
   const result = { version: metadata.version, dependencies: metadata.dependencies, target: runtime.target, runtime: runtime.versions, update, binaries, executable };
   if (candidate) {

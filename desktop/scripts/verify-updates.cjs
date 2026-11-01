@@ -6,6 +6,7 @@ const path = require('node:path');
 const os = require('node:os');
 const http = require('node:http');
 const { createHash, randomBytes } = require('node:crypto');
+const distribution = require('../core/distribution.cjs');
 const helpers = require('./ui-test-helpers.cjs');
 (async () => {
   const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'aura-update-ui-')));
@@ -14,7 +15,7 @@ const helpers = require('./ui-test-helpers.cjs');
   let app, page, downloads = 0, corrupt = false;
   // Den tilbudte version udledes af appens egen, så prøven ikke forældes ved en udgivelse.
   const next = require('../package.json').version.replace(/(\d+)$/, (_, n) => Number(n) + 1);
-  const info = { version: next, critical: true, message: 'En rettelse til filadgang er klar.', files: [{ url: `https://github.com/ai-alliancen-org/ai-harness/releases/download/v${next}/Aura-${next}-mac-arm64.zip`, sha512: hash, size: file.length }] };
+  const info = { version: next, critical: true, message: 'En rettelse til filadgang er klar.', files: [{ url: `https://github.com/${distribution.repository}/releases/download/v${next}/${distribution.artifactPrefix}-${next}-mac-arm64.zip`, sha512: hash, size: file.length }] };
   const server = http.createServer(async (req, res) => {
     if (req.url.startsWith('/feed')) { res.setHeader('content-type', 'application/json'); return res.end(JSON.stringify(info)); }
     downloads++; res.setHeader('content-length', file.length);
@@ -47,7 +48,7 @@ const helpers = require('./ui-test-helpers.cjs');
       updater.downloadedUpdateHelper = new DownloadedUpdateHelper(root + '/download-cache');
       session.fromPartition('electron-updater').webRequest.onBeforeRequest((request, callback) => {
         if (request.url.startsWith('https://ai-alliancen-org.github.io/ai-harness/updates/')) return callback({ redirectURL: serverURL + '/feed' });
-        if (request.url.startsWith('https://github.com/ai-alliancen-org/ai-harness/releases/download/')) return callback({ redirectURL: serverURL + '/file' });
+        if (request.url.startsWith(`https://github.com/${distribution.repository}/releases/download/`)) return callback({ redirectURL: serverURL + '/file' });
         callback({ cancel: !request.url.startsWith(serverURL + '/') });
       });
       global.updateTest.enabled = true; global.updateTest.connect(updater); global.updateTest.set({ phase: 'idle' });

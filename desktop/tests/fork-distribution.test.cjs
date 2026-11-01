@@ -17,7 +17,7 @@ test('fork branding preserves the existing packaged profile and keychain', async
   await fs.writeFile(path.join(existing, 'harness/noeglering.json'), '{"navn":"Aura"}\n');
   const options = { appData: root, packaged: true, customUserData: false, userData: path.join(root, 'Aura 1'), sessionData: path.join(root, 'Aura 1') };
   const result = appIdentity(options);
-  assert.equal(DISPLAY_NAME, 'Aura GLM');
+  assert.equal(DISPLAY_NAME, 'Aura Prime');
   assert.equal(result.userData, existing);
   assert.equal(result.sessionData, existing);
   assert.equal(result.keychainName, 'Aura');
@@ -33,10 +33,10 @@ test('fork branding preserves the existing packaged profile and keychain', async
 
 test('fork updates accept only its own versioned artifact and require explicit download/install', async t => {
   const version = '1.0.0-beta.1', next = '1.0.0-beta.2';
-  const info = { version: next, files: [{ url: `${distribution.releases}download/v${next}/Aura-1-${next}-mac-arm64.zip`, size: 4, sha512: createHash('sha512').update('test').digest('base64') }] };
+  const info = { version: next, files: [{ url: `${distribution.releases}download/v${next}/${distribution.artifactPrefix}-${next}-mac-arm64.zip`, size: 4, sha512: createHash('sha512').update('test').digest('base64') }] };
   const options = { ...distribution, version, platform: 'darwin', arch: 'arm64' };
   assert.equal(validateInfo(info, options).version, next);
-  for (const url of [info.files[0].url.replace('Parthee-Vijaya', 'ai-alliancen-org'), info.files[0].url.replace('Aura-1-', 'Aura-'), info.files[0].url.replace('arm64', 'x64')]) {
+  for (const url of [info.files[0].url.replace('Parthee-Vijaya', 'ai-alliancen-org'), info.files[0].url.replace(`${distribution.artifactPrefix}-`, 'Aura-'), info.files[0].url.replace('arm64', 'x64')]) {
     assert.throws(() => validateInfo({ ...info, files: [{ ...info.files[0], url }] }, options));
   }
   const updater = new EventEmitter(); let feed, downloads = 0, installs = 0;

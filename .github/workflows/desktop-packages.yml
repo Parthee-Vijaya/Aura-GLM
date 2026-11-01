@@ -16,19 +16,19 @@ jobs:
             target: darwin-arm64
             command: package:mac
             arch: arm64
-            app: release/mac-arm64/Aura GLM.app
+            app: release/mac-arm64/Aura Prime.app
             resources: release/mac-arm64/Aura GLM.app/Contents/Resources
           - os: macos-15-intel
             target: darwin-x64
             command: package:mac
             arch: x64
-            app: release/mac/Aura GLM.app
+            app: release/mac/Aura Prime.app
             resources: release/mac/Aura GLM.app/Contents/Resources
           - os: windows-latest
             target: win32-x64
             command: package:windows
             arch: x64
-            app: release/win-unpacked/Aura GLM.exe
+            app: release/win-unpacked/Aura.exe
             resources: release/win-unpacked/resources
     runs-on: ${{ matrix.os }}
     defaults:
@@ -55,7 +55,7 @@ jobs:
         run: npm run test:package -- "${{ matrix.app }}"
       - name: Afprøv den pakkede app på Windows
         if: runner.os == 'Windows'
-        run: npm run test:package -- "release/win-unpacked/Aura.exe"
+        run: npm run test:package -- "${{ matrix.app }}"
       - name: Afprøv gendannelse og forbindelsesfejl i pakken
         run: npm run test:recovery
         env:

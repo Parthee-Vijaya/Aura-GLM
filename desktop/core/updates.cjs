@@ -1,10 +1,9 @@
 // Opdateringer bruger en særskilt netforbindelse. Projektfiler og AI-nøgler sendes ikke med.
 const semver = require('semver');
-const FEED = 'https://github.com/Parthee-Vijaya/Aura-GLM/releases/';
-const RELEASES = 'https://github.com/Parthee-Vijaya/Aura-GLM/releases/';
+const distribution = require('./distribution.cjs');
 const interval = 6 * 60 * 60 * 1000;
 function channelFor(version) { return semver.prerelease(version)?.[0] === 'beta' ? 'beta' : 'latest'; }
-function validateInfo(info, { version, platform, arch, releases = RELEASES, artifactPrefix = 'Aura' }) {
+function validateInfo(info, { version, platform, arch, releases = distribution.releases, artifactPrefix = distribution.artifactPrefix }) {
   if (!semver.valid(info?.version) || !/^\d+\.\d+\.\d+(?:-beta\.\d+)?$/.test(info.version) || !semver.gt(info.version, version)) throw new Error('Udgivelsens version er ugyldig.');
   if (channelFor(version) === 'latest' && semver.prerelease(info.version)) throw new Error('En stabil version må ikke hente en beta.');
   const name = `${artifactPrefix}-${info.version}-${platform === 'darwin' ? 'mac' : 'win'}-${arch}.${platform === 'darwin' ? 'zip' : 'exe'}`;
@@ -15,8 +14,8 @@ function validateInfo(info, { version, platform, arch, releases = RELEASES, arti
   return { version: info.version, bytes: info.files[0].size, critical: info.critical === true, message: info.critical ? info.message.trim() : '' };
 }
 class Updates {
-  constructor({ updater, store, version, platform = process.platform, arch = process.arch, enabled = true, feed = FEED, releases = RELEASES, artifactPrefix = 'Aura', emit = () => {}, busy = () => false, prepare = async () => {}, install = () => updater.quitAndInstall(false, true) }) {
-    Object.assign(this, { updater, store, version, platform, arch, feed, releases, artifactPrefix, emit, busy, prepare, install });
+  constructor({ updater, store, version, platform = process.platform, arch = process.arch, enabled = true, repository = distribution.repository, feed = distribution.feed, releases = distribution.releases, artifactPrefix = distribution.artifactPrefix, emit = () => {}, busy = () => false, prepare = async () => {}, install = () => updater.quitAndInstall(false, true) }) {
+    Object.assign(this, { updater, store, version, platform, arch, repository, feed, releases, artifactPrefix, emit, busy, prepare, install });
     this.enabled = enabled && ['darwin', 'win32'].includes(platform) && ['arm64', 'x64'].includes(arch);
     this.state = { phase: this.enabled ? 'idle' : 'unavailable', current: version, channel: channelFor(version), automatic: true, available: null, warning: null, checkedAt: null, error: '', percent: 0 };
     if (!this.enabled) return;
@@ -27,7 +26,8 @@ class Updates {
     updater.autoDownload = false; updater.autoInstallOnAppQuit = false; updater.autoRunAppAfterInstall = true;
     updater.allowPrerelease = this.state.channel === 'beta'; updater.channel = this.state.channel; updater.allowDowngrade = false;
     updater.disableDifferentialDownload = true; updater.disableWebInstaller = true; updater.logger = null;
-    updater.setFeedURL({ provider: 'github', owner: 'Parthee-Vijaya', repo: 'Aura-GLM', channel: this.state.channel, useMultipleRangeRequest: false });
+    const [owner, repo] = this.repository.split('/');
+    updater.setFeedURL({ provider: 'github', owner, repo, channel: this.state.channel, useMultipleRangeRequest: false });
     updater.on('download-progress', progress => {
       if (this.state.phase === 'downloading') this.set({ percent: Math.max(0, Math.min(100, Math.round(progress.percent || 0))), transferred: progress.transferred, bytes: progress.total });
     });
@@ -99,4 +99,4 @@ class Updates {
   }
   close() { clearTimeout(this.startTimer); clearInterval(this.timer); }
 }
-module.exports = { Updates, validateInfo, channelFor, FEED, RELEASES };
+module.exports = { Updates, validateInfo, channelFor, FEED: distribution.feed, RELEASES: distribution.releases };

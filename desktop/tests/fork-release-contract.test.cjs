@@ -6,9 +6,10 @@ const contract = require('../../scripts/release-contract.cjs');
 const { validateInfo } = require('../core/updates.cjs');
 
 const version = '0.4.0-beta.2';
+const prefix = distribution.artifactPrefix;
 const binaries = [
-  `Aura-1-${version}-mac-arm64.dmg`, `Aura-1-${version}-mac-x64.dmg`, `Aura-1-${version}-win-x64.exe`,
-  `Aura-1-${version}-mac-arm64.zip`, `Aura-1-${version}-mac-x64.zip`
+  `${prefix}-${version}-mac-arm64.dmg`, `${prefix}-${version}-mac-x64.dmg`, `${prefix}-${version}-win-x64.exe`,
+  `${prefix}-${version}-mac-arm64.zip`, `${prefix}-${version}-mac-x64.zip`
 ];
 const url = name => `https://github.com/Parthee-Vijaya/Aura-GLM/releases/download/v${version}/${name}`;
 function fixture() {
@@ -49,10 +50,10 @@ test('fork release validates exact files and rejects another repository, prefix 
     const bad = fixture(); mutate(bad);
     assert.throws(() => contract.validateRelease(bad.release, bad.manifest, bad.checksums, version));
   }
-  for (const prefix of ['Aura', 'AI-Harness', 'Other']) {
+  for (const prefix of ['Aura', 'Aura-1', 'AI-Harness', 'Other']) {
     const bad = fixture();
-    for (const file of bad.manifest.files) file.name = file.name.replace('Aura-1-', prefix + '-');
-    for (const asset of bad.release.assets) { asset.name = asset.name.replace('Aura-1-', prefix + '-'); asset.browser_download_url = url(asset.name); }
+    for (const file of bad.manifest.files) file.name = file.name.replace(`${distribution.artifactPrefix}-`, prefix + '-');
+    for (const asset of bad.release.assets) { asset.name = asset.name.replace(`${distribution.artifactPrefix}-`, prefix + '-'); asset.browser_download_url = url(asset.name); }
     bad.checksums = bad.manifest.files.map(file => `${file.sha256}  ${file.name}`).join('\n');
     assert.throws(() => contract.validateRelease(bad.release, bad.manifest, bad.checksums, version), prefix);
   }
@@ -65,6 +66,6 @@ test('generated fork update feeds are accepted by the actual app update validato
   for (const feed of feeds) {
     const target = feed.path.split('/')[2], [platform, arch] = target.split('-');
     assert.equal(validateInfo(feed.info, { ...distribution, version: '0.4.0-beta.1', platform, arch }).version, version);
-    assert.ok(feed.info.files[0].url.startsWith(distribution.releases + `download/v${version}/Aura-1-`));
+    assert.ok(feed.info.files[0].url.startsWith(distribution.releases + `download/v${version}/${distribution.artifactPrefix}-`));
   }
 });
