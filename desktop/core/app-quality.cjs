@@ -266,10 +266,9 @@ function qualityRepairInstruction(report) {
 function createAppQualityInspector({ BrowserWindow, session, directory }) {
   const inspect = async ({ root, signal, privacy }) => {
     if (privacy) return require('../privacy/isolation/offline-renderer.cjs').inspectProtectedApp({ root, signal, directory });
-    const controller = new AbortController(), abort = () => controller.abort();
-    signal?.addEventListener('abort', abort, { once: true });
-    if (signal?.aborted) abort();
-    const timer = setTimeout(abort, LIMITS.milliseconds);
+    // Egen deadline pr. kontroll, adskilt fra brugerens Stop: årsagen kan aflæses præcist i rapporten.
+    const limit = require('./operation-timeout.cjs').deadline({ signal, milliseconds: LIMITS.milliseconds, operation: 'appkontrollen' });
+    const controller = { signal: limit.signal };
     let win, ses, phase = 'snapshot';
     const check = () => { if (controller.signal.aborted) throw Error('quality-stopped'); };
     const guard = promise => new Promise((resolve, reject) => {
@@ -377,9 +376,12 @@ function createAppQualityInspector({ BrowserWindow, session, directory }) {
       await fs.writeFile(path.join(output, 'report.json'), JSON.stringify(result, null, 2), { mode: 0o600 });
       return result;
     } catch (error) {
-      return { status: signal?.aborted ? 'cancelled' : 'unavailable', reason: (controller.signal.aborted ? 'deadline-or-stop-' : 'inspection-unavailable-') + phase, findings: [] };
+      // Tidsgrænse og brugerens Stop er to forskellige årsager og rapporteres som sådan.
+      if (limit.isStopped()) return { status: 'cancelled', reason: 'inspection-stopped-' + phase, findings: [] };
+      if (limit.isTimeout()) return { status: 'unavailable', reason: 'inspection-deadline-' + phase, findings: [] };
+      return { status: 'unavailable', reason: 'inspection-unavailable-' + phase, findings: [] };
     } finally {
-      clearTimeout(timer); signal?.removeEventListener('abort', abort);
+      limit.done();
       if (win && !win.isDestroyed()) win.destroy();
       if (ses) { ses.protocol.unhandle('https'); let cleanupTimer; await Promise.race([ses.clearStorageData().catch(() => {}), new Promise(resolve => { cleanupTimer = setTimeout(resolve, 1000); })]); clearTimeout(cleanupTimer); }
     }
