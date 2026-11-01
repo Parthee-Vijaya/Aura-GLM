@@ -1,0 +1,30 @@
+/* SPDX-License-Identifier: EUPL-1.2 */
+/* Indstillingsdialogen: ét DSH-panel med sektionsnav til venstre og sektionens
+   indhold til højre. Alle farver, kanter og radius kommer fra aura-tokens.css;
+   de fire etablerede dialoger består uændrede og åbnes i rækkefølge — aldrig
+   indlejret i denne dialog. */
+
+#settings-dialog { width: min(780px, 92vw); padding: 0; overflow: hidden; }
+#settings-dialog .dialog-heading { padding: 24px 28px 0; margin-bottom: 0; }
+.settings-layout { display: grid; grid-template-columns: 200px minmax(0, 1fr); min-height: 340px; max-height: calc(88vh - 96px); margin-top: 18px; border-top: 1px solid var(--aura-border-faint); }
+
+/* Sektionsnavnet i sidebar-stil: gennemsigtige knapper, stregikoner og
+   accentkunsthånd ved den aktuelle sektion (aria-current). */
+.settings-nav { padding: 10px; display: grid; gap: 2px; align-content: start; overflow-y: auto; background: var(--aura-bg-sidebar); border-right: 1px solid var(--aura-border); }
+.settings-nav button { display: flex; align-items: center; gap: 10px; text-align: left; padding: 9px 10px; font-weight: 500; border-color: transparent; background: transparent; border-radius: var(--aura-radius-sm); }
+.settings-nav button:hover:not(:disabled) { background: var(--aura-bg-hover); border-color: transparent; }
+.settings-nav button svg { width: 18px; height: 18px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; color: var(--aura-ink-muted); }
+/* The active label keeps AA contrast (ink on the faint tint); the icon and the
+   stronger weight carry the accent, like the calm theme's active rows. */
+.settings-nav button[aria-current="true"] { color: var(--aura-ink); font-weight: 600; background: var(--aura-accent-faint); }
+.settings-nav button[aria-current="true"] svg { color: var(--aura-accent); }
+
+.settings-content { overflow-y: auto; padding: 22px 28px 26px; }
+.settings-content h3 { margin: 0 0 8px; }
+.settings-content .hint { max-width: 46ch; }
+
+@media (max-width: 720px) {
+  .settings-layout { grid-template-columns: 1fr; min-height: 0; }
+  .settings-nav { display: flex; gap: 6px; overflow-x: auto; overflow-y: hidden; border-right: 0; border-bottom: 1px solid var(--aura-border); }
+  .settings-nav button { white-space: nowrap; }
+}

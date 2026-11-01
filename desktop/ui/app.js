@@ -1187,7 +1187,7 @@ $('#create-form').onsubmit = event => {
     await loadModels(refined.selection);
   });
 };
-$('#connections-button').onclick = () => action(async () => { const owner = selectedOwner(), ticket = navigationRequest; if (setupActive && setupStep === 'provider') setupPage('tools'); moveConnectionForm(false); const next = await call('connectionState', undefined, owner); if (ticket !== navigationRequest || owner?.root !== current?.root) return; state = next; renderConnections(); updateProvider(); connectionView('list'); $('#connections-feedback').textContent = ''; $('#connections-dialog').showModal(); });
+function openConnectionsSection() { return action(async () => { const owner = selectedOwner(), ticket = navigationRequest; if (setupActive && setupStep === 'provider') setupPage('tools'); moveConnectionForm(false); const next = await call('connectionState', undefined, owner); if (ticket !== navigationRequest || owner?.root !== current?.root) return; state = next; renderConnections(); updateProvider(); connectionView('list'); $('#connections-feedback').textContent = ''; $('#connections-dialog').showModal(); }); }
 $('#provider-kind').onchange = () => { updateProvider(); };
 $('#connection-form').onsubmit = event => {
   event.preventDefault(); action(async () => {
@@ -1513,13 +1513,13 @@ async function saveFeatures(id, value) {
   if (id === 'planlaegning' && !features.effective.planlaegning && current && !running && !activePlan && $('#work-mode').value === 'plan') { $('#work-mode').value = defaultMode(); updateWorkMode(); saveChatDraft(); }
   $('#features-feedback').textContent = `Gemt for ${featureScope === 'projekt' ? 'dette projekt' : 'alle projekter'}. Det gælder fra din næste besked.`;
 }
-$('#features-button').onclick = () => action(async () => {
+function openFeaturesSection() { return action(async () => {
   const owner = selectedOwner(), ticket = navigationRequest, features = await call('featuresGet', undefined, owner);
   if (ticket !== navigationRequest || owner?.root !== current?.root) return;
   featuresOwner = owner; state.features = features;
   featureScope = current && Object.keys(state.features.exceptions).length ? 'projekt' : 'alle';
   $('#features-feedback').textContent = ''; renderFeatures(); $('#features-dialog').showModal();
-});
+}); }
 for (const radio of document.querySelectorAll('[name="features-scope"]')) radio.onchange = () => { featureScope = radio.value; $('#features-feedback').textContent = ''; renderFeatures(); };
 
 function hostingLabel(value) { return ({ vercel: 'Vercel', azure: 'Azure', own: 'Egen løsning' })[value] || 'Beslut senere'; }
@@ -2415,7 +2415,7 @@ for (const id of ['settings-menu', 'project-menu', 'preview-menu']) {
   document.getElementById(id).addEventListener('click', event => { if (event.target.closest('button') && (id !== 'preview-menu' || event.target.closest('#attach-preview'))) document.getElementById(id).hidePopover(); });
 }
 
-$('#support-button').onclick = () => action(async () => {
+function openSupportSection() { return action(async () => {
   $('#support-dialog').showModal(); $('#support-status').textContent = '';
   const report = await call('supportReport');
   $('#support-version').textContent = `Aura Prime ${report.app} · ${report.system === 'darwin' ? 'macOS' : report.system === 'win32' ? 'Windows' : report.system} · ${report.arkitektur}`;
@@ -2424,9 +2424,26 @@ $('#support-button').onclick = () => action(async () => {
   const person = await call('supportContact');
   $('#support-contact').textContent = person ? `Send feedback til ${person.name}, ${person.email}.` : 'Send feedback til den, der inviterede dig.';
   $('#support-feedback').hidden = !person; if (person) $('#support-feedback').textContent = `Skriv en e-mail til ${person.name}`;
-});
+}); }
 $('#support-save').onclick = () => action(async () => { $('#support-status').textContent = await call('supportSave') ? 'Rapporten er gemt på din computer. Du vælger selv, om du vil dele den.' : 'Rapporten blev ikke gemt.'; });
 $('#support-feedback').onclick = () => action(() => call('supportFeedback'));
+
+// Settings has one entry point. settings.js owns the dialog and the section
+// route; this block wires the six popover entries and registers the four
+// established dialogs' own open functions, so no dialog ever nests in another.
+function openSettings(section) { return window.SettingsDialog?.open(section); }
+window.SettingsDialog?.register({ connections: openConnectionsSection, features: openFeaturesSection, support: openSupportSection });
+$('#settings-profile-button').onclick = () => openSettings('profile');
+$('#settings-appearance-button').onclick = () => openSettings('appearance');
+$('#connections-button').onclick = () => openSettings('connections');
+$('#features-button').onclick = () => openSettings('features');
+$('#support-button').onclick = () => openSettings('support');
+// updates.js runs after app.js and binds #updates-button itself; adopt its open
+// function as the section's opener, then route the button through openSettings.
+document.addEventListener('DOMContentLoaded', () => {
+  window.SettingsDialog?.register({ updates: $('#updates-button').onclick });
+  $('#updates-button').onclick = () => openSettings('updates');
+});
 
 // Udgiv forbinder komplai Run fra sin egen dialog; appens funktioner følger med.
 window.addEventListener('harness:komplai-connected', () => action(async () => { state = await call('connectionState'); renderConnections(); applyFeatures(); }));
