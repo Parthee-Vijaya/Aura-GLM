@@ -12,7 +12,7 @@ body.workspace-calm[data-workspace-theme="light"] {
   --ink:#24272d; --muted:#5c626c; --accent:#357e70; --accent-hover:#296455;
   --surface:#fafafb; --canvas:#fff; --line:#d9dde2; --tint:#e8eaed;
   --calm-side:#f1f2f4; --calm-raised:#fff; --calm-hover:#e8eaed; --calm-stage:#eef0f2;
-  --calm-faint:#727985; --calm-focus:#668cbf; --calm-button:#292d33; --calm-button-text:#fff;
+  --calm-faint:#6b7080; --calm-focus:#668cbf; --calm-button:#292d33; --calm-button-text:#fff;
   --calm-warning:#775823; --calm-warning-bg:#faf5e9; --calm-error:#963636; --calm-error-bg:#fff1ef;
   --calm-veil:rgba(236,239,242,.85); color-scheme:light;
 }
