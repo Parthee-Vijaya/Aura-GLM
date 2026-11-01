@@ -59,7 +59,7 @@ body.workspace-calm[data-workspace-theme="light"] {
 .workspace-calm .composer:focus-within { border-color:var(--calm-focus); box-shadow:none; }
 .workspace-calm .composer textarea { min-height:53px; max-height:150px; background:transparent; color:var(--ink); padding:5px; border:0; }
 .workspace-calm .composer-toolbar { gap:5px; flex-wrap:nowrap; }
-.workspace-calm #model-chip { flex:1; overflow:hidden; min-width:0; font-size:11px; padding:5px 2px; gap:6px; white-space:nowrap; }
+.workspace-calm #model-chip { flex:0 1 auto; overflow:hidden; min-width:0; font-size:11px; padding:5px 2px; gap:6px; white-space:nowrap; }
 .workspace-calm #model-chip span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .workspace-calm #model-chip .provider-brand-icon { width:17px; height:17px; flex:none; }
 .workspace-calm #composer-mode { padding:5px 3px; font-size:10px; flex-shrink:0; }
@@ -68,7 +68,6 @@ body.workspace-calm[data-workspace-theme="light"] {
 .workspace-calm #send::after { content:'↑'; font-size:18px; }
 .workspace-calm #stop { background:var(--calm-button); color:var(--calm-button-text); border-color:transparent; }
 .workspace-calm #stop::after { content:'□'; font-size:19px; }
-.workspace-calm #chat-form:has(#stop:not([hidden])) #send { display:none; }
 .workspace-calm #composer-shortcut { font-size:9px; margin:2px 5px 6px; color:var(--calm-faint); }
 .workspace-calm :is(.composer-status,#context-status) { font-size:10px; color:var(--calm-faint); padding-inline:15px; }
 .workspace-calm .composer-status { flex-wrap:wrap; gap:3px 10px; padding-bottom:9px; }

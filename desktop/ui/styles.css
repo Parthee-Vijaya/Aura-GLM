@@ -171,14 +171,15 @@ html:has(#workspace:not([hidden])), body:has(#workspace:not([hidden])) { height:
 
 .composer-toolbar { display: flex; align-items: center; gap: 6px; }
 #send, #stop { flex-shrink: 0; white-space: nowrap; }
-/* Model, udbyder og indsats skal altid kunne læses helt; teksten må bryde over to linjer i et smalt panel. */
-#model-chip { margin-right: auto; flex: 1 1 auto; min-width: 0; text-align: left; white-space: normal; line-height: 1.4; font-weight: 450; font-size: 11px; color: var(--muted); }
+/* Model, udbyder og indsats står ved siden af Send; flex-rummet ligger mellem arbejdsmåden og
+   modellen, så navnet afkortes med ellipsis i stedet for at skubbe Send ud. */
+#model-chip { margin-left: auto; flex: 0 1 auto; min-width: 0; text-align: left; white-space: normal; line-height: 1.4; font-weight: 450; font-size: 11px; color: var(--muted); }
 /* F03: lokale, dekorative udbydermærker; modelnavn og modtagertekst bevares. */
 #model-chip, .model-choice .provider-brand-heading { display: flex; align-items: center; gap: 7px; }
 .provider-brand-icon { flex: 0 0 18px; width: 18px; height: 18px; object-fit: contain; }
 .provider-brand-label, .provider-brand-heading > span { min-width: 0; overflow-wrap: anywhere; }
 .model-choice .provider-brand-heading > span { margin-top: 0; font-size: inherit; color: inherit; }
-#composer-mode { font-size: 10px; margin: 0; }
+#composer-mode { font-size: 11px; margin: 0; white-space: nowrap; padding: 4px; }
 .composer button { padding: 6px 13px; font-size: 12px; }
 #draft-status { font-size: 10px; margin: 0 20px 8px; color: var(--muted); min-height: 15px; }
 #resume-notice { margin: 0 0 16px; border-radius: 8px; padding: 12px 18px; background: #edf4ff; font-size: 12px; border-bottom: 1px solid var(--line); }
@@ -972,7 +973,6 @@ kbd { font: 600 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
 .live-draft summary { cursor: pointer; overflow-wrap: anywhere; font-size: 12px; }
 .live-draft pre { max-height: 210px; overflow: auto; white-space: pre; background: var(--canvas); padding: 12px; font-size: 12px; line-height: 1.5; }
 #preview-empty .live-peek { max-width: 34em; color: var(--accent); }
-#composer-mode { white-space: nowrap; font-size: 11px; padding: 4px; }
 #agent-follow { margin-left: auto; font-size: 11px; }
 
 /* komplai-login: ét kort, der viser forbindelsen mellem Aura og komplai.

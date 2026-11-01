@@ -916,7 +916,7 @@ function applyRunning() {
   $('#preview-empty').classList.toggle('is-working', busy);
   // En samtale, der ikke arbejder, viser sin egen seneste status, fx Stoppet eller Fejl. Linjen over skrivefeltet siger, hvis en anden arbejder.
   if (!running) $('#run-status').textContent = view.runLabel || 'Klar';
-  $('#send').disabled = projectLoading || running || Boolean(view.submitting); $('#stop').hidden = !running;
+  $('#send').disabled = projectLoading || running || Boolean(view.submitting); $('#send').hidden = running; $('#stop').hidden = !running;
   $('#composer-wait').hidden = true;
   const mainRunning = window.chats?.projects().find(item => item.root === current?.root)?.chats?.some(chat => chat.running && !chat.isolated);
   $('#merge-copy').disabled = projectLoading || running || Boolean(mainRunning);

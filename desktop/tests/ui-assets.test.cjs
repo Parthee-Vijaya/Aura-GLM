@@ -31,3 +31,11 @@ test('manifestet afviser ukendte filer og stikveje uden at røre mønstrene', ()
   assert.equal(allowed('provider-corti.svg'), true);
   for (const name of ['../main.cjs', 'main.cjs', '', 'app.js.js', 'node_modules/x.js', 'app%2Ejs']) assert.equal(allowed(name), false, name);
 });
+
+test('composer-bundbjælkens knaprækkefølge er låst: plus, arbejdsmåde, model, Stop/Send', async () => {
+  const index = await fs.readFile(path.join(ui, 'index.html'), 'utf8');
+  const start = index.indexOf('<div class="composer-toolbar">');
+  const toolbar = index.slice(start, index.indexOf('</form>', start));
+  const order = [...toolbar.matchAll(/id="(chat-materials-plus|composer-mode|model-chip|stop|send)"/g)].map(match => match[1]);
+  assert.deepEqual(order, ['chat-materials-plus', 'composer-mode', 'model-chip', 'stop', 'send']);
+});
