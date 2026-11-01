@@ -11,9 +11,15 @@
     const bytes = Number.isSafeInteger(entry.request?.bytes) ? kb(entry.request.bytes) : 'ukendt størrelse';
     const parts = Number.isSafeInteger(entry.request?.messages) ? entry.request.messages : null;
     const sources = [...new Set((entry.items || []).map(item => sourceNames[item.source] || item.source || 'besked'))];
+    // Gatens kontrolstatus: hvad Privacy Gate besluttede om dette kald — eller at det ikke kontrolleredes.
+    const gate = entry.gate && typeof entry.gate === 'object'
+      ? entry.gate.decision === 'rewrite' ? 'kontrolleret og omskrevet' : entry.gate.decision === 'allow' ? 'kontrolleret' : 'kontrolstatus ukendt'
+      : 'ikke kontrolleret';
+    const approvedBy = entry.gate?.approvedBy === 'user' ? ' · godkendt af dig' : entry.gate?.approvedBy === 'policy' ? ' · automatisk tilladt' : '';
+    const classification = entry.gate?.classification && entry.gate.classification !== 'public' ? ` · ${entry.gate.classification}` : '';
     return {
       time: at, label: `${model}${parts !== null ? ` · ${parts} ${parts === 1 ? 'beskeddel' : 'beskeddele'}` : ''} · ${bytes}`,
-      detail: sources.length ? `Kilder: ${sources.join(', ')}` : 'Ingen dele registreret'
+      detail: `${sources.length ? `Kilder: ${sources.join(', ')}` : 'Ingen dele registreret'} · ${gate}${approvedBy}${classification}`
     };
   }
 
