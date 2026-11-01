@@ -52,8 +52,12 @@ function totals(files) {
 }
 
 function taskSummary(task) {
-  const files = sorted((task.files || []).map(entry => entry.binary ? { file: entry.file, change: !entry.beforeExists ? 'ny' : !entry.afterExists ? 'slettet' : 'ændret', added: 0, removed: 0, by: taskAttribution(task, entry.file), binary: true, secret: false } : fileSummary(entry.file, value(entry.before), value(entry.after), taskAttribution(task, entry.file))));
-  return { id: task.id, kind: task.kind || 'ai', undone: Boolean(task.undone), label: task.label, mode: task.mode, status: task.status, startedAt: task.startedAt, endedAt: task.endedAt, commands: task.commands || 0, skipped: task.skipped || 0, unavailable: Boolean(task.unavailable), checkpoint: task.checkpoint ? { status: task.checkpoint.status, message: task.checkpoint.message } : null, files, totals: totals(files) };
+  // Omdøbninger fra tur-snapshots (gammel → ny sti) følger med pr. fil; intet røres i selve diffen.
+  const rename = entry => ({ ...(entry.renamedFrom ? { renamedFrom: entry.renamedFrom } : {}), ...(entry.renamedTo ? { renamedTo: entry.renamedTo } : {}) });
+  const files = sorted((task.files || []).map(entry => (entry.binary
+    ? { file: entry.file, change: !entry.beforeExists ? 'ny' : !entry.afterExists ? 'slettet' : 'ændret', added: 0, removed: 0, by: taskAttribution(task, entry.file), binary: true, secret: false, ...rename(entry) }
+    : { ...fileSummary(entry.file, value(entry.before), value(entry.after), taskAttribution(task, entry.file)), ...rename(entry) })));
+  return { id: task.id, kind: task.kind || 'ai', undone: Boolean(task.undone), label: task.label, mode: task.mode, status: task.status, startedAt: task.startedAt, endedAt: task.endedAt, commands: task.commands || 0, skipped: task.skipped || 0, unavailable: Boolean(task.unavailable), checkpoint: task.checkpoint ? { status: task.checkpoint.status, message: task.checkpoint.message } : null, renames: Array.isArray(task.renames) ? task.renames.slice(0, 50) : [], files, totals: totals(files) };
 }
 // baseline og current er øjebliksbilleder fra changes.capture: { files: Map(sti → tekst), skipped }.
 function sessionSummary(baseline, current, tasks) {

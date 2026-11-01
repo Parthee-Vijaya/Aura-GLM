@@ -140,7 +140,9 @@
       const stats = node('span', undefined, 'file-stats');
       stats.append(node('span', `+${file.added}`, 'add'), ' ', node('span', `−${file.removed}`, 'del'), visuallyHidden(` ${plural(file.added, 'linje', 'linjer')} tilføjet, ${file.removed} fjernet`));
       const by = node('span', byText[file.by], `by-tag by-${file.by}`); by.title = help(file.by);
-      button.append(node('span', changeText[file.change], `change-tag change-${file.change}`), node('span', file.file, 'file-path'), stats, by);
+      // Omdøbte filer vises som 'gammel sti → ny sti', så flytningen kan ses i listen.
+      button.append(node('span', changeText[file.change], `change-tag change-${file.change}`), node('span', window.DiffReview.renameLabel(file), 'file-path'), stats, by);
+      button.title = file.renamedFrom ? `Omdøbt fra ${file.renamedFrom}` : '';
       button.onclick = () => action(() => showDiff(file.file, { focus: true }));
       item.append(button); return item;
     }));
@@ -164,25 +166,12 @@
     if (detail.approximate) notes.push('Filen er ændret så meget, at den vises som fjernet og skrevet på ny.');
     if (detail.truncated) notes.push('Ændringen er lang. Kun begyndelsen vises; se hele filen under Kode.');
     $('#changes-diff-note').textContent = notes.join(' ');
-    const rows = [];
-    const gap = count => { const row = node('div', `⋯ ${plural(count, 'uændret linje', 'uændrede linjer')}`, 'diff-gap'); return row; };
-    for (const hunk of detail.hunks) {
-      if (hunk.skippedBefore > 0) rows.push(gap(hunk.skippedBefore));
-      for (const line of hunk.lines) {
-        const kind = line.type === '+' ? 'add' : line.type === '-' ? 'del' : 'same';
-        const row = node('div', undefined, `diff-row ${kind}`);
-        const sign = node('span', line.type === ' ' ? '' : line.type === '+' ? '+' : '−', 'sign'); sign.setAttribute('aria-hidden', 'true');
-        const text = node('span', undefined, 'code');
-        if (kind !== 'same') text.append(visuallyHidden(kind === 'add' ? 'Tilføjet: ' : 'Fjernet: '));
-        text.append(line.text || ' ');
-        row.append(node('span', line.old ?? '', 'ln'), node('span', line.new ?? '', 'ln'), sign, text);
-        rows.push(row);
-      }
-    }
-    if (detail.hunks.length && detail.skippedAfter > 0) rows.push(gap(detail.skippedAfter));
+    const rows = window.DiffReview.rows(detail, { node, visuallyHidden, plural });
     $('#changes-diff-lines').replaceChildren(...rows); $('#changes-diff-lines').hidden = !rows.length;
     if (focus) $('#changes-diff-title').focus();
   }
+  // n og p flytter mellem filerne i Ændringer, når panelet har fokus. Aldrig globalt.
+  window.DiffReview.bindNavigation($('#panel-changes'), $('#changes-files'));
   $('#changes-source').onchange = () => { changes.source = $('#changes-source').value; changes.file = ''; action(renderChanges); };
   $('#changes-refresh').onclick = () => action(() => changes.mode === 'versions' ? (versionSource() ? window.versions.open(changes.source.slice(8)) : window.versions.load()) : loadChanges());
   $('#changes-notice-show').onclick = () => action(() => loadChanges({ source: changes.latest }));
