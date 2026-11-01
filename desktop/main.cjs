@@ -1044,11 +1044,19 @@ app.whenReady().then(async () => {
       let frame = null; try { frame = webFrameMain.fromId(processId, routingId); } catch { return; }
       if (frame && fromPreview(frame.url)) injectPicker().catch(() => {});
     });
-    // ⌘K (Ctrl+K på Windows og Linux) åbner kommandopaletten, også når fokus står i forhåndsvisningen.
+    // ⌘K og de nye genveje fanges i hovedprocessen, så de også virker, mens fokus står i previewet.
     window.webContents.on('before-input-event', (event, input) => {
       const modifier = process.platform === 'darwin' ? input.meta && !input.control : input.control && !input.meta;
-      if (input.type !== 'keyDown' || input.isAutoRepeat || String(input.key).toLowerCase() !== 'k' || !modifier || input.alt || input.shift) return;
-      event.preventDefault(); sendEvent({ type: 'palette.toggle' });
+      if (input.type !== 'keyDown' || input.isAutoRepeat || !modifier || input.alt) return;
+      const key = String(input.key).toLowerCase();
+      if (key === 'k' && !input.shift) { event.preventDefault(); sendEvent({ type: 'palette.toggle' }); return; }
+      const shortcut = key === '.' && !input.shift ? 'stop'
+        : ['1', '2', '3', '4', '5'].includes(key) && !input.shift ? `tab-${key}`
+        : key === 'l' && !input.shift ? 'composer'
+        : key === 'm' && input.shift ? 'model'
+        : null;
+      if (!shortcut) return;
+      event.preventDefault(); sendEvent({ type: 'shortcut', id: shortcut });
     });
     window.webContents.on('will-navigate', event => event.preventDefault());
     window.webContents.on('will-attach-webview', event => event.preventDefault());
