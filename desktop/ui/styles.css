@@ -181,6 +181,12 @@ html:has(#workspace:not([hidden])), body:has(#workspace:not([hidden])) { height:
 .model-choice .provider-brand-heading > span { margin-top: 0; font-size: inherit; color: inherit; }
 #composer-mode { font-size: 11px; margin: 0; white-space: nowrap; padding: 4px; }
 .composer button { padding: 6px 13px; font-size: 12px; }
+/* "Aura har set": Auras egne målinger på resultatkortet — facts, ikke modellens tekst. */
+.run-evidence { margin: 10px 0; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; }
+.run-evidence h4 { margin: 0 0 6px; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.run-evidence dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 0; font-size: 12px; }
+.run-evidence dt { color: var(--muted); }
+.run-evidence dd { margin: 0; }
 #draft-status { font-size: 10px; margin: 0 20px 8px; color: var(--muted); min-height: 15px; }
 #resume-notice { margin: 0 0 16px; border-radius: 8px; padding: 12px 18px; background: #edf4ff; font-size: 12px; border-bottom: 1px solid var(--line); }
 #resume-notice p { margin-bottom: 6px; }

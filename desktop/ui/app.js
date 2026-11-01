@@ -1950,6 +1950,7 @@ function completedResult(result, v = view) {
   box.append(node('p', 'RESULTAT', 'result-eyebrow'), node('h3', 'Prøv resultatet', 'result-receipt'), node('p', 'AI’ens arbejde er afsluttet. Afprøv selv resultatet, før du bygger videre.', 'result-description'));
   const hint = node('p', 'Prøv de vigtigste handlinger og det, du bad om.', 'result-test-hint');
   box.append(hint);
+  const evidence = evidenceBlock(result, v); if (evidence) box.append(evidence);
   const actions = node('div', undefined, 'review-actions');
   const preview = reviewButton('Afprøv resultatet', () => {
     if (v !== view || actions.parentNode !== box || !current?.previewURL) return;
@@ -1981,6 +1982,19 @@ function completedResult(result, v = view) {
 }
 
 const targetLine = (box, v = view) => { if (v.lastTarget) box.append(node('p', `Mål: ${v.lastTarget}`, 'review-target')); };
+// "Aura har set": Auras egne målinger af turen — adskilt fra modellens egen tekst, som står i
+// samtalen. Kun facts fra evidensblokken, bygget med tekstknuder; ukendt forbliver ukendt.
+function evidenceBlock(result, v = view) {
+  const e = result?.evidence; if (!e) return null;
+  const section = node('section', undefined, 'run-evidence'), list = node('dl');
+  const row = (term, fact) => { list.append(node('dt', term), node('dd', fact)); };
+  row('Filer', e.files.count === null ? 'Kunne ikke måles' : e.files.count === 0 ? 'Ingen ændringer målt' : `${e.files.count === 1 ? '1 fil' : `${e.files.count} filer`} ændret · læst på disken`);
+  if (e.commands.run !== null) row('Kommandoer', `${e.commands.run === 1 ? '1 kommando' : `${e.commands.run} kommandoer`} kørt${e.commands.failed ? ` · ${e.commands.failed} med fejl` : ''}${e.commands.unknown ? ' · udfald delvist ukendt' : ''}`);
+  row('Lokal kontrol', e.quality.ran ? (e.quality.findings === null ? 'gennemført' : e.quality.findings === 0 ? 'ingen fund' : `${e.quality.findings} fund`) : 'ikke kørt');
+  if (v?.repeat) row('Observation', `Samme handling gentaget ${v.repeat.count}. gang i træk`);
+  section.append(node('h4', 'Aura har set'), list);
+  return section;
+}
 function renderRunReview(result, v = view) {
   const box = v.review; box.replaceChildren(); box.classList.toggle('result-complete', false); box.classList.toggle('is-reviewed', false);
   // Resultatkortet er afslutningsbeviset for turen; statusafledningen (run-state) læser det.
@@ -1998,6 +2012,7 @@ function renderRunReview(result, v = view) {
     const info = window.ApprovalView.failureText(result.failure?.kind); show();
     box.append(node('h3', info.title), node('p', `${info.text} Din besked står klar i skrivefeltet.`));
     if (result.files.length) { box.append(node('p', filesText(result.files.length, 'AI’en nåede at ændre'))); reviewFiles(box, result); }
+    const failureEvidence = evidenceBlock(result, v); if (failureEvidence) box.append(failureEvidence);
     const actions = node('div', undefined, 'review-actions');
     const kind = state?.connections.find(c => c.id === $('#connection-select').value)?.kind;
     const pages = { anthropic: 'billing', mistral: 'billing', corti: 'console', alexandra: 'billing', openrouter: 'start', zen: 'start' };
@@ -2016,6 +2031,7 @@ function renderRunReview(result, v = view) {
     box.append(node('h3', 'Du stoppede opgaven')); targetLine(box, v); box.append(node('p', result.files.length ? filesText(result.files.length, 'AI’en nåede at ændre') : 'AI’en nåede ikke at ændre noget. Din besked står klar i skrivefeltet, så du kan sende den igen.'));
     reviewFiles(box, result);
     if (saved) box.append(node('p', 'Det, den nåede, er gemt som en version, så du kan fortryde det.', 'hint'));
+    const stoppedEvidence = evidenceBlock(result, v); if (stoppedEvidence) box.append(stoppedEvidence);
     const actions = node('div', undefined, 'review-actions');
     if (result.files.length) actions.append(resultActions(result, v));
     actions.append(reviewButton('Send igen', retrySend, !saved));
