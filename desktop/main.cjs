@@ -26,7 +26,7 @@ const { OwnTools } = require('./core/own-tools.cjs');
 const { buildAboutInfo } = require('./core/about-info.cjs');
 const runtimeLock = require('./runtime-lock.json');
 
-// Appen hedder Aura 1. Datamappen og navnet i nøgleringen bevares fra før navneskiftet; se core/app-identity.cjs.
+// Appen hedder Aura Prime. Datamappen og navnet i nøgleringen bevares fra før navneskiftene; se core/app-identity.cjs.
 const { appIdentity, rememberKeychain, projectParent, DISPLAY_NAME } = require('./core/app-identity.cjs');
 const identity = appIdentity({ appData: app.getPath('appData'), packaged: app.isPackaged, customUserData: app.commandLine.hasSwitch('user-data-dir'), userData: app.getPath('userData'), sessionData: app.getPath('sessionData') });
 const appIcon = path.join(__dirname, 'ui/aura-icon.png');

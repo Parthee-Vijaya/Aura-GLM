@@ -1,12 +1,12 @@
-# Versioner og oprydning i Aura 1
+# Versioner og oprydning i Aura Prime
 
-Brugerens instruktion af 25. oktober 2026 gælder for denne fork, `Parthee-Vijaya/ai-harness`.
+Brugerens instruktion af 25. oktober 2026 gælder for denne fork, `Parthee-Vijaya/Aura-GLM` (oprindeligt `Parthee-Vijaya/ai-harness`).
 
 ## Navn og version
 
-Appen hedder **Aura 1**. Vis versionsmærket tydeligt under navnet ved logoet i sidepanelet, opsætningen og introduktionen. Mærket henter den kørende apps version fra native metadata; versionsnumre må ikke hardcodes i UI.
+Appen hedder **Aura Prime** (navneskift fra Aura GLM/Aura 1 vedtaget 1. november 2026; navnet har én kilde i `desktop/core/distribution.cjs`, og `tests/app-name.test.cjs` afviser gamle navne i UI). Vis versionsmærket tydeligt under navnet ved logoet i sidepanelet, opsætningen og introduktionen. Mærket henter den kørende apps version fra native metadata; versionsnumre må ikke hardcodes i UI.
 
-Ny versionsrække: **Aura 1 beta 0.3.1**. Releases har kun produktnavn, beta og versionsnummer i titlen. Beskriv ændringerne i beskrivelsen.
+Ny versionsrække: **Aura 1 beta 0.3.1** (2026-10-25); fra 2026-11-01 hedder produktet Aura Prime, og rækken fortsætter som **Aura Prime 1.0.0-beta.N**. Releases har kun produktnavn, beta og versionsnummer i titlen. Beskriv ændringerne i beskrivelsen.
 
 Agenten vælger fremover næste version efter den samlede ændring:
 
@@ -18,9 +18,9 @@ Agenten vælger fremover næste version efter den samlede ændring:
 
 Brug største relevante kategori, hvis en release indeholder flere ændringer. Bevar beta-betegnelsen, indtil brugeren har godkendt en stabil udgivelse. En større version alene betyder ikke, at produktet er stabilt.
 
-Den tekniske SemVer er `0.3.1-beta.1`, tagget `v0.3.1-beta.1`, og den synlige titel **Aura 1 beta 0.3.1**. Hver udgivelse får et nyt tal i hovedversionen; tidligere tag/pakke må ikke overskrives. Brug `npm version <version>-beta.1 --no-git-tag-version --ignore-scripts` i `desktop` til at opdatere både package.json og package-lock.json. Kontrollér runtimeversion, UI, pakke, tag, feed, README og noter før publicering.
+Den tekniske SemVer er `0.3.1-beta.1`, tagget `v0.3.1-beta.1`, og den synlige titel **Aura 1 beta 0.3.1** (i dag: Aura Prime). Hver udgivelse får et nyt tal i hovedversionen; tidligere tag/pakke må ikke overskrives. Brug `npm version <version>-beta.1 --no-git-tag-version --ignore-scripts` i `desktop` til at opdatere både package.json og package-lock.json. Kontrollér runtimeversion, UI, pakke, tag, feed, README og noter før publicering.
 
-Hvis det ønskede tekniske tag allerede findes fra den gamle versionsrække, bruges næste ledige beta-iteration, eksempelvis `1.0.0-beta.2`. Den synlige version er stadig **Aura 1 beta 1.0.0**. Flyt aldrig et eksisterende tag.
+Hvis det ønskede tekniske tag allerede findes fra den gamle versionsrække, bruges næste ledige beta-iteration, eksempelvis `1.0.0-beta.2`. Den synlige version er stadig på formen **Aura Prime 1.0.0-beta.N**. Flyt aldrig et eksisterende tag.
 
 Nulstillingen fra beta 1/1.1 (`1.0.0-beta.1`/`1.0.1-beta.1`) til `0.3.1-beta.1` kræver **manuel installation**. Den eksisterende beskyttelse mod automatisk nedgradering bevares. Efter manuel installation kan opdateringer følge den nye stigende række normalt. Bundle-, profil- og nøgleringsidentiteter bevares.
 

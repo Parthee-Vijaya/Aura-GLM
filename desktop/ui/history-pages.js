@@ -1,4 +1,4 @@
-// Display-only pages of records already retained by Aura GLM. No model/IPC calls.
+// Display-only pages of records already retained by Aura Prime. No model/IPC calls.
 (function(root) {
   const PAGE_SIZE = 20, PAGE_CHARACTERS = 60000;
   function takePrevious(remaining) {

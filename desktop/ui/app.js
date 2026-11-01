@@ -183,7 +183,7 @@ function moveConnectionForm(guided) {
 function setupPage(step) {
   ++setupGeneration;
   setupStep = step;
-  const headings = { choice: ['Hvordan vil du forbinde din AI?', 'Vælg den adgang, du allerede har.'], provider: ['Hvem er din udbyder?', 'Har du ikke en nøgle, viser vi dig, hvordan du får en.'], local: ['AI på din computer', 'Vi leder efter modeller, du allerede har i Ollama.'], saved: ['Din AI-forbindelse', 'Kontrollér forbindelsen, før du fortsætter.'], tools: ['Avanceret opsætning', 'Forbindelser og lokale værktøjer.'], features: ['Hvad skal Aura GLM hjælpe med?', 'Du kan altid ændre det under Indstillinger › Funktioner.'], 'features-pick': ['Hvad vil du slå til?', 'Vælg de funktioner, du vil bruge. Resten kan du slå til senere under Indstillinger › Funktioner.'] };
+  const headings = { choice: ['Hvordan vil du forbinde din AI?', 'Vælg den adgang, du allerede har.'], provider: ['Hvem er din udbyder?', 'Har du ikke en nøgle, viser vi dig, hvordan du får en.'], local: ['AI på din computer', 'Vi leder efter modeller, du allerede har i Ollama.'], saved: ['Din AI-forbindelse', 'Kontrollér forbindelsen, før du fortsætter.'], tools: ['Avanceret opsætning', 'Forbindelser og lokale værktøjer.'], features: ['Hvad skal Aura Prime hjælpe med?', 'Du kan altid ændre det under Indstillinger › Funktioner.'], 'features-pick': ['Hvad vil du slå til?', 'Vælg de funktioner, du vil bruge. Resten kan du slå til senere under Indstillinger › Funktioner.'] };
   $('#setup-title').textContent = headings[step][0]; $('#setup-subtitle').textContent = headings[step][1];
   $('#setup-eyebrow').textContent = step.startsWith('features') ? 'FUNKTIONER' : 'DIN AI';
   for (const el of document.querySelectorAll('[data-setup-step]')) el.hidden = el.dataset.setupStep !== step;
@@ -306,9 +306,9 @@ $('#setup-remove-all').onclick = () => action(async () => {
   const dialog = make('dialog', '', 'connection-removal-dialog'); dialog.id = 'remove-all-dialog';
   const heading = make('h2', 'Fjern alle gemte nøgler?'); heading.id = 'remove-all-title'; dialog.setAttribute('aria-labelledby', 'remove-all-title');
   const description = make('p');
-  description.append(make('strong', removeAll.length === 1 ? '1 forbindelse' : `${removeAll.length} forbindelser`), document.createTextNode(' og deres gemte adgangsoplysninger fjernes fra Aura GLM. Dine projekter og samtaler bevares.'));
+  description.append(make('strong', removeAll.length === 1 ? '1 forbindelse' : `${removeAll.length} forbindelser`), document.createTextNode(' og deres gemte adgangsoplysninger fjernes fra Aura Prime. Dine projekter og samtaler bevares.'));
   const names = make('ul', '', 'hint'); for (const connection of removeAll) names.append(make('li', connection.name || 'Forbindelse'));
-  const details = make('p', 'API-nøgler tilbagekaldes ikke hos udbyderne. De kan stadig bruges i andre programmer, og du kan altid tilføje dem igen i Aura GLM.', 'hint');
+  const details = make('p', 'API-nøgler tilbagekaldes ikke hos udbyderne. De kan stadig bruges i andre programmer, og du kan altid tilføje dem igen i Aura Prime.', 'hint');
   const status = make('p', '', 'connection-removal-status hint'); status.setAttribute('role', 'status'); status.hidden = true;
   const buttons = make('div', '', 'dialog-actions');
   const cancel = make('button', 'Annuller'); cancel.type = 'button'; cancel.dataset.action = 'cancel'; cancel.autofocus = true;
@@ -580,9 +580,9 @@ function renderConnectionList() {
     const isRetired = retired.some(item => item.id === connection.id);
     text.append(node('strong', connection.name), node('small', isRetired ? 'komplai · tidligere AI-forbindelse' : state.definitions[connection.kind]?.name || connection.kind));
     if (isRetired) {
-      const remove = node('button', connection.account?.authMethod === 'token' ? 'Fjern fra Aura GLM' : 'Log ud og fjern', 'text-button danger');
+      const remove = node('button', connection.account?.authMethod === 'token' ? 'Fjern fra Aura Prime' : 'Log ud og fjern', 'text-button danger');
       remove.type = 'button'; remove.setAttribute('aria-label', `${remove.textContent}: ${connection.name}`);
-      remove.title = connection.account?.authMethod === 'token' ? 'Fjerner det gemte token fra Aura GLM. Tokenet kan stadig bruges i andre programmer.' : 'Tilbagekalder den gamle AI-adgang og fjerner forbindelsen. komplai Run bevares.';
+      remove.title = connection.account?.authMethod === 'token' ? 'Fjerner det gemte token fra Aura Prime. Tokenet kan stadig bruges i andre programmer.' : 'Tilbagekalder den gamle AI-adgang og fjerner forbindelsen. komplai Run bevares.';
       remove.onclick = () => action(async () => { remove.disabled = true; try { await removeSavedConnection(connection.id, { fromList: true }); $('#connections-search').focus(); } finally { remove.disabled = false; } });
       row.append(text, remove); return row;
     }
@@ -745,7 +745,7 @@ function renderKeyGuide(kind) {
 function updateProvider() {
   clearConnectionReceipt();
   const definition = state?.definitions[$('#provider-kind').value]; if (!definition) return;
-  const help = { openai: 'Brug en OpenAI API-nøgle. Den afregnes separat fra dit ChatGPT-abonnement.', azure: 'Brug API-nøglen og deployment-navnet fra din Azure OpenAI- eller Foundry-ressource.', corti: 'Du skal bruge en nøgle fra Corti Models i et projekt i EU, EU-S eller Frankrig. Appen skifter aldrig automatisk til USA eller en anden model.', alexandra: 'Du skal bruge en API-nøgle fra Alexandra AI Platform. Appen bruger kun platformens egen adresse i Danmark. Adgangen til den enkelte model styres af din organisation.', mistral: 'Du skal bruge en API-nøgle fra Mistral.', anthropic: 'Du skal bruge en API-nøgle fra Anthropic. Et Claude Pro- eller Max-abonnement kan ikke bruges her.', openrouter: 'Brug din OpenRouter-nøgle. Du vælger selv model og den udbyder, der modtager dine data. Gratis modeller er markeret i listen.', zen: 'Brug en nøgle fra OpenCode Zen. Zens gratis modeller virker ikke i Aura GLM, fordi Zen kun giver gratis adgang fra OpenCodes egne programmer. Zens modeller kører i USA.', ollama: 'Forbind til en Ollama-server, som allerede kører. Kontrollér adressen nedenfor; appen installerer ikke modeller.', compatible: 'Brug adressen fra din organisation eller egen modelserver. Serveren kan køre lokalt eller på jeres netværk.' };
+  const help = { openai: 'Brug en OpenAI API-nøgle. Den afregnes separat fra dit ChatGPT-abonnement.', azure: 'Brug API-nøglen og deployment-navnet fra din Azure OpenAI- eller Foundry-ressource.', corti: 'Du skal bruge en nøgle fra Corti Models i et projekt i EU, EU-S eller Frankrig. Appen skifter aldrig automatisk til USA eller en anden model.', alexandra: 'Du skal bruge en API-nøgle fra Alexandra AI Platform. Appen bruger kun platformens egen adresse i Danmark. Adgangen til den enkelte model styres af din organisation.', mistral: 'Du skal bruge en API-nøgle fra Mistral.', anthropic: 'Du skal bruge en API-nøgle fra Anthropic. Et Claude Pro- eller Max-abonnement kan ikke bruges her.', openrouter: 'Brug din OpenRouter-nøgle. Du vælger selv model og den udbyder, der modtager dine data. Gratis modeller er markeret i listen.', zen: 'Brug en nøgle fra OpenCode Zen. Zens gratis modeller virker ikke i Aura Prime, fordi Zen kun giver gratis adgang fra OpenCodes egne programmer. Zens modeller kører i USA.', ollama: 'Forbind til en Ollama-server, som allerede kører. Kontrollér adressen nedenfor; appen installerer ikke modeller.', compatible: 'Brug adressen fra din organisation eller egen modelserver. Serveren kan køre lokalt eller på jeres netværk.' };
   $('#provider-info').dataset.info = help[$('#provider-kind').value]; renderKeyGuide($('#provider-kind').value);
   $('.key-guide').hidden = ['ollama', 'compatible'].includes($('#provider-kind').value);
   const isAzure = $('#provider-kind').value === 'azure';
@@ -902,7 +902,7 @@ function setRunning(value, status, v = view) {
   if (value && !v.running) { v.runStartedAt = Date.now(); v.lastSignalAt = v.runStartedAt; v.receivedChars = 0; v.modelProgress = null; v.todos = []; }
   if (!value) v.waitingFor = [];
   v.running = value; v.runLabel = status;
-  if (value) v.statusDetail = status.startsWith('Starter') ? 'Aura GLM starter AI’en …' : $('#work-mode').value === 'plan' ? 'Venter på modellens forslag …' : 'Venter på modellen …';
+  if (value) v.statusDetail = status.startsWith('Starter') ? 'Aura Prime starter AI’en …' : $('#work-mode').value === 'plan' ? 'Venter på modellens forslag …' : 'Venter på modellen …';
   if (v === view) { running = value; $('#run-status').textContent = status; updateModelSummary(); }
   applyRunning(); window.chats?.render();
   if (!anyRunning() && recovery) { const reason = recovery; recovery = ''; showConnectionWarning(reason); }
@@ -1238,7 +1238,7 @@ function updateModelSummary() {
   $('#model-summary').textContent = model.value ? pentModelNavn(model.value, model.selectedOptions[0]?.textContent) : 'Vælg din AI';
   const brand = view.running && view.activeModelSummary ? view.activeModelBrand : { kind: connection?.kind, modelID: model.value };
   window.ProviderBrand.decorate($('#model-chip'), { ...brand, label: view.running && view.activeModelSummary ? view.activeModelSummary : label });
-  $('#model-chip').title = chosen ? `Du har valgt ${chosen} indsats i denne samtale. Klik for at skifte model eller indsats.` : effort ? `${effort[0].toUpperCase()}${effort.slice(1)} indsats er udbyderens standard for modellen. Klik for at skifte model.` : connection?.kind === 'mistral' ? 'Aura GLM sender ikke et valg af indsats. Mistrals standard gælder; niveauet er ikke verificeret. Klik for at skifte model eller forbindelse.' : 'Klik for at skifte model eller forbindelse.';
+  $('#model-chip').title = chosen ? `Du har valgt ${chosen} indsats i denne samtale. Klik for at skifte model eller indsats.` : effort ? `${effort[0].toUpperCase()}${effort.slice(1)} indsats er udbyderens standard for modellen. Klik for at skifte model.` : connection?.kind === 'mistral' ? 'Aura Prime sender ikke et valg af indsats. Mistrals standard gælder; niveauet er ikke verificeret. Klik for at skifte model eller forbindelse.' : 'Klik for at skifte model eller forbindelse.';
   renderContextUsage();
   $('#connection-status').textContent = model.value ? (state?.connections.find(c => c.id === $('#connection-select').value)?.name || 'Valgt forbindelse') + ' · ' + model.value : 'Ingen model valgt';
   syncOnboardingVisuals();
@@ -1845,7 +1845,7 @@ function renderShortlist() {
   }
   // Modellen øverst er udbyderens eget udgangspunkt, ikke appens anbefaling. Det står synligt; resten ligger bag ⓘ.
   const hint = node('p', !picks.length ? 'Ingen forslag fra din forbindelse. Se alle modeller nedenfor.' : defaultID ? 'Den første er udbyderens eget udgangspunkt.' : 'Et udvalg fra din forbindelse.', 'hint');
-  if (picks.length) hint.append(info('modellerne', `${curated ? 'Aura GLM anbefaler ingen model. ' : ''}Du ser pris og modtager, før noget sendes.`));
+  if (picks.length) hint.append(info('modellerne', `${curated ? 'Aura Prime anbefaler ingen model. ' : ''}Du ser pris og modtager, før noget sendes.`));
   $('#model-shortlist').append(hint);
   markChosenModel();
 }
@@ -2249,7 +2249,7 @@ for (const id of ['settings-menu', 'project-menu', 'preview-menu']) {
 $('#support-button').onclick = () => action(async () => {
   $('#support-dialog').showModal(); $('#support-status').textContent = '';
   const report = await call('supportReport');
-  $('#support-version').textContent = `Aura GLM ${report.app} · ${report.system === 'darwin' ? 'macOS' : report.system === 'win32' ? 'Windows' : report.system} · ${report.arkitektur}`;
+  $('#support-version').textContent = `Aura Prime ${report.app} · ${report.system === 'darwin' ? 'macOS' : report.system === 'win32' ? 'Windows' : report.system} · ${report.arkitektur}`;
   $('#support-report').textContent = JSON.stringify(report, null, 2);
   // Adressen står synligt, så den kan kopieres, hvis computeren ikke har et e-mailprogram.
   const person = await call('supportContact');

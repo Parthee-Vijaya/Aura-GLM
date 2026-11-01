@@ -1,6 +1,10 @@
-# Aura 1 beta 0.5.0
+# Aura Prime
 
-Dette er **Parthee-Vijayas fork af Aura Harness**. Udgaven samler OpenCode 2, Privacy Gate, designhjælp og de godkendte forbedringer af samtale og arbejdsområde. Onboarding B, øvrige funktioner, planer og godkendelser bevares. Bidrag til AI Alliancens original håndteres i særskilte PR’er.
+Dette er **Parthee-Vijayas fork af Aura Harness** (repo: `Parthee-Vijaya/Aura-GLM`), videreført under navnet **Aura Prime** fra 1. november 2026. Udgaven samler OpenCode 2, Privacy Gate, designhjælp og de godkendte forbedringer af samtale og arbejdsområde. Onboarding B, øvrige funktioner, planer og godkendelser bevares. Bidrag til AI Alliancens original håndteres i særskilte PR'er.
+
+**Status 1. november 2026:** Produktet hedder nu Aura Prime; navnet har én kilde i `desktop/core/distribution.cjs`, og `desktop/tests/app-name.test.cjs` afviser gamle navne i UI. Seneste udgivne pakke er Aura GLM `1.0.0-beta.15`; Aura Prime `1.0.0-beta.16` er under udvikling og endnu ikke pakket. Appen er ad hoc-signeret og ikke Apple-notariseret. Bemærk: skiftet af artefaktnavn (`Aura-1-` → `Aura-Prime-`) betyder, at eksisterende beta.15-installationer skal geninstallere manuelt ved næste udgivelse; Parthee har accepteret dette.
+
+*Det følgende er den historiske beskrivelse fra Aura 1 beta 0.5.0 (26. oktober 2026); downloadlinks og testtal afspejler ikke den aktuelle version.*
 
 **Testbeta af 26. oktober 2026** til macOS på Apple Silicon. Teknisk version: `0.5.0-beta.4`. 2.051 kildeprøver og 20 native coreprøver af den faktiske pakke består. Efter nøgleringsgodkendelsen består også alle valgte native pakke-/brugerfladeforløb på denne Mac. Se [omfang, før/efter og begrænsninger](docs/feedback/2026-10-26-package-followup.md). Appen er ad hoc-signeret og ikke Apple-notariseret. GitHub CI er ikke kørt for denne udgivelse.
 

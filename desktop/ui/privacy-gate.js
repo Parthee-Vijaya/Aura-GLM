@@ -76,7 +76,7 @@
     const values = previous || settingsInput(snapshot?.settings), locked = snapshot?.rulesLocked === true, qualified = snapshot?.capabilities?.hybrid === true && snapshot?.capabilities?.isolation === true;
     settingsDialog.replaceChildren(heading(settingsDialog, t('Arbejdsform og datakontrol', 'Work mode and data control'), () => closeDialog(settingsDialog)));
     settingsDialog.append(make('p', t('Modelvalg og datatilladelser er to forskellige valg. Planer og værktøjsgodkendelser gælder fortsat.', 'Model choice and data permissions are separate choices. Plans and tool approvals still apply.'), 'privacy-lead'));
-    const limitation = make('p', qualified ? t('Lokal og ekstern behandling holdes adskilt. Hver deling kontrolleres efter de gældende dataregler.', 'Local and external processing stay separate. Every sharing is checked against the current data rules.') : t('Fra version 1 og fremover kontrollerer Aura GLM alle modelkald og delinger.', 'From version 1 and onwards Aura GLM controls all model calls and sharing.'), 'privacy-scope');
+    const limitation = make('p', qualified ? t('Lokal og ekstern behandling holdes adskilt. Hver deling kontrolleres efter de gældende dataregler.', 'Local and external processing stay separate. Every sharing is checked against the current data rules.') : t('Fra version 1 og fremover kontrollerer Aura Prime alle modelkald og delinger.', 'From version 1 and onwards Aura Prime controls all model calls and sharing.'), 'privacy-scope');
     settingsDialog.append(limitation);
     const scopeSelect = make('select'); scopeSelect.id = 'privacy-scope';
     const state = api.read();
@@ -257,7 +257,7 @@
     if (!reviewing) return;
     const review = reviewing, allowed = allowedDecisions(review), expired = allowed.length === 0;
     sharingDialog.replaceChildren(heading(sharingDialog, t('Gennemgå denne deling', 'Review this sharing')));
-    sharingDialog.append(make('p', t('Aura GLM vil sende følgende kontrollerede modelkald. Godkendelsen gælder kun dette indhold, denne modtager og dette formål.', 'Aura GLM will send the following checked model call. Approval applies only to this content, recipient and purpose.'), 'privacy-lead'));
+    sharingDialog.append(make('p', t('Aura Prime vil sende følgende kontrollerede modelkald. Godkendelsen gælder kun dette indhold, denne modtager og dette formål.', 'Aura Prime will send the following checked model call. Approval applies only to this content, recipient and purpose.'), 'privacy-lead'));
     const details = make('dl', undefined, 'privacy-review-meta');
     const recipient = review.destination?.name || review.destination?.label || (typeof review.recipient === 'string' ? review.recipient : review.recipient?.label || review.recipient?.name || '');
     const fields = [[t('Modtager', 'Recipient'), recipient], [t('Model', 'Model'), textValue(review.destination?.model) || textValue(review.model)], [t('Formål', 'Purpose'), textValue(review.purpose)], [t('Regelversion', 'Policy version'), textValue(review.policyVersion)]];

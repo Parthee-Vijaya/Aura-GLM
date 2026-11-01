@@ -1,5 +1,5 @@
-// En Promte-app i forhåndsvisningen beder siden omkring den om forbindelse (init). Aura GLM svarer som Promte:
-// appen får sine indstillinger, og dens kald sendes gennem Aura GLM til den koblede Promte-app.
+// En Promte-app i forhåndsvisningen beder siden omkring den om forbindelse (init). Aura Prime svarer som Promte:
+// appen får sine indstillinger, og dens kald sendes gennem Aura Prime til den koblede Promte-app.
 // Kun den aktive forhåndsvisnings vindue må bruge det valgte projekts forbindelse.
 (() => {
   const $ = selector => document.querySelector(selector);
@@ -21,7 +21,7 @@
     if (!value.connected) {
       show('Log ind med Promte for at afprøve appen', async () => {
         if (!active(frame, owner)) return;
-        show('Godkend Aura GLM i browseren …');
+        show('Godkend Aura Prime i browseren …');
         const login = await window.harness.promtePreviewLogin(undefined, owner);
         if (!active(frame, owner)) return;
         if (!login.ok) throw Error(login.error);
@@ -32,7 +32,7 @@
       });
       return null;
     }
-    // Aura GLM opretter først en app i Promte, når brugeren vælger det.
+    // Aura Prime opretter først en app i Promte, når brugeren vælger det.
     if (!value.settings) {
       show(`Opret appen ${value.name} i Promte`, async () => {
         if (!active(frame, owner)) return;

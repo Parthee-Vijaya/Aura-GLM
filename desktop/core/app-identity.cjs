@@ -1,7 +1,7 @@
 const path = require('node:path');
 const fs = require('node:fs');
 
-// Appen hedder Aura 1. Visningsnavnet ændrer ikke eksisterende data- eller nøgleringsidentitet.
+// Appen hedder Aura Prime. Visningsnavnet ændrer ikke eksisterende data- eller nøgleringsidentitet.
 const DISPLAY_NAME = require('./distribution.cjs').displayName;
 const STORAGE_NAME = 'Aura';
 const LEGACY_NAME = 'AI Harness';
