@@ -195,3 +195,23 @@ Dialogerne kan rulle ved større tekst; gennemgang og resultat får synligt tast
 - **Tastatur**: ⌘1-5 skifter faner (skjult Plan giver ingen handling), ⌘. stopper den kørende opgave, ⌘⇧M åbner modelvælgeren og ⌘L fokuserer skrivefeltet. Genvejene virker også med fokus i forhåndsvisningen; åbne dialoger og popovers spærrer navigation, men ikke Stop og paletten. Tekstkomposition (IME) og gentagelser røres ikke.
 - **Sendt til AI**: Aktivitet har en sammenfoldelig sektion, 'Sendt til AI', der pr. kald viser klokkeslæt, modtager, antal beskeddele, samlet størrelse og kilder — fra den lokale journal skrevet ved transportgrænsen. Indhold og nøgler gemmes og vises aldrig. Det er en læsevisning: intet kan sendes eller godkendes derfra.
 - **Genindlæsning**: efter et renderer-nedbrud genopbygges status fra hovedprocessens sandhed, og ventende godkendelser og spørgsmål hentes igen og vises som almindelige kort. Intet sendes på ny, intet godkendes automatisk, og YOLO aktiveres ikke igen.
+
+## DSH-stil · 1. november 2026 (seneste)
+
+Aura Prime følger DeepSeek Harness' visuelle sprog (MIT, design-platform.css) som sin primære designretning. Tokens har én kilde i `ui/aura-tokens.css`.
+
+- **Farver:** Hvid baggrund, off-white sidebar rgb(249,250,251). Accent er DSH-blå rgb(65,118,230); blå bruges kun til valgt tilstand, links, aktivitet og markering — ikke til primærknapper.
+- **Primærknapper:** Næsten sorte (lyst) / næsten hvide (mørkt). DSH-stil.
+- **Kanter:** Alpha-baserede rgba(0,0,0,0.04-0.16); ingen faste hex-kanter.
+- **Radius:** 4/8/12/16/20/28px skala. Composer: 28px panel-radius. Bobler: 20px. Kort: 16px.
+- **Hjørner:** superellipse(1.5) bag @supports for bløde squircles.
+- **Beskeder:** Brugerbobler højrestillet, maks. 75% bredde, neutral fyldfarve. Assistentens svar er ren prosa i fuld kontrast — ikke dæmpet.
+- **Composer:** Centreret kort med maks. 800px bredde, blød skygge, diskret kant. Ikke en fast bundbjælke.
+- **Samtalebredde:** Maks. 800px centreret (DSH bruger 920px).
+- **Arbejdsflade:** Valgfrit højrepanel. Lukket = chat-først med centreret fuldbredde-samtale. Åbnes med knap eller ⌘1-5. Panelet åbner aldrig automatisk.
+- **Onboarding B:** Samme tokens. Montserrat til brandnavn, sans-serif til indhold (Georgia er fjernet). Kort med radius 16-20, blå valgt-ring. Hero-overskrift: 28-44px, vægt 500, letter-spacing -1px.
+- **Tom-tilstand:** Centreret hero med projektbeskrivelse og composer.
+- **Bevægelse:** DSH's kurve cubic-bezier(0.4,0,0.2,1) ved 100/200/300ms. Reduceret bevægelse gælder fortsat.
+- **Skrift:** Systemfont til indhold. Montserrat (SIL OFL) kun til brandnavnet. Kodefont: SF Mono/JetBrains Mono/Fira Code.
+
+**Bevares uændret:** Auras navn, logo, datamappe, nøglering, appId, CLI-identitet, fem arbejdsfladers funktionalitet, Privacy Gate-dialoger, YOLO-reglen, onboarding B's struktur og alle godkendelsesforløb.
