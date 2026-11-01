@@ -38,3 +38,15 @@ test('ending a run without a tool result stops its indicator without inventing c
   }
   assert.equal(activityEntry({ kind: 'tool', status: 'completed' }, { finished: true }).completed, true);
 });
+
+test('udfaldsandheden kommer fra kontrakten; exit 0 efter fejlstatistik tæller stadig som fejlet', () => {
+  const failed = activityEntry({ kind: 'tool', tool: 'bash', status: 'completed', outcomeFailed: true });
+  assert.equal(failed.status, 'error'); assert.match(failed.title, /kunne ikke gennemføres/);
+  const ok = activityEntry({ kind: 'tool', tool: 'bash', status: 'completed', outcomeFailed: false });
+  assert.equal(ok.status, 'completed'); assert.equal(ok.completed, true);
+  // Uden kontraktfelt er exitkoden tilbagefaldet (ældre poster).
+  assert.equal(activityEntry({ kind: 'tool', tool: 'bash', status: 'completed', exit: 1 }).status, 'error');
+  assert.equal(activityEntry({ kind: 'tool', tool: 'bash', status: 'completed', exit: 0 }).completed, true);
+  // outcomeFailed vinder over exitkoden, hvis de strider.
+  assert.equal(activityEntry({ kind: 'tool', tool: 'bash', status: 'completed', exit: 0, outcomeFailed: true }).status, 'error');
+});

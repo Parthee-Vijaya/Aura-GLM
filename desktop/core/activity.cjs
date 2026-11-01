@@ -54,7 +54,10 @@ function toolEntry(part, root) {
     if (Number.isInteger(metadata.exit)) entry.exit = metadata.exit;
     // Struktureret udfald til Aktivitet og resultatkort. OpenCode 2.1.4 giver exitkoden; timeout og
     // brugerens Stop kendes ikke pr. kald her og forbliver ukendt frem for opdigtede fakta.
-    entry.outcome = require('./run-contract.cjs').outcome({ exitCode: Number.isInteger(metadata.exit) ? metadata.exit : null });
+    const contract = require('./run-contract.cjs');
+    entry.outcome = contract.outcome({ exitCode: Number.isInteger(metadata.exit) ? metadata.exit : null });
+    entry.outcomeText = contract.describeOutcome(entry.outcome);
+    entry.outcomeFailed = !contract.succeeded(entry.outcome);
   }
   if (state.status === 'error' && state.error) entry.error = cleanOutput(String(state.error)).slice(0, 800);
   return entry;

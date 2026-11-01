@@ -884,7 +884,7 @@ function renderStatus() {
   // Lyskanten følger kun den aktive samtale; ventende valg står stille.
   $('#chat-form').dataset.metalState = v.running ? (waiting ? 'waiting' : 'working') : 'idle';
   $('#agent-activity').classList.toggle('is-idle', !v.running); $('#agent-activity').classList.toggle('is-waiting', waiting);
-  $('#agent-activity-text').textContent = waiting ? `Venter på dig: ${v.waitingFor[0].title}${v.waitingFor.length > 1 ? ` Og ${v.waitingFor.length - 1} mere.` : ''}` : window.ChatDisplay.phase(v) || v.statusDetail;
+  $('#agent-activity-text').textContent = waiting ? `Venter på dig: ${v.waitingFor[0].title}${v.waitingFor.length > 1 ? ` Og ${v.waitingFor.length - 1} mere.` : ''}` : `${window.ChatDisplay.phase(v) || v.statusDetail}${v.repeat ? ` · Gentager samme handling (${v.repeat.count}. gang)` : ''}`;
   $('#agent-activity-jump').hidden = !waiting; $('#agent-follow').hidden = waiting;
   window.liveWork?.render();
   window.previewWorking?.render();
@@ -897,7 +897,7 @@ function renderStatus() {
 }
 $('#agent-activity-jump').onclick = () => { const item = view.waitingFor[0]; if (!item?.element?.isConnected) return; item.element.scrollIntoView({ block: 'nearest' }); item.element.querySelector('button, textarea, input')?.focus(); };
 function setRunning(value, status, v = view) {
-  if (value && !v.running) { v.runStartedAt = Date.now(); v.lastSignalAt = v.runStartedAt; v.receivedChars = 0; v.modelProgress = null; v.todos = []; v.lastReview = null; }
+  if (value && !v.running) { v.runStartedAt = Date.now(); v.lastSignalAt = v.runStartedAt; v.receivedChars = 0; v.modelProgress = null; v.todos = []; v.lastReview = null; v.repeat = null; }
   if (!value) v.waitingFor = [];
   v.running = value; v.runLabel = status;
   // Skærmlæseren holder sig fra den løbende genopbygning under arbejdet; svaret annonceres,
@@ -992,6 +992,9 @@ window.harness.onEvent(event => {
   if (event.type === 'conversation.permission') { v.conversationPermission = { active: event.active === true }; if (active) window.ConversationPermission?.sync(); return; }
   if (v.running && ['message.part.updated', 'message.part.delta', 'permission.asked', 'question.asked', 'permission.replied', 'question.replied', 'usage'].includes(event.type)) v.lastSignalAt = Date.now();
   if (event.type === 'run.todos') { v.todos = event.todos; if (active) renderStatus(); return; }
+  // Løkkesignal: en observation, ikke en fejlkonklusion. Vises i statuslinjen, mens turen kører,
+  // og gemmes på viewet til resultatkortet. Ny tur rydder den.
+  if (event.type === 'run.repeat') { v.repeat = { tool: event.tool, count: event.count, level: event.level, label: event.label, at: Date.now() }; if (active) { renderStatus(); updateBadgeClass(); } window.chats?.render(); return; }
   if (event.type === 'files.written') { if (v.modelProgress) v.modelProgress.draft = null; if (active) renderStatus(); }
   if (event.type === 'model.progress') { if (v.running) { v.modelProgress = event.progress; v.lastSignalAt = event.progress.lastContentAt; if (active) renderStatus(); } return; }
   if (event.type === 'message.part.delta' && typeof p.delta === 'string' && v.partTypes.get(p.partID) === 'text') { v.receivedChars += p.delta.length; if (active) renderStatus(); }

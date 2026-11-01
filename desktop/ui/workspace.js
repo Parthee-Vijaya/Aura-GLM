@@ -403,7 +403,8 @@
       else if (entry.ended && entry.started && entry.status !== 'auto') parts.push(`efter ${duration(entry.ended - entry.started)}`);
     } else if (entry.kind === 'tool' && entry.started && entry.ended) parts.push(duration(entry.ended - entry.started));
     else if (entry.kind === 'run' && entry.started && entry.ended) parts.push(`efter ${duration(entry.ended - entry.started)}`);
-    if (Number.isInteger(entry.exit)) parts.push(`afslutningskode ${entry.exit}`);
+    if (entry.outcomeText) parts.push(entry.outcomeText.toLowerCase());
+    else if (Number.isInteger(entry.exit)) parts.push(`afslutningskode ${entry.exit}`);
     return parts.filter(Boolean).join(' · ');
   }
   function renderEntry(entry) {
@@ -434,7 +435,8 @@
           target.append(resolved ? referenceButton(resolved, document.createTextNode(entry.target)) : entry.target);
           fold.append(target);
         }
-        if (Number.isInteger(entry.exit)) fold.append(node('p', `Afslutningskode: ${entry.exit}`));
+        if (entry.outcomeText) fold.append(node('p', `Udfald: ${entry.outcomeText}`));
+        else if (Number.isInteger(entry.exit)) fold.append(node('p', `Afslutningskode: ${entry.exit}`));
         if (entry.error) fold.append(node('pre', entry.error));
       }
       if (entry.output) fold.append(node('pre', entry.output));
