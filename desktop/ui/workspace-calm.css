@@ -1,20 +1,16 @@
-/* Approved calm workspace, scoped away from onboarding B and project creation. */
+/* Approved calm workspace, scoped away from onboarding B and project creation.
+   Alle farver kommer fra aura-tokens.css (DSH-stil); her arves de. */
 body.workspace-calm {
-  --ink:#e8eaed; --muted:#adb1b9; --accent:#8ac5ba; --accent-hover:#a3d4ca;
-  --surface:#191b1e; --canvas:#16181b; --line:#303339; --tint:#292e32;
-  --calm-side:#202226; --calm-raised:#24272b; --calm-hover:#2b2e33; --calm-stage:#111315;
-  --calm-faint:#979da7; --calm-focus:#9ab5dd; --calm-button:#e4e7eb; --calm-button-text:#24272b;
-  --calm-warning:#e6c181; --calm-warning-bg:#302b22; --calm-error:#f1a5a5; --calm-error-bg:#352627;
-  --calm-veil:rgba(18,21,24,.77); --soft:var(--calm-raised); --sidebar:208px;
-  color:var(--ink); background:var(--canvas); color-scheme:dark;
+  --ink: var(--aura-ink); --muted: var(--aura-ink-muted); --accent: var(--aura-accent); --accent-hover: var(--aura-accent-hover);
+  --surface: var(--aura-bg-raised); --canvas: var(--aura-bg); --line: var(--aura-border); --tint: var(--aura-bg-tint);
+  --calm-side: var(--aura-bg-sidebar); --calm-raised: var(--aura-bg-raised); --calm-hover: var(--aura-bg-hover); --calm-stage: var(--aura-bg-sidebar);
+  --calm-faint: var(--aura-ink-faint); --calm-focus: var(--aura-accent); --calm-button: var(--aura-button-primary); --calm-button-text: var(--aura-button-primary-text);
+  --calm-warning: var(--aura-warning); --calm-warning-bg: var(--aura-warning-subtle); --calm-error: var(--aura-error); --calm-error-bg: var(--aura-error-subtle);
+  --calm-veil: rgba(0,0,0,.55); --soft: var(--aura-bg-raised); --sidebar:208px;
+  color: var(--ink); background: var(--canvas); color-scheme: dark;
 }
 body.workspace-calm[data-workspace-theme="light"] {
-  --ink:#24272d; --muted:#5c626c; --accent:#357e70; --accent-hover:#296455;
-  --surface:#fafafb; --canvas:#fff; --line:#d9dde2; --tint:#e8eaed;
-  --calm-side:#f1f2f4; --calm-raised:#fff; --calm-hover:#e8eaed; --calm-stage:#eef0f2;
-  --calm-faint:#6b7080; --calm-focus:#668cbf; --calm-button:#292d33; --calm-button-text:#fff;
-  --calm-warning:#775823; --calm-warning-bg:#faf5e9; --calm-error:#963636; --calm-error-bg:#fff1ef;
-  --calm-veil:rgba(236,239,242,.85); color-scheme:light;
+  color-scheme: light;
 }
 .workspace-calm :where(button,input,textarea,select,dialog,[popover]) { color:var(--ink); border-color:var(--line); }
 .workspace-calm :where(dialog,[popover],input:not([type=checkbox]):not([type=radio]),select,textarea) { background:var(--surface); }
@@ -47,15 +43,19 @@ body.workspace-calm[data-workspace-theme="light"] {
 .workspace-calm :is(.chat,.work-panel,.panel-bar,.work-tabs,.preview-toolbar,.code-browser) { background:var(--surface); }
 .workspace-calm .chat .section-title { padding:0 16px; min-height:46px; gap:8px; }
 .workspace-calm #run-status { font-size:10px; font-weight:400; white-space:nowrap; }
-.workspace-calm .chat-content { padding:20px 22px; }
+/* DSH-stil: centreret samtaleindhold med maks. bredde (som DSH 920px). */
+.workspace-calm .chat-content { padding:20px 22px; max-width:800px; margin:0 auto; width:100%; }
 .workspace-calm .chat-message { font-size:13px; line-height:1.8; }
-.workspace-calm .chat-message.user { background:var(--calm-raised); border-radius:13px 13px 4px 13px; margin-left:24px; padding:12px 15px; }
-.workspace-calm .chat-message.assistant { color:var(--muted); }
+/* DSH-stil: brugerbobler er neutrale og symmetriske (radius 20 som DSH). */
+.workspace-calm .chat-message.user { background:var(--aura-bg-tint); border-radius:20px; margin-left:auto; margin-right:0; max-width:75%; padding:12px 16px; }
+/* DSH-stil: assistentens svar er ren, fuldt læsbar prosa — ikke dæmpet. */
+.workspace-calm .chat-message.assistant { color:var(--ink); }
 .workspace-calm :is(.agent-activity,.agent-activity.is-waiting,.agent-activity.is-quiet,#connection-warning) { background:var(--surface); color:var(--muted); border-color:var(--line); padding:10px 16px; }
 .workspace-calm .activity-spinner { border-color:var(--line); border-top-color:var(--accent); width:11px; height:11px; }
 .workspace-calm #workspace-divider { background:var(--surface); border-color:var(--line); }
 .workspace-calm #workspace-divider:hover { background:var(--calm-hover); }
-.workspace-calm .composer { margin:8px 14px 5px; padding:10px; border-radius:16px; border-color:#565d68; background:var(--calm-raised); box-shadow:none; }
+/* DSH-stil: composer er et blødt kort med radius 28, skygge og diskret kant. */
+.workspace-calm .composer { margin:8px auto 5px; max-width:800px; padding:12px; border-radius:var(--aura-radius-panel); border:1px solid var(--aura-border); background:var(--aura-bg-raised); box-shadow:var(--aura-shadow-composer); }
 .workspace-calm .composer:focus-within { border-color:var(--calm-focus); box-shadow:none; }
 .workspace-calm .composer textarea { min-height:53px; max-height:150px; background:transparent; color:var(--ink); padding:5px; border:0; }
 .workspace-calm .composer-toolbar { gap:5px; flex-wrap:nowrap; }
@@ -75,7 +75,7 @@ body.workspace-calm[data-workspace-theme="light"] {
 .workspace-calm #chat-form::after { inset:-4px; padding:3px; border-radius:20px; filter:blur(5px); }
 .workspace-calm #chat-form[data-metal-state="working"]::before,
 .workspace-calm #chat-form[data-metal-state="working"]::after {
-  background:conic-gradient(from var(--aura-metal-angle),#92bdb0 0deg,#9c8fbf 85deg,#b7a77b 165deg,#93b7bc 245deg,#9484bc 310deg,#92bdb0 360deg);
+  background:conic-gradient(from var(--aura-metal-angle),var(--aura-accent) 0deg,var(--aura-accent-hover) 90deg,var(--aura-accent) 180deg,var(--aura-accent-hover) 270deg,var(--aura-accent) 360deg);
   animation-duration:5s;
 }
 .workspace-calm #chat-form[data-metal-state="working"]::before { opacity:.95; }
@@ -94,10 +94,10 @@ body.workspace-calm[data-workspace-theme="light"] {
 .workspace-calm :is(.approval-kind,.activity-entry.status-waiting .activity-state,.chat-meta.is-waiting) { color:var(--calm-warning); }
 .workspace-calm :is(.chat-message.error,.dialog-notice.error,.error) { color:var(--calm-error); background:var(--calm-error-bg); }
 .workspace-calm :is(.activity-error,.activity-entry.status-error .activity-state,.activity-entry.status-rejected .activity-state) { color:var(--calm-error); }
-.workspace-calm :is(.diff-row.add,.change-tag.change-ny) { background:color-mix(in srgb,var(--accent) 14%,var(--surface)); }
-.workspace-calm :is(.diff-row.del,.change-tag.change-slettet) { background:var(--calm-error-bg); }
-.workspace-calm :is(.file-stats .add,.diff-row.add .sign,.change-tag.change-ny) { color:var(--accent); }
-.workspace-calm :is(.file-stats .del,.diff-row.del .sign,.change-tag.change-slettet) { color:var(--calm-error); }
+.workspace-calm :is(.diff-row.add,.change-tag.change-ny) { background:var(--aura-diff-add-bg); }
+.workspace-calm :is(.diff-row.del,.change-tag.change-slettet) { background:var(--aura-diff-del-bg); }
+.workspace-calm :is(.file-stats .add,.diff-row.add .sign,.change-tag.change-ny) { color:var(--aura-diff-add); }
+.workspace-calm :is(.file-stats .del,.diff-row.del .sign,.change-tag.change-slettet) { color:var(--aura-diff-del); }
 .workspace-calm .activity-entry { border-color:var(--line); }
 .workspace-calm #chat-materials-menu { background:var(--calm-raised); box-shadow:0 14px 38px #0004; }
 .workspace-calm :is(#chat-materials-menu button,.chat-menu button,[popover] button) { color:var(--ink); }

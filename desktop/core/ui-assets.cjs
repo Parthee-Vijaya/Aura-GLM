@@ -6,6 +6,7 @@
 const PROVIDER_ASSETS = /^provider-(alexandra|anthropic|azure|compatible|corti|komplai|mistral|ollama|openai|openrouter|zen|promte|github-pages|cloudflare|vercel)\.svg$/;
 const ONBOARDING_ASSETS = ['onboarding-aura-mark.svg', 'onboarding-provider-claude.svg', 'onboarding-provider-mistral.svg'];
 const FILES = [
+  'aura-tokens.css',
   'feedback-layout.js', 'feedback-layout.css', 'connection-removal.js', 'privacy-gate.js', 'privacy-gate.css',
   'app-version.js', 'preview-working.js', 'preview-working.css', 'idea-refinement.css', 'conversation-permission.css',
   'workspace-calm.js', 'workspace-calm.css', 'idea-refinement.js', 'conversation-permission.js', 'onboarding-compact.css',
