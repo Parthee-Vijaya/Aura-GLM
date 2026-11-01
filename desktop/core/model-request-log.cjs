@@ -37,7 +37,10 @@ function describeRequest(payloadString) {
 async function fileFor(directory, chat) {
   // Samtale-id'et bliver et filnavn: kun bogstaver, tal og bindestreg.
   if (!/^[A-Za-z0-9-]{1,100}$/.test(chat)) throw new Error('Journalen kræver en gyldig samtale.');
-  await fs.mkdir(directory, { recursive: true, mode: 0o700 });
+  // Privatlivsmappen skal være 0700 og ejes af brugeren — som audit-mappen i privacy-service.
+  const stat = await fs.stat(directory).catch(() => null);
+  if (!stat || !stat.isDirectory()) await fs.mkdir(directory, { recursive: true, mode: 0o700 });
+  else if ((stat.mode & 0o077) !== 0) throw new Error('Journalens mappe er ikke privat.');
   return path.join(directory, `${chat}.jsonl`);
 }
 
@@ -52,8 +55,7 @@ async function append(directory, chat, entry = {}) {
   return next;
 }
 
-async function appendNow(file, chat, entry = {}) {
-  const record = {
+async function appendNow(file, chat, entry = {}) {  const record = {
     schema: 1, at: new Date().toISOString(),
     chat, task: safe(entry.task) ? entry.task : null,
     purpose: safe(entry.purpose) ? entry.purpose : 'project-conversation',
@@ -64,11 +66,18 @@ async function appendNow(file, chat, entry = {}) {
   let lines = [JSON.stringify(record)];
   try {
     const existing = await fs.readFile(file, 'utf8');
-    const kept = existing.split('\n').filter(Boolean);
+    const kept = existing.split('\n').filter(Boolean).filter(line => { try { JSON.parse(line); return true; } catch { return false; } }); // revet linje tolereres
     if (kept.length + 1 > LIMITS.entries || Buffer.byteLength(existing) + lines[0].length > LIMITS.fileBytes) kept.splice(0, Math.ceil(kept.length / 2)); // rotation: ældste halvdele væk
     lines = [...kept, lines[0]];
   } catch { /* Første post i en ny journal. */ }
-  await fs.writeFile(file, lines.join('\n') + '\n', { mode: 0o600 });
+  // Atomisk skrivning: en afbrudt skrivning efterlader den forrige journal uændret.
+  const temporary = `${file}.${process.pid}.${Date.now()}.tmp`;
+  try {
+    await fs.writeFile(temporary, lines.join('\n') + '\n', { mode: 0o600, flag: 'wx' });
+    await fs.rename(temporary, file);
+  } finally {
+    await fs.unlink(temporary).catch(error => { if (error.code !== 'ENOENT') throw error; });
+  }
   return lines.length;
 }
 

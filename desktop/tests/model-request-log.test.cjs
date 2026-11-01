@@ -69,3 +69,17 @@ test('describeRequest tæller beskeder, systemprompt og enorme dele ærligt', ()
   assert.equal(describeRequest(JSON.stringify({ system: 'kort' })).items[0].source, 'system');
   assert.equal(describeRequest('{}').request.messages, 0);
 });
+
+test('journalen skrives atomisk og afviser en mappe, der ikke er privat', async t => {
+  const directory = await journal(t);
+  await append(directory, 'chat-a', { task: 't1', ...describeRequest('{"messages":[]}') });
+  await append(directory, 'chat-a', { task: 't2', ...describeRequest('{"messages":[]}') });
+  const page = await list(directory, 'chat-a', {});
+  assert.equal(page.total, 2, 'atomisk skrivning bevarer begge poster');
+  const entries = await fs.readdir(directory);
+  assert.equal(entries.filter(name => name.endsWith('.tmp')).length, 0, 'ingen midlertidige filer efterlades');
+  const open = path.join(await journal(t), 'open');
+  await fs.mkdir(path.dirname(open), { recursive: true }); await fs.mkdir(open, { mode: 0o755 });
+  await assert.rejects(append(open, 'chat-b', {}), /ikke privat/, 'en mappe med gruppeadgang afvises');
+  await assert.rejects(append(open, 'chat/b', {}), /gyldig samtale/, 'stier i samtale-id afvises');
+});
