@@ -119,3 +119,14 @@ test('bash-værktøjer bærer et struktureret udfald med kodens sandhed', () => 
   const nonBash = toolEntry({ id: 'q4', tool: 'write', state: { status: 'completed', input: { filePath: path.join(root, 'a.js') } } }, root);
   assert.equal('outcome' in nonBash, false, 'kun kommandoer har procesudfald');
 });
+
+test('et bash-kald uden exitkode er igangværende eller ukendt — ikke en fejl', () => {
+  const root = path.join(os.tmpdir(), 'projekt');
+  const running = toolEntry({ id: 'r1', tool: 'bash', state: { status: 'running', input: { command: 'npm test' } } }, root);
+  assert.equal(running.outcomeFailed, false);
+  assert.equal(running.outcomeText, '', 'intet udfald opdigtes for et igangværende kald');
+  const finished = toolEntry({ id: 'r2', tool: 'bash', state: { status: 'completed', input: { command: 'npm test' }, metadata: { exit: 0 } } }, root);
+  assert.equal(finished.outcomeText, 'Afsluttet');
+  const failed = toolEntry({ id: 'r3', tool: 'bash', state: { status: 'completed', input: { command: 'npm test' }, metadata: { exit: 1 } } }, root);
+  assert.equal(failed.outcomeFailed, true); assert.equal(failed.outcomeText, 'Afsluttet med fejl (kode 1)');
+});

@@ -492,11 +492,12 @@ function fillChat(next, fresh) {
   if (next.chatRunning && !v.running) {
     setRunning(true, 'Arbejder', v);
     v.statusDetail = 'Visningen er genindlæst · opgaven fortsætter';
+    // Svaret tilhører det ejende view — også hvis brugeren skiftede samtale undervejs:
+    // kortene tegnes i viewets egen DOM og ses, når samtalen åbnes igen.
     if (fresh) call('pendingChoices').then(choices => {
-      if (view !== v) return;
       for (const choice of choices?.approvals || []) window.approvals.show(choice.properties, v);
       for (const choice of choices?.questions || []) window.planning.showQuestion(choice.properties, v);
-      renderStatus();
+      if (v === view) renderStatus();
     }).catch(() => { /* Ventende valg kan ikke genfindes; statuslinjen viser fortsat arbejdet. */ });
     renderStatus();
   }
@@ -931,6 +932,7 @@ function applyRunning() {
   // En samtale, der ikke arbejder, viser sin egen seneste status, fx Stoppet eller Fejl. Linjen over skrivefeltet siger, hvis en anden arbejder.
   if (!running) $('#run-status').textContent = view.runLabel || 'Klar';
   $('#send').disabled = projectLoading || running || Boolean(view.submitting); $('#send').hidden = running; $('#stop').hidden = !running;
+  if (typeof document !== 'undefined' && running && document.activeElement && document.activeElement.id === 'send') $('#stop').focus();
   $('#composer-wait').hidden = true;
   const mainRunning = window.chats?.projects().find(item => item.root === current?.root)?.chats?.some(chat => chat.running && !chat.isolated);
   $('#merge-copy').disabled = projectLoading || running || Boolean(mainRunning);
@@ -2002,9 +2004,9 @@ function evidenceBlock(result, v = view) {
   const e = result?.evidence; if (!e) return null;
   const section = node('section', undefined, 'run-evidence'), list = node('dl');
   const row = (term, fact) => { list.append(node('dt', term), node('dd', fact)); };
-  row('Filer', e.files.count === null ? 'Kunne ikke måles' : e.files.count === 0 ? 'Ingen ændringer målt' : `${e.files.count === 1 ? '1 fil' : `${e.files.count} filer`} ændret · læst på disken`);
+  row('Filer', e.files.count === null ? 'Kunne ikke måles' : e.files.count === 0 ? 'Ingen ændringer målt' : `${e.files.count === 1 ? '1 fil' : `${e.files.count} filer`} ændret · målt på disken`);
   if (e.commands.run !== null) row('Kommandoer', `${e.commands.run === 1 ? '1 kommando' : `${e.commands.run} kommandoer`} kørt${e.commands.failed ? ` · ${e.commands.failed} med fejl` : ''}${e.commands.unknown ? ' · udfald delvist ukendt' : ''}`);
-  row('Lokal kontrol', e.quality.ran ? (e.quality.findings === null ? 'gennemført' : e.quality.findings === 0 ? 'ingen fund' : `${e.quality.findings} fund`) : 'ikke kørt');
+  row('Lokal kontrol', e.quality.ran ? (e.quality.findings === null ? 'gennemført' : e.quality.findings === 0 ? 'ingen fund' : `${e.quality.findings} fund`) : e.quality.unsupported === true ? 'ikke mulig for projektet' : 'ikke kørt');
   if (v?.repeat) row('Observation', `Samme handling gentaget ${v.repeat.count}. gang i træk`);
   section.append(node('h4', 'Aura har set'), list);
   return section;

@@ -17,14 +17,16 @@ test('prioriteten er: venter på dig → gendannelse → arbejde → afslutning 
 });
 
 test('seneste resultatkort bestemmer afslutningen, når turen er slut', () => {
+  // Kernen sender 'idle' ved succes (se chat-session finishRun); 'completed' accepteres også.
+  assert.equal(derive({ ...base, lastReview: { status: 'idle' } }).key, 'done');
   assert.equal(derive({ ...base, lastReview: { status: 'completed' } }).key, 'done');
   assert.equal(derive({ ...base, lastReview: { status: 'stopped' } }).key, 'stopped');
-  assert.equal(derive({ ...base, lastReview: { status: 'rejected' } }).key, 'stopped');
+  assert.equal(derive({ ...base, lastReview: { status: 'rejected' } }).label, 'Afbrudt');
   const failure = derive({ ...base, lastReview: { status: 'error', failure: { kind: 'timeout' } } });
   assert.equal(failure.key, 'error'); assert.equal(failure.detail, 'Tidsgrænsen blev nået');
   assert.equal(derive({ ...base, lastReview: { status: 'error' } }).detail, '');
   // En afslutning overstyrer aldrig en kørende tur.
-  assert.equal(derive({ ...base, running: true, lastReview: { status: 'completed' } }).key, 'working');
+  assert.equal(derive({ ...base, running: true, lastReview: { status: 'idle' } }).key, 'working');
 });
 
 test('badge-klassen følger tilstanden, ikke teksten', () => {

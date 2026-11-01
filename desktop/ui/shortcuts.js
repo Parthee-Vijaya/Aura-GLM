@@ -25,7 +25,11 @@
   }
 
   function overlayOpen() {
-    return Boolean(document.querySelector('dialog[open], [popover]:popover-open'));
+    // Dialoger, popovers og opsætningsskærmen (en <main>, ikke en dialog) spærrer navigation;
+    // Stop består dog altid.
+    if (document.querySelector('dialog[open], [popover]:popover-open')) return true;
+    const working = document.getElementById('workspace');
+    return !working || working.hidden;
   }
 
   function onShortcut(id) {

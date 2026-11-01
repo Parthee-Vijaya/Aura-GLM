@@ -56,8 +56,9 @@ function toolEntry(part, root) {
     // brugerens Stop kendes ikke pr. kald her og forbliver ukendt frem for opdigtede fakta.
     const contract = require('./run-contract.cjs');
     entry.outcome = contract.outcome({ exitCode: Number.isInteger(metadata.exit) ? metadata.exit : null });
-    entry.outcomeText = contract.describeOutcome(entry.outcome);
-    entry.outcomeFailed = !contract.succeeded(entry.outcome);
+    // Et udfald uden exitkode (kaldet er igangværende eller afbrudt) er ukendt — ikke en fejl.
+    entry.outcomeText = entry.outcome.exitCode === null ? '' : contract.describeOutcome(entry.outcome);
+    entry.outcomeFailed = entry.outcome.exitCode !== null && entry.outcome.exitCode !== 0;
   }
   if (state.status === 'error' && state.error) entry.error = cleanOutput(String(state.error)).slice(0, 800);
   return entry;

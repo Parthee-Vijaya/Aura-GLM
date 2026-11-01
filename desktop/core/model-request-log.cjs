@@ -35,13 +35,24 @@ function describeRequest(payloadString) {
 }
 
 async function fileFor(directory, chat) {
-  if (!safe(chat)) throw new Error('Journalen kræver en samtale.');
+  // Samtale-id'et bliver et filnavn: kun bogstaver, tal og bindestreg.
+  if (!/^[A-Za-z0-9-]{1,100}$/.test(chat)) throw new Error('Journalen kræver en gyldig samtale.');
   await fs.mkdir(directory, { recursive: true, mode: 0o700 });
   return path.join(directory, `${chat}.jsonl`);
 }
 
+// Skrivninger serialiseres pr. fil, så tætte kald fra samme samtale ikke overskriver hinanden.
+const queues = new Map();
 async function append(directory, chat, entry = {}) {
   const file = await fileFor(directory, chat);
+  const write = () => appendNow(file, chat, entry);
+  const previous = queues.get(file) || Promise.resolve();
+  const next = previous.then(write, write);
+  queues.set(file, next.finally(() => { if (queues.get(file) === next) queues.delete(file); }));
+  return next;
+}
+
+async function appendNow(file, chat, entry = {}) {
   const record = {
     schema: 1, at: new Date().toISOString(),
     chat, task: safe(entry.task) ? entry.task : null,

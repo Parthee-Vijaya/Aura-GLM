@@ -271,6 +271,8 @@ class Workbench {
     const copy = chat?.copy || (data.copy?.id ? await this.copies.load(data.copy.id, this.project.root) : null);
     const project = await this.history.removeChat(this.project.root, input?.id, remove);
     if (chat) { await chat.close(); this.chats.delete(chat.id); }
+    // Samtalen journal over det sendte (kun metadata) følger samtalen: den fjernes ved sletning.
+    await require('node:fs/promises').rm(require('node:path').join(this.store.root, 'model-logs', `${input?.id}.jsonl`), { force: true }).catch(() => {});
     if (copy) { await this.releaseWorkspace?.(copy.root); await this.copies.remove(copy); }
     this.memory.delete(input?.id);
     if (this.chatID === input?.id) { this.chatID = null; return project.active ? this.openChat(project.active) : this.newChat(); }

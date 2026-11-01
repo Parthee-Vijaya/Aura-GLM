@@ -3,13 +3,14 @@
 // åbnet af brugeren; intet kan sendes eller godkendes herfra.
 (function (root) {
   // Én post som tekst: klokkeslæt, modtager, omfang og kilderne pr. beskeddel.
-  function describe(entry, kb = bytes => `${Math.max(1, Math.round(bytes / 102.4) / 10)} kB`) {
+  const sourceNames = { user: 'bruger', assistant: 'AI', tool: 'værktøj', system: 'systemprompt', developer: 'udvikler', besked: 'besked' };
+  function describe(entry, kb = bytes => `${Math.max(1, Math.round(bytes / 102.4) / 10)} kB`.replace('.', ',')) {
     if (!entry || typeof entry !== 'object') return null;
     const at = typeof entry.at === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(entry.at) ? entry.at.slice(11, 16) : '';
     const model = entry.recipient?.model || 'ukendt model';
     const bytes = Number.isSafeInteger(entry.request?.bytes) ? kb(entry.request.bytes) : 'ukendt størrelse';
     const parts = Number.isSafeInteger(entry.request?.messages) ? entry.request.messages : null;
-    const sources = [...new Set((entry.items || []).map(item => item.source))].filter(Boolean);
+    const sources = [...new Set((entry.items || []).map(item => sourceNames[item.source] || item.source || 'besked'))];
     return {
       time: at, label: `${model}${parts !== null ? ` · ${parts} ${parts === 1 ? 'beskeddel' : 'beskeddele'}` : ''} · ${bytes}`,
       detail: sources.length ? `Kilder: ${sources.join(', ')}` : 'Ingen dele registreret'
@@ -29,7 +30,13 @@
     details.append(summary, hint, list, more);
     scroll.parentNode.insertBefore(details, scroll);
 
-    let offset = 0, total = 0;
+    // Journalen er pr. samtale: ved samtaleskift nulstilles visningen, så den forrige
+    // samtales kald aldrig står under en ny samtale.
+    let offset = 0, total = 0, owner = null, loaded = false;
+    const reset = () => { list.replaceChildren(); more.hidden = true; offset = 0; loaded = false; };
+    if (root.harness?.onEvent) root.harness.onEvent(event => {
+      if (event.type === 'chats.updated' && event.active !== undefined && event.active !== owner) { owner = event.active; reset(); }
+    });
     const render = page => {
       total = page.total;
       for (const entry of page.entries) {
@@ -41,7 +48,7 @@
         const detail = document.createElement('p'); detail.className = 'hint'; detail.textContent = line.detail;
         item.append(detail); list.append(item);
       }
-      more.hidden = offset + page.entries.length >= total;
+      more.hidden = offset >= total;
     };
     const load = async () => {
       try {
@@ -58,7 +65,7 @@
         if (!list.children.length) { const failure = document.createElement('p'); failure.className = 'hint'; failure.textContent = error.message; details.insertBefore(failure, list); }
       }
     };
-    details.addEventListener('toggle', () => { if (details.open && !list.children.length) load(); });
+    details.addEventListener('toggle', () => { if (details.open) { if (!loaded) { loaded = true; reset(); } load(); } });
     more.addEventListener('click', load);
   }
 

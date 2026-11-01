@@ -25,10 +25,11 @@
     const waiting = node('button', 'Gennemgå mit valg', 'text-button work-progress-choice'); waiting.type = 'button'; waiting.hidden = true;
     waiting.onclick = () => { const item = v.waitingFor[0]; if (!item?.element?.isConnected) return; item.element.scrollIntoView({ block: 'nearest' }); item.element.querySelector('button, textarea, input')?.focus(); };
     body.append(list, waiting, technical); card.append(body);
-    const run = { started: v.runStartedAt, card, name, meta, list, technical, technicalText, waiting, entries: new Map(), recovery: null, ended: null, signature: '', userToggled: false, auto: false };
+    const run = { started: v.runStartedAt, card, name, meta, list, technical, technicalText, waiting, entries: new Map(), recovery: null, ended: null, signature: '', userToggled: false, autoCollapsing: false };
     // Brugerens egen foldning vinder: den automatiske sammenfoldning ved turens slutning må
-    // ikke registreres som et brugerens valg.
-    card.addEventListener('toggle', () => { if (!run.auto) run.userToggled = true; });
+    // ikke registreres som et brugerens valg. Toggle-hændelsen kommer asynkront, så flaget
+    // holdt, til hændelsen har nået lytteren.
+    card.addEventListener('toggle', () => { if (run.autoCollapsing) { run.autoCollapsing = false; return; } run.userToggled = true; });
     runs.set(v, run);
     // sendNow marks the run active just before inserting the user's message.
     queueMicrotask(() => { if (runs.get(v) === run && !card.parentNode) v.log.append(card); });
@@ -56,7 +57,7 @@
   function renderCard(v) {
     const run = forView(v); if (!run) return;
     if (v.activityGroup) v.activityGroup.hidden = true;
-    if (!v.running && !run.ended) { run.ended = Date.now(); if (!run.userToggled) { run.auto = true; run.card.open = false; run.auto = false; } }
+    if (!v.running && !run.ended) { run.ended = Date.now(); if (!run.userToggled) { run.autoCollapsing = true; run.card.open = false; } }
     run.card.hidden = !v.running && !run.entries.size;
     const entries = [...run.entries.values()], count = window.ChatDisplay.activitySummary(entries);
     const phase = v.running ? currentPhase(v, run) : null;

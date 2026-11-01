@@ -417,7 +417,9 @@ class ChatSession {
     await this.saveHistory('working', true);
     this.emit({ type: 'run.status', status: 'starting' });
     const session = this.changes;
-    this.lastCheckpoint = null; this.runBefore = null; this.runSnapshot = null;
+    this.lastCheckpoint = null; this.runBefore = null;
+    // En tæt på oversprunget tur må ikke efterlade sit private snapshotmateriale på disken.
+    await require('./git-snapshot.cjs').release(this.runSnapshot).catch(() => {}); this.runSnapshot = null;
     this.task = { id: crypto.randomUUID(), root: this.root, label: input.text, target: prepared.disclosure.previewReference || '', mode: prepared.mode, startedAt: Date.now(), aiFiles: new Set(), aiHashes: new Map(), reads: [], completed: new Set(), commandParts: new Set(), commands: 0 };
     this.log({ id: `run-${this.task.id}`, kind: 'run', task: this.task.id, title: modeTitles[prepared.mode], target: shortText(input.text), detail: `${prepared.disclosure.modelName || prepared.model.id} · ${prepared.disclosure.provider || prepared.connection.name}${prepared.fileRefs?.length ? ` · ${prepared.fileRefs.length === 1 ? '1 filhenvisning' : `${prepared.fileRefs.length} filhenvisninger`}` : ''}${prepared.disclosure.previewReference ? ` · mål: ${prepared.disclosure.previewReference}` : ''}`, status: 'running', started: this.task.startedAt });
     try {
@@ -425,8 +427,9 @@ class ChatSession {
       this.scratchRoot = this.engine?.active && this.commandSandbox && !prepared.commandIsolation ? this.commandSandbox.scratchRoot : path.join(bench.store.root, 'scratch', bench.store.projectKey(projectRoot), this.task.id);
       await fs.mkdir(this.scratchRoot, { recursive: true, mode: 0o700 }); checkStopped();
       this.runBefore = await capture(this.root); checkStopped();
-      // Git-snapshot pr. tur: præcise linjetal og omdøbninger til Ændringer, uden at røre brugerens repo.
-      this.runSnapshot = await this.takeSnapshot(); checkStopped();
+      // Git-snapshot pr. tur i Byg: præcise linjetal og omdøbninger til Ændringer, uden at røre
+      // brugerens repo. Samtale og Planlæg ændrer ikke filer og springer ventetiden over.
+      this.runSnapshot = ['free', 'build'].includes(prepared.mode) ? await this.takeSnapshot() : null; checkStopped();
       // Billede af forhåndsvisningen før opgaven. Det må højst forsinke starten lidt; uden billede fortsætter opgaven.
       if (prepared.view && !['chat', 'plan'].includes(prepared.mode) && bench.imageHook) {
         this.task.images = { pair: crypto.randomUUID(), view: { ...prepared.view } };
@@ -462,7 +465,12 @@ class ChatSession {
         const key = bench.store.decrypt(prepared.connection);
         const gateway = await startGateway(prepared.connection, prepared.model, key, prepared.route, (message, failure) => {
           if (this.gateway === gateway && this.running && !this.runStopped) this.event({ type: 'engine.error', message, failure });
-        }, { root: this.root, dispatch: (request, transport) => bench.privacy.dispatch({ ...request, scope: { kind: 'conversation', root: this.project.root, chat: this.id }, connection: prepared.connection, model: prepared.model, route: prepared.route, purpose: 'project-conversation', revision: this.task?.id, contextPartition: `conversation:${this.id}`, assertCurrent: () => this.running && !this.runStopped }, transport), record: info => this.recordModelRequest({ ...info, task: this.task?.id || null }), onRecovery: recovery => {
+        }, { root: this.root, dispatch: (request, transport) => bench.privacy.dispatch({ ...request, scope: { kind: 'conversation', root: this.project.root, chat: this.id }, connection: prepared.connection, model: prepared.model, route: prepared.route, purpose: 'project-conversation', revision: this.task?.id, contextPartition: `conversation:${this.id}`, assertCurrent: () => this.running && !this.runStopped }, checked => {
+          // Journalen ved selve transporten: først nu er Privacy Gates endelige indhold kendt, og
+          // et afvist kald er aldrig kommet her. Kun metadata; en fejl må aldrig afbryde afsendelsen.
+          this.recordModelRequest({ purpose: 'project-conversation', recipient: { model: prepared.model.id, route: prepared.route?.id || null }, task: this.task?.id || null, ...require('./model-request-log.cjs').describeRequest(checked?.body) });
+          return transport(checked);
+        }), onRecovery: recovery => {
           if (this.gateway === gateway && this.running && !this.runStopped) this.event({ type: 'engine.recovery', recovery });
         }, onProgress: progress => {
           if (this.gateway === gateway && this.running && !this.runStopped) this.emit({ type: 'model.progress', progress });
@@ -544,7 +552,8 @@ class ChatSession {
     const measured = contract.evidence({
       files: { count: diff ? diff.files.length : null, source: 'disk' },
       commands: contract.commandEvidence(this.runTools?.values() || []),
-      quality: { ran: ['checked', 'unsupported'].includes(qualityStatus), findings: qualityStatus === 'checked' ? (this.runQuality?.findings?.length ?? null) : null }
+      // Kun en virkelig gennemført kontrol tælles som kørt; 'unsupported' er ikke en kontrol.
+      quality: { ran: qualityStatus === 'checked', unsupported: qualityStatus === 'unsupported', findings: qualityStatus === 'checked' ? (this.runQuality?.findings?.length ?? null) : null }
     });
     return { type: 'run.review', quality: this.runQuality || null, task: task?.id, workspaceRoot: this.root, isolated: Boolean(this.copy), chat: this.id, mode: this.runMode, status, finish: this.runFinish || null, failure: this.runFailure || null, files: diff?.files.map(f => f.file) || [], skipped: diff?.skipped || 0, unavailable: !diff, evidence: measured,
       tools: [...(this.runTools?.values() || [])].map(p => ({ tool: p.tool, status: p.state?.status, title: p.state?.title || p.state?.input?.command || '', exit: Number.isInteger(p.state?.metadata?.exit) ? p.state.metadata.exit : null, output: p.tool === 'bash' ? tail(p.state?.output ?? p.state?.metadata?.output) : '', error: p.state?.status === 'error' ? cleanOutput(String(p.state?.error || '')).slice(0, 300) : '' })), ...extra };
@@ -581,10 +590,12 @@ class ChatSession {
     if (this.runSnapshot && endSnapshot) {
       const gitDiff = await require('./git-snapshot.cjs').diffTrees(this.root, this.runSnapshot, endSnapshot).catch(() => null);
       if (gitDiff) {
-        const byPath = new Map(gitDiff.changed.map(entry => [entry.path, entry]));
+        // Beskyttede stier vises aldrig som omdøbninger — hverken gammel eller ny sti.
+        const protectedPath = file => projectFiles.isProtected(file);
+        const byPath = new Map(gitDiff.changed.filter(entry => !protectedPath(entry.path) && !protectedPath(entry.renamedFrom)).map(entry => [entry.path, entry]));
         for (const entry of files) {
           if (byPath.get(entry.file)?.renamedFrom) entry.renamedFrom = byPath.get(entry.file).renamedFrom;
-          const target = gitDiff.changed.find(other => other.renamedFrom === entry.file);
+          const target = gitDiff.changed.find(other => other.renamedFrom === entry.file && !protectedPath(other.path) && !protectedPath(other.renamedFrom));
           if (target) entry.renamedTo = target.path;
         }
         const renames = gitDiff.changed.filter(entry => entry.renamedFrom && !projectFiles.isProtected(entry.renamedFrom) && !projectFiles.isProtected(entry.path)).map(entry => ({ from: entry.renamedFrom, to: entry.path }));

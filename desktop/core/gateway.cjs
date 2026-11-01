@@ -5,7 +5,7 @@ const { StreamProgress } = require('./stream-progress.cjs');
 
 const { forwardModel, IDLE_LIMIT, GRACE_LIMIT, TOTAL_LIMIT, RETRY_DELAYS } = require('./model-transport.cjs');
 // Kun agentmotoren får en midlertidig adgangskode. Den rigtige modelnøgle bliver i hovedprocessen.
-async function startGateway(connection, model, key, route, onFailure = () => {}, { idleLimit = IDLE_LIMIT, graceLimit = GRACE_LIMIT, totalLimit = TOTAL_LIMIT, retryDelays = RETRY_DELAYS, onRecovery = () => {}, onProgress = () => {}, root = '', effort: initialEffort = null, dispatch, record = null } = {}) {
+async function startGateway(connection, model, key, route, onFailure = () => {}, { idleLimit = IDLE_LIMIT, graceLimit = GRACE_LIMIT, totalLimit = TOTAL_LIMIT, retryDelays = RETRY_DELAYS, onRecovery = () => {}, onProgress = () => {}, root = '', effort: initialEffort = null, dispatch } = {}) {
   // Brugerens valgte indsats kan skifte mellem beskeder uden at starte en ny modelsession.
   let effort = initialEffort, images = [];
   assertSupported(connection);
@@ -56,9 +56,6 @@ async function startGateway(connection, model, key, route, onFailure = () => {},
       // Serialize once: every attempt uses exactly the same model, route, history,
       // attachments and effort. Only this transport can retry a model request.
       const payload = JSON.stringify(body);
-      // Journalen ved transportgrænsen: hvad der faktisk blev sendt — kilde, størrelse og hash,
-      // aldrig indhold. En fejl i journaleringen må aldrig afbryde selve kaldet.
-      if (record) { try { record({ purpose: 'project-conversation', recipient: { model: model.id, route: route?.id || null }, ...require('./model-request-log.cjs').describeRequest(payload) }); } catch { /* Journalen er frivillig viden. */ } }
       await forwardModel({ url: `${base}${responses ? '/responses' : anthropic ? '/messages' : '/chat/completions'}`, headers, payload, res, signal: controller.signal,
         progress: new StreamProgress({ emit: onProgress, root }), idleLimit, graceLimit, totalLimit, retryDelays, onRecovery, dispatch });
     } catch (error) {

@@ -38,7 +38,7 @@ test('hændelsesidentitet kræver projekt, samtale og opgave som rene strenge', 
 
 test('bevisblokken tæller målinger og markerer manglende kilder som ukendte', () => {
   const full = evidence({ files: { count: 3, source: 'disk' }, commands: { run: 2, failed: 1 }, quality: { ran: true, findings: 0 } });
-  assert.deepEqual(full, { files: { count: 3, source: 'disk' }, commands: { run: 2, failed: 1, unknown: false }, quality: { ran: true, findings: 0 } });
+  assert.deepEqual(full, { files: { count: 3, source: 'disk' }, commands: { run: 2, failed: 1, unknown: false }, quality: { ran: true, unsupported: false, findings: 0 } });
   const empty = evidence();
   assert.equal(empty.files.count, null); assert.equal(empty.files.source, null);
   assert.equal(empty.commands.run, null); assert.equal(empty.quality.ran, false); assert.equal(empty.quality.findings, null);
@@ -52,4 +52,11 @@ test('kommandobeviset tæller kun afsluttede kald og adskiller manglende exitkod
   assert.deepEqual(commandEvidence([part('bash', 'completed', 0), part('bash', 'error')]), { run: 2, failed: 0, unknown: true }, 'en manglende exitkode gør udfaldet delvist ukendt');
   assert.deepEqual(commandEvidence([part('bash', 'running', 0), part('read', 'completed'), part('bash', 'pending')]), { run: 0, failed: 0, unknown: false }, 'kun afsluttede bash-kald tæller');
   assert.deepEqual(commandEvidence([]), { run: 0, failed: 0, unknown: false });
+});
+
+test('kvalitetsfakta skelner gennemført, ikke mulig og ikke kørt', () => {
+  assert.deepEqual(evidence({ quality: { ran: true, findings: 2 } }).quality, { ran: true, unsupported: false, findings: 2 });
+  assert.equal(evidence({ quality: { unsupported: true } }).quality.unsupported, true);
+  assert.equal(evidence({ quality: { unsupported: true } }).quality.ran, false, 'ikke mulig er ikke gennemført');
+  assert.equal(evidence().quality.unsupported, false);
 });

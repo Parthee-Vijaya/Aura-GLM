@@ -14,10 +14,11 @@
     }
     const review = v.lastReview;
     if (review) {
+      // Kernen sender 'idle' ved en vellykket afslutning; 'completed' accepteres også.
       if (review.status === 'error') return { key: 'error', label: 'Fejl', detail: review.failure?.kind === 'timeout' ? 'Tidsgrænsen blev nået' : '' };
       if (review.status === 'stopped') return { key: 'stopped', label: 'Stoppet', detail: '' };
       if (review.status === 'rejected') return { key: 'stopped', label: 'Afbrudt', detail: '' };
-      if (review.status === 'completed') return { key: 'done', label: 'Færdig', detail: '' };
+      if (review.status === 'idle' || review.status === 'completed') return { key: 'done', label: 'Færdig', detail: '' };
     }
     return { key: 'idle', label: v.runLabel || 'Klar', detail: '' };
   }

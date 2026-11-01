@@ -1047,7 +1047,7 @@ app.whenReady().then(async () => {
     // ⌘K og de nye genveje fanges i hovedprocessen, så de også virker, mens fokus står i previewet.
     window.webContents.on('before-input-event', (event, input) => {
       const modifier = process.platform === 'darwin' ? input.meta && !input.control : input.control && !input.meta;
-      if (input.type !== 'keyDown' || input.isAutoRepeat || !modifier || input.alt) return;
+      if (input.type !== 'keyDown' || input.isAutoRepeat || input.isComposing || !modifier || input.alt) return;
       const key = String(input.key).toLowerCase();
       if (key === 'k' && !input.shift) { event.preventDefault(); sendEvent({ type: 'palette.toggle' }); return; }
       const shortcut = key === '.' && !input.shift ? 'stop'

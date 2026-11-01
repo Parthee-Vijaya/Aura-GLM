@@ -24,6 +24,14 @@ async function filterBlock(root) {
   return false;
 }
 
+// Beskyttet indhold må aldrig indgå i et snapshot: `git add --all` ville ellers gemme fx
+// trackte .env-filer i scratchmappen. Findes én beskyttet fil, bruges fillæsning i stedet.
+async function protectedContent(root) {
+  const protectedPaths = require('./protected-paths.cjs');
+  const files = (await git.run(root, ['ls-files', '-z', '--cached', '--others', '--exclude-standard'])).toString().split('\0').filter(Boolean);
+  return files.some(file => protectedPaths.isProtected(path.basename(file)));
+}
+
 // Et øjebliksbillede af arbejdsfilerne. Kaldet med en privat 0700-mappe (fx under appens
 // datamappe); temp-materialet fjernes med release() efter diffen er beregnet.
 async function snapshot(root, { directory }) {
@@ -32,11 +40,15 @@ async function snapshot(root, { directory }) {
     // Hurtigt tjek uden processtart: uden .git er der intet repo, og forbrugeren bruger fillæsning.
     await fs.access(path.join(root, '.git'));
     if (git.isProtected(root)) return null;
-    const gitDir = path.resolve(root, (await git.run(root, ['rev-parse', '--git-dir'])).toString().trim());
     if (await filterBlock(root)) return null;
+    // Beskyttet indhold i arbejdsområdet gør snapshottet utilgiveligt: fillæsning bruges i stedet.
+    if (await protectedContent(root)) return null;
+    // Objekterne ligger i det fælles lager (worktrees); index og HEAD er pr. arbejdsmappe.
+    const gitDir = path.resolve(root, (await git.run(root, ['rev-parse', '--git-dir'])).toString().trim());
+    const commonDir = path.resolve(root, (await git.run(root, ['rev-parse', '--git-common-dir'])).toString().trim());
     const snapshotDir = await fs.mkdtemp(path.join(directory, 'turn-'));
     await fs.mkdir(path.join(snapshotDir, 'objects'), { recursive: true, mode: 0o700 });
-    const environment = await snapshotEnvironment(root, snapshotDir, gitDir);
+    const environment = await snapshotEnvironment(root, snapshotDir, commonDir);
     // Brugerens index kopieres som udgangspunkt, så uændrede filer ikke skal læses igen.
     try { await fs.copyFile(path.join(gitDir, 'index'), environment.GIT_INDEX_FILE); } catch { /* Uden et index startes fra tomt. */ }
     // GIT_LITERAL_PATHSPECS er sat globalt i git.cjs; derfor ingen pathspec her — 'add --all'
@@ -53,10 +65,10 @@ async function snapshot(root, { directory }) {
 // Omdøbninger og linjetal mellem to snapshots. Udgangen afkortes ved LIMITS.files.
 async function diffTrees(root, before, after) {
   if (!before || !after || before.tree === after.tree) return { changed: [], identical: before && after ? true : null };
-  const gitDir = path.resolve(root, (await git.run(root, ['rev-parse', '--git-dir'])).toString().trim());
+  const commonDir = path.resolve(root, (await git.run(root, ['rev-parse', '--git-common-dir'])).toString().trim());
   const environment = {
     GIT_OBJECT_DIRECTORY: path.join(after.directory, 'objects'),
-    GIT_ALTERNATE_OBJECT_DIRECTORIES: [path.join(before.directory, 'objects'), path.join(gitDir, 'objects')].join(path.delimiter)
+    GIT_ALTERNATE_OBJECT_DIRECTORIES: [path.join(before.directory, 'objects'), path.join(commonDir, 'objects')].join(path.delimiter)
   };
   const output = (await git.run(root, ['diff-tree', '-r', '-M', '-z', '--numstat', '--no-color', before.tree, after.tree], null, [], environment)).toString();
   return { changed: parseNumstat(output).slice(0, LIMITS.files), identical: false };

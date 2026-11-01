@@ -78,3 +78,14 @@ test('parseNumstat læser linjetal og NUL-adskilte stier, omdøbninger og binær
   assert.deepEqual(parseNumstat(''), []);
   assert.equal(LIMITS.files, 500);
 });
+
+test('beskyttet indhold i arbejdsområdet gør snapshottet utilgiveligt', async t => {
+  const { project, private } = await fixture(t);
+  await fs.writeFile(path.join(project, 'a.txt'), 'indhold');
+  const before = await snapshot(project, { directory: private });
+  assert.ok(before, 'uden beskyttede filer gives der et snapshot');
+  await fs.writeFile(path.join(project, '.env'), 'SECRET=1');
+  assert.equal(await snapshot(project, { directory: private }), null, 'trackbar .env: tilbagefald til fillæsning');
+  await fs.unlink(path.join(project, '.env'));
+  assert.ok(await snapshot(project, { directory: private }), 'uden .env igen: snapshottet virker');
+});

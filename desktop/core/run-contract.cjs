@@ -42,7 +42,7 @@ function evidence(value = {}) {
   return {
     files: { count: count(value?.files?.count), source: ['disk', 'git'].includes(value?.files?.source) ? value.files.source : null },
     commands: { run: count(value?.commands?.run), failed: count(value?.commands?.failed), unknown: value?.commands?.unknown === true },
-    quality: { ran: value?.quality?.ran === true, findings: count(value?.quality?.findings) }
+    quality: { ran: value?.quality?.ran === true, unsupported: value?.quality?.unsupported === true, findings: count(value?.quality?.findings) }
   };
 }
 

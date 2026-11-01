@@ -60,7 +60,9 @@
   function activityEntry(entry, options = {}) {
     // Udfaldsandheden kommer fra kontrakten i hovedprocessen (outcomeFailed); exitkoden er
     // tilbagefald for ældre poster. kode 0 er kun en succes uden samtidig timeout eller signal.
-    const failed = entry.status === 'error' || entry.kind === 'tool' && (entry.outcomeFailed === true || entry.outcomeFailed !== false && Number.isInteger(entry.exit) && entry.exit !== 0);
+    // outcomeFailed er sandheden fra kontrakten; uden den (ældre poster) er exitkoden tilbagefald.
+    // Et igangværende kald (udfald ukendt) er aldrig en fejl.
+    const failed = entry.status === 'error' || entry.kind === 'tool' && (entry.outcomeFailed === true || entry.outcomeFailed === undefined && Number.isInteger(entry.exit) && entry.exit !== 0);
     const unfinished = options.finished === true && ['pending', 'running', 'waiting'].includes(entry.status || 'pending');
     const status = failed ? 'error' : unfinished ? 'stopped' : entry.status || 'pending';
     const complete = status === 'completed';
