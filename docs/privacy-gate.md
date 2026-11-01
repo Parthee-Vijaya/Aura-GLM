@@ -1,8 +1,17 @@
-# Privacy Gate i Aura 1
+# Privacy Gate i Aura Prime
 
-Dette dokument gælder kildearbejdet i `Parthee-Vijaya/ai-harness` på `work/privacy-gate-followup`. Det indgår ikke i den udgivne `0.4.0-beta.2`-DMG. Den ældre Code-OSS-version og originalens PR’er er ikke ændret.
+Dette dokument gælder kildearbejdet i `Parthee-Vijaya/Aura-GLM` på `main``. Det indgår ikke i den udgivne `1.0.0-beta.17`-DMG. Den ældre Code-OSS-version og originalens PR’er er ikke ændret.
 
 Privacy Gate kontrollerer, hvilke data en arbejdsopgave må sende til en model eller ekstern tjeneste. Den almindelige modelgodkendelse, planvalg og værktøjsgodkendelser består. YOLO giver ingen ekstra datadelingsrettigheder.
+
+
+## Aktuel status (1.11.2026)
+
+- **Journalen "Sendt til AI"** skrives ved selve transporten, efter Privacy Gate har kontrolleret det endelige indhold. Hvert kald bærer gatens beslutning (kontrolleret / omskrevet / ikke kontrolleret), hvem der godkendte (dig eller automatisk), dataklassifikation og indholdets størrelse og kilder — aldrig indhold. Journalen fjernes med samtalen.
+- **Revisionssporet** (`audit.jsonl`) skelner nu mellem `approvedBy:'user'` og `approvedBy:'policy'` og bevarer `requestId` og `expiresAt`. Sporet er fortsat fælles for hele profilen med højst 1.000 poster.
+- **Dataminimering i snapshots**: Git-snapshots afvises, hvis projektet indeholder beskyttede filer eller mapper (`.env`, `secrets/` osv.); fillæsning bruges i stedet.
+- **Slået fra datakontrol**: Der skrives intet i revisionssporet, og journalen viser "ikke kontrolleret". Det er den bevidste adfærd.
+- **Beskyttelsesniveauer** for historikken er monotone og bevares ved samtale-sletning; de beskytter overlevende data.
 
 ## Arbejdsformer
 

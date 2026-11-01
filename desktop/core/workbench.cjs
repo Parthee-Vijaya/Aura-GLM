@@ -271,8 +271,20 @@ class Workbench {
     const copy = chat?.copy || (data.copy?.id ? await this.copies.load(data.copy.id, this.project.root) : null);
     const project = await this.history.removeChat(this.project.root, input?.id, remove);
     if (chat) { await chat.close(); this.chats.delete(chat.id); }
-    // Samtalen journal over det sendte (kun metadata) følger samtalen: den fjernes ved sletning.
+    // Samtalens private data følger samtalen: journalen over det sendte og samtale-specifikke
+    // regler fjernes. Beskyttelsesniveauer for historikken er monotone og bevares bevidst.
     await require('node:fs/promises').rm(require('node:path').join(this.store.root, 'model-logs', `${input?.id}.jsonl`), { force: true }).catch(() => {});
+    const privacyState = await this.store.read().catch(() => null);
+    if (privacyState?.projects) {
+      for (const key of Object.keys(privacyState.projects)) {
+        const conversations = privacyState.projects[key]?.privacy?.conversations;
+        if (conversations && Object.hasOwn(conversations, input?.id)) {
+          delete conversations[input?.id];
+          await this.store.save(privacyState).catch(() => {});
+          break;
+        }
+      }
+    }
     if (copy) { await this.releaseWorkspace?.(copy.root); await this.copies.remove(copy); }
     this.memory.delete(input?.id);
     if (this.chatID === input?.id) { this.chatID = null; return project.active ? this.openChat(project.active) : this.newChat(); }
