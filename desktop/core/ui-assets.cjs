@@ -15,7 +15,7 @@ const FILES = [
   'provider-brand.js', 'connection-overview.js', 'chat-display.js', 'context-display.js', 'conversation-mode.js',
   'live-work.js', 'server.js', 'viewport.js', 'share-view.js', 'hosting.js', 'deployment-setup.js',
   'promte-preview.js', 'komplai-preview.js', 'deployment.js', 'styles.css', 'demo.css', 'onboarding-b.js', 'onboarding-b.css',
-  'run-state.js', 'diff-review.js', 'shortcuts.js'
+  'run-state.js', 'diff-review.js', 'shortcuts.js', 'request-log-view.js'
 ];
 function allowed(name) {
   return PROVIDER_ASSETS.test(name) || ONBOARDING_ASSETS.includes(name) || name === 'provider-cloudflare.png' || FILES.includes(name);
