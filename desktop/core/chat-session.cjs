@@ -567,6 +567,16 @@ class ChatSession {
     }
     const task = this.task;
     if (!task) return;
+    // Gentagelsessignal: ens værktøjskald i træk tælles pr. opgave og annonceres ved 3, 5 og 8.
+    // Kun afsluttede eller afviste kald tæller; signalet er vejledende og stopper intet.
+    if (['completed', 'error'].includes(part.state?.status)) {
+      if (this.repeatTaskID !== task.id) { this.repeatTaskID = task.id; this.repeatGuard = new (require('./repeat-tool.cjs').RepeatTool)(); this.repeatSeen = new Set(); }
+      if (!this.repeatSeen.has(part.id)) {
+        this.repeatSeen.add(part.id);
+        const repeat = this.repeatGuard.observe(part.tool, part.state?.input || {});
+        if (repeat) this.emit({ type: 'run.repeat', root: this.project.root, chat: this.id, task: task.id, tool: repeat.tool, count: repeat.count, level: repeat.level, label: cleanOutput(String(part.state?.input?.command || part.state?.title || part.tool)).slice(0, 120) });
+      }
+    }
     if (part.tool === 'bash' && ['running', 'completed', 'error'].includes(part.state?.status) && !task.commandParts.has(part.id)) { task.commandParts.add(part.id); task.commands = task.commandParts.size; }
     if (part.state?.status !== 'completed' || task.completed.has(part.id)) return;
     task.completed.add(part.id);
