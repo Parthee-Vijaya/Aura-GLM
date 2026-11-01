@@ -155,7 +155,7 @@ const helpers = require('./ui-test-helpers.cjs');
     await page.click('#deployment-connect'); await page.waitForSelector('#deployment-cancel-login:not([hidden])');
     assert.equal(await page.locator('#deployment-cancel-login').isEnabled(), true, 'Login kan afbrydes, mens formularen er låst.');
     assert.equal(await page.textContent('#deployment-progress-label'), 'Venter på login …');
-    assert.equal(await page.textContent('#deployment-connection-note'), 'Godkend Aura 1 i browseren.');
+    assert.equal(await page.textContent('#deployment-connection-note'), 'Godkend Aura Prime i browseren.');
     assert.equal(await page.textContent('#deployment-feedback'), '');
     await page.screenshot({ path: path.join(root, 'promte-login-afbryd.png') });
     await page.click('#deployment-cancel-login'); await page.waitForSelector('[data-deploy-step="promteHost"]:not([hidden])'); await page.waitForFunction(() => !document.querySelector('#deployment-fields').disabled);

@@ -74,7 +74,7 @@ const { run } = require('../core/git.cjs');
   assert.equal((await page.evaluate(()=>window.harness.connectionState())).value.connections.length,1);
   await page.click('#setup-back');await page.click('#setup-back');assert.equal(await page.locator('#welcome-dialog').evaluate(el=>el.open),true);await page.click('#welcome-build');await page.click('#setup-local');
   // Første start: ét spørgsmål om funktioner med to valg. Hele pakken står først og er markeret som anbefalet.
-  await page.locator('#setup-title').filter({hasText:'Hvad skal Aura 1 hjælpe med?'}).waitFor();
+  await page.locator('#setup-title').filter({hasText:'Hvad skal Aura Prime hjælpe med?'}).waitFor();
   assert.equal(await page.locator('#setup-feature-choice button:visible').count(),2);
   assert.equal(await page.locator('#setup-feature-choice button').first().locator('.recommended').textContent(),'Anbefalet');
   assert.equal(await page.locator('#setup-eyebrow').textContent(),'FUNKTIONER');
