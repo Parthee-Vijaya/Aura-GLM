@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
-const { append, list, describeRequest, LIMITS } = require('../core/model-request-log.cjs');
+const { append, list, describeRequest, remove, LIMITS } = require('../core/model-request-log.cjs');
 
 async function journal(t) {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'aura-model-log-'));
@@ -82,4 +82,17 @@ test('journalen skrives atomisk og afviser en mappe, der ikke er privat', async 
   await fs.mkdir(path.dirname(open), { recursive: true }); await fs.mkdir(open, { mode: 0o755 });
   await assert.rejects(append(open, 'chat-b', {}), /ikke privat/, 'en mappe med gruppeadgang afvises');
   await assert.rejects(append(open, 'chat/b', {}), /gyldig samtale/, 'stier i samtale-id afvises');
+});
+
+test('remove venter på igangværende skrivninger og forhindrer filen i at genopstå', async t => {
+  const directory = await journal(t);
+  // Start en skrivning og slet samtidig.
+  const writing = append(directory, 'chat-race', { task: 't1', ...describeRequest('{"messages":[]}') });
+  await remove(directory, 'chat-race');
+  await writing; // skrivningen er færdig; filen må ikke genopstå.
+  const page = await list(directory, 'chat-race', {});
+  assert.equal(page.total, 0, 'journalen er væk og genopstår ikke');
+  // En ny skrivning til den slettede samtale afvises.
+  await append(directory, 'chat-race', { task: 't2', ...describeRequest('{"messages":[]}') });
+  assert.equal((await list(directory, 'chat-race', {})).total, 0, 'ingen nye poster efter sletning');
 });

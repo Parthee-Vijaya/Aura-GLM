@@ -272,19 +272,16 @@ class Workbench {
     const project = await this.history.removeChat(this.project.root, input?.id, remove);
     if (chat) { await chat.close(); this.chats.delete(chat.id); }
     // Samtalens private data følger samtalen: journalen over det sendte og samtale-specifikke
-    // regler fjernes. Beskyttelsesniveauer for historikken er monotone og bevares bevidst.
-    await require('node:fs/promises').rm(require('node:path').join(this.store.root, 'model-logs', `${input?.id}.jsonl`), { force: true }).catch(() => {});
-    const privacyState = await this.store.read().catch(() => null);
-    if (privacyState?.projects) {
-      for (const key of Object.keys(privacyState.projects)) {
-        const conversations = privacyState.projects[key]?.privacy?.conversations;
-        if (conversations && Object.hasOwn(conversations, input?.id)) {
-          delete conversations[input?.id];
-          await this.store.save(privacyState).catch(() => {});
-          break;
-        }
+    // regler fjernes gennem butikkens opdateringskø. Journal-sletningen venter på igangværende
+    // skrivninger, så filen ikke genopstår. Beskyttelsesniveauer for historikken er monotone og
+    // bevares bevidst.
+    await require('./model-request-log.cjs').remove(require('node:path').join(this.store.root, 'model-logs'), input?.id);
+    await this.store.update(state => {
+      for (const key of Object.keys(state.projects || {})) {
+        const conversations = state.projects[key]?.privacy?.conversations;
+        if (conversations && Object.hasOwn(conversations, input?.id)) delete conversations[input?.id];
       }
-    }
+    }).catch(() => {});
     if (copy) { await this.releaseWorkspace?.(copy.root); await this.copies.remove(copy); }
     this.memory.delete(input?.id);
     if (this.chatID === input?.id) { this.chatID = null; return project.active ? this.openChat(project.active) : this.newChat(); }

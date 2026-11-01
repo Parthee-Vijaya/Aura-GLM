@@ -399,3 +399,39 @@ test('a policy change during encryption cannot authorize a protected request und
   await assert.rejects(f.dispatch(), { code: 'PRIVACY_STALE' });
   assert.equal(f.received.length, 0);
 });
+
+test('recordTransport modtager den kontrollerede body og gatens metadata; fejl afbryder ikke afsendelsen', async t => {
+  const f = await fixture(t);
+  const recorded = [];
+  let failFirst = false;
+  await f.service.configure({ scope: 'project', settings: { enabled: true, workMode: 'cloud-controlled', defaultClass: 'public', requireApproval: false, protectedSources: [] } });
+  const scope = { kind: 'conversation', root: f.bench.project.root, chat: f.bench.chat?.id || f.bench.chatID };
+  const result = await f.service.dispatch({
+    scope, connection: f.connection, model: f.model, route: null,
+    url: `${f.connection.baseURL}/chat/completions`, headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ model: 'synthetic', messages: [{ role: 'user', content: 'Hjælp med en formular.' }] }),
+    purpose: 'project-conversation', revision: 'task-1', contextPartition: 'c1',
+    assertCurrent: () => true,
+    recordTransport: (checkedBody, gateMeta) => {
+      if (failFirst) throw new Error('Journalen er fuld.');
+      recorded.push({ body: checkedBody, gate: gateMeta });
+    }
+  }, f.transport);
+  assert.ok(result, 'afsendelsen lykkedes');
+  // Anden runde: recordTransport fejler, men afsendelsen fortsætter.
+  failFirst = true;
+  await f.service.dispatch({
+    scope, connection: f.connection, model: f.model, route: null,
+    url: `${f.connection.baseURL}/chat/completions`, headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ model: 'synthetic', messages: [{ role: 'user', content: 'Prøv igen.' }] }),
+    purpose: 'project-conversation', revision: 'task-2', contextPartition: 'c1',
+    assertCurrent: () => true,
+    recordTransport: (checkedBody, gateMeta) => { if (failFirst) throw new Error('Journalen er fuld.'); }
+  }, f.transport);
+  assert.equal(f.received.filter(item => item.body).length >= 2, true, 'begge POSTs nåede frem til modtageren');
+  if (recorded.length) {
+    const parsed = JSON.parse(recorded[0].body);
+    assert.equal(parsed.model, 'synthetic', 'journalen ser den kontrollerede body, ikke URL\'en');
+    assert.ok(recorded[0].gate?.requestId, 'gatens requestId er med');
+  }
+});

@@ -143,7 +143,7 @@ class PrivacyGate {
       // No await or JSON reconstruction between final check and transport.
       // Gatens beslutning følger med som rent metadata (frossen før sidste kontrol), så
       // journalen kan vise kontrollens udfald pr. kald. Intet indhold; ingen ny beregning.
-      const gateMeta = freeze({ requestId: id, decision: checked.changed ? 'rewrite' : 'allow', approvedBy: requiresApproval ? 'user' : 'policy', classification: inherited.classification, attributes: freeze({ ...inherited.attributes }), locality: destination.locality });
+      const gateMeta = freeze({ requestId: id, decision: checked.changed ? 'rewrite' : 'allow', approvedBy: requiresApproval ? 'user' : 'policy', classification: lastInheritance.classification, attributes: freeze({ ...lastInheritance.attributes }), locality: destination.locality });
       return transport(payload, gateMeta);
     } catch (cause) {
       if (cause instanceof PrivacyGateError) { await record(cause.decision); throw cause; }

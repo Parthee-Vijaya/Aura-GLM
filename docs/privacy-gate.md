@@ -1,6 +1,6 @@
 # Privacy Gate i Aura Prime
 
-Dette dokument gælder kildearbejdet i `Parthee-Vijaya/Aura-GLM` på `main``. Det indgår ikke i den udgivne `1.0.0-beta.17`-DMG. Den ældre Code-OSS-version og originalens PR’er er ikke ændret.
+Dette dokument gælder kildearbejdet i `Parthee-Vijaya/Aura-GLM` på `main`. Det indgår ikke i den udgivne `1.0.0-beta.17`-DMG. Den ældre Code-OSS-version og originalens PR’er er ikke ændret.
 
 Privacy Gate kontrollerer, hvilke data en arbejdsopgave må sende til en model eller ekstern tjeneste. Den almindelige modelgodkendelse, planvalg og værktøjsgodkendelser består. YOLO giver ingen ekstra datadelingsrettigheder.
 

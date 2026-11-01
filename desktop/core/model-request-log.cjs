@@ -38,8 +38,10 @@ async function fileFor(directory, chat) {
   // Samtale-id'et bliver et filnavn: kun bogstaver, tal og bindestreg.
   if (!/^[A-Za-z0-9-]{1,100}$/.test(chat)) throw new Error('Journalen kræver en gyldig samtale.');
   // Privatlivsmappen skal være 0700 og ejes af brugeren — som audit-mappen i privacy-service.
-  const stat = await fs.stat(directory).catch(() => null);
-  if (!stat || !stat.isDirectory()) await fs.mkdir(directory, { recursive: true, mode: 0o700 });
+  // lstat følger ikke symlinks; en henvisning afvises.
+  const stat = await fs.lstat(directory).catch(() => null);
+  if (!stat) await fs.mkdir(directory, { recursive: true, mode: 0o700 });
+  else if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error('Journalens mappe er ikke privat.');
   else if ((stat.mode & 0o077) !== 0) throw new Error('Journalens mappe er ikke privat.');
   return path.join(directory, `${chat}.jsonl`);
 }
@@ -55,7 +57,19 @@ async function append(directory, chat, entry = {}) {
   return next;
 }
 
-async function appendNow(file, chat, entry = {}) {  const record = {
+// Slettede samtaler afviser nye skrivninger, så en igangværende post ikke genopstår filen.
+// Et slettet samtale-id genbruges ikke, så tombestonen bliver siddende.
+const tombstones = new Set();
+async function remove(directory, chat) {
+  if (!/^[A-Za-z0-9-]{1,100}$/.test(chat)) return;
+  tombstones.add(chat);
+  try { await (queues.get(path.join(directory, `${chat}.jsonl`)) || Promise.resolve()); } catch { /* En fejl i en igangværende skrivning er acceptabel her. */ }
+  await fs.rm(path.join(directory, `${chat}.jsonl`), { force: true }).catch(() => {});
+}
+
+async function appendNow(file, chat, entry = {}) {
+  if (tombstones.has(chat)) return 0; // Samtalen er slettet; intet genopstår.
+  const record = {
     schema: 1, at: new Date().toISOString(),
     chat, task: safe(entry.task) ? entry.task : null,
     purpose: safe(entry.purpose) ? entry.purpose : 'project-conversation',
@@ -90,4 +104,4 @@ async function list(directory, chat, { offset = 0, limit = 50 } = {}) {
   return { total: kept.length, entries: kept.slice(offset, offset + limit) };
 }
 
-module.exports = { append, list, describeRequest, LIMITS };
+module.exports = { append, list, describeRequest, remove, LIMITS };
