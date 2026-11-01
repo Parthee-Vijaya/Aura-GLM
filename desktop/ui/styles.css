@@ -1278,12 +1278,12 @@ details.plan-detail > .plan-detail-body { padding: 0 14px 12px 14px; font-size: 
 #model-picker-search { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--canvas); color: var(--ink); font: inherit; margin: 0; }
 #model-picker-search:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 32%, transparent); }
 #model-picker-list { max-height: 260px; overflow-y: auto; display: grid; gap: 2px; margin-top: 8px; }
-#model-picker-list button[aria-checked="true"]::before { content: '›  '; color: var(--accent); }
+#model-picker-list button[aria-selected="true"]::before { content: '›  '; color: var(--accent); }
 #model-picker-list button[data-aktiv] { background: var(--tint); }
 #model-picker-list p.hint { margin: 0; padding: 7px 10px; font-size: 12px; color: var(--muted); }
 #model-picker-list button { display: block; width: 100%; text-align: left; padding: 8px 12px; border: none; background: transparent; border-radius: 8px; font-size: 13px; cursor: pointer; color: var(--ink); }
 #model-picker-list button:hover { background: var(--tint); }
-#model-picker-list button[aria-checked="true"] { background: var(--tint); font-weight: 600; }
+#model-picker-list button[aria-selected="true"] { background: var(--tint); font-weight: 600; }
 #model-picker .mode-menu-footer { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
 
 /* Status-badges: farve-kodede piller for agenttilstande (Paradev-mønster) */

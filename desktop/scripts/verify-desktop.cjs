@@ -24,7 +24,7 @@ const root = path.join(__dirname, '..', '..');
     const identity = await app.evaluate(({app, Menu}) => ({ name: app.getName(), userData: app.getPath('userData'), labels: Menu.getApplicationMenu().items.map(item => item.label) }));
     assert.equal(identity.name, 'Aura');
     assert.equal(await fs.realpath(identity.userData), await fs.realpath(path.join(testRoot, 'electron-data')));
-    assert.deepEqual(identity.labels, ['Aura', 'Rediger', 'Vis', 'Vindue']);
+    assert.deepEqual(identity.labels, [require('../core/distribution.cjs').displayName, 'Rediger', 'Vis', 'Vindue']);
     return page;
   }
   async function choose(paths, canceled=false) {
@@ -55,8 +55,8 @@ const root = path.join(__dirname, '..', '..');
     assert.equal(await page.locator('#onboarding').isVisible(),true);
     await require('./ui-test-helpers.cjs').chooseLocation(app, page, testRoot); await page.click('#create');
     await page.waitForSelector('#workspace:not([hidden])');
-    // Et nyt projekt starter i Samtale med idéen klar i skrivefeltet.
-    assert.equal(await page.inputValue('#work-mode'), 'chat');
+    // Et nyt projekts første idé står som en redigerbar kladde i Byg (DESIGN.md); teksten ligger i skrivefeltet.
+    assert.equal(await page.inputValue('#work-mode'), 'free');
     assert.match(await page.inputValue('#prompt'), /Find og del aktiviteter/);
     assert.equal(await page.locator('#messages').textContent(), '');
     await page.fill('#prompt', 'Min egen kladde'); assert.equal(await page.isVisible('#start-idea'), false, 'en kladde kan ikke overskrives');
@@ -75,7 +75,7 @@ const root = path.join(__dirname, '..', '..');
     await fs.writeFile(publicIndex,initial.replace('Fælleshaven</h1>','En levende fælleshave</h1>'));
     await preview.locator('h1').filter({hasText:'En levende fælleshave'}).waitFor({timeout:10000});
     for (const [preset, w, h] of [['desktop',1920,1080],['tablet',768,1024],['phone',390,844]]) {
-      await page.selectOption('#viewport-preset',preset);
+      await page.click(`.viewport-icon[data-preset="${preset}"]`);
       await page.waitForFunction(([w,h])=>{const f=document.querySelector('#preview');return f.clientWidth===w&&f.clientHeight===h;},[w,h]);
       assert.deepEqual(await preview.locator('body').evaluate(()=>[innerWidth,innerHeight]),[w,h]);
     }
@@ -90,12 +90,16 @@ const root = path.join(__dirname, '..', '..');
     assert.ok((await page.locator('#chat-panel').boundingBox()).width>originalWidth+100);
     await page.locator('#workspace-divider').focus();await page.keyboard.press('Home');
     assert.equal(await page.locator('#workspace-divider').getAttribute('aria-valuenow'),'280');
-    await page.selectOption('#viewport-preset','desktop');await require('./ui-test-helpers.cjs').previewOptions(page);await page.selectOption('#viewport-zoom','actual');
+    await page.click('.viewport-icon[data-preset="desktop"]');await require('./ui-test-helpers.cjs').previewOptions(page);await page.selectOption('#viewport-zoom','actual');
+    // Overløb opstår først, når siden er bredere end ruden. Brug en egen bredde over ruden,
+    // så prøven ikke afhænger af vinduets og skærmens størrelse (kendt svaghed i den gamle prøve).
+    const surfaceWidth = await page.locator('#preview-surface').evaluate(el => el.clientWidth);
+    await page.fill('#viewport-width', String(surfaceWidth + 600)); await page.locator('#viewport-width').press('Tab');
     assert.ok(await page.locator('#preview-surface').evaluate(el=>el.scrollWidth>el.clientWidth));
     await page.selectOption('#viewport-zoom','fit'); await page.keyboard.press('Escape');
     assert.ok(await page.locator('#preview-surface').evaluate(el=>el.scrollWidth<=el.clientWidth));
     await page.screenshot({path:path.join(testRoot,'desktop-preview.png'),fullPage:true});
-    await page.selectOption('#viewport-preset','fluid');
+    await page.click('.viewport-icon[data-preset="fluid"]');
     assert.equal(await preview.locator('body').evaluate(()=>typeof window.harness),'undefined');
     assert.equal(await preview.locator('body').evaluate(()=>typeof require),'undefined');
     assert.equal(await preview.locator('body').evaluate(async()=>{try{await fetch('https://example.com');return true;}catch{return false;}}),false);

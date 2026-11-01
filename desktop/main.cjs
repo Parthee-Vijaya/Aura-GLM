@@ -36,7 +36,7 @@ app.setPath('userData', identity.userData);
 app.setPath('sessionData', identity.sessionData);
 // Én app ad gangen: to processer ville dele datamappen og skrive i hinandens filer og motorer.
 const gotLock = app.requestSingleInstanceLock();
-if (!gotLock) app.quit();
+if (!gotLock) app.exit(0);
 app.on('second-instance', () => { if (window) { if (window.isMinimized()) window.restore(); window.focus(); } });
 // Opstartsregistrer for agentmotoren skriver kun faste felter uden indhold,
 // stier eller hemmeligheder og er bevidst adskilt fra samtale- og projektdata.
@@ -97,7 +97,17 @@ async function selectSpace(root, owner = currentWorkbench()) {
   return { workspaceRoot: root, isolated: root !== owner.project.root, copy: chat?.copy ? { id: chat.copy.id, omissions: chat.copy.omissions } : null, previewURL: ctx.preview?.url || ctx.externalPreview || null, previewExternal: Boolean(ctx.externalPreview), runtime: { ...ctx.devServer.snapshot(), root: owner.project.root, workspaceRoot: root, project: ctx.detectedRuntime } };
 }
 async function chatState(state) { const request = requests.getStore(); if (request) { request.workspaceRoot = state.workspaceRoot; request.chat = state.chat; } return { ...state, preview: await selectSpace(state.workspaceRoot) }; }
-async function closeSpaces() { await Promise.all([...spaces.values()].map(async ctx => { await ctx.ready.catch(() => {}); await ctx.devServer?.stop(); await ctx.preview?.close(); })); spaces.clear(); selectedRoot = null; }
+async function closeSpaces() {
+  await Promise.all([...spaces.values()].map(async ctx => {
+    await ctx.ready.catch(() => {});
+    // Hver ressource lukkes for sig, så en fejl ikke efterlader de øvrige kørende.
+    const failures = [];
+    try { await ctx.devServer?.stop(); } catch (error) { failures.push(error); }
+    try { await ctx.preview?.close(); } catch (error) { failures.push(error); }
+    if (failures.length) throw failures[0];
+  }));
+  spaces.clear(); selectedRoot = null;
+}
 let quitReady = false, shuttingDown = null;
 const failures = [];
 function recordFailure(area, type) { failures.push({ area, type, at: new Date().toISOString() }); if (failures.length > 10) failures.shift(); }
@@ -120,10 +130,15 @@ function shutdown() {
 process.on('unhandledRejection', reason => { recordFailure('app', 'uventet'); console.error('Unhandled rejection:', reason); });
 function aiWorking() { return Boolean(registry) && registry.allChats().some(chat => chat.running || chat.sending || chat.starting || chat.finishing); }
 // Lukning midt i en AI-opgave afbryder arbejdet; brugeren bekræfter det udtrykkeligt.
+let discardingWork = false;
 async function confirmDiscardWork() {
+  if (discardingWork) return false; // Én dialog ad gangen; et nyt ⌘Q skal ikke stille et andet spørgsmål.
   if (!aiWorking()) return true;
-  const choice = await dialog.showMessageBox(window, { type: 'question', title: 'AI’en arbejder stadig', message: 'AI’en er i gang med en opgave i et projekt.', detail: 'Lukker du nu, afbrydes opgaven. Kladden gemmes, og de gemte versioner består, men arbejdet fortsætter ikke af sig selv ved næste start.', buttons: ['Fortsæt arbejdet', 'Luk alligevel'], defaultId: 0, cancelId: 0 });
-  return choice.response === 1;
+  discardingWork = true;
+  try {
+    const choice = await dialog.showMessageBox(window, { type: 'question', title: 'AI’en arbejder stadig', message: 'AI’en er i gang med en opgave i et projekt.', detail: 'Lukker du nu, afbrydes opgaven. Kladden gemmes, og de gemte versioner består, men arbejdet fortsætter ikke af sig selv ved næste start.', buttons: ['Fortsæt arbejdet', 'Luk alligevel'], defaultId: 0, cancelId: 0 });
+    return choice.response === 1;
+  } finally { discardingWork = false; }
 }
 const uiURL = 'harness://app/index.html';
 const credentialEntry = require('./core/credential-entry.cjs').createCredentialEntry({ BrowserWindow, ipcMain, safeStorage, parent:() => window, createSession:() => {
@@ -645,6 +660,7 @@ handle('idea:send', value => { if (currentProject()) throw new Error('Idéhjælp
 handle('idea:stop', () => ideaRefinement.stop());
 handle('connections:models', value => workbench.models(value, requests.getStore()?.chat));
 handle('connections:routes', value => workbench.routes(value.connectionID, value.modelID, requests.getStore()?.chat));
+handle('connections:effort-levels', value => workbench.effortLevels(value?.connectionID, value?.modelID, value?.capabilities));
 require('./core/chat-materials-ipc.cjs').installChatMaterials({ getWorkbench:currentWorkbench, isSelected:bench => registry.selected === bench, register:handle, dialog, exclusive, normalizeImage:require('./core/screenshot-normalizer.cjs').createImageNormalizer({ nativeImage }), emit:event => sendEvent(event) });
 handle('agent:prepare', value => exclusive(() => workbench.prepare(chatInput(value))));
 handle('agent:send', value => {
@@ -1037,17 +1053,21 @@ app.whenReady().then(async () => {
     window.webContents.on('will-navigate', event => event.preventDefault());
     window.webContents.on('will-attach-webview', event => event.preventDefault());
     // En nedbrudt renderer viser en hvid skærm; grænsefladen genindlæses, så appen er brugelig uden genstart.
-    created.webContents.on('render-process-gone', (_event, details) => {
+    let rendererCrashes = 0;
+    window.webContents.on('did-finish-load', () => { rendererCrashes = 0; });
+    window.webContents.on('render-process-gone', (_event, details) => {
       if (quitReady || !window || window.isDestroyed() || details.reason === 'clean-exit') return;
       recordFailure('app', 'renderer');
-      if (!window.webContents.isLoading()) window.loadURL(uiURL).catch(() => {});
+      // Genindlæs højst to gange i træk; en renderer, der går ned ved hver indlæsning, må ikke sætte appen i ring.
+      if (++rendererCrashes > 2 || window.webContents.isLoading()) return;
+      window.loadURL(uiURL).catch(() => {});
     });
     const created = window;
     created.on('close', async event => {
       if (quitReady) return;
       event.preventDefault();
       if (!await confirmDiscardWork()) return;
-      shutdown().catch(() => {}).finally(() => { if (!created.isDestroyed()) created.destroy(); });
+      shutdown().catch(error => console.error('Oprydning ved vindueslukning fejlede:', error)).finally(() => { if (!created.isDestroyed()) created.destroy(); });
     });
     created.on('closed', () => { window = null; assets = []; registry.deselect(); });
     window.loadURL(uiURL);
@@ -1068,7 +1088,7 @@ app.on('before-quit', async event => {
   if (quitReady) return;
   event.preventDefault();
   if (!await confirmDiscardWork()) return;
-  shutdown().catch(() => {}).finally(() => { quitReady = true; app.quit(); });
+  shutdown().catch(error => console.error('Oprydning ved afslutning fejlede:', error)).finally(() => { quitReady = true; app.quit(); });
 });
 
 }

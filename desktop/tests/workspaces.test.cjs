@@ -234,3 +234,53 @@ test('godkendelser kan grupperes inden for samme projekt, huskes ved nyt besøg 
   second.generation++; await assert.rejects(second.reply({ id: 'b1', allow: true }), /ikke længere/);
   first.running = false; second.running = false;
 });
+
+test('en fejlet aktivering fjernes fra registret, lukkes og kan prøves igen', async t => {
+  const { registry, projects } = await setup(t);
+  const originalCreate = registry.create.bind(registry);
+  let attempts = 0;
+  const firstBenchCloses = { count: 0 };
+  registry.create = () => {
+    const bench = originalCreate();
+    const originalActivate = bench.activate.bind(bench), originalClose = bench.close.bind(bench);
+    bench.activate = async options => { await originalActivate(options); attempts++; if (attempts === 1) throw new Error('simuleret aktiveringsfejl'); };
+    bench.close = async () => { if (attempts === 1) firstBenchCloses.count++; return originalClose(); };
+    return bench;
+  };
+  await assert.rejects(registry.select(projects[0]), /simuleret aktiveringsfejl/);
+  assert.equal(registry.get(projects[0].root), null, 'den halvt aktiverede arbejdsbænk er fjernet fra registret');
+  assert.equal(firstBenchCloses.count, 1, 'arbejdsbænken lukkes, så ingen ressourcer efterlades uden ejer');
+  const bench = await registry.select(projects[0]);
+  assert.ok(bench, 'et nyt valg starter aktiveringen forfra');
+  assert.equal(attempts, 2);
+});
+
+test('registrets lukning gennemføres for alle arbejdsbænke, også når én lukning fejler', async t => {
+  const { registry, projects, engines } = await setup(t);
+  const first = await registry.select(projects[0]), second = await registry.select(projects[1]);
+  prepare(first.chat, { id: 'connection-a', kind: 'compatible', baseURL: 'http://127.0.0.1:1/v1', name: 'Syntetisk' }, 'model-a');
+  prepare(second.chat, { id: 'connection-b', kind: 'compatible', baseURL: 'http://127.0.0.1:1/v1', name: 'Syntetisk' }, 'model-b');
+  await first.send({ text: 'Hej', fingerprint: 'connection-a:first:model-a' });
+  await second.send({ text: 'Hej', fingerprint: 'connection-b:first:model-b' });
+  first.chat.event({ type: 'session.idle' }); second.chat.event({ type: 'session.idle' });
+  await first.chat.finishing; await second.chat.finishing;
+  const originalFirstClose = first.close.bind(first);
+  first.close = async () => { throw new Error('simuleret lukningsfejl'); };
+  await assert.rejects(registry.close(), /simuleret lukningsfejl/);
+  assert.equal(engines[1].closed, 1, 'den anden arbejdsbænk lukkes alligevel');
+  first.close = originalFirstClose; // Gendannes, så testens oprydning kan lukke rent.
+});
+
+test('samtidens gateway lukkes, selv om motorlukningen fejler', async t => {
+  const { registry, projects } = await setup(t);
+  const bench = await registry.select(projects[0]);
+  const fingerprint = prepare(bench.chat, { id: 'connection-g', kind: 'compatible', baseURL: 'http://127.0.0.1:1/v1', name: 'Syntetisk' }, 'model-g');
+  await bench.send({ text: 'Hej', fingerprint });
+  assert.ok(bench.chat.engine && bench.chat.gateway, 'motoren og gatewayen er startet');
+  bench.chat.engine.close = async () => { throw new Error('motorlukning fejlede'); };
+  let gatewayClosed = 0; const originalGatewayClose = bench.chat.gateway.close.bind(bench.chat.gateway);
+  bench.chat.gateway.close = async () => { gatewayClosed++; return originalGatewayClose(); };
+  await assert.rejects(bench.chat.close(false), /motorlukning fejlede/);
+  assert.equal(gatewayClosed, 1, 'gatewayen lukkes, selv om motoren fejler');
+  assert.equal(bench.chat.engine, null, 'lukningen nulstiller samtalen; testens oprydning kan lukke rent');
+});

@@ -1108,20 +1108,23 @@ class ChatSession {
   async closeCurrentRun(reset) {
     if (reset) { this.permissionRevoke(); this.cancelQuality(); }
     this.questions.clear();
+    const failures = [];
     if (reset) {
-      if ((this.copy || this.bench.checkpointOwner === this)) this.checkpoints.cancel();
-      await this.stopping;
-      await this.finishing;
-      if (this.running) { ++this.generation; this.runStopped = true; this.running = false; await this.finishTask('interrupted', null); await this.saveHistory('interrupted'); this.bench.release(this); }
-      clearTimeout(this.historyTimer); this.historyTimer = null;
-      await this.bench.history.queue;
+      // Stop og historikgemning må ikke forhindre motor og gateway i at blive lukket.
+      try {
+        if ((this.copy || this.bench.checkpointOwner === this)) this.checkpoints.cancel();
+        await this.stopping;
+        await this.finishing;
+        if (this.running) { ++this.generation; this.runStopped = true; this.running = false; await this.finishTask('interrupted', null); await this.saveHistory('interrupted'); this.bench.release(this); }
+        clearTimeout(this.historyTimer); this.historyTimer = null;
+        await this.bench.history.queue;
+      } catch (error) { failures.push(error); }
     }
     const engine = this.engine, gateway = this.gateway;
     this.engine = null; this.gateway = null; this.engineIdentity = null;
     // contextUsage.bind er klassens egen metode: nulstil den målte kontekst, så en lukket samtale viser 'ukendt'.
     this.contextUsage.bind(null);
-    // Lukning gennemføres for begge ressourcer, også når den første fejler; fejlen kastes bagefter.
-    const failures = [];
+    // Lukning gennemføres for begge ressourcer, også når den første fejler; fejlene kastes bagefter.
     try { await engine?.close(); } catch (error) { failures.push(error); }
     try { await gateway?.close(); } catch (error) { failures.push(error); }
     if (failures.length) throw failures[0];

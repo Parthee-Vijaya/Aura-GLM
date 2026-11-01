@@ -38,7 +38,7 @@ const helpers = require('./ui-test-helpers.cjs');
       Updates.prototype.snapshot = function () { global.updateTest = this; Updates.prototype.snapshot = original; return original.call(this); };
     }, root);
     await page.evaluate(() => window.harness.updatesState());
-    await app.evaluate(async ({ app, session }, { root, serverURL }) => {
+    await app.evaluate(async ({ app, session }, { root, serverURL, repository }) => {
       const require = process.getBuiltinModule('module').createRequire(app.getAppPath() + '/package.json');
       const { MacUpdater } = require(app.getAppPath() + '/node_modules/electron-updater');
       const { DownloadedUpdateHelper } = require(app.getAppPath() + '/node_modules/electron-updater/out/DownloadedUpdateHelper');
@@ -47,13 +47,13 @@ const helpers = require('./ui-test-helpers.cjs');
       updater.updateConfigPath = root + '/app-update.yml'; await fs.writeFile(root + '/app-update.yml', JSON.stringify({ provider: 'generic', url: serverURL, updaterCacheDirName: 'test' }));
       updater.downloadedUpdateHelper = new DownloadedUpdateHelper(root + '/download-cache');
       session.fromPartition('electron-updater').webRequest.onBeforeRequest((request, callback) => {
-        if (request.url.startsWith('https://ai-alliancen-org.github.io/ai-harness/updates/')) return callback({ redirectURL: serverURL + '/feed' });
-        if (request.url.startsWith(`https://github.com/${distribution.repository}/releases/download/`)) return callback({ redirectURL: serverURL + '/file' });
+        if (request.url.startsWith(serverURL + '/feed')) return callback();
+        if (request.url.startsWith(`https://github.com/${repository}/releases/download/`)) return callback({ redirectURL: serverURL + '/file' });
         callback({ cancel: !request.url.startsWith(serverURL + '/') });
       });
       global.updateTest.enabled = true; global.updateTest.connect(updater); global.updateTest.set({ phase: 'idle' });
       global.updateInstalls = 0; global.updateTest.install = () => { global.updateInstalls++; };
-    }, { root, serverURL });
+    }, { root, serverURL, repository: distribution.repository });
     await page.click('#settings-toggle'); await page.click('#updates-button'); await page.click('#updates-action');
     await page.locator('#updates-action').filter({ hasText: 'Hent opdatering' }).waitFor();
     assert.equal(downloads, 0); assert.equal(await page.isVisible('#updates-warning'), true);

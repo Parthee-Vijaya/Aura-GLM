@@ -13,7 +13,8 @@ const running = source.slice(source.indexOf('function setRunning('), source.inde
 
 function makeView(id) {
   return { id, running: false, waitingFor: [], runStartedAt: 0, lastSignalAt: 0, receivedChars: 0,
-    runLabel: 'Klar', statusDetail: '', modelProgress: null, plan: { id: `plan-${id}` } };
+    runLabel: 'Klar', statusDetail: '', modelProgress: null, plan: { id: `plan-${id}` },
+    log: { attributes: {}, setAttribute(name, value) { this.attributes[name] = value; } } };
 }
 
 function fixture() {

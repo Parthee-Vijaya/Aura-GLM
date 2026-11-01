@@ -2,7 +2,7 @@
 const { repository, artifactPrefix } = require('../desktop/core/distribution.cjs');
 // Historical names remain readable; new releases use the configured distribution prefix.
 const escapedPrefix = artifactPrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const installerPattern = new RegExp(`^(${escapedPrefix}|Aura|AI-Harness)-(\\d+\\.\\d+\\.\\d+(?:-beta\\.\\d+)?)-(mac|win)-(arm64|x64)\\.(dmg|zip|exe)$`);
+const installerPattern = new RegExp(`^(${escapedPrefix}|Aura-1|Aura|AI-Harness)-(\\d+\\.\\d+\\.\\d+(?:-beta\\.\\d+)?)-(mac|win)-(arm64|x64)\\.(dmg|zip|exe)$`);
 const versionPattern = /^\d+\.\d+\.\d+(?:-beta\.\d+)?$/;
 const submissionIdPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 function installer(name) {

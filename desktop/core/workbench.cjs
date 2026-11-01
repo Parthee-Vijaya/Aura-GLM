@@ -380,6 +380,14 @@ class Workbench {
     this.catalogs.set(id, models); this.catalogTimes.set(id, new Date().toISOString()); return models;
   }
   async routes(id, modelID, trustedChatID) { const connection = await this.connection(id); connections.assertSupported(connection); const current = await this.privacy.discoveryPermit(this.discoveryScope(trustedChatID), connection, { kind: 'routes', modelID }); const result = await connections.routes(connection, this.store.decrypt(connection), modelID, { assertCurrent: current }); current(); return result; }
+  // Indsatsniveauer for en bestemt model uden netværkskald: den kendte tabel og katalogets egne oplysninger.
+  // Afsendelsen kontrollerer indsatsvalget igen (chat-session), så dette er vejledende for vælgeren.
+  async effortLevels(id, modelID, capabilities) {
+    const connection = await this.connection(id); connections.assertSupported(connection);
+    if (typeof modelID !== 'string' || !modelID) return [];
+    const model = { id: modelID, ...(capabilities && typeof capabilities === 'object' && Array.isArray(capabilities.effort) ? { capabilities: { effort: capabilities.effort } } : {}) };
+    return connections.effortLevels(connection, model);
+  }
   async selection(input, trustedChatID) {
     if (!this.project) throw new Error('Åbn et projekt først.');
     if (typeof input.modelID !== 'string' || !/^[a-zA-Z0-9_./:@+-]{1,200}$/.test(input.modelID)) throw new Error('Vælg en gyldig model.');
@@ -471,9 +479,12 @@ class Workbench {
   // Lukker samtalernes motorer og afbryder en opgave i gang. Projektet og samtalerne forbliver åbne; activate skifter dem.
   async close() {
     this.privacy.cancelScope();
-    for (const chat of this.chats.values()) await chat.close();
+    // Samtalerne lukkes alle, også når én lukning fejler; den første fejl kastes bagefter.
+    const failures = [];
+    for (const chat of this.chats.values()) { try { await chat.close(); } catch (error) { failures.push(error); } }
     clearTimeout(this.chatsTimer); this.chatsTimer = null;
-    await this.history.queue;
+    try { await this.history.queue; } catch (error) { failures.push(error); }
+    if (failures.length) throw failures[0];
   }
 }
 module.exports = { Workbench, planningReply };

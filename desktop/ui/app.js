@@ -28,7 +28,7 @@ function node(tag, text, className) { const el = document.createElement(tag); if
 const views = new Map();
 function makeView(id) {
   const v = { id, historyPending:[], historyLoaded:false, historyNotice:'', log: node('div'), approvals: node('div'), review: node('section', undefined, 'journey-card'), roles: new Map(), parts: new Map(), partTypes: new Map(), assistantText: new Map(), pendingMarkdown: new Set(), activityGroup: null, lastSentText: '', lastTarget: '', lastTargetRef: null, lastCheckpoint: null, rejectedThisRun: false, lastRejection: null, running: false, runStartedAt: 0, runLabel: '', statusDetail: '', waitingFor: [], plan: null, planCard: false, unread: false, draft: null, followChat: true, scrollTop: 0, lastSignalAt: 0, receivedChars: 0 };
-  v.log.setAttribute('aria-live', 'polite'); v.review.hidden = true; v.review.setAttribute('aria-live', 'polite');
+  v.log.setAttribute('role', 'log'); v.review.hidden = true; v.review.setAttribute('aria-live', 'polite');
   if (id) views.set(id, v);
   return v;
 }
@@ -771,7 +771,7 @@ async function loadModels(saved = {}) {
     }
     if (saved.modelID && models.some(m => m.id === saved.modelID)) { $('#model-select').value = saved.modelID; await loadRoutes(saved.routeID); }
     else preselectRecommended(id);
-    markChosenModel(); updateModelSummary(); $('#connection-warning').hidden = true; $('#connection-status').textContent = state.connections.find(c => c.id === id)?.name || 'Ingen model valgt';
+    markChosenModel(); updateModelSummary(); refreshEffortLevels(); $('#connection-warning').hidden = true; $('#connection-status').textContent = state.connections.find(c => c.id === id)?.name || 'Ingen model valgt';
   } catch (error) { if (generation === modelRequest) { $('#model-select').replaceChildren(option('', 'Forbindelsen kunne ikke læses')); connectionFailed(error.message); } throw error; }
 }
 async function loadRoutes(saved = '') {
@@ -902,6 +902,9 @@ function setRunning(value, status, v = view) {
   if (value && !v.running) { v.runStartedAt = Date.now(); v.lastSignalAt = v.runStartedAt; v.receivedChars = 0; v.modelProgress = null; v.todos = []; }
   if (!value) v.waitingFor = [];
   v.running = value; v.runLabel = status;
+  // Skærmlæseren holder sig fra den løbende genopbygning under arbejdet; svaret annonceres,
+  // når statuslinjen og resultatkortet (aria-live) siger, at opgaven er færdig.
+  v.log.setAttribute('aria-busy', value ? 'true' : 'false');
   if (value) v.statusDetail = status.startsWith('Starter') ? 'Aura Prime starter AI’en …' : $('#work-mode').value === 'plan' ? 'Venter på modellens forslag …' : 'Venter på modellen …';
   if (v === view) { running = value; $('#run-status').textContent = status; updateModelSummary(); }
   applyRunning(); window.chats?.render();
@@ -2130,6 +2133,8 @@ function placerModelVaelger() {
   p.style.left = `${Math.round(venstre)}px`; p.style.top = `${Math.round(topp)}px`;
 }
 $('#model-chip').onclick = async () => { await buildModelPicker(); document.getElementById('model-picker').showPopover(); placerModelVaelger(); document.getElementById('model-picker-search')?.focus(); };
+// Combobox-relationen: aria-expanded følger popoberen, så skærmlæseren ved, om listen er åben.
+document.getElementById('model-picker').addEventListener('toggle', () => { document.getElementById('model-picker-search')?.setAttribute('aria-expanded', String(document.getElementById('model-picker').matches(':popover-open'))); });
 addEventListener('resize', () => { if (document.getElementById('model-picker')?.matches(':popover-open')) placerModelVaelger(); });
 let pickerEntries = [];
 function syncPickerEffort() {
@@ -2201,32 +2206,40 @@ async function buildModelPicker() {
     });
   }
   const conn = $('#connection-select'), connModel = $('#model-select');
+  await refreshEffortLevels();
   syncPickerEffort();
   if (!conn?.value) { pickerEntries = []; if (search) search.value = ''; renderModelPicker(''); list.replaceChildren(node('p', 'Ingen forbindelse valgt endnu.', 'hint')); return; }
   const currentID = connModel?.value ?? '';
-  // Hele forbindelsens modelkatalog vises med søgning og indsats, som modelvælgeren i Codex.
+  // En mislykket hentning er ikke et tomt katalog: fejl og genforsøgsvej vises særskilt.
   let catalogFailed = false;
   if (!modelCatalog?.length) { list.replaceChildren(node('p', 'Henter modeller …', 'hint')); try { await loadModels(); } catch { catalogFailed = true; } }
   pickerEntries = [];
-  if (currentID && connModel.selectedOptions?.[0]?.textContent) pickerEntries.push({ modelID: currentID, label: pentModelNavn(currentID, connModel.selectedOptions[0].textContent), current: true });
+  if (currentID) {
+    // Ved en fejlet hentning viser selecten en fejltekst; modelnavnet må ikke stamme derfra.
+    const chosenText = connModel.selectedOptions?.[0]?.textContent || '';
+    const fromPlaceholder = ['Henter modeller …', 'Forbindelsen kunne ikke læses', 'Vælg model', 'Vælg en forbindelse først'].includes(chosenText);
+    pickerEntries.push({ modelID: currentID, label: pentModelNavn(currentID, fromPlaceholder ? '' : chosenText), current: true });
+  }
   for (const model of modelCatalog || []) {
     if (model.id === currentID) continue;
     const free = model.price && model.price.prompt != null && model.price.completion != null && Number(model.price.prompt) === 0 && Number(model.price.completion) === 0;
     pickerEntries.push({ modelID: model.id, label: `${pentModelNavn(model.id, model.name)}${free ? ' · gratis*' : ''}` });
   }
-  // En mislykket hentning er ikke et tomt katalog: fejl og genforsøgsvej vises særskilt.
   if (!pickerEntries.length) { if (search) search.value = ''; renderModelPicker(''); list.replaceChildren(node('p', catalogFailed ? 'Modellerne kunne ikke hentes fra forbindelsen. Kontrollér den, og prøv igen her eller under Flere indstillinger.' : 'Ingen modeller fundet hos forbindelsen.', 'hint')); return; }
   if (search) search.value = '';
   renderModelPicker('');
+  if (catalogFailed) list.prepend(node('p', 'Modellerne kunne ikke hentes fra forbindelsen. Listen kan være ufuldstændig; prøv igen under Flere indstillinger.', 'hint'));
 }
 function renderModelPicker(term = '') {
   const list = document.getElementById('model-picker-list');
   const search = document.getElementById('model-picker-search');
   const needle = term.trim().toLowerCase();
+  // Listen genopbygges; en gammel knapmarkering må ikke blive hængende som pegepind.
+  if (search) search.removeAttribute('aria-activedescendant');
   const matches = needle ? pickerEntries.filter(e => e.label.toLowerCase().includes(needle) || e.modelID.toLowerCase().includes(needle)) : pickerEntries;
   list.replaceChildren(...(matches.length ? matches.map((item, index) => {
-    const btn = node('button', item.label); btn.type = 'button'; btn.id = `model-option-${index}`; btn.setAttribute('role', 'radio');
-    btn.setAttribute('aria-checked', String(!!item.current));
+    const btn = node('button', item.label); btn.type = 'button'; btn.id = `model-option-${index}`; btn.setAttribute('role', 'option');
+    btn.setAttribute('aria-selected', String(!!item.current));
     btn.onclick = () => {
       document.getElementById('model-picker').hidePopover();
       const select = $('#model-select'); if (item.modelID && select && select.value !== item.modelID) { select.value = item.modelID; select.dispatchEvent(new Event('change', { bubbles: true })); }
@@ -2261,8 +2274,27 @@ const resetEffort = () => { if (view) view.effort = null; updateModelSummary(); 
 $('#model-effort-reset').onclick = resetEffort;
 // Indsats-knapperne i Vælg AI-dialogen: gem niveauet til samtalen og visning hvorefter.
 function setEffort(level) { if (!view) return; view.effort = level || null; updateModelSummary(); }
+// Henter modellens faktiske indsatsniveauer fra hovedprocessen (kendt tabel + katalogets egne
+// oplysninger), så vælgeren viser de samme trin, backenden accepterer — også før første afsendelse
+// og efter et modelskift. Ingen netværksforbindelse bruges.
+let effortLevelsRequest = 0;
+async function refreshEffortLevels() {
+  if (!view) return;
+  const id = $('#connection-select')?.value, modelID = $('#model-select')?.value;
+  if (!id || !modelID) return;
+  const generation = ++effortLevelsRequest;
+  try {
+    const capabilities = (modelCatalog || []).find(model => model.id === modelID)?.capabilities;
+    const levels = await call('effortLevels', { connectionID: id, modelID, capabilities });
+    if (generation !== effortLevelsRequest || !view || !Array.isArray(levels)) return;
+    view.effortLevels = levels;
+    // Modellen kan ikke tage imod et tidligere valgt niveau; samtalen falder da tilbage til standard.
+    if (view.effort && !levels.includes(view.effort)) { view.effort = null; updateModelSummary(); }
+    else if (document.getElementById('model-picker')?.matches(':popover-open')) syncPickerEffort();
+  } catch { /* Niveauerne hentes igen ved næste valg; intet forkert vises imens. */ }
+}
 for (const chip of document.querySelectorAll('.effort-chip')) { chip.onclick = () => { setEffort(chip.dataset.effort); }; }
-for (const id of ['#connection-select', '#model-select']) $(id).addEventListener('change', () => { if (view?.effort) resetEffort(); });
+for (const id of ['#connection-select', '#model-select']) $(id).addEventListener('change', () => { if (view?.effort) resetEffort(); refreshEffortLevels(); });
 for (const id of ['settings-menu', 'project-menu', 'preview-menu']) {
   document.getElementById(id).addEventListener('click', event => { if (event.target.closest('button') && (id !== 'preview-menu' || event.target.closest('#attach-preview'))) document.getElementById(id).hidePopover(); });
 }

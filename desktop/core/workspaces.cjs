@@ -30,8 +30,8 @@ class WorkspaceRegistry {
       bench = this.create(); this.benches.set(root, bench);
       ready = bench.activate({ ...project, root }); this.opening.set(root, ready);
       ready.finally(() => { if (this.opening.get(root) === ready) this.opening.delete(root); }).catch(() => {});
-      // En fejlet aktivering må ikke blive hængende som en halvt klar arbejdsbænk; næste valg starter forfra.
-      try { await ready; } catch (error) { if (this.benches.get(root) === bench) this.benches.delete(root); throw error; }
+      // En fejlet aktivering fjernes fra registret og lukkes, så halvt startede motorer ikke efterlades uden ejer.
+      try { await ready; } catch (error) { if (this.benches.get(root) === bench) this.benches.delete(root); bench.close().catch(() => {}); throw error; }
     }
     await ready;
     bench.project = { ...bench.project, ...project, root };
