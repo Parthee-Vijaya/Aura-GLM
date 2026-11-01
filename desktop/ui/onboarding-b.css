@@ -1,12 +1,12 @@
 /* Approved onboarding B. All rules are confined to onboarding and its existing
    model dialog; the workspace, plan view and approval surfaces are untouched. */
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) {
-  --ob-line: var(--line, #e2e3e9);
-  --ob-surface: var(--surface, #fff);
-  --ob-soft: var(--soft, #f6f6f8);
-  --ob-ink: var(--ink, #25262b);
-  --ob-muted: var(--muted, #777a87);
-  --ob-success: #16784f;
+  --ob-line: var(--aura-border, rgba(0,0,0,.08));
+  --ob-surface: var(--aura-bg-raised, #fff);
+  --ob-soft: var(--aura-bg-tint, #f3f4f6);
+  --ob-ink: var(--aura-ink, #151517);
+  --ob-muted: var(--aura-ink-muted, #70747c);
+  --ob-success: var(--aura-success, #229a60);
   color: var(--ob-ink);
 }
 :is(#setup.onboarding-b, #onboarding.onboarding-b) {
@@ -28,15 +28,15 @@
 #setup.onboarding-b .setup-topbar { margin-bottom: 26px; }
 #setup.onboarding-b .setup-heading { max-width: 100%; margin-bottom: 32px; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b) :is(.setup-heading h1, .intro h1) {
-  font-size: clamp(31px, 3.1vw, 48px);
-  line-height: 1.12;
-  font-weight: 650;
-  letter-spacing: -1.65px;
+  font-size: clamp(28px, 3.1vw, 44px);
+  line-height: 1.15;
+  font-weight: 500;
+  letter-spacing: -1px;
   margin-bottom: 15px;
   overflow-wrap: anywhere;
 }
 :is(#setup.onboarding-b, #onboarding.onboarding-b) :is(.setup-heading h1, .intro h1) em {
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--aura-font-family-brand, 'Montserrat', sans-serif);
   font-weight: 500;
   letter-spacing: -1.1px;
 }
@@ -207,7 +207,7 @@
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual-heading { margin: 8px 0 13px; font-size: 25px; line-height: 1.25; letter-spacing: -.8px; overflow-wrap: anywhere; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual-heading > span,
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual-heading > em { display: block; }
-:is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual-heading em { margin-top: 2px; font-family: Georgia, 'Times New Roman', serif; font-weight: 500; font-size: 29px; }
+:is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual-heading em { margin-top: 2px; font-family: var(--aura-font-family-brand, 'Montserrat', sans-serif); font-weight: 500; font-size: 29px; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual-description { color: var(--ob-muted); font-size: 11px; line-height: 1.8; margin: 0; overflow-wrap: anywhere; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-connection-name { color: var(--ob-muted); font-size: 10px; line-height: 1.6; margin: 11px 0 0; overflow-wrap: anywhere; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-data-path { display: grid; grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr) 24px minmax(0, 1fr); gap: 3px; align-items: start; margin: 27px 18px 28px; }

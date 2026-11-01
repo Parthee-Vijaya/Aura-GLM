@@ -160,3 +160,16 @@ body.workspace-calm[data-workspace-theme="light"] {
 
 .workspace-calm .provider-brand-icon { background:#fff; border-radius:4px; padding:1px; }
 .workspace-calm input:not([type=checkbox]):not([type=radio]):not([type=color]) { background:var(--surface); color:var(--ink); border-color:var(--line); }
+
+/* DSH-stil: tom samtale er en hero — centreret med puls fra DSH's intro. */
+.workspace-calm #project-intro { text-align: center; max-width: 520px; margin: 8vh auto 16px; }
+.workspace-calm #project-intro h3 { font-size: 28px; font-weight: 300; color: var(--ink); margin: 0 0 12px; }
+.workspace-calm #project-intro p { font-size: 14px; color: var(--muted); line-height: 1.6; margin: 0 0 8px; }
+.workspace-calm #project-intro details { margin-top: 18px; text-align: left; border: 1px solid var(--aura-border); border-radius: var(--aura-radius-md); padding: 12px 14px; background: var(--aura-bg-raised); }
+.workspace-calm #project-intro summary { font-weight: var(--aura-font-weight-medium); cursor: pointer; }
+.workspace-calm #start-idea { display: block; margin: 12px auto; font-size: 13px; }
+/* Når chatten er tom, rykker composeren sig til midten. */
+.workspace-calm .work-grid[data-surface="off"] .composer { max-width: 720px; }
+
+/* DSH-stil: composerens genvejslinje er diskret. */
+.workspace-calm #composer-shortcut { font-size: 10px; color: var(--aura-ink-faint); text-align: center; margin: 4px 0 2px; }
