@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { identity, outcome, succeeded, describeOutcome, evidence } = require('../core/run-contract.cjs');
+const { identity, outcome, succeeded, describeOutcome, evidence, commandEvidence } = require('../core/run-contract.cjs');
 
 test('udfald normaliseres uden at opfinde felter, og ukendt forbliver ukendt', () => {
   assert.deepEqual(outcome({ exitCode: 0 }), { exitCode: 0, signal: null, timedOut: false, cancelled: false, durationMs: null });
@@ -44,4 +44,12 @@ test('bevisblokken tæller målinger og markerer manglende kilder som ukendte', 
   assert.equal(empty.commands.run, null); assert.equal(empty.quality.ran, false); assert.equal(empty.quality.findings, null);
   assert.equal(evidence({ files: { count: -1 } }).files.count, null);
   assert.equal(evidence({ commands: { run: 2, unknown: true } }).commands.unknown, true);
+});
+
+test('kommandobeviset tæller kun afsluttede kald og adskiller manglende exitkoder', () => {
+  const part = (tool, status, exit) => ({ tool, state: { status, ...(Number.isInteger(exit) ? { metadata: { exit } } : {}) } });
+  assert.deepEqual(commandEvidence([part('bash', 'completed', 0), part('bash', 'completed', 1), part('bash', 'error', 2)]), { run: 3, failed: 2, unknown: false });
+  assert.deepEqual(commandEvidence([part('bash', 'completed', 0), part('bash', 'error')]), { run: 2, failed: 0, unknown: true }, 'en manglende exitkode gør udfaldet delvist ukendt');
+  assert.deepEqual(commandEvidence([part('bash', 'running', 0), part('read', 'completed'), part('bash', 'pending')]), { run: 0, failed: 0, unknown: false }, 'kun afsluttede bash-kald tæller');
+  assert.deepEqual(commandEvidence([]), { run: 0, failed: 0, unknown: false });
 });

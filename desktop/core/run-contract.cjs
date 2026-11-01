@@ -46,4 +46,12 @@ function evidence(value = {}) {
   };
 }
 
-module.exports = { identity, outcome, succeeded, describeOutcome, evidence };
+// Kommandoer med faktiske udfald fra værktøjspartene: kørt, fejlet (kode != 0) og om nogen
+// mangler exitkode. Kald uden afsluttet status tæller ikke; intet opfindes.
+function commandEvidence(parts) {
+  const commands = [...parts].filter(part => part?.tool === 'bash' && ['completed', 'error'].includes(part?.state?.status));
+  const withExit = commands.filter(part => Number.isInteger(part?.state?.metadata?.exit));
+  return { run: commands.length, failed: withExit.filter(part => part.state.metadata.exit !== 0).length, unknown: commands.length > withExit.length };
+}
+
+module.exports = { identity, outcome, succeeded, describeOutcome, evidence, commandEvidence };
