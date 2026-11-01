@@ -130,6 +130,9 @@ let connectionReceipt=null, connectionTicket=0;
 let setupActive = false, setupGeneration = 0, verifiedConnection = '', recovery = '';
 // F20 changes presentation only; connection checks and all actions remain owned by the existing controllers.
 let onboardingPreviewKind = '';
+// The onboarding profile step holds pure UI state: the fields are saved through
+// profileSave and never reach prompts, the model log or diagnostics.
+let profileStepShown = false, profileStepDone = false, profileIconChoice = '';
 function syncOnboardingVisuals() {
   if (!window.OnboardingB) return;
   const selected = state?.connections?.find(c => c.id === $('#setup-connection').value);
@@ -137,14 +140,15 @@ function syncOnboardingVisuals() {
   const setupConnection = details ? state?.connections?.find(c => c.id === $('#connection-id').value) : setupStep === 'saved' || setupStep?.startsWith('features') ? selected : null;
   const setupCheck = setupConnection && connectionChecks.get(setupConnection.id);
   const kind = details ? $('#provider-kind').value : setupStep === 'local' ? 'ollama' : setupConnection?.kind || onboardingPreviewKind || '';
-  const phase = setupStep === 'saved' || setupStep === 'local' || details ? 'connection' : setupStep?.startsWith('features') ? 'features' : setupStep === 'provider' ? 'provider' : 'choice';
+  const phase = setupStep === 'profile' ? 'profile' : setupStep === 'saved' || setupStep === 'local' || details ? 'connection' : setupStep?.startsWith('features') ? 'features' : setupStep === 'provider' ? 'provider' : 'choice';
   const checked = Boolean(setupConnection && setupConnection.kind === kind && verifiedConnection === setupConnection.id && setupCheck?.status === 'ok' && setupCheck.count);
   window.OnboardingB.render($('#setup-visual'), { kind, phase, preview: setupStep === 'provider' && !details, connectionName: setupConnection?.name || '', saved: Boolean(setupConnection), checked, error: setupCheck?.status === 'error', pending: setupCheck?.status === 'checking' });
   for (const step of document.querySelectorAll('#setup .onboarding-b-progress li')) {
-    const complete = step.dataset.phase === 'provider' && Boolean(details || setupConnection) || step.dataset.phase === 'connection' && checked;
+    // Provider and connection are one logical choice: both setup phases mark item 2.
+    const complete = step.dataset.phase === 'profile' ? profileStepDone : step.dataset.phase === 'connection' && Boolean(details || setupConnection);
     step.dataset.complete = String(complete);
-    step.querySelector('span').textContent = complete ? '✓' : String(['provider', 'connection', 'features', 'idea'].indexOf(step.dataset.phase) + 1);
-    const active = step.dataset.phase === (phase === 'choice' ? 'provider' : phase);
+    step.querySelector('span').textContent = complete ? '✓' : String(['profile', 'connection', 'features', 'idea'].indexOf(step.dataset.phase) + 1);
+    const active = step.dataset.phase === (phase === 'profile' ? 'profile' : phase === 'features' ? 'features' : 'connection');
     if (active) step.setAttribute('aria-current', 'step'); else step.removeAttribute('aria-current');
   }
   const connection = state?.connections?.find(c => c.id === $('#connection-select').value);
@@ -183,15 +187,56 @@ function moveConnectionForm(guided) {
 function setupPage(step) {
   ++setupGeneration;
   setupStep = step;
-  const headings = { choice: ['Hvordan vil du forbinde din AI?', 'Vælg den adgang, du allerede har.'], provider: ['Hvem er din udbyder?', 'Har du ikke en nøgle, viser vi dig, hvordan du får en.'], local: ['AI på din computer', 'Vi leder efter modeller, du allerede har i Ollama.'], saved: ['Din AI-forbindelse', 'Kontrollér forbindelsen, før du fortsætter.'], tools: ['Avanceret opsætning', 'Forbindelser og lokale værktøjer.'], features: ['Hvad skal Aura Prime hjælpe med?', 'Du kan altid ændre det under Indstillinger › Funktioner.'], 'features-pick': ['Hvad vil du slå til?', 'Vælg de funktioner, du vil bruge. Resten kan du slå til senere under Indstillinger › Funktioner.'] };
+  const headings = { profile: ['Din profil', 'Udfyld din profil — du kan altid ændre den under Indstillinger.'], choice: ['Hvordan vil du forbinde din AI?', 'Vælg den adgang, du allerede har.'], provider: ['Hvem er din udbyder?', 'Har du ikke en nøgle, viser vi dig, hvordan du får en.'], local: ['AI på din computer', 'Vi leder efter modeller, du allerede har i Ollama.'], saved: ['Din AI-forbindelse', 'Kontrollér forbindelsen, før du fortsætter.'], tools: ['Avanceret opsætning', 'Forbindelser og lokale værktøjer.'], features: ['Hvad skal Aura Prime hjælpe med?', 'Du kan altid ændre det under Indstillinger › Funktioner.'], 'features-pick': ['Hvad vil du slå til?', 'Vælg de funktioner, du vil bruge. Resten kan du slå til senere under Indstillinger › Funktioner.'] };
   $('#setup-title').textContent = headings[step][0]; $('#setup-subtitle').textContent = headings[step][1];
-  $('#setup-eyebrow').textContent = step.startsWith('features') ? 'FUNKTIONER' : 'DIN AI';
+  $('#setup-eyebrow').textContent = step === 'profile' ? 'DIN PROFIL' : step.startsWith('features') ? 'FUNKTIONER' : 'DIN AI';
   for (const el of document.querySelectorAll('[data-setup-step]')) el.hidden = el.dataset.setupStep !== step;
   moveConnectionForm(step === 'provider');
   $('#setup-advanced').hidden = step !== 'choice';
+  // The profile step has its own continue button; the quick actions belong to the connection choice.
+  $('.setup-quick-actions').hidden = step === 'profile';
   $('#setup').dataset.step = step;
   $('#setup-title').focus(); window.scrollTo(0, 0); setupControls();
 }
+// The profile step in onboarding: name, icon, theme and help level. Every field is
+// optional; "Fortsæt" saves the whole set, and empty strings are valid profile values.
+function renderProfileIconGrid() {
+  const grid = $('#profile-icon-grid'), ids = window.ProfileIcons?.IDS || [];
+  grid.replaceChildren(...ids.map(id => {
+    const choice = node('button', undefined, 'profile-icon-choice'); choice.type = 'button';
+    choice.dataset.icon = id; choice.setAttribute('role', 'radio'); choice.setAttribute('aria-checked', 'false');
+    choice.setAttribute('aria-label', window.ProfileIcons?.LABELS?.[id] || id);
+    choice.innerHTML = window.ProfileIcons.svg(id);
+    choice.onclick = () => selectProfileIcon(id);
+    return choice;
+  }));
+}
+function selectProfileIcon(icon) {
+  profileIconChoice = window.ProfileIcons?.IDS.includes(icon) ? icon : '';
+  for (const choice of document.querySelectorAll('#profile-icon-grid button')) {
+    const selected = choice.dataset.icon === profileIconChoice;
+    choice.setAttribute('aria-checked', String(selected));
+  }
+}
+function profilePatch() {
+  const theme = [...document.querySelectorAll('#profile-theme input')].find(input => input.checked)?.value;
+  return { name: $('#profile-name').value.trim(), icon: profileIconChoice, helpLevel: $('#profile-help').value, appearance: { theme: theme === 'light' || theme === 'dark' ? theme : 'system', panelOpen: true } };
+}
+async function prepareProfileStep(profile) {
+  renderProfileIconGrid();
+  if (profile?.name) $('#profile-name').value = profile.name;
+  else {
+    $('#profile-name').value = '';
+    try { const suggestion = await call('profileSuggest'); if (suggestion) $('#profile-name').value = suggestion; } catch { /* the suggestion is optional */ }
+  }
+  selectProfileIcon(profile?.icon || '');
+  for (const input of document.querySelectorAll('#profile-theme input')) input.checked = input.value === (profile?.appearance?.theme || 'system');
+  $('#profile-help').value = profile?.helpLevel || 'fuld';
+}
+async function saveProfileStep() {
+  try { await call('profileSave', profilePatch()); } catch { /* saving the profile never blocks the setup */ }
+}
+$('#profile-continue').onclick = () => action(async () => { await saveProfileStep(); profileStepDone = true; setupPage('choice'); });
 // Udbyderne vises på lige vilkår. Et valg åbner kun den valgte forbindelses opsætning.
 const featuredProviders = [{ kind: 'anthropic' }, { kind: 'mistral' }, { kind: 'corti' }, { kind: 'alexandra' }];
 const providerCards = [
@@ -262,11 +307,18 @@ async function setupGit() {
   try { const result = await call('setupStatus'); $('#setup-git').textContent = result.git; $('#setup-git-open').hidden = !result.project || !featureOn('versioner'); }
   finally { $('#setup-git-refresh').disabled = false; }
 }
-function showSetup(reason = '', fromIntroduction = false) {
+async function showSetup(reason = '', fromIntroduction = false) {
   guidedSetup = fromIntroduction; document.body.classList.toggle('setup-guided', fromIntroduction);
+  // The profile step opens first when a guided setup starts with an empty profile:
+  // a first guided introduction always has one, and a filled profile is never asked
+  // again — repeat setup goes straight to the connection choice.
+  let profile = null, readProfile = false;
+  if (fromIntroduction) { try { profile = (await call('profileGet')).profile; readProfile = true; } catch { /* without a readable profile the setup starts at the connection choice */ } }
   setupActive = true; $('#setup').hidden = false; $('#workspace').hidden = true; $('#onboarding').hidden = true;
   $('#view-title').textContent = 'Opsætning'; $('#setup-reason').textContent = reason; $('#setup-reason').hidden = !reason;
-  renderSetup(); setupPage('choice'); action(discoverLocal);
+  renderSetup(); profileStepShown = readProfile && !profile?.name && !profile?.icon; profileStepDone = false;
+  if (profileStepShown) await prepareProfileStep(profile);
+  setupPage(profileStepShown ? 'profile' : 'choice'); action(discoverLocal);
 }
 function connectionFailed(reason) {
   invalidateConnection($('#connection-select').value, reason);
@@ -289,6 +341,17 @@ async function leaveSetup(useAI) {
   const returningToConnections = Boolean(repeatSetup);
   autoConnect = returningToConnections && !useAI ? repeatSetup.autoConnect : useAI;
   repeatSetup = null;
+  // The profile fields are saved before completing the setup, and a verified
+  // connection becomes the profile's standard AI when none is chosen yet.
+  try {
+    const patch = profileStepShown ? profilePatch() : {};
+    if (useAI) {
+      const current = await call('profileGet');
+      if (!current.profile?.standardAI?.connectionID) patch.standardAI = { connectionID: id, modelID: current.profile?.standardAI?.modelID || '' };
+    }
+    if (Object.keys(patch).length) await call('profileSave', patch);
+  } catch { /* saving the profile never blocks completing the setup */ }
+  profileStepShown = false; profileStepDone = false;
   ++setupGeneration; ++localDiscoveryGeneration; clearConnectionReceipt(); moveConnectionForm(false);
   guidedSetup = false; completeIntroduction('guided');
   document.body.classList.remove('setup-guided'); setupActive = false; $('#setup').hidden = true; $('#workspace').hidden = !current; $('#onboarding').hidden = Boolean(current);
@@ -1520,7 +1583,7 @@ $('#welcome-skip').onclick = leaveIntroduction;
 $('#welcome-dialog').addEventListener('close', () => { if (!$('#welcome-dialog').open) document.body.classList.remove('introduction-open'); });
 $('#welcome-dialog').addEventListener('cancel', event => { event.preventDefault(); leaveIntroduction(); });
 $('#intro-button').onclick = () => showIntroduction();
-$('#setup-back').onclick = () => { if (setupStep === 'features-pick') setupPage('features'); else if (setupStep === 'provider' && $('#setup-provider').dataset.view === 'details') providerPicker(); else if (setupStep !== 'choice') { clearConnectionReceipt(); setupPage('choice'); } else if (repeatSetup) action(() => leaveSetup(false)); else if (guidedSetup) showIntroduction('start'); else action(() => leaveSetup(false)); };
+$('#setup-back').onclick = () => { const leave = () => repeatSetup ? action(() => leaveSetup(false)) : guidedSetup ? showIntroduction('start') : action(() => leaveSetup(false)); if (setupStep === 'features-pick') setupPage('features'); else if (setupStep === 'provider' && $('#setup-provider').dataset.view === 'details') providerPicker(); else if (setupStep === 'profile') leave(); else if (setupStep !== 'choice') { clearConnectionReceipt(); setupPage('choice'); } else if (profileStepShown) setupPage('profile'); else leave(); };
 async function beginGuidedProject() {
   if (current) { await $('#new').onclick(); if (current) return; }
   closeIntroduction(); showSetup('', true);

@@ -95,6 +95,29 @@ test('ukendte udbydere og faser kan ikke tilføje nye destinationer eller efterl
   assert.ok(icons(root).every(image => /^[a-z0-9-]+\.svg$/i.test(image.src)));
 });
 
+test('fremgangslinjen har fire punkter: profil, forbindelse, funktioner og idé', () => {
+  const index = fs.readFileSync(path.join(__dirname, '..', 'ui', 'index.html'), 'utf8');
+  const start = index.indexOf('<ol class="onboarding-b-progress"');
+  assert.ok(start >= 0, 'index.html skal have en fremgangslinje');
+  const progress = index.slice(start, index.indexOf('</ol>', start));
+  const phases = [...progress.matchAll(/data-phase="([a-z]+)"/g)].map(match => match[1]);
+  assert.deepEqual(phases, ['profile', 'connection', 'features', 'idea'], 'udbyder og forbindelse er ét punkt nummer 2');
+  const numbers = [...progress.matchAll(/<span>(\d)<\/span>/g)].map(match => match[1]);
+  assert.deepEqual(numbers, ['1', '2', '3', '4']);
+});
+
+test('profil-trinnet tilføjer ingen ny visuel fase i Onboarding B', () => {
+  const { root } = documentFixture();
+  // The setup progress line gained a profile item, but the visual phases stay
+  // unchanged: 'profile' falls back to the default presentation like any
+  // unknown phase, without leaving an old choice behind.
+  render(root, { kind: 'corti', phase: 'profile', connectionName: 'Syntetisk forbindelse' });
+  assert.equal(root.dataset.phase, 'choice');
+  assert.equal(root.dataset.kind, 'corti');
+  assert.equal(root.getAttribute('aria-label'), 'Din opsætning');
+  assert.equal(root.dataset.verified, 'false');
+});
+
 test('omtegning er ren præsentation uden netværk, lagring, timer eller implicitte handlinger', () => {
   const { root } = documentFixture();
   const previous = Object.fromEntries(['fetch', 'setTimeout', 'setInterval', 'localStorage'].map(name => [name, Object.getOwnPropertyDescriptor(global, name)]));

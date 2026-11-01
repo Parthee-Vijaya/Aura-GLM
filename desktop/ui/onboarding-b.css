@@ -24,7 +24,7 @@
   gap: 34px;
 }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-content { min-width: 0; }
-#setup.onboarding-b :is(#setup-provider, #setup-saved, #setup-local-step, #setup-tools, #setup-features, #setup-features-pick) { max-width: none; }
+#setup.onboarding-b :is(#setup-provider, #setup-saved, #setup-local-step, #setup-tools, #setup-features, #setup-features-pick, #setup-profile) { max-width: none; }
 #setup.onboarding-b .setup-topbar { margin-bottom: 26px; }
 #setup.onboarding-b .setup-heading { max-width: 100%; margin-bottom: 32px; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b) :is(.setup-heading h1, .intro h1) {

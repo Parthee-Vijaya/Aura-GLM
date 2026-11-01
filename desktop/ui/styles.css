@@ -360,7 +360,7 @@ body.setup-guided .app-content { margin-left: 0; }
 :is(#setup-choice, #setup-feature-choice) span { font-size: 14px; line-height: 1.55; }
 :is(#setup-choice, #setup-feature-choice) .setup-symbol { font-size: 25px; line-height: 1; color: var(--accent); }
 [data-setup-step]:not([hidden]) { animation: step-arrive var(--motion-step) var(--ease-out); }
-#setup-provider, #setup-local-step, #setup-saved, #setup-tools { max-width: 520px; }
+#setup-provider, #setup-local-step, #setup-saved, #setup-tools, #setup-profile { max-width: 520px; }
 #setup-provider-body { padding: 0; }
 #setup-provider .dialog-actions { justify-content: flex-end; }
 #setup-provider .key-guide { background: transparent; padding: 0; font-size: 13px; }
@@ -370,6 +370,19 @@ body.setup-guided .app-content { margin-left: 0; }
 #setup-saved details, #setup-local-step details { margin-top: 24px; font-size: 13px; }
 #setup-ai, #local-discovery-status { font-size: 16px; line-height: 1.7; }
 #setup-local-address { margin-top: 20px; }
+/* The onboarding profile step: icon picker and theme in the guide's own expression. */
+#setup-profile input { font-size: 16px; }
+#setup-profile .hint { margin: 8px 0 0; }
+.profile-icon-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin-top: 8px; }
+.profile-icon-choice { display: inline-grid; place-items: center; aspect-ratio: 1; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); cursor: pointer; transition: border-color var(--motion-fast), color var(--motion-fast), box-shadow var(--motion-fast); }
+.profile-icon-choice svg { width: 22px; height: 22px; }
+.profile-icon-choice:hover { border-color: var(--accent); color: var(--accent); }
+.profile-icon-choice[aria-checked="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); color: var(--accent); }
+.profile-icon-choice:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.profile-theme { border: 0; padding: 0; margin: 0; min-inline-size: 0; }
+.profile-theme legend { font-size: 12px; font-weight: 550; margin: 16px 0 7px; }
+.profile-theme label { display: inline-flex; align-items: center; gap: 8px; margin: 0 18px 0 0; font-size: 14px; font-weight: 400; color: var(--ink); }
+@media (max-width: 700px) { .profile-icon-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .setup-footer { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 36px; }
 #setup-advanced { color: var(--muted); font-size: 12px; }
 #setup .primary { padding: 12px 22px; }
