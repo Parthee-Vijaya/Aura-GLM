@@ -60,8 +60,8 @@ class PrivacyGate {
     if (!policy.enabled) { assertActive(signal); if (await assertCurrent() === false) throw error('PRIVACY_STALE'); assertActive(signal); return transport(body); }
     const id = randomUUID();
     let lastInheritance = { classification: policy.defaultClass, attributes: { personalData:false,secrets:false } };
-    const record = async (decision, inherited = lastInheritance) => {
-      try { await this.audit(freeze({ timestamp: new Date(this.now()).toISOString(), requestId: id, action: 'model-call', destinationId: destination?.id || null, locality: destination?.locality || 'unknown', classification: inherited.classification, attributes: { ...inherited.attributes }, decision, policyVersions: snapshot(policy.versions) })); }
+    const record = async (decision, inherited = lastInheritance, extra = {}) => {
+      try { await this.audit(freeze({ timestamp: new Date(this.now()).toISOString(), requestId: id, action: 'model-call', destinationId: destination?.id || null, locality: destination?.locality || 'unknown', classification: inherited.classification, attributes: { ...inherited.attributes }, decision, policyVersions: snapshot(policy.versions), ...extra })); }
       catch { throw error('PRIVACY_CONTROL_FAILED'); }
     };
     try {
@@ -122,7 +122,9 @@ class PrivacyGate {
       assertActive(signal);
       // Audit callbacks may wait for disk. Revalidate after that wait so a
       // policy/recipient change during audit cannot use the old permit.
-      await record(checked.changed ? 'rewrite' : 'allow',lastInheritance);
+      // approvedBy skelner brugerens godkendelse (requiresApproval-stien) fra automatisk
+      // politiktilladelse, uden at selve tilladelsesreglerne ændres.
+      await record(checked.changed ? 'rewrite' : 'allow', lastInheritance, requiresApproval ? { approvedBy: 'user', expiresAt } : { approvedBy: 'policy' });
       if (await assertCurrent(freeze({ scope:snapshot(scopeSnapshot), revision, contextPartition, purpose, destination:snapshot(destination), policyVersions:snapshot(policy.versions) })) === false) throw error('PRIVACY_STALE');
       const freshPolicy = composePolicy(snapshot(await interruptible(() => this.getPolicy(scopeSnapshot),signal)));
       const freshDestination = validateDestination(await interruptible(() => this.resolveDestination(destinationRef),signal));

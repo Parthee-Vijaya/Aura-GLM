@@ -277,7 +277,9 @@ test('callback and detector failures reveal no raw exception and have no cloud f
 test('audit is minimal metadata without raw values, paths, payload hashes or pseudonym mappings', async () => {
   const f = fixture(); await f.action({body:JSON.stringify({model:'fixture-model',messages:[{content:'alice@example.invalid in /synthetic/private-person.csv'}]})});
   const audit = JSON.stringify(f.state.audit); assert.doesNotMatch(audit,/alice@example|private-person|payload|mapping|EMAIL_|hash|unit.invalid|route-1|account-1/);
-  assert.deepEqual(Object.keys(f.state.audit[0]).sort(),['action','attributes','classification','decision','destinationId','locality','policyVersions','requestId','timestamp'].sort());
+  assert.deepEqual(Object.keys(f.state.audit[0]).sort(),['action','approvedBy','attributes','classification','decision','destinationId','expiresAt','locality','policyVersions','requestId','timestamp'].sort());
+  // approvedBy er 'user' her: indholdet krævede en gennemgang, som blev godkendt.
+  assert.equal(f.state.audit[0].approvedBy,'user');
 });
 
 test('bounded inspection refuses huge and deep requests without transport', async () => {
