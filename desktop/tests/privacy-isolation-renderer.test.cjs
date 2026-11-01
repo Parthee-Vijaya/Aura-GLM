@@ -28,6 +28,8 @@ test('native renderer cannot send via Node, subprocess, HTTP, WebSocket or WebRT
 test('protected quality runs real desktop/mobile and click inspection in private OS scope', {skip:!native,timeout:25000},async t=>{
  const{base,root}=await fixture(t);await fs.mkdir(path.join(root,'public'));const html='<html><style>body{background:white;color:#123;font:20px system-ui;padding:24px}button{font:20px system-ui;padding:10px}</style><main><h1>Private static fixture</h1><button onclick="this.textContent=\'Done\'">Test</button></main></html>';await fs.writeFile(path.join(root,'public/index.html'),html);
  const report=await inspectProtectedApp({root,directory:path.join(base,'reports')});
+ // Miljøet uden skærmadgang (fx en CI-runner) kan ikke køre den beskyttede renderer; det er produktets egen 'unavailable'-status.
+ if(report.status==='unavailable'&&report.reason==='protected-inspection-unavailable')return t.skip('protected renderer unavailable in this environment');
  assert.equal(report.status,'checked',JSON.stringify(report));assert.equal(report.isolation.network,'none');assert.equal(report.isolation.writersStopped,true);assert.equal(report.isolation.matchingProcesses,0);assert.equal(report.screenshots.length,2);assert.equal(report.clicks,1);
  for(const screenshot of report.screenshots){const data=await fs.readFile(screenshot);assert.ok(data.length>500);assert.equal(data.toString('ascii',1,4),'PNG');}
  assert.equal(await fs.readFile(path.join(root,'public/index.html'),'utf8'),html);
@@ -40,6 +42,10 @@ test('Stop retires an active protected renderer and removes only its private ins
  const running=inspectProtectedApp({root,directory,signal:controller.signal});
  let active=false;
  for(let i=0;i<100;i++) {const entries=await fs.readdir(directory).catch(()=>[]);for(const entry of entries)if(await fs.stat(path.join(directory,entry,'state/session')).then(()=>true,()=>false))active=true;if(active)break;await new Promise(r=>setTimeout(r,25));}
+ if(!active){ // Uden skærmadgang kan den beskyttede renderer ikke starte; spring over i det miljø, fejlbærende alle andre steder.
+  const early=await Promise.race([running,new Promise(r=>setTimeout(()=>r(null),2000))]);
+  if(early&&early.status==='unavailable'&&early.reason==='protected-inspection-unavailable')return t.skip('protected renderer unavailable in this environment');
+ }
  assert.equal(active,true,'separate browser session started');const start=Date.now();controller.abort();const report=await running;
  assert.equal(report.status,'cancelled');assert.ok(Date.now()-start<5000);assert.deepEqual(await fs.readdir(directory),[]);assert.equal(await fs.readFile(path.join(root,'public/index.html'),'utf8'),html);
 });
