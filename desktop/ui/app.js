@@ -114,7 +114,7 @@ function showAssistant(id, text, v = view) {
 }
 function appendMessage(text, role = 'assistant', v = view) {
   const active = v === view;
-  if (active) { $('#project-intro').hidden = true; $('#start-idea').hidden = true; }
+  if (active) { $('#project-intro').hidden = true; $('#start-idea').hidden = true; $('#chat-choice').hidden = true; }
   const el = node('div', text, `chat-message ${role}`); if (role === 'assistant' && text) markdownInto(el, text); v.log.append(el);
   if (active && role === 'user') view.followChat = true;
   return el;
@@ -463,7 +463,11 @@ function fillChat(next, fresh) {
   if (fresh || !v.historyLoaded && !v.log.children.length) { const page=window.HistoryPages.takePrevious(history?.messages || []);v.historyPending=page.older;v.historyLoaded=true;for(const item of page.recent){const element=appendMessage(item.text,item.role);if(typeof item.id==='string')element.dataset.messageId=item.id;} }
   renderHistoryControls();
   const empty = !v.log.children.length;
-  $('#project-intro').hidden = !empty; $('#start-idea').hidden = !empty;
+  // Første samtale i projektet viser den fulde intro med projektdetaljerne.
+  // Efterfølgende nye samtaler får et enkelt valg: planlægge først eller bygge.
+  const firstChat = v.firstProjectTask === true;
+  $('#project-intro').hidden = !(empty && firstChat); $('#start-idea').hidden = !(empty && firstChat);
+  $('#chat-choice').hidden = !(empty && !firstChat);
   $('#resume-notice').hidden = !history?.messages?.length && !next.historyWarning; $('#resume-notice').open = false;
   $('#include-history').checked = false;
   if (fresh) v.planOffer = history?.planOffer === true;
@@ -1304,7 +1308,19 @@ $('#repair-connection').onclick = () => showSetup($('#connection-warning-text').
 $('#dismiss-connection').onclick = () => { $('#connection-warning').hidden = true; $('#prompt').focus(); };
 $('#model-manage').onclick = () => { $('#task-dialog').close(); showSetup(); };
 // Forbered første besked vises kun, når skrivefeltet er tomt og samtalen ikke er begyndt. Så står der aldrig to måder at starte på.
-function updateStartIdea() { $('#start-idea').hidden = !current || $('#project-intro').hidden || Boolean($('#prompt').value.trim()); }
+function updateStartIdea() {
+  // Vis kun intro-elementer, når samtalen er tom og der ikke er skrevet i feltet.
+  const emptyPrompt = !$('#prompt').value.trim();
+  const firstChat = view?.firstProjectTask === true;
+  const empty = !view?.log?.children.length;
+  const show = Boolean(current) && empty && emptyPrompt;
+  $('#project-intro').hidden = !(show && firstChat);
+  $('#start-idea').hidden = !(show && firstChat);
+  $('#chat-choice').hidden = !(show && !firstChat);
+}
+function v_logHasMessages() { return Boolean(view?.log?.children.length); }
+$('#choice-plan').onclick = () => { $('#chat-choice').hidden = true; $('#work-mode').value = 'plan'; updateWorkMode(); if (!$('#prompt').value.trim()) $('#prompt').value = 'Lad os lave en plan for det, jeg vil bygge.'; $('#prompt').focus(); };
+$('#choice-chat').onclick = () => { $('#chat-choice').hidden = true; $('#work-mode').value = 'chat'; updateWorkMode(); $('#prompt').focus(); };
 $('#start-idea').onclick = () => {
   if (running) return;
   if ($('#prompt').value.trim()) { message('Din kladde er bevaret. Send eller ryd den, før du forbereder en ny besked.'); $('#prompt').focus(); return; }
