@@ -189,7 +189,17 @@ class Workbench {
   async state(chatID) {
     const chat = chatID ? this.chatFor(chatID) : this.chat, project = this.project;
     const state = await this.store.read();
-    return { connections: state.connections.filter(c => Object.hasOwn(connections.definitions, c.kind)).map(c => this.store.publicConnection(c)), retiredConnections: state.connections.filter(c => c.kind === 'komplai').map(c => ({ id: c.id, kind: c.kind, name: c.name, hasKey: Boolean(c.secret), account: { authMethod: c.account?.authMethod === 'token' ? 'token' : 'oauth' } })), definitions: connections.definitions, engineVersion: VERSION, projectSettings: project ? await this.store.project(project.root) : {}, running: this.running, workspace: chat?.data || null, historyWarning: this.historyWarning || chat?.historyWarning || '', usage: chat ? chat.currentUsage() : null, features: await this.features.get(project?.root), brief: project ? this.brief : null, plan: chat?.plan || null, lastPlan: chat?.lastPlan || null, chat: chat?.id || null, chatRunning: Boolean(chat?.running), conversationPermission: chat?.conversationPermission.state() || { active: false }, workspaceRoot: chat?.root || project?.root, isolated: Boolean(chat?.copy), copy: chat?.copy ? { id: chat.copy.id, omissions: chat.copy.omissions } : null, chats: project ? await this.chatList(project.root) : [] };
+    return { connections: state.connections.filter(c => Object.hasOwn(connections.definitions, c.kind)).map(c => this.store.publicConnection(c)), retiredConnections: state.connections.filter(c => c.kind === 'komplai').map(c => ({ id: c.id, kind: c.kind, name: c.name, hasKey: Boolean(c.secret), account: { authMethod: c.account?.authMethod === 'token' ? 'token' : 'oauth' } })), definitions: connections.definitions, engineVersion: VERSION, projectSettings: project ? await this.store.project(project.root) : {}, running: this.running, workspace: chat?.data || null, historyWarning: this.historyWarning || chat?.historyWarning || '', usage: chat ? chat.currentUsage() : null, features: await this.features.get(project?.root), brief: project ? this.brief : null, plan: chat?.plan || null, lastPlan: chat?.lastPlan || null, chat: chat?.id || null, chatRunning: Boolean(chat?.running), chatWaiting: Boolean(chat?.running && chat?.waiting), conversationPermission: chat?.conversationPermission.state() || { active: false }, workspaceRoot: chat?.root || project?.root, isolated: Boolean(chat?.copy), copy: chat?.copy ? { id: chat.copy.id, omissions: chat.copy.omissions } : null, chats: project ? await this.chatList(project.root) : [] };
+  }
+  // Ventende valg efter en genindlæst visning (fx renderer-nedbrud): godkendelser og spørgsmål,
+  // der stadig venter på svaret. Læsevej alene — intet sendes eller godkendes igen herfra.
+  async pendingChoices(trustedChatID) {
+    const chat = trustedChatID ? this.chatFor(trustedChatID) : this.chat;
+    if (!chat) return { approvals: [], questions: [] };
+    return {
+      approvals: [...chat.approvals.entries()].map(([id, entry]) => ({ id, properties: entry.p })),
+      questions: [...chat.questions.entries()].map(([id, record]) => ({ id, properties: { id, questions: record.questions } }))
+    };
   }
   async activate(project) {
     await this.close();

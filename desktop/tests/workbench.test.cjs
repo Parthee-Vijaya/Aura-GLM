@@ -459,3 +459,22 @@ test('en sikkert bundet værktøjsafvisning bevarer afvisningsforklaring, plan o
  assert.equal(bench.activityList().some(entry=>entry.kind==='error'),false,'A user rejection is not logged as an AI connection error');
  await bench.close();
 });
+
+test('ventende valg kan hentes igen til en genindlæst visning uden at sende noget', async t => {
+  const { Workbench } = require('../core/workbench.cjs');
+  const fs = require('node:fs/promises'), os = require('node:os'), path = require('node:path');
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'aura-pending-'));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const bench = new Workbench({ directory, profiles: path.resolve(__dirname, '../../profiles'), safeStorage: {}, emit: () => {} });
+  await bench.activate({ root: path.join(directory, 'project'), name: 'Genoptag' });
+  t.after(() => bench.close());
+  const empty = await bench.pendingChoices();
+  assert.deepEqual(empty, { approvals: [], questions: [] }, 'uden ventende valg er svaret tomt');
+  bench.chat.approvals.set('a1', { p: { id: 'a1', tool: 'edit', filepath: '/project/a.js' } });
+  bench.chat.questions.set('q1', { questions: [{ question: 'A eller B?', options: ['A', 'B'] }] });
+  const choices = await bench.pendingChoices();
+  assert.deepEqual(choices.approvals, [{ id: 'a1', properties: { id: 'a1', tool: 'edit', filepath: '/project/a.js' } }]);
+  assert.equal(choices.questions[0].id, 'q1');
+  assert.deepEqual(choices.questions[0].properties.questions, [{ question: 'A eller B?', options: ['A', 'B'] }]);
+  assert.equal(bench.chat.approvals.size, 1, 'læsningen ændrer intet; valgene venter stadig i hovedprocessen');
+});

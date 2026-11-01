@@ -486,6 +486,20 @@ function fillChat(next, fresh) {
   try { const draft = JSON.parse(localStorage.getItem(`harness.chatDraft.${current.root}.${v.id}`)); if (draft && typeof draft.text === 'string' && (draft.text || !['working','interrupted'].includes(history?.status))) { $('#prompt').value = draft.text; if (['chat','plan','free'].includes(draft.mode)) { $('#work-mode').value = draft.mode; v.modeChosen = true; } } } catch {}
   if (v.draft) { $('#prompt').value = v.draft.text; if (['chat','plan','free','build'].includes(v.draft.mode)) $('#work-mode').value = v.draft.mode; }
   v.contextUsage = next.contextUsage || null;
+  // Genindlæst visning (fx efter et renderer-nedbrud): hovedprocessen ejer sandheden om den
+  // kørende opgave. Status genopbygges, og ventende valg hentes igen — intet sendes på ny,
+  // intet godkendes, og YOLO aktiveres ikke igen.
+  if (next.chatRunning && !v.running) {
+    setRunning(true, 'Arbejder', v);
+    v.statusDetail = 'Visningen er genindlæst · opgaven fortsætter';
+    if (fresh) call('pendingChoices').then(choices => {
+      if (view !== v) return;
+      for (const choice of choices?.approvals || []) window.approvals.show(choice.properties, v);
+      for (const choice of choices?.questions || []) window.planning.showQuestion(choice.properties, v);
+      renderStatus();
+    }).catch(() => { /* Ventende valg kan ikke genfindes; statuslinjen viser fortsat arbejdet. */ });
+    renderStatus();
+  }
   renderUsage(v.usage || next.usage);
   updateWorkMode(); $('#draft-status').textContent = history?.draft ? 'Kladde hentet fra denne computer' : '';
   updateStartIdea(); applyRunning();

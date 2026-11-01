@@ -675,7 +675,7 @@ handle('agent:stop', value => workbench.stop(chatInput(value)));
 handle('agent:reply', value => workbench.reply(chatInput(value)));
 handle('permission:review', value => workbench.permissionReview(chatInput(value)));
 handle('permission:confirm', value => workbench.permissionConfirm(chatInput(value)));
-handle('permission:revoke', value => workbench.permissionRevoke(chatInput(value)));
+handle('permission:pending', () => workbench.pendingChoices(requests.getStore()?.chat));handle('permission:revoke', value => workbench.permissionRevoke(chatInput(value)));
 handle('agent:question', value => workbench.question(chatInput(value)));
 // Afklaring og plan: briefen er brugerens egne ord, og planen kan rettes af brugeren. Intet sendes, før næste besked.
 handle('plan:brief', value => exclusive(() => workbench.saveBrief(value)));
