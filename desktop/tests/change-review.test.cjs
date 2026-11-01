@@ -5,6 +5,7 @@ const path = require('node:path');
 const os = require('node:os');
 const { taskSummary, sessionSummary, fileDetail, hash } = require('../core/change-review.cjs');
 const { Activity, toolEntry, toolFiles, projectPath, approvalTarget } = require('../core/activity.cjs');
+const { describeOutcome } = require('../core/run-contract.cjs');
 const { capture, changes } = require('../core/changes.cjs');
 const { Workbench } = require('../core/workbench.cjs');
 const profiles = path.join(__dirname, '../../profiles');
@@ -105,4 +106,16 @@ test('arbejdsbænken husker opgavens ændringer og tilskriver dem efter AI’ens
   assert.equal(later.session.files.find(f => f.file === 'public/index.html').by, 'blandet');
   assert.equal(later.tasks[0].files.find(f => f.file === 'public/index.html').by, 'ai');
   assert.equal(later.tasks[0].changedSince, 1, 'opgavens resumé nævner, at filen er ændret igen bagefter');
+});
+
+test('bash-værktøjer bærer et struktureret udfald med kodens sandhed', () => {
+  const root = path.join(os.tmpdir(), 'projekt');
+  const ok = toolEntry({ id: 'q1', tool: 'bash', state: { status: 'completed', input: { command: 'npm test' }, metadata: { exit: 0 } } }, root);
+  assert.deepEqual(ok.outcome, { exitCode: 0, signal: null, timedOut: false, cancelled: false, durationMs: null });
+  const failed = toolEntry({ id: 'q2', tool: 'bash', state: { status: 'completed', input: { command: 'npm test' }, metadata: { exit: 1 } } }, root);
+  assert.equal(failed.outcome.exitCode, 1); assert.equal(describeOutcome(failed.outcome), 'Afsluttet med fejl (kode 1)');
+  const unknown = toolEntry({ id: 'q3', tool: 'bash', state: { status: 'error', input: { command: 'npm test' } } }, root);
+  assert.equal(unknown.outcome.unknown, true, 'uden exitkode er udfaldet ukendt, ikke en succes');
+  const nonBash = toolEntry({ id: 'q4', tool: 'write', state: { status: 'completed', input: { filePath: path.join(root, 'a.js') } } }, root);
+  assert.equal('outcome' in nonBash, false, 'kun kommandoer har procesudfald');
 });
