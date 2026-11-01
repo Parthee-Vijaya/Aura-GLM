@@ -61,6 +61,7 @@ async function appendNow(file, chat, entry = {}) {  const record = {
     purpose: safe(entry.purpose) ? entry.purpose : 'project-conversation',
     recipient: { ...(entry.recipient && typeof entry.recipient === 'object' ? { model: safe(entry.recipient.model) ? entry.recipient.model : null, route: safe(entry.recipient.route) ? entry.recipient.route : null } : {}) },
     request: { bytes: count(entry.request?.bytes), sha256: entry.request?.sha256 && /^[0-9a-f]{64}$/.test(entry.request.sha256) ? entry.request.sha256 : null, messages: count(entry.request?.messages) },
+    gate: entry.gate && typeof entry.gate === 'object' ? { requestId: safe(entry.gate.requestId) ? entry.gate.requestId : null, decision: safe(entry.gate.decision) ? entry.gate.decision : null, approvedBy: entry.gate.approvedBy === 'user' ? 'user' : entry.gate.approvedBy === 'policy' ? 'policy' : null, classification: safe(entry.gate.classification) ? entry.gate.classification : null } : null,
     items: Array.isArray(entry.items) ? entry.items.slice(0, 400).map(item => ({ source: safe(item?.source) ? item.source : 'besked', bytes: count(item?.bytes), ...(item?.sha256 && /^[0-9a-f]{64}$/.test(item.sha256) ? { sha256: item.sha256 } : {}), ...(item?.truncated === true ? { truncated: true } : {}) })) : []
   };
   let lines = [JSON.stringify(record)];

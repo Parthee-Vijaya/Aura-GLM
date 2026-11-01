@@ -57,7 +57,7 @@ class PrivacyGate {
     catch (cause) { if (cause instanceof PrivacyGateError) throw cause; throw error('PRIVACY_CONTROL_FAILED'); }
     // Existing profiles are byte-identical until the trusted store enables the
     // feature. A caller cannot disable a higher-level enabled policy.
-    if (!policy.enabled) { assertActive(signal); if (await assertCurrent() === false) throw error('PRIVACY_STALE'); assertActive(signal); return transport(body); }
+    if (!policy.enabled) { assertActive(signal); if (await assertCurrent() === false) throw error('PRIVACY_STALE'); assertActive(signal); return transport(body, null); }
     const id = randomUUID();
     let lastInheritance = { classification: policy.defaultClass, attributes: { personalData:false,secrets:false } };
     const record = async (decision, inherited = lastInheritance, extra = {}) => {
@@ -141,7 +141,10 @@ class PrivacyGate {
       assertActive(signal);
       this.#permits.delete(id);
       // No await or JSON reconstruction between final check and transport.
-      return transport(payload);
+      // Gatens beslutning følger med som rent metadata (frossen før sidste kontrol), så
+      // journalen kan vise kontrollens udfald pr. kald. Intet indhold; ingen ny beregning.
+      const gateMeta = freeze({ requestId: id, decision: checked.changed ? 'rewrite' : 'allow', approvedBy: requiresApproval ? 'user' : 'policy', classification: inherited.classification, attributes: freeze({ ...inherited.attributes }), locality: destination.locality });
+      return transport(payload, gateMeta);
     } catch (cause) {
       if (cause instanceof PrivacyGateError) { await record(cause.decision); throw cause; }
       // Trusted callback failures do not copy an exception's potentially

@@ -394,7 +394,7 @@ class PrivacyService {
     if (!saved || stable(saved) !== stable(connection)) throw new PrivacyGateError('PRIVACY_STALE', 'AI-forbindelsen er ændret. Ingen ny katalogforespørgsel er tilladt.');
     current(); return current;
   }
-  async dispatch({ scope, connection, model, route, url, headers, body, signal, purpose, revision, contextPartition, provenance = [], assertCurrent = () => true }, transport = fetch) {
+  async dispatch({ scope, connection, model, route, url, headers, body, signal, purpose, revision, contextPartition, provenance = [], assertCurrent = () => true, recordTransport = null }, transport = fetch) {
     const initial = this.snapshotBinding(scope, connection.id, false);
     const beforeFloor = () => { signal?.throwIfAborted(); return assertCurrent() === true && this.snapshotBinding(scope, connection.id, false) === initial; };
     const layersBefore = await this.policies(scope), policyBefore = composePolicy(layersBefore);
@@ -424,8 +424,7 @@ class PrivacyService {
     // model request conservatively inherits every protected project source.
     const inherited = [...provenance, ...Object.values(layers).flatMap(layer => layer?.protectedSources || [])];
     const response = await this.gate.executeAction({ scope, destinationRef, purpose, revision, contextPartition, body, contentType: 'application/json', signal, provenance: inherited, assertCurrent: current,
-      transport: checkedBody => { current(); return transport(url, { method:'POST', headers:outgoingHeaders, body:checkedBody, signal, redirect:'error' }); } });
-    Object.defineProperty(response, 'privacyAssertCurrent', { value: current });
+      transport: (checkedBody, gateMeta) => { current(); if (typeof recordTransport === 'function') { try { recordTransport(checkedBody, gateMeta); } catch { /* Journalen er frivillig viden og må aldrig afbryde afsendelsen. */ } } return transport(url, { method:'POST', headers:outgoingHeaders, body:checkedBody, signal, redirect:'error' }); } });    Object.defineProperty(response, 'privacyAssertCurrent', { value: current });
     return response;
   }
   snapshotBinding(scope, connectionID, includeFloors = true) {

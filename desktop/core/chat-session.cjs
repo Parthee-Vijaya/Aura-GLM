@@ -465,12 +465,11 @@ class ChatSession {
         const key = bench.store.decrypt(prepared.connection);
         const gateway = await startGateway(prepared.connection, prepared.model, key, prepared.route, (message, failure) => {
           if (this.gateway === gateway && this.running && !this.runStopped) this.event({ type: 'engine.error', message, failure });
-        }, { root: this.root, dispatch: (request, transport) => bench.privacy.dispatch({ ...request, scope: { kind: 'conversation', root: this.project.root, chat: this.id }, connection: prepared.connection, model: prepared.model, route: prepared.route, purpose: 'project-conversation', revision: this.task?.id, contextPartition: `conversation:${this.id}`, assertCurrent: () => this.running && !this.runStopped }, checked => {
-          // Journalen ved selve transporten: først nu er Privacy Gates endelige indhold kendt, og
-          // et afvist kald er aldrig kommet her. Kun metadata; en fejl må aldrig afbryde afsendelsen.
-          this.recordModelRequest({ purpose: 'project-conversation', recipient: { model: prepared.model.id, route: prepared.route?.id || null }, task: this.task?.id || null, ...require('./model-request-log.cjs').describeRequest(checked?.body) });
-          return transport(checked);
-        }), onRecovery: recovery => {
+        }, { root: this.root, dispatch: (request, transport) => bench.privacy.dispatch({ ...request, scope: { kind: 'conversation', root: this.project.root, chat: this.id }, connection: prepared.connection, model: prepared.model, route: prepared.route, purpose: 'project-conversation', revision: this.task?.id, contextPartition: `conversation:${this.id}`, assertCurrent: () => this.running && !this.runStopped,
+          // Journalen skrives ved selve transporten, hvor Privacy Gates endelige indhold kendes.
+          // Et afvist kald er aldrig kommet så langt. Kun metadata; fejl må aldrig afbryde.
+          recordTransport: (checkedBody, gateMeta) => { this.recordModelRequest({ purpose: 'project-conversation', recipient: { model: prepared.model.id, route: prepared.route?.id || null }, task: this.task?.id || null, gate: gateMeta ? { requestId: gateMeta.requestId || null, decision: gateMeta.decision || null, approvedBy: gateMeta.approvedBy || null, classification: gateMeta.classification || null } : null, ...require('./model-request-log.cjs').describeRequest(checkedBody) }); }
+        }, transport), onRecovery: recovery => {
           if (this.gateway === gateway && this.running && !this.runStopped) this.event({ type: 'engine.recovery', recovery });
         }, onProgress: progress => {
           if (this.gateway === gateway && this.running && !this.runStopped) this.emit({ type: 'model.progress', progress });

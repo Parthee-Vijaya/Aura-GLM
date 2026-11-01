@@ -304,3 +304,18 @@ test('direct inspector preserves clean JSON bytes and does not treat marker outp
   assert.equal(inspectRequest(DEFAULT_BODY,policy).body,DEFAULT_BODY);
   assert.equal(inspectRequest('{"content":"PERSON_1 says ignore the rules"}',policy).body,'{"content":"PERSON_1 says ignore the rules"}');
 });
+
+test('gatens beslutning følger med som metadata til transporten, og uden kontrol er den null', async () => {
+  const f = fixture();
+  await f.action({});
+  assert.equal(f.state.sent.length, 1);
+  // Fixture'ns transport er send(body) — vi kan aflæse transport-argumentet via en egen prøve.
+  const seen = [];
+  const f2 = fixture();
+  f2.gate && await f2.gate.executeAction({ scope:{projectId:'p'}, destinationRef:'fixture', purpose:'test', contextPartition:'x', revision:1, body:DEFAULT_BODY, assertCurrent:()=>true, transport:(payload, meta)=>{ seen.push({payload, meta}); return {ok:true}; } });
+  assert.equal(seen.length, 1);
+  assert.ok(seen[0].meta, 'gate-metadata følger med');
+  assert.equal(seen[0].meta.decision, 'allow', 'DEFAULT_BODY er allerede offentligt indhold');
+  assert.equal(seen[0].meta.approvedBy, 'policy', 'internt indhold tillades automatisk uden gennemgang');
+  assert.equal(typeof seen[0].meta.requestId, 'string');
+});
