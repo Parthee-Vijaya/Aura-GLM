@@ -661,6 +661,7 @@ handle('idea:stop', () => ideaRefinement.stop());
 handle('connections:models', value => workbench.models(value, requests.getStore()?.chat));
 handle('connections:routes', value => workbench.routes(value.connectionID, value.modelID, requests.getStore()?.chat));
 handle('connections:effort-levels', value => workbench.effortLevels(value?.connectionID, value?.modelID, value?.capabilities));
+handle('model-log:list', value => workbench.modelLogList(value?.offset, value?.limit, requests.getStore()?.chat));
 require('./core/chat-materials-ipc.cjs').installChatMaterials({ getWorkbench:currentWorkbench, isSelected:bench => registry.selected === bench, register:handle, dialog, exclusive, normalizeImage:require('./core/screenshot-normalizer.cjs').createImageNormalizer({ nativeImage }), emit:event => sendEvent(event) });
 handle('agent:prepare', value => exclusive(() => workbench.prepare(chatInput(value))));
 handle('agent:send', value => {

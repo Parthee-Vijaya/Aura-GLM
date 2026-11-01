@@ -388,6 +388,12 @@ class Workbench {
     const model = { id: modelID, ...(capabilities && typeof capabilities === 'object' && Array.isArray(capabilities.effort) ? { capabilities: { effort: capabilities.effort } } : {}) };
     return connections.effortLevels(connection, model);
   }
+  // Journalen over det sendte pr. samtale; kun metadata, aldrig indhold. En læsevisning.
+  async modelLogList(offset = 0, limit = 50, trustedChatID) {
+    const chat = trustedChatID ? this.chatFor(trustedChatID) : this.chat;
+    if (!chat) return { entries: [], total: 0 };
+    return require('./model-request-log.cjs').list(require('node:path').join(this.store.root, 'model-logs'), chat.id, { offset, limit });
+  }
   async selection(input, trustedChatID) {
     if (!this.project) throw new Error('Åbn et projekt først.');
     if (typeof input.modelID !== 'string' || !/^[a-zA-Z0-9_./:@+-]{1,200}$/.test(input.modelID)) throw new Error('Vælg en gyldig model.');

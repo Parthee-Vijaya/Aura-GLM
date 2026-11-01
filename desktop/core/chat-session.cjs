@@ -462,7 +462,7 @@ class ChatSession {
         const key = bench.store.decrypt(prepared.connection);
         const gateway = await startGateway(prepared.connection, prepared.model, key, prepared.route, (message, failure) => {
           if (this.gateway === gateway && this.running && !this.runStopped) this.event({ type: 'engine.error', message, failure });
-        }, { root: this.root, dispatch: (request, transport) => bench.privacy.dispatch({ ...request, scope: { kind: 'conversation', root: this.project.root, chat: this.id }, connection: prepared.connection, model: prepared.model, route: prepared.route, purpose: 'project-conversation', revision: this.task?.id, contextPartition: `conversation:${this.id}`, assertCurrent: () => this.running && !this.runStopped }, transport), onRecovery: recovery => {
+        }, { root: this.root, dispatch: (request, transport) => bench.privacy.dispatch({ ...request, scope: { kind: 'conversation', root: this.project.root, chat: this.id }, connection: prepared.connection, model: prepared.model, route: prepared.route, purpose: 'project-conversation', revision: this.task?.id, contextPartition: `conversation:${this.id}`, assertCurrent: () => this.running && !this.runStopped }, transport), record: info => this.recordModelRequest({ ...info, task: this.task?.id || null }), onRecovery: recovery => {
           if (this.gateway === gateway && this.running && !this.runStopped) this.event({ type: 'engine.recovery', recovery });
         }, onProgress: progress => {
           if (this.gateway === gateway && this.running && !this.runStopped) this.emit({ type: 'model.progress', progress });
@@ -551,6 +551,16 @@ class ChatSession {
       await fs.mkdir(directory, { recursive: true, mode: 0o700 });
       return await require('./git-snapshot.cjs').snapshot(this.root, { directory });
     } catch { return null; }
+  }
+  // Journalen over det sendte: metadata pr. kald i projektets private datamappe. Fejl må aldrig
+  // afbryde afsendelsen; manglende journal er fravær af viden, ikke en fejl for brugeren.
+  recordModelRequest(info) {
+    void (async () => {
+      try {
+        const directory = path.join(this.bench.store.root, 'model-logs');
+        await require('./model-request-log.cjs').append(directory, this.id, info);
+      } catch { /* Journalen er frivillig viden og fejler lydløst. */ }
+    })();
   }
   // En afsluttet opgave gemmes med sine ændringer, så Ændringer kan vise dem og sige, hvem der lavede dem.
   async finishTask(status, diff) {
