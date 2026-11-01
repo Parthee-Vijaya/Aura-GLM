@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const brand = require('../ui/provider-brand.js');
+const advice = require('../ui/model-advice.js');
 
 class Element {
   constructor(tag = 'button', ownerDocument) { this.tagName = tag; this.ownerDocument = ownerDocument; this.children = []; this.attributes = {}; this._text = ''; this.value = ''; }
@@ -77,7 +78,7 @@ function fixture() {
   $('#model-select').selectedOptions = [{ textContent: 'Claude prøve' }];
   $('#route-select').value = 'konkret-rute'; $('#prompt').value = 'Bevar kladde';
   const context = { $, renderContextUsage() {}, syncOnboardingVisuals() {}, state: { connections: [connection], definitions: { openrouter: { provider: 'OpenRouter' } } }, view: { running: false, effort: null },
-    window: { ProviderBrand: brand, ModelAdvice: { effort: () => null } }, acceptedFingerprint: 'godkendt-materiale', activePlan: Object.freeze({ id: 'godkendt-plan' }) };
+    window: { ProviderBrand: brand, ModelAdvice: advice }, acceptedFingerprint: 'godkendt-materiale', activePlan: Object.freeze({ id: 'godkendt-plan' }) };
   vm.createContext(context);
   const source = fs.readFileSync(path.join(__dirname, '../ui/app.js'), 'utf8');
   vm.runInContext(source.slice(source.indexOf('const effortNames ='), source.indexOf('// Forbruget i samtalen:')), context);

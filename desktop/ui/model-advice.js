@@ -18,6 +18,11 @@
   // Standardindsats for Anthropics nuværende modeller, når appen ikke selv vælger en. OpenCode sender ingen indsats, så API'ets standard gælder.
   const efforts = [[/^claude-fable-5/, 'høj'], [/^claude-opus-5-5/, 'middel'], [/^claude-sonnet-5-5/, 'høj']];
   function effort(kind, id) { if (!['anthropic', 'zen', 'openrouter'].includes(kind)) return null; const bare = String(id).replace(/^anthropic\//, ''); return efforts.find(([pattern]) => pattern.test(bare))?.[1] || null; }
+  // Trin til indsatsvælgeren: 'Standard' (ingen eksplicit indsats) altid først, derefter præcis
+  // de niveauer, backenden accepterer for modellen. Vælgeren tilbyder aldrig et valg, der afvisses.
+  const effortLabels = { minimal: 'Minimal', low: 'Lav', medium: 'Mellem', high: 'Høj', xhigh: 'Ultra', max: 'Maksimal' };
+  function effortLabel(level) { return level == null ? 'Standard' : effortLabels[level] || (String(level).charAt(0).toUpperCase() + String(level).slice(1)); }
+  function effortSteps(levels) { return [null, ...(Array.isArray(levels) ? levels.filter(level => typeof level === 'string' && level) : [])]; }
   // Versionsnumre sammenlignes tal for tal; datoer med seks eller flere cifre tæller ikke med.
   const versionKey = id => (id.match(/\d+/g) || []).filter(part => part.length < 6).map(Number);
   function newestFirst(a, b) {
@@ -36,6 +41,6 @@
     const fallback = [...usable].sort((a, b) => Number(b.capabilities?.tools === true) - Number(a.capabilities?.tools === true) || a.name.localeCompare(b.name, 'da')).slice(0, 3);
     return { curated: false, defaultID: null, picks: fallback.map(model => ({ model, text: model.capabilities?.tools === true ? 'Kan bruge kodeværktøjer ifølge kataloget' : 'Understøttelse af kodeværktøjer er ukendt' })) };
   }
-  const api = { suggest, newestFirst, effort };
+  const api = { suggest, newestFirst, effort, effortSteps, effortLabel };
   if (typeof module === 'object' && module.exports) module.exports = api; else root.ModelAdvice = api;
 })(typeof window === 'object' ? window : globalThis);

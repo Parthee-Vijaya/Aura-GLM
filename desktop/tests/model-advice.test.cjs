@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { suggest } = require('../ui/model-advice.js');
+const { suggest, effortSteps, effortLabel } = require('../ui/model-advice.js');
 const model = (id, tools = true) => ({ id, name: id, capabilities: { tools } });
 
 test('Claude: Anthropics eget udgangspunkt først, derefter Sonnet og Haiku, og aldrig mere end tre', () => {
@@ -63,4 +63,23 @@ test('ukendte udbydere og egne servere får et udvalg uden anbefaling', () => {
   assert.equal(picks.length, 3);
   assert.ok(!picks.some(pick => /Anbefalet/.test(pick.text)));
   assert.deepEqual(suggest([], 'anthropic').picks, []);
+});
+
+test('indsatsvælgeren bygger kun trin, backenden accepterer for modellen', () => {
+  assert.deepEqual(effortSteps(null), [null], 'uden kendte niveauer er Standard det eneste valg');
+  assert.deepEqual(effortSteps([]), [null], 'Mistral uden indsatsniveauer får kun Standard');
+  assert.deepEqual(effortSteps(['low', 'medium', 'high']), [null, 'low', 'medium', 'high']);
+  assert.deepEqual(effortSteps(['minimal', 'low', 'medium', 'high']), [null, 'minimal', 'low', 'medium', 'high'], 'minimal er et gyldigt trin, fx hos GPT-5');
+  assert.deepEqual(effortSteps(['low', 42, '', 'high']), [null, 'low', 'high'], 'ugyldige niveauer filtreres fra');
+  assert.equal(effortSteps(['low', 'high']).length, 3, 'xhigh tilbydes ikke, hvis modellen ikke tager imod det');
+});
+
+test('indsatstrinene har danske navne, også for ukendte niveauer', () => {
+  assert.equal(effortLabel(null), 'Standard');
+  assert.equal(effortLabel('minimal'), 'Minimal');
+  assert.equal(effortLabel('low'), 'Lav');
+  assert.equal(effortLabel('medium'), 'Mellem');
+  assert.equal(effortLabel('high'), 'Høj');
+  assert.equal(effortLabel('xhigh'), 'Ultra');
+  assert.equal(effortLabel('custom'), 'Custom', 'ukendte niveauer får et læsbart navn i stedet for et rå API-ord');
 });

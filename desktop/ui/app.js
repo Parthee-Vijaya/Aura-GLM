@@ -1233,7 +1233,11 @@ function updateModelSummary() {
   const effort = model.value && window.ModelAdvice.effort(connection?.kind, model.value);
   const effortLabel = chosen ? `${chosen} indsats` : effort ? `${effort} indsats` : connection?.kind === 'mistral' ? 'standardindsats' : '';
   $('#model-effort-text').textContent = chosen ? `Valgt i denne samtale.` : effort ? `Standard: ${effort}.` : '';
-  if (typeof document !== 'undefined' && document.querySelectorAll) for (const chip of document.querySelectorAll('.effort-chip')) { const active = chip.dataset.effort === view?.effort; chip.setAttribute('aria-checked', active ? 'true' : 'false'); }
+  // Chips og række følger modellens faktiske niveauer: et tilbud backenden afviser, vises ikke.
+  const allowedEfforts = window.ModelAdvice.effortSteps(view?.effortLevels).filter(level => level !== null);
+  const effortRow = typeof document !== 'undefined' ? document.getElementById('model-effort') : null;
+  if (effortRow) effortRow.hidden = allowedEfforts.length === 0;
+  if (typeof document !== 'undefined' && document.querySelectorAll) for (const chip of document.querySelectorAll('.effort-chip')) { const active = chip.dataset.effort === view?.effort; chip.setAttribute('aria-checked', active ? 'true' : 'false'); chip.hidden = !allowedEfforts.includes(chip.dataset.effort); chip.disabled = !allowedEfforts.includes(chip.dataset.effort); }
   const label = model.value ? [pentModelNavn(model.value, model.selectedOptions[0]?.textContent), provider, effortLabel].filter(Boolean).join(' · ') : 'Vælg AI';
   $('#model-summary').textContent = model.value ? pentModelNavn(model.value, model.selectedOptions[0]?.textContent) : 'Vælg din AI';
   const brand = view.running && view.activeModelSummary ? view.activeModelBrand : { kind: connection?.kind, modelID: model.value };
@@ -2129,19 +2133,28 @@ $('#model-chip').onclick = async () => { await buildModelPicker(); document.getE
 addEventListener('resize', () => { if (document.getElementById('model-picker')?.matches(':popover-open')) placerModelVaelger(); });
 let pickerEntries = [];
 function syncPickerEffort() {
-  // Kort og klart navn som 'Mistral Large 4' eller 'Corti S1' i stedet for katalog-id'er.
-  const effortNivaa = ['Standard', 'Lav', 'Mellem', 'Høj', 'Ultra'];
-  const effortKey = [null, 'low', 'medium', 'high', 'xhigh'];
   const range = document.getElementById('picker-effort-range');
   const valueEl = document.getElementById('picker-effort-value');
-  if (range && !range.dataset.bound) {
-    range.dataset.bound = '1';
-    range.addEventListener('input', () => { setEffort(effortKey[Number(range.value)] ?? null); oppdaterEffortSlider(true); });
-    range.addEventListener('keydown', event => { if (event.key === 'Escape') { event.preventDefault(); document.getElementById('model-picker').hidePopover(); } });
-    for (const etiquet of document.querySelectorAll('.effort-slider-labels span')) etiquet.addEventListener('click', () => { const n = Number(etiquet.dataset.effortLevel); range.value = n; range.dispatchEvent(new Event('input', { bubbles: true })); });
+  const row = document.getElementById('picker-effort');
+  const labels = document.querySelector('.effort-slider-labels');
+  // Trinene kommer fra modellens faktiske indsatsniveauer, så vælgeren aldrig tilbyder et valg, backenden afviser.
+  const steps = window.ModelAdvice.effortSteps(view?.effortLevels);
+  if (row) row.hidden = steps.length < 2;
+  if (!range || steps.length < 2) return;
+  if (labels && !labels.dataset.bound) {
+    labels.dataset.bound = '1';
+    labels.addEventListener('click', event => { const span = event.target.closest('span[data-effort-level]'); if (!span) return; range.value = span.dataset.effortLevel; range.dispatchEvent(new Event('input', { bubbles: true })); });
   }
-  const ind = Math.max(0, effortKey.indexOf(view?.effort ?? null));
-  range.value = ind; valueEl.textContent = effortNivaa[ind];
+  if (!range.dataset.bound) {
+    range.dataset.bound = '1';
+    range.addEventListener('input', () => { setEffort(window.ModelAdvice.effortSteps(view?.effortLevels)[Number(range.value)] ?? null); oppdaterEffortSlider(true); });
+    range.addEventListener('keydown', event => { if (event.key === 'Escape') { event.preventDefault(); document.getElementById('model-picker').hidePopover(); $('#model-chip').focus(); } });
+  }
+  range.max = steps.length - 1;
+  if (labels) labels.replaceChildren(...steps.slice(1).map((level, index) => { const span = node('span', window.ModelAdvice.effortLabel(level)); span.dataset.effortLevel = index + 1; span.title = `${window.ModelAdvice.effortLabel(level)} indsats`; return span; }));
+  const ind = Math.max(0, steps.indexOf(view?.effort ?? null));
+  range.value = ind; valueEl.textContent = window.ModelAdvice.effortLabel(steps[ind]);
+  range.setAttribute('aria-valuetext', window.ModelAdvice.effortLabel(steps[ind]));
   oppdaterEffortSlider(false);
   // Vækker animationen: fyldet glider ind fra venstre, når vælgeren åbnes.
   requestAnimationFrame(() => requestAnimationFrame(() => oppdaterEffortSlider(false)));
@@ -2152,9 +2165,12 @@ function oppdaterEffortSlider(pop = false) {
   const thumb = document.querySelector('.picker-effort-slider .effort-slider-thumb');
   const valueEl = document.getElementById('picker-effort-value');
   if (!range || !fill || !thumb) return;
-  const prosent = (Number(range.value) / 4) * 100;
+  const steps = window.ModelAdvice.effortSteps(view?.effortLevels);
+  const label = window.ModelAdvice.effortLabel(steps[Number(range.value)] ?? null);
+  const prosent = steps.length > 1 ? (Number(range.value) / (steps.length - 1)) * 100 : 0;
   fill.style.width = `${prosent}%`; thumb.style.left = `${prosent}%`;
-  valueEl.textContent = ['Standard', 'Lav', 'Mellem', 'Høj', 'Ultra'][Number(range.value)];
+  valueEl.textContent = label;
+  range.setAttribute('aria-valuetext', label);
   if (pop) { thumb.classList.remove('pop'); void thumb.offsetWidth; thumb.classList.add('pop'); }
 }
 
@@ -2173,12 +2189,14 @@ async function buildModelPicker() {
         event.preventDefault();
         const neste = event.key === 'ArrowDown' ? Math.min(poster.length - 1, aktiv + 1) : Math.max(0, aktiv < 0 ? 0 : aktiv - 1);
         poster.forEach(b => delete b.dataset.aktiv); poster[neste].dataset.aktiv = '1';
+        // Skærmlæseren følger markeringen gennem listens knapper.
+        search.setAttribute('aria-activedescendant', poster[neste].id);
         poster[neste].scrollIntoView({ block: 'nearest' });
       } else if (event.key === 'Enter') {
         event.preventDefault();
         (poster.find(b => b.dataset.aktiv === '1') || poster[0]).click();
       } else if (event.key === 'Escape') {
-        event.preventDefault(); document.getElementById('model-picker').hidePopover();
+        event.preventDefault(); document.getElementById('model-picker').hidePopover(); $('#model-chip').focus();
       }
     });
   }
@@ -2187,7 +2205,8 @@ async function buildModelPicker() {
   if (!conn?.value) { pickerEntries = []; if (search) search.value = ''; renderModelPicker(''); list.replaceChildren(node('p', 'Ingen forbindelse valgt endnu.', 'hint')); return; }
   const currentID = connModel?.value ?? '';
   // Hele forbindelsens modelkatalog vises med søgning og indsats, som modelvælgeren i Codex.
-  if (!modelCatalog?.length) { list.replaceChildren(node('p', 'Henter modeller …', 'hint')); try { await loadModels(); } catch { /* Netværksfejl vises som 'Ingen modeller' nedenfor. */ } }
+  let catalogFailed = false;
+  if (!modelCatalog?.length) { list.replaceChildren(node('p', 'Henter modeller …', 'hint')); try { await loadModels(); } catch { catalogFailed = true; } }
   pickerEntries = [];
   if (currentID && connModel.selectedOptions?.[0]?.textContent) pickerEntries.push({ modelID: currentID, label: pentModelNavn(currentID, connModel.selectedOptions[0].textContent), current: true });
   for (const model of modelCatalog || []) {
@@ -2195,16 +2214,18 @@ async function buildModelPicker() {
     const free = model.price && model.price.prompt != null && model.price.completion != null && Number(model.price.prompt) === 0 && Number(model.price.completion) === 0;
     pickerEntries.push({ modelID: model.id, label: `${pentModelNavn(model.id, model.name)}${free ? ' · gratis*' : ''}` });
   }
-  if (!pickerEntries.length) { if (search) search.value = ''; renderModelPicker(''); list.replaceChildren(node('p', 'Ingen modeller fundet hos forbindelsen.', 'hint')); return; }
+  // En mislykket hentning er ikke et tomt katalog: fejl og genforsøgsvej vises særskilt.
+  if (!pickerEntries.length) { if (search) search.value = ''; renderModelPicker(''); list.replaceChildren(node('p', catalogFailed ? 'Modellerne kunne ikke hentes fra forbindelsen. Kontrollér den, og prøv igen her eller under Flere indstillinger.' : 'Ingen modeller fundet hos forbindelsen.', 'hint')); return; }
   if (search) search.value = '';
   renderModelPicker('');
 }
 function renderModelPicker(term = '') {
   const list = document.getElementById('model-picker-list');
+  const search = document.getElementById('model-picker-search');
   const needle = term.trim().toLowerCase();
   const matches = needle ? pickerEntries.filter(e => e.label.toLowerCase().includes(needle) || e.modelID.toLowerCase().includes(needle)) : pickerEntries;
-  list.replaceChildren(...(matches.length ? matches.map(item => {
-    const btn = node('button', item.label); btn.type = 'button'; btn.setAttribute('role', 'radio');
+  list.replaceChildren(...(matches.length ? matches.map((item, index) => {
+    const btn = node('button', item.label); btn.type = 'button'; btn.id = `model-option-${index}`; btn.setAttribute('role', 'radio');
     btn.setAttribute('aria-checked', String(!!item.current));
     btn.onclick = () => {
       document.getElementById('model-picker').hidePopover();
