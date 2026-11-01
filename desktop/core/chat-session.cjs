@@ -1118,8 +1118,13 @@ class ChatSession {
     }
     const engine = this.engine, gateway = this.gateway;
     this.engine = null; this.gateway = null; this.engineIdentity = null;
+    // contextUsage.bind er klassens egen metode: nulstil den målte kontekst, så en lukket samtale viser 'ukendt'.
     this.contextUsage.bind(null);
-    await engine?.close(); await gateway?.close();
+    // Lukning gennemføres for begge ressourcer, også når den første fejler; fejlen kastes bagefter.
+    const failures = [];
+    try { await engine?.close(); } catch (error) { failures.push(error); }
+    try { await gateway?.close(); } catch (error) { failures.push(error); }
+    if (failures.length) throw failures[0];
     if (reset) { this.running = false; this.prepared = null; }
   }
 }

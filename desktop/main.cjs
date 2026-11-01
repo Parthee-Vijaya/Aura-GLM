@@ -34,6 +34,10 @@ rememberKeychain(identity);
 app.setName(identity.keychainName);
 app.setPath('userData', identity.userData);
 app.setPath('sessionData', identity.sessionData);
+// Én app ad gangen: to processer ville dele datamappen og skrive i hinandens filer og motorer.
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) app.quit();
+app.on('second-instance', () => { if (window) { if (window.isMinimized()) window.restore(); window.focus(); } });
 // Opstartsregistrer for agentmotoren skriver kun faste felter uden indhold,
 // stier eller hemmeligheder og er bevidst adskilt fra samtale- og projektdata.
 require('./core/engine-startup.cjs').install({ directory: path.join(identity.userData, 'harness', 'diagnostics') });
@@ -57,7 +61,6 @@ function currentChat() { const id = requestChatID(); return id ? currentWorkbenc
 function chatInput(value) { return { ...value, chat: value?.chat || requestChatID() }; }
 function workspaceRoot() { const request = requests.getStore(); return request?.workspaceRoot || currentWorkbench()?.chat?.root || currentProject()?.root; }
 function currentSpace() { return spaces.get(workspaceRoot()) || {}; }
-function saveSpace() { /* Hver arbejdsmappe ejer nu sin tilstand direkte. */ }
 function spaceFor(root = workspaceRoot()) { return spaces.get(root); }
 function ownerFor(root) { return spaces.get(root)?.owner || [...registry.values()].find(bench => bench.project?.root === root || [...bench.chats.values()].some(chat => chat.root === root)); }
 function makeServer(ctx) {
@@ -103,8 +106,24 @@ function supportReport() {
   return require('./core/diagnostics.cjs').diagnostics({ version: app.getVersion(), platform: process.platform, arch: process.arch, packaged: app.isPackaged, versions: require('./core/runtime.cjs').get()?.versions, project: Boolean(currentProject()), running: workbench?.running, preview: currentSpace().devServer?.state, failures });
 }
 function shutdown() {
-  if (!shuttingDown) shuttingDown = (async () => { ideaRefinement.stop(); credentialEntry.revoke(); github?.cancel(); deploymentSetup?.promte.cancelAll(); await registry?.close(); await closeSpaces(); })().finally(() => { shuttingDown = null; });
+  if (!shuttingDown) shuttingDown = (async () => {
+    ideaRefinement.stop(); credentialEntry.revoke(); github?.cancel(); deploymentSetup?.promte.cancelAll();
+    // Oprydning fortsætter forbi enkeltfejl, så ingen ressource efterlades kørende; den første fejl kastes bagefter.
+    const failures = [];
+    try { await registry?.close(); } catch (error) { failures.push(error); }
+    try { await closeSpaces(); } catch (error) { failures.push(error); }
+    if (failures.length) throw failures[0];
+  })().finally(() => { shuttingDown = null; });
   return shuttingDown;
+}
+// Ubehandlede afvisninger logges lokalt i fejlrapportens faste kategorier; intet sendes automatisk.
+process.on('unhandledRejection', reason => { recordFailure('app', 'uventet'); console.error('Unhandled rejection:', reason); });
+function aiWorking() { return Boolean(registry) && registry.allChats().some(chat => chat.running || chat.sending || chat.starting || chat.finishing); }
+// Lukning midt i en AI-opgave afbryder arbejdet; brugeren bekræfter det udtrykkeligt.
+async function confirmDiscardWork() {
+  if (!aiWorking()) return true;
+  const choice = await dialog.showMessageBox(window, { type: 'question', title: 'AI’en arbejder stadig', message: 'AI’en er i gang med en opgave i et projekt.', detail: 'Lukker du nu, afbrydes opgaven. Kladden gemmes, og de gemte versioner består, men arbejdet fortsætter ikke af sig selv ved næste start.', buttons: ['Fortsæt arbejdet', 'Luk alligevel'], defaultId: 0, cancelId: 0 });
+  return choice.response === 1;
 }
 const uiURL = 'harness://app/index.html';
 const credentialEntry = require('./core/credential-entry.cjs').createCredentialEntry({ BrowserWindow, ipcMain, safeStorage, parent:() => window, createSession:() => {
@@ -477,7 +496,6 @@ handle('git:restore', input => exclusive(async () => {
   if (error) workbench.log({ kind: 'error', title: 'Gendannelsen gik ikke helt igennem', detail: error, status: 'error' }, requestChatID());
   // activate kontrollerer journalen, også efter genstart eller en delvis gendannelse.
   if (!inCopy) { const restoredState = await restoration.previous(root); if (restoredState) await workbench.invalidatePlan(restoredState.id); }
-  const reopened = null;
   // Ændringen står under Ændringer som din. Billedet efter tages i baggrunden af samme side i samme størrelse.
   // En opgave i denne samtale, der er fortrudt, kan ikke fortrydes igen fra kortet.
   if (restored?.files && pending?.task) { const done = workbench.findTask(pending.task); if (done) done.undone = true; }
@@ -494,7 +512,7 @@ handle('git:restore', input => exclusive(async () => {
       sendEvent({ type: 'history.images', root, task: task.id, commit: saved?.head || null });
     })().catch(() => {});
   }
-  return { restored, error, saved, savedFirst, project: reopened, state: await chatState(await workbench.state(requestChatID())) };
+  return { restored, error, saved, savedFirst, project: null, state: await chatState(await workbench.state(requestChatID())) };
 }));
 handle('git:save', value => exclusive(async () => {
   const { note = '', view } = typeof value === 'string' || value === undefined ? { note: value || '' } : value;
@@ -749,7 +767,7 @@ handle('preview:check', input => {
   const last = documents.at(-1) || null;
   const result = { preview: true, loaded: Boolean(last), status: last?.status || null, errors: errors.slice(0, 5).map(({ message, source, line }) => ({ message, source, line })), errorCount: errors.length };
   const shown = !last ? 'siden svarede ikke' : last.status >= 400 ? `siden svarede med fejl ${last.status}` : 'siden blev vist';
-  workbench.log({ kind: 'check', title: 'Kontrol af forhåndsvisningen', detail: `${shown[0].toUpperCase()}${shown.slice(1)} · ${errors.length ? `${errors.length} ${errors.length === 1 ? 'fejl' : 'fejl'} i siden: ${errors[0].message}` : 'ingen fejl i konsollen'}. Aura har ikke klikket eller afprøvet funktioner.`, status: !last || last.status >= 400 || errors.length ? 'error' : 'completed' }, requestChatID());
+  workbench.log({ kind: 'check', title: 'Kontrol af forhåndsvisningen', detail: `${shown[0].toUpperCase()}${shown.slice(1)} · ${errors.length ? `${errors.length} fejl i siden: ${errors[0].message}` : 'ingen fejl i konsollen'}. Aura har ikke klikket eller afprøvet funktioner.`, status: !last || last.status >= 400 || errors.length ? 'error' : 'completed' }, requestChatID());
   return result;
 });
 // Billeder af forhåndsvisningen til historikken. De tages i et skjult vindue med sin egen session uden lagring. Det
@@ -890,6 +908,7 @@ handle('preview:stop', () => currentSpace().devServer.stop().then(() => currentS
 handle('about:info', () => buildAboutInfo({ appVersion: app.getVersion(), opencode: runtimeLock.opencode, electron: process.versions.electron, chromium: process.versions.chrome, nodeEmbedded: process.versions.node, nodeRuntime: runtimeLock.node, git: runtimeLock.git, platform: process.platform, arch: process.arch, osRelease: require('node:os').release() }));
 
 app.whenReady().then(async () => {
+  if (!gotLock) return; // En anden instans ejer allerede datamappen; denne proces er på vej ud.
   app.setAboutPanelOptions({ applicationName: DISPLAY_NAME, applicationVersion: app.getVersion(), credits: `OpenCode ${runtimeLock.opencode} · Electron ${process.versions.electron} · Chromium ${process.versions.chrome} · Node ${process.versions.node}` });
   Menu.setApplicationMenu(Menu.buildFromTemplate([
     { label: DISPLAY_NAME, submenu: [
@@ -1017,16 +1036,39 @@ app.whenReady().then(async () => {
     });
     window.webContents.on('will-navigate', event => event.preventDefault());
     window.webContents.on('will-attach-webview', event => event.preventDefault());
+    // En nedbrudt renderer viser en hvid skærm; grænsefladen genindlæses, så appen er brugelig uden genstart.
+    created.webContents.on('render-process-gone', (_event, details) => {
+      if (quitReady || !window || window.isDestroyed() || details.reason === 'clean-exit') return;
+      recordFailure('app', 'renderer');
+      if (!window.webContents.isLoading()) window.loadURL(uiURL).catch(() => {});
+    });
     const created = window;
-    created.on('close', event => { if (quitReady) return; event.preventDefault(); shutdown().finally(() => { if (!created.isDestroyed()) created.destroy(); }); });
+    created.on('close', async event => {
+      if (quitReady) return;
+      event.preventDefault();
+      if (!await confirmDiscardWork()) return;
+      shutdown().catch(() => {}).finally(() => { if (!created.isDestroyed()) created.destroy(); });
+    });
     created.on('closed', () => { window = null; assets = []; registry.deselect(); });
     window.loadURL(uiURL);
   }
   if (process.platform === 'darwin') app.dock.setIcon(appIcon);
   createWindow();
   app.on('activate', () => { if (!window) createWindow(); });
-});
+}).catch(startupFailure);
+function startupFailure(error) {
+  // Opstarten har én samlet fejlvej: brugeren ser en native besked, og appen lukker pænt uden at røre data.
+  console.error('Opstarten fejlede:', error);
+  try { dialog.showErrorBox('Aura Prime kunne ikke starte', 'Appen kunne ikke blive klar og lukker igen. Åbn den igen, og se fejlrapporten under Hjælp og feedback, hvis problemet gentager sig.\n\n' + String(error?.message || error)); } catch { /* Beskedvinduet er en sidste udvej. */ }
+  app.exit(1);
+}
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
-app.on('before-quit', event => { credentialEntry.close(); komplaiLogin.cancel(); if (quitReady) return; event.preventDefault(); shutdown().finally(() => { quitReady = true; app.quit(); }); });
+app.on('before-quit', async event => {
+  credentialEntry.close(); komplaiLogin.cancel();
+  if (quitReady) return;
+  event.preventDefault();
+  if (!await confirmDiscardWork()) return;
+  shutdown().catch(() => {}).finally(() => { quitReady = true; app.quit(); });
+});
 
 }

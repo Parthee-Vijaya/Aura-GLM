@@ -30,6 +30,8 @@ class WorkspaceRegistry {
       bench = this.create(); this.benches.set(root, bench);
       ready = bench.activate({ ...project, root }); this.opening.set(root, ready);
       ready.finally(() => { if (this.opening.get(root) === ready) this.opening.delete(root); }).catch(() => {});
+      // En fejlet aktivering må ikke blive hængende som en halvt klar arbejdsbænk; næste valg starter forfra.
+      try { await ready; } catch (error) { if (this.benches.get(root) === bench) this.benches.delete(root); throw error; }
     }
     await ready;
     bench.project = { ...bench.project, ...project, root };
@@ -42,6 +44,14 @@ class WorkspaceRegistry {
   servers() { return [...this.values()].flatMap(bench => bench.servers()); }
   get running() { return [...this.values()].some(bench => bench.running); }
   invalidateConnection(id) { return Promise.all([this.empty, ...this.values()].map(bench => bench.connectionChanged(id))); }
-  async close() { ++this.selection; await Promise.all([...this.opening.values()]); await Promise.all([this.empty, ...this.values()].map(bench => bench.close())); await this.store.queue; }
+  async close() {
+    ++this.selection;
+    // Oprydning gennemføres for alle arbejdsbænke, også når én lukning fejler; den første fejl kastes bagefter.
+    await Promise.allSettled([...this.opening.values()]);
+    const closed = await Promise.allSettled([this.empty, ...this.values()].map(bench => bench.close()));
+    await this.store.queue;
+    const failure = closed.find(result => result.status === 'rejected');
+    if (failure) throw failure.reason;
+  }
 }
 module.exports = { WorkspaceRegistry };
