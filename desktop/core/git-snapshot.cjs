@@ -29,6 +29,8 @@ async function filterBlock(root) {
 async function snapshot(root, { directory }) {
   if (!root || typeof root !== 'string' || !directory || typeof directory !== 'string') throw new Error('Snapshot kræver projekt og privat mappe.');
   try {
+    // Hurtigt tjek uden processtart: uden .git er der intet repo, og forbrugeren bruger fillæsning.
+    await fs.access(path.join(root, '.git'));
     if (git.isProtected(root)) return null;
     const gitDir = path.resolve(root, (await git.run(root, ['rev-parse', '--git-dir'])).toString().trim());
     if (await filterBlock(root)) return null;

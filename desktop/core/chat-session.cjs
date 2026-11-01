@@ -417,7 +417,7 @@ class ChatSession {
     await this.saveHistory('working', true);
     this.emit({ type: 'run.status', status: 'starting' });
     const session = this.changes;
-    this.lastCheckpoint = null; this.runBefore = null;
+    this.lastCheckpoint = null; this.runBefore = null; this.runSnapshot = null;
     this.task = { id: crypto.randomUUID(), root: this.root, label: input.text, target: prepared.disclosure.previewReference || '', mode: prepared.mode, startedAt: Date.now(), aiFiles: new Set(), aiHashes: new Map(), reads: [], completed: new Set(), commandParts: new Set(), commands: 0 };
     this.log({ id: `run-${this.task.id}`, kind: 'run', task: this.task.id, title: modeTitles[prepared.mode], target: shortText(input.text), detail: `${prepared.disclosure.modelName || prepared.model.id} · ${prepared.disclosure.provider || prepared.connection.name}${prepared.fileRefs?.length ? ` · ${prepared.fileRefs.length === 1 ? '1 filhenvisning' : `${prepared.fileRefs.length} filhenvisninger`}` : ''}${prepared.disclosure.previewReference ? ` · mål: ${prepared.disclosure.previewReference}` : ''}`, status: 'running', started: this.task.startedAt });
     try {
@@ -425,6 +425,8 @@ class ChatSession {
       this.scratchRoot = this.engine?.active && this.commandSandbox && !prepared.commandIsolation ? this.commandSandbox.scratchRoot : path.join(bench.store.root, 'scratch', bench.store.projectKey(projectRoot), this.task.id);
       await fs.mkdir(this.scratchRoot, { recursive: true, mode: 0o700 }); checkStopped();
       this.runBefore = await capture(this.root); checkStopped();
+      // Git-snapshot pr. tur: præcise linjetal og omdøbninger til Ændringer, uden at røre brugerens repo.
+      this.runSnapshot = await this.takeSnapshot(); checkStopped();
       // Billede af forhåndsvisningen før opgaven. Det må højst forsinke starten lidt; uden billede fortsætter opgaven.
       if (prepared.view && !['chat', 'plan'].includes(prepared.mode) && bench.imageHook) {
         this.task.images = { pair: crypto.randomUUID(), view: { ...prepared.view } };
@@ -537,6 +539,15 @@ class ChatSession {
     return { type: 'run.review', quality: this.runQuality || null, task: task?.id, workspaceRoot: this.root, isolated: Boolean(this.copy), chat: this.id, mode: this.runMode, status, finish: this.runFinish || null, failure: this.runFailure || null, files: diff?.files.map(f => f.file) || [], skipped: diff?.skipped || 0, unavailable: !diff,
       tools: [...(this.runTools?.values() || [])].map(p => ({ tool: p.tool, status: p.state?.status, title: p.state?.title || p.state?.input?.command || '', exit: Number.isInteger(p.state?.metadata?.exit) ? p.state.metadata.exit : null, output: p.tool === 'bash' ? tail(p.state?.output ?? p.state?.metadata?.output) : '', error: p.state?.status === 'error' ? cleanOutput(String(p.state?.error || '')).slice(0, 300) : '' })), ...extra };
   }
+  // Et git-øjebliksbillede i opgavens private scratchmappe; uden Git eller ved filtre er tilbagefaldet null.
+  async takeSnapshot() {
+    try {
+      if (!this.scratchRoot) return null;
+      const directory = path.join(this.scratchRoot, 'git-snapshots');
+      await fs.mkdir(directory, { recursive: true, mode: 0o700 });
+      return await require('./git-snapshot.cjs').snapshot(this.root, { directory });
+    } catch { return null; }
+  }
   // En afsluttet opgave gemmes med sine ændringer, så Ændringer kan vise dem og sige, hvem der lavede dem.
   async finishTask(status, diff) {
     this.runMeasurement?.finish(status === 'idle' ? 'completed' : status === 'stopped' ? 'stopped' : 'error');
@@ -545,6 +556,23 @@ class ChatSession {
     await Promise.allSettled(task.reads);
     const files = diff?.files || [];
     Object.assign(task, { ...(this.runQuality ? { quality: this.runQuality } : {}), status, endedAt: Date.now(), files, skipped: diff?.skipped || 0, unavailable: !diff, checkpoint: this.lastCheckpoint && this.lastCheckpoint.status !== 'unchanged' ? this.lastCheckpoint : null });
+    // Tur-snapshots: præcise linjetal og omdøbninger (a → b) på filerne; det private materiale slippes bagefter.
+    const endSnapshot = await this.takeSnapshot();
+    if (this.runSnapshot && endSnapshot) {
+      const gitDiff = await require('./git-snapshot.cjs').diffTrees(this.root, this.runSnapshot, endSnapshot).catch(() => null);
+      if (gitDiff) {
+        const byPath = new Map(gitDiff.changed.map(entry => [entry.path, entry]));
+        for (const entry of files) {
+          if (byPath.get(entry.file)?.renamedFrom) entry.renamedFrom = byPath.get(entry.file).renamedFrom;
+          const target = gitDiff.changed.find(other => other.renamedFrom === entry.file);
+          if (target) entry.renamedTo = target.path;
+        }
+        const renames = gitDiff.changed.filter(entry => entry.renamedFrom && !projectFiles.isProtected(entry.renamedFrom) && !projectFiles.isProtected(entry.path)).map(entry => ({ from: entry.renamedFrom, to: entry.path }));
+        if (renames.length) task.renames = renames.slice(0, 50);
+      }
+    }
+    await require('./git-snapshot.cjs').release(this.runSnapshot); await require('./git-snapshot.cjs').release(endSnapshot);
+    this.runSnapshot = null;
     delete task.reads; delete task.completed;
     this.changes.tasks.push(task); while (this.changes.tasks.length > 20) this.changes.tasks.shift();
     const summary = taskSummary(task);
