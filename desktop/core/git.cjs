@@ -33,13 +33,21 @@ function metadataOnly(args, configuration) {
   return copy[0] === 'check-ignore';
 }
 
-function run(root, args, input, configuration = []) {
+function run(root, args, input, configuration = [], extraEnvironment = null) {
   const permit = gitPermit(root);
   if (permit.protected) return require('./privacy/git-isolation.cjs').runIsolatedGit(root, args, input, configuration, permit);
   const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')));
   Object.assign(env, { GIT_TERMINAL_PROMPT: '0', GIT_OPTIONAL_LOCKS: '0', GIT_LITERAL_PATHSPECS: '1', LC_ALL: 'C' });
   env.GIT_CONFIG_COUNT = String(configuration.length);
   configuration.forEach(([key, value], index) => { env[`GIT_CONFIG_KEY_${index}`] = key; env[`GIT_CONFIG_VALUE_${index}`] = value; });
+  // Kun værten (denne hovedproces) må give et privat snapshot-index og objektlager med; nøglerne er
+  // en fast hvidliste, så ingen rendererleveret værdi kan frit styre Git-miljøet her.
+  if (extraEnvironment) {
+    for (const [key, value] of Object.entries(extraEnvironment)) {
+      if (!SNAPSHOT_ENV_KEYS.includes(key) || typeof value !== 'string' || !value) throw new Error('Ugyldig snapshot-konfiguration.');
+      env[key] = value;
+    }
+  }
   return new Promise((resolve, reject) => {
     const runtime = require('./runtime.cjs');
     permit.assertCurrent();
@@ -212,4 +220,8 @@ class GitVersions {
     } finally { this.busy = false; }
   }
 }
-module.exports = { GitVersions, run, secretContent, protectedPath, content, ANONYMOUS, registerGitPrivacyResolver, metadataOnly };
+// Miljønøgler, kun værten må give med til et snapshot: privat index og privat objektlager.
+const SNAPSHOT_ENV_KEYS = ['GIT_INDEX_FILE', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES'];
+// Om projektet ligger i et beskyttet Git-scope (isolation), hvor almindelige kørsler ikke bruges.
+function isProtected(root) { try { return gitPermit(root).protected; } catch { return true; } }
+module.exports = { GitVersions, run, secretContent, protectedPath, content, ANONYMOUS, registerGitPrivacyResolver, metadataOnly, isProtected, SNAPSHOT_ENV_KEYS };
