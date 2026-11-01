@@ -25,7 +25,10 @@
     const waiting = node('button', 'Gennemgå mit valg', 'text-button work-progress-choice'); waiting.type = 'button'; waiting.hidden = true;
     waiting.onclick = () => { const item = v.waitingFor[0]; if (!item?.element?.isConnected) return; item.element.scrollIntoView({ block: 'nearest' }); item.element.querySelector('button, textarea, input')?.focus(); };
     body.append(list, waiting, technical); card.append(body);
-    const run = { started: v.runStartedAt, card, name, meta, list, technical, technicalText, waiting, entries: new Map(), recovery: null, ended: null, signature: '' };
+    const run = { started: v.runStartedAt, card, name, meta, list, technical, technicalText, waiting, entries: new Map(), recovery: null, ended: null, signature: '', userToggled: false, auto: false };
+    // Brugerens egen foldning vinder: den automatiske sammenfoldning ved turens slutning må
+    // ikke registreres som et brugerens valg.
+    card.addEventListener('toggle', () => { if (!run.auto) run.userToggled = true; });
     runs.set(v, run);
     // sendNow marks the run active just before inserting the user's message.
     queueMicrotask(() => { if (runs.get(v) === run && !card.parentNode) v.log.append(card); });
@@ -53,7 +56,7 @@
   function renderCard(v) {
     const run = forView(v); if (!run) return;
     if (v.activityGroup) v.activityGroup.hidden = true;
-    if (!v.running && !run.ended) run.ended = Date.now();
+    if (!v.running && !run.ended) { run.ended = Date.now(); if (!run.userToggled) { run.auto = true; run.card.open = false; run.auto = false; } }
     run.card.hidden = !v.running && !run.entries.size;
     const entries = [...run.entries.values()], count = window.ChatDisplay.activitySummary(entries);
     const phase = v.running ? currentPhase(v, run) : null;
@@ -65,7 +68,7 @@
     if (Number.isFinite(run.started) && run.started > 0) parts.push(duration((run.ended || Date.now()) - run.started));
     const meta = parts.join(' · ') || 'Følg arbejdet'; if (run.meta.textContent !== meta) run.meta.textContent = meta;
     // Recent facts only; the full exact log remains available in Activity.
-    const rows = entries.filter(entry => entry.kind === 'tool' || ['approval', 'question'].includes(entry.kind)).slice(-4).map(entry => window.ChatDisplay.activityEntry(entry, { finished: !v.running }));
+    const rows = entries.filter(entry => entry.kind === 'tool' || ['approval', 'question'].includes(entry.kind)).slice(-6).map(entry => window.ChatDisplay.activityEntry(entry, { finished: !v.running }));
     if (phase && (!rows.length || !['running', 'waiting'].includes(rows.at(-1).status) || v.waitingFor?.length || run.recovery)) rows.push(phase);
     const signature = JSON.stringify(rows);
     if (signature !== run.signature) { run.signature = signature; run.list.replaceChildren(...rows.map(step)); }
