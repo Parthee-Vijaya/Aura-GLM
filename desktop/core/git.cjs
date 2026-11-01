@@ -47,7 +47,9 @@ function run(root, args, input, configuration = []) {
     // provenance when Git exits. Even status can run configured clean filters.
     if (!metadataOnly(args, configuration)) permit.recordUncontained();
     const child = execFile(runtime.get()?.git || 'git', ['-c', 'core.fsmonitor=false', ...args], { cwd: root, env: runtime.gitEnvironment(env), timeout: 30000, maxBuffer: 8 * LIMIT, windowsHide: true, encoding: 'buffer' }, (error, stdout) => {
-      if (error) { const failure = new Error(error.code === 'ENOENT' ? 'Git blev ikke fundet. Installer Git, og genstart appen.' : 'Git kunne ikke gennemføre handlingen. Kontrollér repository, låsefiler, hooks og eventuel commitsignering.'); failure.code = error.code; reject(failure); }
+      if (error) { const failure = new Error(error.code === 'ENOENT' ? 'Git blev ikke fundet. Installer Git, og genstart appen.' : 'Git kunne ikke gennemføre handlingen. Kontrollér repository, låsefiler, hooks og eventuel commitsignering.'); failure.code = error.code; // Struktureret udfald: timeout, signal og kode holdes adskilt; teksten vælges af forbrugeren.
+        failure.outcome = require('./run-contract.cjs').outcome({ exitCode: Number.isInteger(error.code) ? error.code : null, signal: error.signal, timedOut: error.killed === true && !Number.isInteger(error.code) });
+        reject(failure); }
       else { try { permit.assertCurrent(); resolve(stdout); } catch (error) { reject(error); } }
     });
     child.stdin.on('error', () => {}); child.stdin.end(input);

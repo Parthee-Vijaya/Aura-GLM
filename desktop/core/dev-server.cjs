@@ -296,9 +296,10 @@ class DevServer {
     const runStep = (file, args, cwd, label) => new Promise((resolve, reject) => {
       if (generation !== this.generation) return reject(Error('Handlingen blev stoppet.'));
       const child = launch(file, args, cwd, label);
-      const timer = setTimeout(() => { void terminate(child); reject(Error(`${label} svarede ikke. Kontrollér procesloggen og netværket.`)); }, 10 * 60 * 1000);
-      child.once('error', () => { clearTimeout(timer); reject(Error(`${label} kunne ikke startes.`)); });
-      child.once('exit', code => { clearTimeout(timer); this.children = this.children.filter(c => c !== child); code === 0 ? resolve() : reject(Error(label === 'npm' ? npmFailure(this.output) : `${label} blev ikke gennemført. Se procesloggen.`)); });
+      let timedOut = false;
+      const timer = setTimeout(() => { timedOut = true; void terminate(child); const failure = Error(`${label} svarede ikke. Kontrollér procesloggen og netværket.`); failure.outcome = { timedOut: true, operation: label }; reject(failure); }, 10 * 60 * 1000);
+      child.once('error', () => { clearTimeout(timer); const failure = Error(`${label} kunne ikke startes.`); failure.outcome = { unknown: true, operation: label }; reject(failure); });
+      child.once('exit', (code, signal) => { clearTimeout(timer); this.children = this.children.filter(c => c !== child); if (require('./run-contract.cjs').succeeded({ exitCode: code, signal, timedOut })) return resolve(); const failure = Error(timedOut ? `${label} svarede ikke. Kontrollér procesloggen og netværket.` : label === 'npm' ? npmFailure(this.output) : `${label} blev ikke gennemført (${require('./run-contract.cjs').describeOutcome({ exitCode: code, signal })}). Se procesloggen.`); failure.outcome = require('./run-contract.cjs').outcome({ exitCode: code, signal, timedOut }); reject(failure); });
     });
     if (installing) {
       void (async () => {
