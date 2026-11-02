@@ -199,11 +199,12 @@ const freshView = () => ({ id: 'chat-1', log: { children: [] }, historyLoaded: f
 function runChat({ profile = null, storage = {}, view = freshView() } = {}) {
   const dom = makeChatDom();
   const store = { ...storage };
+  const listeners = {};
   const harness = { profileGet: async () => ({ profile: plain(profile), warnings: [] }), profileSave: async value => ({ profile: { ...plain(profile), ...(value.workMode ? { workMode: value.workMode } : {}) }, warnings: [] }) };
   const context = {
     $: dom.$, document: dom.document, view,
     localStorage: { getItem: key => Object.prototype.hasOwnProperty.call(store, key) ? store[key] : null, setItem: (key, value) => { store[key] = String(value); }, removeItem: key => { delete store[key]; } },
-    window: { HistoryPages: { takePrevious: messages => ({ older: [], recent: messages }) }, planning: { onProject: () => {} }, dispatchEvent: () => {}, calmWorkspace: { setTheme: () => {} } },
+    window: { HistoryPages: { takePrevious: messages => ({ older: [], recent: messages }) }, planning: { onProject: () => {} }, dispatchEvent: () => {}, calmWorkspace: { setTheme: () => {} }, addEventListener: (name, handler) => { (listeners[name] ||= []).push(handler); } },
     CustomEvent: class { constructor(type, init) { this.type = type; this.detail = init?.detail; } },
     call: async (method, value) => { if (!harness[method]) throw new Error(`Uventet kald: ${method}`); return harness[method](value); },
     current: { root: '/projekt' }, activePlan: null,
@@ -212,8 +213,14 @@ function runChat({ profile = null, storage = {}, view = freshView() } = {}) {
     setRunning: () => {}, renderStatus: () => {}, renderUsage: () => {},
     updateWorkMode: () => {}, updateStartIdea: () => {}, applyRunning: () => {}, node
   };
-  vm.runInNewContext(`${profileSlices()}\n${sliceOf(app, 'function applyChatChoiceRecommendation()', 'async function showChat')}`, context);
-  return { context, dom, view, adopt: async value => context.adoptProfile(plain(value)) };
+  vm.runInNewContext([
+    profileSlices(),
+    sliceOf(app, 'function applyChatChoiceRecommendation()', 'async function showChat'),
+    // Indstillinger gemmer profilen uden for app.js; lytterudsnittet binder
+    // hændelsen, der holder cachen opdateret.
+    sliceOf(app, "window.addEventListener('aura:profile-saved'", "action(async () => { syncCreateAvailability(); try { state = await call('connectionState');")
+  ].join('\n'), context);
+  return { context, dom, view, listeners, adopt: async value => context.adoptProfile(plain(value)) };
 }
 
 test('en helt ny samtale uden kladde og historik starter i profilens arbejdsmåde', async () => {
@@ -273,6 +280,27 @@ test('anbefalingen flytter sig, når profilen ændres', async () => {
   assert.ok(f.dom.registry.get('choice-plan').classList.contains('is-recommended'), 'anbefalingen følger profilen');
   assert.equal(f.dom.registry.get('choice-plan').querySelector('.recommended')?.textContent, 'Anbefalet');
   assert.equal(f.dom.registry.get('choice-chat').querySelector('.recommended'), null, 'det gamle mærke fjernes');
+});
+test('uden en indlæst profil vises ingen anbefaling — intet mærkat uden grundlag', async () => {
+  const f = runChat({ profile: null });
+  f.context.fillChat({ workspace: { messages: [], mode: 'chat' } }, true);
+  assert.equal(f.dom.registry.get('choice-plan').classList.contains('is-recommended'), false);
+  assert.equal(f.dom.registry.get('choice-chat').classList.contains('is-recommended'), false, 'chat-kortet mærkes ikke uden profilgrundlag');
+  assert.equal(f.dom.registry.get('choice-chat').querySelector('.recommended'), null);
+  await f.adopt({ ...blank(), workMode: 'plan' });
+  assert.ok(f.dom.registry.get('choice-plan').classList.contains('is-recommended'), 'mærkatet kommer først med en indlæst profil');
+});
+test('Indstillinger gemmer profilen: aura:profile-saved opdaterer cachen, og den nye samtale bruger arbejdsmåden', async () => {
+  const f = runChat({ profile: { ...blank(), workMode: 'chat' } });
+  await f.adopt({ ...blank(), workMode: 'chat' });
+  f.context.fillChat({ workspace: { messages: [], mode: 'chat' } }, true);
+  assert.equal(f.dom.registry.get('work-mode').value, 'chat');
+  assert.ok(f.listeners['aura:profile-saved']?.length >= 1, 'app.js lytter efter gemte profiler');
+  // Indstillinger gemmer en ny arbejds måde; hændelsen bærer den gemte profil.
+  for (const handler of f.listeners['aura:profile-saved']) handler({ detail: { ...blank(), workMode: 'plan' } });
+  f.context.fillChat({ workspace: { messages: [], mode: 'chat' } }, true);
+  assert.equal(f.dom.registry.get('work-mode').value, 'plan', 'den gemte arbejdsmåde gælder den næste nye samtale uden genstart');
+  assert.ok(f.dom.registry.get('choice-plan').classList.contains('is-recommended'), 'anbefalingen følger også med');
 });
 
 // ---------- Armatur: Flere valg præudfyldes fra profilen ----------

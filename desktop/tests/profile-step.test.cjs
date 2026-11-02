@@ -299,6 +299,14 @@ test('Fortsæt virker uden udfyldte felter — tomme værdier er gyldige profilv
   assert.equal(f.context.setupStep, 'choice');
   assert.deepEqual(plain(f.saves[0]), { name: '', icon: '', helpLevel: 'fuld', appearance: { theme: 'system', panelOpen: true } });
 });
+test('profil-trinnet bevarer panelets gemte starttilstand — appearance er én enhed', async () => {
+  const f = runSetup({ profile: { ...blank(), appearance: { theme: 'light', panelOpen: false } } });
+  await f.context.showSetup('', true);
+  for (const input of f.document.querySelectorAll('#profile-theme input')) input.checked = input.value === 'dark';
+  await f.registry.get('profile-continue').onclick();
+  assert.equal(f.context.setupStep, 'choice');
+  assert.deepEqual(plain(f.saves[0]).appearance, { theme: 'dark', panelOpen: false }, 'et gemt panelOpen: false nulstilles aldrig af trinnet');
+});
 
 test('gennemført opsætning gemmer profilfelterne og udfylder standard-AI med den kontrollerede forbindelse', async () => {
   const f = runSetup();

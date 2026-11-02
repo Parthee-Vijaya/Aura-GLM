@@ -96,6 +96,8 @@ function makeDom() {
   const document = { activeElement: null };
   document.listeners = {};
   document.addEventListener = (name, handler) => { (document.listeners[name] ||= []).push(handler); };
+  // Minimal EventTarget: a dispatched event reaches the registered listeners.
+  document.dispatchEvent = event => { for (const handler of document.listeners[event.type] || []) handler(event); return true; };
   document.createElement = tag => new El(tag, document);
   document.body = new El('body', document);
   document.querySelectorAll = selector => selectWithin(document.body, selector);
@@ -339,6 +341,31 @@ test('valg af standard-AI gemmer hele standardAI-enheden', async () => {
   connection.value = ''; connection.emit('change');
   await flush();
   assert.deepEqual(harness.saves[1], { standardAI: { connectionID: '', modelID: '' } }, 'Beslut senere er et gyldigt valg');
+});
+test('en vellykket profilgemning udsender aura:profile-saved med den gemte profil', async () => {
+  const dom = makeDom();
+  const harness = makeHarness({ profile: { ...blank(), workMode: 'chat' } });
+  const settings = makeSettings(dom, harness);
+  await openSection(settings, 'profile');
+  const saved = [];
+  dom.document.addEventListener('aura:profile-saved', event => saved.push(event.detail));
+  const mode = dom.content.querySelector('#settings-work-mode');
+  mode.value = 'plan'; mode.emit('change');
+  await flush();
+  assert.equal(saved.length, 1, 'hændelsen udsendes én gang pr. vellykket gemning');
+  assert.equal(saved[0].workMode, 'plan', 'hændelsen bærer den returnerede profil');
+  assert.equal(saved[0].name, '', 'profilen er hel — ikke kun det gemte felt');
+  // En afvist gemning udsender intet: cachen følger kun bekræftede gemninger.
+  const failingDom = makeDom();
+  const failing = makeHarness({ profile: blank(), saveError: 'Profilen kunne ikke gemmes.' });
+  await openSection(makeSettings(failingDom, failing), 'profile');
+  const failed = [];
+  failingDom.document.addEventListener('aura:profile-saved', event => failed.push(event.detail));
+  const failingMode = failingDom.content.querySelector('#settings-work-mode');
+  failingMode.value = 'plan'; failingMode.emit('change');
+  await flush();
+  assert.match(failingDom.content.querySelector('#settings-feedback').textContent, /kunne ikke gemmes/, 'fejlen annonceres i dialogen');
+  assert.deepEqual(failed, [], 'en afvist gemning udsender intet');
 });
 
 test('projektstandarder gemmes som én enhed med alle tre felter', async () => {

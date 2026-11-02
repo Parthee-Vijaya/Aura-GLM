@@ -106,6 +106,13 @@
       area.textContent = text;
       area.classList.toggle('error', Boolean(text && isError));
     }
+    // Every successful save announces the canonical profile: app.js keeps a
+    // cache for new conversations and the standard-AI prefill, and the event
+    // keeps that cache in step without a restart. The event bubbles from the
+    // document up to the window, where app.js listens.
+    function dispatchSaved(profile) {
+      try { document.dispatchEvent(new CustomEvent('aura:profile-saved', { detail: profile, bubbles: true })); } catch { /* a missing event target never blocks a save */ }
+    }
 
     // Theme and help application, shared by open and every save: the hint copy
     // is written first (workspace-calm.js reads it at startup), then the body
@@ -187,6 +194,7 @@
         const result = await invoke('profileSave', partial);
         fill(result.profile);
         announce(result.warnings);
+        dispatchSaved(result.profile);
         return result;
       } catch (error) {
         announce([error.message], true);

@@ -589,10 +589,12 @@ async function displayProject(project, { firstTask = false } = {}) {
 // Anbefalet-pille som funktionsvalget — så der ingen skjult aria-tilstand er
 // at holde i synk.
 function applyChatChoiceRecommendation() {
-  const wanted = profileState?.workMode === 'plan' ? '#choice-plan' : '#choice-chat';
+  // Anbefalingen kræver en indlæst profil: uden profilgrundlag vises intet
+  // mærkat — aldrig en gættet anbefaling.
+  const wanted = profileState ? (profileState.workMode === 'plan' ? '#choice-plan' : '#choice-chat') : '';
   for (const card of [$('#choice-plan'), $('#choice-chat')]) {
     if (!card) continue;
-    const recommended = card === $(wanted);
+    const recommended = Boolean(wanted) && card === $(wanted);
     card.classList.toggle('is-recommended', recommended);
     let badge = card.querySelector('.recommended');
     if (recommended && !badge) { badge = node('span', 'Anbefalet', 'recommended'); card.querySelector('strong')?.after(badge); }
@@ -1455,6 +1457,10 @@ $('#connections-dialog').addEventListener('close', () => {
   if (addingConnectionStage) { resetAddConnection(); connectionView('list'); }
 });
 setInterval(async () => { if (!current || polling) return; polling = true; const project = current, root = current.workspaceRoot; try { const next = await call('revision'); if (current !== project || current.workspaceRoot !== root || !next) return; if (revision && next !== revision) $('#preview').src = current.previewURL; revision = next; $('#preview-status').textContent = 'Lokal forhåndsvisning'; } catch { $('#preview-status').textContent = 'Kan ikke læse siden – kontrollér projektfilerne'; } finally { polling = false; } }, 1500);
+// Profilen kan også gemmes uden for denne fil (fx i Indstillinger): hændelsen
+// bærer den gemte profil, så cachen — arbejdsmåden, anbefalingen og standard-
+// AI'et — følger med uden genstart.
+window.addEventListener('aura:profile-saved', event => { if (event?.detail) adoptProfile(event.detail); });
 action(async () => { syncCreateAvailability(); try { state = await call('connectionState'); await startupProfile(); renderConnections(); updateProvider(); await loadDesigns(); await loadStartup(); applyFeatures(); renderLocation(await call('projectLocation')); restoreIdeaDraft(); showIdeaExamples(); await refreshRecent(); setupControls(); for (const id of ['#welcome-build', '#welcome-example', '#welcome-open']) $(id).disabled = false; if ($('#welcome-dialog').open) $('#welcome-title').focus(); else { $('#purpose').focus(); await reopenLast(); } } finally { projectLoading = false; applyRunning(); } });
 // Kom tilbage: det senest åbnede projekt åbnes igen ved start, så man fortsætter, hvor man slap.
 // Et projekt, brugeren selv har lukket med Nyt projekt, åbnes ikke igen.
