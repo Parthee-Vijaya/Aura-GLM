@@ -304,6 +304,105 @@ test('Indstillinger gemmer profilen: aura:profile-saved opdaterer cachen, og den
   assert.ok(f.dom.registry.get('choice-plan').classList.contains('is-recommended'), 'anbefalingen følger også med');
 });
 
+// ---------- Armatur: profilgemninger synkroniserer den viste projektopstart ----------
+function makeSyncDom() {
+  const body = makeBody();
+  const registry = new Map();
+  const make = (tag, id) => { const el = new El(tag); el.id = id; registry.set(id, el); body.append(el); return el; };
+  make('select', 'startup-hosting'); make('select', 'startup-connection'); make('select', 'tests');
+  make('select', 'design-select'); make('p', 'startup-warning');
+  make('details', 'project-options'); make('details', 'design-options'); make('textarea', 'links');
+  const onboarding = make('main', 'onboarding'); onboarding.hidden = false;
+  return { ...makeDocument(body), registry };
+}
+function runStartupSync({ profile = null, connections = [{ id: 'c1', name: 'Egen' }, { id: 'c2', name: 'Anden' }] } = {}) {
+  const dom = makeSyncDom();
+  const designsApplied = [];
+  const windowListeners = {};
+  const summaries = [];
+  const harness = {
+    profileGet: async () => ({ profile: plain(profile), warnings: [] }),
+    applyDesign: async id => { designsApplied.push(id); return { color: '#123456', links: ['https://design.example/'], assets: [] }; },
+    profileMigrate: async () => ({ profile: null, warnings: [] })
+  };
+  const context = {
+    $: dom.$, document: dom.document,
+    localStorage: { getItem: () => null, setItem: () => {}, removeItem: () => {} },
+    window: { addEventListener: (name, handler) => { (windowListeners[name] ||= []).push(handler); }, dispatchEvent: () => {}, calmWorkspace: { setTheme: () => {} } },
+    CustomEvent: class { constructor(type, init) { this.type = type; this.detail = init?.detail; } },
+    call: async (method, value) => { if (!harness[method]) throw new Error(`Uventet kald: ${method}`); return harness[method](value); },
+    applyChatChoiceRecommendation: () => {}, option, node,
+    navigationRequest: 0, selectedOwner: () => null, startupLoads: 0, syncCreateAvailability: () => {},
+    state: { connections }, current: null, action: async fn => fn(),
+    renderStartupConnections: () => {}, setProjectColor: () => {}, showAssets: () => {},
+    clearStartupDesign: async () => {}, updateStartupSummary: () => { summaries.push('summary'); }
+  };
+  vm.runInNewContext([
+    profileSlices(),
+    sliceOf(app, 'function renderStartupConnections()', 'function updateStartupSummary'),
+    sliceOf(app, 'async function applyStartupDefaults(', 'async function loadStartup()'),
+    sliceOf(app, 'async function loadStartup()', "for (const selector of ['#startup-hosting'"),
+    sliceOf(app, "for (const selector of ['#startup-hosting'", "$('#model-load').onclick"),
+    sliceOf(app, "window.addEventListener('aura:profile-saved'", "action(async () => { syncCreateAvailability();")
+  ].join('\n'), context);
+  return { context, dom, windowListeners, designsApplied, summaries };
+}
+test('profilgemning synkroniserer de urørte projektopstartsfelter; rørte felter vinder', async () => {
+  const f = runStartupSync({ profile: { ...blank(), standardAI: { connectionID: 'c1', modelID: '' }, projectDefaults: { hosting: 'vercel', designID: '', tests: 'senere' } } });
+  await f.context.loadStartup();
+  assert.equal(f.dom.registry.get('startup-hosting').value, 'vercel');
+  assert.equal(f.dom.registry.get('startup-connection').value, 'c1');
+  assert.equal(f.dom.registry.get('tests').value, 'senere');
+  // Brugeren vælger selv tests — det er projektets eget valg.
+  f.dom.registry.get('tests').value = 'manuel';
+  for (const handler of f.dom.registry.get('tests').listeners.change || []) handler();
+  // Standard-AI'et og standarderne ændres i Indstillinger, mens skærmen står åben.
+  const saved = { ...blank(), standardAI: { connectionID: 'c2', modelID: '' }, projectDefaults: { hosting: 'own', designID: 'd1', tests: 'automatiske' } };
+  for (const handler of f.windowListeners['aura:profile-saved']) handler({ detail: saved });
+  await new Promise(resolve => setImmediate(resolve));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(f.dom.registry.get('startup-hosting').value, 'own', 'uprobert hosting følger profilen');
+  assert.equal(f.dom.registry.get('startup-connection').value, 'c2', 'uprobert forbindelse følger profilen');
+  assert.equal(f.dom.registry.get('design-select').value, 'd1', 'uprobert design følger profilen');
+  assert.deepEqual(f.designsApplied, ['d1'], 'den nye designpakke anvendes med det samme');
+  assert.equal(f.dom.registry.get('tests').value, 'manuel', 'det rørte felt vinder over profilen');
+  assert.ok(f.summaries.length >= 2, 'resuméet genberegnes efter synkroniseringen');
+});
+test('uden rørte felter følger alle fire felter en profilgemning', async () => {
+  const f = runStartupSync({ profile: { ...blank(), standardAI: { connectionID: 'c1', modelID: '' }, projectDefaults: { hosting: 'vercel', designID: '', tests: 'senere' } } });
+  await f.context.loadStartup();
+  const saved = { ...blank(), standardAI: { connectionID: 'c2', modelID: '' }, projectDefaults: { hosting: 'azure', designID: '', tests: 'automatiske' } };
+  for (const handler of f.windowListeners['aura:profile-saved']) handler({ detail: saved });
+  await new Promise(resolve => setImmediate(resolve));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(f.dom.registry.get('startup-hosting').value, 'azure');
+  assert.equal(f.dom.registry.get('startup-connection').value, 'c2');
+  assert.equal(f.dom.registry.get('tests').value, 'automatiske');
+  assert.deepEqual(f.designsApplied, [], 'intet design betyder ingen anvendelse');
+});
+test('et rørt design vælges ikke om af profilen', async () => {
+  const f = runStartupSync({ profile: { ...blank(), projectDefaults: { hosting: '', designID: 'd1', tests: 'senere' } } });
+  await f.context.loadStartup();
+  assert.deepEqual(f.designsApplied, ['d1'], 'profilens design er anvendt ved opstart');
+  f.dom.registry.get('design-select').value = 'd2';
+  for (const handler of f.dom.registry.get('design-select').listeners.change || []) handler();
+  for (const handler of f.windowListeners['aura:profile-saved']) handler({ detail: { ...blank(), projectDefaults: { hosting: '', designID: 'd3', tests: 'senere' } } });
+  await new Promise(resolve => setImmediate(resolve));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(f.designsApplied, ['d1'], 'det rørte design genanvendes ikke fra profilen');
+  assert.equal(f.dom.registry.get('design-select').value, 'd2', 'brugerens valg står ved magt');
+});
+test('med et åbent projekt rører synkroniseringen ikke opstartsfelterne', async () => {
+  const f = runStartupSync({ profile: { ...blank(), projectDefaults: { hosting: 'vercel', designID: '', tests: 'senere' } } });
+  await f.context.loadStartup();
+  f.context.current = { root: '/projekt' };
+  for (const handler of f.windowListeners['aura:profile-saved']) handler({ detail: { ...blank(), projectDefaults: { hosting: 'own', designID: '', tests: 'automatiske' } } });
+  await new Promise(resolve => setImmediate(resolve));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(f.dom.registry.get('startup-hosting').value, 'vercel', 'opstartsskærmen er ikke synke med et åbent projekt');
+  assert.equal(f.dom.registry.get('tests').value, 'senere');
+});
+
 // ---------- Armatur: Flere valg præudfyldes fra profilen ----------
 function makeDefaultsDom() {
   const body = makeBody();
@@ -332,9 +431,10 @@ function runDefaults({ profile, warnings = [], connections = [] } = {}) {
     applyChatChoiceRecommendation: () => {}, option, node,
     navigationRequest: 0, selectedOwner: () => null, startupLoads: 0, syncCreateAvailability: () => {},
     state: { connections }, renderStartupConnections: () => {}, action: async fn => fn(),
-    setProjectColor: () => {}, showAssets: () => {}, clearStartupDesign: async () => {}, updateStartupSummary: () => {}
+    setProjectColor: () => {}, showAssets: () => {}, clearStartupDesign: async () => {}, updateStartupSummary: () => {},
+    startupTouched: new Set()
   };
-  vm.runInNewContext(`${profileSlices()}\n${sliceOf(app, 'async function loadStartup()', "for (const selector of ['#startup-hosting'")}`, context);
+  vm.runInNewContext(`${profileSlices()}\n${sliceOf(app, 'async function applyStartupDefaults(', 'async function loadStartup()')}\n${sliceOf(app, 'async function loadStartup()', "for (const selector of ['#startup-hosting'")}`, context);
   return { context, dom, designsApplied };
 }
 
@@ -516,6 +616,74 @@ test('arbejdsfladen: hurtige skift gemmer i rækkefølge gennem den delte kø, s
   await flush();
   assert.deepEqual(f.saves, [{ appearance: { panelOpen: true } }, { appearance: { panelOpen: false } }], 'den sidste skrivning matcher det sidste klik — ingen gemning afvises');
   assert.deepEqual(f.announced.map(profile => profile.appearance.panelOpen), [true, false], 'hver gemning annonceres');
+});
+
+// ---------- Projektsåbning: standardmodellen uden et tidligere klik (fund 11) ----------
+function makeProjectChoiceDom() {
+  const body = makeBody();
+  const registry = new Map();
+  const make = (tag, id) => { const el = new El(tag); el.id = id; registry.set(id, el); body.append(el); return el; };
+  make('select', 'connection-select'); make('select', 'model-select'); make('div', 'route-row');
+  make('select', 'route-select'); make('details', 'model-options'); make('button', 'start-idea');
+  make('p', 'project-startup');
+  return { ...makeDocument(body), registry };
+}
+function runProjectChoice({ saved = null, startup = null, autoConnect = false, connections = [{ id: 'c1' }], standardAI = { connectionID: '', modelID: '' } } = {}) {
+  const dom = makeProjectChoiceDom();
+  const modelLoads = [];
+  const project = { root: '/projekt' };
+  const context = {
+    $: dom.$, document: dom.document,
+    state: { connections, retiredConnections: [], projectSettings: { selection: saved, startup } },
+    autoConnect, preferredConnection: 'c2',
+    profileState: { standardAI: plain(standardAI) },
+    project, current: project, request: 1, projectDisplayRequest: 1,
+    loadModels: async (kept = {}) => { modelLoads.push([dom.registry.get('connection-select').value, plain(kept)]); },
+    option, updateModelSummary: () => {}, updateStartIdea: () => {},
+    hostingLabel: () => 'Vercel', testLabel: () => 'Beslut senere',
+    pentModelNavn: (id, name) => name || id,
+  };
+  const run = vm.runInNewContext(`(async () => {\n${sliceOf(app, 'const saved = state.projectSettings.selection;', '\n  fillChat(state')}\n})()`, context);
+  return { dom, modelLoads, run };
+}
+test('et nyt projekts opstartsforbindelse og profilens standardmodel forvælges uden autoConnect og uden kataloghentning', async () => {
+  const f = runProjectChoice({ startup: { connectionID: 'c1', hosting: '', designID: '', tests: 'senere' }, standardAI: { connectionID: 'c1', modelID: 'm1' } });
+  await f.run;
+  assert.equal(f.dom.registry.get('connection-select').value, 'c1', 'opstartsforbindelsen er valgt');
+  assert.deepEqual(f.dom.registry.get('model-select').children.map(child => child.value), ['m1'], 'profilens standardmodel forvælges direkte fra sit id');
+  assert.deepEqual(f.modelLoads, [], 'intet katalog hentes — projektoprettelsen forbliver uden netværkskald');
+});
+test('profilens model tilhører en anden forbindelse — kun forbindelsen forvælges', async () => {
+  const f = runProjectChoice({ startup: { connectionID: 'c1' }, standardAI: { connectionID: 'anden', modelID: 'm1' } });
+  await f.run;
+  assert.equal(f.dom.registry.get('connection-select').value, 'c1', 'opstartsforbindelsen er valgt');
+  assert.deepEqual(f.dom.registry.get('model-select').children, [], 'profilens model forvælges ikke på en fremmed forbindelse');
+  assert.deepEqual(f.modelLoads, [], 'kataloget hentes først, når modelvælgeren åbnes');
+});
+test('uden profilens standardmodel forvælges kun forbindelsen', async () => {
+  const f = runProjectChoice({ startup: { connectionID: 'c1' }, standardAI: { connectionID: 'c1', modelID: '' } });
+  await f.run;
+  assert.equal(f.dom.registry.get('connection-select').value, 'c1');
+  assert.deepEqual(f.dom.registry.get('model-select').children, [], 'uden standardmodel overtager modelvælgeren ved åbning');
+  assert.deepEqual(f.modelLoads, []);
+});
+test('projektets egen gemte model vises uden en kataloghentning', async () => {
+  const f = runProjectChoice({ saved: { connectionID: 'c1', modelID: 'm1', routeID: '' }, startup: { connectionID: 'c1' } });
+  await f.run;
+  assert.equal(f.modelLoads.length, 0, 'det gemte valg behøver ikke kataloget');
+  assert.deepEqual(f.dom.registry.get('model-select').children.map(child => child.value), ['m1'], 'den gemte model står i vælgeren');
+  assert.equal(f.dom.registry.get('model-options').open, false);
+});
+test('autoConnect indlæster stadig som før — også for det gemte valg', async () => {
+  const f = runProjectChoice({ saved: { connectionID: 'c1', modelID: 'm1' }, startup: { connectionID: 'c1' }, autoConnect: true });
+  await f.run;
+  assert.deepEqual(f.modelLoads, [['c1', { connectionID: 'c1', modelID: 'm1' }]], 'sessionsvalget indlæser kataloget med det gemte valg');
+});
+test('en utilgængelig opstartsforbindelse vælger og indlæser intet', async () => {
+  const f = runProjectChoice({ startup: { connectionID: 'borte' } });
+  await f.run;
+  assert.equal(f.dom.registry.get('connection-select').value, '');
+  assert.deepEqual(f.modelLoads, [], 'ingen forbindelse vælges, og intet katalog hentes');
 });
 
 // ---------- Projektoprettelse: eksplicitte tomme valg overlever (main.cjs) ----------

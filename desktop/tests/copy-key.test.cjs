@@ -79,6 +79,19 @@ test('copy-key: redigering med uændret udbyder og adresse bevarer nøglen som f
   assert.notEqual(edited.revision, first.revision, 'hver gemning får en ny revision');
 });
 
+test('copy-key: clearKey vinder over copyKeyFrom — en rydning sender aldrig en kopi', async t => {
+  const bench = await newBench(t);
+  const first = (await bench.saveConnection({ kind: 'compatible', name: 'Første', baseURL: 'http://127.0.0.1:1/v1', apiKey: 'hemmelighed' })).connections[0];
+  const saved = await bench.saveConnection({ kind: 'compatible', name: 'Anden', baseURL: 'http://127.0.0.1:1/v1', copyKeyFrom: first.id, copyKeyRevision: first.revision, clearKey: true });
+  const second = saved.connections.find(c => c.id !== first.id);
+  assert.ok(second, 'destinationen er gemt');
+  assert.equal(second.hasKey, false, 'rydningen slår kopikilden fra — hasKey er falsk');
+  const storedSecond = (await stored(bench)).find(c => c.id === second.id);
+  assert.equal(storedSecond.secret, undefined, 'intet hemmeligt materiale er kopieret til destinationen');
+  const storedFirst = (await stored(bench)).find(c => c.id === first.id);
+  assert.equal(bench.store.decrypt(storedFirst), 'hemmelighed', 'kildens nøgle er urørt');
+});
+
 test('copy-key: kvitteringen binder copyKeyFrom og copyKeyRevision uden at kræve nøglevinduet', () => {
   const receipts = new CredentialReceipts({ now: () => 0 });
   const configuration = { id: 'ny', kind: 'compatible', name: 'Anden', baseURL: 'http://127.0.0.1:1/v1', copyKeyFrom: 'kilde-1', copyKeyRevision: 'revision-1' };

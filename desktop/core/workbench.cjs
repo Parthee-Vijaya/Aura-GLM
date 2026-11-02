@@ -341,9 +341,11 @@ class Workbench {
       if (connection.kind === 'corti' && !input.apiKey && !input.clearKey && previous?.kind === 'corti') connection.baseURL = previous.baseURL;
       // Key reuse: the source must exist as the same provider at the same address
       // in the revision the renderer read, so the encrypted key never moves to a
-      // different recipient. A freshly typed key always wins over the reference.
+      // different recipient. A freshly typed key always wins over the reference,
+      // and clearing the key beats the copy source: a checked removal never
+      // ships the referenced key to the destination.
       let copySource;
-      if (input.copyKeyFrom && !input.apiKey) {
+      if (input.copyKeyFrom && !input.apiKey && !input.clearKey) {
         copySource = state.connections.find(c => c.id === input.copyKeyFrom);
         if (!copySource || copySource.kind !== connection.kind || copySource.baseURL !== connection.baseURL || input.copyKeyRevision !== copySource.revision) throw new Error('Nøglen kan ikke genbruges: udbyderen eller adressen er ændret. Indtast nøglen igen.');
       }

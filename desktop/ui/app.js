@@ -579,7 +579,20 @@ async function displayProject(project, { firstTask = false } = {}) {
   if (autoConnect && preferredProjectConnection && !unavailableSelection) { $('#connection-select').value = preferredProjectConnection; await loadModels(saved || {}); }
   else if (!preferredProjectConnection && autoConnect && state.connections.some(c => c.id === preferredConnection)) { $('#connection-select').value = preferredConnection; await loadModels(); }
   if (request !== projectDisplayRequest || current !== project) return;
-  if (!$('#connection-select').value && preferredProjectConnection && state.connections.some(c => c.id === preferredProjectConnection)) $('#connection-select').value = preferredProjectConnection;
+  if (!$('#connection-select').value && preferredProjectConnection && state.connections.some(c => c.id === preferredProjectConnection)) {
+    $('#connection-select').value = preferredProjectConnection;
+    // The creation-time startup connection is an explicit choice that prefilled
+    // from the profile: without a saved model, the profile's standard model
+    // preselects straight from its id — the same offline path a saved selection
+    // takes — so the standard model applies without a prior session click
+    // (autoConnect) and without a catalog fetch. The full catalog loads when
+    // the model picker opens.
+    const standard = profileState?.standardAI;
+    if (!saved?.connectionID && standard?.connectionID === preferredProjectConnection && standard.modelID) {
+      $('#model-select').replaceChildren(option(standard.modelID, pentModelNavn(standard.modelID, standard.modelID)));
+      updateModelSummary();
+    }
+  }
   $('#project-startup').textContent = startup ? `Hostingønske: ${hostingLabel(startup.hosting)} · Tests: ${testLabel(startup.tests)}` : 'Ingen opstartsvalg gemt for dette projekt.';
   $('#model-options').open = !$('#model-select').value; $('#start-idea').textContent = project.purpose ? 'Forbered første besked' : 'Beskriv din idé'; updateModelSummary();
   if (saved && state.connections.some(c => c.id === saved.connectionID) && !$('#model-select').value) {
@@ -1470,8 +1483,22 @@ $('#connections-dialog').addEventListener('close', () => {
 setInterval(async () => { if (!current || polling) return; polling = true; const project = current, root = current.workspaceRoot; try { const next = await call('revision'); if (current !== project || current.workspaceRoot !== root || !next) return; if (revision && next !== revision) $('#preview').src = current.previewURL; revision = next; $('#preview-status').textContent = 'Lokal forhåndsvisning'; } catch { $('#preview-status').textContent = 'Kan ikke læse siden – kontrollér projektfilerne'; } finally { polling = false; } }, 1500);
 // Profilen kan også gemmes uden for denne fil (fx i Indstillinger): hændelsen
 // bærer den gemte profil, så cachen — arbejdsmåden, anbefalingen og standard-
-// AI'et — følger med uden genstart.
-window.addEventListener('aura:profile-saved', event => { if (event?.detail) adoptProfile(event.detail); });
+// AI'et — følger med uden genstart, og den viste projektopstart synkroniserer
+// de felter, brugeren endnu ikke har ændret for projektet.
+window.addEventListener('aura:profile-saved', event => { if (event?.detail) { adoptProfile(event.detail); syncStartupFromProfile(event.detail); } });
+// En profilgemning opdaterer den allerede viste projektopstart: urørte felter
+// følger profilen; felter, brugeren har rørt for dette projekt, vinder.
+function syncStartupFromProfile(profile) {
+  if (current || $('#onboarding').hidden) return;
+  const request = navigationRequest;
+  action(async () => {
+    try {
+      await applyStartupDefaults(profile, { touched: startupTouched });
+      if (request !== navigationRequest) return;
+      updateStartupSummary();
+    } catch { /* den næste loadStartup udfylder igen fra profilen */ }
+  });
+}
 action(async () => { syncCreateAvailability(); try { state = await call('connectionState'); await startupProfile(); renderConnections(); updateProvider(); await loadDesigns(); await loadStartup(); applyFeatures(); renderLocation(await call('projectLocation')); restoreIdeaDraft(); showIdeaExamples(); await refreshRecent(); setupControls(); for (const id of ['#welcome-build', '#welcome-example', '#welcome-open']) $(id).disabled = false; if ($('#welcome-dialog').open) $('#welcome-title').focus(); else { $('#purpose').focus(); await reopenLast(); } } finally { projectLoading = false; applyRunning(); } });
 // Kom tilbage: det senest åbnede projekt åbnes igen ved start, så man fortsætter, hvor man slap.
 // Et projekt, brugeren selv har lukket med Nyt projekt, åbnes ikke igen.
@@ -1758,31 +1785,50 @@ function updateStartupSummary() {
 async function clearStartupDesign() {
   showAssets(await call('clearAssets')); $('#design-select').value = ''; setProjectColor(null); $('#links').value = ''; updateStartupSummary();
 }
+// Startup fields from the profile: the connection list refreshes, then the four
+// fields fill. touched is the set of fields the user has already changed for
+// this project — they win over a newer profile; null fills everything. The
+// design apply belongs to the design field: an untouched design follows the
+// profile's choice with colour, links and assets.
+async function applyStartupDefaults(profile, { touched = null } = {}) {
+  const skip = key => touched?.has(key) === true;
+  renderStartupConnections();
+  const standard = profile.standardAI?.connectionID || '';
+  if (!skip('#startup-hosting')) $('#startup-hosting').value = profile.projectDefaults?.hosting || '';
+  if (!skip('#startup-connection')) $('#startup-connection').value = standard && (state?.connections || []).some(c => c.id === standard) ? standard : '';
+  if (!skip('#tests')) $('#tests').value = profile.projectDefaults?.tests || 'senere';
+  if (!skip('#design-select')) {
+    const designID = profile.projectDefaults?.designID || '';
+    $('#design-select').value = designID;
+    if (designID) {
+      try { const design = await call('applyDesign', designID, selectedOwner()); setProjectColor(design.color); $('#links').value = design.links.join('\n'); showAssets(design.assets); }
+      catch { await clearStartupDesign(); $('#startup-warning').textContent = 'Designpakken kunne ikke indlæses. Vælg en anden, eller fortsæt uden design.'; }
+    }
+  }
+  return profile;
+}
 async function loadStartup() {
   const request = navigationRequest, owner = selectedOwner();
   ++startupLoads; syncCreateAvailability();
+  startupTouched.clear();
   try {
     // Flere valg præudfyldes fra profilen: projektstandarderne og standard-
     // AI'ets forbindelse. Projektets egne valg skriver aldrig tilbage.
     const result = await call('profileGet', undefined, owner);
     if (request !== navigationRequest) return;
     const { profile, warnings = [] } = result;
-    renderStartupConnections();
-    const standard = profile.standardAI?.connectionID || '';
-    $('#startup-hosting').value = profile.projectDefaults?.hosting || '';
-    $('#startup-connection').value = standard && (state?.connections || []).some(c => c.id === standard) ? standard : '';
-    $('#tests').value = profile.projectDefaults?.tests || 'senere';
-    $('#design-select').value = profile.projectDefaults?.designID || '';
     $('#startup-warning').textContent = warnings.join(' ');
-    if (profile.projectDefaults?.designID) {
-      try { const design = await call('applyDesign', profile.projectDefaults.designID, owner); if (request !== navigationRequest) return; setProjectColor(design.color); $('#links').value = design.links.join('\n'); showAssets(design.assets); }
-      catch { if (request !== navigationRequest) return; await clearStartupDesign(); $('#startup-warning').textContent = 'Designpakken kunne ikke indlæses. Vælg en anden, eller fortsæt uden design.'; }
-    }
+    await applyStartupDefaults(profile);
+    if (request !== navigationRequest) return;
     for (const selector of ['#project-options', '#design-options']) $(selector).open = false;
     updateStartupSummary();
   } finally { --startupLoads; syncCreateAvailability(); }
 }
 for (const selector of ['#startup-hosting', '#startup-connection', '#tests']) $(selector).addEventListener('change', updateStartupSummary);
+// Projektopstartens felter følger profilen, indtil brugeren selv rører dem:
+// et rørt felt vinder over en senere profilgemning (fx fra Indstillinger).
+const startupTouched = new Set();
+for (const selector of ['#startup-hosting', '#startup-connection', '#tests', '#design-select']) $(selector).addEventListener('change', () => { startupTouched.add(selector); });
 $('#model-load').onclick = () => action(() => loadModels(state?.projectSettings.selection?.connectionID === $('#connection-select').value ? state.projectSettings.selection : {}));
 
 
