@@ -47,7 +47,7 @@ const plain = value => JSON.parse(JSON.stringify(value));
 
 test('chippen viser profilens ikon og navn og er skjult uden begge', () => {
   const f = makeModule();
-  for (const handler of f.listeners['aura:profile']) handler({ detail: { name: 'Anna Klit', icon: 'moon' } });
+  for (const handler of f.listeners['aura:profile']) handler({ detail: { name: 'Anna Klit', icon: 'aura-1' } });
   const chip = f.registry.get('profile-chip');
   assert.equal(chip.hidden, false, 'chippen vises med navn og ikon');
   assert.equal(chip.getAttribute('aria-label'), 'Din profil: Anna Klit');
@@ -55,6 +55,29 @@ test('chippen viser profilens ikon og navn og er skjult uden begge', () => {
   assert.equal(f.registry.get('profile-chip-name').textContent, 'Anna Klit');
   for (const handler of f.listeners['aura:profile-saved']) handler({ detail: { name: '', icon: '' } });
   assert.equal(chip.hidden, true, 'uden navn og ikon er der intet ærligt at vise');
+});
+
+test('med upload som ikon viser chippen det gemte billede', () => {
+  const f = makeModule();
+  for (const handler of f.listeners['aura:profile']) handler({ detail: { name: 'Anna Klit', icon: 'upload' } });
+  const chip = f.registry.get('profile-chip');
+  assert.equal(chip.hidden, false);
+  assert.ok(f.registry.get('profile-chip-mark').innerHTML.includes('<img src="avatar.png"'), 'billedet tegnes fra det faste navn — ingen stier, ingen base64');
+  assert.ok(!f.registry.get('profile-chip-mark').innerHTML.includes('data:'), 'intet billede indlejres som data');
+  assert.equal(chip.getAttribute('aria-label'), 'Din profil: Anna Klit');
+  assert.equal(f.registry.get('profile-chip-name').textContent, 'Anna Klit');
+});
+
+test('kun et ikon er også et gyldigt grundlag — mærket nævner ikonet', () => {
+  const f = makeModule();
+  for (const handler of f.listeners['aura:profile-saved']) handler({ detail: { name: '', icon: 'aura-2' } });
+  const chip = f.registry.get('profile-chip');
+  assert.equal(chip.hidden, false);
+  assert.equal(chip.getAttribute('aria-label'), 'Din profil: Aura · bølge');
+  assert.ok(f.registry.get('profile-chip-mark').innerHTML.includes('<svg'));
+  // Et upload uden navn er også et ærligt grundlag.
+  for (const handler of f.listeners['aura:profile-saved']) handler({ detail: { name: '', icon: 'upload' } });
+  assert.equal(chip.getAttribute('aria-label'), 'Din profil: Eget billede');
 });
 
 test('uden ikon viser chippen initialerne fra ProfileIcons', () => {
@@ -67,13 +90,13 @@ test('uden ikon viser chippen initialerne fra ProfileIcons', () => {
   assert.equal(chip.getAttribute('aria-label'), 'Din profil: Anna Klit');
 });
 
-test('kun et ikon er også et gyldigt grundlag — mærket nævner ikonet', () => {
+test('et udgået Lucide-id tegner intet — chippen bruger initialerne', () => {
   const f = makeModule();
-  for (const handler of f.listeners['aura:profile-saved']) handler({ detail: { name: '', icon: 'star' } });
+  for (const handler of f.listeners['aura:profile-saved']) handler({ detail: { name: 'Anna Klit', icon: 'star' } });
   const chip = f.registry.get('profile-chip');
   assert.equal(chip.hidden, false);
-  assert.equal(chip.getAttribute('aria-label'), 'Din profil: Stjerne');
-  assert.ok(f.registry.get('profile-chip-mark').innerHTML.includes('<svg'));
+  assert.equal(f.registry.get('profile-chip-mark').textContent, 'AK', 'et gammelt ikon-id er ikke længere et valg');
+  assert.equal(chip.getAttribute('aria-label'), 'Din profil: Anna Klit');
 });
 
 test('et ukendt ikon falder tilbage til initialerne', () => {

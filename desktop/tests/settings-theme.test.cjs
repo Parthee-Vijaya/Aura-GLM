@@ -286,7 +286,7 @@ test('app.js: en profilgemning med tema opdaterer hintet gennem calmWorkspace', 
     document,
     $: selector => registry.get(selector.replace(/^#/, '')),
     profileState: null,
-    profileIconChoice: 'bird',
+    profileIconChoice: 'aura-2', profileAvatarAvailable: false,
     call: async (method, value) => {
       if (method === 'profileGet') return { profile: { helpLevel: 'fuld', appearance: { theme: 'dark' } }, warnings: [] };
       saves.push([method, value]); return { profile: { ...value }, warnings: [] };
@@ -297,7 +297,7 @@ test('app.js: en profilgemning med tema opdaterer hintet gennem calmWorkspace', 
   };
   vm.runInNewContext(`${appSlice('function profilePatch() {', 'async function prepareProfileStep')}\n${appSlice('async function saveProfileStep', '$(\'#profile-continue\').onclick')}`, context);
   await context.saveProfileStep();
-  assert.deepEqual(plain(saves), [['profileSave', { name: 'Anna', icon: 'bird', helpLevel: 'fuld', appearance: { theme: 'dark', panelOpen: true } }]]);
+  assert.deepEqual(plain(saves), [['profileSave', { name: 'Anna', icon: 'aura-2', helpLevel: 'fuld', appearance: { theme: 'dark', panelOpen: true } }]]);
   assert.deepEqual(themes, ['dark'], 'temaet gives videre straks efter gemningen');
   assert.equal(context.profileState.name, 'Anna', 'cachen følger den gemte profil med det samme');
   assert.deepEqual(announced.map(event => event.type), ['aura:profile-saved'], 'den gemte profil annonceres');

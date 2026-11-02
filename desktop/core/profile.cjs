@@ -5,7 +5,15 @@
 // updates, Danish validation errors, and warnings for dead references.
 const { normalize } = require('./preferences.cjs');
 
-const ICON_IDS = Object.freeze(['star', 'bolt', 'leaf', 'moon', 'box', 'bird', 'wave', 'compass', 'flame', 'heart', 'cube', 'spark']);
+// The icon is one of three Aura line variants, the empty string (initials) or
+// 'upload' — the stored avatar file. 'upload' is not a plain id: it is only a
+// valid choice while the avatar file exists, so a missing file falls back to
+// the initials everywhere (read, patch and the renderer) without a warning.
+// Retired Lucide ids fold to the initials: reads warn per the lenient read,
+// patch validation normalizes them silently (a stale renderer can never break
+// a save).
+const ICON_IDS = Object.freeze(['aura-1', 'aura-2', 'aura-3']);
+const UPLOAD_ICON = 'upload';
 const PROJECT_DEFAULTS = Object.freeze({ hosting: '', designID: '', tests: 'senere' });
 const THEME_VALUES = Object.freeze(['system', 'light', 'dark']);
 const HELP_VALUES = Object.freeze(['fuld', 'minimal']);
@@ -19,7 +27,23 @@ function blank() {
 
 function cleanID(value) { return typeof value === 'string' && value.length <= 100 && !/[\x00-\x1f]/.test(value) ? value : null; }
 function cleanName(value) { if (typeof value !== 'string' || value.length > 60 || /[\x00-\x1f]/.test(value)) throw new Error('Ugyldigt profilnavn.'); return value; }
-function cleanIcon(value) { if (typeof value !== 'string' || value !== '' && !ICON_IDS.includes(value)) throw new Error('Ukendt profilikon.'); return value; }
+// Strict read-side validation: an unknown value (fx a retired Lucide id or an
+// icon from a newer beta) throws, so the lenient read resets the field with a
+// Danish warning. 'upload' survives only while the avatar file exists — a
+// missing file clears it silently here (the honest answer is the initials).
+function cleanIcon(value, hasAvatar = () => false) {
+  if (typeof value !== 'string' || value !== '' && !ICON_IDS.includes(value) && value !== UPLOAD_ICON) throw new Error('Ukendt profilikon.');
+  if (value === UPLOAD_ICON && !hasAvatar()) return '';
+  return value;
+}
+// Patch validation is lenient about retired values but strict about types: a
+// saved 'star' from a stale renderer becomes the initials, not an error, and
+// 'upload' without the file folds the same way. Corrupt input still throws.
+function cleanIconPatch(value, hasAvatar = () => false) {
+  if (typeof value !== 'string' || /[\x00-\x1f]/.test(value) || value.length > 32) throw new Error('Ukendt profilikon.');
+  if (value === UPLOAD_ICON) return hasAvatar() ? UPLOAD_ICON : '';
+  return ICON_IDS.includes(value) ? value : '';
+}
 function cleanChoice(value, allowed, message) { if (!allowed.includes(value)) throw new Error(message); return value; }
 
 // partial keeps only the fields the patch actually carries: appearance saves
@@ -52,11 +76,11 @@ function normalizeProjectDefaults(input = {}) {
 // A save replaces only the keys the renderer sends. Each nested object is one
 // unit — except appearance, which merges field by field (see normalizeAppearance),
 // so the separate theme and panel writers can never overwrite each other.
-function normalizePatch(input) {
+function normalizePatch(input, hasAvatar = () => false) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Ugyldig profil.');
   const patch = {};
   if (input.name !== undefined) patch.name = cleanName(input.name);
-  if (input.icon !== undefined) patch.icon = cleanIcon(input.icon);
+  if (input.icon !== undefined) patch.icon = cleanIconPatch(input.icon, hasAvatar);
   if (input.helpLevel !== undefined) patch.helpLevel = cleanChoice(input.helpLevel, HELP_VALUES, 'Ukendt hjælpeniveau.');
   if (input.appearance !== undefined) patch.appearance = normalizeAppearance(input.appearance, { partial: true });
   if (input.standardAI !== undefined) patch.standardAI = normalizeStandardAI(input.standardAI);
@@ -92,7 +116,7 @@ function readGroup(value, fallback, normalize, keys, warn) {
   }
   return result;
 }
-function readProfile(input) {
+function readProfile(input, hasAvatar = () => false) {
   const warnings = [];
   const warn = text => { if (!warnings.includes(text)) warnings.push(text); };
   const fresh = blank();
@@ -104,7 +128,7 @@ function readProfile(input) {
   const group = (value, fallback, normalize, keys, text) => readGroup(value, fallback, normalize, keys, () => warn(text));
   const profile = {
     name: field(READ_WARNINGS.name, '', () => input.name === undefined ? '' : cleanName(input.name)),
-    icon: field(READ_WARNINGS.icon, '', () => input.icon === undefined ? '' : cleanIcon(input.icon)),
+    icon: field(READ_WARNINGS.icon, '', () => input.icon === undefined ? '' : cleanIcon(input.icon, hasAvatar)),
     helpLevel: field(READ_WARNINGS.helpLevel, 'fuld', () => input.helpLevel === undefined ? 'fuld' : cleanChoice(input.helpLevel, HELP_VALUES, 'Ukendt hjælpeniveau.')),
     appearance: group(input.appearance, fresh.appearance, normalizeAppearance, ['theme', 'panelOpen'], READ_WARNINGS.appearance),
     standardAI: group(input.standardAI, fresh.standardAI, normalizeStandardAI, ['connectionID', 'modelID'], READ_WARNINGS.standardAI),
@@ -146,29 +170,33 @@ function resolveReferences(profile, state) {
 }
 
 class Profile {
-  constructor(store) { this.store = store; }
+  // hasAvatar is the main process's synchronous existence check for the stored
+  // avatar file: 'upload' is a valid icon only while that file exists.
+  constructor(store, { hasAvatar = () => false } = {}) { this.store = store; this.hasAvatar = hasAvatar; }
   async get() {
     const state = await this.store.read();
     // Reading is lenient: an unknown value from a newer version falls back per
-    // field with a warning instead of locking the settings or the app.
-    const read = readProfile(state.profile);
+    // field with a warning instead of locking the settings or the app. A
+    // missing avatar file clears a saved 'upload' silently — the initials are
+    // the honest answer, not a warning.
+    const read = readProfile(state.profile, this.hasAvatar);
     const result = resolveReferences(read.profile, state);
-    return { profile: result.profile, warnings: [...read.warnings, ...result.warnings] };
+    return { profile: result.profile, warnings: [...read.warnings, ...result.warnings], hasAvatar: this.hasAvatar() };
   }
   async save(input) {
     // Validate the patch before the write, so a rejected save never touches the file.
-    const patch = normalizePatch(input);
+    const patch = normalizePatch(input, this.hasAvatar);
     return this.store.update(state => {
       // The stored profile is read leniently, so a corrupt field never blocks
       // saving the fields the renderer just changed. appearance merges field by
       // field: a writer that only owns the theme can never drag a stale
       // panelOpen back over a newer write (or vice versa).
-      const read = readProfile(state.profile);
+      const read = readProfile(state.profile, this.hasAvatar);
       const merged = { ...read.profile, ...patch };
       if (patch.appearance) merged.appearance = { ...read.profile.appearance, ...patch.appearance };
       const result = resolveReferences(merged, state);
       state.profile = result.profile;
-      return { profile: result.profile, warnings: [...read.warnings, ...result.warnings] };
+      return { profile: result.profile, warnings: [...read.warnings, ...result.warnings], hasAvatar: this.hasAvatar() };
     });
   }
   // Renderer-initiated one-shot migration in a single atomic update: the saved
@@ -179,8 +207,8 @@ class Profile {
   // the fold leaves them at their defaults.
   async migrate(input) {
     return this.store.update(state => {
-      const profile = readProfile(state.profile).profile;
-      if (profile.migrated === 1) return { profile };
+      const profile = readProfile(state.profile, this.hasAvatar).profile;
+      if (profile.migrated === 1) return { profile, hasAvatar: this.hasAvatar() };
       const legacyDefaults = state.startupDefaults && typeof state.startupDefaults === 'object' && !Array.isArray(state.startupDefaults) ? state.startupDefaults : null;
       if (legacyDefaults) {
         const legacy = readProjectDefaults(legacyDefaults).values;
@@ -196,9 +224,10 @@ class Profile {
       if (profile.appearance.panelOpen === true && (input?.surfaceOpen === 'true' || input?.surfaceOpen === 'false')) profile.appearance.panelOpen = input.surfaceOpen === 'true';
       profile.migrated = 1;
       state.profile = profile;
-      return { profile };
+      return { profile, hasAvatar: this.hasAvatar() };
     });
   }
 }
 Profile.ICON_IDS = ICON_IDS;
-module.exports = { Profile, ICON_IDS, blank };
+Profile.UPLOAD_ICON = UPLOAD_ICON;
+module.exports = { Profile, ICON_IDS, UPLOAD_ICON, blank };

@@ -6,6 +6,7 @@ require('./core/http-runtime.cjs').install();
 const { app, BrowserWindow, ipcMain, dialog, protocol, session, safeStorage, Menu, shell, webFrameMain, nativeImage, nativeTheme } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs/promises');
+const fsSync = require('node:fs');
 const crypto = require('node:crypto');
 const { createProject, openProject } = require('./core/projects.cjs');
 const previewSession = require('./core/preview-session.cjs');
@@ -390,8 +391,21 @@ handle('preview:revision', async () => {
 
 handle('preferences:get', () => new Preferences(workbench.store).get());
 handle('preferences:save', input => exclusive(() => new Preferences(workbench.store).save(input)));
-// The profile is app-owned UI state; name and icon never reach prompts, model log, diagnostics or feedback.
-const profileStore = () => new Profile(workbench.store);
+// The profile is app-owned UI state; name, icon and the avatar never reach prompts, model log, diagnostics or feedback.
+// The avatar is one fixed file in the app's private harness folder: icon 'upload' is valid only while it exists.
+const avatarFile = () => path.join(app.getPath('userData'), 'harness', 'avatar.png');
+const avatarExists = () => { try { return fsSync.statSync(avatarFile()).isFile(); } catch { return false; } };
+const profileStore = () => new Profile(workbench.store, { hasAvatar: avatarExists });
+// The avatar upload is the main process's alone: the renderer can only ask for
+// the native picker and receives the outcome — never paths, never bytes. The
+// stored file is served to the app's own renderer through the harness protocol.
+require('./core/profile-avatar.cjs').installProfileAvatar({
+  register: (channel, action) => handle(channel, value => action(value)),
+  dialog, nativeImage, fs, path,
+  directory: () => path.join(app.getPath('userData'), 'harness'),
+  saveProfile: input => exclusive(() => profileStore().save(input)),
+  getWindow: () => window,
+});
 // The profile's appearance.theme drives Electron's theme source, so the renderer's
 // prefers-color-scheme matches the profile before the first paint. Electron's
 // contract allows only 'dark' | 'light' | 'system': 'system' follows the
@@ -1039,6 +1053,13 @@ app.whenReady().then(async () => {
     const name = url.pathname.slice(1);
     const uiAssets = require('./core/ui-assets.cjs');
     if (url.host !== 'app' || !uiAssets.allowed(name)) return new Response('Ikke fundet', { status: 404 });
+    // The one served file that lives outside ui/: the user's own avatar from
+    // the private harness folder, under its fixed allowlisted name and only
+    // for the app's own renderer. Never cached — it can change with every upload.
+    if (name === 'avatar.png') {
+      try { return new Response(await fs.readFile(avatarFile()), { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'no-store' } }); }
+      catch { return new Response('Ikke fundet', { status: 404 }); }
+    }
     return new Response(await fs.readFile(path.join(__dirname, 'ui', name)), { headers: { 'Content-Type': uiAssets.contentType(name) } });
   });
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));

@@ -33,7 +33,7 @@
 .settings-field + .hint { margin-top: 0; }
 
 /* The icon grid reuses the onboarding picker's presentation (styles.css). */
-.settings-field .profile-icon-grid { margin-top: 0; }
+.settings-field .profile-icon-wrap { margin-top: 0; }
 
 /* The theme choice as a borderless radio group; the panel start as one check. */
 .settings-theme { border: 0; padding: 0; margin: 14px 0 0; }

@@ -129,7 +129,7 @@ function runStartup({ storage = {}, profile, connections = [], migrateError = nu
     CustomEvent: class { constructor(type, init) { this.type = type; this.detail = init?.detail; } },
     call: async (method, value) => { if (!harness[method]) throw new Error(`Uventet kald: ${method}`); return harness[method](value); },
     applyChatChoiceRecommendation: () => {}, option, node,
-    state: { connections }, verifiedConnection: '', setupControls: () => {}
+    state: { connections }, verifiedConnection: '', setupControls: () => {}, profileAvatarAvailable: false
   };
   vm.runInNewContext(`${profileSlices()}\n${sliceOf(app, 'function renderSetup()', 'async function setupGit')}`, context);
   return { context, dom, store, removed, migrateCalls, getCalls, dispatched, themes };

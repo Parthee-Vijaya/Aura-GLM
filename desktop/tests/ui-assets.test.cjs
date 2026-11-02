@@ -32,6 +32,15 @@ test('manifestet afviser ukendte filer og stikveje uden at røre mønstrene', ()
   for (const name of ['../main.cjs', 'main.cjs', '', 'app.js.js', 'node_modules/x.js', 'app%2Ejs']) assert.equal(allowed(name), false, name);
 });
 
+test('avatar-ruten er ét fast navn — protokollen åbner aldrig en fri sti', () => {
+  // Profilbilledet er den ene serverede fil uden for ui/: navnet er tilladt
+  // præcist, så protokollen aldrig bliver en generel fillæser.
+  assert.equal(allowed('avatar.png'), true, 'egne profilbilleder serveres under det faste navn');
+  assert.equal(contentType('avatar.png'), 'image/png');
+  assert.equal(FILES.includes('avatar.png'), false, 'avataren er ikke en UI-fil på disken');
+  for (const name of ['avatar2.png', 'avatar.png.png', 'avatar.jpeg', 'avatar/../avatar.png', 'avatar.png?x=1']) assert.equal(allowed(name), false, name);
+});
+
 test('composer-bundbjælkens knaprækkefølge er låst: plus, arbejdsmåde, model, Stop/Send', async () => {
   const index = await fs.readFile(path.join(ui, 'index.html'), 'utf8');
   const start = index.indexOf('<div class="composer-toolbar">');

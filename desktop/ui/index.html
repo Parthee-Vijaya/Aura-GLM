@@ -30,8 +30,8 @@
     <label for="profile-name">Hvad skal Aura kalde dig?</label>
     <input id="profile-name" maxlength="60" autocomplete="nickname" placeholder="Fx Anna">
     <p class="hint">Navnet bliver i appen og sendes aldrig til AI’en eller nogen server.</p>
-    <div id="profile-icon-grid" class="profile-icon-grid" role="radiogroup" aria-label="Dit ikon"></div>
-    <p class="hint">Uden valgt ikon bruger appen dine initialer, fx AK for Anna Klit.</p>
+    <div class="profile-icon-wrap"><div id="profile-icon-row" class="profile-icon-row" role="radiogroup" aria-label="Dit ikon"></div><button type="button" id="profile-avatar-remove" class="text-button profile-avatar-remove" hidden>Fjern billedet</button></div>
+    <p class="hint">Uden valgt ikon bruger appen dine initialer, fx AK for Anna Klit. Et eget billede gemmes kun i appen på din computer og sendes aldrig til AI’en.</p>
     <fieldset id="profile-theme" class="profile-theme">
       <legend>Tema</legend>
       <label><input type="radio" name="profile-theme" value="system" checked> Følg system</label>

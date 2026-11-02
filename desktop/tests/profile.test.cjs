@@ -21,15 +21,15 @@ async function fixture(t, setup) {
 
 test('get() på tom settings.json returnerer standardprofilen uden advarsler', async t => {
   const store = await fixture(t);
-  assert.deepEqual(await new Profile(store).get(), { profile: standardProfile(), warnings: [] });
+  assert.deepEqual(await new Profile(store).get(), { profile: standardProfile(), warnings: [], hasAvatar: false });
 });
 
 test('save() erstatter kun de angivne felter; appearance flettes felt for felt', async t => {
   const store = await fixture(t), profile = new Profile(store);
-  await profile.save({ name: 'Parthee', icon: 'star', helpLevel: 'minimal', workMode: 'plan', appearance: { theme: 'dark', panelOpen: false } });
+  await profile.save({ name: 'Parthee', icon: 'aura-1', helpLevel: 'minimal', workMode: 'plan', appearance: { theme: 'dark', panelOpen: false } });
   const second = await profile.save({ name: 'Anna' });
   assert.equal(second.profile.name, 'Anna');
-  assert.equal(second.profile.icon, 'star');
+  assert.equal(second.profile.icon, 'aura-1');
   assert.equal(second.profile.helpLevel, 'minimal');
   assert.equal(second.profile.workMode, 'plan');
   assert.deepEqual(second.profile.appearance, { theme: 'dark', panelOpen: false });
@@ -45,10 +45,50 @@ test('save() erstatter kun de angivne felter; appearance flettes felt for felt',
 test('save() afviser ugyldige værdier uden at gemme noget', async t => {
   const store = await fixture(t), profile = new Profile(store);
   await profile.save({ name: 'Parthee' });
-  const invalid = [{ icon: 'drage' }, { icon: 7 }, { helpLevel: 'megen' }, { appearance: { theme: 'blå' } }, { appearance: { theme: 'dark', panelOpen: 'ja' } }, { appearance: { theme: null } }, { workMode: 'byg' }, { name: 'x'.repeat(61) }, { name: 'navn\tmed fane' }, { standardAI: { connectionID: 'x'.repeat(101) } }, { standardAI: 'ai' }, { projectDefaults: { hosting: 'andet' } }];
+  const invalid = [{ icon: 7 }, { icon: null }, { helpLevel: 'megen' }, { appearance: { theme: 'blå' } }, { appearance: { theme: 'dark', panelOpen: 'ja' } }, { appearance: { theme: null } }, { workMode: 'byg' }, { name: 'x'.repeat(61) }, { name: 'navn\tmed fane' }, { standardAI: { connectionID: 'x'.repeat(101) } }, { standardAI: 'ai' }, { projectDefaults: { hosting: 'andet' } }];
   for (const values of invalid) await assert.rejects(() => profile.save(values));
   assert.deepEqual((await profile.get()).profile, { ...standardProfile(), name: 'Parthee' }, 'afviste kald ændrer intet');
-  assert.deepEqual(Profile.ICON_IDS, ['star', 'bolt', 'leaf', 'moon', 'box', 'bird', 'wave', 'compass', 'flame', 'heart', 'cube', 'spark']);
+  assert.deepEqual(Profile.ICON_IDS, ['aura-1', 'aura-2', 'aura-3']);
+});
+
+// ---------- Ikon-semantik: initialer, tre Aura-varianter, upload ----------
+test('udgåede Lucide-id\'er folder til initialer i en gemning — ingen fejl', async t => {
+  const store = await fixture(t), profile = new Profile(store);
+  const folded = await profile.save({ icon: 'star' });
+  assert.equal(folded.profile.icon, '', 'et gammelt Lucide-id gemmes som initialer');
+  assert.deepEqual(folded.warnings, [], 'foldningen er stille — ingen advarsel');
+  assert.equal((await profile.save({ icon: 'moon' })).profile.icon, '', 'alle gamle id\'er folder');
+  assert.equal((await profile.save({ icon: 'aura-2' })).profile.icon, 'aura-2', 'de tre Aura-varianter er gyldige valg');
+  assert.equal((await profile.save({ icon: 'aura-1' })).profile.icon, 'aura-1');
+  assert.equal((await profile.save({ icon: 'aura-3' })).profile.icon, 'aura-3');
+});
+
+test('upload uden gemt billede gemmes som initialer — med billede som ikonvalget', async t => {
+  const store = await fixture(t), profile = new Profile(store);
+  const withoutFile = await profile.save({ icon: 'upload' });
+  assert.equal(withoutFile.profile.icon, '', 'uden avatar-fil er upload ikke et gyldigt valg');
+  const withAvatar = new Profile(store, { hasAvatar: () => true });
+  const saved = await withAvatar.save({ icon: 'upload' });
+  assert.equal(saved.profile.icon, 'upload', 'med filen på plads er upload det valgte ikon');
+  assert.equal(saved.hasAvatar, true, 'svaret bærer, at billedet findes');
+  const read = await withAvatar.get();
+  assert.equal(read.profile.icon, 'upload', 'get() læser upload som det valgte ikon');
+  assert.equal(read.hasAvatar, true);
+  // Filen forsvinder: faldet tilbage til initialer sker stille, uden advarsel.
+  const gone = new Profile(store, { hasAvatar: () => false });
+  const fallen = await gone.get();
+  assert.equal(fallen.profile.icon, '', 'en forsvunden avatar-fil rydder ikonvalget');
+  assert.deepEqual(fallen.warnings, [], 'tilbagefaldet er stille — chippen viser bare initialer');
+  assert.equal(fallen.hasAvatar, false);
+});
+
+test('get() bærer hasAvatar for hver eneste læsning', async t => {
+  const store = await fixture(t);
+  assert.equal((await new Profile(store).get()).hasAvatar, false, 'uden fil er der intet billede');
+  const withAvatar = new Profile(store, { hasAvatar: () => true });
+  assert.equal((await withAvatar.get()).hasAvatar, true);
+  const saved = await withAvatar.save({ name: 'Anna' });
+  assert.equal(saved.hasAvatar, true, 'svaret fra save() bærer det samme grundlag');
 });
 
 // ---------- Læsning er eftergivende: en ukendt værdi låser aldrig appen ----------

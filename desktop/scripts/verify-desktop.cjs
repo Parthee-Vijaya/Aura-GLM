@@ -5,14 +5,36 @@ const path = require('node:path');
 const os = require('node:os');
 const root = path.join(__dirname, '..', '..');
 // Profilen, der udfyldes i onboarding-trinnet ved første start (tom profil) og
-// genfindes i Indstillinger og efter genstart i de to nye kontroller.
-const PROFILE = { name: 'Anna Klit', icon: 'star', theme: 'dark' };
+// genfindes i Indstillinger og efter genstart i de to nye kontroller. Ikonet
+// vælges først som Aura-variant og skifter derefter til eget billede, så både
+// rækken og avatar-vejen prøves fra første gang.
+const PROFILE = { name: 'Anna Klit', icon: 'aura-1', theme: 'dark' };
+// Et lille gyldigt PNG, som hovedprocessens nativeImage kan afkode: avataren
+// læses som buffer (i modsætning til logoet, der kun vises i browseren).
+function tinyPNG() {
+  const zlib = require('node:zlib');
+  const chunk = (type, data) => {
+    const length = Buffer.alloc(4); length.writeUInt32BE(data.length);
+    const body = Buffer.concat([Buffer.from(type, 'ascii'), data]);
+    const crc = Buffer.alloc(4); crc.writeUInt32BE(zlib.crc32(body) >>> 0);
+    return Buffer.concat([length, body, crc]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(8, 0); ihdr.writeUInt32BE(8, 4); ihdr[8] = 8; ihdr[9] = 2;
+  const raw = Buffer.concat(Array.from({ length: 8 }, () => Buffer.concat([Buffer.from([0]), Buffer.alloc(24, 0x7f)])));
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk('IHDR', ihdr), chunk('IDAT', zlib.deflateSync(raw)), chunk('IEND', Buffer.alloc(0)),
+  ]);
+}
 (async () => {
   const testRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'harness-desktop-'));
   const reference = path.join(testRoot, 'reference.txt');
   await fs.writeFile(reference, 'PRIVAT TESTREFERENCE');
   const logo = path.join(testRoot, 'logo.png');
   await fs.writeFile(logo, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==', 'base64'));
+  const avatar = path.join(testRoot, 'avatar.png');
+  await fs.writeFile(avatar, tinyPNG());
   const executablePath = require('electron');
   let app;
   async function launch({ expectProject } = {}) {
@@ -34,6 +56,7 @@ const PROFILE = { name: 'Anna Klit', icon: 'star', theme: 'dark' };
     await page.click('#connection-add'); await page.waitForSelector('#connection-add-flow:not([hidden])');
     await page.click('#connection-add-cancel'); await page.waitForSelector('#connections-list:not([hidden])');
     await page.click('#connections-setup'); await page.waitForSelector('#setup:not([hidden])');
+    let uploaded = false;
     if (await page.locator('#setup-profile').isVisible()) {
       // Første guidede gang med en tom profil vises profil-trinnet, og felterne
       // udfyldes her. Operativsystemets navneforslag kan nå feltet efter
@@ -43,8 +66,13 @@ const PROFILE = { name: 'Anna Klit', icon: 'star', theme: 'dark' };
         settled = await page.waitForFunction(name => document.querySelector('#profile-name').value === name, PROFILE.name, { timeout: 1000 }).then(() => true, () => false);
       }
       assert.equal(await page.inputValue('#profile-name'), PROFILE.name, 'profilnavnet står stille efter udfyldningen');
-      await page.click(`#profile-icon-grid button[data-icon="${PROFILE.icon}"]`);
+      await page.click(`#profile-icon-row button[data-icon="${PROFILE.icon}"]`);
       await page.check(`#profile-theme input[value="${PROFILE.theme}"]`);
+      // Eget billede: filvælgeren stubbes, hovedprocessen gemmer og skalerer,
+      // og rækken viser forhåndsvisningen som det valgte ikon.
+      await choose([avatar]); await page.click('#profile-avatar-slot');
+      await page.waitForSelector('#profile-icon-row button[data-icon="upload"][aria-checked="true"]');
+      uploaded = true;
       await page.click('#profile-continue');
     }
     await page.waitForSelector('#setup-choice:not([hidden])');
@@ -53,6 +81,9 @@ const PROFILE = { name: 'Anna Klit', icon: 'star', theme: 'dark' };
     await page.click('[data-close="connections-dialog"]');
     await page.waitForFunction(() => !document.querySelector('#connections-dialog').open);
     await page.waitForSelector('#create-form');
+    // Opsætningen er lukket, og sidepanelet er tilbage: chippen viser nu
+    // avatar-billedet fra profil-trinnet (setup-guided skjuler ellers panelet).
+    if (uploaded) await page.waitForSelector('#profile-chip:not([hidden]) #profile-chip-mark img');
     const identity = await app.evaluate(({app, Menu}) => ({ name: app.getName(), userData: app.getPath('userData'), labels: Menu.getApplicationMenu().items.map(item => item.label) }));
     assert.equal(identity.name, 'Aura');
     assert.equal(await fs.realpath(identity.userData), await fs.realpath(path.join(testRoot, 'electron-data')));
@@ -71,7 +102,7 @@ const PROFILE = { name: 'Anna Klit', icon: 'star', theme: 'dark' };
     // viser de samme værdier, et nyt navn gemmes, og sektionen genåbnes med det.
     await page.click('#settings-toggle'); await page.click('#settings-profile-button');
     await page.waitForFunction(name => document.querySelector('#settings-name')?.value === name, PROFILE.name);
-    assert.deepEqual(await page.locator('#settings-icons button[aria-checked="true"]').evaluateAll(buttons => buttons.map(button => button.dataset.icon)), [PROFILE.icon]);
+    assert.deepEqual(await page.locator('#settings-icons button[aria-checked="true"]').evaluateAll(buttons => buttons.map(button => button.dataset.icon)), ['upload'], 'upload-ikonet fra trinnet står som det valgte');
     assert.equal(await page.evaluate(() => document.body.dataset.workspaceTheme), PROFILE.theme, 'temaet fra profil-trinnet er i brug');
     await page.fill('#settings-name', 'Bo Larsen'); await page.locator('#settings-name').press('Tab');
     await page.waitForFunction(() => window.harness.profileGet().then(result => result.value.profile.name === 'Bo Larsen'));
@@ -94,7 +125,9 @@ const PROFILE = { name: 'Anna Klit', icon: 'star', theme: 'dark' };
     assert.equal(await page.evaluate(() => document.body.dataset.workspaceTheme), PROFILE.theme, 'profilens tema sættes ved genstart');
     await page.click('#settings-toggle'); await page.click('#settings-profile-button');
     await page.waitForFunction(() => document.querySelector('#settings-name')?.value === 'Bo Larsen');
-    assert.deepEqual(await page.locator('#settings-icons button[aria-checked="true"]').evaluateAll(buttons => buttons.map(button => button.dataset.icon)), [PROFILE.icon]);
+    assert.deepEqual(await page.locator('#settings-icons button[aria-checked="true"]').evaluateAll(buttons => buttons.map(button => button.dataset.icon)), ['upload'], 'profilbilledet genfindes efter genstart');
+    await page.click('#settings-avatar-remove');
+    await page.waitForFunction(() => document.querySelector('#settings-icons button[data-icon=""]')?.getAttribute('aria-checked') === 'true');
     await page.click('[data-settings-section="appearance"]');
     await page.waitForFunction(theme => document.querySelector(`#settings-theme input[value="${theme}"]`)?.checked === true, PROFILE.theme);
     await page.click('[data-close="settings-dialog"]');

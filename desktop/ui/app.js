@@ -133,6 +133,9 @@ let onboardingPreviewKind = '';
 // The onboarding profile step holds pure UI state: the fields are saved through
 // profileSave and never reach prompts, the model log or diagnostics.
 let profileStepShown = false, profileStepDone = false, profileIconChoice = '';
+// Whether the stored avatar file exists — the main process owns the truth and
+// answers it with every profile read, upload and removal.
+let profileAvatarAvailable = false;
 function syncOnboardingVisuals() {
   if (!window.OnboardingB) return;
   const selected = state?.connections?.find(c => c.id === $('#setup-connection').value);
@@ -210,20 +213,56 @@ function setupPage(step) {
 }
 // The profile step in onboarding: name, icon, theme and help level. Every field is
 // optional; "Fortsæt" saves the whole set, and empty strings are valid profile values.
-function renderProfileIconGrid() {
-  const grid = $('#profile-icon-grid'), ids = window.ProfileIcons?.IDS || [];
-  grid.replaceChildren(...ids.map(id => {
+// The icon choice is one compact row: the initials, the three Aura variants and
+// the avatar slot — an upload button until a picture is stored, a selectable
+// rounded preview afterwards. The picture itself is the main process's business:
+// the row only asks for the picker and renders the outcome.
+function renderProfileIconRow() {
+  const row = $('#profile-icon-row'), ids = window.ProfileIcons?.IDS || [];
+  const initialsChoice = node('button', undefined, 'profile-icon-choice profile-initials');
+  initialsChoice.type = 'button';
+  initialsChoice.dataset.icon = '';
+  initialsChoice.setAttribute('role', 'radio'); initialsChoice.setAttribute('aria-checked', 'false');
+  initialsChoice.setAttribute('aria-label', 'Initialer');
+  initialsChoice.textContent = initialsPreview();
+  initialsChoice.onclick = () => selectProfileIcon('');
+  const choices = [initialsChoice, ...ids.map(id => {
     const choice = node('button', undefined, 'profile-icon-choice'); choice.type = 'button';
     choice.dataset.icon = id; choice.setAttribute('role', 'radio'); choice.setAttribute('aria-checked', 'false');
     choice.setAttribute('aria-label', window.ProfileIcons?.LABELS?.[id] || id);
     choice.innerHTML = window.ProfileIcons.svg(id);
     choice.onclick = () => selectProfileIcon(id);
     return choice;
-  }));
+  })];
+  const slot = node('button', undefined, 'profile-icon-choice profile-avatar-slot'); slot.type = 'button';
+  if (profileAvatarAvailable) {
+    slot.dataset.icon = 'upload';
+    slot.setAttribute('role', 'radio'); slot.setAttribute('aria-checked', 'false');
+    slot.setAttribute('aria-label', window.ProfileIcons?.LABELS?.upload || 'Eget billede');
+    slot.innerHTML = window.ProfileIcons.avatarImage();
+    slot.onclick = () => selectProfileIcon('upload');
+  } else {
+    slot.id = 'profile-avatar-slot';
+    slot.setAttribute('aria-label', 'Upload eget billede');
+    slot.title = 'Upload eget billede';
+    slot.innerHTML = window.ProfileIcons.svg('upload');
+    slot.onclick = () => action(uploadProfileAvatar);
+  }
+  row.replaceChildren(...choices, slot);
+  $('#profile-avatar-remove').hidden = !profileAvatarAvailable;
+}
+// The initials preview follows the name field as it is typed; the hint's example
+// (AK) stands in while the name is still empty.
+function initialsPreview() {
+  return window.ProfileIcons?.initials($('#profile-name').value.trim()) || 'AK';
+}
+function updateProfileInitialsPreview() {
+  const initialsChoice = document.querySelector('#profile-icon-row .profile-initials');
+  if (initialsChoice) initialsChoice.textContent = initialsPreview();
 }
 function selectProfileIcon(icon) {
-  profileIconChoice = window.ProfileIcons?.IDS.includes(icon) ? icon : '';
-  for (const choice of document.querySelectorAll('#profile-icon-grid button')) {
+  profileIconChoice = window.ProfileIcons?.IDS.includes(icon) || icon === 'upload' && profileAvatarAvailable ? icon : '';
+  for (const choice of document.querySelectorAll('#profile-icon-row button')) {
     const selected = choice.dataset.icon === profileIconChoice;
     choice.setAttribute('aria-checked', String(selected));
   }
@@ -235,12 +274,13 @@ function profilePatch() {
   return { name: $('#profile-name').value.trim(), icon: profileIconChoice, helpLevel: $('#profile-help').value, appearance: { theme: theme === 'light' || theme === 'dark' ? theme : 'system', panelOpen: profileState?.appearance?.panelOpen !== false } };
 }
 async function prepareProfileStep(profile) {
-  renderProfileIconGrid();
+  renderProfileIconRow();
   if (profile?.name) $('#profile-name').value = profile.name;
   else {
     $('#profile-name').value = '';
     try { const suggestion = await call('profileSuggest'); if (suggestion) $('#profile-name').value = suggestion; } catch { /* the suggestion is optional */ }
   }
+  updateProfileInitialsPreview();
   selectProfileIcon(profile?.icon || '');
   for (const input of document.querySelectorAll('#profile-theme input')) input.checked = input.value === (profile?.appearance?.theme || 'system');
   $('#profile-help').value = profile?.helpLevel || 'fuld';
@@ -300,11 +340,35 @@ async function migrateLegacyProfile() {
 // so the profile's theme always wins over a previous session's hint.
 async function startupProfile() {
   await migrateLegacyProfile();
-  try { adoptProfile((await call('profileGet')).profile); } catch { /* the profile is optional at startup */ }
+  try { const read = await call('profileGet'); profileAvatarAvailable = read.hasAvatar === true; adoptProfile(read.profile); } catch { /* the profile is optional at startup */ }
   window.dispatchEvent(new CustomEvent('aura:profile', { detail: profileState || {} }));
   await applyProfilePresentation();
 }
 $('#profile-continue').onclick = () => action(async () => { await saveProfileStep(); profileStepDone = true; setupPage('choice'); });
+// The avatar upload and removal run in the main process: the picker opens there,
+// the picture is stored there, and this step only re-renders the row from the
+// answer. A rejected upload shows its Danish error through action(); a canceled
+// picker changes nothing. Both paths announce the canonical profile, so the
+// sidebar chip follows along without a restart.
+async function uploadProfileAvatar() {
+  const result = await call('profileUploadAvatar');
+  if (result?.canceled) return;
+  profileAvatarAvailable = result.hasAvatar === true;
+  adoptProfile(result.profile);
+  announceProfileSaved(result.profile);
+  renderProfileIconRow();
+  selectProfileIcon('upload');
+}
+async function removeProfileAvatar() {
+  const result = await call('profileRemoveAvatar');
+  profileAvatarAvailable = result.hasAvatar === true;
+  adoptProfile(result.profile);
+  announceProfileSaved(result.profile);
+  renderProfileIconRow();
+  selectProfileIcon('');
+}
+$('#profile-avatar-remove').onclick = () => action(removeProfileAvatar);
+$('#profile-name').oninput = updateProfileInitialsPreview;
 // Udbyderne vises på lige vilkår. Et valg åbner kun den valgte forbindelses opsætning.
 const featuredProviders = [{ kind: 'anthropic' }, { kind: 'mistral' }, { kind: 'corti' }, { kind: 'alexandra' }];
 const providerCards = [
@@ -386,7 +450,7 @@ async function showSetup(reason = '', fromIntroduction = false) {
   // a first guided introduction always has one, and a filled profile is never asked
   // again — repeat setup goes straight to the connection choice.
   let profile = null, readProfile = false;
-  if (fromIntroduction) { try { profile = (await call('profileGet')).profile; readProfile = true; adoptProfile(profile); } catch { /* without a readable profile the setup starts at the connection choice */ } }
+  if (fromIntroduction) { try { const read = await call('profileGet'); profile = read.profile; profileAvatarAvailable = read.hasAvatar === true; readProfile = true; adoptProfile(profile); } catch { /* without a readable profile the setup starts at the connection choice */ } }
   setupActive = true; $('#setup').hidden = false; $('#workspace').hidden = true; $('#onboarding').hidden = true;
   $('#view-title').textContent = 'Opsætning'; $('#setup-reason').textContent = reason; $('#setup-reason').hidden = !reason;
   renderSetup(); profileStepShown = readProfile && !profile?.name && !profile?.icon; profileStepDone = false;
@@ -420,6 +484,7 @@ async function leaveSetup(useAI) {
     const patch = profileStepShown ? profilePatch() : {};
     if (useAI) {
       const current = await call('profileGet');
+      profileAvatarAvailable = current.hasAvatar === true;
       adoptProfile(current.profile);
       if (!current.profile?.standardAI?.connectionID) patch.standardAI = { connectionID: id, modelID: current.profile?.standardAI?.modelID || '' };
     }

@@ -17,7 +17,7 @@ async function fixture(t, setup) {
 test('præferencer genåbnes uden godkendelser og ændrer ikke eksisterende projekter', async t => {
   const store = await fixture(t, s => {
     s.connections = [{ id: 'ai' }]; s.designs = [{ id: 'design' }];
-    s.profile = { name: 'Parthee', icon: 'star', helpLevel: 'fuld', appearance: { theme: 'system', panelOpen: true }, standardAI: { connectionID: 'ai', modelID: '' }, workMode: 'chat', projectDefaults: { hosting: 'vercel', designID: 'design', tests: 'automatiske' }, migrated: 1 };
+    s.profile = { name: 'Parthee', icon: 'aura-1', helpLevel: 'fuld', appearance: { theme: 'system', panelOpen: true }, standardAI: { connectionID: 'ai', modelID: '' }, workMode: 'chat', projectDefaults: { hosting: 'vercel', designID: 'design', tests: 'automatiske' }, migrated: 1 };
   });
   const prefs = new Preferences(store);
   const values = { hosting: 'own', connectionID: 'ai', designID: 'design', tests: 'manuel' };

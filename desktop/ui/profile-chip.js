@@ -16,12 +16,13 @@
   const mark = document.getElementById('profile-chip-mark');
   const name = document.getElementById('profile-chip-name');
   function render(profile) {
-    const icon = typeof profile?.icon === 'string' && root.ProfileIcons?.IDS?.includes(profile.icon) ? profile.icon : '';
+    const icon = typeof profile?.icon === 'string' && (root.ProfileIcons?.IDS?.includes(profile.icon) || profile.icon === 'upload') ? profile.icon : '';
     const text = typeof profile?.name === 'string' ? profile.name : '';
     // Without a name and an icon there is nothing honest to show: the chip
     // stays hidden until the profile has at least one of them.
     if (!icon && !text.trim()) { chip.hidden = true; return chip; }
-    if (icon) { mark.innerHTML = root.ProfileIcons.svg(icon); mark.removeAttribute('title'); }
+    if (icon === 'upload') { mark.innerHTML = root.ProfileIcons.avatarImage(); mark.title = 'Eget billede'; }
+    else if (icon) { mark.innerHTML = root.ProfileIcons.svg(icon); mark.removeAttribute('title'); }
     else { mark.innerHTML = ''; mark.textContent = root.ProfileIcons.initials(text); mark.title = 'Initialer'; }
     name.textContent = text;
     chip.setAttribute('aria-label', `Din profil${text ? `: ${text}` : icon ? `: ${root.ProfileIcons.LABELS[icon]}` : ''}`);

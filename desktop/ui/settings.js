@@ -66,9 +66,10 @@
     const navButtons = new Map();
     for (const button of dialog.querySelectorAll('[data-settings-section]')) navButtons.set(button.dataset.settingsSection, button);
     const openers = new Map();
-    // The last known profile, connection list and design list; fill() renders
-    // from them, so a failed save can always restore the last known values.
-    let profile = null, connections = [], designs = [], current = null;
+    // The last known profile, connection list, design list and avatar state;
+    // fill() renders from them, so a failed save can always restore the last
+    // known values.
+    let profile = null, connections = [], designs = [], current = null, avatarAvailable = false;
 
     function invoke(method, value) {
       const request = harness?.[method];
@@ -137,7 +138,19 @@
       // Never overwrite text the user is still typing; committed saves refill.
       if (name && document.activeElement !== name) name.value = profile.name || '';
       const grid = byId('settings-icons');
-      if (grid) for (const choice of grid.querySelectorAll('button')) choice.setAttribute('aria-checked', String(Boolean(profile.icon) && choice.dataset.icon === profile.icon));
+      if (grid) {
+        // The avatar slot changes shape with the avatar state (an upload action
+        // or a selectable preview). A late fetch answer — or an upload made in
+        // another surface — rebuilds the profile fields instead of filling a
+        // row whose slot no longer matches the state.
+        if (Boolean(grid.querySelector('.profile-avatar-slot')?.dataset?.icon) !== avatarAvailable) { refreshProfileSection(); return; }
+        for (const choice of grid.querySelectorAll('button')) {
+          // The initials are a first-class choice: an empty icon means the
+          // initials radio is the selected one, not that nothing is selected.
+          choice.setAttribute('aria-checked', String(choice.dataset.icon === (profile.icon || '')));
+          if (choice.dataset.icon === '') choice.textContent = icons?.initials(profile.name || '') || 'AK';
+        }
+      }
       const mode = byId('settings-work-mode');
       if (mode) mode.value = profile.workMode || 'chat';
       const help = byId('settings-help');
@@ -220,6 +233,51 @@
       });
     }
 
+    // The avatar upload and removal are serialized through the shared save queue
+    // like every other profile write, so a rapid field change can never race the
+    // avatar's own save in the main process. The main process owns the whole
+    // picture flow — picker, scaling, storage — and answers with the outcome
+    // alone; a canceled picker changes nothing.
+    async function uploadAvatar() {
+      return saveQueue.queued(async () => {
+        try {
+          const result = await invoke('profileUploadAvatar');
+          if (result?.canceled) return;
+          avatarAvailable = result.hasAvatar === true;
+          profile = result.profile;
+          refreshProfileSection();
+          announce(['Dit profilbillede er gemt.', ...(result.warnings || [])]);
+          dispatchSaved(result.profile);
+          byId('settings-icons')?.querySelector('[data-icon="upload"]')?.focus();
+        } catch (error) {
+          announce([error.message], true);
+        }
+      });
+    }
+    async function removeAvatar() {
+      return saveQueue.queued(async () => {
+        try {
+          const result = await invoke('profileRemoveAvatar');
+          avatarAvailable = result.hasAvatar === true;
+          profile = result.profile;
+          refreshProfileSection();
+          announce(['Dit profilbillede er fjernet.', ...(result.warnings || [])]);
+          dispatchSaved(result.profile);
+          byId('settings-avatar-slot')?.focus();
+        } catch (error) {
+          announce([error.message], true);
+        }
+      });
+    }
+    // The avatar slot changes shape between upload and removal (action button or
+    // selectable preview), so the section cannot just refill the old controls —
+    // it rebuilds its fields from the last known profile and avatar state.
+    function refreshProfileSection() {
+      describe('profile');
+      renderProfileFields();
+      if (profile) fill(profile);
+    }
+
     function renderProfileFields() {
       const name = document.createElement('input');
       name.id = 'settings-name';
@@ -228,14 +286,31 @@
       name.autocomplete = 'nickname';
       name.placeholder = 'Fx Anna';
       name.addEventListener('change', () => { void saveSection({ name: name.value.trim() }); });
+      // The initials preview follows the name as it is typed; a committed save refills.
+      name.addEventListener('input', () => { const preview = byId('settings-icons')?.querySelector('.profile-initials'); if (preview) preview.textContent = icons?.initials(name.value.trim()) || 'AK'; });
       content.append(field('Hvad skal Aura kalde dig?', name, 'settings-name'));
       content.append(note('Navnet bliver i appen og sendes aldrig til AI’en eller nogen server.'));
 
-      const grid = document.createElement('div');
-      grid.id = 'settings-icons';
-      grid.className = 'profile-icon-grid';
-      grid.setAttribute('role', 'radiogroup');
-      grid.setAttribute('aria-label', 'Dit ikon');
+      // The compact icon row: the initials, the three Aura variants and the
+      // avatar slot — an upload button until a picture is stored, a selectable
+      // rounded preview afterwards. The picture itself is the main process's
+      // business; this row only asks for the picker and renders the outcome.
+      const row = document.createElement('div');
+      row.id = 'settings-icons';
+      row.className = 'profile-icon-row';
+      row.setAttribute('role', 'radiogroup');
+      row.setAttribute('aria-label', 'Dit ikon');
+      const initialsChoice = document.createElement('button');
+      initialsChoice.type = 'button';
+      initialsChoice.className = 'profile-icon-choice profile-initials';
+      initialsChoice.dataset.icon = '';
+      initialsChoice.setAttribute('role', 'radio');
+      initialsChoice.setAttribute('aria-checked', 'false');
+      initialsChoice.setAttribute('aria-label', 'Initialer');
+      initialsChoice.textContent = icons?.initials(profile?.name || '') || 'AK';
+      // The initials are also the deselect target: choosing them saves the empty icon.
+      initialsChoice.onclick = () => { void saveSection({ icon: '' }); };
+      row.append(initialsChoice);
       for (const id of icons?.IDS || []) {
         const choice = document.createElement('button');
         choice.type = 'button';
@@ -247,10 +322,40 @@
         choice.innerHTML = icons?.svg(id) || '';
         // Clicking the chosen icon again returns to the initials fallback.
         choice.onclick = () => { void saveSection({ icon: choice.getAttribute('aria-checked') === 'true' ? '' : id }); };
-        grid.append(choice);
+        row.append(choice);
       }
-      content.append(field('Ikon', grid));
-      content.append(note('Uden valgt ikon bruger appen dine initialer, fx AK for Anna Klit.'));
+      const slot = document.createElement('button');
+      slot.type = 'button';
+      slot.className = 'profile-icon-choice profile-avatar-slot';
+      if (avatarAvailable) {
+        slot.dataset.icon = 'upload';
+        slot.setAttribute('role', 'radio');
+        slot.setAttribute('aria-checked', 'false');
+        slot.setAttribute('aria-label', icons?.LABELS?.upload || 'Eget billede');
+        slot.innerHTML = icons?.avatarImage() || '';
+        slot.onclick = () => { void saveSection({ icon: slot.getAttribute('aria-checked') === 'true' ? '' : 'upload' }); };
+      } else {
+        slot.id = 'settings-avatar-slot';
+        slot.setAttribute('aria-label', 'Upload eget billede');
+        slot.title = 'Upload eget billede';
+        slot.innerHTML = icons?.svg('upload') || '';
+        slot.onclick = () => { void uploadAvatar(); };
+      }
+      row.append(slot);
+      const iconWrap = document.createElement('div');
+      iconWrap.className = 'profile-icon-wrap';
+      iconWrap.append(row);
+      if (avatarAvailable) {
+        const removeAvatarButton = document.createElement('button');
+        removeAvatarButton.id = 'settings-avatar-remove';
+        removeAvatarButton.type = 'button';
+        removeAvatarButton.className = 'text-button';
+        removeAvatarButton.textContent = 'Fjern billedet';
+        removeAvatarButton.onclick = () => { void removeAvatar(); };
+        iconWrap.append(removeAvatarButton);
+      }
+      content.append(field('Ikon', iconWrap));
+      content.append(note('Uden valgt ikon bruger appen dine initialer, fx AK for Anna Klit. Et eget billede gemmes kun i appen på din computer og sendes aldrig til AI’en.'));
 
       const connection = document.createElement('select');
       connection.id = 'settings-standard-connection';
@@ -392,6 +497,7 @@
         if (generation !== profileGeneration) return;
         if (connectionResult) connections = connectionResult.connections || [];
         if (designResult) designs = designResult || [];
+        avatarAvailable = profileResult.hasAvatar === true;
         fill(profileResult.profile);
         announce(profileResult.warnings);
       } catch (error) {

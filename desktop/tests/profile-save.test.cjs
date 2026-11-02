@@ -53,7 +53,7 @@ test('saved udsender aura:profile-saved på dokumentet med den gemte profil', ()
   const root = makeModule({ document });
   const received = [];
   document.listeners['aura:profile-saved'] = [event => received.push(event.detail)];
-  const profile = { name: 'Anna Klit', icon: 'star' };
+  const profile = { name: 'Anna Klit', icon: 'aura-1' };
   root.profileSaveQueued.saved(profile);
   assert.equal(received.length, 1);
   assert.equal(received[0], profile, 'hændelsen bærer den kanoniske profil');

@@ -65,8 +65,9 @@ nav button[aria-current=page] span { color: var(--accent); }
 .profile-chip[hidden] { display: none; }
 .profile-chip:hover { border-color: var(--accent); color: var(--accent); }
 .profile-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.profile-chip-mark { display: inline-grid; place-items: center; width: 20px; height: 20px; flex: none; border-radius: 50%; background: var(--tint); color: var(--ink); font-size: 10px; font-weight: 600; letter-spacing: 0.02em; }
+.profile-chip-mark { display: inline-grid; place-items: center; width: 20px; height: 20px; flex: none; border-radius: 50%; background: var(--tint); color: var(--ink); font-size: 10px; font-weight: 600; letter-spacing: 0.02em; overflow: hidden; }
 .profile-chip-mark svg { width: 14px; height: 14px; }
+.profile-chip-mark img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
 .profile-chip-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .badge { font-size: 11px; font-weight: 450; color: var(--muted); }
 .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #24835b; margin-right: 6px; }
@@ -382,16 +383,23 @@ body.setup-guided .app-content { margin-left: 0; }
 /* The onboarding profile step: icon picker and theme in the guide's own expression. */
 #setup-profile input { font-size: 16px; }
 #setup-profile .hint { margin: 8px 0 0; }
-.profile-icon-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin-top: 8px; }
-.profile-icon-choice { display: inline-grid; place-items: center; aspect-ratio: 1; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); cursor: pointer; transition: border-color var(--motion-fast), color var(--motion-fast), box-shadow var(--motion-fast); }
+/* The icon choice is one compact row: the initials, the three Aura variants and
+   the avatar slot — an upload button until a picture is stored. */
+.profile-icon-wrap { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+.profile-icon-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.profile-icon-choice { display: inline-grid; place-items: center; width: 44px; height: 44px; flex: none; border: 1px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--ink); cursor: pointer; transition: border-color var(--motion-fast), color var(--motion-fast), box-shadow var(--motion-fast); }
 .profile-icon-choice svg { width: 22px; height: 22px; }
 .profile-icon-choice:hover { border-color: var(--accent); color: var(--accent); }
 .profile-icon-choice[aria-checked="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); color: var(--accent); }
 .profile-icon-choice:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.profile-initials { font-size: 13px; font-weight: 600; letter-spacing: 0.02em; }
+.profile-avatar-slot img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.profile-avatar-slot:not([data-icon]) { border-style: dashed; }
+.profile-avatar-remove { font-size: 12px; color: var(--muted); }
+.profile-avatar-remove:hover { color: var(--accent); }
 .profile-theme { border: 0; padding: 0; margin: 0; min-inline-size: 0; }
 .profile-theme legend { font-size: 12px; font-weight: 550; margin: 16px 0 7px; }
 .profile-theme label { display: inline-flex; align-items: center; gap: 8px; margin: 0 18px 0 0; font-size: 14px; font-weight: 400; color: var(--ink); }
-@media (max-width: 700px) { .profile-icon-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .setup-footer { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 36px; }
 #setup-advanced { color: var(--muted); font-size: 12px; }
 #setup .primary { padding: 12px 22px; }

@@ -113,7 +113,8 @@ function makeDom() {
   for (const [id, step] of Object.entries(sections)) { const section = make('section', id); section.dataset.setupStep = step; section.hidden = id !== 'setup-choice'; content.append(section); }
   const profile = registry.get('setup-profile');
   profile.append(make('input', 'profile-name'));
-  const grid = make('div', 'profile-icon-grid'); grid.className = 'profile-icon-grid'; profile.append(grid);
+  const grid = make('div', 'profile-icon-row'); grid.className = 'profile-icon-row'; profile.append(grid);
+  profile.append(make('button', 'profile-avatar-remove'));
   const theme = make('fieldset', 'profile-theme'); profile.append(theme);
   for (const value of ['system', 'light', 'dark']) { const label = new El('label'); const input = make('input'); input.type = 'radio'; input.value = value; input.checked = value === 'system'; label.append(input); theme.append(label); }
   profile.append(make('select', 'profile-help'));
@@ -121,13 +122,26 @@ function makeDom() {
   layout.append(make('aside', 'setup-visual'));
   return { document, registry, progress };
 }
-function runSetup({ profile = blank(), suggestion = 'Parthee', repeat = null } = {}) {
+function runSetup({ profile = blank(), suggestion = 'Parthee', repeat = null, avatar = false, uploadFails = null } = {}) {
   const dom = makeDom();
   const saves = [], calls = [], visuals = [], store = {}, announced = [], adoptCalls = [];
+  let avatarAvailable = avatar;
+  const current = () => typeof profile === 'function' ? profile() : { ...profile };
   const harness = {
-    profileGet: async () => { calls.push('profileGet'); return { profile: typeof profile === 'function' ? profile() : { ...profile }, warnings: [] }; },
-    profileSave: async value => { calls.push('profileSave'); saves.push(value); return { profile: { ...value }, warnings: [] }; },
-    profileSuggest: async () => { calls.push('profileSuggest'); return suggestion; }
+    profileGet: async () => { calls.push('profileGet'); return { profile: current(), warnings: [], hasAvatar: avatarAvailable }; },
+    profileSave: async value => { calls.push('profileSave'); saves.push(value); return { profile: { ...value }, warnings: [], hasAvatar: avatarAvailable }; },
+    profileSuggest: async () => { calls.push('profileSuggest'); return suggestion; },
+    profileUploadAvatar: async () => {
+      calls.push('profileUploadAvatar');
+      if (uploadFails) throw new Error(uploadFails);
+      avatarAvailable = true;
+      return { canceled: false, profile: { ...current(), icon: 'upload' }, warnings: [], hasAvatar: true };
+    },
+    profileRemoveAvatar: async () => {
+      calls.push('profileRemoveAvatar');
+      avatarAvailable = false;
+      return { profile: { ...current(), icon: '' }, warnings: [], hasAvatar: false };
+    }
   };
   const $ = selector => {
     const found = dom.document.querySelector(selector);
@@ -160,9 +174,9 @@ const progressItem = (fixture, phase) => fixture.progress.children.find(item => 
 // trip brings them into this realm so deepEqual compares values, not prototypes.
 const plain = value => JSON.parse(JSON.stringify(value));
 
-test('profile-icons matcher kernerprofilens ikonliste og tegner DSH-stregglyffer', () => {
+test('profile-icons matcher kernerprofilens ikonliste og tegner Aura-stregglyffer', () => {
   assert.deepEqual(ProfileIcons.IDS, ICON_IDS);
-  assert.equal(ProfileIcons.IDS.length, 12);
+  assert.equal(ProfileIcons.IDS.length, 3);
   for (const id of ProfileIcons.IDS) {
     const glyph = ProfileIcons.svg(id);
     assert.match(glyph, /^<svg /, `${id} starter med et svg-element`);
@@ -173,7 +187,12 @@ test('profile-icons matcher kernerprofilens ikonliste og tegner DSH-stregglyffer
     assert.ok(glyph.includes('<path'), `${id} indeholder stregdata`);
     assert.match(glyph, /aria-hidden="true"/);
   }
-  for (const unknown of ['', 'unknown', '__proto__', 'constructor', null, undefined, {}]) assert.equal(ProfileIcons.svg(unknown), '', `${String(unknown)} tegner intet`);
+  // The upload slot's picture glyph names the action; it is not a profile choice.
+  assert.ok(ProfileIcons.svg('upload').includes('<svg'), 'upload-knappen tegner et stregikon');
+  for (const unknown of ['', 'star', 'bird', 'unknown', '__proto__', 'constructor', null, undefined, {}]) assert.equal(ProfileIcons.svg(unknown), '', `${String(unknown)} tegner intet — gamle Lucide-id'er er gledet ud`);
+  // The stored avatar renders from the fixed protocol name — never a path or data URL.
+  assert.ok(ProfileIcons.avatarImage().includes('<img src="avatar.png"'), 'avataren tegnes som et billede fra det faste navn');
+  assert.ok(!ProfileIcons.avatarImage().includes('data:'), 'ingen base64 i visningen');
   assert.equal(ProfileIcons.initials('Parthee'), 'PA');
   assert.equal(ProfileIcons.initials('parthee vijaya'), 'PV');
   assert.equal(ProfileIcons.initials('Anna Klit'), 'AK');
@@ -195,7 +214,13 @@ test('index.html har profil-trinnet med felter og fire nummererede fremgangspunk
   assert.match(section, /hidden/);
   assert.match(section, /for="profile-name"/);
   assert.ok(section.includes('Hvad skal Aura kalde dig?'));
-  assert.match(section, /id="profile-icon-grid"/);
+  assert.match(section, /id="profile-icon-row"/);
+  assert.match(section, /class="profile-icon-row"/, 'ikonvalget er en kompakt række — ikke et gitter');
+  assert.match(section, /role="radiogroup"/);
+  assert.match(section, /id="profile-avatar-remove"/, 'fjern-knappen til et eget billede findes');
+  assert.ok(section.includes('Fjern billedet'));
+  assert.ok(section.includes('Uden valgt ikon bruger appen dine initialer, fx AK for Anna Klit.'));
+  assert.ok(section.includes('Et eget billede gemmes kun i appen på din computer og sendes aldrig til AI’en.'), 'upload-hintet lover det samme som navnet: intet billede når AI’en');
   assert.match(section, /id="profile-theme"/);
   assert.ok(section.includes('value="system"') && section.includes('value="light"') && section.includes('value="dark"'), 'temavalgene er system, lyst og mørkt');
   assert.ok(section.includes('Temaet følger dit system, medmindre du vælger selv.'));
@@ -227,7 +252,7 @@ test('profil-trinnet er det første trin, når den guidede opsætning starter me
 });
 
 test('repeat-opsætning springer profil-trinnet over, når profilen er udfyldt', async () => {
-  const f = runSetup({ profile: { ...blank(), name: 'Anna', icon: 'star' }, repeat: { autoConnect: false } });
+  const f = runSetup({ profile: { ...blank(), name: 'Anna', icon: 'aura-1' }, repeat: { autoConnect: false } });
   await f.context.showSetup('', true);
   assert.equal(f.context.setupStep, 'choice');
   assert.equal(f.registry.get('setup-profile').hidden, true, 'et udfyldt profil-trin vises aldrig igen');
@@ -264,31 +289,91 @@ test('en gemt profil vises i trinnet, og forslaget bruges kun, når navnet er to
   await f.context.showSetup('', true);
   assert.equal(f.context.setupStep, 'profile');
   assert.equal(f.calls.filter(call => call === 'profileSuggest').length, 1, 'en tom profil forslår et navn');
-  const buttons = f.document.querySelectorAll('#profile-icon-grid button');
-  assert.equal(buttons.length, 12, 'ikonvælgeren viser alle tolv glyffer');
-  assert.ok(buttons.every(button => button.getAttribute('aria-checked') === 'false'), 'intet ikon er forvalgt uden et gemt valg');
-  assert.ok(buttons.every(button => button.innerHTML.includes('<svg')), 'hver ikonknap bærer sin glyf');
-  assert.equal(buttons.find(button => button.dataset.icon === 'bird').getAttribute('aria-label'), 'Fugl');
-  await f.context.prepareProfileStep({ name: 'Anna', icon: 'moon', helpLevel: 'minimal', appearance: { theme: 'dark', panelOpen: true } });
-  const grid = f.document.querySelectorAll('#profile-icon-grid button');
+  const buttons = f.document.querySelectorAll('#profile-icon-row button');
+  assert.equal(buttons.length, 5, 'kompakt række: initialer, tre Aura-varianter og upload-pladsen');
+  const radios = buttons.filter(button => button.getAttribute('role') === 'radio');
+  assert.deepEqual(radios.map(button => button.dataset.icon), ['', 'aura-1', 'aura-2', 'aura-3'], 'initialerne er det første valg — derefter de tre varianter');
+  assert.equal(radios.find(radio => radio.dataset.icon === '').getAttribute('aria-checked'), 'true', 'initialerne er forvalgt — de er standardvalget');
+  assert.ok(radios.filter(radio => radio.dataset.icon).every(radio => radio.getAttribute('aria-checked') === 'false'), 'ingen variant er forvalgt uden et gemt valg');
+  assert.equal(radios.find(radio => radio.dataset.icon === 'aura-1').getAttribute('aria-label'), 'Aura · ring');
+  assert.equal(radios.find(radio => radio.dataset.icon === 'aura-2').getAttribute('aria-label'), 'Aura · bølge');
+  assert.equal(radios.find(radio => radio.dataset.icon === 'aura-3').getAttribute('aria-label'), 'Aura · kredsløb');
+  assert.equal(radios.find(radio => radio.dataset.icon === '').textContent, 'PA', 'initialer-knappen viser forslaget fra navnefeltet');
+  assert.ok(radios.filter(radio => radio.dataset.icon).every(radio => radio.innerHTML.includes('<svg')), 'hver variant bærer sin glyf');
+  const upload = buttons.find(button => button.getAttribute('aria-label') === 'Upload eget billede');
+  assert.ok(upload, 'upload-pladsen er en handlingsknap uden et gemt billede');
+  assert.equal(upload.getAttribute('role'), null, 'upload er ikke et ikonvalg endnu');
+  assert.ok(upload.innerHTML.includes('<svg'), 'upload-knappen bærer sit billede-stregikon');
+  await f.context.prepareProfileStep({ name: 'Anna', icon: 'aura-1', helpLevel: 'minimal', appearance: { theme: 'dark', panelOpen: true } });
+  const row = f.document.querySelectorAll('#profile-icon-row button');
   assert.equal(f.registry.get('profile-name').value, 'Anna', 'et gemt navn vises');
-  assert.equal(grid.find(button => button.dataset.icon === 'moon').getAttribute('aria-checked'), 'true', 'det gemte ikon er forvalgt');
+  assert.equal(row.find(button => button.dataset.icon === 'aura-1').getAttribute('aria-checked'), 'true', 'det gemte ikon er forvalgt');
   assert.equal(f.document.querySelectorAll('#profile-theme input').find(input => input.checked).value, 'dark', 'det gemte tema er forvalgt');
   assert.equal(f.registry.get('profile-help').value, 'minimal', 'det gemte hjælpeniveau er forvalgt');
   assert.equal(f.calls.filter(call => call === 'profileSuggest').length, 1, 'forslaget overskriver aldrig et gemt navn');
+});
+
+test('upload-knappen beder hovedprocessen om filvælgeren — og billedet bliver det valgte ikon', async () => {
+  const f = runSetup();
+  await f.context.showSetup('', true);
+  assert.equal(f.registry.get('profile-avatar-remove').hidden, true, 'uden billede er der intet at fjerne');
+  const slot = f.document.querySelectorAll('#profile-icon-row button').find(button => button.getAttribute('aria-label') === 'Upload eget billede');
+  await slot.onclick();
+  assert.equal(f.calls.includes('profileUploadAvatar'), true, 'filvælgeren åbnes i hovedprocessen');
+  const row = f.document.querySelectorAll('#profile-icon-row button');
+  const avatar = row.find(button => button.dataset.icon === 'upload');
+  assert.ok(avatar, 'efter gemningen er avatar-pladsen et valg');
+  assert.ok(avatar.innerHTML.includes('<img src="avatar.png"'), 'billedet vises som forhåndsvisning fra det faste navn');
+  assert.equal(avatar.getAttribute('role'), 'radio', 'billedet er nu med i valget');
+  assert.equal(avatar.getAttribute('aria-checked'), 'true', 'upload er det valgte ikon');
+  assert.equal(avatar.getAttribute('aria-label'), 'Eget billede');
+  assert.equal(f.registry.get('profile-avatar-remove').hidden, false, 'fjern-knappen står frem');
+  await f.registry.get('profile-continue').onclick();
+  assert.equal(plain(f.saves[0]).icon, 'upload', 'Fortsæt gemmer avatar-valget');
+});
+
+test('Fjern billedet rydder tilbage til initialerne', async () => {
+  const f = runSetup();
+  await f.context.showSetup('', true);
+  const slot = f.document.querySelectorAll('#profile-icon-row button').find(button => button.getAttribute('aria-label') === 'Upload eget billede');
+  await slot.onclick();
+  const avatar = f.document.querySelectorAll('#profile-icon-row button').find(button => button.dataset.icon === 'upload');
+  assert.ok(avatar, 'efter upload er billedet et valg');
+  assert.equal(avatar.getAttribute('aria-checked'), 'true');
+  assert.equal(f.registry.get('profile-avatar-remove').hidden, false, 'fjern-knappen står frem');
+  await f.registry.get('profile-avatar-remove').onclick();
+  assert.equal(f.calls.includes('profileRemoveAvatar'), true, 'fjernelsen sker i hovedprocessen');
+  const cleared = f.document.querySelectorAll('#profile-icon-row button');
+  assert.ok(!cleared.some(button => button.dataset.icon === 'upload'), 'avatar-valget er væk');
+  assert.ok(cleared.find(button => button.getAttribute('aria-label') === 'Upload eget billede'), 'upload-pladsen er en handlingsknap igen');
+  assert.equal(cleared.find(button => button.dataset.icon === '').getAttribute('aria-checked'), 'true', 'initialerne er valgt igen');
+  assert.equal(f.registry.get('profile-avatar-remove').hidden, true, 'fjern-knappen gemmes igen');
+  await f.registry.get('profile-continue').onclick();
+  assert.equal(plain(f.saves[0]).icon, '', 'Fortsæt gemmer initialerne');
+});
+
+test('en upload der afvises, viser den danske fejl og lader rækken stå', async () => {
+  const f = runSetup({ uploadFails: 'Billedet er for stort. Vælg et jpg- eller png-billede på højst 1 MB.' });
+  await f.context.showSetup('', true);
+  const before = f.document.querySelectorAll('#profile-icon-row button');
+  await assert.rejects(() => f.document.querySelectorAll('#profile-icon-row button').find(button => button.getAttribute('aria-label') === 'Upload eget billede').onclick(), /for stort/);
+  const after = f.document.querySelectorAll('#profile-icon-row button');
+  assert.equal(after.find(button => button.dataset.icon === 'upload'), undefined, 'intet billede er kommet til');
+  assert.equal(after.find(button => button.getAttribute('aria-label') === 'Upload eget billede') !== undefined, true, 'upload-knappen står uændret');
+  assert.equal(before.length, after.length);
 });
 
 test('Fortsæt gemmer alle fire feltgrupper og går videre til forbindelsesvalget', async () => {
   const f = runSetup();
   await f.context.showSetup('', true);
   f.registry.get('profile-name').value = 'Anna Klit';
-  f.document.querySelectorAll('#profile-icon-grid button').find(button => button.dataset.icon === 'bird').onclick();
+  f.document.querySelectorAll('#profile-icon-row button').find(button => button.dataset.icon === 'aura-2').onclick();
   for (const input of f.document.querySelectorAll('#profile-theme input')) input.checked = input.value === 'dark';
   f.registry.get('profile-help').value = 'minimal';
   await f.registry.get('profile-continue').onclick();
   assert.equal(f.context.setupStep, 'choice');
   assert.equal(f.registry.get('setup-profile').hidden, true);
-  assert.deepEqual(plain(f.saves[0]), { name: 'Anna Klit', icon: 'bird', helpLevel: 'minimal', appearance: { theme: 'dark', panelOpen: true } });
+  assert.deepEqual(plain(f.saves[0]), { name: 'Anna Klit', icon: 'aura-2', helpLevel: 'minimal', appearance: { theme: 'dark', panelOpen: true } });
   assert.equal(progressItem(f, 'profile').dataset.complete, 'true', 'profilpunktet mærkes gennemført');
   assert.equal(progressItem(f, 'profile').querySelector('span').textContent, '✓');
 });
@@ -297,13 +382,13 @@ test('Fortsæt adopterer den gemte profil og annoncerer den som aura:profile-sav
   const f = runSetup();
   await f.context.showSetup('', true);
   f.registry.get('profile-name').value = 'Anna Klit';
-  f.document.querySelectorAll('#profile-icon-grid button').find(button => button.dataset.icon === 'bird').onclick();
+  f.document.querySelectorAll('#profile-icon-row button').find(button => button.dataset.icon === 'aura-2').onclick();
   await f.registry.get('profile-continue').onclick();
   // Cachen følger den gemte profil med det samme — adoptProfile genberegner
   // anbefalingen, og chippen og anbefalingerne arbejder aldrig på et forældet
   // grundlag.
   assert.equal(f.adoptCalls.length >= 1, true, 'den gemte profil adopteres straks');
-  assert.deepEqual(plain(f.announced), [{ name: 'Anna Klit', icon: 'bird', helpLevel: 'fuld', appearance: { theme: 'system', panelOpen: true } }], 'den gemte profil annonceres til vinduet');
+  assert.deepEqual(plain(f.announced), [{ name: 'Anna Klit', icon: 'aura-2', helpLevel: 'fuld', appearance: { theme: 'system', panelOpen: true } }], 'den gemte profil annonceres til vinduet');
 });
 
 test('Fortsæt virker uden udfyldte felter — tomme værdier er gyldige profilværdier', async () => {
@@ -326,7 +411,7 @@ test('gennemført opsætning gemmer profilfelterne og udfylder standard-AI med d
   const f = runSetup();
   await f.context.showSetup('', true);
   f.registry.get('profile-name').value = 'Anna';
-  f.document.querySelectorAll('#profile-icon-grid button').find(button => button.dataset.icon === 'star').onclick();
+  f.document.querySelectorAll('#profile-icon-row button').find(button => button.dataset.icon === 'aura-1').onclick();
   await f.registry.get('profile-continue').onclick();
   f.registry.get('setup-connection').value = 'forbindelse-1';
   f.context.verifiedConnection = 'forbindelse-1';
@@ -334,14 +419,14 @@ test('gennemført opsætning gemmer profilfelterne og udfylder standard-AI med d
   assert.equal(f.registry.get('setup').hidden, true, 'opsætningen er gennemført');
   const completion = plain(f.saves[f.saves.length - 1]);
   assert.deepEqual(completion, {
-    name: 'Anna', icon: 'star', helpLevel: 'fuld', appearance: { theme: 'system', panelOpen: true },
+    name: 'Anna', icon: 'aura-1', helpLevel: 'fuld', appearance: { theme: 'system', panelOpen: true },
     standardAI: { connectionID: 'forbindelse-1', modelID: '' }
   }, 'gennemførelsen er én samlet profilgemning');
   assert.equal(f.calls.filter(call => call === 'profileSave').length, 2, 'Fortsæt og gennemførelse gemmer hver sin gang');
 });
 
 test('en eksisterende standard-AI overskrives ikke af gennemførelsen', async () => {
-  const f = runSetup({ profile: { ...blank(), name: 'Anna', icon: 'star', standardAI: { connectionID: 'gammel', modelID: 'm1' } } });
+  const f = runSetup({ profile: { ...blank(), name: 'Anna', icon: 'aura-1', standardAI: { connectionID: 'gammel', modelID: 'm1' } } });
   await f.context.showSetup('', true);
   await f.registry.get('profile-continue').onclick();
   f.registry.get('setup-connection').value = 'forbindelse-1';
@@ -351,7 +436,7 @@ test('en eksisterende standard-AI overskrives ikke af gennemførelsen', async ()
 });
 
 test('standard-AI udfyldes også, når profil-trinnet ikke blev vist', async () => {
-  const f = runSetup({ profile: { ...blank(), name: 'Anna', icon: 'star' }, repeat: { autoConnect: false } });
+  const f = runSetup({ profile: { ...blank(), name: 'Anna', icon: 'aura-1' }, repeat: { autoConnect: false } });
   await f.context.showSetup('', true);
   assert.equal(f.context.setupStep, 'choice');
   f.registry.get('setup-connection').value = 'forbindelse-1';
@@ -406,7 +491,7 @@ test('Tilbage fra forbindelsesvalget vender til profil-trinnet, når det blev vi
 });
 
 test('Tilbage fra valget forlader opsætningen, når profil-trinnet ikke blev vist', async () => {
-  const f = runSetup({ profile: { ...blank(), name: 'Anna', icon: 'star' }, repeat: { autoConnect: false } });
+  const f = runSetup({ profile: { ...blank(), name: 'Anna', icon: 'aura-1' }, repeat: { autoConnect: false } });
   await f.context.showSetup('', true);
   assert.equal(f.context.setupStep, 'choice');
   f.registry.get('setup-back').onclick();
@@ -423,7 +508,7 @@ test('en profilgemning med tema opdaterer tema-hintet straks gennem calmWorkspac
   f.context.window.calmWorkspace = { setTheme: theme => themes.push(theme) };
   await f.context.showSetup('', true);
   f.registry.get('profile-name').value = 'Anna Klit';
-  f.document.querySelectorAll('#profile-icon-grid button').find(button => button.dataset.icon === 'bird').onclick();
+  f.document.querySelectorAll('#profile-icon-row button').find(button => button.dataset.icon === 'aura-2').onclick();
   for (const input of f.document.querySelectorAll('#profile-theme input')) input.checked = input.value === 'dark';
   await f.registry.get('profile-continue').onclick();
   assert.deepEqual(themes, ['dark'], 'Fortsæt giver temaet videre med det samme efter gemningen');
