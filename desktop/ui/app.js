@@ -352,7 +352,8 @@ $('#profile-continue').onclick = () => action(async () => { await saveProfileSte
 // sidebar chip follows along without a restart.
 async function uploadProfileAvatar() {
   const result = await call('profileUploadAvatar');
-  if (result?.canceled) return;
+  // En afbrudt vælger er en status, ikke en fejl: intet er rørt, og rækken står.
+  if (result?.canceled) { message('Billedvalget blev afbrudt.'); return; }
   profileAvatarAvailable = result.hasAvatar === true;
   adoptProfile(result.profile);
   announceProfileSaved(result.profile);

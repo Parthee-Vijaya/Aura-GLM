@@ -68,10 +68,18 @@ function tinyPNG() {
       assert.equal(await page.inputValue('#profile-name'), PROFILE.name, 'profilnavnet står stille efter udfyldningen');
       await page.click(`#profile-icon-row button[data-icon="${PROFILE.icon}"]`);
       await page.check(`#profile-theme input[value="${PROFILE.theme}"]`);
+      // En afbrudt filvælger er en stille status, ikke en fejl — intet sker.
+      await choose([], true); await page.click('#profile-avatar-slot');
+      await page.waitForSelector('#message:not([hidden])');
+      assert.equal(await page.locator('#message').textContent(), 'Billedvalget blev afbrudt.');
+      assert.equal((await page.getAttribute('#message', 'class') || '').includes('error'), false, 'beskeden er ikke en fejl');
       // Eget billede: filvælgeren stubbes, hovedprocessen gemmer og skalerer,
       // og rækken viser forhåndsvisningen som det valgte ikon.
       await choose([avatar]); await page.click('#profile-avatar-slot');
       await page.waitForSelector('#profile-icon-row button[data-icon="upload"][aria-checked="true"]');
+      // Ruten svarer altid PNG, gemmes aldrig i cachen og gætter aldrig
+      // content-type — som resten af appens nosniff-hærdning.
+      assert.deepEqual(await page.evaluate(async () => { const answer = await fetch('avatar.png'); return [answer.status, answer.headers.get('content-type'), answer.headers.get('cache-control'), answer.headers.get('x-content-type-options')]; }), [200, 'image/png', 'no-store', 'nosniff'], 'avatar-ruten: PNG, ingen cache, nosniff');
       uploaded = true;
       await page.click('#profile-continue');
     }

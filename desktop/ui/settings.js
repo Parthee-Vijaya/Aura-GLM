@@ -242,7 +242,8 @@
       return saveQueue.queued(async () => {
         try {
           const result = await invoke('profileUploadAvatar');
-          if (result?.canceled) return;
+          // En afbrudt vælger er en status, ikke en fejl: intet er rørt, og rækken står.
+          if (result?.canceled) { announce(['Billedvalget blev afbrudt.']); return; }
           avatarAvailable = result.hasAvatar === true;
           profile = result.profile;
           refreshProfileSection();

@@ -1055,9 +1055,10 @@ app.whenReady().then(async () => {
     if (url.host !== 'app' || !uiAssets.allowed(name)) return new Response('Ikke fundet', { status: 404 });
     // The one served file that lives outside ui/: the user's own avatar from
     // the private harness folder, under its fixed allowlisted name and only
-    // for the app's own renderer. Never cached — it can change with every upload.
+    // for the app's own renderer. Never cached — it can change with every
+    // upload — and never content-type-sniffed, like the app's other surfaces.
     if (name === 'avatar.png') {
-      try { return new Response(await fs.readFile(avatarFile()), { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'no-store' } }); }
+      try { return new Response(await fs.readFile(avatarFile()), { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } }); }
       catch { return new Response('Ikke fundet', { status: 404 }); }
     }
     return new Response(await fs.readFile(path.join(__dirname, 'ui', name)), { headers: { 'Content-Type': uiAssets.contentType(name) } });

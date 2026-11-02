@@ -144,7 +144,7 @@ function mergeProfile(profile, patch) {
   for (const [key, value] of Object.entries(patch || {})) next[key] = value && typeof value === 'object' && !Array.isArray(value) ? { ...value } : value;
   return next;
 }
-function makeHarness({ profile = blank(), connections = [], designs = [], warnings = [], saveError = null, avatar = false } = {}) {
+function makeHarness({ profile = blank(), connections = [], designs = [], warnings = [], saveError = null, avatar = false, uploadCancel = false } = {}) {
   let current = profile;
   let avatarAvailable = avatar;
   const saves = [], preferencesSaves = [], calls = [];
@@ -159,6 +159,7 @@ function makeHarness({ profile = blank(), connections = [], designs = [], warnin
     },
     profileUploadAvatar: async () => {
       calls.push('profileUploadAvatar');
+      if (uploadCancel) return { ok: true, value: { canceled: true } };
       avatarAvailable = true; current = { ...current, icon: 'upload' };
       return { ok: true, value: { canceled: false, profile: copy(current), warnings: [], hasAvatar: true } };
     },
@@ -323,6 +324,22 @@ test('upload i Indstillinger beder hovedprocessen og gør billedet til det valgt
   assert.ok(dom.content.querySelector('#settings-avatar-remove'), 'fjern-knappen står frem');
   assert.equal(harness.profile.icon, 'upload');
   assert.equal(saved.length >= 1, true, 'chippen og cachen følger med straks — upload annonceres som enhver anden profilgemning');
+});
+
+test('en annulleret billedvælger giver en stille dansk status — ikke en fejl', async () => {
+  const dom = makeDom();
+  const harness = makeHarness({ profile: { ...blank(), name: 'Anna Klit' }, uploadCancel: true });
+  const settings = makeSettings(dom, harness);
+  await openSection(settings, 'profile');
+  dom.content.querySelector('#settings-avatar-slot').click();
+  await flush();
+  assert.equal(harness.calls.includes('profileUploadAvatar'), true);
+  const feedback = dom.content.querySelector('#settings-feedback');
+  assert.equal(feedback.textContent, 'Billedvalget blev afbrudt.');
+  assert.equal(feedback.classList.contains('error'), false, 'en afbrudt vælger er ikke en fejl');
+  assert.equal(dom.content.querySelector('#settings-icons button[data-icon="upload"]'), null, 'intet billede er kommet til');
+  assert.equal(dom.content.querySelector('#settings-avatar-remove'), null, 'fjern-knappen forbliver væk');
+  assert.equal(harness.profile.icon, '', 'profilen røres ikke');
 });
 
 test('Fjern billedet rydder ikonvalget og gør upload-knappen tilbage', async () => {

@@ -122,9 +122,9 @@ function makeDom() {
   layout.append(make('aside', 'setup-visual'));
   return { document, registry, progress };
 }
-function runSetup({ profile = blank(), suggestion = 'Parthee', repeat = null, avatar = false, uploadFails = null } = {}) {
+function runSetup({ profile = blank(), suggestion = 'Parthee', repeat = null, avatar = false, uploadFails = null, uploadCanceled = false } = {}) {
   const dom = makeDom();
-  const saves = [], calls = [], visuals = [], store = {}, announced = [], adoptCalls = [];
+  const saves = [], calls = [], visuals = [], store = {}, announced = [], adoptCalls = [], messages = [];
   let avatarAvailable = avatar;
   const current = () => typeof profile === 'function' ? profile() : { ...profile };
   const harness = {
@@ -133,6 +133,7 @@ function runSetup({ profile = blank(), suggestion = 'Parthee', repeat = null, av
     profileSuggest: async () => { calls.push('profileSuggest'); return suggestion; },
     profileUploadAvatar: async () => {
       calls.push('profileUploadAvatar');
+      if (uploadCanceled) return { canceled: true };
       if (uploadFails) throw new Error(uploadFails);
       avatarAvailable = true;
       return { canceled: false, profile: { ...current(), icon: 'upload' }, warnings: [], hasAvatar: true };
@@ -162,12 +163,13 @@ function runSetup({ profile = blank(), suggestion = 'Parthee', repeat = null, av
     localStorage: { getItem: key => store[key] ?? null, setItem: (key, value) => { store[key] = String(value); } },
     call: async (method, value) => { if (!harness[method]) throw new Error(`Uventet kald: ${method}`); return harness[method](value); },
     action: async fn => fn(),
+    message: (text, isError) => { messages.push({ text, isError: Boolean(isError) }); },
     renderSetup: () => {}, discoverLocal: async () => {}, completeIntroduction: () => {}, clearConnectionReceipt: () => {},
     loadModels: async () => {}, applyFeatures: () => {}, providerPicker: () => {}, syncCreateAvailability: () => {},
     showIntroduction: () => { context.introductions = (context.introductions || 0) + 1; }
   };
   vm.runInNewContext(setupCode, context);
-  return { context, $, document: dom.document, registry: dom.registry, progress: dom.progress, harness, saves, calls, visuals, announced, adoptCalls };
+  return { context, $, document: dom.document, registry: dom.registry, progress: dom.progress, harness, saves, calls, visuals, announced, adoptCalls, messages };
 }
 const progressItem = (fixture, phase) => fixture.progress.children.find(item => item.dataset.phase === phase);
 // Objects created inside the vm context belong to another realm; a JSON round
@@ -350,6 +352,19 @@ test('Fjern billedet rydder tilbage til initialerne', async () => {
   assert.equal(f.registry.get('profile-avatar-remove').hidden, true, 'fjern-knappen gemmes igen');
   await f.registry.get('profile-continue').onclick();
   assert.equal(plain(f.saves[0]).icon, '', 'Fortsæt gemmer initialerne');
+});
+
+test('en annulleret billedvælger giver en stille dansk besked og lader rækken stå', async () => {
+  const f = runSetup({ uploadCanceled: true });
+  await f.context.showSetup('', true);
+  const slot = f.document.querySelectorAll('#profile-icon-row button').find(button => button.getAttribute('aria-label') === 'Upload eget billede');
+  await slot.onclick();
+  assert.deepEqual(f.messages, [{ text: 'Billedvalget blev afbrudt.', isError: false }], 'afbrudt vælger er en statusbesked — ikke en fejl');
+  const row = f.document.querySelectorAll('#profile-icon-row button');
+  assert.equal(row.find(button => button.dataset.icon === 'upload'), undefined, 'intet billede er kommet til');
+  assert.ok(row.find(button => button.getAttribute('aria-label') === 'Upload eget billede'), 'upload-knappen står uændret');
+  assert.equal(f.registry.get('profile-avatar-remove').hidden, true, 'fjern-knappen forbliver skjult');
+  assert.equal(f.saves.length, 0, 'profilen røres ikke');
 });
 
 test('en upload der afvises, viser den danske fejl og lader rækken stå', async () => {
