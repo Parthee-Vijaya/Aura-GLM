@@ -4,14 +4,18 @@ Profilen er dine grundindstillinger: hvem du er, og hvad Aura Prime skal bruge s
 
 ## Sådan udfyldes profilen
 
-Den guidede opstart begynder med trinnet **Din profil**. Du kan skrive dit navn, vælge et af tolv ikoner og vælge, om appen skal følge systemets tema eller være lys eller mørk. Alle felter kan udelades, og **Vælg senere** er altid tilladt. Er din profil allerede udfyldt, springer trinnet over — du bliver aldrig spurgt igen.
+Den guidede opstart begynder med trinnet **Din profil**. Du kan skrive dit navn, vælge dit ikon — dine initialer (standardvalget), én af tre Aura-ikoner eller et eget billede — og vælge, om appen skal følge systemets tema eller være lys eller mørk. Alle felter kan udelades, og **Vælg senere** er altid tilladt. Er din profil allerede udfyldt, springer trinnet over — du bliver aldrig spurgt igen.
+
+## Funktioner vælges ad gangen
+
+Introduktionen spørger ikke om funktioner. En helt ny installation starter med grundpakken: grundreglerne og designhjælpen, som altid er aktiv. Øvrige funktioner og skills vælges til og fra ad gangen under **Indstillinger › Funktioner**. Har du brugt appen fra før, beholder du automatisk alle funktioner — intet slås fra af sig selv.
 
 ## Det gemmer profilen
 
-- **Navn og ikon.** Navnet bruges i appens egen visning; uden ikon vises dine initialer.
+- **Navn og ikon.** Navnet bruges i appens egen visning. Som standard vises dine initialer; du kan vælge én af tre Aura-ikoner eller uploade et eget billede (jpg eller png, højst 1 MB). Billedet gemmes i appens egen datamappe, og **Fjern billedet** sletter det igen.
 - **Standard-AI.** Hvilken forbindelse (og evt. model) nye projekter starter med. Vælges under Indstillinger eller med **Brug som standard** i modelvælgeren.
 - **Standard arbejdsmåde.** Om helt nye samtaler starter i Samtale eller Planlæg.
-- **Udseende.** Temaet (Følg system, Lyst, Mørkt) og om sidepanelet er åbent, når appen starter.
+- **Udseende.** Temaet (Følg system, Lyst, Mørkt), om sidepanelet er åbent, når appen starter, og skriftstørrelsen (10–16 px, standard 13), som skalerer hele appen.
 - **Projektstandarder.** Udgivelse, designpakke og tests, som forudfylder Flere valg, når du opretter et projekt.
 - **Hjælpeniveau.** Tre trin: Fuld hjælp (forklaringer undervejs), Hjælp ved behov (hintene samles bag en "?"-knap ved skrivefeltet) og Ingen hjælp. Advarsler, godkendelser, Før du sender og privacyvalg vises altid.
 
@@ -25,9 +29,9 @@ Nye projekter og helt nye samtaler starter med profilens valg: standard-AI'et, a
 
 ## Fortrolighed
 
-Navn og ikon er ren UI-tilstand. De bliver i appen og i din egen datamappe og sendes aldrig til AI'en, prompts, modellog, diagnostik eller feedbackrapporter.
+Navn, ikon og billede er ren UI-tilstand. De bliver i appen og i din egen datamappe og sendes aldrig til AI'en, prompts, modellog, diagnostik eller feedbackrapporter.
 
 ## Afprøvning
 
-- Enhedsprøver: `desktop/tests/profile.test.cjs`, `profile-step.test.cjs`, `settings.test.cjs`, `settings-theme.test.cjs` og `profile-consumption.test.cjs`.
+- Enhedsprøver: `desktop/tests/profile.test.cjs`, `profile-avatar.test.cjs`, `profile-step.test.cjs`, `profile-chip.test.cjs`, `profile-save.test.cjs`, `settings.test.cjs`, `settings-theme.test.cjs`, `settings-fontsize.test.cjs`, `composer-help.test.cjs` og `profile-consumption.test.cjs`.
 - Native prøve: `npm run test:desktop` i `desktop` gennemfører hele appforløbet og kontrollerer, at profilen udfyldes i onboarding, ændres under Indstillinger og genindlæses efter genstart.
