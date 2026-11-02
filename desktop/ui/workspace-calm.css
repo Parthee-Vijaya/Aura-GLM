@@ -187,6 +187,8 @@ body.workspace-calm[data-workspace-theme="light"] {
 .workspace-calm .chat-choice-icon { font-size: 20px; color: var(--aura-accent); flex-shrink: 0; width: 28px; text-align: center; }
 .workspace-calm .chat-choice-card strong { display: block; font-size: 14px; margin-bottom: 4px; color: var(--ink); }
 .workspace-calm .chat-choice-card small { font-size: 12px; line-height: 1.5; color: var(--muted); }
+/* Profilens standard-arbejdsmåde mærkes Anbefalet — samme pille som funktionsvalget. */
+.workspace-calm .chat-choice-card .recommended { display: inline-block; margin: 0 0 4px; padding: 2px 9px; border-radius: 999px; background: var(--aura-accent-faint); color: var(--aura-accent); font-size: 11px; font-weight: 650; letter-spacing: .02em; }
 
 /* Det lette "Tilføj forbindelse"-flow i AI-forbindelsesdialogen (profilplanens
    femte skive). Gitteret genbruger opsættelsens .provider-cards-markup, og

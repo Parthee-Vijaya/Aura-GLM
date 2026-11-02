@@ -161,6 +161,12 @@ function syncOnboardingVisuals() {
   window.OnboardingB.render($('#idea-visual'), { kind: startup?.kind || '', phase: 'idea', connectionName: startup?.name || '', saved: Boolean(startup), checked: Boolean(startupCheck?.status === 'ok' && startupCheck.count), error: startupCheck?.status === 'error' });
 }
 
+// Profilen er eneste kilde for appens standarder: arbejdsmåden i helt nye
+// samtaler, standard-AI'et i nye projekter og panelets starttilstand.
+// profileState hentes ved start efter migrationen og genoptages efter hver
+// profilgemning; preferredConnection foder fra profilen, og den gamle
+// localStorage-nøgle læses kun én gang som migreringskilde.
+let profileState = null;
 let preferredConnection = '', autoConnect = false;
 try { preferredConnection = localStorage.getItem('harness.preferredConnection') || ''; } catch {}
 function setupControls() {
@@ -224,7 +230,9 @@ function selectProfileIcon(icon) {
 }
 function profilePatch() {
   const theme = [...document.querySelectorAll('#profile-theme input')].find(input => input.checked)?.value;
-  return { name: $('#profile-name').value.trim(), icon: profileIconChoice, helpLevel: $('#profile-help').value, appearance: { theme: theme === 'light' || theme === 'dark' ? theme : 'system', panelOpen: true } };
+  // Appearance is one unit: the theme from the step, the panel's start state
+  // from the cached profile — a migrated panelOpen: false is never reset here.
+  return { name: $('#profile-name').value.trim(), icon: profileIconChoice, helpLevel: $('#profile-help').value, appearance: { theme: theme === 'light' || theme === 'dark' ? theme : 'system', panelOpen: profileState?.appearance?.panelOpen !== false } };
 }
 async function prepareProfileStep(profile) {
   renderProfileIconGrid();
@@ -251,10 +259,40 @@ async function saveProfileStep() {
 // settings. The hint copy refreshes from the profile — the single source.
 async function applyProfilePresentation() {
   try {
-    const { profile } = await call('profileGet');
+    // After the startup pass the profile is already read; only without it is
+    // it fetched here, so the presentation never shows a stale theme.
+    const { profile } = profileState ? { profile: profileState } : await call('profileGet');
     document.body.classList.toggle('help-minimal', profile.helpLevel === 'minimal');
     window.calmWorkspace?.setTheme?.(profile.appearance?.theme);
   } catch { /* the profile is optional at startup */ }
+}
+// The profile is adopted: the cache, the standard AI and the chat-choice
+// recommendation follow along every time the profile is read or saved.
+function adoptProfile(profile) {
+  profileState = profile || null;
+  preferredConnection = profile?.standardAI?.connectionID || '';
+  applyChatChoiceRecommendation();
+}
+// The startup one-shot migration: the three retired localStorage keys are sent
+// to profile:migrate and deleted only after the confirmed save — otherwise
+// they wait for the next start. The main process is idempotent through the
+// migrated marker, so a repeated call changes nothing.
+async function migrateLegacyProfile() {
+  const legacyKeys = [['harness.preferredConnection', 'preferredConnection'], ['harness-workspace-theme-v1', 'workspaceTheme'], ['aura-surface-open', 'surfaceOpen']];
+  const legacy = {};
+  for (const [key, field] of legacyKeys) { try { const value = localStorage.getItem(key); if (value !== null) legacy[field] = value; } catch { /* without local storage there is nothing to migrate */ } }
+  let migrated = false;
+  try { await call('profileMigrate', legacy); migrated = true; } catch { /* the keys wait for the next start */ }
+  if (migrated) for (const [key] of legacyKeys) { try { localStorage.removeItem(key); } catch {} }
+}
+// The startup profile pass in one order: migration, read, the aura:profile
+// event for the consumers, and then the presentation (help level and theme),
+// so the profile's theme always wins over a previous session's hint.
+async function startupProfile() {
+  await migrateLegacyProfile();
+  try { adoptProfile((await call('profileGet')).profile); } catch { /* the profile is optional at startup */ }
+  window.dispatchEvent(new CustomEvent('aura:profile', { detail: profileState || {} }));
+  await applyProfilePresentation();
 }
 $('#profile-continue').onclick = () => action(async () => { await saveProfileStep(); profileStepDone = true; setupPage('choice'); });
 // Udbyderne vises på lige vilkår. Et valg åbner kun den valgte forbindelses opsætning.
@@ -338,7 +376,7 @@ async function showSetup(reason = '', fromIntroduction = false) {
   // a first guided introduction always has one, and a filled profile is never asked
   // again — repeat setup goes straight to the connection choice.
   let profile = null, readProfile = false;
-  if (fromIntroduction) { try { profile = (await call('profileGet')).profile; readProfile = true; } catch { /* without a readable profile the setup starts at the connection choice */ } }
+  if (fromIntroduction) { try { profile = (await call('profileGet')).profile; readProfile = true; adoptProfile(profile); } catch { /* without a readable profile the setup starts at the connection choice */ } }
   setupActive = true; $('#setup').hidden = false; $('#workspace').hidden = true; $('#onboarding').hidden = true;
   $('#view-title').textContent = 'Opsætning'; $('#setup-reason').textContent = reason; $('#setup-reason').hidden = !reason;
   renderSetup(); profileStepShown = readProfile && !profile?.name && !profile?.icon; profileStepDone = false;
@@ -360,7 +398,6 @@ async function leaveSetup(useAI) {
   if (choosingFeatures) useAI = pendingAI;
   else {
     if (useAI && (!id || verifiedConnection !== id)) return;
-    if (useAI) { preferredConnection = id; try { localStorage.setItem('harness.preferredConnection', id); } catch {} }
   }
   // Første gang spørger appen, hvad den skal hjælpe med, før projektet oprettes. Vælg senere beholder standarden: alle funktioner.
   if (guidedSetup && !repeatSetup && !choosingFeatures && !state?.features?.chosen) { pendingAI = useAI; setupPage('features'); return; }
@@ -373,9 +410,14 @@ async function leaveSetup(useAI) {
     const patch = profileStepShown ? profilePatch() : {};
     if (useAI) {
       const current = await call('profileGet');
+      adoptProfile(current.profile);
       if (!current.profile?.standardAI?.connectionID) patch.standardAI = { connectionID: id, modelID: current.profile?.standardAI?.modelID || '' };
     }
-    if (Object.keys(patch).length) { await call('profileSave', patch); if (patch.appearance?.theme) window.calmWorkspace?.setTheme?.(patch.appearance.theme); }
+    if (Object.keys(patch).length) {
+      const saved = await call('profileSave', patch);
+      adoptProfile(saved.profile);
+      if (patch.appearance?.theme) window.calmWorkspace?.setTheme?.(patch.appearance.theme);
+    }
   } catch { /* saving the profile never blocks completing the setup */ }
   profileStepShown = false; profileStepDone = false;
   ++setupGeneration; ++localDiscoveryGeneration; clearConnectionReceipt(); moveConnectionForm(false);
@@ -542,6 +584,21 @@ async function displayProject(project, { firstTask = false } = {}) {
   window.versions?.refreshStatus();
   $('#project-name').tabIndex = -1; if (!setupActive) $('#project-name').focus();
 }
+// Chat-choice: profilen anbefaler sin standard-arbejdsmåde med et mærkat, men
+// begge valg forbliver lige tilgængelige. Mærket er tekst i kortet — samme
+// Anbefalet-pille som funktionsvalget — så der ingen skjult aria-tilstand er
+// at holde i synk.
+function applyChatChoiceRecommendation() {
+  const wanted = profileState?.workMode === 'plan' ? '#choice-plan' : '#choice-chat';
+  for (const card of [$('#choice-plan'), $('#choice-chat')]) {
+    if (!card) continue;
+    const recommended = card === $(wanted);
+    card.classList.toggle('is-recommended', recommended);
+    let badge = card.querySelector('.recommended');
+    if (recommended && !badge) { badge = node('span', 'Anbefalet', 'recommended'); card.querySelector('strong')?.after(badge); }
+    if (!recommended && badge) badge.remove();
+  }
+}
 // Den åbne samtales indhold: beskeder, kladde, arbejdsmåde, plan og besked om en afbrudt opgave. fresh betyder, at
 // beskederne skal vises fra den gemte samtale; ellers står de allerede i samtalens visning.
 function fillChat(next, fresh) {
@@ -563,7 +620,9 @@ function fillChat(next, fresh) {
   if (fresh) { v.plan = next.plan || null; v.planCard = Boolean(next.plan) && ['chat', 'plan'].includes(history?.mode); }
   updatePlanOffer(v);
   activePlan = v.plan; $('#plan-card').hidden = !v.planCard || !v.plan;
-  $('#work-mode').value = v.firstProjectTask ? 'free' : 'chat';
+  // Første projektopgave bygger frit; ellers arver en helt ny samtale uden
+  // kladde og historik profilens arbejdsmåde. Kladde og historik vinder.
+  $('#work-mode').value = v.firstProjectTask ? 'free' : (profileState?.workMode === 'plan' ? 'plan' : 'chat');
   $('#prompt').value = '';
   if (history) {
     $('#prompt').value = history.draft || '';
@@ -597,6 +656,8 @@ function fillChat(next, fresh) {
   renderUsage(v.usage || next.usage);
   updateWorkMode(); $('#draft-status').textContent = history?.draft ? 'Kladde hentet fra denne computer' : '';
   updateStartIdea(); applyRunning();
+  // Anbefalingen følger profilen, også når chat-choice netop er blevet vist.
+  applyChatChoiceRecommendation();
   window.planning?.onProject(next);
 }
 // Skift til en anden samtale i samme projekt. En samtale, der arbejder, fortsætter i baggrunden.
@@ -854,7 +915,9 @@ $('#connections-setup').onclick = () => {
 };
 $('#connection-use').onclick = () => action(async () => {
   const id = editingConnection;
-  preferredConnection = id; try { localStorage.setItem('harness.preferredConnection', id); } catch {}
+  // Sessionvalg: forbindelsen aktiveres nu. Profilen er et fast valg og
+  // ændres kun eksplicit i Indstillinger eller gennem Brug som standard.
+  preferredConnection = id;
   clearConnectionReceipt(); $('#connections-dialog').close();
   if (current) {
     const saved = $('#connection-select').value === id ? { modelID: $('#model-select').value, routeID: $('#route-select').value } : {};
@@ -962,6 +1025,7 @@ async function loadModels(saved = {}) {
       $('#model-select').append(option(model.id, `${pentModelNavn(model.id, model.name)}${free ? ' · gratis*' : ''}`));
     }
     if (saved.modelID && models.some(m => m.id === saved.modelID)) { $('#model-select').value = saved.modelID; await loadRoutes(saved.routeID); }
+    else if (profileState?.standardAI?.connectionID === id && profileState.standardAI.modelID && models.some(m => m.id === profileState.standardAI.modelID)) { $('#model-select').value = profileState.standardAI.modelID; await loadRoutes(); }
     else preselectRecommended(id);
     markChosenModel(); updateModelSummary(); refreshEffortLevels(); $('#connection-warning').hidden = true; $('#connection-status').textContent = state.connections.find(c => c.id === id)?.name || 'Ingen model valgt';
   } catch (error) { if (generation === modelRequest) { $('#model-select').replaceChildren(option('', 'Forbindelsen kunne ikke læses')); connectionFailed(error.message); } throw error; }
@@ -1391,8 +1455,7 @@ $('#connections-dialog').addEventListener('close', () => {
   if (addingConnectionStage) { resetAddConnection(); connectionView('list'); }
 });
 setInterval(async () => { if (!current || polling) return; polling = true; const project = current, root = current.workspaceRoot; try { const next = await call('revision'); if (current !== project || current.workspaceRoot !== root || !next) return; if (revision && next !== revision) $('#preview').src = current.previewURL; revision = next; $('#preview-status').textContent = 'Lokal forhåndsvisning'; } catch { $('#preview-status').textContent = 'Kan ikke læse siden – kontrollér projektfilerne'; } finally { polling = false; } }, 1500);
-void applyProfilePresentation();
-action(async () => { syncCreateAvailability(); try { state = await call('connectionState'); renderConnections(); updateProvider(); await loadDesigns(); await loadStartup(); applyFeatures(); renderLocation(await call('projectLocation')); restoreIdeaDraft(); showIdeaExamples(); await refreshRecent(); setupControls(); for (const id of ['#welcome-build', '#welcome-example', '#welcome-open']) $(id).disabled = false; if ($('#welcome-dialog').open) $('#welcome-title').focus(); else { $('#purpose').focus(); await reopenLast(); } } finally { projectLoading = false; applyRunning(); } });
+action(async () => { syncCreateAvailability(); try { state = await call('connectionState'); await startupProfile(); renderConnections(); updateProvider(); await loadDesigns(); await loadStartup(); applyFeatures(); renderLocation(await call('projectLocation')); restoreIdeaDraft(); showIdeaExamples(); await refreshRecent(); setupControls(); for (const id of ['#welcome-build', '#welcome-example', '#welcome-open']) $(id).disabled = false; if ($('#welcome-dialog').open) $('#welcome-title').focus(); else { $('#purpose').focus(); await reopenLast(); } } finally { projectLoading = false; applyRunning(); } });
 // Kom tilbage: det senest åbnede projekt åbnes igen ved start, så man fortsætter, hvor man slap.
 // Et projekt, brugeren selv har lukket med Nyt projekt, åbnes ikke igen.
 const lastProjectKey = 'harness.lastProject.v1';
@@ -1531,6 +1594,15 @@ $('#start-idea').onclick = () => {
   if (inBrief) action(async () => { await window.planning.addWishes(wishes); message('Dine ønsker står i projektbriefen under Plan.'); });
 };
 $('#model-select').addEventListener('change', updateModelSummary);
+// Modelvælgeren: "Brug som standard" gemmer standardAI som én enhed. Det
+// aktuelle projekts valg rører aldrig profilen af sig selv.
+$('#model-standard').onclick = () => action(async () => {
+  const connectionID = $('#connection-select').value, modelID = $('#model-select').value;
+  if (!connectionID || !modelID) { message('Vælg en forbindelse og en model, før du gør dem til din standard.', true); return; }
+  const saved = await call('profileSave', { standardAI: { connectionID, modelID } });
+  adoptProfile(saved.profile);
+  message(`${$('#model-select').selectedOptions[0]?.textContent || modelID} er nu din standard-AI. Nye projekter starter med den.`);
+});
 
 $('#model-done').onclick = () => { if (!$('#connection-select').value || !$('#model-select').value || (!$('#route-row').hidden && !$('#route-select').value)) { message('Vælg en forbindelse, model og eventuel udbyder først.', true); return; } updateModelSummary(); $('#model-options').open = false; $('#task-dialog').close(); $('#prompt').focus(); };
 
@@ -1557,8 +1629,6 @@ function applyFeatures() {
   for (const id of ['#publish-button', '#setup-hosting', '#startup-hosting-row']) $(id).hidden = !featureOn('deling');
   window.dispatchEvent(new Event('aura:features'));
   for (const id of ['#design-options', '#design-row']) $(id).hidden = !featureOn('design');
-  const remembered = ['AI-forbindelse', featureOn('deling') && 'udgivelsesønske', featureOn('design') && 'designpakke'].filter(Boolean);
-  $('#remember-info').dataset.info = `Husker ${remembered.join(', ')} og teststrategi fra det seneste projekt. Godkendelser og private referencer huskes ikke.`;
   updateStartupSummary();
 }
 // Et valg slår det til, funktionen bygger på, og et fravalg slår det fra, der bygger på den. Hovedprocessen gør det samme.
@@ -1674,20 +1744,26 @@ async function loadStartup() {
   const request = navigationRequest, owner = selectedOwner();
   ++startupLoads; syncCreateAvailability();
   try {
-  const result = await call('preferencesGet', undefined, owner);
-  if (request !== navigationRequest) return;
-  renderStartupConnections();
-  $('#startup-hosting').value = result.values.hosting; $('#startup-connection').value = result.values.connectionID; $('#tests').value = result.values.tests; $('#design-select').value = result.values.designID;
-  $('#startup-warning').textContent = result.warnings.join(' ');
-  if (result.values.designID) {
-    try { const design = await call('applyDesign', result.values.designID, owner); if (request !== navigationRequest) return; setProjectColor(design.color); $('#links').value = design.links.join('\n'); showAssets(design.assets); }
-    catch { if (request !== navigationRequest) return; await clearStartupDesign(); $('#startup-warning').textContent = 'Designpakken kunne ikke indlæses. Vælg en anden, eller fortsæt uden design.'; }
-  }
-  for (const selector of ['#project-options', '#design-options']) $(selector).open = false;
-  updateStartupSummary();
+    // Flere valg præudfyldes fra profilen: projektstandarderne og standard-
+    // AI'ets forbindelse. Projektets egne valg skriver aldrig tilbage.
+    const result = await call('profileGet', undefined, owner);
+    if (request !== navigationRequest) return;
+    const { profile, warnings = [] } = result;
+    renderStartupConnections();
+    const standard = profile.standardAI?.connectionID || '';
+    $('#startup-hosting').value = profile.projectDefaults?.hosting || '';
+    $('#startup-connection').value = standard && (state?.connections || []).some(c => c.id === standard) ? standard : '';
+    $('#tests').value = profile.projectDefaults?.tests || 'senere';
+    $('#design-select').value = profile.projectDefaults?.designID || '';
+    $('#startup-warning').textContent = warnings.join(' ');
+    if (profile.projectDefaults?.designID) {
+      try { const design = await call('applyDesign', profile.projectDefaults.designID, owner); if (request !== navigationRequest) return; setProjectColor(design.color); $('#links').value = design.links.join('\n'); showAssets(design.assets); }
+      catch { if (request !== navigationRequest) return; await clearStartupDesign(); $('#startup-warning').textContent = 'Designpakken kunne ikke indlæses. Vælg en anden, eller fortsæt uden design.'; }
+    }
+    for (const selector of ['#project-options', '#design-options']) $(selector).open = false;
+    updateStartupSummary();
   } finally { --startupLoads; syncCreateAvailability(); }
 }
-$('#forget-startup').onclick = () => action(async () => { await call('preferencesSave', { hosting: '', connectionID: '', designID: '', tests: 'senere' }); $('#startup-warning').textContent = 'De huskede valg er glemt. Valgene her er bevaret.'; });
 for (const selector of ['#startup-hosting', '#startup-connection', '#tests']) $(selector).addEventListener('change', updateStartupSummary);
 $('#model-load').onclick = () => action(() => loadModels(state?.projectSettings.selection?.connectionID === $('#connection-select').value ? state.projectSettings.selection : {}));
 

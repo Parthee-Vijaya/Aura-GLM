@@ -13,22 +13,46 @@
   // ── DSH-stil: arbejdsfladen er et valgfrit højrepanel ──
   // Lukket panel giver en centreret chat (chat-først). Åbnes med knappen eller ⌘1-5.
   // Panelet åbner aldrig af sig selv; AI-hændelser opdaterer kun badges.
-  const surfaceKey = 'aura-surface-open';
-  function surfaceOpen(open, { select } = {}) {
+  // Starttilstanden kommer fra profilen gennem aura:profile; indtil hændelsen
+  // lander, står panelet åbent, som skærmen starter. Skift gemmes i profilen —
+  // appearance er én enhed, så temaet hentes fra den gemte profil ved gemning,
+  // og den gamle localStorage-nøgle er pensioneret.
+  let panelSave = Promise.resolve();
+  async function profileInvoke(method, value) {
+    const response = await window.harness[method](value);
+    if (!response?.ok) throw new Error(response?.error || 'Profilen kunne ikke gemmes.');
+    return response.value;
+  }
+  function savePanelChoice(open) {
+    // Én kø: hurtige skift gemmer i rækkefølge, så den sidste skrivning
+    // matcher det sidste klik.
+    panelSave = panelSave.catch(() => {}).then(async () => {
+      try {
+        const { profile } = await profileInvoke('profileGet');
+        const theme = profile?.appearance?.theme;
+        await profileInvoke('profileSave', { appearance: { theme: theme === 'light' || theme === 'dark' ? theme : 'system', panelOpen: open } });
+      } catch { /* Starttilstanden er præsentation; profilen forbliver kilden. */ }
+    });
+    return panelSave;
+  }
+  function surfaceOpen(open, { select, persist = true } = {}) {
     const grid = document.querySelector('.work-grid');
     if (!grid) return;
     grid.dataset.surface = open ? 'on' : 'off';
     const toggle = document.getElementById('surface-toggle');
     if (toggle) { toggle.setAttribute('aria-pressed', String(open)); toggle.textContent = open ? '◧ Arbejdsflade' : '◨ Arbejdsflade'; }
-    try { localStorage.setItem(surfaceKey, String(open)); } catch { /* Kunne ikke gemme valget. */ }
+    if (persist) void savePanelChoice(open);
     if (open && select) show(select, { focus: true });
   }
   document.getElementById('surface-toggle')?.addEventListener('click', () => {
     const grid = document.querySelector('.work-grid');
     surfaceOpen(grid?.dataset.surface !== 'on');
   });
-  // Genopret brugerens valg ved start (panel åbent som standard).
-  try { if (localStorage.getItem(surfaceKey) === 'false') surfaceOpen(false); else surfaceOpen(true); } catch { surfaceOpen(true); }
+  // Profilen bestemmer starttilstanden; den skrives ikke tilbage, og
+  // arbejdsfladen står åben som udgangspunkt, indtil profilen er landet.
+  window.addEventListener('aura:profile', event => {
+    surfaceOpen(event.detail?.appearance?.panelOpen !== false, { persist: false });
+  });
 
   function show(name, { focus = false } = {}) {
     if (!tabs.includes(name)) return;

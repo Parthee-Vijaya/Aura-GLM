@@ -509,7 +509,6 @@ input[type=checkbox][role=switch]:disabled { cursor: not-allowed; opacity: .5; }
 .setting-row:first-child { border-top: 0; }
 .setting-row .label-row { margin: 0; }
 .setting-row[hidden] + .setting-row { border-top: 0; }
-.remember-line { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
 @media (max-width: 560px) { .setting-row { grid-template-columns: 1fr; gap: 6px; } }
 h2 .info, h3 .info { vertical-align: middle; }
 .features-group { margin: 18px 0 0; font-size: 13px; }

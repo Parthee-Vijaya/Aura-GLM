@@ -254,6 +254,7 @@ test('app.js: en profilgemning med tema opdaterer hintet gennem calmWorkspace', 
   const context = {
     document,
     $: selector => registry.get(selector.replace(/^#/, '')),
+    profileState: null,
     profileIconChoice: 'bird',
     call: async (method, value) => {
       if (method === 'profileGet') return { profile: { helpLevel: 'fuld', appearance: { theme: 'dark' } }, warnings: [] };

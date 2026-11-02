@@ -143,6 +143,7 @@ function runSetup({ profile = blank(), suggestion = 'Parthee', repeat = null } =
     current: null, projectLoading: false, setupActive: false, setupStep: 'choice', guidedSetup: false,
     repeatSetup: repeat, pendingAI: false, verifiedConnection: '', setupGeneration: 0, localDiscoveryGeneration: 0,
     connectionChecks: { get: () => undefined }, acceptedFingerprint: null, pendingSend: null, connectionReceipt: null,
+    applyChatChoiceRecommendation: () => {},
     localStorage: { getItem: key => store[key] ?? null, setItem: (key, value) => { store[key] = String(value); } },
     call: async (method, value) => { if (!harness[method]) throw new Error(`Uventet kald: ${method}`); return harness[method](value); },
     action: async fn => fn(),
