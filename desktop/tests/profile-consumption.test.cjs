@@ -304,6 +304,17 @@ test('Indstillinger gemmer profilen: aura:profile-saved opdaterer cachen, og den
   assert.ok(f.dom.registry.get('choice-plan').classList.contains('is-recommended'), 'anbefalingen følger også med');
 });
 
+// The View menu's zoom steps persist through the main process alone: the
+// saved profile is announced on the harness event, and app.js bridges it to
+// the shared aura:profile-saved event — the same one every renderer-side save
+// uses — so the settings cache, the sidebar chip and the startup sync follow
+// a menu zoom without a restart.
+test('menu-zoom: main annoncerer sin profilgemning, og app.js bygger bro til aura:profile-saved', () => {
+  assert.ok(mainSource.includes("sendEvent({ type: 'profile.saved', profile: saved.profile });"), 'main sender den gemte profil til rendereren efter et menu-trin');
+  assert.match(app, /window\.harness\?\.onEvent\?\.\(event => \{ if \(event\?\.type === 'profile\.saved' && event\.profile\) announceProfileSaved\(event\.profile\); \}\)/, 'app.js bygger bro fra harness-hændelsen til den delte gemningshændelse');
+  assert.match(settingsSource, /addEventListener\?\.\('aura:profile-saved', event => \{ if \(event\?\.detail && event\.detail !== profile\) fill\(event\.detail\); \}\)/, 'Indstillinger følger gemninger uden for dialogen');
+});
+
 // ---------- Armatur: profilgemninger synkroniserer den viste projektopstart ----------
 function makeSyncDom() {
   const body = makeBody();

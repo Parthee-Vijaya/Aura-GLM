@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const { FONT_SIZE } = require('../core/profile.cjs');
+const { FONT_SIZE, clampFontSize } = require('../core/profile.cjs');
 
 // 4K-skalering: the profile's font size (10-16 px, 13 neutral) is applied by
 // the main process as Chromium's page zoom — never a CSS zoom on the app root
@@ -37,7 +37,7 @@ const nearly = (a, b, epsilon = 1e-9) => Math.abs(a - b) < epsilon;
 test('main.cjs: applyProfileFontSize klamrer værdien og sætter zoomfaktoren', () => {
   // let bindings stay inside the script scope, so the test reads the module
   // value through a var — the source line itself is untouched by the swap.
-  const source = mainSlice('let profileFontSize', 'async function stepFontSize').replace('let profileFontSize', 'var profileFontSize');
+  const source = mainSlice('let profileFontSize', 'function stepFontSize').replace('let profileFontSize', 'var profileFontSize');
   const clampFontSize = require('../core/profile.cjs').clampFontSize;
   const scenario = window => {
     const zoom = [];
@@ -175,33 +175,41 @@ test('main.cjs: Vis-menuens zoomgange går gennem profilen — rollerne er væk'
 });
 
 // stepFontSize: the menu's steps. Every step persists through the profile and
-// applies the saved size; the bounds are honest no-ops, and a failing or busy
-// save leaves the zoom as it was.
+// applies the saved size; the bounds are honest no-ops, a failing or busy save
+// leaves the zoom as it was — and the step is announced to the renderer like
+// every other profile save, so the settings UI never caches a stale size.
 test('main.cjs: stepFontSize skriver trinnet gennem profilen og stopper ærligt ved grænserne', async () => {
-  const source = mainSlice('async function stepFontSize', "handle('profile:get'");
+  const source = mainSlice('let stepFontSizeQueue', "handle('profile:get'");
   const plain = value => JSON.parse(JSON.stringify(value));
   const run = ({ start, fail = false }) => {
-    const saves = [], zooms = [];
+    const saves = [], zooms = [], sent = [];
+    let state = start;
     const context = {
-      FONT_SIZE,
-      profileFontSize: start,
+      FONT_SIZE, clampFontSize,
       exclusive: fn => fn(),
-      profileStore: () => ({ save: async input => { if (fail) throw new Error('allerede i gang'); saves.push(input); return { profile: { appearance: { fontSize: input.appearance.fontSize } } }; } }),
-      applyProfileFontSize: size => { context.profileFontSize = size; zooms.push(size); }
+      profileStore: () => ({
+        get: async () => ({ profile: { appearance: { fontSize: state } } }),
+        save: async input => { if (fail) throw new Error('allerede i gang'); state = input.appearance.fontSize; saves.push(input); return { profile: { appearance: { fontSize: state } } }; }
+      }),
+      applyProfileFontSize: size => zooms.push(size),
+      sendEvent: event => sent.push(event)
     };
     vm.runInNewContext(source, context);
-    return { context, saves, zooms };
+    return { context, saves, zooms, sent };
   };
   const up = run({ start: 13 });
   await up.context.stepFontSize(1);
   assert.deepEqual(plain(up.saves), [{ appearance: { fontSize: 14 } }], 'et trin op gemmes gennem profilen');
   assert.deepEqual(up.zooms, [14], 'den gemte størrelse anvendes straks');
+  assert.deepEqual(up.sent.map(event => event.type), ['profile.saved'], 'menu-trinet annonceres til rendereren som en gemt profil');
+  assert.deepEqual(plain(up.sent[0].profile.appearance), { fontSize: 14 }, 'annoncen bærer den gemte profil');
   await up.context.stepFontSize(-1);
   assert.deepEqual(plain(up.saves[1]), { appearance: { fontSize: 13 } }, 'et trin ned går tilbage til 13');
   assert.deepEqual(up.zooms, [14, 13]);
   const top = run({ start: FONT_SIZE.max });
   await top.context.stepFontSize(1);
   assert.deepEqual(plain(top.saves), [], 'øvre grænse 16 er en stille no-op');
+  assert.deepEqual(top.sent, [], 'ingen gemning, ingen annonce');
   const bottom = run({ start: FONT_SIZE.min });
   await bottom.context.stepFontSize(-1);
   assert.deepEqual(plain(bottom.saves), [], 'nedre grænse 10 er en stille no-op');
@@ -211,7 +219,33 @@ test('main.cjs: stepFontSize skriver trinnet gennem profilen og stopper ærligt 
   assert.deepEqual(reset.zooms, [13], 'zoomen følger tilbage til 100%');
   const failed = run({ start: 13, fail: true });
   await failed.context.stepFontSize(1);
-  assert.equal(failed.context.profileFontSize, 13, 'en afvist gemning lader zoomen stå — skærmen og profilen er aldrig uenige');
+  assert.deepEqual(failed.zooms, [], 'en afvist gemning lader zoomen stå — skærmen og profilen er aldrig uenige');
+  assert.deepEqual(failed.sent, [], 'en afvist gemning annonceres ikke');
+});
+
+// Two quick '+' steps fired before the first save lands: the menu's own queue
+// waits out the first step, and the second computes its target inside the
+// serialized store operation — 14 then 15, never [14, 14].
+test('main.cjs: to hurtige menu-trin beregnes i den serialiserede operation — 14 derefter 15', async () => {
+  const source = mainSlice('let stepFontSizeQueue', "handle('profile:get'");
+  const plain = value => JSON.parse(JSON.stringify(value));
+  const saves = [], zooms = [], sent = [];
+  let state = 13;
+  const context = {
+    FONT_SIZE, clampFontSize,
+    exclusive: fn => fn(),
+    profileStore: () => ({
+      get: async () => { await new Promise(resolve => setTimeout(resolve, 5)); return { profile: { appearance: { fontSize: state } } }; },
+      save: async input => { state = input.appearance.fontSize; saves.push(input); return { profile: { appearance: { fontSize: state } } }; }
+    }),
+    applyProfileFontSize: size => zooms.push(size),
+    sendEvent: event => sent.push(event)
+  };
+  vm.runInNewContext(source, context);
+  await Promise.all([context.stepFontSize(1), context.stepFontSize(1)]);
+  assert.deepEqual(plain(saves).map(step => step.appearance.fontSize), [14, 15], 'det andet trin læser det første trins skrivning — [14, 14] er umuligt');
+  assert.deepEqual(zooms, [14, 15], 'begge trin anvendes efter tur');
+  assert.equal(sent.length, 2, 'hvert trin annonceres til rendereren');
 });
 
 // viewport.js: the fit calculation is zoom-safe arithmetic. Chromium's page
@@ -304,7 +338,8 @@ test('settings.js: font-styringen spejler core/profile.cjs FONT_SIZE-kontrakten'
   const mirror = /const FONT = Object\.freeze\(\{ min: (\d+), max: (\d+), base: (\d+) \}\);/.exec(settingsSource);
   assert.ok(mirror, 'FONT-konstanten findes i settings.js');
   assert.deepEqual({ min: Number(mirror[1]), max: Number(mirror[2]), base: Number(mirror[3]) }, { ...FONT_SIZE }, 'trinnet og kernen deler samme række');
-  assert.ok(settingsSource.includes(`saveSection({ appearance: { fontSize: next } })`), 'trinnet gemmer kun sit eget felt gennem den delte kø');
+  assert.ok(settingsSource.includes(`saveProfile({ appearance: { fontSize: next } })`), 'trinnet gemmer kun sit eget felt — beregnet i den delte kø, aldrig fra cachen');
+  assert.ok(settingsSource.includes('const fresh = await invoke(\'profileGet\');'), 'trinnet læser det friske svar fra butikken inde i den serialiserede opgave');
   assert.ok(settingsSource.includes('Skriftstørrelse'), 'feltet har sit danske navn');
   assert.ok(settingsSource.includes('Skalerer hele appen'), 'beskrivelsen er ærlig: hele appen skaleres');
 });

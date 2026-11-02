@@ -427,12 +427,34 @@ function applyProfileFontSize(fontSize) {
 // Chromium's unmanaged zoom level: every step persists like a settings change,
 // so the zoom survives restarts and never drifts from the saved profile. A
 // busy or failing save leaves the zoom untouched — the step is UI, not data.
-async function stepFontSize(delta) {
-  const target = delta === 0 ? FONT_SIZE.base : Math.min(FONT_SIZE.max, Math.max(FONT_SIZE.min, profileFontSize + delta));
-  if (target === profileFontSize) return;
+// The menu's steps run one at a time through their own small queue: two quick
+// clicks wait for each other instead of colliding with exclusive()'s busy
+// rejection, and each step computes its target inside the serialized store
+// operation — the second '+' reads the first one's write, never a cached
+// pre-step value.
+let stepFontSizeQueue = Promise.resolve();
+function stepFontSize(delta) {
+  const run = stepFontSizeQueue.then(() => performFontSizeStep(delta));
+  stepFontSizeQueue = run.catch(() => {});
+  return run;
+}
+async function performFontSizeStep(delta) {
   try {
-    const result = await exclusive(async () => profileStore().save({ appearance: { fontSize: target } }));
-    applyProfileFontSize(result.profile.appearance.fontSize);
+    let saved = null;
+    await exclusive(async () => {
+      const current = clampFontSize((await profileStore().get()).profile.appearance.fontSize);
+      const target = delta === 0 ? FONT_SIZE.base : Math.min(FONT_SIZE.max, Math.max(FONT_SIZE.min, current + delta));
+      if (target === current) return;
+      saved = await profileStore().save({ appearance: { fontSize: target } });
+    });
+    if (!saved) return;
+    applyProfileFontSize(saved.profile.appearance.fontSize);
+    // The renderer's settings UI caches the profile, and a menu step is a
+    // save behind its back: the saved profile is announced on the same
+    // profile-saved event every renderer-side save uses (app.js bridges the
+    // harness event to aura:profile-saved), so the cache, the chip and the
+    // stepper follow the menu's step without a restart.
+    sendEvent({ type: 'profile.saved', profile: saved.profile });
   } catch { /* The saved profile and the zoom stay as they were. */ }
 }
 handle('profile:get', () => profileStore().get());

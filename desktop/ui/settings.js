@@ -122,6 +122,16 @@
       try { document.dispatchEvent(new CustomEvent('aura:profile-saved', { detail: profile, bubbles: true })); } catch { /* a missing event target never blocks a save */ }
     }
 
+    // A profile saved outside this dialog — the View menu's zoom steps in the
+    // main process — arrives on the same event every renderer-side save
+    // announces. The cache and the open controls follow it, so the stepper
+    // never stands on a size the menu has already stepped past. The dialog's
+    // own announcements carry the very profile it just filled in — those are
+    // skipped (same object), so a self-save never renders twice. The window
+    // listener catches app.js's announcements; the document listener this
+    // dialog's own bubbling dispatches.
+    for (const target of [document, root]) target.addEventListener?.('aura:profile-saved', event => { if (event?.detail && event.detail !== profile) fill(event.detail); });
+
     // Theme and help application, shared by open and every save. The hint
     // copy, the body dataset and the button state are written by one writer —
     // workspace-calm.js's setTheme — so this module only hands the choice
@@ -498,11 +508,24 @@
       sizeUp.textContent = '+';
       sizeUp.setAttribute('aria-label', 'Større tekst');
       const sizeStep = delta => {
-        const current = fontClamp(profile?.appearance?.fontSize);
-        const next = Math.min(FONT.max, Math.max(FONT.min, current + delta));
-        if (next === current) return;
-        paintFontSize(next);
-        void saveSection({ appearance: { fontSize: next } });
+        // The step is computed inside the serialized save, from the store's
+        // fresh answer — never from the cached pre-step value: two quick '+'
+        // clicks walk 14 then 15, because the second click reads the first
+        // one's write. The paint follows the computed step at once; a failed
+        // save refills the last known profile, so the stepper never lies.
+        void saveQueue.queued(async () => {
+          try {
+            const fresh = await invoke('profileGet');
+            const current = fontClamp(fresh?.profile?.appearance?.fontSize);
+            const next = Math.min(FONT.max, Math.max(FONT.min, current + delta));
+            if (next === current) return;
+            paintFontSize(next);
+            await saveProfile({ appearance: { fontSize: next } });
+          } catch (error) {
+            announce([error.message], true);
+            if (profile) fill(profile);
+          }
+        });
       };
       sizeDown.addEventListener('click', () => sizeStep(-1));
       sizeUp.addEventListener('click', () => sizeStep(1));

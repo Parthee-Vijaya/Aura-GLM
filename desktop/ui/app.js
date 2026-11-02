@@ -1561,6 +1561,11 @@ setInterval(async () => { if (!current || polling) return; polling = true; const
 // AI'et — følger med uden genstart, og den viste projektopstart synkroniserer
 // de felter, brugeren endnu ikke har ændret for projektet.
 window.addEventListener('aura:profile-saved', event => { if (event?.detail) { adoptProfile(event.detail); syncStartupFromProfile(event.detail); } });
+// A profile save the main process made on its own — the View menu's zoom
+// steps — is announced on the shared profile-saved event like every
+// renderer-side save: the cache, the chip, the settings UI and the startup
+// sync follow the menu's step without a restart.
+window.harness?.onEvent?.(event => { if (event?.type === 'profile.saved' && event.profile) announceProfileSaved(event.profile); });
 // En profilgemning opdaterer den allerede viste projektopstart: urørte felter
 // følger profilen; felter, brugeren har rørt for dette projekt, vinder.
 function syncStartupFromProfile(profile) {

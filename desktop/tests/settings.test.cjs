@@ -468,7 +468,6 @@ test('et trin i skriftstørrelsen gemmer kun font-feltet gennem den delte kø', 
   const settings = makeSettings(dom, harness);
   await openSection(settings, 'appearance');
   dom.content.querySelector('#settings-font-up').click();
-  assert.equal(dom.content.querySelector('#settings-font-size-value').textContent, '14 px', 'visningen følger klikket straks — før svaret lander');
   await flush();
   assert.deepEqual(harness.saves, [{ appearance: { fontSize: 14 } }], 'kun font-feltet sendes — tema og panel flettes main-side (profiltestene) og bevares');
   assert.equal(dom.content.querySelector('#settings-font-size-value').textContent, '14 px', 'den gemte profil bekræfter visningen');
@@ -477,13 +476,44 @@ test('et trin i skriftstørrelsen gemmer kun font-feltet gennem den delte kø', 
   assert.deepEqual(harness.saves[1], { appearance: { fontSize: 13 } }, 'et trin ned går tilbage til det neutrale 13');
 });
 
+// Two quick '+' clicks: the step is computed inside the serialized save from
+// the store's fresh answer, so the clicks walk 14 then 15 — the second never
+// computes from the cached pre-step value.
+test('to hurtige "+"-klik går 14 og derefter 15 — aldrig [14, 14]', async () => {
+  const dom = makeDom();
+  const harness = makeHarness({ profile: { ...blank(), appearance: { theme: 'system', panelOpen: true, fontSize: 13 } } });
+  const settings = makeSettings(dom, harness);
+  await openSection(settings, 'appearance');
+  dom.content.querySelector('#settings-font-up').click();
+  dom.content.querySelector('#settings-font-up').click();
+  await flush();
+  await flush();
+  assert.deepEqual(harness.saves.map(step => step.appearance.fontSize), [14, 15], 'det andet klik læser det første klicks skrivning');
+  assert.equal(dom.content.querySelector('#settings-font-size-value').textContent, '15 px', 'visningen står på det sidste trin');
+});
+
+// A profile saved outside the dialog — fx the View menu's zoom step in the
+// main process — arrives on the shared aura:profile-saved event. The cache
+// and the open controls follow it, so the stepper never stands on a stale
+// size after a menu zoom.
+test('en gemning uden for dialogen (menu-zoom) opdaterer cachen og stepperen', async () => {
+  const dom = makeDom();
+  const harness = makeHarness({ profile: { ...blank(), appearance: { theme: 'system', panelOpen: true, fontSize: 13 } } });
+  const settings = makeSettings(dom, harness);
+  await openSection(settings, 'appearance');
+  const stepped = { ...blank(), appearance: { theme: 'system', panelOpen: true, fontSize: 16 } };
+  dom.document.dispatchEvent({ type: 'aura:profile-saved', detail: stepped });
+  assert.equal(dom.content.querySelector('#settings-font-size-value').textContent, '16 px', 'stepperen følger menuens trin uden genåbning');
+  assert.equal(dom.content.querySelector('#settings-font-up').disabled, true, 'grænsen er ærlig efter den eksterne gemning');
+  assert.equal(harness.saves.length, 0, 'opdateringen skriver intet selv');
+});
+
 test('en fejlslagen skriftstørrelsesgemning ruller visningen tilbage', async () => {
   const dom = makeDom();
   const harness = makeHarness({ profile: { ...blank(), appearance: { fontSize: 13 } }, saveError: 'Datamappen er låst.' });
   const settings = makeSettings(dom, harness);
   await openSection(settings, 'appearance');
   dom.content.querySelector('#settings-font-up').click();
-  assert.equal(dom.content.querySelector('#settings-font-size-value').textContent, '14 px', 'klikket vises straks');
   await flush();
   assert.equal(dom.content.querySelector('#settings-font-size-value').textContent, '13 px', 'den sidste kendte profil ruller visningen tilbage');
   assert.match(dom.content.querySelector('#settings-feedback').textContent, /Datamappen er låst/, 'fejlen annonceres på dansk');
