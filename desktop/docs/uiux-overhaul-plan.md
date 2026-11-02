@@ -58,26 +58,97 @@
 - [ ] Implementér; ANIMEN testes visuelt i Electron (begge temaer, reduced-motion ON/OFF).
 - [ ] Commit: "Add one disclosure component for all fold-out surfaces".
 
-### Task 5 ★: Idé-valg som chips + resume-banner (preview før commit)
-**Files:** Modify `ui/index.html` (:119-125 #idea-options), `ui/idea-refinement.js`, `ui/composer-help.js` (hvis hint-flytning), `ui/app.js` (resume-notice-rendering :725, :1186-1208 datafolds), `ui/components.css`, `ui/workspace-calm.css`; test: `tests/*idea*`/`tests/*resume*` + verify-planning/verify-chat.
-**Interfaces:** #idea-options → chip/tags-picker (radio-chips for platform/data/UI/design; valgt værdi SYNLIBAR på chippen; "Tekniske ønsker" som ÉN flad sektion, ingen nested details); resume-notice → inline-banner (kun forklaringen folder; delingsadvarslen altid synlig — 2e79ed0-reglen). Samme gemte værdier og brief-output (idea:*-payload uændret).
-- [ ] Preview til Parthee (screenshots begge temaer) → accept → commit.
+## Amendment (2.11.2026 · efter Parthees beslutninger + Codex-review)
 
-### Task 6 ★: Moderne composer + ét popover-system (preview før commit)
-**Files:** Modify `ui/index.html` (composer), `ui/app.js` (model-picker :2566, mode-menu), `ui/conversation-mode.js`, `ui/feedback-layout.js`/`.css`, `ui/workspace-calm.css`, `ui/styles.css` (:1314); test: composer/tests + verify-chat.
-**Interfaces:** Prompt-input-inspireret composer (Fisher prompt-input/prompt-input-2: aktivér-og-udvid-antydning, chips, runde handlinger — bevarendes: alle eksisterende handlinger, genveje, materialer, arbejdsmåde, YOLO-adfærd) + ÉT popover-system ([popover] + ankeret positionering; model-picker er allerede JS-ankret — foren mode-menu + info-pop til samme mekanik; hardcodede koordinater ud). Ingen overlap ved divider, zoom, lange modelnavne.
-- [ ] Preview → accept → commit. THIRD_PARTY_NOTICES: prompt-input-kilde + licens.
+Parthees beslutninger: **B1 ja** (nyt onboarding-trin D6) · **B2 Ny samtale** (stor knap; #new følg=
+er Nyt projekt til ⊞ med uændret handler; Ny samtale får EGEN handler) · **B3 topbjælke** (klikbar
+arbejdsmåde-chip + chip over composeren i tom tilstand) · **B4: D7 udskydes** (Forløb-fane senere)
+· **B5: Nøgletrin (standard)** som default · **B6 ja: D2+D3 erstatter T6; D4 erstatter T7** ·
+**Hjælp: '? '-knappen forbliver ved composeren** — de tre hjælpeniveaus betydninger er uændrede;
+kun genvejslinjens tekst flyttes til tooltip.
 
-### Task 7 ★: Turoversigt + værktøjsresultater (preview før commit)
-**Files:** Modify `ui/live-work.js` (:17-27 work-progress-card), `ui/workspace.js` (:461-476 activity-output), `ui/styles.css` (:1238-1266, :659-660), `ui/components.css`; test: conversation-progress-verify + existing fold-behavior tests.
-**Interfaces:** task-rows/tool-result-inspireret: summary-række med status-markering (✓/!/·-glyffer → SVG), tidsstempler, roterende chevron; åben = trinliste med token-afstande; NESTET teknisk fold beholdes som .disclosure. Brugerens foldvalg (auto-kollaps + manuel override), fejlstatus og streamingforløb bevares 100%.
-- [ ] Preview → accept → commit. Notices: task-rows/tool-result-kilder.
+Kilder: deepseek-design-plan.md (Claude-node) + codex-deepseek-design-review.md (9 Required,
+ALLE bindende herunder).
 
-### Task 8 ★: Kontroller + ikoner + tooltips (preview før commit)
-**Files:** Create `ui/icons.js` (SVG-sæt); Modify `ui/settings.js`/`ui/settings.css`, `ui/styles.css` (:39 checkbox, :511-515 ⓘ, :493-497 pill-switch udvides), `ui/index.html`, relevante renderere (≡ ◇ ⌄ ▸ ✦-glyffer); test: settings/app-name + nye ikon-tests.
-**Interfaces:** apple-switch-inspireret switch på ALLE checkboxes (spring-motion via CSS, tastatur=eksisterende native, drag valgfrit); SVG-ikonsæt (currentColor, 24×24) erstatter unicode-glyffer på chat-choice/navigation/menu/progress; tooltip-komponent (hover + klik + fokus, WCAG-AA) erstatter ⓘ-pop. Native selects bevares i denne skive (listbox-erstatning er egen fremtidig skive — undgå scope creep).
-- [ ] Preview → accept → commit. Notices: apple-switch-kilde.
+### Bindende krav fra Codex-reviewet (gælder alle D-skiver)
 
-## Efter Task 8
+- **R1 Tilladelses-pillen:** pillen er et RESUME, ikke reglen. Vis "Projektets tilladelser"
+  under Byg når et samlet udsagn ikke findes; "Spørg før ændringer" KUN når det faktisk gælder
+  (approvals-policy.cjs:206-234: taskRules, autoProjectFiles, sandbox, gemte regler). "Slå fra"
+  forbliver ét klik — også når Byg-menu er skjult. FIRE interne værdier (chat/plan/free/build);
+  "Byg den valgte plan" må aldrig blive til fri bygning ved flytning.
+- **R2 Timing:** step-register med ÉN monoton observationsklokke; `session.step.streamed` er
+  streamens slutpunkt (verificeret prøve); native `started` må ikke trækkes fra performance.now;
+  gamle ture/dobbelte step-slut/andre sessioner afvises (engine.cjs ejerskabskontrol). Etiket:
+  **"Observeret svarhastighed"** — aldrig "provider-dekodning". Recovery-snapshot får ingen nye
+  tider. Hvis instrumenteringen ikke er klar, bygges D5 uden hastighedstal ("–").
+- **R3 Målekontrakt:** hvert step bindes til samtale/tur/engine/modelbinding + stabilt step-id;
+  hver værdi har kendt/ukendt/øvre-grænse + kilde + enhed; samme stepmængde i tæller og nævner;
+  umålte steps udelades af delaggregatet; modeltid/værktøjstid kræver kvalificeret kilde;
+  runSteps er pr.-opgave — samlede tal mærkes **"Målt siden denne appstart"**; Privacy Gate-
+  runtime = ukendt hastighed; indholdsfri DTO til rendereren (ikke diagnostics-buffer).
+- **R4 Kontrast-tokens:** særskilte tokens til læsbar sekundær/tertiær, dekorativ caption,
+  accent-tekst og ikon-på-accent. Tertiær på hvid (3,7:1) og caption (2,1:1) må IKKE bære
+  nødvendig tekst; accent-tekst 12-14px = mørkere variant (fed skrift hjælper IKKE); hvid pil på
+  mørk accent (2,3:1) = mørkt ikon eller mørkere knapflade; alpha/blur-menuer måles over
+  sammensat baggrund + uigennemsigtig fallback.
+- **R5 Kortlægningstabel FØR flytning:** gammel kontrol/id → ny placering → uændret handler →
+  nyt bindingspunkt → regressionsprøve. #new beholder newProject-handler; Ny samtale = ny
+  handler (afsenderklade + uden-projekt-flow specificeret). (+)-menuen har ALLE FIRE stier
+  (Tekst og kode / Referencemappe / PDF-dokument / Billede). Pladsholderen lover IKKE "/" og "@"
+  (findes ikke i dag). Alle FEM samtalestatuser (arbejder/venter/klar-til-at-flette/nyt
+  resultat/afbrudt) bevares. Sidebar-bredde = NY NØGLE i layout-objektet (overskriver aldrig).
+- **R6 Ingen private tænkeuddrag:** "Forbereder svaret" med fase/varighed fra stream-progress.
+  "Alle detaljer" = alle eksisterende tilladte arbejdsdetaljer. Intet resoneret indhold vises.
+- **R7 Hjælpeniveauer uændrede; transcriptView:** gemmes via den fælles profilkø + aura:
+  profile-saved; validering i læsning/patch/blank/migration (HELP_VALUES-mønster); Spring over
+  bevarer gemt værdi (kun ny bruger → standard); brugerens manuelle foldvalg vinder over niveau;
+  9-kombinationsscenarie (3 hjælpe × 3 detaljer med afventende godkendelse) i verifikationen.
+- **R9 Kontekst vs. arbejdsgrænse:** "Modelkontekst: input / oplyst vindue" er ÉN måling;
+  komprimeringsadvarsel er et SÆRSKILT "Arbejdsgrænse"-forhold fra motorens faktiske input-
+  grænse (connections.cjs:241-261, 200k-loft + reserve). 80/95%-farver begrunder KUN kapacitet.
 
-Efter-byg-brief til begge rådgivere på HELE deltaet → fix-bølge → merge til main → CI → projekthukommelse. DMG-beta.18-releasen kan herefter overvejes samlet.
+### Byggerækkefølge (Codex R8, bindende)
+
+- **D0 ★ Ikon-sæt** (overtager T8's ikon-del): ui/icons.js, 24×24, currentColor, 1,5px streg;
+  egne tegninger eller MIT/ISC-sæt (Lucide ISC) dokumenteret i THIRD_PARTY_NOTICES.md; DSH-ikoner
+  kopieres ikke 1:1; T4's midlertidige chevron migrerer hertil. Manifest + licensnote + tests.
+- **D1 ★ Sidepanelet** (DSH §3): brandrække, ⊕ Ny samtale (NY handler), Værktøjer/Mere,
+  projekter+samtaler med status (5 tilstande), profil-kontorække nederst → #settings-menu.
+  R5-kortlægningstabel + alle handlerflytninger + responsivitet (280px std., træk 264-420,
+  ny layout-nøgle) i samme skive.
+- **D2+D3 ★ ÉN composer-skive** (erstatter T6, integrerer T5): DSH §4+§5 — kort (radius 28,
+  soft skygge), (+)-menu ALLE 4 stier, tilladelses-pille (R1), model·indsats-chip, rund Send/
+  Stop (R4-kontrast), '? '-knap beholdes, genvejslinje → tooltip; helt-tilstand (§4): centreret
+  overskrift + projekt-/arbejdsmåde-chips + T5's idé-chips + resume-banner (delingsadvarsel
+  altid synlig); data-phase hero/active/settling; samme --chat-col bredde; ét ankeret popover-
+  system (R5: ingen hardcodede koordinater).
+- **D4a ★ Profilregler:** profile.transcriptView (compact/standard/detailed, standard='standard')
+  via R7-reglerne; Indstillinger › Udseende "Arbejdsdetaljer" (tre radio-kort); body.transcript-*-
+  klasser.
+- **D4b ★ Trinrækker** (erstatter T7, bygger på D4a + T4's .disclosure.step): §6.3 — 24px enlinje-
+  rækker, D0-ikoner, shimmer ved kørsel (reduced-motion: ingen shimmer), grupperække pr. færdig
+  tur, R6-reglen (Forbereder svaret), altid-synlige sikkerhedsflader, brugerens foldvalg/fejlstatus/
+  streaming bevares 100 %. Topbjælke (§6.1: titel+kbrømme+arbejdsmåde-chip B3+handlingerne) og
+  brugerbobler (§6.2) og live-indikator (§6.4) i samme skive.
+- **D5a ★ Målekontrakten (backend):** R2+R3 — step-register, indholdsfri DTO, tests (dubletter,
+  tool-only, reasoning, afbrydelse, retry, recovery, modelskift, to samtidige samtaler, delvist
+  kendte tællere; run-metrics.test.cjs bevares). Kan afkortes: uden hastighedstal hvis ikke klar.
+- **D5b ★ Statuslinjen:** §7 — pills under composeren (ture/trin/tok/s + kontekst + cache),
+  klik-panel (TTFT-snit, tok/s-snit, forbrug, pris), R9-reglerne, ◔-ring (skjult til kendt
+  vindue, warn 80 %/error 95 % på KAPACITET).
+- **D6 ★ Onboarding-trin** (B1=ja): §8 — tre radio-kort efter profiltrinnet, statisk valgkant,
+  Spring over = gemt værdi (R7), radiogroup + piletaster, eksisterende baggrund.
+- **T8-rest ★:** switches (apple-switch-inspireret, udvid styles.css:493), tooltips (hover+klik+
+  fokus), MUST-FIX: .approval-kind/.activity-state warning 2,92:1 + accent-på-hvid 4,19:1 +
+  var(--surface)7e7-typo + klik-mål ≥24px (effort-ticks, preview-status).
+- **D7: UDEN FOR SCOPE** (B4). Montserrat-fravalg + Ny samtale-hierarki = bevidste DESIGN-afvigelser
+  (registreret her).
+
+### Åbne profil-fund (fra Claude-nodens review; skal verificeres + rettes i næste fix-runde)
+
+1. repeat-setup: ny forbindelse bruges ikke som standard (ui/app.js:493-494) — verificér mod
+   fix-bølge-tilstanden og ret hvis reelt.
+2. "Brug"-valg på forbindelse nulstilles af settings-gem (ui/app.js:1566) — verificér og ret.
+3. Avatar-dekompressionsbombe (IHDR-tjek FØR afkodning) + avatar-upload uden exclusive() — kendt
+   ventelistepunkt, løftes til fix-runde.
