@@ -99,18 +99,38 @@
     expanded(false);
     if (restoreFocus) button.focus();
   }
-  button.addEventListener('click', () => { if (openState) close(); else open(); });
+  // The button is the popover's native invoker (popovertarget in index.html):
+  // the browser opens and closes it on clicks and keys, and the invoker is
+  // exempt from light dismiss — a second "?" click closes the popover instead
+  // of pointerdown's light dismiss closing it and the click re-opening it.
+  // The toggle event is where the native path lands: the content, position,
+  // focus and the honest aria state are applied here. open() has already done
+  // the work on the programmatic path (openState guards the double pass — the
+  // browser's toggle lands as a later task).
+  popover.addEventListener('toggle', event => {
+    if (event?.newState === 'open') {
+      if (openState) return;
+      openState = true;
+      expanded(true);
+      render();
+      position();
+      popover.focus();
+    } else { openState = false; expanded(false); }
+  });
   // Escape closes from inside the popover and returns focus to the button.
   popover.addEventListener('keydown', event => {
     if (event.key === 'Escape') { event.preventDefault(); close(); }
   });
-  // Light dismiss (a click outside) closes the native popover on its own;
-  // the toggle event keeps aria-expanded honest about what happened.
-  popover.addEventListener('toggle', event => {
-    if (event?.newState === 'closed') { openState = false; expanded(false); }
-  });
+  // An open popover re-anchors when its ground moves: a window resize and a
+  // profile zoom step both change the button's rectangle and the viewport
+  // (Chromium fires resize for a zoom change as well), so the position is
+  // recomputed while the popover stands open. The profile events are the
+  // belt-and-braces for a zoom step whose resize notification races the
+  // event; recomputing beats closing, because the help stays where it was
+  // asked for.
+  root.addEventListener?.('resize', () => { if (openState) position(); });
   // The startup read and every save from any writer re-check the surface.
-  for (const type of ['aura:profile', 'aura:profile-saved']) root.addEventListener?.(type, () => { refresh(); });
+  for (const type of ['aura:profile', 'aura:profile-saved']) root.addEventListener?.(type, () => { refresh(); if (openState) position(); });
   refresh();
   return Object.freeze({ hints, refresh, open, close });
 });

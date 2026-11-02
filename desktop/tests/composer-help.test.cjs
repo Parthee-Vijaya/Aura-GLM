@@ -165,10 +165,13 @@ test('en flade uden hint skjuler knappen ærligt — hidden, ikke disabled', () 
   assert.equal(empty.button.getAttribute('aria-hidden'), null, 'hidden-attributtet er den ærlige mekanisme — ikke aria-hidden oven på en synlig knap');
 });
 
-test('åbning: klikket viser popoverens tekster, sætter aria-expanded og flytter fokus ind', () => {
+test('åbning: den native invoker viser popoverens tekster, sætter aria-expanded og flytter fokus ind', () => {
   const dom = makeDom();
   const { api } = runModule(dom);
-  dom.button.emit('click');
+  // popovertarget åbner og lukker nativt i browseren; det syntetiske DOM
+  // træder i browserens sted: showPopover plus toggle-hændelsen.
+  dom.popover.showPopover();
+  dom.popover.emit('toggle', { newState: 'open' });
   assert.equal(dom.popover.open, true, 'popoveren er åben');
   assert.equal(dom.button.getAttribute('aria-expanded'), 'true');
   assert.deepEqual(dom.list.children.map(item => item.textContent), [SHORTCUT, RESUME_HINT, IDEA_HINT, TECH_HINT], 'popoverens liste er fladens hint');
@@ -190,15 +193,45 @@ test('Escape lukker popoveren og returnerer fokus til knappen', () => {
   assert.equal(dom.document.activeElement, dom.button, 'fokus er tilbage på "?"-knappen');
 });
 
-test('et nyt klik på knappen lukker popoveren igen', () => {
+test('et nyt klik på knappen lukker popoveren igen — invokeren er fritaget for lysafbrydning', () => {
   const dom = makeDom();
   const { api } = runModule(dom);
-  dom.button.emit('click');
+  // Den anden invoker-klik lukker: browseren skjuler popoveren, og
+  // toggle-hændelsen holder aria ærlig. Der er ingen JavaScript-klikhandler,
+  // der kan genåbne det, lysafbrydningen lige har lukket — det var den gamle
+  // fejl: pointerdown lukkede, click genåbnede.
+  dom.popover.showPopover();
+  dom.popover.emit('toggle', { newState: 'open' });
   assert.equal(dom.popover.open, true);
-  dom.button.emit('click');
+  assert.equal(dom.button.getAttribute('aria-expanded'), 'true');
+  dom.popover.hidePopover();
+  dom.popover.emit('toggle', { newState: 'closed' });
   assert.equal(dom.popover.open, false, 'knappen skifter ærligt');
   assert.equal(dom.button.getAttribute('aria-expanded'), 'false');
-  assert.equal(dom.document.activeElement, dom.button);
+});
+
+test('en åben popover genankrer ved zoom og vinduesstørrelse', () => {
+  const dom = makeDom();
+  const { api, window } = runModule(dom);
+  // Det syntetiske DOM har intet layout: knappens rektangel erstattes af en
+  // flytbar pladsholder, så genberegningen kan iagttages.
+  let left = 400, top = 600;
+  dom.button.getBoundingClientRect = () => ({ left, top });
+  Object.defineProperty(window, 'innerWidth', { value: 1280, configurable: true });
+  dom.popover.offsetHeight = 120;
+  dom.popover.style = {};
+  api.open();
+  assert.equal(dom.popover.style.left, '400px', 'popoveren ankrer ved knappens venstre kant');
+  assert.equal(dom.popover.style.top, '472px', 'popoveren står over knappen');
+  // Et zoomtrin og en vinduesændring flytter knappens rektangel: den åbne
+  // popover følger med i stedet for at svæve ved de gamle koordinater.
+  left = 200; top = 300;
+  Object.defineProperty(window, 'innerWidth', { value: 800, configurable: true });
+  for (const handler of window.listeners['resize']) handler();
+  assert.equal(dom.popover.style.left, '200px', 'resize genberegner positionen fra det nye rektangel');
+  assert.equal(dom.popover.style.top, '172px', 'afstanden over knappen følger også med');
+  for (const handler of window.listeners['aura:profile-saved']) handler({ detail: {} });
+  assert.equal(dom.popover.style.left, '200px', 'profilhændelsen genankorer uden at flytte');
 });
 
 test('lysafbrydning holder aria-expanded ærlig', () => {
@@ -240,7 +273,11 @@ test('index.html: knappen og popoveren står ved skrivefeltet med ærlig aria', 
   assert.match(index, /id="composer-help"/);
   assert.match(index, /aria-label="Vis hjælp"/, 'knappens navn er det danske "Vis hjælp"');
   assert.match(index, /id="composer-help"[^>]*aria-expanded="false"/, 'aria-expanded starter lukket');
-  assert.match(index, /aria-controls="composer-help-popover"/);
+  assert.match(index, /id="composer-help"[^>]*aria-controls="composer-help-popover"/);
+  // Knappen er popoverens native invoker: browseren håndterer åbning og
+  // lukning, og invokeren er fritaget for lysafbrydning — derfor kan et nyt
+  // "?"-klik lukke popoveren i stedet for straks at genåbne den.
+  assert.match(index, /id="composer-help"[^>]*popovertarget="composer-help-popover"/, 'knappen toggler popoveren nativt');
   assert.match(index, /id="composer-help-popover"[^>]*popover/, 'popoveren er en ægte popover');
   assert.match(index, /id="composer-help-popover"[^>]*tabindex="-1"/, 'fokus kan flyttes ind i popoveren');
   assert.match(index, /id="composer-help-list"/);
