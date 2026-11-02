@@ -15,6 +15,7 @@ const workspaceSource = fs.readFileSync(path.join(ui, 'workspace.js'), 'utf8');
 const calmSource = fs.readFileSync(path.join(ui, 'workspace-calm.js'), 'utf8');
 const indexSource = fs.readFileSync(path.join(ui, 'index.html'), 'utf8');
 const settingsSource = fs.readFileSync(path.join(ui, 'settings.js'), 'utf8');
+const mainSource = fs.readFileSync(path.join(__dirname, '..', 'main.cjs'), 'utf8');
 
 function sliceOf(source, from, to) {
   const start = source.indexOf(from);
@@ -515,6 +516,40 @@ test('arbejdsfladen: hurtige skift gemmer i rækkefølge gennem den delte kø, s
   await flush();
   assert.deepEqual(f.saves, [{ appearance: { panelOpen: true } }, { appearance: { panelOpen: false } }], 'den sidste skrivning matcher det sidste klik — ingen gemning afvises');
   assert.deepEqual(f.announced.map(profile => profile.appearance.panelOpen), [true, false], 'hver gemning annonceres');
+});
+
+// ---------- Projektoprettelse: eksplicitte tomme valg overlever (main.cjs) ----------
+test('project:create: eksplicit "Beslut senere" og "Intet design" gemmes — kun manglende felter falder tilbage på profilen', async () => {
+  let create = null;
+  const savedProjects = [];
+  const context = {
+    handle: (channel, fn) => { if (channel === 'project:create') create = fn; },
+    exclusive: fn => fn(),
+    profileStore: () => ({ get: async () => ({ profile: { projectDefaults: { hosting: 'vercel', designID: 'design-1', tests: 'automatiske' } } }) }),
+    Preferences: class { constructor() {} async available(input) { return { values: { hosting: input.hosting, connectionID: input.connectionID ?? '', designID: input.designID, tests: input.tests }, warnings: [] }; } },
+    workbench: {
+      store: { saveProject: async (root, value) => { savedProjects.push([root, value]); } },
+      features: { get: async () => ({ effective: { design: true, deling: true, versioner: false } }) },
+      privacy: { prepareIdeaProjectInheritance: async () => null },
+    },
+    chosenParent: '/tmp/aura-projekter',
+    defaultProjectParent: () => '/tmp/aura-projekter',
+    fs: { mkdir: async () => {} },
+    path: require('node:path'),
+    createProject: async parent => ({ root: path.join(parent, 'projekt') }),
+    openProject: async root => ({ root, warnings: [] }),
+    activate: async opened => ({ opened: true }),
+    profileRoot: '/tmp/aura-profiler', assets: [],
+  };
+  vm.runInNewContext(sliceOf(mainSource, "handle('project:create'", "handle('project:open'"), context);
+  assert.ok(create, 'project:create-handleren er registreret');
+  // Brugeren vælger eksplicit "Beslut senere" og "Intet design": de tomme
+  // strenge er valg og skal gemmes som projektets egne opstartsvalg.
+  await create({ name: 'Projekt', purpose: 'Byg noget.', color: null, links: [], tests: 'senere', startup: { hosting: '', connectionID: '', designID: '', tests: 'senere' } });
+  assert.deepEqual(plain(savedProjects[0][1].startup), { hosting: '', connectionID: '', designID: '', tests: 'senere' }, 'de eksplicitte tomme valg overlever — profilens standarder blander sig ikke');
+  // Uden startup-valg falder hvert felt tilbage på profilens standarder.
+  await create({ name: 'Projekt to', purpose: 'Byg noget andet.', color: null, links: [] });
+  assert.deepEqual(plain(savedProjects[1][1].startup), { hosting: 'vercel', connectionID: '', designID: 'design-1', tests: 'automatiske' }, 'manglende felter arver profilens standarder');
 });
 
 // ---------- Pensionering: kilder og copy ----------

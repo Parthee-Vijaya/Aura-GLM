@@ -28,8 +28,15 @@ class Preferences {
     // require stays inside the method so the modules never load each other.
     const { blank } = require('./profile.cjs');
     await this.store.update(state => {
-      if (!state.profile || typeof state.profile !== 'object' || Array.isArray(state.profile)) state.profile = blank();
-      state.profile.projectDefaults = result.values;
+      if (!state.profile || typeof state.profile !== 'object' || Array.isArray(state.profile)) {
+        // The user has made an explicit standards choice: a profile created by
+        // it counts as migrated, so a later one-shot migration cannot
+        // resurrect the retired startup defaults over the just-saved choice.
+        state.profile = { ...blank(), migrated: 1 };
+      }
+      // Only the profile's own three fields are written: connectionID belongs
+      // to standardAI and never rides along in projectDefaults on disk.
+      state.profile.projectDefaults = { hosting: result.values.hosting, designID: result.values.designID, tests: result.values.tests };
     });
     return result;
   }
