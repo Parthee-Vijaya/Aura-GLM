@@ -59,6 +59,15 @@ nav button[aria-current=page] span { color: var(--accent); }
 #intro-button, #tools-button { margin-top: 2px; text-align: left; }
 .sidebar-bottom { padding: 18px 8px 0; font-size: 11px; }
 .sidebar-bottom p { font-size: 11px; color: var(--muted); margin: 8px 0; }
+/* Profil-chip i sidepanelets bund: ikonet eller initialerne og navnet — den
+   mindste ærlige visning af profilen. Klik åbner Indstillinger › Din profil. */
+.profile-chip { display: flex; align-items: center; gap: 6px; width: 100%; margin: 0 0 10px; padding: 5px 8px; border: 1px solid var(--line); border-radius: var(--aura-radius-sm); background: var(--surface); color: var(--ink); font-size: 12px; font-weight: 500; text-align: left; cursor: pointer; transition: border-color var(--motion-fast), color var(--motion-fast); }
+.profile-chip[hidden] { display: none; }
+.profile-chip:hover { border-color: var(--accent); color: var(--accent); }
+.profile-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.profile-chip-mark { display: inline-grid; place-items: center; width: 20px; height: 20px; flex: none; border-radius: 50%; background: var(--tint); color: var(--ink); font-size: 10px; font-weight: 600; letter-spacing: 0.02em; }
+.profile-chip-mark svg { width: 14px; height: 14px; }
+.profile-chip-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .badge { font-size: 11px; font-weight: 450; color: var(--muted); }
 .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #24835b; margin-right: 6px; }
 .app-content { margin-left: var(--sidebar); }
