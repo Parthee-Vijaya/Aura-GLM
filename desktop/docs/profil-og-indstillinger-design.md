@@ -254,3 +254,51 @@ samme commit.
 - Hvor "Glem dem" for projektstandarder lander i Indstillinger.
 - Eventuel tynd wrapper vedr. testventetrin afgøres af testløb i skive 3 (reglen er:
   vagter omskrives til openSettings; wrappers kun hvis uundgåeligt).
+
+## Rev. 3 · Poleringsbølge (2.11.2026 — Parthees gennemgang af den byggede profil)
+
+Godkendt af Parthee: alle tre ikon-valg, "skills ad gangen", begge 4K-løsninger, byg
+før merge. Bygges på samme gren som rev. 1-2 (beta.18 er ikke udgivet endnu).
+
+### Ikon-valg (erstatter rev. 2's 12-glyffer-sæt)
+
+- **Kompakt række** i Din profil (og onboarding-trinnet) i stedet for gitter.
+- Tre valg: **Initialer** (standard, cirkel med to bogstaver), **3 Aura-logo-inspirerede
+  ikoner** (streg-varianter af Aura-mærket i DSH-udtryk), **upload af eget billede**
+  (jpg/png, håndteres af hovedprocessen, skaleres til avatarestørrelse, gemmes som fil
+  i appdata — aldrig base64 i settings.json; **sendes aldrig til AI, prompts, log eller
+  feedback**, samme regel som navn).
+- Profilmodel: `icon` er streng — `''` (initialer), `'aura-1'|'aura-2'|'aura-3'`, eller
+  `'upload'` (refererer til gemt avatar-fil; fjernelse af fil ⇒ fald tilbage til
+  initialer). Gammelt Lucide-id normaliseres til `''`. ICON_IDS udskiftes.
+- Upload-IPC: main åbner filvælger (jpg/png, ~≤1 MB), skalerer med Electron
+  nativeImage, gemmer under appdata, validerer; rendereren ser kun resultatet.
+
+### Hjælpeniveau (3 trin) — styrer KUN UI-hjælp
+
+- `helpLevel: 'fuld' | 'delvis' | 'ingen'`.
+- **Fuld:** som i dag. **Delvis:** ingen stående hints; en "?"-knap ved composeren
+  åbner en popover med hjælpen til den aktuelle flade (de hints der ellers ville vise).
+  **Ingen:** ingen hjælp, ingen "?"-knap. Privacy, advarsler, godkendelser og "Før du
+  sender" vises ALTID uanset niveau.
+
+### Skills ad gangen (onboarding spørger ikke længere)
+
+- Features-trinnet ("Hele pakken" / "Vælg selv") fjernes fra onboarding. Fremgangslinjen:
+  **"1 Din profil · 2 Forbindelse · 3 Din idé"**.
+- Standarden er grundpakken: grundregler + altid-aktive funktioner (designhjælpen
+  forbliver altid aktiv pr. repo-reglen). Øvrige funktioner/skills tilvælges senere
+  under Indstillinger › Funktioner, som i dag.
+- `features.cjs`-defaults rettes så "standard uden valg" = grundpakken (ikke alle).
+
+### 4K-skalering (DSH's opskrift)
+
+- **Skriftstørrelse** i Indstillinger › Udseende: 10-16px (standard 13), gemmes i
+  profilen (`appearance.fontSize`), anvendes globalt (foretrukket mekanisme: CSS-zoom
+  af app-roden via variabel — px-literal-kodebasen gør rem-refaktorering urealistisk;
+  alternativ: --aura-text-variabel for vigtigste flader).
+- **Bredere indholdsbredder** på store skærme: min-width 1600px ⇒ chat/komposer
+  800→960px, panel-lukket 900→1080px; min-width 2000px ⇒ 1040/1200px. Hero-bredder
+  (520px) må vokse moderat. Ingen ændringer under 1600px.
+- Begge dele dokumenteres i DESIGN.md (og retter den forældede "hele enheder"-sætning
+  fra fix-bølgens feltfletning).

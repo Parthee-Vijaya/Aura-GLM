@@ -176,3 +176,49 @@
 ## Efter Task 8
 
 Merge til main (`git merge --ff-only`), push, CI-grøn verificeres, efter-byg-brief sendes til begge rådgivere (Claude + Codex), fund rettes, projekthukommelsen opdateres.
+
+## Poleringsbølge (rev. 3) · Task 9-13 (2.11.2026)
+
+Designtillæg: "Rev. 3 · Poleringsbølge" i desktop/docs/profil-og-indstillinger-design.md.
+Samme grene, samme verifikation: fuld suite grøn + test:desktop 12/12 pr. task;
+bundlen Node på PATH.
+
+### Task 9: Ikon-valg — kompakt række, 3 Aura-varianter, initialer, upload
+- core/profile.cjs: ny ICON-semantik (`''`, aura-1..3, upload), Lucide-id → '',
+  validering af avatar-reference; upload-IPC (main: filvælger + nativeImage-skalering +
+  gem i appdata; renderer ser kun resultat/reference).
+- ui/profile-icons.js: 3 Aura-streg-varianter + initialer + avatar-rendering;
+  ui/index.html + settings.js + onboarding-trin: kompakt række + upload-knap.
+- Upload-storage aldrig base64 i settings.json; billedet sendes aldrig til AI.
+- Tests: model-validering, upload-flow (stub), kompaktrække-rendering, forvitrerede
+  Lucide-id'er, privacy-grep.
+
+### Task 10: Hjælpeniveau 3 trin
+- core/profile.cjs: helpLevel ∈ {fuld, delvis, ingen}; UI (settings + onboarding).
+- CSS: body.help-delvis (hints skjult, "?"-knap ved composeren åbner popover med
+  aktuelle hjælpetekster), body.help-ingen (heller ingen "?"-knap). Privacy,
+  advarsler, godkendelser, "Før du sender" vises altid.
+- Tests: tre niveauer, "?"-popover, at privacy-elementer aldrig skjules.
+
+### Task 11: Skills ad gangen — features-trin ud af onboarding
+- Onboarding: features/features-pick-trin fjernes; fremgangslinje "1 Din profil ·
+  2 Forbindelse · 3 Din idé" (headings, syncOnboardingVisuals, onboarding-b.js).
+- core/features.cjs: standard uden valg = grundpakken (grundregler + altid-aktive),
+  ikke alle; Indstillinger › Funktioner stadig fuld styring.
+- Tests: onboarding-flow, features-default, features-dialog, verify-onboarding-b.
+
+### Task 12: 4K-skalering
+- Indstillinger › Udseende: skriftstørrelse 10-16 (standard 13), gemmes i
+  appearance.fontSize, anvender global skalering (CSS-zoom af app-rod via variabel —
+  dokumentér mekanismen; fallback: --aura-text).
+- Media queries: min-width 1600px → chat/komposer 960px, panel-lukket 1080px;
+  min-width 2000px → 1040/1200px. Hero maks 560px ved ≥1600px.
+- Tests: skriftstørrelse-persistens + anvendelse, bredder ved store viewports
+  (jsdom-bredde-simulering eller CSS-parse-assertion).
+
+### Task 13: Dokumentation + DESIGM.md-rettelser
+- DESIGN.md: profilafsnit opdateres (ikoner, hjælpeniveauer, skills-ad-gangen,
+  skalering) + ret den forældede "hele enheder"-sætning (appearance flettes nu felt
+  for felt i main).
+- docs/profil.md opdateres. Version forbliver 1.0.0-beta.18 (ikke udgivet endnu).
+- Full suite + test:desktop + repræsentative verify-scripts grønne.
