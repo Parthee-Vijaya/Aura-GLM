@@ -95,15 +95,15 @@ test('ukendte udbydere og faser kan ikke tilføje nye destinationer eller efterl
   assert.ok(icons(root).every(image => /^[a-z0-9-]+\.svg$/i.test(image.src)));
 });
 
-test('fremgangslinjen har fire punkter: profil, forbindelse, funktioner og idé', () => {
+test('fremgangslinjen har tre punkter: profil, forbindelse og idé', () => {
   const index = fs.readFileSync(path.join(__dirname, '..', 'ui', 'index.html'), 'utf8');
   const start = index.indexOf('<ol class="onboarding-b-progress"');
   assert.ok(start >= 0, 'index.html skal have en fremgangslinje');
   const progress = index.slice(start, index.indexOf('</ol>', start));
   const phases = [...progress.matchAll(/data-phase="([a-z]+)"/g)].map(match => match[1]);
-  assert.deepEqual(phases, ['profile', 'connection', 'features', 'idea'], 'udbyder og forbindelse er ét punkt nummer 2');
+  assert.deepEqual(phases, ['profile', 'connection', 'idea'], 'udbyder og forbindelse er ét punkt nummer 2 — funktioner vælges i Indstillinger');
   const numbers = [...progress.matchAll(/<span>(\d)<\/span>/g)].map(match => match[1]);
-  assert.deepEqual(numbers, ['1', '2', '3', '4']);
+  assert.deepEqual(numbers, ['1', '2', '3']);
 });
 
 test('profil-trinnet tilføjer ingen ny visuel fase i Onboarding B', () => {
@@ -125,11 +125,14 @@ test('omtegning er ren præsentation uden netværk, lagring, timer eller implici
   try {
     global.fetch = forbidden; global.setTimeout = forbidden; global.setInterval = forbidden;
     Object.defineProperty(global, 'localStorage', { configurable: true, writable: true, value: { getItem: forbidden, setItem: forbidden, removeItem: forbidden } });
-    for (const phase of ['provider', 'connection', 'model', 'idea', 'choice', 'features']) {
+    for (const phase of ['provider', 'connection', 'model', 'idea', 'choice']) {
       render(root, { kind: 'openai', phase, connectionName: 'Syntetisk forbindelse', modelName: 'Syntetisk model', modelChosen: phase === 'model' });
       assert.equal(root.dataset.phase, phase); assert.equal(root.dataset.kind, 'openai');
     }
-    const size = descendants(root).length; render(root, { kind: 'openai', phase: 'features', connectionName: 'Syntetisk forbindelse', modelName: 'Syntetisk model' });
+    // 'features' er ikke længere en kendt fase: den tegner udgangspunktet som ethvert ukendt ord.
+    render(root, { kind: 'openai', phase: 'features', connectionName: 'Syntetisk forbindelse' });
+    assert.equal(root.dataset.phase, 'choice', 'funktionstrinnet findes ikke mere i præsentationen');
+    const size = descendants(root).length; render(root, { kind: 'openai', phase: 'idea', connectionName: 'Syntetisk forbindelse', modelName: 'Syntetisk model' });
     assert.equal(descendants(root).length, size, 'omtegning erstatter indholdet frem for at akkumulere det');
   } finally {
     for (const [name, descriptor] of Object.entries(previous)) { if (descriptor === undefined) delete global[name]; else Object.defineProperty(global, name, descriptor); }

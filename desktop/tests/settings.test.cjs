@@ -652,6 +652,60 @@ test('open(features) lukker settings-dialogen og åbner #features-dialog gennem 
   assert.equal(dom.registry.get('features-dialog').open, true, '#features-dialog[open] gælder');
 });
 
+// Skills ad gangen (poleringsbølgen): onboarding spørger ikke længere om funktioner, så
+// Indstillinger › Funktioner er det eneste sted, de vælges. Panelet kører som et vm-snit
+// af app.js over det syntetiske DOM — med den rigtige kerne (Features og kataloget), så
+// panelet viser grundpakken for en ny bruger og hele pakken for en migreret bruger.
+test('Funktioner-panelet viser grundpakken for en ny bruger og hele pakken for en migreret', async t => {
+  const os = require('node:os');
+  const { Store } = require('../core/store.cjs');
+  const { Features } = require('../core/features.cjs');
+  const { loadLibrary } = require('../core/library.cjs');
+  const library = await loadLibrary(path.join(__dirname, '..', '..', 'profiles'));
+  const start = app.indexOf('function featureRow');
+  assert.ok(start >= 0, 'app.js har featureRow');
+  const code = [app.slice(start, app.indexOf('async function saveFeatures', start)),
+    ...['function node(tag, text, className) {', 'function info(label, text) {'].map(marker => app.split('\n').find(line => line.startsWith(marker)))].join('\n');
+  const dialog = async sign => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'harness-funktioner-dialog-'));
+    t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+    const store = new Store(path.join(root, 'appdata')), features = new Features(store, async () => library);
+    if (sign) await store.update(sign);
+    // Profilmigreringen ved appstart vurderer standardpakken, før panelet tegnes.
+    await features.migrate();
+    const dom = makeDom();
+    const context = {
+      $: selector => {
+        const found = dom.document.querySelector(selector);
+        if (found || !/^#[A-Za-z0-9_-]+$/.test(selector)) return found;
+        const el = new El('div', dom.document); el.id = selector.slice(1); dom.registry.set(el.id, el); dom.body.append(el);
+        return el;
+      },
+      document: dom.document, state: { features: await features.get(null) }, current: null,
+      projectLoading: false, crypto: { randomUUID: () => 'fast' }, action: fn => fn(), saveFeatures: async () => {}
+    };
+    vm.runInNewContext(code, context);
+    context.renderFeatures();
+    return { dom, state: context.state, toggles: id => dom.document.querySelectorAll(`#features-list input[data-feature="${id}"]`)[0] };
+  };
+  // En ny bruger: grundpakken — alle valgfrie kontakter står slået fra, design er ikke en kontakt.
+  const fresh = await dialog(null);
+  assert.equal(fresh.state.features.chosen, '', 'en ny bruger har ikke valgt en pakke');
+  const freshInputs = fresh.dom.document.querySelectorAll('#features-list input[data-feature]');
+  assert.equal(freshInputs.length, 9, 'fem funktioner og fire integrationer');
+  assert.ok(freshInputs.every(input => input.checked === false), 'grundpakken har ingen tilvalg');
+  assert.equal(fresh.toggles('versioner')?.checked, false, 'versioner er fra indtil tilvalgt');
+  assert.equal(fresh.dom.document.querySelectorAll('#features-list .feature-row[data-feature="design"]').length, 0, 'designhjælpen er altid aktiv og ikke en kontakt');
+  assert.equal(fresh.dom.document.querySelectorAll('#features-list .features-group').length, 1, 'integrationerne står for sig');
+  // En migreret bruger uden valg: hele pakken låses fast — kontakterne viser den gamle standard.
+  const migrated = await dialog(state => { state.connections.push({ id: 'c1', kind: 'corti', name: 'Forbindelse' }); });
+  assert.equal(migrated.state.features.chosen, 'alle', 'migreringen har låst hele pakken fast');
+  assert.equal(migrated.toggles('versioner').checked, true, 'versioner forbliver slået til');
+  assert.equal(migrated.toggles('kvalitet').checked, true, 'kodekvalitet forbliver slået til');
+  assert.equal(migrated.toggles('deling').checked, false, 'udgivelse er fortsat et bevidst tilvalg');
+});
+
+
 // Carried finding 2 from task 3's review: the updates route's end link — the
 // adopted opener is updates.js's own open, and it must open #updates-dialog.
 // updates.js runs unmodified in a vm slice over the shared synthetic DOM.

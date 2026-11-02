@@ -4,6 +4,7 @@
 // The profile follows the Preferences pattern: one class, atomic store
 // updates, Danish validation errors, and warnings for dead references.
 const { normalize } = require('./preferences.cjs');
+const { pinDefault } = require('./features.cjs');
 
 // The icon is one of three Aura line variants, the empty string (initials) or
 // 'upload' — the stored avatar file. 'upload' is not a plain id: it is only a
@@ -220,9 +221,12 @@ class Profile {
   // each only into fields the profile has not chosen yet. Once the marker is
   // set the call is a no-op that returns the existing profile unchanged.
   // Corrupt profile fields and expired startup-default values never throw —
-  // the fold leaves them at their defaults.
+  // the fold leaves them at their defaults. The features default pins in the
+  // same update (before the marker guard, with its own one-shot latch), so
+  // every real app start evaluates the package default exactly once.
   async migrate(input) {
     return this.store.update(state => {
+      pinDefault(state);
       const profile = readProfile(state.profile, this.hasAvatar).profile;
       if (profile.migrated === 1) return { profile, hasAvatar: this.hasAvatar() };
       const legacyDefaults = state.startupDefaults && typeof state.startupDefaults === 'object' && !Array.isArray(state.startupDefaults) ? state.startupDefaults : null;

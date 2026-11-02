@@ -24,7 +24,7 @@
   gap: 34px;
 }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-content { min-width: 0; }
-#setup.onboarding-b :is(#setup-provider, #setup-saved, #setup-local-step, #setup-tools, #setup-features, #setup-features-pick, #setup-profile) { max-width: none; }
+#setup.onboarding-b :is(#setup-provider, #setup-saved, #setup-local-step, #setup-tools, #setup-profile) { max-width: none; }
 #setup.onboarding-b .setup-topbar { margin-bottom: 26px; }
 #setup.onboarding-b .setup-heading { max-width: 100%; margin-bottom: 32px; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b) :is(.setup-heading h1, .intro h1) {
@@ -297,16 +297,16 @@
 }
 /* Keep the original short setup choices and their footer visible on laptop windows. */
 @media (min-width: 900px) and (max-height: 800px) {
-  #setup.onboarding-b:is([data-step=choice], [data-step=features]) { padding-top: 24px; padding-bottom: 24px; }
-  #setup.onboarding-b:is([data-step=choice], [data-step=features]) .setup-topbar { margin-bottom: 12px; }
-  #setup.onboarding-b:is([data-step=choice], [data-step=features]) .setup-heading { margin: 12px 0 20px; }
-  #setup.onboarding-b:is([data-step=choice], [data-step=features]) .onboarding-b-progress { margin-bottom: 20px; padding-bottom: 16px; }
-  #setup.onboarding-b:is([data-step=choice], [data-step=features]) :is(#setup-choice, #setup-feature-choice) { margin: 0; }
-  #setup.onboarding-b:is([data-step=choice], [data-step=features]) :is(.onboarding-b-art, .onboarding-b-data-path) { display: none; }
-  #setup.onboarding-b:is([data-step=choice], [data-step=features]) .onboarding-b-visual-copy { padding: 20px 22px; }
-  #setup.onboarding-b:is([data-step=choice], [data-step=features]) .onboarding-b-visual-heading { font-size: 22px; }
-  #setup.onboarding-b:is([data-step=choice], [data-step=features]) .onboarding-b-visual-heading em { font-size: 24px; }
-  #setup.onboarding-b:is([data-step=choice], [data-step=features]) .setup-footer { margin-top: 20px; }
+  #setup.onboarding-b[data-step=choice] { padding-top: 24px; padding-bottom: 24px; }
+  #setup.onboarding-b[data-step=choice] .setup-topbar { margin-bottom: 12px; }
+  #setup.onboarding-b[data-step=choice] .setup-heading { margin: 12px 0 20px; }
+  #setup.onboarding-b[data-step=choice] .onboarding-b-progress { margin-bottom: 20px; padding-bottom: 16px; }
+  #setup.onboarding-b[data-step=choice] #setup-choice { margin: 0; }
+  #setup.onboarding-b[data-step=choice] :is(.onboarding-b-art, .onboarding-b-data-path) { display: none; }
+  #setup.onboarding-b[data-step=choice] .onboarding-b-visual-copy { padding: 20px 22px; }
+  #setup.onboarding-b[data-step=choice] .onboarding-b-visual-heading { font-size: 22px; }
+  #setup.onboarding-b[data-step=choice] .onboarding-b-visual-heading em { font-size: 24px; }
+  #setup.onboarding-b[data-step=choice] .setup-footer { margin-top: 20px; }
 }
 @media (prefers-reduced-motion: reduce) {
   :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }

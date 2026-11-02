@@ -161,6 +161,34 @@ test('migrate() tåler startupDefaults med udgåede værdier og folder kun de l�
   assert.equal(migrated.standardAI.connectionID, 'ai', 'den læsbare forbindelse folder ind');
   assert.equal(migrated.projectDefaults.designID, 'd1', 'den læsbare designpakke folder ind');
   assert.deepEqual(migrated.projectDefaults, { hosting: '', designID: 'd1', tests: 'senere' }, 'de udgåede værdier bliver til standarden — ikke til en fejl');
+  // Skills ad gangen: samme migration vurderer standardpakken — en installation i brug
+  // låser hele pakken fast, så ingen funktion går tabt ved det nye grundpakke-standard.
+  const state = await store.read();
+  assert.equal(state.featuresDefault, 'alle', 'installationen med en forbindelse er eksisterende');
+  assert.equal(state.features.chosen, 'alle', 'hele pakken gemmes som det gamle udgangspunkt');
+  // En gentagen migration er stadig en no-op, også for pakken.
+  await profile.migrate({});
+  assert.deepEqual(await store.read(), state);
+});
+
+test('migrate() vurderer grundpakken for en helt ny indstillingsfil', async t => {
+  const store = await fixture(t);
+  await new Profile(store).migrate({});
+  const state = await store.read();
+  assert.equal(state.featuresDefault, 'grundpakke', 'en ny installation starter med grundpakken');
+  assert.equal(state.features, undefined, 'intet pakkevalg gemmes for en ny bruger');
+});
+
+test('migrate() låser hele pakken for eksisterende profiler, også når profilen allerede er migreret', async t => {
+  const store = await fixture(t, s => {
+    s.connections = [{ id: 'ai', name: 'Egen model', kind: 'ollama', baseURL: 'http://127.0.0.1:11434' }];
+    s.profile = { ...standardProfile(), migrated: 1 };
+  });
+  await new Profile(store).migrate({});
+  const state = await store.read();
+  assert.equal(state.featuresDefault, 'alle', 'vurderingen står før markøren for allerede migrerede profiler');
+  assert.equal(state.features.chosen, 'alle');
+  assert.equal(state.profile.migrated, 1, 'profilmarkøren røres ikke');
 });
 
 test('migrate() læser en korrupt profil eftergivende og sætter markøren alligevel', async t => {

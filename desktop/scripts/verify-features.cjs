@@ -1,6 +1,6 @@
 // Funktioner: hele forløbet i Electron med rigtig OpenCode, Git og projektfiler. Modellen er en kontrolleret server.
-// Første start med Vælg selv, en funktion der bygger på en anden, undtagelser pr. projekt, skills i motoren,
-// et projekt uden versioner og genstart. Global Git-opsætning er slået fra, så appens anonyme identitet bruges.
+// Første start uden funktionsspørgsmål (grundpakken), tilvalg under Indstillinger › Funktioner, en funktion der
+// bygger på en anden, undtagelser pr. projekt, skills i motoren, et projekt uden versioner og genstart. Global Git-opsætning er slået fra, så appens anonyme identitet bruges.
 const { _electron: electron } = require('playwright');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
@@ -70,33 +70,28 @@ const helpers = require('./ui-test-helpers.cjs');
   }
   try {
     await launch();
-    // 1. Første start: AI vælges senere, derefter ét spørgsmål om funktioner.
+    // 1. Første start: AI vælges senere — og funktioner spørges ikke længere; grundpakken gælder.
     await page.click('#path-app'); await page.click('#welcome-build'); await page.waitForSelector('#setup:not([hidden])');
     // Første guidede start viser profil-trinnet (godkendt gating); Fortsæt gemmer
     // og fører til valget, så prøven tester sit eget trin.
     await helpers.continuePastProfileStep(page);
     await page.click('#setup-local');
-    await page.locator('#setup-title').filter({ hasText: 'Hvad skal Aura Prime hjælpe med?' }).waitFor();
-    assert.equal((await features()).chosen, '');
-    await page.click('#features-pick');
-    await page.locator('#setup-title').filter({ hasText: 'Hvad vil du slå til?' }).waitFor();
-    assert.equal(await page.locator('#setup-features-list input[data-feature]').count(), 5);
-    assert.equal(await page.locator('#setup-features-list input[data-feature]:checked').count(), 0, 'Vælg selv starter uden tilvalg');
-    assert.equal(await page.textContent('#features-continue'), 'Fortsæt med grundpakken');
-    // Deling bygger på versionerne: den ene slår den anden til, og et fravalg af versioner slår deling fra.
-    await toggle('#setup-features-list', 'deling').check();
-    assert.equal(await toggle('#setup-features-list', 'versioner').isChecked(), true);
-    assert.equal(await page.textContent('#features-continue'), 'Fortsæt med 2 tilvalg');
-    await toggle('#setup-features-list', 'versioner').uncheck();
-    assert.equal(await toggle('#setup-features-list', 'deling').isChecked(), false);
-    await toggle('#setup-features-list', 'versioner').check();
-    assert.equal(await page.textContent('#features-continue'), 'Fortsæt med 1 tilvalg');
-    await shot('vaelg-selv');
-    await page.click('#features-continue'); await page.waitForSelector('#create-form');
+    await page.waitForSelector('#create-form');
+    assert.equal(await page.isVisible('#setup'), false, 'opsætningen er gennemført uden et funktionstrin');
+    assert.equal(await page.locator('[data-phase="features"]').count(), 0, 'fremgangslinjen har kun profil, forbindelse og idé');
+    const fresh = await features();
+    assert.equal(fresh.chosen, '', 'ingen pakke er valgt ved første start');
+    assert.deepEqual(Object.keys(fresh.effective).filter(id => fresh.effective[id]), ['design'], 'grundpakken: kun designhjælpen er slået til');
+    // Skills ad gangen: funktioner tilvælges under Indstillinger › Funktioner — her Versioner og fortryd.
+    await helpers.menuClick(page, '#features-button'); await page.waitForSelector('#features-dialog[open]');
+    assert.equal(await page.locator('#features-list .feature-row').count(), 9, 'fem funktioner og fire integrationer i panelet');
+    assert.equal(await toggle('#features-list', 'versioner').isChecked(), false, 'grundpakken starter uden tilvalg');
+    await toggle('#features-list', 'versioner').check();
+    await page.locator('#features-feedback').filter({ hasText: 'Gemt for alle projekter' }).waitFor();
+    await page.click('[data-close="features-dialog"]');
     const chosen = await features();
-    assert.equal(chosen.chosen, 'valgt');
+    assert.equal(chosen.chosen, '', 'et tilvalg i panelet er ikke en pakke');
     assert.deepEqual(chosen.defaults, { versioner: true, planlaegning: false, design: true, sikkerhed: false, kvalitet: false, deling: false, 'integration-adresser': false, 'integration-cvr': false, 'integration-promte': false, 'integration-komplai-run': false });
-    assert.equal(await page.locator('#setup-features-list .feature-row').count(), 5, 'integrationer vælges ikke ved første start');
     // 2. Startsiden bevarer designgrundpakken; hostingønsket er fortsat fravalgt.
     await helpers.projectOptions(page);
     assert.equal(await page.isVisible('#design-options'), true); assert.equal(await page.isVisible('#startup-hosting-row'), false);
@@ -202,9 +197,9 @@ const helpers = require('./ui-test-helpers.cjs');
     assert.equal(await page.locator('#welcome-dialog').evaluate(el => el.open), false);
     assert.equal(await page.isVisible('#setup'), false);
     const after = await features();
-    assert.equal(after.chosen, 'valgt'); assert.equal(after.defaults.versioner, false); assert.equal(after.defaults.kvalitet, true);
+    assert.equal(after.chosen, ''); assert.equal(after.defaults.versioner, false); assert.equal(after.defaults.kvalitet, true);
     assert.deepEqual(errors, []);
-    console.log(JSON.stringify({ status: 'bestået', root, checks: ['første start med Vælg selv', 'deling og versioner følges ad', 'startsiden med designgrundpakke og uden hosting', 'ⓘ åbner og lukker i og uden for en dialog', 'Git fra start med versioner', 'Del og sikkerhedskopi skjult uden deling', 'direkte arbejde uden planlægning', 'kun aktive skills i motoren', 'appens regler følger funktionerne', 'undtagelse for ét projekt', 'ingen vandret rullebjælke i dialogen', 'integration slået til for ét projekt', 'arbejdsmåden følger planlægning med det samme', 'ændring for alle projekter', 'ny modelsession med nye skills', 'projekt uden Git og uden versionsknapper', 'valget husket efter genstart'] }, null, 2));
+    console.log(JSON.stringify({ status: 'bestået', root, checks: ['første start uden funktionsspørgsmål og med grundpakken', 'tilvalg i Indstillinger › Funktioner', 'startsiden med designgrundpakke og uden hosting', 'ⓘ åbner og lukker i og uden for en dialog', 'Git fra start med versioner', 'Del og sikkerhedskopi skjult uden deling', 'direkte arbejde uden planlægning', 'kun aktive skills i motoren', 'appens regler følger funktionerne', 'undtagelse for ét projekt', 'ingen vandret rullebjælke i dialogen', 'integration slået til for ét projekt', 'arbejdsmåden følger planlægning med det samme', 'ændring for alle projekter', 'ny modelsession med nye skills', 'projekt uden Git og uden versionsknapper', 'valget husket efter genstart'] }, null, 2));
   } catch (error) {
     if (page) await page.screenshot({ path: path.join(root, 'fejl.png'), animations: 'disabled' }).catch(() => {});
     console.error(JSON.stringify({ root, errors }));

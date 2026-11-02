@@ -45,6 +45,8 @@ test('real library and supported exports retain the revised architecture skill a
 
 test('confirmed-brief guidance reaches real library, exports and engine without adding a new confirmation or write permission', async t => {
   const f = await fixture(t), source = await fs.readFile(path.join(PROFILES, 'skills', IDEA, 'SKILL.md'), 'utf8');
+  // Grundpakken er standard: Planlægning er et bevidst tilvalg, før vejledningen prøves.
+  await f.features.save(null, { scope: 'alle', values: { planlaegning: true } });
   const idea = f.library.skills.find(skill => skill.name === IDEA);
   assert.equal(idea.files.find(file => file.path === 'SKILL.md').content, source);
   assert.match(source, /Genbrug en allerede bekræftet projektbrief/);
@@ -73,6 +75,8 @@ test('confirmed-brief guidance reaches real library, exports and engine without 
 
 test('actual engine skill files receive the new guidance without granting writes or changing the approved plan', async t => {
   const f = await fixture(t);
+  // Grundpakken er standard: Planlægning er et bevidst tilvalg, før arkitektur-skillenen prøves.
+  await f.features.save(null, { scope: 'alle', values: { planlaegning: true } });
   const plan = { id: 'selected-plan', source: 'dig', text: 'Byg den aftalte mødedemo.', context: 'Ingen nye tilladelser.' };
   await f.store.saveProject(f.project.root, { approvedPlan: plan, approvals: { sentinel: 'preserved' } });
   const before = await f.store.read(), context = await f.skills.context(f.project.root);
@@ -145,6 +149,8 @@ test('real prompt composition carries answered requirements and the selected pla
 test('optional architecture opt-out and project customization still work while mandatory design remains', async t => {
   const f = await fixture(t), feature = f.library.features.find(item => item.skills.includes(NAME));
   assert.notEqual(feature.alwaysOn, true);
+  // Grundpakken er standarden nu: funktionen tilvælges eksplicit, før tilpasningen prøves.
+  await f.features.save(null, { scope: 'alle', values: { [feature.id]: true } });
   const original = (await f.skills.list(f.project.root)).find(item => item.id === NAME).content;
   await f.skills.save(f.project.root, { id: NAME, content: original + '\nProjektets aftale: brug den eksisterende statiske løsning.\n' });
   const customized = await f.skills.context(f.project.root);

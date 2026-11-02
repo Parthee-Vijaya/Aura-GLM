@@ -22,6 +22,8 @@ test('nøglelager afviser manglende kryptering; offentlige forbindelser udelader
 });
 test('instruktioner kan tilpasses og gendannes pr. projekt uden at ændre biblioteket', async t => {
  const bench = new Workbench({ directory: await temp(t), profiles, emit: () => {}, safeStorage: {} });
+ // Et "Hele pakken"-valg fra en tidligere version: samme udgangspunkt som før grundpakken blev standard.
+ await bench.store.update(state => { state.features = { chosen: 'alle' }; });
  const original = (await bench.skills.list('/a')).find(s => s.id === 'harness-git-og-samarbejde');
  assert.equal(original.title, 'Git og samarbejde'); assert.equal(original.enabled, true);
  await bench.skills.save('/a', { id: original.id, content: original.content + '\nEkstra prøvekrav.' });

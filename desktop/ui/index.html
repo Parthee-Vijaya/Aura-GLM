@@ -23,7 +23,7 @@
   <div class="setup-topbar"><button id="setup-back" class="text-button">← Tilbage</button><span class="aura-brand"><img class="aura-logo" src="aura-icon.png" width="36" height="36" alt=""><span class="brand-copy">Aura Prime<small class="app-version" data-app-version></small></span></span></div>
   <div class="setup-heading"><p id="setup-eyebrow" class="eyebrow">DIN AI</p><h1 id="setup-title" tabindex="-1">Hvordan vil du forbinde din AI?</h1><p id="setup-subtitle">Vælg den adgang, du allerede har.</p></div>
   <div class="setup-quick-actions"><button id="setup-local" class="text-button">Vælg senere</button><button id="setup-advanced" class="text-button">Avanceret opsætning</button><button id="setup-remove-all" class="text-button" hidden>Fjern alle gemte nøgler …</button></div>
-  <ol class="onboarding-b-progress" aria-label="Din opsætning"><li data-phase="profile"><span>1</span>Din profil</li><li data-phase="connection"><span>2</span>Forbindelse</li><li data-phase="features"><span>3</span>Funktioner</li><li data-phase="idea"><span>4</span>Din idé</li></ol>
+  <ol class="onboarding-b-progress" aria-label="Din opsætning"><li data-phase="profile"><span>1</span>Din profil</li><li data-phase="connection"><span>2</span>Forbindelse</li><li data-phase="idea"><span>3</span>Din idé</li></ol>
   <p id="setup-reason" role="status" hidden></p>
   <div class="onboarding-b-layout"><div class="onboarding-b-content">
   <section id="setup-profile" data-setup-step="profile" hidden aria-label="Din profil">
@@ -64,18 +64,6 @@
   <section id="setup-tools" data-setup-step="tools" hidden>
     <button id="setup-manage">Administrer AI-forbindelser</button><button id="setup-hosting">Forbind GitHub</button>
     <details class="setup-row"><summary>Lokale værktøjer</summary><p id="setup-git" role="status">Git er ikke kontrolleret.</p><button id="setup-git-refresh">Kontrollér Git</button><button id="setup-git-open" hidden>Åbn versionsindstillinger</button></details>
-  </section>
-  <section id="setup-features" data-setup-step="features" hidden aria-label="Vælg funktioner">
-    <div id="setup-feature-choice">
-      <button id="features-all"><span class="setup-symbol" aria-hidden="true">✓</span><strong>Hele pakken</strong><span class="recommended">Anbefalet</span><span>Versioner, planlægning, design, sikkerhed og kodekvalitet. Udgivelse kan du slå til senere.</span></button>
-      <button id="features-pick"><span class="setup-symbol" aria-hidden="true">☰</span><strong>Vælg selv</strong><span>Slå kun det til, du vil bruge, fx kun versioner.</span></button>
-    </div>
-    <p class="hint">Gennemarbejdet design fra første udkast, grundregler, overblik før afsendelse, godkendelser og beskyttelse af nøgler er altid slået til.</p>
-  </section>
-  <section id="setup-features-pick" data-setup-step="features-pick" hidden aria-label="Funktioner">
-    <p class="hint">Design og tilgængelighed er altid med i grundpakken.</p>
-    <div id="setup-features-list" class="features-list"></div>
-    <div class="setup-actions"><button id="features-continue" class="primary">Fortsæt med grundpakken</button></div>
   </section>
   </div><aside id="setup-visual" class="onboarding-b-visual" aria-label="Din opsætning"></aside></div>
 

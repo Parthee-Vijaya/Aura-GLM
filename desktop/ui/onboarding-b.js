@@ -21,7 +21,7 @@
     compatible: { name: 'Egen server', logo: 'provider-compatible.svg', accent: '#737581' },
     openrouter: { name: 'OpenRouter', logo: 'provider-openrouter.svg', accent: '#6467b9' }
   }).map(([key, value]) => [key, Object.freeze(value)])));
-  const PHASES = new Set(['provider', 'connection', 'model', 'idea', 'choice', 'features']);
+  const PHASES = new Set(['provider', 'connection', 'model', 'idea', 'choice']);
   const ICONS = Object.freeze({
     check: 'm5 12 4.5 4.5L19 7',
     lock: 'M6 10h12v11H6ZM9 10V7a3 3 0 0 1 6 0v3',
@@ -81,7 +81,7 @@
     art.append(ring, make(doc, 'span', 'onboarding-b-art-pill', phase === 'idea' ? 'Fra dine ord til noget, du kan bygge' : 'Forbindelse og model er to valg'));
     const copy = make(doc, 'div', 'onboarding-b-visual-copy'), title = make(doc, 'h2', 'onboarding-b-visual-heading');
     title.append(make(doc, 'span', null, phase === 'model' && modelChosen ? modelName : current?.name || 'Din AI'), make(doc, 'em', null, phase === 'model' && modelChosen ? 'i dit projekt.' : phase === 'idea' ? 'og din idé.' : 'møder Aura Prime.'));
-    const description = phase === 'features' ? 'Du vælger, hvad Aura Prime skal hjælpe med. Planer og godkendelser følger stadig det samme forløb.' : phase === 'model' ? 'Vælg den model, du vil arbejde med. Modtager og vilkår gennemgås, før du sender noget.' : phase === 'idea' ? 'Beskriv det, du vil bygge. Din forbindelse og dine projektvalg er lige ved hånden.' : preview && current ? 'Se den forbindelse, du kigger på. Åbn kortet, når du vil indtaste dine oplysninger.' : current ? 'Forbindelsen er din adgang til AI. Modellen vælger du i projektet, og du kan ændre valget senere.' : 'Begynd med den adgang, du allerede har. Projektfiler og gemte valg bliver på din computer.';
+    const description = phase === 'model' ? 'Vælg den model, du vil arbejde med. Modtager og vilkår gennemgås, før du sender noget.' : phase === 'idea' ? 'Beskriv det, du vil bygge. Din forbindelse og dine projektvalg er lige ved hånden.' : preview && current ? 'Se den forbindelse, du kigger på. Åbn kortet, når du vil indtaste dine oplysninger.' : current ? 'Forbindelsen er din adgang til AI. Modellen vælger du i projektet, og du kan ændre valget senere.' : 'Begynd med den adgang, du allerede har. Projektfiler og gemte valg bliver på din computer.';
     copy.append(title, make(doc, 'p', 'onboarding-b-visual-description', description));
     if (connectionName) copy.append(make(doc, 'p', 'onboarding-b-connection-name', connectionName));
     const route = make(doc, 'div', 'onboarding-b-data-path');

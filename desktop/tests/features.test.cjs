@@ -12,12 +12,18 @@ const { Skills } = require('../core/skills.cjs');
 const profiles = path.join(__dirname, '../../profiles');
 async function temp(t) { const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'harness-funktioner-'))); t.after(() => fs.rm(root, { recursive: true, force: true })); return root; }
 const definitions = [{ id: 'versioner' }, { id: 'design', alwaysOn: true }, { id: 'deling', requires: ['versioner'], default: false }];
+// Katalogets "hele pakke": alt undtagen Udgivelse og integrationer, som er fravalgt uden et login.
+const full = { versioner: true, planlaegning: true, design: true, sikkerhed: true, kvalitet: true, deling: false, 'integration-adresser': false, 'integration-cvr': false, 'integration-promte': false, 'integration-komplai-run': false };
+// Grundpakken: designhjælpen (altid aktiv) — resten tilvælges ad gangen.
+const base = { ...full, versioner: false, planlaegning: false, sikkerhed: false, kvalitet: false };
 
-test('uden valg gælder den anbefalede pakke, og en funktion følger den, den bygger på', () => {
-  assert.deepEqual(resolve(definitions), { versioner: true, design: true, deling: false });
-  assert.deepEqual(resolve(definitions, { deling: true }), { versioner: true, design: true, deling: true });
+test('uden valg gælder grundpakken; hele pakken følger katalogets anbefaling', () => {
+  assert.deepEqual(resolve(definitions), { versioner: false, design: true, deling: false }, 'grundpakken: kun altid-aktive og udtrykkeligt anbefalede funktioner');
+  assert.deepEqual(resolve(definitions, { versioner: true, deling: true }), { versioner: true, design: true, deling: true }, 'et eget valg vinder over grundpakken');
   assert.deepEqual(resolve(definitions, { versioner: false }), { versioner: false, design: true, deling: false });
-  assert.deepEqual(resolve(definitions, { design: false }, { design: false }), { versioner: true, design: true, deling: false }, 'grundpakken gælder også ved gamle fravalg');
+  assert.deepEqual(resolve(definitions, { deling: true }), { versioner: false, design: true, deling: false }, 'Udgivelse bygger på versioner og følger den med i fravalg');
+  assert.deepEqual(resolve(definitions, { design: false }, { design: false }), { versioner: false, design: true, deling: false }, 'grundpakken gælder også ved gamle fravalg');
+  assert.deepEqual(resolve(definitions, {}, {}, true), { versioner: true, design: true, deling: false }, 'hele pakken er alt undtagen katalogets egne fravalg');
   assert.deepEqual(couple(definitions, { deling: true }), { deling: true, versioner: true });
   assert.deepEqual(couple(definitions, { versioner: false }), { versioner: false, deling: false });
 });
@@ -28,12 +34,13 @@ test('standarden gælder alle projekter; undtagelser gemmes kun, når de afviger
   assert.equal(first.chosen, ''); assert.equal(first.list.filter(feature => !feature.group).length, 6);
   assert.deepEqual(first.list.filter(feature => feature.group === 'integrationer').map(feature => feature.id), ['integration-adresser', 'integration-cvr', 'integration-promte', 'integration-komplai-run']);
   assert.equal(first.list.find(feature => feature.id === 'integration-cvr').skills[0].integration.owner, 'Erhvervsstyrelsen');
-  assert.deepEqual(Object.keys(first.effective).filter(id => !first.effective[id]), ['deling', 'integration-adresser', 'integration-cvr', 'integration-promte', 'integration-komplai-run'], 'uden et valg er alt undtagen deling og integrationer slået til');
+  assert.deepEqual(first.defaults, base, 'uden valg gælder grundpakken: kun designhjælpen er slået til');
+  assert.deepEqual(Object.keys(first.effective).filter(id => first.effective[id]), ['design'], 'en ny bruger starter med grundpakken');
   assert.equal(first.list.find(feature => feature.id === 'kvalitet').skills[0].title, 'Kodestil og vedligeholdelse');
-  // Vælg selv ved første start: kun versioner.
+  // Et gammelt "Vælg selv"-valg fra onboarding respekteres fortsat som ethvert andet valg.
   const picked = await features.save(null, { scope: 'alle', chosen: 'valgt', values: { versioner: true, planlaegning: false, design: false, sikkerhed: false, kvalitet: false, deling: false } });
   assert.equal(picked.chosen, 'valgt');
-  assert.deepEqual(picked.defaults, { versioner: true, planlaegning: false, design: true, sikkerhed: false, kvalitet: false, deling: false, 'integration-adresser': false, 'integration-cvr': false, 'integration-promte': false, 'integration-komplai-run': false });
+  assert.deepEqual(picked.defaults, { ...base, versioner: true });
   // Et projekt får kodekvalitet som undtagelse. Deling slår også versionerne til, som allerede er standard, så kun deling gemmes.
   const project = await features.save('/projekt', { scope: 'projekt', values: { kvalitet: true } });
   assert.deepEqual(project.exceptions, { kvalitet: true });
@@ -48,11 +55,93 @@ test('standarden gælder alle projekter; undtagelser gemmes kun, når de afviger
   assert.equal(all.chosen, 'valgt', 'valget ved første start bevares'); assert.equal(all.defaults.kvalitet, true);
   // Hele pakken følger igen katalogets anbefaling, også efter Vælg selv.
   const recommended = await features.save(null, { scope: 'alle', chosen: 'alle', values: {} });
-  assert.equal(recommended.chosen, 'alle'); assert.deepEqual(recommended.defaults, first.defaults);
+  assert.equal(recommended.chosen, 'alle'); assert.deepEqual(recommended.defaults, full, 'hele pakken er alt undtagen katalogets fravalg');
   assert.deepEqual((await store.read()).features.on, {}, 'intet valg gemmes, så en ny anbefaling slår igennem');
   for (const input of [null, { scope: 'alle', values: { ukendt: true } }, { scope: 'alle', values: { design: 'ja' } }, { scope: 'alle', values: { design: null } }, { scope: 'projekt', values: {}, chosen: 'alle' }, { scope: 'alle', values: {}, chosen: 'nogle' }])
     await assert.rejects(features.save('/projekt', input), /Ugyldigt valg|Ukendt funktion/);
   await assert.rejects(features.save(null, { scope: 'projekt', values: { kvalitet: true } }), /Åbn et projekt/);
+});
+
+// Før grundpakken var standard, betød "intet valg" alle funktioner slået til. Migreringen
+// vurderer standarden én gang: en eksisterende installation låser hele pakken fast som
+// chosen 'alle', så ingen mister funktioner stille, mens en helt ny installation starter
+// med grundpakken — uanset hvor meget den bruges bagefter.
+test('migreringen låser hele pakken fast for eksisterende installationer — én gang', async t => {
+  const signs = [
+    ['en gemt forbindelse', state => { state.connections.push({ id: 'c1', kind: 'corti', name: 'Forbindelse' }); }],
+    ['et gemt projekt', state => { state.projects['rod'] = {}; }],
+    ['en udgivelses-login', state => { state.hosting = { komplai: { secret: 'krypteret' } }; }],
+    ['et tidligere funktionsvalg', state => { state.features = { on: { kvalitet: true } }; }],
+    ['de gamle opstartsvalg', state => { state.startupDefaults = { hosting: '' }; }]
+  ];
+  for (const [name, sign] of signs) {
+    const store = new Store(await temp(t)), features = new Features(store, () => loadLibrary(profiles));
+    await store.update(sign);
+    // Profilmigreringen ved appstart vurderer standardpakken, før noget læses.
+    await features.migrate();
+    const read = await features.get();
+    assert.equal(read.chosen, 'alle', `${name}: hele pakken låses fast`);
+    assert.equal(read.defaults.versioner, true, `${name}: versioner forbliver slået til`);
+    assert.equal(read.defaults.kvalitet, true, `${name}: kodekvalitet forbliver slået til`);
+    assert.equal(read.defaults.design, true, `${name}: designhjælpen er altid med`);
+    const saved = await store.read();
+    assert.equal(saved.features.chosen, 'alle', `${name}: valget gemmes`);
+    assert.equal(saved.featuresDefault, 'alle', `${name}: migreringen er vurderet`);
+    if (name === 'et tidligere funktionsvalg') assert.equal(read.defaults.deling, false, 'det gamle eget valg bevares');
+  }
+  // Migreringen sker kun én gang: forsvinder tegnet igen, holder låsen stadig.
+  const store = new Store(await temp(t)), features = new Features(store, () => loadLibrary(profiles));
+  await store.update(state => { state.connections.push({ id: 'c1', kind: 'corti', name: 'Forbindelse' }); });
+  await features.migrate();
+  await store.update(state => { state.connections = []; });
+  const again = await features.get();
+  assert.equal(again.chosen, 'alle', 'låsen overlever, at installationens tegn fjernes');
+  assert.equal(again.effective.kvalitet, true);
+  // En læsning alene skriver aldrig: uden migreringen forbliver filen urørt.
+  const untouched = new Store(await temp(t)), reader = new Features(untouched, () => loadLibrary(profiles));
+  await untouched.update(state => { state.connections.push({ id: 'c1', kind: 'corti', name: 'Forbindelse' }); });
+  const before = await untouched.read();
+  await reader.get();
+  assert.deepEqual(await untouched.read(), before, 'get er en ren læsning');
+});
+
+test('en ny installation starter med grundpakken — senere brug ændrer den ikke', async t => {
+  const store = new Store(await temp(t)), features = new Features(store, () => loadLibrary(profiles));
+  await features.migrate();
+  const first = await features.get();
+  assert.equal(first.chosen, '', 'en ny bruger har ikke valgt en pakke');
+  assert.deepEqual(Object.keys(first.effective).filter(id => first.effective[id]), ['design'], 'grundpakken gælder fra første læsning');
+  assert.equal((await store.read()).featuresDefault, 'grundpakke', 'migreringen er vurderet én gang');
+  // Appen tages i brug: forbindelser og projekter dukker op, men standarden er låst.
+  await store.update(state => { state.connections.push({ id: 'c1', kind: 'corti', name: 'Forbindelse' }); state.projects['rod'] = {}; });
+  const second = await features.get();
+  assert.equal(second.chosen, '', 'senere brug låser ikke hele pakken fast');
+  assert.equal(second.effective.versioner, false, 'versioner tilvælges stadig ad gangen');
+});
+
+test('et save uden en forudgående læsning migrerer også standarden', async t => {
+  const store = new Store(await temp(t)), features = new Features(store, () => loadLibrary(profiles));
+  await store.update(state => { state.projects['rod'] = {}; });
+  const saved = await features.save(null, { scope: 'alle', values: { versioner: true } });
+  assert.equal(saved.chosen, 'alle', 'et eksisterende projekt låser hele pakken fast');
+  assert.equal((await store.read()).featuresDefault, 'alle');
+});
+
+// Repo-reglen: designhjælpen er altid aktiv. Kataloget markerer den alwaysOn, resolve
+// tvinger den til, og hverken standardvalg eller projektundtagelser kan fjerne den.
+test('designhjælpen er altid aktiv i kataloget og kan ikke slås fra', async t => {
+  const library = await loadLibrary(profiles);
+  assert.equal(library.features.find(feature => feature.id === 'design').alwaysOn, true, 'kataloget markerer designhjælpen altid-aktiv');
+  const store = new Store(await temp(t)), features = new Features(store, async () => library);
+  await store.update(state => { state.features = { chosen: 'valgt', on: { design: false, versioner: false, planlaegning: false, sikkerhed: false, kvalitet: false, deling: false } }; });
+  await store.saveProject('/projekt', { features: { design: false } });
+  // Et gammelt globalt fravalg og en projektundtagelse ignoreres: grundpakken kan ikke fjernes.
+  await features.save(null, { scope: 'alle', values: { design: false } });
+  const read = await features.get('/projekt');
+  assert.equal(read.defaults.design, true, 'standarden holder designhjælpen slået til');
+  assert.equal(read.effective.design, true, 'designhjælpen kan ikke slås fra');
+  assert.deepEqual(read.exceptions, {}, 'altid-aktive funktioner har aldrig undtagelser');
+  assert.equal(read.list.find(feature => feature.id === 'design').alwaysOn, true, 'panelet viser designhjælpen som altid-aktiv');
 });
 
 test('Komplai Run når kun motoren efter tilvalg og fjernes igen ved fravalg', async t => {
@@ -138,15 +227,29 @@ test('appens regler følger funktionerne', () => {
   assert.match(appRules(all, { integrations: ['Adresser', 'CVR'] }), /slået disse integrationer til: Adresser, CVR\. .*\.env/);
 });
 
-// Et Promte-login gør Udgiv anbefalet, så brugeren kan udgive den app, Aura har forbundet til Promte.
-test('et Promte-login slår Udgivelse til som standard, men respekterer et eget valg', async t => {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'harness-promte-deling-')); t.after(() => fs.rm(root, { recursive: true, force: true }));
-  const library = await loadLibrary(profiles), store = new Store(path.join(root, 'appdata'));
-  const features = new Features(store, async () => library);
-  assert.equal((await features.get(null)).effective.deling, false);
-  await store.update(state => { state.hosting = { ...state.hosting, promte: { 'https://kodning.promte.dk': { secret: 'krypteret', email: 'test@example.invalid', expiresAt: '2099-01-01T00:00:00.000Z' } } }; });
-  const after = await features.get(null);
-  assert.equal(after.effective.deling, true); assert.equal(after.effective.versioner, true, 'Udgiv kræver versioner');
-  await features.save(null, { scope: 'alle', chosen: 'valgt', values: { versioner: true, planlaegning: false, design: false, sikkerhed: false, kvalitet: false, deling: false } });
+// Et Promte-login gør Udgivelse anbefalet: i hele pakken straks, i grundpakken først med versioner.
+test('et Promte-login anbefaler Udgivelse — hele pakken straks, grundpakken med versioner', async t => {
+  const library = await loadLibrary(profiles);
+  const promte = store => store.update(state => { state.hosting = { ...state.hosting, promte: { 'https://kodning.promte.dk': { secret: 'krypteret', email: 'test@example.invalid', expiresAt: '2099-01-01T00:00:00.000Z' } } }; });
+  // Eksisterende installation: loginet findes, før migreringen vurderer → 'alle' og anbefalingen gælder.
+  let root = await fs.mkdtemp(path.join(os.tmpdir(), 'harness-promte-deling-'));
+  let store = new Store(path.join(root, 'appdata')), features = new Features(store, async () => library);
+  await promte(store);
+  await features.migrate();
+  const established = await features.get(null);
+  assert.equal(established.chosen, 'alle', 'en installation med et login er eksisterende');
+  assert.equal(established.effective.deling, true); assert.equal(established.effective.versioner, true, 'Udgiv kræver versioner');
+  await features.save(null, { scope: 'alle', chosen: 'valgt', values: { versioner: true, deling: false } });
   assert.equal((await features.get(null)).effective.deling, false, 'brugerens eget fravalg gælder');
+  await fs.rm(root, { recursive: true, force: true });
+  // Ny installation: migreringen vurderer, før loginet findes; anbefalingen venter på versioner.
+  root = await fs.mkdtemp(path.join(os.tmpdir(), 'harness-promte-deling-')); t.after(() => fs.rm(root, { recursive: true, force: true }));
+  store = new Store(path.join(root, 'appdata')); features = new Features(store, async () => library);
+  await features.migrate();
+  assert.equal((await features.get(null)).effective.deling, false, 'uden login er Udgivelse fra');
+  await promte(store);
+  const lean = await features.get(null);
+  assert.equal(lean.chosen, '', 'grundpakken gælder stadig efter loginet');
+  assert.equal(lean.effective.versioner, false, 'versioner er fortsat et tilvalg');
+  assert.equal(lean.defaults.deling, false, 'anbefalingen trækkes fra, når dens versioner mangler');
 });

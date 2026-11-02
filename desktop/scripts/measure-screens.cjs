@@ -95,18 +95,17 @@ const server = http.createServer(async (req, res) => {
     await require('./ui-test-helpers.cjs').enterCredential(win, 'syntetisk-noegle-kun-til-maaling'); await click('#save-connection');
     await win.locator('#setup-ai').filter({ hasText: /virker|svarer/ }).waitFor(); await measure('forbindelse', '#setup', 'Opsætning: forbindelsen virker');
     await click('#setup-continue'); task = null;
-    await win.locator('#setup-title').filter({ hasText: 'Hvad skal Aura Prime hjælpe med?' }).waitFor(); await measure('funktioner-start', '#setup', 'Første start: funktioner');
-    await win.click('#features-pick'); await measure('funktioner-vaelg', '#setup', 'Første start: vælg selv');
-    await win.click('#setup-back'); await win.click('#features-all'); await win.waitForSelector('#create-form');
+    // Onboarding spørger ikke om funktioner: grundpakken gælder, og versioner tilvælges for målingen med versioner.
+    if (!withoutVersions) await win.evaluate(() => window.harness.featuresSave({ scope: 'alle', values: { versioner: true } }));
+    await win.waitForSelector('#create-form');
     // Projektopstart.
     await measure('projektopstart', '#onboarding', 'Hvad vil du bygge?');
     await win.click('#idea-examples-toggle'); await measure('ide-eksempler', '#onboarding', 'Hvad vil du bygge? · Eksempler på idéer'); await win.click('#idea-examples-toggle');
     await helpers.projectOptions(win); await measure('flere-valg', '#onboarding', 'Hvad vil du bygge? · Flere valg');
     await win.evaluate(() => { for (const details of document.querySelectorAll('#onboarding details')) details.open = true; }); await measure('flere-valg-alt', '#onboarding', 'Hvad vil du bygge? · alt foldet ud');
     await win.evaluate(() => { for (const details of document.querySelectorAll('#onboarding details')) details.open = false; });
-    // Første resultat.
+    // Første resultat. Grundpakken er standard: uden versioner er de ikke slået til fra starten.
     begin('Fra idé til første udkast');
-    if (withoutVersions) await win.evaluate(() => window.harness.featuresSave({ scope: 'alle', values: { versioner: false } }));
     await win.fill('#purpose', 'Jeg vil lave en oversigt over tre fiktive mødelokaler.');
     await click('#create'); await win.waitForSelector('#workspace:not([hidden])');
     state.project = path.join(documents, 'Aura', (await fs.readdir(path.join(documents, 'Aura')))[0]);

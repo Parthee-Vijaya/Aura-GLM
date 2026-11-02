@@ -1,12 +1,15 @@
 // Valgfrie funktioner kan slås til og fra. Grundpakken (alwaysOn) gælder også ved ældre fravalg.
-// Hver funktion har sine skills i det fælles bibliotek. Uden et valg gælder appens anbefalede pakke fra kataloget:
-// alle funktioner undtagen dem med "default": false. Udgivelse kræver ellers udviklerværktøjer og er
-// derfor kun med i pakken, når en komplai Run-adgang er forbundet: så kan Udgiv udgive uden ekstra værktøjer.
+// Hver funktion har sine skills i det fælles bibliotek. Uden et valg gælder grundpakken: grundreglerne
+// og de altid-aktive funktioner (fx designhjælpen) samt katalogets udtrykkelige anbefalinger
+// ("default": true). Øvrige funktioner og skills tilvælges ad gangen under Indstillinger › Funktioner.
+// "Hele pakken" (chosen 'alle') følger i stedet katalogets anbefaling: alle funktioner undtagen dem
+// med "default": false, fx Udgivelse, som kun er anbefalet, når en komplai Run-adgang er forbundet —
+// så kan Udgiv udgive uden ekstra værktøjer.
 const CHOICES = ['alle', 'valgt'];
 
 // En funktion, der bygger på en anden, er kun slået til sammen med den, fx Udgivelse med Versioner og fortryd.
-function resolve(definitions, defaults = {}, exceptions = {}) {
-  const on = Object.fromEntries(definitions.map(feature => [feature.id, feature.alwaysOn === true || (exceptions[feature.id] ?? defaults[feature.id] ?? feature.default !== false)]));
+function resolve(definitions, defaults = {}, exceptions = {}, fullPackage = false) {
+  const on = Object.fromEntries(definitions.map(feature => [feature.id, feature.alwaysOn === true || (exceptions[feature.id] ?? defaults[feature.id] ?? (fullPackage ? feature.default !== false : feature.default === true))]));
   for (const feature of definitions) if ((feature.requires || []).some(id => !on[id])) on[feature.id] = false;
   return on;
 }
@@ -25,12 +28,37 @@ function recommended(definitions, state) {
   const publishing = Boolean(state.hosting?.komplai?.secret) || Object.values(state.hosting?.promte || {}).some(login => login?.secret);
   return publishing ? definitions.map(feature => feature.id === 'deling' ? { ...feature, default: true } : feature) : definitions;
 }
+
+// Standardpakken låses én gang pr. indstillingsfil (idempotent via featuresDefault): en
+// installation i brug — gemte forbindelser eller projekter, udgivelses-logins, tidligere
+// funktionsvalg eller de pensionerede opstartsvalg — beholder hele pakken som chosen 'alle';
+// en helt ny indstillingsfil starter med grundpakken. pinDefault muterer state direkte og
+// kaldes som del af profilmigreringens énye atomiske gemning (og af Features.save som sikringsnet).
+function pinDefault(state) {
+  if (state.featuresDefault !== undefined || CHOICES.includes(state.features?.chosen)) return;
+  const established = Boolean((state.connections || []).length
+    || Object.keys(state.projects || {}).length
+    || state.hosting?.komplai?.secret || Object.values(state.hosting?.promte || {}).some(login => login?.secret)
+    || Object.keys(state.features?.on || {}).length
+    || state.startupDefaults && typeof state.startupDefaults === 'object' && !Array.isArray(state.startupDefaults));
+  state.featuresDefault = established ? 'alle' : 'grundpakke';
+  if (established) state.features = { ...(state.features || {}), chosen: 'alle' };
+}
 class Features {
   constructor(store, library) { this.store = store; this.library = library; }
   async definitions() { return (await this.library()).features; }
+  // Standardpakken vurderes én gang pr. indstillingsfil — typisk som del af profilmigreringen
+  // ved appstart. Før grundpakken blev standard, betød "intet valg" alle funktioner slået til,
+  // så en installation, der allerede er i brug, låser hele pakken fast som chosen 'alle' — ingen
+  // mister funktioner stille. En helt ny installation starter med grundpakken, og låsen
+  // forhindrer senere brug i at udvide standarden på egen hånd. Læsning (get) skriver aldrig;
+  // gemning (save) forsikrer sig mod at stå før migreringen.
+  async migrate() { return this.store.update(pinDefault); }
   async get(root) {
-    const library = await this.library(), state = await this.store.read();
+    const state = await this.store.read();
+    const library = await this.library();
     const definitions = recommended(library.features, state);
+    const fullPackage = state.features?.chosen === 'alle' || state.featuresDefault === 'alle';
     const defaults = state.features?.on || {};
     const saved = root ? state.projects[this.store.projectKey(root)]?.features || {} : {};
     const exceptions = Object.fromEntries(Object.entries(saved).filter(([id, value]) => definitions.some(feature => feature.id === id && !feature.alwaysOn) && typeof value === 'boolean'));
@@ -38,13 +66,15 @@ class Features {
     return {
       chosen: CHOICES.includes(state.features?.chosen) ? state.features.chosen : '',
       list: definitions.map(({ id, title, summary, requires = [], group = '', skills, alwaysOn = false }) => ({ id, title, summary, requires, group, alwaysOn, skills: skills.map(skill) })),
-      defaults: resolve(definitions, defaults),
+      defaults: resolve(definitions, defaults, {}, fullPackage),
       exceptions,
-      effective: resolve(definitions, defaults, exceptions)
+      effective: resolve(definitions, defaults, exceptions, fullPackage)
     };
   }
   // scope "alle" ændrer standarden for alle projekter. scope "projekt" gemmer undtagelser; null fjerner en undtagelse.
   async save(root, input) {
+    const before = await this.store.read();
+    if (before.featuresDefault === undefined && !CHOICES.includes(before.features?.chosen)) await this.migrate();
     const definitions = recommended(await this.definitions(), await this.store.read());
     if (!input || !['alle', 'projekt'].includes(input.scope) || !input.values || typeof input.values !== 'object' || Array.isArray(input.values)) throw new Error('Ugyldigt valg af funktioner.');
     const nullable = input.scope === 'projekt';
@@ -60,7 +90,8 @@ class Features {
     if (input.scope === 'alle') {
       await this.store.update(state => {
         // Hele pakken følger appens anbefaling i kataloget, også når den ændres i en senere version.
-        const base = input.chosen === 'alle' ? {} : resolve(definitions, state.features?.on), chosen = input.chosen || state.features?.chosen;
+        const fullPackage = state.features?.chosen === 'alle' || state.featuresDefault === 'alle';
+        const base = input.chosen === 'alle' ? {} : resolve(definitions, state.features?.on, {}, fullPackage), chosen = input.chosen || state.features?.chosen;
         state.features = { ...(chosen ? { chosen } : {}), on: Object.fromEntries(Object.entries({ ...base, ...values }).filter(optional)) };
       });
     } else {
@@ -74,4 +105,4 @@ class Features {
     return this.get(root);
   }
 }
-module.exports = { Features, resolve, couple, recommended };
+module.exports = { Features, resolve, couple, recommended, pinDefault };

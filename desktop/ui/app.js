@@ -143,10 +143,10 @@ function syncOnboardingVisuals() {
   if (!window.OnboardingB) return;
   const selected = state?.connections?.find(c => c.id === $('#setup-connection').value);
   const details = setupStep === 'provider' && $('#setup-provider').dataset.view === 'details';
-  const setupConnection = details ? state?.connections?.find(c => c.id === $('#connection-id').value) : setupStep === 'saved' || setupStep?.startsWith('features') ? selected : null;
+  const setupConnection = details ? state?.connections?.find(c => c.id === $('#connection-id').value) : setupStep === 'saved' ? selected : null;
   const setupCheck = setupConnection && connectionChecks.get(setupConnection.id);
   const kind = details ? $('#provider-kind').value : setupStep === 'local' ? 'ollama' : setupConnection?.kind || onboardingPreviewKind || '';
-  const phase = setupStep === 'profile' ? 'profile' : setupStep === 'saved' || setupStep === 'local' || details ? 'connection' : setupStep?.startsWith('features') ? 'features' : setupStep === 'provider' ? 'provider' : 'choice';
+  const phase = setupStep === 'profile' ? 'profile' : setupStep === 'saved' || setupStep === 'local' || details ? 'connection' : setupStep === 'provider' ? 'provider' : 'choice';
   const checked = Boolean(setupConnection && setupConnection.kind === kind && verifiedConnection === setupConnection.id && setupCheck?.status === 'ok' && setupCheck.count);
   window.OnboardingB.render($('#setup-visual'), { kind, phase, preview: setupStep === 'provider' && !details, connectionName: setupConnection?.name || '', saved: Boolean(setupConnection), checked, error: setupCheck?.status === 'error', pending: setupCheck?.status === 'checking' });
   for (const step of document.querySelectorAll('#setup .onboarding-b-progress li')) {
@@ -154,8 +154,8 @@ function syncOnboardingVisuals() {
     // which only completes once the connection has been verified.
     const complete = step.dataset.phase === 'profile' ? profileStepDone : step.dataset.phase === 'connection' && checked;
     step.dataset.complete = String(complete);
-    step.querySelector('span').textContent = complete ? '✓' : String(['profile', 'connection', 'features', 'idea'].indexOf(step.dataset.phase) + 1);
-    const active = step.dataset.phase === (phase === 'profile' ? 'profile' : phase === 'features' ? 'features' : 'connection');
+    step.querySelector('span').textContent = complete ? '✓' : String(['profile', 'connection', 'idea'].indexOf(step.dataset.phase) + 1);
+    const active = step.dataset.phase === (phase === 'profile' ? 'profile' : 'connection');
     if (active) step.setAttribute('aria-current', 'step'); else step.removeAttribute('aria-current');
   }
   const connection = state?.connections?.find(c => c.id === $('#connection-select').value);
@@ -203,9 +203,9 @@ function moveConnectionForm(guided, addFlow = false) {
 function setupPage(step) {
   ++setupGeneration;
   setupStep = step;
-  const headings = { profile: ['Din profil', 'Udfyld din profil — du kan altid ændre den under Indstillinger.'], choice: ['Hvordan vil du forbinde din AI?', 'Vælg den adgang, du allerede har.'], provider: ['Hvem er din udbyder?', 'Har du ikke en nøgle, viser vi dig, hvordan du får en.'], local: ['AI på din computer', 'Vi leder efter modeller, du allerede har i Ollama.'], saved: ['Din AI-forbindelse', 'Kontrollér forbindelsen, før du fortsætter.'], tools: ['Avanceret opsætning', 'Forbindelser og lokale værktøjer.'], features: ['Hvad skal Aura Prime hjælpe med?', 'Du kan altid ændre det under Indstillinger › Funktioner.'], 'features-pick': ['Hvad vil du slå til?', 'Vælg de funktioner, du vil bruge. Resten kan du slå til senere under Indstillinger › Funktioner.'] };
+  const headings = { profile: ['Din profil', 'Udfyld din profil — du kan altid ændre den under Indstillinger.'], choice: ['Hvordan vil du forbinde din AI?', 'Vælg den adgang, du allerede har.'], provider: ['Hvem er din udbyder?', 'Har du ikke en nøgle, viser vi dig, hvordan du får en.'], local: ['AI på din computer', 'Vi leder efter modeller, du allerede har i Ollama.'], saved: ['Din AI-forbindelse', 'Kontrollér forbindelsen, før du fortsætter.'], tools: ['Avanceret opsætning', 'Forbindelser og lokale værktøjer.'] };
   $('#setup-title').textContent = headings[step][0]; $('#setup-subtitle').textContent = headings[step][1];
-  $('#setup-eyebrow').textContent = step === 'profile' ? 'DIN PROFIL' : step.startsWith('features') ? 'FUNKTIONER' : 'DIN AI';
+  $('#setup-eyebrow').textContent = step === 'profile' ? 'DIN PROFIL' : 'DIN AI';
   for (const el of document.querySelectorAll('[data-setup-step]')) el.hidden = el.dataset.setupStep !== step;
   moveConnectionForm(step === 'provider');
   $('#setup-advanced').hidden = step !== 'choice';
@@ -475,15 +475,10 @@ function connectionFailed(reason) {
   if (!running) { showConnectionWarning(recovery); recovery = ''; }
 }
 async function leaveSetup(useAI) {
-  const choosingFeatures = setupStep.startsWith('features');
   const id = $('#setup-connection').value;
-  // Forbindelsen er kontrolleret før spørgsmålet om funktioner, så et valg dér fører altid videre.
-  if (choosingFeatures) useAI = pendingAI;
-  else {
-    if (useAI && (!id || verifiedConnection !== id)) return;
-  }
-  // Første gang spørger appen, hvad den skal hjælpe med, før projektet oprettes. Vælg senere beholder standarden: alle funktioner.
-  if (guidedSetup && !repeatSetup && !choosingFeatures && !state?.features?.chosen) { pendingAI = useAI; setupPage('features'); return; }
+  if (useAI && (!id || verifiedConnection !== id)) return;
+  // Funktionen er ikke længere et spørgsmål under opsætningen: grundpakken gælder, og
+  // hver funktion tilvælges ad gangen under Indstillinger › Funktioner.
   const returningToConnections = Boolean(repeatSetup);
   autoConnect = returningToConnections && !useAI ? repeatSetup.autoConnect : useAI;
   repeatSetup = null;
@@ -1756,23 +1751,16 @@ function applyFeatures() {
   for (const id of ['#design-options', '#design-row']) $(id).hidden = !featureOn('design');
   updateStartupSummary();
 }
-// Et valg slår det til, funktionen bygger på, og et fravalg slår det fra, der bygger på den. Hovedprocessen gør det samme.
-function coupleFeatures(values, id, value) {
-  const next = { ...values, [id]: value };
-  if (value) for (const required of state.features.list.find(feature => feature.id === id).requires) next[required] = true;
-  else for (const feature of state.features.list) if (feature.requires.includes(id)) next[feature.id] = false;
-  return next;
-}
-// Én kontakt pr. funktion med én linje forklaring. Skills står bag ⓘ i Indstillinger; ved første start er de udeladt.
-function featureRow(feature, checked, onChange, note, withSkills = true) {
+// Én kontakt pr. funktion med én linje forklaring. Skills står bag ⓘ i Indstillinger › Funktioner.
+function featureRow(feature, checked, onChange, note) {
   const row = node('div', undefined, 'feature-row'); row.dataset.feature = feature.id;
   const label = node('label', undefined, 'feature-toggle');
   const title = node('strong', feature.title);
   const requires = feature.requires.map(id => state.features.list.find(item => item.id === id).title);
   const integration = feature.skills[0]?.integration;
   // En integration viser ejer, adgang og dataflow, så man kan vurdere den, før den slås til.
-  if (withSkills && integration) title.append(info(feature.title, [`System: ${integration.system}`, `Ejer: ${integration.owner}`, `Adgang: ${integration.access}`, `Data: ${integration.data}`, `Dataflow: ${integration.dataFlow}`, `Pris: ${integration.cost}`, integration.itRoute ? 'Kræver hjælp fra IT-afdelingen.' : '', integration.sensitive ? 'Omfatter følsomme personoplysninger.' : '', `Skillen vedligeholdes af ${integration.maintainer} og er kontrolleret ${integration.checkedAt}.`].filter(Boolean).join('\n')));
-  else if (withSkills) title.append(info(feature.title, `${feature.skills.length === 1 ? 'Skill' : 'Skills'}, AI’en henter, når opgaven passer:\n${feature.skills.map(skill => `• ${skill.title}: ${skill.summary}`).join('\n')}${requires.length ? `\n\nBygger på ${requires.join(' og ')}, som slås til sammen med den.` : ''}`));
+  if (integration) title.append(info(feature.title, [`System: ${integration.system}`, `Ejer: ${integration.owner}`, `Adgang: ${integration.access}`, `Data: ${integration.data}`, `Dataflow: ${integration.dataFlow}`, `Pris: ${integration.cost}`, integration.itRoute ? 'Kræver hjælp fra IT-afdelingen.' : '', integration.sensitive ? 'Omfatter følsomme personoplysninger.' : '', `Skillen vedligeholdes af ${integration.maintainer} og er kontrolleret ${integration.checkedAt}.`].filter(Boolean).join('\n')));
+  else title.append(info(feature.title, `${feature.skills.length === 1 ? 'Skill' : 'Skills'}, AI’en henter, når opgaven passer:\n${feature.skills.map(skill => `• ${skill.title}: ${skill.summary}`).join('\n')}${requires.length ? `\n\nBygger på ${requires.join(' og ')}, som slås til sammen med den.` : ''}`));
   const text = node('span'); text.append(title, node('small', feature.summary));
   const input = node('input'); input.type = 'checkbox'; input.setAttribute('role', 'switch'); input.setAttribute('aria-label', feature.title); input.dataset.feature = feature.id; input.checked = checked; input.disabled = projectLoading;
   input.id = `feature-${feature.id}-${crypto.randomUUID()}`; label.htmlFor = input.id;
@@ -1781,28 +1769,6 @@ function featureRow(feature, checked, onChange, note, withSkills = true) {
   if (note) row.append(note);
   return row;
 }
-// Første start, Vælg selv: grundpakken gælder altid; kun de valgfrie funktioner vælges.
-let pendingAI = false, pickedFeatures = {};
-function updatePick() {
-  for (const input of document.querySelectorAll('#setup-features-list input[data-feature]')) input.checked = pickedFeatures[input.dataset.feature] === true;
-  const count = Object.values(pickedFeatures).filter(Boolean).length;
-  $('#features-continue').textContent = count ? `Fortsæt med ${count} tilvalg` : 'Fortsæt med grundpakken';
-}
-$('#features-all').onclick = () => action(async () => {
-  state.features = await call('featuresSave', { scope: 'alle', chosen: 'alle', values: {} });
-  await leaveSetup(pendingAI);
-});
-$('#features-pick').onclick = () => {
-  // Ved første start vælges kun de almindelige funktioner. Integrationer slås til under Indstillinger › Funktioner.
-  const main = state.features.list.filter(feature => !feature.group && !feature.alwaysOn);
-  pickedFeatures = Object.fromEntries(main.map(feature => [feature.id, false]));
-  $('#setup-features-list').replaceChildren(...main.map(feature => featureRow(feature, false, (id, value) => { pickedFeatures = coupleFeatures(pickedFeatures, id, value); updatePick(); }, null, false)));
-  updatePick(); setupPage('features-pick');
-};
-$('#features-continue').onclick = () => action(async () => {
-  state.features = await call('featuresSave', { scope: 'alle', chosen: 'valgt', values: pickedFeatures });
-  await leaveSetup(pendingAI);
-});
 // Indstillinger › Funktioner: standarden for alle projekter eller undtagelser for det åbne projekt.
 let featureScope = 'alle';
 function renderFeatures(focus) {
@@ -1934,7 +1900,7 @@ $('#welcome-skip').onclick = leaveIntroduction;
 $('#welcome-dialog').addEventListener('close', () => { if (!$('#welcome-dialog').open) document.body.classList.remove('introduction-open'); });
 $('#welcome-dialog').addEventListener('cancel', event => { event.preventDefault(); leaveIntroduction(); });
 $('#intro-button').onclick = () => showIntroduction();
-$('#setup-back').onclick = () => { const leave = () => repeatSetup ? action(() => leaveSetup(false)) : guidedSetup ? showIntroduction('start') : action(() => leaveSetup(false)); if (setupStep === 'features-pick') setupPage('features'); else if (setupStep === 'provider' && $('#setup-provider').dataset.view === 'details') providerPicker(); else if (setupStep === 'profile') leave(); else if (setupStep !== 'choice') { clearConnectionReceipt(); setupPage('choice'); } else if (profileStepShown) setupPage('profile'); else leave(); };
+$('#setup-back').onclick = () => { const leave = () => repeatSetup ? action(() => leaveSetup(false)) : guidedSetup ? showIntroduction('start') : action(() => leaveSetup(false)); if (setupStep === 'provider' && $('#setup-provider').dataset.view === 'details') providerPicker(); else if (setupStep === 'profile') leave(); else if (setupStep !== 'choice') { clearConnectionReceipt(); setupPage('choice'); } else if (profileStepShown) setupPage('profile'); else leave(); };
 async function beginGuidedProject() {
   if (current) { await $('#new').onclick(); if (current) return; }
   closeIntroduction(); showSetup('', true);

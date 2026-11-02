@@ -173,7 +173,9 @@ async function main() {
       // Intet skærmbillede eller DOM-udtræk af feltet, mens nøglen tastes.
       note(`KLAR TIL NØGLE: Indtast ${provider}-nøglen direkte i dette Aura-vindue, og klik Gem og kontrollér. Ingen nøgle i chat eller terminal.`);
       await page.waitForFunction(() => !document.querySelector('#setup-continue').hidden && !document.querySelector('#setup-continue').disabled, null, { timeout: 30 * 60000, polling: 1000 });
-      await page.click('#setup-continue'); await page.click('#features-all');
+      // Onboarding spørger ikke om funktioner; Fortryd-opgaven kræver versioner som et bevidst tilvalg.
+      await page.click('#setup-continue');
+      await page.evaluate(() => window.harness.featuresSave({ scope: 'alle', values: { versioner: true } }));
     }
     await page.waitForSelector('#create-form'); await page.fill('#purpose', idea); await page.click('#create');
     await page.waitForSelector('#workspace:not([hidden])', { timeout: 60000 });

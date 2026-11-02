@@ -84,6 +84,8 @@ test('arbejdsbænken afviser en ændret kopi og gemmer en gennemgået indfletnin
   const { Workbench } = require('../core/workbench.cjs');
   const bench = new Workbench({ directory: path.join(dir, 'bench'), safeStorage: {}, profiles: path.join(__dirname, '../../profiles'), emit: () => {} });
   t.after(() => bench.close()); bench.restoration = new Restoration(bench.git, bench.store);
+  // Et "Hele pakken"-valg fra en tidligere version: versionshistorikken er med fra starten.
+  await bench.store.update(state => { state.features = { chosen: 'alle' }; });
   await fs.writeFile(path.join(root, 'a.txt'), 'øverst\nmidte\nnederst\n');
   await bench.git.startProject(root); await bench.store.saveProject(root, { autoCheckpoint: true });
   await bench.activate({ root, name: 'Prøve' }); const original = bench.chat;

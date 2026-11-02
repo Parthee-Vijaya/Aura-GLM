@@ -76,15 +76,18 @@ const { run } = require('../core/git.cjs');
   await page.waitForFunction(()=>!document.querySelector('#local-discovery-use').disabled);
   assert.equal((await page.evaluate(()=>window.harness.connectionState())).value.connections.length,1);
   await page.click('#setup-back');await page.click('#setup-back');await page.click('#setup-back');assert.equal(await page.locator('#welcome-dialog').evaluate(el=>el.open),true);await page.click('#welcome-build');await page.click('#setup-local');
-  // Første start: ét spørgsmål om funktioner med to valg. Hele pakken står først og er markeret som anbefalet.
-  await page.locator('#setup-title').filter({hasText:'Hvad skal Aura Prime hjælpe med?'}).waitFor();
-  assert.equal(await page.locator('#setup-feature-choice button:visible').count(),2);
-  assert.equal(await page.locator('#setup-feature-choice button').first().locator('.recommended').textContent(),'Anbefalet');
-  assert.equal(await page.locator('#setup-eyebrow').textContent(),'FUNKTIONER');
-  assert.ok(await page.locator('#setup-local').evaluate(el=>el.getBoundingClientRect().bottom<=innerHeight));
-  await page.screenshot({path:path.join(root,'funktioner-foerste-start.png'),animations:'disabled'});
-  await page.click('#features-all');await page.waitForSelector('#create-form');
-  assert.equal((await page.evaluate(()=>window.harness.featuresGet())).value.chosen,'alle');
+  // Første start spørger ikke om funktioner: opsætningen ender ved idéen, og grundpakken gælder.
+  await page.waitForSelector('#create-form');
+  assert.equal(await page.isVisible('#setup'),false,'intet funktionstrin i opsætningen');
+  assert.equal(await page.locator('[data-phase="features"]').count(),0,'fremgangslinjen har kun profil, forbindelse og idé');
+  const state=(await page.evaluate(()=>window.harness.featuresGet())).value;
+  assert.equal(state.chosen,'');
+  assert.deepEqual(Object.keys(state.effective).filter(id=>state.effective[id]),['design'],'grundpakken: kun designhjælpen er slået til');
+  // Git fra start er nu et bevidst tilvalg: Versioner og fortryd slås til i panelet, før projektet oprettes.
+  await require('./ui-test-helpers.cjs').menuClick(page,'#features-button');await page.waitForSelector('#features-dialog[open]');
+  await page.locator('#features-list input[data-feature="versioner"]').check();
+  await page.locator('#features-feedback').filter({hasText:'Gemt for alle projekter'}).waitFor();
+  await page.click('[data-close="features-dialog"]');
   assert.equal(await page.inputValue('#name'),'Mit bibliotek');
   await app.evaluate(({dialog})=>{dialog.showOpenDialog=async()=>({canceled:true,filePaths:[]});});
   await page.click('#choose-location');await page.waitForFunction(()=>!document.querySelector('#create').disabled);assert.equal(await page.inputValue('#name'),'Mit bibliotek');
@@ -106,6 +109,6 @@ const { run } = require('../core/git.cjs');
   assert.equal((await page.evaluate(()=>window.harness.providerAccount('https://example.invalid'))).ok,false);
   assert.deepEqual(errors,[]);
   await page.screenshot({path:path.join(root,'arbejdsomraade.png')});
-  console.log(JSON.stringify({status:'bestået',root,checks:['første start med valg af brugsvej','lokal demonstration uden model eller projektfiler','spring over og genindlæsning','navneforslag respekterer rettelser','bevaret kladde','guidet fortsættelse uden AI','annulleret mappevalg','rigtigt projekt med preview','kun lokal katalogsøgning uden modelsendelse', 'aktivt tilvalg af Ollama uden dubletter','afvist ukendt udbyderlink']}));
+  console.log(JSON.stringify({status:'bestået',root,checks:['første start med valg af brugsvej','lokal demonstration uden model eller projektfiler','spring over og genindlæsning','navneforslag respekterer rettelser','bevaret kladde','guidet fortsættelse uden AI','grundpakken uden funktionsspørgsmål','annulleret mappevalg','rigtigt projekt med preview','kun lokal katalogsøgning uden modelsendelse', 'aktivt tilvalg af Ollama uden dubletter','afvist ukendt udbyderlink']}));
  }finally{await app?.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -14,7 +14,7 @@ Aura skal kunne bruges af en person uden teknisk baggrund, som klikker sig igenn
 - **Knappen siger, hvad der sker.** Skriv "Installer resten" frem for et afkrydsningsfelt og en generel knap.
 - **Én næste handling.** Når noget er færdigt, vises det vigtigste næste skridt; andre handlinger er sekundære.
 
-Eksempler i appen: AI-adgang har to store valg. Udbyderoversigten er en udtrykkeligt valgt undtagelse fra grænsen på fire valg: alle ti udbydere har store kort med logo og forbindelsesstatus. Ingen udbyder eller model anbefales. Kun det valgte kort åbner en formular. Modellen er udbyderens eget udgangspunkt, valgt på forhånd; modelknappen viser det, to alternativer og "Alle modeller". En filgodkendelse viser Tillad én gang, Tillad altid i projektet og Afvis; tilladelse til resten af opgaven ligger under Flere valg. Funktioner ved første start har to kort, Hele pakken (anbefalet) og Vælg selv. Kodeværktøj har fire kort og "Et andet værktøj".
+Eksempler i appen: AI-adgang har to store valg. Udbyderoversigten er en udtrykkeligt valgt undtagelse fra grænsen på fire valg: alle ti udbydere har store kort med logo og forbindelsesstatus. Ingen udbyder eller model anbefales. Kun det valgte kort åbner en formular. Modellen er udbyderens eget udgangspunkt, valgt på forhånd; modelknappen viser det, to alternativer og "Alle modeller". En filgodkendelse viser Tillad én gang, Tillad altid i projektet og Afvis; tilladelse til resten af opgaven ligger under Flere valg. Funktioner vælges ad gangen under Indstillinger › Funktioner — første start spørger ikke om dem. Kodeværktøj har fire kort og "Et andet værktøj".
 
 Tæl de synlige valg, før en skærm kaldes færdig, og gennemfør forløbet i appen.
 
@@ -35,10 +35,9 @@ Dialogens tilgængelige navn skal bruge den overskrift, der faktisk vises i det 
 
 - Første skærm spørger, om man vil bygge i appen eller bruge Aura Harness i sit eget kodeværktøj.
 - Den guidede opstart viser ét spørgsmål ad gangen med stor overskrift og to eller tre store valg. Først vises Din profil med navn, ikon, tema og hjælpeniveau — alt kan udelades. Derefter vælger man adgangsnøgle eller AI på computeren; en gemt forbindelse bliver et tredje valg. Adgangsnøgle fører til ti udbyderkort på lige vilkår, inklusive Alexandra, Azure, Claude, Corti, Egen server, Mistral, Ollama, OpenAI, OpenCode Zen og OpenRouter. Nøglefeltet vises først, når en udbyder er valgt. "Har du ikke en nøgle? Sådan får du en" viser konto, betaling, månedlig grænse og nøgle som nummererede trin med en knap til hver side hos udbyderen. Sidepanelet er skjult under introduktionen.
-- Efter AI-trinnet spørger den guidede opstart én gang: "Hvad skal Aura hjælpe med?".
-  - Der er to store valg. Hele pakken står først og er markeret Anbefalet; det andet er Vælg selv.
-  - Vælg selv viser de seks funktioner som kontakter, der starter slået fra. Knappen siger, hvad der sker, fx "Fortsæt med 2 funktioner".
-  - Én linje nævner det, der altid er slået til.
+- Efter AI-trinnet fører den guidede opstart direkte videre til idéen; funktioner spørges ikke ved første start.
+  - Standarden er grundpakken: grundregler og designhjælpen (altid aktiv). Øvrige funktioner tilvælges ad gangen under Indstillinger › Funktioner.
+  - Fremgangslinjen er "1 Din profil · 2 Forbindelse · 3 Din idé".
 - Indstillinger › Funktioner viser én kontakt pr. funktion med én linje forklaring.
   - Skills og "Altid slået til" er foldet sammen.
   - Med et projekt åbent vælger man Alle projekter eller Kun projektet. En undtagelse står under funktionen med Brug standarden.

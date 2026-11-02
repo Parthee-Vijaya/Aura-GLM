@@ -100,16 +100,16 @@ function makeDom() {
   const quick = new El('div'); quick.className = 'setup-quick-actions'; setup.append(quick);
   quick.append(make('button', 'setup-local'), make('button', 'setup-advanced'), make('button', 'setup-remove-all'));
   const progress = new El('ol'); progress.className = 'onboarding-b-progress'; setup.append(progress);
-  const labels = { profile: 'Din profil', connection: 'Forbindelse', features: 'Funktioner', idea: 'Din idé' };
-  for (const phase of ['profile', 'connection', 'features', 'idea']) {
+  const labels = { profile: 'Din profil', connection: 'Forbindelse', idea: 'Din idé' };
+  for (const phase of ['profile', 'connection', 'idea']) {
     const item = new El('li'); item.dataset.phase = phase;
-    const number = new El('span'); number.textContent = String(['profile', 'connection', 'features', 'idea'].indexOf(phase) + 1);
+    const number = new El('span'); number.textContent = String(['profile', 'connection', 'idea'].indexOf(phase) + 1);
     item.append(number, labels[phase]); progress.append(item);
   }
   setup.append(make('p', 'setup-reason'));
   const layout = new El('div'); setup.append(layout);
   const content = new El('div'); content.className = 'onboarding-b-content'; layout.append(content);
-  const sections = { 'setup-profile': 'profile', 'setup-choice': 'choice', 'setup-provider': 'provider', 'setup-local-step': 'local', 'setup-saved': 'saved', 'setup-tools': 'tools', 'setup-features': 'features', 'setup-features-pick': 'features-pick' };
+  const sections = { 'setup-profile': 'profile', 'setup-choice': 'choice', 'setup-provider': 'provider', 'setup-local-step': 'local', 'setup-saved': 'saved', 'setup-tools': 'tools' };
   for (const [id, step] of Object.entries(sections)) { const section = make('section', id); section.dataset.setupStep = step; section.hidden = id !== 'setup-choice'; content.append(section); }
   const profile = registry.get('setup-profile');
   profile.append(make('input', 'profile-name'));
@@ -155,9 +155,9 @@ function runSetup({ profile = blank(), suggestion = 'Parthee', repeat = null, av
     window: { OnboardingB: { render: (element, state) => visuals.push(state.phase) }, ProfileIcons, scrollTo: () => {}, dispatchEvent: event => { if (event.type === 'aura:profile-saved') announced.push(event.detail); } },
     CustomEvent: class { constructor(type, init) { this.type = type; this.detail = init?.detail; } },
     node: (tag, text, className) => { const el = new El(tag); if (text !== undefined) el.textContent = text; if (className) el.className = className; return el; },
-    state: { connections: [], features: { chosen: true } },
+    state: { connections: [] },
     current: null, projectLoading: false, setupActive: false, setupStep: 'choice', guidedSetup: false,
-    repeatSetup: repeat, pendingAI: false, verifiedConnection: '', setupGeneration: 0, localDiscoveryGeneration: 0,
+    repeatSetup: repeat, verifiedConnection: '', setupGeneration: 0, localDiscoveryGeneration: 0,
     connectionChecks: { get: () => undefined }, acceptedFingerprint: null, pendingSend: null, connectionReceipt: null,
     applyChatChoiceRecommendation: () => { adoptCalls.push('adopt'); },
     localStorage: { getItem: key => store[key] ?? null, setItem: (key, value) => { store[key] = String(value); } },
@@ -204,7 +204,7 @@ test('profile-icons matcher kernerprofilens ikonliste og tegner Aura-stregglyffe
   assert.equal(ProfileIcons.initials(null), '');
 });
 
-test('index.html har profil-trinnet med felter og fire nummererede fremgangspunkter', () => {
+test('index.html har profil-trinnet med felter og tre nummererede fremgangspunkter', () => {
   const index = fs.readFileSync(path.join(ui, 'index.html'), 'utf8');
   assert.ok(index.includes('<script src="profile-icons.js" defer></script>'), 'profil-ikonmodulet indlæses');
   assert.ok(index.indexOf('profile-icons.js') < index.indexOf('src="app.js"'), 'ikonmodulet indlæses før app.js');
@@ -233,11 +233,14 @@ test('index.html har profil-trinnet med felter og fire nummererede fremgangspunk
   const progressStart = index.indexOf('<ol class="onboarding-b-progress"');
   const progress = index.slice(progressStart, index.indexOf('</ol>', progressStart));
   const phases = [...progress.matchAll(/data-phase="([a-z]+)"/g)].map(match => match[1]);
-  assert.deepEqual(phases, ['profile', 'connection', 'features', 'idea']);
+  assert.deepEqual(phases, ['profile', 'connection', 'idea'], 'funktionen er ikke længere et punkt — den vælges i Indstillinger');
   assert.ok(!progress.includes('data-phase="provider"'), 'udbyderpunktet er forenet med forbindelsen');
   const numbers = [...progress.matchAll(/<span>(\d)<\/span>/g)].map(match => match[1]);
-  assert.deepEqual(numbers, ['1', '2', '3', '4']);
-  assert.ok(progress.includes('Din profil') && progress.includes('Forbindelse') && progress.includes('Funktioner') && progress.includes('Din idé'));
+  assert.deepEqual(numbers, ['1', '2', '3']);
+  assert.ok(progress.includes('Din profil') && progress.includes('Forbindelse') && progress.includes('Din idé'));
+  assert.ok(!progress.includes('Funktioner'), 'funktionsspørgsmålet er ude af onboarding');
+  // Skills ad gangen: intet funktionstrin står tilbage i opsætningen.
+  for (const gone of ['setup-features', 'setup-features-pick', 'features-all', 'features-pick', 'features-continue', 'Hele pakken']) assert.ok(!index.includes(gone), `${gone} er fjernet fra onboarding`);
 });
 
 test('profil-trinnet er det første trin, når den guidede opsætning starter med en tom profil', async () => {
@@ -453,6 +456,17 @@ test('en eksisterende standard-AI overskrives ikke af gennemførelsen', async ()
   assert.equal(f.saves.some(save => save.standardAI), false, 'standard-AI røres ikke, når den allerede er valgt');
 });
 
+test('gennemført opsætning spørger ikke om funktioner — grundpakken gælder fra starten', async () => {
+  const f = runSetup();
+  await f.context.showSetup('', true);
+  await f.registry.get('profile-continue').onclick();
+  f.registry.get('setup-connection').value = 'forbindelse-1';
+  f.context.verifiedConnection = 'forbindelse-1';
+  await f.context.leaveSetup(true);
+  assert.equal(f.registry.get('setup').hidden, true, 'opsætningen gennemføres uden et funktionstrin');
+  assert.ok(!f.calls.includes('featuresSave'), 'onboarding gemmer intet funktionsvalg');
+});
+
 test('standard-AI udfyldes også, når profil-trinnet ikke blev vist', async () => {
   const f = runSetup({ profile: { ...blank(), name: 'Anna', icon: 'aura-1' }, repeat: { autoConnect: false } });
   await f.context.showSetup('', true);
@@ -463,7 +477,7 @@ test('standard-AI udfyldes også, når profil-trinnet ikke blev vist', async () 
   assert.deepEqual(plain(f.saves), [{ standardAI: { connectionID: 'forbindelse-1', modelID: '' } }], 'uden profil-trin gemmes kun standard-AI');
 });
 
-test('fremgangslinjen mærker profil og forbindelse separat med numrene 1-4', async () => {
+test('fremgangslinjen mærker profil og forbindelse separat med numrene 1-3', async () => {
   const f = runSetup();
   await f.context.showSetup('', true);
   assert.equal(progressItem(f, 'profile').getAttribute('aria-current'), 'step');
@@ -472,18 +486,15 @@ test('fremgangslinjen mærker profil og forbindelse separat med numrene 1-4', as
   assert.equal(progressItem(f, 'connection').getAttribute('aria-current'), 'step', 'forbindelsesvalget mærker punkt 2');
   f.context.setupPage('provider');
   assert.equal(progressItem(f, 'connection').getAttribute('aria-current'), 'step', 'udbydertrinnet mærker også punkt 2');
-  f.context.setupPage('features');
-  assert.equal(progressItem(f, 'features').getAttribute('aria-current'), 'step');
   assert.equal(progressItem(f, 'connection').querySelector('span').textContent, '2');
-  assert.equal(progressItem(f, 'features').querySelector('span').textContent, '3');
-  assert.equal(progressItem(f, 'idea').querySelector('span').textContent, '4');
+  assert.equal(progressItem(f, 'idea').querySelector('span').textContent, '3', 'idéen er nummer 3 — funktioner spørges ikke længere');
 });
 
 test('forbindelsespunktet får først ✓, når forbindelsen er kontrolleret', async () => {
   const f = runSetup();
   await f.context.showSetup('', true);
   await f.registry.get('profile-continue').onclick();
-  f.context.state = { connections: [{ id: 'forbindelse-1', kind: 'corti', name: 'Testforbindelse' }], features: { chosen: true } };
+  f.context.state = { connections: [{ id: 'forbindelse-1', kind: 'corti', name: 'Testforbindelse' }] };
   f.registry.get('setup-connection').value = 'forbindelse-1';
   f.context.setupStep = 'saved';
   f.context.syncOnboardingVisuals();
