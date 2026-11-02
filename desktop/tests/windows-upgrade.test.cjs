@@ -41,6 +41,6 @@ test('NSIS-identiteten og databevarelsen er stadig kompatibel med den eksisteren
   assert.equal(config.nsis.oneClick, false);
   assert.equal(config.publish.provider, 'github');
   assert.equal(config.publish.owner, 'Parthee-Vijaya');
-  assert.equal(config.publish.repo, 'Aura-GLM');
+  assert.equal(config.publish.repo, 'Aura-Prime');
   assert.equal(config.publish.channel, 'beta');
 });

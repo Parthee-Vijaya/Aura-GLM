@@ -11,7 +11,7 @@ const binaries = [
   `${prefix}-${version}-mac-arm64.dmg`, `${prefix}-${version}-mac-x64.dmg`, `${prefix}-${version}-win-x64.exe`,
   `${prefix}-${version}-mac-arm64.zip`, `${prefix}-${version}-mac-x64.zip`
 ];
-const url = name => `https://github.com/Parthee-Vijaya/Aura-GLM/releases/download/v${version}/${name}`;
+const url = name => `https://github.com/Parthee-Vijaya/Aura-Prime/releases/download/v${version}/${name}`;
 function fixture() {
   const content = Buffer.from('Synthetic release bytes, never executed.');
   const files = binaries.map(name => ({ name, bytes: content.length,
@@ -27,7 +27,7 @@ function fixture() {
 
 test('release identity and artifact names match the running fork distribution', () => {
   assert.equal(contract.repository, distribution.repository);
-  assert.equal(contract.repository, 'Parthee-Vijaya/Aura-GLM');
+  assert.equal(contract.repository, 'Parthee-Vijaya/Aura-Prime');
   assert.deepEqual(contract.expectedFiles(version), binaries.slice(0, 3));
   assert.deepEqual(contract.releaseBinaries(version), binaries);
   assert.deepEqual(contract.installer(binaries[0]), { version, os: 'mac', arch: 'arm64', extension: 'dmg', target: 'mac-arm64' });

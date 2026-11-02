@@ -14,7 +14,7 @@ module.exports = {
   dmg: { sign: false },
   win: { icon: 'packaging/icon.png', target: ['nsis'], signAndEditExecutable: true, executableName: 'Aura' },
   nsis: { oneClick: false, perMachine: false, allowToChangeInstallationDirectory: true, createDesktopShortcut: true, deleteAppDataOnUninstall: false, language: '1030' },
-  publish: { provider: 'github', owner: 'Parthee-Vijaya', repo: 'Aura-GLM', channel: 'beta' },
+  publish: { provider: 'github', owner: 'Parthee-Vijaya', repo: 'Aura-Prime', channel: 'beta' },
   generateUpdatesFilesForAllChannels: true,
   beforePack: async context => {
     await require('./scripts/create-icon.cjs').syncAuraIcons();

@@ -1,6 +1,6 @@
 # Aura Prime — forkens arbejdsregler
 
-- Dette repository er `Parthee-Vijaya/Aura-GLM` (navneskiftet fra Aura GLM til Aura Prime er vedtaget 1. november 2026; navnet har én kilde i `desktop/core/distribution.cjs`). Originalen og dens åbne PR'er ændres kun ved en særskilt bestilling.
+- Dette repository er `Parthee-Vijaya/Aura-Prime` (navneskiftet fra Aura GLM til Aura Prime er vedtaget 1. november 2026; navnet har én kilde i `desktop/core/distribution.cjs`). Originalen og dens åbne PR'er ændres kun ved en særskilt bestilling.
 - Bevar det godkendte UI, onboarding B, funktioner, planer og godkendelser. UI/UX-ændringer kræver brugerens konkrete ønske og accept; en allerede givet accept skal ikke gentages.
 - Kommunikation og dokumentation er på dansk; kode, symbolnavne og commits er på engelsk.
 - **Designhjælpen er altid aktiv i Aura Prime.** Bevar Aura-design og den leverede byggevejledning som grundpakke fra første idé-, plan- og byggeforsøg. Første udkast skal have gennemarbejdet design og visuel kontrol. Gamle fravalg og projekttilpasninger må ikke fjerne grundmetoden; planer, dataregler og værktøjsgodkendelser gælder fortsat.

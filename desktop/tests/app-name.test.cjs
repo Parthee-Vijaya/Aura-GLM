@@ -6,7 +6,7 @@ const path = require('node:path');
 // Productnavnet har én kilde: core/distribution.cjs. Denne test afviser gamle
 // produktnavne som levende tekst i UI og holder metadata og titel i trit, så et
 // fremtidigt navneskift ikke kan efterlade halve omdøbninger. Historiske
-// udgivelsesnoter og repo-/feed-identiteten (Aura-GLM) røres ikke her.
+// udgivelsesnoter og repo-/feed-identiteten (Aura-Prime) røres ikke her.
 const distribution = require('../core/distribution.cjs');
 const ui = path.join(__dirname, '..', 'ui');
 const OLD_NAMES = [/Aura GLM/, /AuraGLM/, /Aura[ -]1\b/];

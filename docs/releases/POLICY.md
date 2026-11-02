@@ -1,6 +1,6 @@
 # Versioner og oprydning i Aura Prime
 
-Brugerens instruktion af 25. oktober 2026 gælder for denne fork, `Parthee-Vijaya/Aura-GLM` (oprindeligt `Parthee-Vijaya/ai-harness`).
+Brugerens instruktion af 25. oktober 2026 gælder for denne fork, `Parthee-Vijaya/Aura-Prime` (oprindeligt `Parthee-Vijaya/ai-harness`).
 
 ## Navn og version
 
