@@ -156,6 +156,9 @@ function makeDom() {
   const advanced = make('details', 'connection-advanced');
   advanced.append(make('input', 'connection-name'), make('input', 'base-url'), make('span', 'base-url-help'), new El('p', document));
   form.append(advanced);
+  const reuseRow = make('div', 'connection-key-reuse-row'); reuseRow.hidden = true;
+  reuseRow.append(new El('label', document), make('select', 'connection-key-reuse'));
+  form.append(reuseRow);
   form.append(make('button', 'credential-open'), make('p', 'credential-status'));
   const clearRow = make('label', 'clear-key-row'); const clearKey = make('input', 'clear-key'); clearKey.type = 'checkbox';
   clearRow.append(clearKey); form.append(clearRow, make('p', 'connection-cost'), make('button', 'cost-info'));
@@ -458,6 +461,51 @@ test('flowet holder listen skjult, så en igangværende fjernelse fra listen afv
   await assert.rejects(f.context.removeSavedConnection('one', { fromList: true }), /ændret/, 'fjernelsen kræver en synlig liste');
   assert.equal(f.harness.removals.length, 0, 'ingen fjernelse gennemføres under flowet');
 });
+
+// Genbrug af en gemt nøgle i tilføj-flowet: kilderne er forbindelser af samme
+// udbyder med en gemt nøgle, og gemningen medsender kilde-id og revisionen fra
+// den offentlige forbindelsestilstand.
+test('en gemt nøgle kan genbruges i tilføj-flowet — valget præudfylder adressen og medsender kilde og revision', async () => {
+  const f = runFlow({ connections: [
+    { id: 'one', kind: 'corti', name: 'Gamle Corti', hasKey: true, revision: 'rev-1', baseURL: definitions.corti.baseURL },
+    { id: 'two', kind: 'corti', name: 'Uden nøgle', hasKey: false, revision: 'rev-2', baseURL: definitions.corti.baseURL }
+  ] });
+  openFlow(f);
+  chooseProvider(f, 'corti');
+  const row = f.registry.get('connection-key-reuse-row'), select = f.registry.get('connection-key-reuse');
+  assert.equal(row.hidden, false, 'rækken vises, når udbyderen har en gemt nøgle');
+  assert.deepEqual(select.children.map(item => item.textContent), ['Ingen — indtast selv en nøgle', 'Gamle Corti'], 'kun forbindelser med en gemt nøgle står i listen');
+  select.value = 'one'; select.onchange();
+  assert.equal(f.registry.get('base-url').value, definitions.corti.baseURL, 'adressen præudfyldes fra kilden');
+  await submitConnection(f);
+  assert.equal(f.harness.saves[0].copyKeyFrom, 'one', 'gemningen medsender kilde-id');
+  assert.equal(f.harness.saves[0].copyKeyRevision, 'rev-1', 'revisionen fra den offentlige tilstand medsendes');
+});
+
+test('genbrugskilden følger udbyderen — skift rydder valget, og uden kilder er rækken væk', () => {
+  const f = runFlow({ connections: [{ id: 'one', kind: 'corti', name: 'Gamle Corti', hasKey: true, revision: 'rev-1', baseURL: definitions.corti.baseURL }] });
+  openFlow(f);
+  chooseProvider(f, 'anthropic');
+  assert.equal(f.registry.get('connection-key-reuse-row').hidden, true, 'en udbyder uden gemte nøgler viser ikke rækken');
+  chooseProvider(f, 'corti');
+  assert.equal(f.registry.get('connection-key-reuse-row').hidden, false, 'rækken følger udbyderens gemte nøgler');
+  f.registry.get('connection-key-reuse').value = 'one'; f.registry.get('connection-key-reuse').onchange();
+  chooseProvider(f, 'anthropic');
+  assert.equal(f.registry.get('connection-key-reuse').value, '', 'valget ryddes ved udbyderskift');
+  assert.equal(f.registry.get('connection-key-reuse-row').hidden, true, 'rækken viger for en udbyder uden kilder');
+});
+
+test('en nyindtastet nøgle vinder over genbrugsvalget', async () => {
+  const f = runFlow({ connections: [{ id: 'one', kind: 'corti', name: 'Gamle Corti', hasKey: true, revision: 'rev-1', baseURL: definitions.corti.baseURL }] });
+  openFlow(f);
+  chooseProvider(f, 'corti');
+  f.registry.get('connection-key-reuse').value = 'one'; f.registry.get('connection-key-reuse').onchange();
+  f.context.connectionReceipt = 'kvittering-fra-nøglevinduet';
+  await submitConnection(f);
+  assert.equal(f.harness.saves[0].keyReceipt, 'kvittering-fra-nøglevinduet');
+  assert.equal('copyKeyFrom' in f.harness.saves[0], false, 'en indtastet nøgle vinder — genbrugsfelterne sendes ikke');
+});
+
 
 test('index.html har flowet som sektion mellem listen og redigeringsvisningen', () => {
   const dialogStart = index.indexOf('<dialog id="connections-dialog"');

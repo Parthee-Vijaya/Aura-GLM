@@ -45,7 +45,9 @@ test('receipts are opaque, one-use, and expose the value only to their bound mai
 });
 
 test('purpose and every editable connection field are bound; a mismatch burns the receipt', () => {
-  for (const [field, value] of Object.entries({ id: 'other', kind: 'azure', name: 'Other', baseURL: 'https://example.invalid/v1', deployment: 'other', protocol: 'openai', clearKey: true })) {
+  // copyKeyFrom/copyKeyRevision are references to a saved key, not secrets — they
+  // bind like every other editable field, so a changed reuse source burns the receipt.
+  for (const [field, value] of Object.entries({ id: 'other', kind: 'azure', name: 'Other', baseURL: 'https://example.invalid/v1', deployment: 'other', protocol: 'openai', clearKey: true, copyKeyFrom: 'other', copyKeyRevision: 'other' })) {
     const receipts = new CredentialReceipts(), configuration = metadata(), receipt = receipts.put('connection', configuration, key);
     assert.throws(() => receipts.consume('connection', { ...configuration, [field]: value }, receipt), /oplysningerne er ændret/, field);
     assert.throws(() => receipts.consume('connection', configuration, receipt), /udløbet/, field);

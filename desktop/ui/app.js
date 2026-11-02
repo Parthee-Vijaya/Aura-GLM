@@ -786,11 +786,12 @@ function openAddConnection() {
 }
 function chooseAddProvider(kind) {
   moveConnectionForm(false, true);
+  // The stage is set before updateProvider, so the key-reuse row renders with the form.
+  addingConnectionStage = 'form';
   $('#provider-kind').value = kind; updateProvider();
   $('#add-provider-cards').hidden = true; $('#add-connection-home').hidden = false;
   $('#connection-add-lead').textContent = `Forbind ${providerCards.find(item => item.kind === kind)?.name || kind}`;
   $('#connection-feedback').textContent = '';
-  addingConnectionStage = 'form';
   (['ollama', 'compatible'].includes(kind) ? $('#base-url') : $('#credential-open')).focus();
 }
 function resetAddConnection() {
@@ -798,12 +799,34 @@ function resetAddConnection() {
   clearConnectionReceipt();
   $('#connection-form').reset(); $('#connection-id').value = ''; $('#connection-feedback').textContent = '';
   moveConnectionForm(false);
+  renderKeyReuse();
 }
 function closeAddConnection() {
   resetAddConnection();
   connectionView('list'); renderConnectionList();
   $('#connection-add').focus();
 }
+// Key reuse in the add-connection flow: the sources are saved connections of the
+// same provider that hold a key. The revision comes from the public connection
+// state, so the save can reject a source that changed after it was read.
+function keyReuseSources(kind) {
+  return (state?.connections || []).filter(c => c.kind === kind && c.hasKey && c.id !== $('#connection-id').value);
+}
+function renderKeyReuse() {
+  const select = $('#connection-key-reuse'), sources = keyReuseSources($('#provider-kind').value);
+  $('#connection-key-reuse-row').hidden = addingConnectionStage !== 'form' || !sources.length;
+  const picked = select.value;
+  select.replaceChildren(option('', 'Ingen — indtast selv en nøgle'), ...sources.map(c => option(c.id, c.name)));
+  select.value = sources.some(c => c.id === picked) ? picked : '';
+}
+$('#connection-key-reuse').onchange = () => {
+  clearConnectionReceipt();
+  const kind = $('#provider-kind').value, source = keyReuseSources(kind).find(c => c.id === $('#connection-key-reuse').value);
+  // Picking a source prefills the address; a save with a changed address is
+  // rejected main-side with the copy-key error.
+  if (kind === 'azure') $('#azure-endpoint').value = source?.baseURL || '';
+  else $('#base-url').value = source ? source.baseURL : state?.definitions[kind]?.baseURL ?? '';
+};
 async function verifyAddedConnection(connection) {
   // Udfyld → gem → kontrollér: resultatet tilhører den gemte forbindelse. Ved fejl
   // forbliver den oprettet med fejlteksten synlig og redigering/fjernelse i listen.
@@ -922,6 +945,7 @@ function updateProvider() {
   for (const el of [$('#base-url'), $('#base-url').previousElementSibling, $('#base-url-help').nextElementSibling]) el.hidden = isAzure;
   $('#base-url').value = definition.baseURL; $('#connection-advanced').open = ['ollama', 'compatible'].includes($('#provider-kind').value); $('#base-url').readOnly = !['ollama', 'compatible'].includes($('#provider-kind').value);
   if (!$('#connection-id').value) { const used = new Set((state?.connections || []).map(c => c.name)); let name = definition.name, number = 2; while (used.has(name)) name = `${definition.name} ${number++}`; $('#connection-name').value = name; }
+  renderKeyReuse();
 }
 async function loadModels(saved = {}) {
   const id = $('#connection-select').value; const generation = ++modelRequest; acceptedFingerprint = null;
@@ -1279,7 +1303,11 @@ $('#connection-form').onsubmit = event => {
     const generation = setupGeneration, guided = setupActive && setupStep === 'provider';
     const addFlow = !guided && addingConnectionStage === 'form';
     const previousIDs = new Set(state.connections.map(c => c.id));
-    const input = connectionInput(); if(connectionReceipt)input.keyReceipt=connectionReceipt; connectionReceipt=null;
+    const input = connectionInput();
+    if(connectionReceipt)input.keyReceipt=connectionReceipt;
+    // A picked saved key is only a reference; a freshly typed key always wins over it.
+    else if(addFlow){const reuse=keyReuseSources($('#provider-kind').value).find(c=>c.id===$('#connection-key-reuse').value);if(reuse){input.copyKeyFrom=reuse.id;input.copyKeyRevision=reuse.revision;}}
+    connectionReceipt=null;
     try {
       state = await call('saveConnection', input); if (input.id) connectionChecks.clear(input.id);
       const stillGuided = guided && setupActive && setupStep === 'provider' && generation === setupGeneration;

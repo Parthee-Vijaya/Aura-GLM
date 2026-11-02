@@ -10,7 +10,9 @@ function binding(purpose, value = {}) {
     if (Object.keys(value).some(key => key !== 'generation') || value.generation !== undefined && (!Number.isSafeInteger(value.generation) || value.generation < 0)) throw new Error('GitHub-adgang bruger kun den faste GitHub-modtager.');
     return crypto.createHash('sha256').update(JSON.stringify(['github','https://api.github.com',value.generation ?? 0])).digest('hex');
   }
-  const fields = ['id', 'kind', 'name', 'baseURL', 'deployment', 'protocol', 'clearKey'];
+  // copyKeyFrom/copyKeyRevision reference a saved key; they are bound like the
+  // other fields but never require the secure entry window themselves.
+  const fields = ['id', 'kind', 'name', 'baseURL', 'deployment', 'protocol', 'clearKey', 'copyKeyFrom', 'copyKeyRevision'];
   if (Object.keys(value).some(key => !fields.includes(key))) throw new Error('Ugyldige nøgleoplysninger.');
   return crypto.createHash('sha256').update(JSON.stringify([purpose, fields.map(key => [key, value[key] ?? null])])).digest('hex');
 }

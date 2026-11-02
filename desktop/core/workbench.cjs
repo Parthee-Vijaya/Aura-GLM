@@ -339,7 +339,15 @@ class Workbench {
       if (input.id && !previous) throw new Error('Forbindelsen findes ikke.');
       // En Corti-nøgle hører til sit eget miljø. Uden ny nøgle beholder forbindelsen adressen fra den gemte nøgle.
       if (connection.kind === 'corti' && !input.apiKey && !input.clearKey && previous?.kind === 'corti') connection.baseURL = previous.baseURL;
-      connection.secret = input.apiKey ? this.store.encrypt(input.apiKey) : (input.clearKey || previous?.kind !== connection.kind || previous?.baseURL !== connection.baseURL ? undefined : previous?.secret);
+      // Key reuse: the source must exist as the same provider at the same address
+      // in the revision the renderer read, so the encrypted key never moves to a
+      // different recipient. A freshly typed key always wins over the reference.
+      let copySource;
+      if (input.copyKeyFrom && !input.apiKey) {
+        copySource = state.connections.find(c => c.id === input.copyKeyFrom);
+        if (!copySource || copySource.kind !== connection.kind || copySource.baseURL !== connection.baseURL || input.copyKeyRevision !== copySource.revision) throw new Error('Nøglen kan ikke genbruges: udbyderen eller adressen er ændret. Indtast nøglen igen.');
+      }
+      connection.secret = input.apiKey ? this.store.encrypt(input.apiKey) : copySource ? copySource.secret : (input.clearKey || previous?.kind !== connection.kind || previous?.baseURL !== connection.baseURL ? undefined : previous?.secret);
       state.connections = [...state.connections.filter(c => c.id !== connection.id), connection];
     });
     await this.invalidateConnection(connection.id);
