@@ -29,23 +29,23 @@
   #setup.onboarding-b .setup-quick-actions{position:absolute;right:32px;top:108px;max-width:40%}
   #setup.onboarding-b .setup-heading{padding-right:40%}
   #setup.onboarding-b .setup-heading h1{font-size:30px}
-  :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-visual-top{padding:14px 14px 0;font-size:8px}
+  :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-visual-top{padding:14px 14px 0;font-size:11px}
   :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-art{height:142px;margin-top:8px}
   :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-art-ring{width:126px;height:126px}
   :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-hero{width:60px;height:60px}
   :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-hero img{width:40px;height:40px}
   :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-visual[data-kind=''] .onboarding-b-hero img{width:50px;height:50px}
-  :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-art-pill{font-size:8px;padding:4px 8px;bottom:-4px}
+  :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-art-pill{font-size:11px;padding:4px 8px;bottom:-4px}
   :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-visual-copy{padding:0 16px}
   :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-visual-heading{font-size:20px;margin:9px 0}
   :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-visual-heading em{font-size:23px}
-  :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-visual-description{font-size:10px;line-height:1.5}
+  :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-visual-description{font-size:11px;line-height:1.5}
   :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-data-path{margin:14px 12px}
   :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-route-node{gap:4px}
-  :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-route-node strong{font-size:9px}
-  :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-route-node small{font-size:8px}
+  :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-route-node strong{font-size:11px}
+  :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-route-node small{font-size:11px}
   :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-route-tile{width:28px;height:28px}
-  :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-visual-note{padding:10px 12px;font-size:9px;line-height:1.6}
+  :is(#setup.onboarding-b,#onboarding.onboarding-b) .onboarding-b-visual-note{padding:10px 12px;font-size:11px;line-height:1.6}
 }
 @media(max-width:700px){#setup.onboarding-b,#onboarding.onboarding-b{padding:20px 18px}#setup.onboarding-b .setup-quick-actions{justify-content:flex-start}}
 

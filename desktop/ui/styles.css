@@ -52,7 +52,7 @@ nav button span:not(.nav-text) { width: 18px; height: 18px; display: inline-flex
 nav svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 nav button[aria-current=page] { color: var(--accent); background: var(--tint); }
 nav button[aria-current=page] span { color: var(--accent); }
-.nav-label { color: var(--muted); font-size: 10px; font-weight: 650; letter-spacing: .08em; margin: 28px 10px 10px; }
+.nav-label { color: var(--aura-ink-secondary); font-size: 12px; font-weight: 650; letter-spacing: .08em; margin: 28px 10px 10px; }
 .project-item { padding: 10px; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; border-radius: 8px; }
 .project-item.active { color: var(--ink); background: var(--tint); }
 #settings-toggle { margin-top: auto; text-align: left; }
@@ -65,7 +65,7 @@ nav button[aria-current=page] span { color: var(--accent); }
 .profile-chip[hidden] { display: none; }
 .profile-chip:hover { border-color: var(--accent); color: var(--accent); }
 .profile-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.profile-chip-mark { display: inline-grid; place-items: center; width: 20px; height: 20px; flex: none; border-radius: 50%; background: var(--tint); color: var(--ink); font-size: 10px; font-weight: 600; letter-spacing: 0.02em; overflow: hidden; }
+.profile-chip-mark { display: inline-grid; place-items: center; width: 20px; height: 20px; flex: none; border-radius: 50%; background: var(--tint); color: var(--ink); font-size: 11px; font-weight: 600; letter-spacing: 0.02em; overflow: hidden; }
 .profile-chip-mark svg { width: 14px; height: 14px; }
 .profile-chip-mark img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
 .profile-chip-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -157,7 +157,7 @@ html:has(#workspace:not([hidden])), body:has(#workspace:not([hidden])) { height:
 .workflow label { margin: 0; }
 .workflow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .workflow select { padding: 5px 8px; font-size: 12px; flex: 1; width: auto; }
-.workflow .hint { width: 100%; margin: 0; font-size: 11px; }
+.workflow .hint { width: 100%; margin: 0; font-size: 12px; }
 /* Én indholdsramme: kortet lukker ved --chat-col minus gutteren og fylder
    panelet minus gutteren (aura-tokens) — kant mod kant med tekstkolonnen. */
 .composer { margin: 8px auto 6px; max-width: calc(var(--chat-col) - var(--chat-gutter) * 2); width: calc(100% - var(--chat-gutter) * 2); border: 1px solid var(--line); border-radius: 14px; padding: 10px; background: var(--surface); box-shadow: 0 3px 12px #1b3a6410; text-align: right; }
@@ -204,11 +204,11 @@ html:has(#workspace:not([hidden])), body:has(#workspace:not([hidden])) { height:
 .composer button { padding: 6px 13px; font-size: 12px; }
 /* "Aura har set": Auras egne målinger på resultatkortet — facts, ikke modellens tekst. */
 .run-evidence { margin: 10px 0; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; }
-.run-evidence h4 { margin: 0 0 6px; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.run-evidence h4 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
 .run-evidence dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 0; font-size: 12px; }
 .run-evidence dt { color: var(--muted); }
 .run-evidence dd { margin: 0; }
-#draft-status { font-size: 10px; margin: 0 20px 8px; color: var(--muted); min-height: 15px; }
+#draft-status { font-size: 12px; margin: 0 20px 8px; color: var(--muted); min-height: 15px; }
 #resume-notice { margin: 0 0 16px; border-radius: 8px; padding: 12px 18px; background: #edf4ff; font-size: 12px; border-bottom: 1px solid var(--line); }
 #resume-notice p { margin-bottom: 6px; }
 #resume-notice .check-label { margin: 6px 0 0; font-size: 11px; }
@@ -230,7 +230,7 @@ body.resizing-workspace iframe { pointer-events: none; }
 #viewport-dimensions { display: flex; align-items: center; gap: 4px; }
 #viewport-dimensions input { width: 65px; padding: 5px; font-size: 11px; }
 #viewport-rotate { padding: 5px 8px; }
-#viewport-info { font: 10px ui-monospace, monospace; color: var(--muted); }
+#viewport-info { font: 11px ui-monospace, monospace; color: var(--muted); }
 #preview-surface { position: relative; flex: 1; min-height: 0; overflow: auto; background: var(--tint); }
 #preview-stage { position: relative; margin: 0 auto; flex-shrink: 0; overflow: hidden; background: var(--surface); }
 iframe { border: 0; width: 100%; height: 100%; background: var(--surface); }
@@ -241,7 +241,7 @@ iframe { border: 0; width: 100%; height: 100%; background: var(--surface); }
 #server-log { max-height: 200px; overflow: auto; }
 #server-review { border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-top: 20px; }
 #server-folder, #server-packages { overflow-wrap: anywhere; }
-.preview-footer { padding: 9px 16px; border-top: 1px solid var(--line); font-size: 10px; color: var(--muted); }
+.preview-footer { padding: 9px 16px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
 .empty-state { max-width: 400px; padding: 32px; margin: 12vh auto 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
 .empty-state h2 { color: var(--ink); font-size: 19px; }
 .empty-state h2:empty { display: none; }
@@ -264,6 +264,16 @@ iframe { border: 0; width: 100%; height: 100%; background: var(--surface); }
 #setup-choice strong { margin-bottom: 6px; font-size: 14px; }
 #setup-choice span { color: var(--muted); font-weight: 400; font-size: 12px; line-height: 1.6; }
 dialog { width: min(700px, 92vw); max-height: 88vh; padding: 28px; overflow: auto; border: 1px solid var(--line); border-radius: 16px; color: var(--ink); background: var(--surface); box-shadow: 0 24px 80px #18365826, 0 3px 8px #18365812; }
+/* Dialog-størrelsesklasserne (uiux-overhaulens "Kernetal"): indholdet vælger
+   klassen — bekræftelser 480-560 px, oversigts-/formulardialoger 880-1040 px,
+   sammensatte opgave-/datadialoger 1120-1280 px. Alt er loftet af 92vw, højden
+   følger indholdet (kun max-height mod viewporten), og selve dialogen er den
+   eneste rulleregion. #settings-dialog beholder sin egen 780 px-bredde, og
+   kommandopaletten har sin egen regel — begge dokumenteret i
+   tests/ui-typography.test.cjs. Bredderne pins af samme test. */
+dialog[data-size="confirm"] { width: min(520px, 92vw); }
+dialog[data-size="wide"] { width: min(1000px, 92vw); }
+dialog[data-size="complex"] { width: min(1130px, 92vw); }
 dialog::backdrop { background: #14263b40; backdrop-filter: blur(4px); }
 dialog[open] { animation: dialog-arrive var(--motion-step) var(--ease-out); }
 .dialog-heading, .dialog-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -296,12 +306,10 @@ dialog p { font-size: 13px; }
 .approval pre, #changes-list pre, #git-files pre { font: 11px/1.7 ui-monospace, monospace; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 260px; overflow: auto; padding: 12px; background: #f2f5f9; border-radius: 8px; }
 .approval button { margin: 8px 5px 0 0; }
 .action-target { white-space: pre-wrap; overflow-wrap: anywhere; }
-#changes-dialog { width: min(1000px, 92vw); }
 #changes-list details { margin: 18px 0; }
 #changes-list h3 { font-size: 12px; }
 #git-files > section { border-top: 1px solid var(--line); padding: 10px 0; }
 #git-save { margin-top: 16px; }
-#hosting-dialog, #deployment-dialog { width: min(820px, 92vw); }
 #hosting-body, #deployment-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
 #hosting-dialog form, #hosting-project { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 16px; }
 #hosting-files, #deployment-files { max-height: 220px; overflow: auto; font: 12px/1.6 ui-monospace, monospace; }
@@ -311,7 +319,7 @@ dialog p { font-size: 13px; }
 #deployment-form > button { margin-top: 18px; }
 #deployment-form details { margin-top: 18px; }
 #hosting-feedback, #hosting-destination, #git-feedback, #deployment-state { overflow-wrap: anywhere; }
-#welcome-dialog { width: min(940px, 94vw); padding: 36px; background: linear-gradient(145deg,#fff,#f6f9ff); }
+#welcome-dialog { padding: 36px; background: linear-gradient(145deg,#fff,#f6f9ff); }
 .welcome-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; font-size: 16px; font-weight: 650; }
 #welcome-start { max-width: 620px; margin: 64px auto; text-align: center; }
 #welcome-title { font-size: 36px; letter-spacing: -.04em; }
@@ -332,7 +340,7 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus { outline: none; }
 @keyframes step-arrive { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 #welcome-start:not([hidden]), #welcome-demo:not([hidden]), #setup:not([hidden]), #onboarding:not([hidden]) { animation: step-arrive var(--motion-step) var(--ease-out); }
 @media (max-width: 1100px) { :root { --sidebar: 184px; } .sidebar { padding: 22px 10px 14px; } #onboarding, #setup { padding: 32px 26px; } .actions button { font-size: 11px; padding: 7px 9px; } }
-@media (max-height: 800px) { .chat-content { padding: 16px; } .model-controls { max-height: 170px; } .workflow .hint { font-size: 10px; } #welcome-start { margin: 30px auto; } }
+@media (max-height: 800px) { .chat-content { padding: 16px; } .model-controls { max-height: 170px; } .workflow .hint { font-size: 12px; } #welcome-start { margin: 30px auto; } }
 @media (max-width: 720px) { .design-row, #setup-choice, .demo-layout { grid-template-columns: 1fr; } #data-summary { grid-template-columns: 1fr; gap: 6px; } #data-summary dd { margin-bottom: 12px; } .create-footer { flex-wrap: wrap; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
 
@@ -350,7 +358,6 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus { outline: none; }
 #preview-options { anchor-name: --preview-options; }
 #preview-menu { position-anchor: --preview-options; inset: auto; top: anchor(bottom); right: anchor(right); margin: 6px 0 0; width: 275px; padding: 14px; }
 #preview-menu #viewport-info { margin-top: 8px; }
-#task-dialog { width: min(580px, 92vw); }
 #task-dialog .model-controls, #task-dialog .reference-choice { max-height: none; background: transparent; padding: 18px 0; }
 #task-dialog .workflow { display: block; padding: 18px 0; }
 #task-dialog .workflow label { margin: 12px 0 8px; }
@@ -421,7 +428,6 @@ body.setup-guided .app-content { margin-left: 0; }
 .path-choice:hover { border-color: var(--accent); box-shadow: 0 6px 20px #0052cc14; }
 .path-choice:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (max-height: 800px) { #welcome-path { margin: 30px auto; } }
-.tools-dialog { width: min(760px, 94vw); }
 #tools-error { color: #982f28; background: #4c231f; border: 1px solid #dfb8b3; padding: 10px 12px; border-radius: 8px; }
 .tools-step h3 { font-size: 22px; letter-spacing: -.02em; margin: 4px 0 8px; }
 .tools-lead { font-size: 14px; line-height: 1.6; color: var(--muted); margin: 0 0 18px; }
@@ -489,7 +495,7 @@ body.setup-guided .app-content { margin-left: 0; }
 .key-steps { margin: 8px 0 12px; padding-left: 22px; }
 .key-steps li { margin: 6px 0; line-height: 1.6; }
 .key-steps .text-button { padding: 0 4px; }
-.composer-status { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 11px; color: var(--muted); margin: 0 16px 6px; min-height: 15px; }
+.composer-status { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin: 0 16px 6px; min-height: 15px; }
 .composer-status #draft-status { margin: 0; }
 .features-list { display: grid; gap: 8px; margin: 0 0 12px; }
 .feature-row { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; background: var(--surface); }
@@ -561,7 +567,7 @@ body.sidebar-overlay .sidebar { width: 216px; z-index: 30; box-shadow: 0 12px 40
 /* I et smalt panel rykker fanerne tættere, så alle fire står på én linje ved 980 px. Bliver der for lidt plads, brydes de. */
 @container work (max-width: 430px) { .work-tabs { gap: 2px; padding: 6px 8px; } .work-tab { padding: 6px 6px; } .panel-bar { padding-left: 12px; padding-right: 8px; } .panel-scroll, .code-view { padding-left: 14px; padding-right: 14px; } }
 /* Mærket ligger oven på fanens hjørne, så fanerne ikke flytter sig, når det dukker op. */
-.tab-badge { position: absolute; top: -5px; right: -5px; display: inline-grid; place-items: center; min-width: 17px; height: 17px; padding: 0 4px; border: 2px solid #fff; border-radius: 999px; background: var(--accent); color: #fff; font-size: 9.5px; font-weight: 700; line-height: 1; box-sizing: border-box; }
+.tab-badge { position: absolute; top: -5px; right: -5px; display: inline-grid; place-items: center; min-width: 17px; height: 17px; padding: 0 4px; border: 2px solid #fff; border-radius: 999px; background: var(--aura-button-primary); color: var(--aura-button-primary-text); font-size: 11px; font-weight: 700; line-height: 1; box-sizing: border-box; }
 .tab-badge.dot { top: 2px; right: 0; min-width: 10px; width: 10px; height: 10px; padding: 0; background: var(--accent); }
 .tab-badge.dot.running { background: #24835b; animation: pulse 1.6s ease-in-out infinite; }
 .tab-badge.dot.waiting { background: #b7791f; }
@@ -595,7 +601,7 @@ body.sidebar-overlay .sidebar { width: 216px; z-index: 30; box-shadow: 0 12px 40
 .by-tag { grid-column: 2 / -1; font-size: 11px; font-weight: 500; color: var(--muted); }
 .by-tag.by-ai { color: var(--accent); }
 .by-tag.by-blandet, .by-tag.by-kommando { color: #8a5a12; }
-.change-tag { display: inline-block; padding: 1px 7px; border-radius: 999px; background: #eef2f7; color: var(--ink); font-size: 10px; font-weight: 650; white-space: nowrap; }
+.change-tag { display: inline-block; padding: 1px 7px; border-radius: 999px; background: #eef2f7; color: var(--ink); font-size: 11px; font-weight: 650; white-space: nowrap; }
 .change-tag.change-ny { background: #e3f4ea; color: #1d6b43; }
 .change-tag.change-slettet { background: #fbe9e9; color: #a3282a; }
 .diff-view { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
@@ -723,7 +729,7 @@ body.sidebar-overlay .sidebar { width: 216px; z-index: 30; box-shadow: 0 12px 40
 .answer-choice[aria-pressed="true"] { border-color: var(--accent); background: var(--tint); box-shadow: inset 0 0 0 1px var(--accent); }
 .answer-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
 .answer-head strong { font-size: 13px; font-weight: 650; }
-.answer-choice .recommended { padding: 1px 8px; border-radius: 999px; background: var(--tint); color: var(--accent); font-size: 10px; font-weight: 650; }
+.answer-choice .recommended { padding: 1px 8px; border-radius: 999px; background: var(--tint); color: var(--accent-hover); font-size: 11px; font-weight: 650; }
 .answer-description { font-size: 12px; line-height: 1.5; color: var(--muted); }
 .answer-own { margin-top: 10px; }
 .answer-own label { margin-top: 0; }
@@ -851,7 +857,6 @@ body.picking #preview-stage { box-shadow: 0 0 0 2px var(--accent); }
 @container work (max-width: 430px) { .compare { grid-template-columns: minmax(0, 1fr); } }
 #version-images { margin: 0 0 6px; }
 /* Gennemgang før gendannelse og fortryd. */
-#restore-dialog { width: min(760px, 92vw); }
 .restore-outcomes { margin: 10px 0; padding-left: 20px; font-size: 13px; line-height: 1.7; overflow-wrap: anywhere; }
 .restore-outcomes code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
 .restore-conflicts { margin: 12px 0; padding: 12px 14px; border: 1px solid #f1d39a; border-radius: 10px; background: var(--surface)af0; }
@@ -869,7 +874,7 @@ body.picking #preview-stage { box-shadow: 0 0 0 2px var(--accent); }
 .project-list { list-style: none; margin: 0; padding: 0; display: grid; align-content: start; gap: 2px; flex: 1 1 auto; min-height: 60px; overflow: auto; }
 .project-row { display: flex; align-items: center; gap: 2px; }
 .project-name { flex: 1 1 auto; min-width: 0; text-align: left; border: 0; background: transparent; padding: 7px 8px; font-size: 12px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; display: flex; gap: 6px; align-items: center; }
-.project-name::before { content: "▸"; color: var(--muted); font-size: 10px; flex: 0 0 auto; }
+.project-name::before { content: "▸"; color: var(--muted); font-size: 11px; flex: 0 0 auto; }
 .project-name[aria-expanded="true"]::before { content: "▾"; }
 .project-entry:not(.is-current) .project-name { font-weight: 500; color: var(--muted); }
 .project-name:hover:not(:disabled), .project-add:hover:not(:disabled) { background: var(--tint); }
@@ -881,9 +886,9 @@ body.picking #preview-stage { box-shadow: 0 0 0 2px var(--accent); }
 .chat-row:hover:not(:disabled) { background: var(--tint); }
 .chat-row[aria-current="true"] { background: #e3ecfa; color: #163b75; font-weight: 600; }
 .chat-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.chat-meta { font-size: 10.5px; color: var(--muted); white-space: nowrap; }
+.chat-meta { font-size: 11px; color: var(--aura-ink-secondary); white-space: nowrap; }
 .chat-meta.is-waiting { color: #8a5300; font-weight: 600; }
-.chat-meta.is-running, .chat-meta.is-unread { color: var(--accent); font-weight: 600; }
+.chat-meta.is-running, .chat-meta.is-unread { color: var(--accent-hover); font-weight: 600; }
 .chat-status { width: 7px; height: 7px; border-radius: 50%; background: transparent; }
 .chat-status.is-running { background: var(--accent); animation: chat-pulse 1.4s ease-in-out infinite; }
 .chat-status.is-waiting { background: #d58a00; }
@@ -979,7 +984,7 @@ kbd { font: 600 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
 .color-swatch::after { content: ''; position: absolute; inset: 0; background: var(--swatch-color); }
 .chat-latest { align-self: center; flex-shrink: 0; margin: 2px 0; font-size: 12px; }
 .activity-spinner { flex: 0 0 12px; width: 12px; height: 12px; border: 2px solid #bdd1ed; border-top-color: var(--accent); border-radius: 50%; animation: activity-spin .9s linear infinite; }
-#agent-progress { flex-basis: 100%; padding-left: 20px; font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
+#agent-progress { flex-basis: 100%; padding-left: 20px; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .agent-activity.is-waiting .activity-spinner, .agent-activity.is-quiet .activity-spinner { animation: none; border-color: currentColor; opacity: .6; }
 @keyframes activity-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .activity-spinner { animation: none; } }
@@ -1000,7 +1005,6 @@ kbd { font: 600 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
 .updates-notice { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; gap: 16px; padding: 8px 16px; background: #E8F1FF; border-bottom: 1px solid #E0E7F0; font-size: 13px; }
 .updates-notice.critical, .updates-warning { background: #FFF4DC; color: #644207; }
 .updates-warning { padding: 12px; border-radius: 8px; }
-#updates-dialog { max-width: 520px; }
 #updates-dialog progress { width: 100%; height: 8px; accent-color: #0052CC; }
 #updates-dialog details { margin-top: 24px; }
 #updates-error { color: #A1362E; }
@@ -1092,7 +1096,6 @@ kbd { font: 600 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
 @media (max-width: 560px) { .visibility-choice { grid-template-columns: 1fr; } }
 
 /* Udgiv viser kun det aktuelle spørgsmål. */
-#deployment-dialog { width: min(640px, 92vw); }
 #deployment-dialog > .dialog-heading { align-items: flex-start; gap: 20px; margin-bottom: 24px; }
 #deployment-heading { font-size: 22px; line-height: 1.3; letter-spacing: -.025em; }
 #deployment-heading:focus { outline: none; }
@@ -1214,10 +1217,10 @@ kbd { font: 600 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
 #deployment-copy { margin-bottom: 16px; }
 @media (prefers-reduced-motion: reduce) { .operation-spinner { animation: none; } }
 
-.composer-shortcut { margin: 0 16px 4px; color: var(--muted); font-size: 11px; line-height: 1.4; }
+.composer-shortcut { margin: 0 16px 4px; color: var(--muted); font-size: 12px; line-height: 1.4; }
 
 /* F07: sidste observerede kontekst er adskilt fra den eksisterende forbrugslinje. */
-.context-status { padding: 0 16px; color: var(--muted); font-size: 10px; overflow-wrap: anywhere; }
+.context-status { padding: 0 16px; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
 #context-meter { display: block; width: min(180px, 100%); height: 4px; margin-top: 3px; }
 #context-meter[hidden], .context-status[hidden] { display: none; }
 #context-meter::-webkit-meter-bar { background: var(--line); border: 0; border-radius: 3px; }
@@ -1231,7 +1234,6 @@ kbd { font: 600 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
 .markdown-code { margin-bottom: 10px; }
 .markdown-copy-code, .markdown-copy-answer { font-size: 11px; }
 /* Local conversation search follows the app's existing dialog and button style. */
-.history-search-dialog { width: min(760px, calc(100vw - 32px)); }
 .history-search-form { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; }
 .history-search-form label, .history-search-form input { grid-column: 1 / -1; }
 .history-search-results { list-style: none; padding: 0; display: grid; gap: 8px; }
@@ -1248,25 +1250,25 @@ kbd { font: 600 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
 .work-progress-card[open] > summary::after { transform: none; }
 .work-progress-card > summary > span:nth-child(2) { display: grid; gap: 3px; min-width: 0; }
 .work-progress-card > summary strong { color: var(--ink); font-size: 12px; font-weight: 550; line-height: 1.5; overflow-wrap: anywhere; }
-.work-progress-card > summary small { font-size: 10px; line-height: 1.5; }
+.work-progress-card > summary small { font-size: 12px; line-height: 1.5; }
 .work-progress-symbol { color: var(--accent); padding-top: 2px; font-size: 13px; }
 .work-progress-body { margin: 9px 0 0 6px; padding-left: 18px; border-left: 1px solid var(--line); }
 .work-progress-steps { display: grid; gap: 15px; margin: 0; padding: 2px 0; list-style: none; }
 .work-progress-step { position: relative; display: flex; align-items: flex-start; gap: 8px; min-width: 0; font-size: 11px; line-height: 1.6; }
 .work-progress-step > div { flex: 1; min-width: 0; }
 .work-progress-step strong { font-weight: 500; overflow-wrap: anywhere; }
-.work-progress-step p { margin: 3px 0 0; font-size: 10px; line-height: 1.65; overflow-wrap: anywhere; }
-.work-progress-step time { white-space: nowrap; font-size: 9px; padding-top: 1px; }
-.work-progress-mark { position: absolute; left: -25px; top: 2px; width: 12px; height: 12px; display: grid; place-content: center; color: var(--accent); background: var(--surface, #fff); font-size: 10px; }
+.work-progress-step p { margin: 3px 0 0; font-size: 12px; line-height: 1.65; overflow-wrap: anywhere; }
+.work-progress-step time { white-space: nowrap; font-size: 11px; padding-top: 1px; }
+.work-progress-mark { position: absolute; left: -25px; top: 2px; width: 12px; height: 12px; display: grid; place-content: center; color: var(--accent); background: var(--surface, #fff); font-size: 11px; }
 .work-progress-step.status-running { color: var(--ink); }
 .work-progress-step.status-running .work-progress-mark { border: 1px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: work-progress-spin 1s linear infinite; }
 .work-progress-step.status-waiting { color: var(--calm-warning, #775823); }
 .work-progress-step.status-error { color: var(--calm-error, #963636); }
 .work-progress-step.status-error .work-progress-mark { color: inherit; }
 .work-progress-technical { margin-top: 14px; }
-.work-progress-technical > summary { font-size: 10px; cursor: pointer; padding: 3px 0; }
-.work-progress-technical pre { max-height: 220px; overflow: auto; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--calm-raised, #f2f5f9); color: var(--ink); font: 10px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
-.work-progress-technical .text-button, .work-progress-choice { padding: 6px 0; font-size: 10px; }
+.work-progress-technical > summary { font-size: 12px; cursor: pointer; padding: 3px 0; }
+.work-progress-technical pre { max-height: 220px; overflow: auto; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--calm-raised, #f2f5f9); color: var(--ink); font: 11px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+.work-progress-technical .text-button, .work-progress-choice { padding: 6px 0; font-size: 12px; }
 .activity-technical-title { font-size: 11px; margin-bottom: 4px; }
 @keyframes work-progress-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .work-progress-step.status-running .work-progress-mark { animation: none; } }
@@ -1300,7 +1302,7 @@ details.plan-detail > .plan-detail-body { padding: 0 14px 12px 14px; font-size: 
 /* Animeret indsats-slider: glidende fyld, svajende glød og pæren ved ny værdi. */
 .picker-effort-slider { margin: 10px 2px 0; padding-top: 8px; border-top: 1px solid var(--line); }
 .picker-effort-slider .effort-heading { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
-.picker-effort-slider .effort-label { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.picker-effort-slider .effort-label { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .picker-effort-slider .effort-value { font-size: 12.5px; font-weight: 650; color: var(--ink); }
 .picker-effort-slider .effort-slider { position: relative; height: 28px; }
 .picker-effort-slider #picker-effort-range { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; margin: 0; }
@@ -1312,7 +1314,7 @@ details.plan-detail > .plan-detail-body { padding: 0 14px 12px 14px; font-size: 
 .picker-effort-slider .effort-slider-thumb-dot { width: 6px; height: 6px; border-radius: 999px; background: var(--surface); animation: effortPuls 2.2s ease-in-out infinite; }
 .picker-effort-slider .effort-slider-thumb.pop { animation: effortPop .34s cubic-bezier(.3,1.4,.4,1); }
 .picker-effort-slider .effort-slider-labels { position: absolute; left: 11px; right: 11px; bottom: -3px; display: flex; justify-content: space-between; pointer-events: none; }
-.picker-effort-slider .effort-slider-labels span { font-size: 10px; color: var(--muted); border-radius: 6px; padding: 0 2px; pointer-events: auto; cursor: pointer; }
+.picker-effort-slider .effort-slider-labels span { font-size: 12px; color: var(--muted); border-radius: 6px; padding: 0 2px; pointer-events: auto; cursor: pointer; }
 .picker-effort-slider .effort-slider-labels span:hover { color: var(--ink); }
 @keyframes effortShimmer { 0% { background-position: 0% 0; } 100% { background-position: 200% 0; } }
 @keyframes effortPuls { 0%, 100% { opacity: .45; transform: scale(.75); } 50% { opacity: 1; transform: scale(1.18); } }
@@ -1349,7 +1351,7 @@ details.plan-detail > .plan-detail-body { padding: 0 14px 12px 14px; font-size: 
 #agent-activity .chat-latest { grid-column: 3; grid-row: 2; }
 
 /* B: Kompakte diff-stats-badge i opgave-resultater */
-.diff-stat-badge { display: inline-grid; place-items: center; gap: 4px; padding: 2px 6px; border-radius: 999px; background: var(--tint); font-size: 10px; font-weight: 600; color: var(--muted); margin-left: 6px; }
+.diff-stat-badge { display: inline-grid; place-items: center; gap: 4px; padding: 2px 6px; border-radius: 999px; background: var(--tint); font-size: 11px; font-weight: 600; color: var(--aura-ink-secondary); margin-left: 6px; }
 .diff-stat-badge .added { color: #1d6b43; }
 .diff-stat-badge .removed { color: #9c2a27; }
 @media (prefers-color-scheme: dark) {
@@ -1424,5 +1426,8 @@ details.plan-detail > .plan-detail-body { padding: 0 14px 12px 14px; font-size: 
   .segmented { background: #1c232e; }
   .segmented button[aria-pressed="true"] { box-shadow: 0 1px 2px #00000066; }
   .chat-more { background: #1c2432; }
+  /* 11 px-tidsstempler (typografi-gulvet): ventestatussen holder 4,5:1 på det
+     mørke sidepanelet — den lyse #8a5300 måler kun 2,7:1 her. */
+  .chat-meta.is-waiting { color: #e0b34d; }
 }
 

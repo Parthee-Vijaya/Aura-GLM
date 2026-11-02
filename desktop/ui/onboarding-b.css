@@ -41,7 +41,7 @@
   letter-spacing: -1.1px;
 }
 :is(#setup.onboarding-b, #onboarding.onboarding-b) :is(.setup-heading > p:not(.eyebrow), .intro > p) { color: var(--ob-muted); font-size: 14px; line-height: 1.8; }
-#setup.onboarding-b .eyebrow { font-size: 10px; letter-spacing: 2px; font-weight: 650; }
+#setup.onboarding-b .eyebrow { font-size: 11px; letter-spacing: 2px; font-weight: 650; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b) .onboarding-b-progress {
   display: flex;
   align-items: center;
@@ -109,7 +109,7 @@
 #setup.onboarding-b .provider-card:is([aria-pressed=true], :hover, :focus-visible) img { filter: none; opacity: 1; }
 #setup.onboarding-b .provider-card strong { margin: 0 22px 0 0; font-size: 15px; font-weight: 600; line-height: 1.4; letter-spacing: -.2px; }
 #setup.onboarding-b .provider-card > span:not(.onboarding-b-choice-mark) { margin-top: 5px; font-size: 11px; color: var(--ob-muted); line-height: 1.6; }
-#setup.onboarding-b .provider-card > small { margin-top: 7px; font-size: 10px; line-height: 1.5; color: var(--ob-muted); }
+#setup.onboarding-b .provider-card > small { margin-top: 7px; font-size: 11px; line-height: 1.5; color: var(--ob-muted); }
 #setup.onboarding-b .provider-card > small[data-state=connected] { color: var(--ob-success); }
 #setup.onboarding-b .provider-card > small[data-state=error] { color: var(--danger, #b83f3a); }
 #setup.onboarding-b .provider-card > small:empty { display: none; }
@@ -182,8 +182,11 @@
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual[data-kind=alexandra] { --ob-brand: #001b4f; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual[data-kind=openrouter] { --ob-brand: #6467b9; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual-top { display: flex; align-items: center; justify-content: space-between; gap: 9px; padding: 26px 24px 0; color: var(--ob-muted); }
-:is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual-top > span:first-child { font-size: 10px; letter-spacing: 1.8px; font-weight: 650; text-transform: uppercase; }
-:is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-live-tag { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--ob-line); border-radius: 999px; padding: 4px 7px; white-space: nowrap; text-transform: uppercase; font-size: 8px; font-weight: 600; letter-spacing: .8px; }
+/* Typografi-gulvet (uiux-overhaul skive 3): plakatens mikro-tekster er
+   løftet til 11 px-minimumet — kun størrelserne er ændret, udtrykket er ellers
+   urørt. Hævningerne er dokumenteret enkeltvis i task-3-report.md. */
+:is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual-top > span:first-child { font-size: 11px; letter-spacing: 1.8px; font-weight: 650; text-transform: uppercase; }
+:is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-live-tag { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--ob-line); border-radius: 999px; padding: 4px 7px; white-space: nowrap; text-transform: uppercase; font-size: 11px; font-weight: 600; letter-spacing: .8px; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-live-tag::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--ob-brand); }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-art { position: relative; display: grid; place-items: center; height: 240px; margin: 12px 10px 0; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-art-ring { position: relative; display: grid; place-items: center; width: 208px; height: 208px; border: 1px solid var(--ob-brand); border-radius: 50%; }
@@ -202,25 +205,25 @@
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-orbit-1 { right: -8px; bottom: 28px; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-orbit-2 { right: 2px; top: 12px; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-orbit-3 { left: -3px; bottom: 18px; }
-:is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-art-pill { position: absolute; z-index: 3; bottom: 17px; max-width: calc(100% - 12px); box-sizing: border-box; border: 1px solid var(--ob-line); border-radius: 999px; background: var(--ob-surface); color: var(--ob-muted); padding: 6px 10px; font-size: 9px; line-height: 1.4; text-align: center; }
+:is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-art-pill { position: absolute; z-index: 3; bottom: 17px; max-width: calc(100% - 12px); box-sizing: border-box; border: 1px solid var(--ob-line); border-radius: 999px; background: var(--ob-surface); color: var(--ob-muted); padding: 6px 10px; font-size: 11px; line-height: 1.4; text-align: center; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual-copy { padding: 0 27px; text-align: center; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual-heading { margin: 8px 0 13px; font-size: 25px; line-height: 1.25; letter-spacing: -.8px; overflow-wrap: anywhere; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual-heading > span,
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual-heading > em { display: block; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual-heading em { margin-top: 2px; font-family: var(--aura-font-family-brand, 'Montserrat', sans-serif); font-weight: 500; font-size: 29px; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual-description { color: var(--ob-muted); font-size: 11px; line-height: 1.8; margin: 0; overflow-wrap: anywhere; }
-:is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-connection-name { color: var(--ob-muted); font-size: 10px; line-height: 1.6; margin: 11px 0 0; overflow-wrap: anywhere; }
+:is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-connection-name { color: var(--ob-muted); font-size: 11px; line-height: 1.6; margin: 11px 0 0; overflow-wrap: anywhere; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-data-path { display: grid; grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr) 24px minmax(0, 1fr); gap: 3px; align-items: start; margin: 27px 18px 28px; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-route-node { display: flex; flex-direction: column; align-items: center; gap: 7px; min-width: 0; text-align: center; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-route-tile { display: grid; place-items: center; height: 37px; width: 37px; flex: none; border: 1px solid var(--ob-line); border-radius: 10px; background: var(--ob-surface); color: var(--ob-muted); }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-route-tile img { width: 24px; height: 24px; object-fit: contain; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-route-tile svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-:is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-route-node strong { color: var(--ob-ink); font-size: 10px; line-height: 1.4; font-weight: 600; overflow-wrap: anywhere; }
-:is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-route-node small { color: var(--ob-muted); font-size: 9px; line-height: 1.45; overflow-wrap: anywhere; }
+:is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-route-node strong { color: var(--ob-ink); font-size: 11px; line-height: 1.4; font-weight: 600; overflow-wrap: anywhere; }
+:is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-route-node small { color: var(--ob-muted); font-size: 11px; line-height: 1.45; overflow-wrap: anywhere; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-route-arrow { display: grid; place-items: center; padding-top: 8px; color: var(--ob-line); }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-route-arrow[data-active=true] { color: var(--ob-brand); }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-route-arrow svg { width: 24px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
-:is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual-note { display: flex; gap: 9px; align-items: flex-start; margin: auto 0 0; padding: 17px 22px; border-top: 1px solid var(--ob-line); background: var(--ob-surface); color: var(--ob-muted); font-size: 10px; line-height: 1.8; }
+:is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual-note { display: flex; gap: 9px; align-items: flex-start; margin: auto 0 0; padding: 17px 22px; border-top: 1px solid var(--ob-line); background: var(--ob-surface); color: var(--ob-muted); font-size: 11px; line-height: 1.8; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual-note svg { height: 17px; width: 17px; flex: none; margin-top: 1px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual-note[data-verified=true] svg { background: var(--ob-success); color: #fff; border-radius: 50%; padding: 2px; box-sizing: border-box; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual-note[data-state=error] { color: var(--danger, #b83f3a); }
@@ -256,12 +259,12 @@
 @media (max-width: 540px) {
   :is(#setup.onboarding-b, #onboarding.onboarding-b) { padding: 24px 18px 32px; }
   :is(#setup.onboarding-b, #onboarding.onboarding-b) .onboarding-b-progress { gap: 12px 16px; margin-bottom: 25px; }
-  :is(#setup.onboarding-b, #onboarding.onboarding-b) .onboarding-b-progress > * { font-size: 10px; gap: 6px; }
+  :is(#setup.onboarding-b, #onboarding.onboarding-b) .onboarding-b-progress > * { font-size: 11px; gap: 6px; }
   :is(#setup.onboarding-b, #onboarding.onboarding-b) :is(.setup-heading h1, .intro h1) { font-size: 31px; letter-spacing: -1px; }
   #setup.onboarding-b .provider-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   #setup.onboarding-b .provider-card { min-height: 145px; padding: 18px 13px 15px; }
   #setup.onboarding-b .provider-card strong { font-size: 13px; }
-  #setup.onboarding-b .provider-card > span:not(.onboarding-b-choice-mark) { font-size: 10px; }
+  #setup.onboarding-b .provider-card > span:not(.onboarding-b-choice-mark) { font-size: 11px; }
   #setup.onboarding-b .provider-card img { width: 32px; height: 30px; }
   #setup.onboarding-b .onboarding-b-choice-mark { width: 16px; height: 16px; right: 12px; top: 17px; }
   #setup.onboarding-b :is(#setup-provider-body, #setup-saved) { padding: 20px 17px; }
@@ -274,16 +277,16 @@
   :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-hero img { width: 35px; height: 35px; }
   :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-orbit { width: 28px; height: 28px; border-radius: 8px; }
   :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-orbit img { width: 19px; height: 19px; }
-  :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-art-pill { font-size: 8px; bottom: 13px; border-radius: 9px; padding: 5px 6px; }
+  :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-art-pill { font-size: 11px; bottom: 13px; border-radius: 9px; padding: 5px 6px; }
   :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual-copy { padding: 16px 15px 0 8px; }
   :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual-heading { font-size: 18px; letter-spacing: -.5px; }
   :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual-heading em { font-size: 21px; }
-  :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual-description { font-size: 10px; line-height: 1.7; }
+  :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual-description { font-size: 11px; line-height: 1.7; }
   :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-data-path { margin: 15px 12px 20px 8px; grid-template-columns: minmax(0, 1fr) 14px minmax(0, 1fr) 14px minmax(0, 1fr); gap: 2px; }
   :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-route-tile { width: 29px; height: 29px; border-radius: 8px; }
   :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-route-tile img { width: 20px; height: 20px; }
-  :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-route-node strong { font-size: 8px; }
-  :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-route-node small { font-size: 8px; }
+  :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-route-node strong { font-size: 11px; }
+  :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-route-node small { font-size: 11px; }
   :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-route-arrow svg { width: 14px; }
   #task-dialog.onboarding-b #model-shortlist { grid-template-columns: minmax(0, 1fr); }
 }

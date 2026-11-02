@@ -12,7 +12,7 @@
 /* Keep the focus hint in the composer with a constant reserved line, so the
    hint can never overlap the latest reply text. It toggles with visibility
    instead of absolute positioning, and blur therefore never moves a button. */
-.workspace-calm #chat-form #composer-shortcut { position: static; visibility: hidden; max-width: none; width: auto; height: auto; margin: 2px 16px; padding: 0; border: 0; background: none; clip-path: none; overflow: visible; font-size: 11px; line-height: 1.4; pointer-events: none; }
+.workspace-calm #chat-form #composer-shortcut { position: static; visibility: hidden; max-width: none; width: auto; height: auto; margin: 2px 16px; padding: 0; border: 0; background: none; clip-path: none; overflow: visible; font-size: 12px; line-height: 1.4; pointer-events: none; }
 .workspace-calm #chat-form:focus-within #composer-shortcut { visibility: visible; }
 .workspace-calm #agent-activity { flex-shrink:0; margin:0 14px; padding:7px 3px; border:0; font-size:12px; column-gap:7px; }
 .workspace-calm #agent-activity-text { min-width:0; flex:1; }
@@ -24,7 +24,6 @@
 .workspace-calm .question-card textarea { width:100%; min-height:64px; resize:vertical; }
 .workspace-calm .question-card .question-custom-label { display:block; margin:12px 0 5px; }
 .workspace-calm .question-card .question-shortcut { font-size:11px; margin:4px 0 8px; color:var(--muted); }
-.connection-removal-dialog { width:min(32rem,calc(100vw - 2rem)); }
 .workspace-calm #plan-card { padding:14px; }
 .workspace-calm #plan-card h3 { margin:0 0 8px; font-size:15px; }
 .workspace-calm #agent-activity { display:grid; grid-template-columns:12px minmax(0,1fr) auto; }
@@ -43,7 +42,7 @@
 
 /* FB11/FB15: approved mode explanations and explicit result review. */
 #composer-mode-menu { position:fixed; inset:auto; margin:0; padding:12px 8px 6px; width:360px; max-width:calc(100vw - 24px); overflow-y:auto; border:1px solid var(--line); border-radius:14px; background:var(--surface); color:var(--ink); }
-#composer-mode-menu .mode-menu-title { margin:0 12px 7px; font-size:10px; letter-spacing:.12em; color:var(--muted); font-weight:600; }
+#composer-mode-menu .mode-menu-title { margin:0 12px 7px; font-size:12px; letter-spacing:.12em; color:var(--muted); font-weight:600; }
 #composer-mode-menu [data-work-mode] { display:flex; align-items:flex-start; gap:10px; text-align:left; width:100%; border:1px solid transparent; border-radius:9px; padding:10px; background:transparent; margin:2px 0; }
 #composer-mode-menu [data-work-mode][aria-checked="true"] { background:var(--tint); border-color:var(--line); }
 #composer-mode-menu [data-work-mode] > span:nth-child(2) { flex:1; }
@@ -54,10 +53,10 @@
 #composer-mode-menu [aria-checked="true"] .mode-menu-check { visibility:visible; }
 #composer-mode-menu .mode-menu-footer { display:flex; align-items:center; gap:10px; margin-top:5px; padding:10px 10px 5px; border-top:1px solid var(--line); }
 #composer-yolo { font-size:11px; padding:6px 8px; white-space:nowrap; }
-#composer-mode-boundary { margin:0; font-size:10px; line-height:1.6; color:var(--muted); }
+#composer-mode-boundary { margin:0; font-size:12px; line-height:1.6; color:var(--muted); }
 .workspace-calm #composer-mode::after { content:'⌄'; display:inline-block; margin-left:4px; }
 .workspace-calm .journey-card.result-complete { padding:16px 0 0; margin-top:22px; border:0; border-top:1px solid var(--line); border-radius:0; background:transparent; }
-.result-complete .result-eyebrow { margin:0 0 10px; font-size:10px; letter-spacing:.12em; color:var(--muted); font-weight:600; }
+.result-complete .result-eyebrow { margin:0 0 10px; font-size:12px; letter-spacing:.12em; color:var(--muted); font-weight:600; }
 .result-complete .result-receipt { margin:0 0 10px; font-size:19px; line-height:1.35; color:var(--ink); }
 .result-complete .result-description { font-size:13px; line-height:1.65; color:var(--muted); margin:0 0 14px; }
 .result-complete .result-test-hint { padding-left:11px; border-left:2px solid var(--line); margin:16px 0; font-size:12px; line-height:1.65; color:var(--muted); }

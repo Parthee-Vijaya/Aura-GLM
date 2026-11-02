@@ -330,8 +330,8 @@
   window.PrivacyGate = { connect(value) {
     if (connected || !value || typeof value.read !== 'function' || typeof value.invoke !== 'function') return;
     api = value; connected = true;
-    settingsDialog = make('dialog', undefined, 'privacy-dialog privacy-settings'); settingsDialog.id = 'privacy-settings-dialog'; settingsDialog.setAttribute('data-i18n-content', ''); settingsDialog.setAttribute('data-help', 'essential');
-    sharingDialog = make('dialog', undefined, 'privacy-dialog privacy-sharing'); sharingDialog.id = 'privacy-sharing-dialog'; sharingDialog.setAttribute('data-i18n-content', ''); sharingDialog.setAttribute('data-help', 'essential');
+    settingsDialog = make('dialog', undefined, 'privacy-dialog privacy-settings'); settingsDialog.id = 'privacy-settings-dialog'; settingsDialog.setAttribute('data-i18n-content', ''); settingsDialog.setAttribute('data-help', 'essential'); settingsDialog.setAttribute('data-size','wide');
+    sharingDialog = make('dialog', undefined, 'privacy-dialog privacy-sharing'); sharingDialog.id = 'privacy-sharing-dialog'; sharingDialog.setAttribute('data-i18n-content', ''); sharingDialog.setAttribute('data-help', 'essential'); sharingDialog.setAttribute('data-size','wide');
     settingsDialog.addEventListener('cancel', event => { event.preventDefault(); closeDialog(settingsDialog); });
     sharingDialog.addEventListener('cancel', event => { event.preventDefault(); if (allowedDecisions(reviewing).includes('cancel')) void decide('cancel'); else if (!allowedDecisions(reviewing).length) closeReview(); });
     document.body.append(settingsDialog, sharingDialog);

@@ -29,8 +29,8 @@ body.workspace-calm[data-workspace-theme="light"] {
 .workspace-calm .brand .sidebar-toggle { margin-left:auto; }
 .workspace-calm .sidebar :is(nav button,.project-name,.chat-row,#settings-toggle) { color:var(--muted); background:transparent; }
 .workspace-calm .sidebar :is(.chat-row[aria-current="true"],nav button[aria-current="page"]) { background:var(--calm-hover); color:var(--ink); }
-.workspace-calm .sidebar-bottom { border-color:var(--line); font-size:10px; }
-.workspace-calm :is(.nav-label,.chat-meta,.badge) { color:var(--calm-faint); }
+.workspace-calm .sidebar-bottom { border-color:var(--line); font-size:12px; color:var(--aura-ink-secondary); }
+.workspace-calm :is(.nav-label,.chat-meta,.badge) { color:var(--aura-ink-secondary); }
 .workspace-calm .badge { background:transparent; border-color:var(--line); }
 .workspace-calm.sidebar-collapsed { --sidebar:60px; }
 .workspace-calm.sidebar-collapsed .brand { flex-direction:column; padding:12px 0; gap:8px; }
@@ -44,13 +44,15 @@ body.workspace-calm[data-workspace-theme="light"] {
 .workspace-calm .work-grid[data-surface="off"] #workspace-divider { display: none; }
 .workspace-calm .work-grid[data-surface="off"] #work-surface { display: none; }
 .workspace-calm .work-grid[data-surface="off"] #chat-panel { max-width: 900px; margin: 0 auto; width: 100%; }
-/* Panelet åbnes: normal grid med chat venstre + panel højre. Kun diskrete åbn/luk ændringer
-   animeres; træk i skillelinjen skal følge pointeren uden easing (DSH: data-dragging). */
+/* Panelet åbnes: normalt grid med chat venstre + panel højre. Både åbn/luk og
+   vinduets størrelsesændringer animerer kolonnen på friske profiler (clamp-
+   trinnet følger viewporten); træk i skillelinjen følger pointeren uden
+   easing (DSH: data-dragging). */
 .workspace-calm .work-grid { transition: grid-template-columns var(--aura-transition-duration-slow) var(--aura-ease-in-out); }
 .workspace-calm .work-grid[data-dragging] { transition: none; }
 .workspace-calm :is(.chat,.work-panel,.panel-bar,.work-tabs,.preview-toolbar,.code-browser) { background:var(--surface); }
 .workspace-calm .chat .section-title { padding:0 16px; min-height:46px; gap:8px; }
-.workspace-calm #run-status { font-size:10px; font-weight:400; white-space:nowrap; }
+.workspace-calm #run-status { font-size:11px; font-weight:400; white-space:nowrap; }
 /* DSH-stil: centreret samtaleindhold med maks. bredde (som DSH 920px).
    Indholdsrammen er --chat-col fra aura-tokens; gutteren (--chat-gutter)
    er padding her på kolonnen, så composeren kan trække den fra og ramme
@@ -77,14 +79,14 @@ body.workspace-calm[data-workspace-theme="light"] {
 .workspace-calm #model-chip { flex:0 1 auto; overflow:hidden; min-width:0; font-size:11px; padding:5px 2px; gap:6px; white-space:nowrap; }
 .workspace-calm #model-chip span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .workspace-calm #model-chip .provider-brand-icon { width:17px; height:17px; flex:none; }
-.workspace-calm #composer-mode { padding:5px 3px; font-size:10px; flex-shrink:0; }
+.workspace-calm #composer-mode { padding:5px 3px; font-size:13px; flex-shrink:0; }
 .workspace-calm #chat-materials-plus { width:28px; height:28px; min-height:28px; font-size:23px; padding:0; }
 .workspace-calm #send,.workspace-calm #stop { width:32px; height:32px; border-radius:50%; padding:0; flex-shrink:0; font-size:0; }
 .workspace-calm #send::after { content:'↑'; font-size:18px; }
 .workspace-calm #stop { background:var(--calm-button); color:var(--calm-button-text); border-color:transparent; }
 .workspace-calm #stop::after { content:'□'; font-size:19px; }
-.workspace-calm #composer-shortcut { font-size:9px; margin:2px 5px 6px; color:var(--calm-faint); }
-.workspace-calm :is(.composer-status,#context-status) { font-size:10px; color:var(--calm-faint); padding-inline:15px; }
+.workspace-calm #composer-shortcut { font-size:12px; margin:2px 5px 6px; color:var(--muted); }
+.workspace-calm :is(.composer-status,#context-status) { font-size:12px; color:var(--muted); padding-inline:15px; }
 .workspace-calm .composer-status { flex-wrap:wrap; gap:3px 10px; padding-bottom:9px; }
 .workspace-calm #chat-form::before { inset:-2px; padding:2px; border-radius:18px; }
 .workspace-calm #chat-form::after { inset:-4px; padding:3px; border-radius:20px; filter:blur(5px); }
@@ -106,7 +108,7 @@ body.workspace-calm[data-workspace-theme="light"] {
 .workspace-calm :is(.markdown pre,.markdown code,.activity-output pre,.approval pre,.live-draft pre,.diff,.code-lines,.permission-boundary,.journey-card,.plan-card,.question-card,.material-candidates,.material-review) { background:var(--calm-raised); color:var(--ink); border-color:var(--line); }
 .workspace-calm :is(.panel-notice,.model-controls,.approval .answer-choice,.approval-facts code.action-target,.share-summary,.data-summary,#data-summary,.features-intro) { background:var(--calm-raised); color:var(--ink); border-color:var(--line); }
 .workspace-calm :is(.approval,.panel-warning,.activity-entry.status-waiting,.restore-conflicts,.code-line.is-marked) { background:var(--calm-warning-bg); color:var(--ink); border-color:color-mix(in srgb,var(--calm-warning) 40%,var(--line)); }
-.workspace-calm :is(.approval-kind,.activity-entry.status-waiting .activity-state,.chat-meta.is-waiting) { color:var(--calm-warning); }
+.workspace-calm :is(.approval-kind,.activity-entry.status-waiting .activity-state) { color:var(--calm-warning); }
 .workspace-calm :is(.chat-message.error,.dialog-notice.error,.error) { color:var(--calm-error); background:var(--calm-error-bg); }
 .workspace-calm :is(.activity-error,.activity-entry.status-error .activity-state,.activity-entry.status-rejected .activity-state) { color:var(--calm-error); }
 .workspace-calm :is(.diff-row.add,.change-tag.change-ny) { background:var(--aura-diff-add-bg); }
@@ -124,7 +126,7 @@ body.workspace-calm[data-workspace-theme="light"] {
      er én kilde, så rammens kant-mod-kant-kontrakt består også her. */
   body.workspace-calm { --chat-gutter:18px; }
   .workspace-calm .chat-content { padding:18px var(--chat-gutter); }
-  .workspace-calm .work-tab { padding-inline:6px; font-size:10px; }
+  .workspace-calm .work-tab { padding-inline:6px; font-size:11px; }
 }
 @media(max-width:900px) {
   body.workspace-calm,body.workspace-calm.sidebar-collapsed { --sidebar:0px; }
@@ -152,8 +154,8 @@ body.workspace-calm[data-workspace-theme="light"] {
   .workspace-calm .preview-actions { flex-wrap:wrap; }
   .workspace-calm .preview-actions select { max-width:108px; }
   .workspace-calm .composer-toolbar { gap:3px; }
-  .workspace-calm #model-chip { font-size:10px; }
-  .workspace-calm #composer-mode { font-size:9px; }
+  .workspace-calm #model-chip { font-size:11px; }
+  .workspace-calm #composer-mode { font-size:12px; }
 }
 @media(max-height:650px) {
   .workspace-calm .chat-content { padding-top:12px; }
@@ -184,7 +186,7 @@ body.workspace-calm[data-workspace-theme="light"] {
    kant som tekstkolonnen (den tidligere egenbredde på 720 px er væk). */
 
 /* DSH-stil: composerens genvejslinje er diskret. */
-.workspace-calm #composer-shortcut { font-size: 10px; color: var(--aura-ink-faint); text-align: center; margin: 4px 0 2px; }
+.workspace-calm #composer-shortcut { font-size: 12px; color: var(--aura-ink-muted); text-align: center; margin: 4px 0 2px; }
 
 /* Valgmulighederne i en ny samtale: planlægge eller bygge. */
 .workspace-calm #chat-choice { text-align: center; max-width: 520px; margin: 6vh auto 16px; }
@@ -198,7 +200,7 @@ body.workspace-calm[data-workspace-theme="light"] {
 .workspace-calm .chat-choice-card strong { display: block; font-size: 14px; margin-bottom: 4px; color: var(--ink); }
 .workspace-calm .chat-choice-card small { font-size: 12px; line-height: 1.5; color: var(--muted); }
 /* Profilens standard-arbejdsmåde mærkes Anbefalet — samme pille som funktionsvalget. */
-.workspace-calm .chat-choice-card .recommended { display: inline-block; margin: 0 0 4px; padding: 2px 9px; border-radius: 999px; background: var(--aura-accent-faint); color: var(--aura-accent); font-size: 11px; font-weight: 650; letter-spacing: .02em; }
+.workspace-calm .chat-choice-card .recommended { display: inline-block; margin: 0 0 4px; padding: 2px 9px; border-radius: 999px; background: var(--aura-accent-faint); color: var(--aura-accent-hover); font-size: 11px; font-weight: 650; letter-spacing: .02em; }
 
 /* Det lette "Tilføj forbindelse"-flow i AI-forbindelsesdialogen (profilplanens
    femte skive). Gitteret genbruger opsættelsens .provider-cards-markup, og

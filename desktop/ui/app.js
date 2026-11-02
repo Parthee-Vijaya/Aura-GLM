@@ -527,7 +527,7 @@ $('#setup-remove-all').onclick = () => action(async () => {
   const removeAll = (state?.connections || []).slice();
   if (!removeAll.length) return;
   const make = (tag, text, className) => { const element = document.createElement(tag); if (text) element.textContent = text; if (className) element.className = className; return element; };
-  const dialog = make('dialog', '', 'connection-removal-dialog'); dialog.id = 'remove-all-dialog';
+  const dialog = make('dialog', '', 'connection-removal-dialog'); dialog.id = 'remove-all-dialog'; dialog.setAttribute('data-size','confirm');
   const heading = make('h2', 'Fjern alle gemte nøgler?'); heading.id = 'remove-all-title'; dialog.setAttribute('aria-labelledby', 'remove-all-title');
   const description = make('p');
   description.append(make('strong', removeAll.length === 1 ? '1 forbindelse' : `${removeAll.length} forbindelser`), document.createTextNode(' og deres gemte adgangsoplysninger fjernes fra Aura Prime. Dine projekter og samtaler bevares.'));
