@@ -4,6 +4,9 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const os = require('node:os');
 const root = path.join(__dirname, '..', '..');
+// Profilen, der udfyldes i onboarding-trinnet ved første start (tom profil) og
+// genfindes i Indstillinger og efter genstart i de to nye kontroller.
+const PROFILE = { name: 'Anna Klit', icon: 'star', theme: 'dark' };
 (async () => {
   const testRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'harness-desktop-'));
   const reference = path.join(testRoot, 'reference.txt');
@@ -20,7 +23,36 @@ const root = path.join(__dirname, '..', '..');
     if (expectProject) { await page.waitForSelector('#workspace:not([hidden])'); assert.equal(await page.locator('#project-name').textContent(), expectProject); await page.frameLocator('#preview').locator('h1').waitFor(); }
     else { await page.waitForFunction(() => !document.querySelector('#new').disabled); await page.waitForTimeout(500); assert.equal(await page.locator('#workspace').isVisible(), false); }
     await require('./ui-test-helpers.cjs').toOnboarding(page);
-    await page.waitForSelector('#onboarding'); await page.waitForFunction(() => !document.querySelector('#new').disabled); await require('./ui-test-helpers.cjs').openSetup(page); await page.click('#setup-local'); await page.waitForSelector('#create-form');
+    await page.waitForSelector('#onboarding'); await page.waitForFunction(() => !document.querySelector('#new').disabled);
+    // Opsætningen gennemgås ad de nye veje: "Tilføj forbindelse" åbner det lette
+    // flow inde i dialogen (ikke opsætningsskærmen), og "Gennemgå opsætningen"
+    // starter på "Din profil", når profilen er tom (godkendt profil-gating).
+    // "Vælg senere" fuldfører repeat-opsætningen, som genåbner AI-forbindelser;
+    // dialogen lukkes, og prøven står ved projektoprettelsen.
+    await require('./ui-test-helpers.cjs').menuClick(page, '#connections-button');
+    await page.waitForFunction(() => { const dialog = document.querySelector('#connections-dialog'); return dialog.open && !dialog.getAnimations().some(animation => animation.playState === 'running'); });
+    await page.click('#connection-add'); await page.waitForSelector('#connection-add-flow:not([hidden])');
+    await page.click('#connection-add-cancel'); await page.waitForSelector('#connections-list:not([hidden])');
+    await page.click('#connections-setup'); await page.waitForSelector('#setup:not([hidden])');
+    if (await page.locator('#setup-profile').isVisible()) {
+      // Første guidede gang med en tom profil vises profil-trinnet, og felterne
+      // udfyldes her. Operativsystemets navneforslag kan nå feltet efter
+      // udfyldningen; navnet prøves, til det står stille.
+      for (let settled = false, attempts = 0; !settled && attempts < 10; attempts++) {
+        await page.fill('#profile-name', PROFILE.name);
+        settled = await page.waitForFunction(name => document.querySelector('#profile-name').value === name, PROFILE.name, { timeout: 1000 }).then(() => true, () => false);
+      }
+      assert.equal(await page.inputValue('#profile-name'), PROFILE.name, 'profilnavnet står stille efter udfyldningen');
+      await page.click(`#profile-icon-grid button[data-icon="${PROFILE.icon}"]`);
+      await page.check(`#profile-theme input[value="${PROFILE.theme}"]`);
+      await page.click('#profile-continue');
+    }
+    await page.waitForSelector('#setup-choice:not([hidden])');
+    await page.click('#setup-local');
+    await page.waitForSelector('#connections-dialog[open]');
+    await page.click('[data-close="connections-dialog"]');
+    await page.waitForFunction(() => !document.querySelector('#connections-dialog').open);
+    await page.waitForSelector('#create-form');
     const identity = await app.evaluate(({app, Menu}) => ({ name: app.getName(), userData: app.getPath('userData'), labels: Menu.getApplicationMenu().items.map(item => item.label) }));
     assert.equal(identity.name, 'Aura');
     assert.equal(await fs.realpath(identity.userData), await fs.realpath(path.join(testRoot, 'electron-data')));
@@ -34,6 +66,20 @@ const root = path.join(__dirname, '..', '..');
     let page = await launch();
     const errors=[]; page.on('pageerror',e=>errors.push(e.message));
     await page.screenshot({path:path.join(testRoot, 'opstart.png'), fullPage:true});
+    // Kontrol: profilen udfyldes i onboarding og ændres i Indstillinger. Trinnet
+    // udfyldte navn, ikon og tema under opstarten; Indstillinger › Din profil
+    // viser de samme værdier, et nyt navn gemmes, og sektionen genåbnes med det.
+    await page.click('#settings-toggle'); await page.click('#settings-profile-button');
+    await page.waitForFunction(name => document.querySelector('#settings-name')?.value === name, PROFILE.name);
+    assert.deepEqual(await page.locator('#settings-icons button[aria-checked="true"]').evaluateAll(buttons => buttons.map(button => button.dataset.icon)), [PROFILE.icon]);
+    assert.equal(await page.evaluate(() => document.body.dataset.workspaceTheme), PROFILE.theme, 'temaet fra profil-trinnet er i brug');
+    await page.fill('#settings-name', 'Bo Larsen'); await page.locator('#settings-name').press('Tab');
+    await page.waitForFunction(() => window.harness.profileGet().then(result => result.value.profile.name === 'Bo Larsen'));
+    await page.click('[data-close="settings-dialog"]');
+    await page.click('#settings-toggle'); await page.click('#settings-profile-button');
+    await page.waitForFunction(() => document.querySelector('#settings-name')?.value === 'Bo Larsen');
+    assert.equal(await page.locator('#settings-dialog').evaluate(dialog => dialog.open), true, 'Din profil genåbnes med det nye navn');
+    await page.click('[data-close="settings-dialog"]');
     await page.fill('#name','Fælleshaven'); await page.fill('#purpose','Find og del aktiviteter med dine naboer.');
     await require('./ui-test-helpers.cjs').projectOptions(page); await page.click('#design-options > summary'); await page.fill('#links','https://example.com/design');
     await choose([reference]); await page.click('#reference'); await page.waitForSelector('#assets li');
@@ -43,6 +89,15 @@ const root = path.join(__dirname, '..', '..');
     await page.waitForFunction(() => document.querySelector('#design-select').options.length === 2);
     await fs.unlink(reference); await fs.unlink(logo);
     await app.close(); page = await launch();
+    // Kontrol: profilen genindlæses efter genstart. Temaet er i brug fra første
+    // visning, før Indstillinger åbnes, og felterne viser de gemte værdier.
+    assert.equal(await page.evaluate(() => document.body.dataset.workspaceTheme), PROFILE.theme, 'profilens tema sættes ved genstart');
+    await page.click('#settings-toggle'); await page.click('#settings-profile-button');
+    await page.waitForFunction(() => document.querySelector('#settings-name')?.value === 'Bo Larsen');
+    assert.deepEqual(await page.locator('#settings-icons button[aria-checked="true"]').evaluateAll(buttons => buttons.map(button => button.dataset.icon)), [PROFILE.icon]);
+    await page.click('[data-settings-section="appearance"]');
+    await page.waitForFunction(theme => document.querySelector(`#settings-theme input[value="${theme}"]`)?.checked === true, PROFILE.theme);
+    await page.click('[data-close="settings-dialog"]');
     await page.waitForFunction(() => document.querySelector('#design-select').options.length === 2);
     await require('./ui-test-helpers.cjs').projectOptions(page); await page.click('#design-options > summary'); await page.selectOption('#design-select', { label: 'Genbrugeligt design · 2 filer' });
     await page.waitForFunction(() => document.querySelectorAll('#assets li').length === 2);
@@ -127,6 +182,6 @@ const root = path.join(__dirname, '..', '..');
     await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).setSize(980,720));
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth <= window.innerWidth),true);
     assert.deepEqual(errors,[]);
-    console.log(JSON.stringify({passed:['designpakke genbrugt efter genstart og slettede originaler','projektoprettelse','annulleret dialog','logo og reference','ægte preview','automatisk opdatering fra disk','skærmstørrelser, rotation, egne mål, skalering og trækbar skillelinje','ingen Node eller IPC i preview','genåbning efter genstart','eksisterende projekt bevaret'],testRoot,projectDir,screenshots:[path.join(testRoot, 'opstart.png'),path.join(testRoot, 'arbejdsflade.png')]}));
+    console.log(JSON.stringify({passed:['designpakke genbrugt efter genstart og slettede originaler','projektoprettelse','annulleret dialog','logo og reference','ægte preview','automatisk opdatering fra disk','skærmstørrelser, rotation, egne mål, skalering og trækbar skillelinje','ingen Node eller IPC i preview','genåbning efter genstart','eksisterende projekt bevaret','profil udfyldes i onboarding og ændres i Indstillinger','profil genindlæses efter genstart'],testRoot,projectDir,screenshots:[path.join(testRoot, 'opstart.png'),path.join(testRoot, 'arbejdsflade.png')]}));
   } finally {if(app) await app.close().catch(()=>{});}
 })().catch(error=>{console.error(error);process.exitCode=1;});
