@@ -391,3 +391,19 @@ test('Tilbage fra valget forlader opsætningen, når profil-trinnet ikke blev vi
   assert.equal(f.context.setupStep, 'choice');
   assert.equal(f.registry.get('setup').hidden, true, 'repeat-opsætning lukkes som i dag');
 });
+
+test('en profilgemning med tema opdaterer tema-hintet straks gennem calmWorkspace', async () => {
+  const f = runSetup();
+  const themes = [];
+  // settings.js and workspace-calm.js expose setTheme on window.calmWorkspace;
+  // every profile save that includes a theme hands it over right away.
+  f.context.window.calmWorkspace = { setTheme: theme => themes.push(theme) };
+  await f.context.showSetup('', true);
+  f.registry.get('profile-name').value = 'Anna Klit';
+  f.document.querySelectorAll('#profile-icon-grid button').find(button => button.dataset.icon === 'bird').onclick();
+  for (const input of f.document.querySelectorAll('#profile-theme input')) input.checked = input.value === 'dark';
+  await f.registry.get('profile-continue').onclick();
+  assert.deepEqual(themes, ['dark'], 'Fortsæt giver temaet videre med det samme efter gemningen');
+  await f.context.leaveSetup(false);
+  assert.deepEqual(themes, ['dark', 'dark'], 'gennemførelsen giver temaet videre igen fra den gemte flet');
+});

@@ -1,15 +1,15 @@
 /* SPDX-License-Identifier: EUPL-1.2 */
-/* Indstillingsdialogen: ét DSH-panel med sektionsnav til venstre og sektionens
-   indhold til højre. Alle farver, kanter og radius kommer fra aura-tokens.css;
-   de fire etablerede dialoger består uændrede og åbnes i rækkefølge — aldrig
-   indlejret i denne dialog. */
+/* The unified settings dialog: one DSH panel with the section nav on the left
+   and the section's content on the right. All colors, borders and radii come
+   from aura-tokens.css; the four established dialogs remain unchanged and open
+   sequentially — never nested inside this dialog. */
 
 #settings-dialog { width: min(780px, 92vw); padding: 0; overflow: hidden; }
 #settings-dialog .dialog-heading { padding: 24px 28px 0; margin-bottom: 0; }
 .settings-layout { display: grid; grid-template-columns: 200px minmax(0, 1fr); min-height: 340px; max-height: calc(88vh - 96px); margin-top: 18px; border-top: 1px solid var(--aura-border-faint); }
 
-/* Sektionsnavnet i sidebar-stil: gennemsigtige knapper, stregikoner og
-   accentkunsthånd ved den aktuelle sektion (aria-current). */
+/* The section nav in sidebar style: transparent buttons, stroke icons and the
+   accent treatment on the current section (aria-current). */
 .settings-nav { padding: 10px; display: grid; gap: 2px; align-content: start; overflow-y: auto; background: var(--aura-bg-sidebar); border-right: 1px solid var(--aura-border); }
 .settings-nav button { display: flex; align-items: center; gap: 10px; text-align: left; padding: 9px 10px; font-weight: 500; border-color: transparent; background: transparent; border-radius: var(--aura-radius-sm); }
 .settings-nav button:hover:not(:disabled) { background: var(--aura-bg-hover); border-color: transparent; }
@@ -23,8 +23,43 @@
 .settings-content h3 { margin: 0 0 8px; }
 .settings-content .hint { max-width: 46ch; }
 
+/* Field rows: the label sits left of the control, the calm theme's setting-row
+   pattern. The first row of the content starts clean without a top rule. */
+.settings-field { display: grid; grid-template-columns: minmax(110px, 170px) minmax(0, 1fr); align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--aura-border-faint); }
+.settings-field:first-of-type { border-top: 0; padding-top: 12px; }
+.settings-field > label { margin: 0; }
+/* Explanations and the standard-model line belong under the control column. */
+.settings-content > .hint { margin: 4px 0 6px; }
+.settings-field + .hint { margin-top: 0; }
+
+/* The icon grid reuses the onboarding picker's presentation (styles.css). */
+.settings-field .profile-icon-grid { margin-top: 0; }
+
+/* The theme choice as a borderless radio group; the panel start as one check. */
+.settings-theme { border: 0; padding: 0; margin: 14px 0 0; }
+.settings-theme legend { padding: 0; font-size: 12px; font-weight: 550; }
+.settings-theme label { display: inline-flex; align-items: center; gap: 8px; margin: 10px 28px 4px 0; font-size: 13px; }
+.settings-check { display: flex; align-items: center; gap: 10px; margin: 14px 0 0; padding: 10px 14px; border: 1px solid var(--aura-border); border-radius: var(--aura-radius-sm); font-size: 13px; font-weight: 500; cursor: pointer; }
+
+/* "Glem projektstandarder" is a quiet reset under the project defaults. */
+.settings-forget { display: flex; justify-content: flex-end; margin: 4px 0 0; }
+
+/* Save feedback: validation errors in the error tone, warnings as status. */
+.settings-content .hint[role="status"] { min-height: 1.6em; }
+.settings-content .hint[role="status"].error { color: var(--aura-error); }
+
+/* Help level "minimal" hides ONLY the three designated hints — never privacy
+   texts, warnings, approvals or "Før du sender" content. The targets:
+   - #composer-shortcut: the shortcut line under the message field.
+   - #resume-notice .hint: the resume notice's explanation about shared references.
+   - #idea-options .hint: the project intro's "Ønsker til løsningen" explanations. */
+body.help-minimal #composer-shortcut,
+body.help-minimal #resume-notice .hint,
+body.help-minimal #idea-options .hint { display: none; }
+
 @media (max-width: 720px) {
   .settings-layout { grid-template-columns: 1fr; min-height: 0; }
   .settings-nav { display: flex; gap: 6px; overflow-x: auto; overflow-y: hidden; border-right: 0; border-bottom: 1px solid var(--aura-border); }
   .settings-nav button { white-space: nowrap; }
+  .settings-field { grid-template-columns: 1fr; gap: 6px; }
 }

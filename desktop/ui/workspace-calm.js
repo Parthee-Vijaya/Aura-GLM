@@ -5,11 +5,15 @@
   const body = document.body;
   const narrow = matchMedia('(max-width: 720px)');
   const overlaySidebar = matchMedia('(max-width: 900px)');
-  const themeKey = 'harness-workspace-theme-v1';
+  // Theme: the profile is the single source; aura.theme-hint.v1 is the
+  // read-only renderer copy, written only by profile/theme code (this module
+  // and settings.js) so the theme applies synchronously at startup. Without a
+  // stored choice the app follows the system's light/dark state.
+  const themeHintKey = 'aura.theme-hint.v1';
   const systemDark = matchMedia('(prefers-color-scheme: dark)');
-  // Gemt manuel valg vinder; uden gemt valg følger appen systemets lys/mørke-tilstand.
-  function storedChoice() { try { const v = localStorage.getItem(themeKey); return v === 'light' || v === 'dark' ? v : null; } catch { return null; } }
-  let theme = storedChoice() ?? (systemDark.matches ? 'dark' : 'light'), mobileSurface = false;
+  function storedChoice() { try { const v = localStorage.getItem(themeHintKey); return ['system', 'light', 'dark'].includes(v) ? v : null; } catch { return null; } }
+  function resolveTheme() { const choice = storedChoice(); return choice === 'light' || choice === 'dark' ? choice : (systemDark.matches ? 'dark' : 'light'); }
+  let theme = resolveTheme(), mobileSurface = false;
 
   const themeButton = node('button', 'Mørk arbejdsvisning');
   themeButton.id = 'workspace-theme'; themeButton.type = 'button';
@@ -33,12 +37,32 @@
     body.dataset.workspaceTheme = theme;
     themeButton.setAttribute('aria-checked', String(theme === 'dark'));
   }
+  // Profile/theme code calls this after saving a theme: refresh the hint copy
+  // and apply the choice immediately ('system' follows prefers-color-scheme).
+  function setTheme(choice) {
+    try { localStorage.setItem(themeHintKey, choice === 'light' || choice === 'dark' ? choice : 'system'); } catch { /* Presentation only. */ }
+    theme = resolveTheme();
+    applyTheme();
+  }
+  async function invoke(method, value) {
+    const response = await window.harness[method](value);
+    if (!response.ok) throw new Error(response.error);
+    return response.value;
+  }
+  // The project-menu button cycles light/dark: the visual change and the hint
+  // are synchronous; the profile persists asynchronously as the single source.
   themeButton.onclick = () => {
-    theme = theme === 'dark' ? 'light' : 'dark'; applyTheme();
-    try { localStorage.setItem(themeKey, theme); } catch { /* Presentation only. */ }
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    void (async () => {
+      try {
+        const current = await invoke('profileGet');
+        await invoke('profileSave', { appearance: { theme: next, panelOpen: current.profile?.appearance?.panelOpen !== false } });
+      } catch { /* The hint keeps this session's choice; the profile stays authoritative. */ }
+    })();
   };
-  // Følger live med når systemet skifter lys/mørke, medmindre brugeren har valgt manuelt.
-  systemDark.addEventListener('change', () => { theme = storedChoice() ?? (systemDark.matches ? 'dark' : 'light'); applyTheme(); });
+  // Follows the system's light/dark change unless a stored choice overrides it.
+  systemDark.addEventListener('change', () => { theme = resolveTheme(); applyTheme(); });
   function closeSidebar() {
     body.classList.remove('calm-sidebar-open'); navigation.setAttribute('aria-expanded', 'false');
   }
@@ -84,6 +108,6 @@
     panes();
   }
   new MutationObserver(visibility).observe(root, { attributes: true, attributeFilter: ['hidden'] });
-  window.calmWorkspace = { showSurface: () => showPane(true), showChat: () => showPane(false) };
+  window.calmWorkspace = { showSurface: () => showPane(true), showChat: () => showPane(false), setTheme };
   applyTheme(); visibility();
 })();

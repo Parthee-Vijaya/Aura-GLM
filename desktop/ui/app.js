@@ -235,7 +235,23 @@ async function prepareProfileStep(profile) {
   $('#profile-help').value = profile?.helpLevel || 'fuld';
 }
 async function saveProfileStep() {
-  try { await call('profileSave', profilePatch()); } catch { /* saving the profile never blocks the setup */ }
+  const patch = profilePatch();
+  try {
+    await call('profileSave', patch);
+    // Every profile save that includes a theme hands it to the calm workspace,
+    // so the hint copy never goes stale against the profile.
+    window.calmWorkspace?.setTheme?.(patch.appearance?.theme);
+  } catch { /* saving the profile never blocks the setup */ }
+}
+// The profile is presentation state: after a restart the help level and theme
+// must be in effect from the app's first paint, not only after a visit to
+// settings. The hint copy refreshes from the profile — the single source.
+async function applyProfilePresentation() {
+  try {
+    const { profile } = await call('profileGet');
+    document.body.classList.toggle('help-minimal', profile.helpLevel === 'minimal');
+    window.calmWorkspace?.setTheme?.(profile.appearance?.theme);
+  } catch { /* the profile is optional at startup */ }
 }
 $('#profile-continue').onclick = () => action(async () => { await saveProfileStep(); profileStepDone = true; setupPage('choice'); });
 // Udbyderne vises på lige vilkår. Et valg åbner kun den valgte forbindelses opsætning.
@@ -351,7 +367,7 @@ async function leaveSetup(useAI) {
       const current = await call('profileGet');
       if (!current.profile?.standardAI?.connectionID) patch.standardAI = { connectionID: id, modelID: current.profile?.standardAI?.modelID || '' };
     }
-    if (Object.keys(patch).length) await call('profileSave', patch);
+    if (Object.keys(patch).length) { await call('profileSave', patch); if (patch.appearance?.theme) window.calmWorkspace?.setTheme?.(patch.appearance.theme); }
   } catch { /* saving the profile never blocks completing the setup */ }
   profileStepShown = false; profileStepDone = false;
   ++setupGeneration; ++localDiscoveryGeneration; clearConnectionReceipt(); moveConnectionForm(false);
@@ -1263,6 +1279,7 @@ for (const id of ['support-dialog', 'connections-dialog', 'features-dialog']) do
 });
 $('#connections-dialog').addEventListener('close', () => { clearConnectionReceipt(); });
 setInterval(async () => { if (!current || polling) return; polling = true; const project = current, root = current.workspaceRoot; try { const next = await call('revision'); if (current !== project || current.workspaceRoot !== root || !next) return; if (revision && next !== revision) $('#preview').src = current.previewURL; revision = next; $('#preview-status').textContent = 'Lokal forhåndsvisning'; } catch { $('#preview-status').textContent = 'Kan ikke læse siden – kontrollér projektfilerne'; } finally { polling = false; } }, 1500);
+void applyProfilePresentation();
 action(async () => { syncCreateAvailability(); try { state = await call('connectionState'); renderConnections(); updateProvider(); await loadDesigns(); await loadStartup(); applyFeatures(); renderLocation(await call('projectLocation')); restoreIdeaDraft(); showIdeaExamples(); await refreshRecent(); setupControls(); for (const id of ['#welcome-build', '#welcome-example', '#welcome-open']) $(id).disabled = false; if ($('#welcome-dialog').open) $('#welcome-title').focus(); else { $('#purpose').focus(); await reopenLast(); } } finally { projectLoading = false; applyRunning(); } });
 // Kom tilbage: det senest åbnede projekt åbnes igen ved start, så man fortsætter, hvor man slap.
 // Et projekt, brugeren selv har lukket med Nyt projekt, åbnes ikke igen.

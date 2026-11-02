@@ -389,8 +389,12 @@ handle('preferences:get', () => new Preferences(workbench.store).get());
 handle('preferences:save', input => exclusive(() => new Preferences(workbench.store).save(input)));
 // The profile is app-owned UI state; name and icon never reach prompts, model log, diagnostics or feedback.
 const profileStore = () => new Profile(workbench.store);
+// The profile's appearance.theme drives Electron's theme source, so the renderer's
+// prefers-color-scheme matches the profile before the first paint: 'system' follows
+// the operating system, the manual choices force their palette.
+function applyProfileTheme(theme) { nativeTheme.themeSource = theme === 'dark' ? 'dark' : theme === 'light' ? 'light' : 'default'; }
 handle('profile:get', () => profileStore().get());
-handle('profile:save', input => exclusive(() => profileStore().save(input)));
+handle('profile:save', input => exclusive(async () => { const result = await profileStore().save(input); if (input?.appearance?.theme !== undefined) applyProfileTheme(result.profile.appearance.theme); return result; }));
 handle('profile:migrate', input => exclusive(() => profileStore().migrate(input)));
 handle('profile:suggest', () => { try { return require('node:os').userInfo().username || ''; } catch { return ''; } });
 handle('designs:clear', () => exclusive(() => { assets = []; return []; }));
@@ -1093,6 +1097,9 @@ app.whenReady().then(async () => {
     created.on('closed', () => { window = null; assets = []; registry.deselect(); });
     window.loadURL(uiURL);
   }
+  // The profile's theme must be in effect before the window is created, so the
+  // first paint matches the profile instead of flashing the system theme.
+  try { applyProfileTheme((await profileStore().get()).profile.appearance.theme); } catch { /* an unreadable profile keeps the system theme */ }
   if (process.platform === 'darwin') app.dock.setIcon(appIcon);
   createWindow();
   app.on('activate', () => { if (!window) createWindow(); });
