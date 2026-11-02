@@ -174,6 +174,33 @@ test('opstart: uden gamle nøgler migreres en tom mængde', async () => {
   assert.deepEqual(Object.keys(f.store), [], 'intet er gemt i den lokale lagring');
 });
 
+// ---------- A4: standardpakken låses ved opstart, og rendereren genindlæser ----------
+// The features default pins in main before the window is created, and the
+// renderer's startup migration can pin it in the same store update. The
+// connectionState answer can predate that pin, so startupProfile re-reads the
+// features after the migration pass — also when the migration itself failed,
+// because the main process's pin still applies.
+test('opstart: funktionerne genindlæses efter migrationsgennemløbet — også når migrationen fejler', async () => {
+  for (const migrateError of [null, new Error('nøglecenter utilgængelig')]) {
+    const f = runStartup({ storage: { ...legacyStorage }, profile: blank(), migrateError });
+    const canonical = { chosen: 'alle', list: [], defaults: { versioner: true }, exceptions: {}, effective: { versioner: true } };
+    let asked = 0;
+    f.context.state.features = { chosen: '', list: [], defaults: { versioner: false }, exceptions: {}, effective: { versioner: false } };
+    const innerCall = f.context.call;
+    f.context.call = async (method, value) => { if (method === 'featuresGet') { asked += 1; return canonical; } return innerCall(method, value); };
+    await f.context.startupProfile();
+    assert.equal(asked, 1, 'featuresGet genindlæser funktionslisten efter migrationsgennemløbet');
+    assert.deepEqual(plain(f.context.state.features), canonical, 'den forældede grundpakke-tilstand erstattes af det kanoniske svar');
+  }
+});
+
+test('main.cjs: standardpakken låses ved opstart, før vinduet og den første features-forespørgsel', () => {
+  const pin = mainSource.indexOf('await workbench.features.migrate();');
+  assert.ok(pin >= 0, 'main låser standardpakken (pinDefault) ved opstart');
+  assert.ok(pin < mainSource.indexOf('createWindow();'), 'låsen sættes før vinduet skabes — den første connectionState-forespørgsel svarer allerede med den låste pakke');
+  assert.ok(pin > mainSource.indexOf('applyProfileFontSize(appearance.fontSize);'), 'låsen står i samme opstartsgennemløb som profil- og temainitieringen');
+});
+
 // ---------- Armatur: arbejdsmåden og chat-choice ----------
 function makeChatDom() {
   const body = makeBody();

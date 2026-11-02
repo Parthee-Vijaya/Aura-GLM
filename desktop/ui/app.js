@@ -345,12 +345,19 @@ async function migrateLegacyProfile() {
 }
 // The startup profile pass in one order: migration, read, the aura:profile
 // event for the consumers, and then the presentation (help level and theme),
-// so the profile's theme always wins over a previous session's hint.
+// so the profile's theme always wins over a previous session's hint. The
+// migration in this pass pins the features default in the same atomic store
+// update the main process also performs before the window is created; a
+// connectionState answer fetched before this point (app.js's startup order)
+// can carry the pre-pin package, so the features are re-read here — also when
+// the migration itself failed (the main process's pin still applies), and the
+// action's applyFeatures() applies what the store now says.
 async function startupProfile() {
   await migrateLegacyProfile();
   try { const read = await call('profileGet'); profileAvatarAvailable = read.hasAvatar === true; adoptProfile(read.profile); } catch { /* the profile is optional at startup */ }
   window.dispatchEvent(new CustomEvent('aura:profile', { detail: profileState || {} }));
   await applyProfilePresentation();
+  try { if (state?.features) state.features = await call('featuresGet'); } catch { /* the features keep the connectionState answer */ }
 }
 $('#profile-continue').onclick = () => action(async () => { await saveProfileStep(); profileStepDone = true; setupPage('choice'); });
 // The avatar upload and removal run in the main process: the picker opens there,

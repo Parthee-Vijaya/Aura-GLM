@@ -1182,6 +1182,15 @@ app.whenReady().then(async () => {
   // system theme or the base zoom. The font size is kept in profileFontSize
   // until createWindow applies it through the webContents zoom factor.
   try { const appearance = (await profileStore().get()).profile.appearance; applyProfileTheme(appearance.theme); applyProfileFontSize(appearance.fontSize); } catch { /* an unreadable profile keeps the system theme and the base zoom */ }
+  // The features default pins in the same startup pass, before the window
+  // exists: the renderer's first connectionState fetch carries the features,
+  // and it must already answer with the pinned package — a fresh install
+  // starts at the base package and an installation in use keeps the whole
+  // one, never the pre-pin state on the first start after an upgrade. The pin
+  // is idempotent (featuresDefault is its own latch), and a failure here is
+  // not fatal: the renderer's startup migration retries it in the same
+  // atomic store update.
+  try { await workbench.features.migrate(); } catch { /* the renderer's startup migration retries the pin */ }
   if (process.platform === 'darwin') app.dock.setIcon(appIcon);
   createWindow();
   app.on('activate', () => { if (!window) createWindow(); });
