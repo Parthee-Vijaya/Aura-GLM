@@ -773,6 +773,9 @@ $('#connection-back').onclick = () => { clearConnectionReceipt(); connectionView
 // udfyld → gem → kontrollér, fordi kontrollen kræver en gemt forbindelses-id.
 let addingConnectionStage = '';
 function openAddConnection() {
+  // En ny flow-runde afslutter gemninger og kontroller fra en tidligere runde:
+  // deres generationsvagt ser, at deres flow ikke længere er det aktive.
+  ++setupGeneration;
   clearConnectionReceipt();
   $('#connection-form').reset(); $('#connection-id').value = ''; $('#connection-feedback').textContent = '';
   renderProviderCards($('#add-provider-cards'), chooseAddProvider, false);
@@ -1286,6 +1289,13 @@ $('#connection-form').onsubmit = event => {
       if (selected) $('#setup-connection').value = selected.id;
       setupControls(); $('#connection-feedback').textContent = 'Forbindelsen er gemt.';
       if (stillAddFlow && selected) await verifyAddedConnection(selected);
+      else if (addFlow) {
+        // En forældet tilføj-flow-gemning: flowet blev annulleret eller lukket,
+        // mens gemningen løb. Forbindelsen er gemt, men formularen kan tilhøre en
+        // ny flow-runde — kun et stillestående flow ryddes og viser listen.
+        if (!addingConnectionStage) { $('#connection-form').reset(); $('#connection-id').value = ''; updateProvider(); connectionView('list'); }
+        $('#connections-feedback').textContent = 'Forbindelsen er gemt.';
+      }
       else {
         $('#connection-form').reset(); $('#connection-id').value = ''; updateProvider();
         if (stillGuided && selected) { setupPage('saved'); await testSetupConnection(); }

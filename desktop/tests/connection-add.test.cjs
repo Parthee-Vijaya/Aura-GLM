@@ -173,12 +173,13 @@ function makeDom() {
 }
 // En harness med de rigtige svarkontrakter: saveConnection returnerer hele
 // forbindelsestilstanden, models kaster ved fejl, og gate kan holde kontrollen tilbage.
-function makeHarness({ definitions: defs = definitions, connections = [], models = [], modelsError = null, gate = null } = {}) {
+function makeHarness({ definitions: defs = definitions, connections = [], models = [], modelsError = null, gate = null, saveGate = null } = {}) {
   const store = { connections: connections.map(c => ({ ...c })), definitions: defs };
   const saves = [], modelCalls = [], removals = [];
   const snapshot = () => ({ connections: store.connections.map(c => ({ ...c })), retiredConnections: [], definitions: defs });
   const api = {
     saveConnection: async input => {
+      if (saveGate) await saveGate;
       saves.push(input);
       const id = input.id || `forbindelse-${store.connections.length + 1}`;
       const connection = { id, kind: input.kind, name: input.name, baseURL: input.baseURL, deployment: input.deployment, protocol: input.protocol };
@@ -405,6 +406,50 @@ test('Annullér under en kørende kontrol viser resultatet i listen — flowet v
   assert.equal(f.registry.get('connections-list').hidden, false, 'flowet vender ikke tilbage af sig selv');
   assert.equal(rowStatus(f).dataset.state, 'connected', 'kontrollens resultat nåede listen');
   assert.equal(f.registry.get('connections-feedback').textContent, '', 'succeslinjen tilhører kun det åbne flow');
+});
+
+test('genåbning af flowet afslutter en gammel, hængende kontrol', async () => {
+  let release; const gate = new Promise(resolve => { release = resolve; });
+  const f = runFlow({ models: [{ id: 'corti-s1', name: 'Corti S1' }], gate });
+  openFlow(f);
+  chooseProvider(f, 'corti');
+  const submitting = submitConnection(f);
+  await flush();
+  assert.ok(f.registry.get('connection-feedback').textContent.includes('Kontrollerer'));
+  await f.dialog.emit('cancel');        // annullér, mens kontrollen hænger
+  openFlow(f);                          // genåbn og udfyld et nyt flow
+  chooseProvider(f, 'anthropic');
+  f.registry.get('connection-name').value = 'Ny forbindelse';
+  release();
+  await submitting;
+  assert.equal(f.registry.get('connection-add-flow').hidden, false, 'det nye flow består');
+  assert.equal(f.registry.get('add-connection-home').hidden, false, 'formularen ligger stadig i flowet');
+  assert.equal(f.registry.get('connection-name').value, 'Ny forbindelse', 'formularen er uændret');
+  assert.equal(f.registry.get('connection-feedback').textContent, '', 'den gamle verifikation skriver hverken fejl- eller ventetekst ind');
+  assert.equal(f.registry.get('connections-list').hidden, true, 'brugeren smides ikke ud af det halvudfyldte flow');
+  assert.equal(f.registry.get('connections-feedback').textContent, '', 'den gamle runde efterlader ingen succeslinje');
+});
+
+test('genåbning af flowet afslutter en gammel, hængende gemning', async () => {
+  let release; const saveGate = new Promise(resolve => { release = resolve; });
+  const f = runFlow({ saveGate });
+  openFlow(f);
+  chooseProvider(f, 'corti');
+  const submitting = submitConnection(f);
+  await flush();
+  await f.dialog.emit('cancel');        // annullér, mens gemningen hænger
+  openFlow(f);                          // genåbn og udfyld et nyt flow
+  chooseProvider(f, 'anthropic');
+  f.registry.get('connection-name').value = 'Ny forbindelse';
+  release();
+  await submitting;
+  assert.equal(f.harness.saves.length, 1, 'den gamle gemning gik igennem');
+  assert.equal(f.context.state.connections.length, 1, 'forbindelsen er gemt');
+  assert.equal(f.registry.get('connection-add-flow').hidden, false, 'det nye flow består');
+  assert.equal(f.registry.get('add-connection-home').hidden, false, 'formularen ligger stadig i flowet');
+  assert.equal(f.registry.get('connection-name').value, 'Ny forbindelse', 'formularen røres ikke af den gamle gemning');
+  assert.equal(f.registry.get('connections-list').hidden, true, 'ingen tilbagesmidth til listen');
+  assert.equal(f.registry.get('connections-feedback').textContent, 'Forbindelsen er gemt.', 'gemningen kvitteres i listens statuslinje');
 });
 
 test('flowet holder listen skjult, så en igangværende fjernelse fra listen afvises', async () => {

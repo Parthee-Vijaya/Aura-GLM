@@ -74,8 +74,14 @@ const helpers = require('./ui-test-helpers.cjs');
       assert.equal(await page.inputValue('#connection-select'), 'connection-2');
       await helpers.closeTaskOptions(page);
       await helpers.menuClick(page, '#connections-button');
-      await page.click('#connections-setup'); await page.waitForSelector('#setup-choice:not([hidden])');
-      await page.click('#setup-add-provider'); await page.click('#setup-back'); await page.click('#setup-back');
+      // Tom profil: "Gennemgå opsætningen" starter på profil-trinnet (godkendt
+      // profil-gating). Fortsæt gemmer felterne og fører videre til valget.
+      await page.click('#connections-setup'); await page.waitForSelector('#setup-profile:not([hidden])');
+      await page.click('#profile-continue'); await page.waitForSelector('#setup-choice:not([hidden])');
+      await page.click('#setup-add-provider');
+      // Godkendt tilbage-navigation: udbyder → valg → profil → opsætningen
+      // forlades, og repeat-opsætningen genåbner AI-forbindelser.
+      await page.click('#setup-back'); await page.click('#setup-back'); await page.click('#setup-back');
       await page.waitForSelector('#connections-dialog[open]'); await page.click('[data-close="connections-dialog"]');
       assert.equal(await page.inputValue('#connection-select'), 'connection-2');
       assert.equal(await page.inputValue('#prompt'), 'Min kladde skal bevares.');
