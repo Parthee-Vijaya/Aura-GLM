@@ -458,7 +458,7 @@
     if (presentation.detail) body.append(node('p', presentation.detail, 'activity-detail'));
     if (entry.error && !technical) body.append(node('p', entry.error, 'activity-error'));
     if (technical || entry.output) {
-      const fold = node('details', undefined, 'activity-output activity-technical');
+      const fold = node('details', undefined, 'activity-output activity-technical disclosure');
       fold.append(node('summary', 'Tekniske detaljer'));
       if (technical) {
         fold.append(node('p', entry.title, 'activity-technical-title'));

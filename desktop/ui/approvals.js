@@ -78,7 +78,7 @@
       if (existing.requests.has(p.id)) return;
       existing.requests.set(p.id, p); existing.count.hidden = false;
       existing.count.textContent = `${existing.requests.size} forespørgsler om samme adgang`;
-      const fold = node('details', undefined, 'approval-fold');
+      const fold = node('details', undefined, 'approval-fold disclosure');
       const location = target(p).text;
       fold.append(node('summary', location || 'Se den næste handling'));
       if (p.permission === 'edit' && typeof p.metadata?.diff === 'string') fold.append(diffRows(view.parseUnifiedDiff(p.metadata.diff)));
@@ -116,8 +116,8 @@
       if (guesses.length) { const list = node('ul', undefined, 'approval-hints'); for (const guess of guesses) list.append(node('li', guess)); const note = node('span', 'Et gæt ud fra kommandoens tekst, ikke en kontrol.', 'hint'); note.append(info('gættet', 'Kommandoer kan ændre eller slette filer, installere programmer og kontakte andre tjenester med dine rettigheder. Aura Prime læser kun kommandoens tekst og kan ikke se, hvad den faktisk gør.')); effectDd.append(list, note); }
     }
     box.append(facts, items);
-    if (diff && (diff.added || diff.removed)) { const fold = node('details', undefined, 'approval-fold'); fold.append(node('summary', 'Se ændringen'), diffRows(diff)); box.append(fold); }
-    const technical = node('details', undefined, 'approval-fold'); technical.append(node('summary', 'Tekniske detaljer'), node('pre', JSON.stringify({ tilladelse: p.permission, mønstre: p.patterns, detaljer: { ...p.metadata, ...(p.metadata?.diff ? { diff: '(se ændringen ovenfor)' } : {}) } }, null, 2))); box.append(technical);
+    if (diff && (diff.added || diff.removed)) { const fold = node('details', undefined, 'approval-fold disclosure'); fold.append(node('summary', 'Se ændringen'), diffRows(diff)); box.append(fold); }
+    const technical = node('details', undefined, 'approval-fold disclosure'); technical.append(node('summary', 'Tekniske detaljer'), node('pre', JSON.stringify({ tilladelse: p.permission, mønstre: p.patterns, detaljer: { ...p.metadata, ...(p.metadata?.diff ? { diff: '(se ændringen ovenfor)' } : {}) } }, null, 2))); box.append(technical);
     const projectFile = p.policy?.projectFile === true;
     const choices = [['Tillad én gang', true], ...(p.policy?.persistable ? [['Tillad altid i projektet', true, 'project']] : []), ['Afvis', false]];
     const row = node('div', undefined, 'approval-actions');

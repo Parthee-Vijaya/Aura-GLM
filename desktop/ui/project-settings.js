@@ -10,7 +10,7 @@
     for (const button of dialog.querySelectorAll('[data-project-section]')) button.setAttribute('aria-pressed', String(button.dataset.projectSection === name));
   }
   function serviceRow(service = {}) {
-    const fold = node('details', undefined, 'project-service'); fold.dataset.service = service.id || `tjeneste-${crypto.randomUUID().slice(0, 8)}`;
+    const fold = node('details', undefined, 'project-service disclosure'); fold.dataset.service = service.id || `tjeneste-${crypto.randomUUID().slice(0, 8)}`;
     fold.append(node('summary', service.label || 'Ny tjeneste'));
     const field = (label, key, value, multiline = false) => {
       const input = node(multiline ? 'textarea' : 'input'); input.dataset.field = key; input.value = value ?? ''; input.setAttribute('aria-label', label);

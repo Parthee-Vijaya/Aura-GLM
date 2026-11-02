@@ -3,7 +3,7 @@
   const runs = new WeakMap();
   const section = node('section', undefined, 'live-work'); section.hidden = true;
   const title = node('h3'), note = node('p', '', 'hint'), todos = node('ol', undefined, 'live-todos');
-  const draft = node('details', undefined, 'live-draft'), summary = node('summary'), explanation = node('p', 'Udkastet er ikke gemt endnu.', 'hint');
+  const draft = node('details', undefined, 'live-draft disclosure'), summary = node('summary'), explanation = node('p', 'Udkastet er ikke gemt endnu.', 'hint');
   const code = node('pre'); code.tabIndex = 0; code.setAttribute('aria-label', 'Kode under modtagelse');
   const follow = node('button', 'Følg de nyeste linjer', 'text-button'); follow.type = 'button';
   let following = true, shown = '', panelOwner = null;
@@ -14,11 +14,11 @@
   const peek = node('p', '', 'live-peek'); $('#preview-empty').append(peek);
   const duration = ms => ms < 1000 ? 'under 1 s' : ms < 60000 ? Math.floor(ms / 1000) + ' s' : Math.floor(ms / 60000) + ' min ' + Math.floor(ms / 1000) % 60 + ' s';
   function create(v) {
-    const card = node('details', undefined, 'work-progress-card'); card.open = true;
+    const card = node('details', undefined, 'work-progress-card disclosure'); card.open = true;
     const heading = node('summary'), mark = node('span', '✦', 'work-progress-symbol'); mark.setAttribute('aria-hidden', 'true');
     const labels = node('span'), name = node('strong'), meta = node('small'); meta.setAttribute('aria-live', 'off'); labels.append(name, meta); heading.append(mark, labels); card.append(heading);
     const body = node('div', undefined, 'work-progress-body'), list = node('ol', undefined, 'work-progress-steps');
-    const technical = node('details', undefined, 'work-progress-technical'), technicalText = node('pre');
+    const technical = node('details', undefined, 'work-progress-technical disclosure'), technicalText = node('pre');
     technical.append(node('summary', 'Tekniske detaljer'), technicalText);
     const all = node('button', 'Se hele aktiviteten', 'text-button'); all.type = 'button';
     all.onclick = () => window.workspace.show('activity', { focus: true }); technical.append(all);

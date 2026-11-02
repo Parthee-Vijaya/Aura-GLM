@@ -1,0 +1,69 @@
+/* Aura Prime · shared UI components (UI/UX overhaul, slice 4).
+   One sheet for component classes: each component owns its selector prefix and
+   takes every value from aura-tokens.css. Linked LAST in index.html so the
+   component contracts win source-order ties with the older per-surface rules. */
+
+/* Height animations may interpolate to and from the `auto` keyword
+   (Chromium >= 129; the app ships Electron >= Chromium 131). Inherited from
+   the root — checked: no existing sheet transitions to an auto size, so this
+   only enables the disclosure animation below. */
+:root { interpolate-size: allow-keywords; }
+
+/* ── .disclosure — the one fold-out component for every <details> surface ──
+   Native <details>/<summary> everywhere: ids, structure and toggle behavior
+   are untouched; the class carries the shared look. Closed = one compact row;
+   open height comes from the content — no empty minimums. */
+
+/* Summary: 13px ink text on a >= 32px click row, flex-centered. The 3px
+   token-accent focus ring comes from the shared :where rule in styles.css. */
+details.disclosure > summary { display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 4px 2px; font-size: 13px; line-height: 1.5; font-weight: 550; color: var(--aura-ink); cursor: pointer; list-style: none; border-radius: var(--aura-radius-xs); }
+details.disclosure > summary::-webkit-details-marker { display: none; }
+
+/* Temporary inline-SVG chevron, masked so it follows the summary's
+   currentColor. Task 8 replaces it centrally through the shared icon system. */
+details.disclosure > summary::after { content: ""; width: 16px; height: 16px; flex: none; margin-left: auto; background-color: currentColor; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat; rotate: 0deg; transition: rotate var(--aura-transition-duration) var(--aura-ease-in-out); }
+details.disclosure[open] > summary::after { rotate: 180deg; }
+
+/* Optional right-aligned note slot on the summary row (counts like "3 valgt").
+   CSS only — later slices set the content. */
+details.disclosure > summary > [data-summary-note] { margin-left: auto; font-size: 12px; font-weight: 450; color: var(--aura-ink-muted); }
+details.disclosure > summary:has([data-summary-note])::after { margin-left: 8px; }
+
+/* Open fold: content-sized. The token padding keeps the summary gap small and
+   gives the content bottom breathing room; height is always the content's. */
+details.disclosure[open] { padding-bottom: 12px; }
+details.disclosure[open] > summary { margin-bottom: 6px; }
+
+/* Height animation, following Chromium's documented details pattern: the
+   content region starts at 0 and clips, block-size interpolates to auto, and
+   `allow-discrete` keeps content-visibility visible until the close transition
+   has finished. The whole block is feature-gated: a runtime without
+   interpolate-size AND ::details-content gets fully native folds — nothing is
+   permanently clipped and no JS shim is involved. overflow-clip-margin lets
+   focus rings (3px + 3px offset) of inner controls paint past the clip edge.
+   Transitions are read from the after-change style, which makes the two
+   directions deliberately asymmetric: closing (base rule) transitions
+   content-visibility too, so it flips to hidden only at the end of the
+   collapse; opening ([open] rule) transitions block-size ONLY, so
+   content-visibility flips to visible in the same style recalc as the click —
+   rendered text (innerText) and the a11y tree are correct immediately, with
+   the expanding box clipping the reveal. */
+@supports (interpolate-size: allow-keywords) and selector(::details-content) {
+  details.disclosure::details-content { block-size: 0; overflow: clip; overflow-clip-margin: 6px; transition: block-size var(--aura-transition-duration) var(--aura-ease-in-out), content-visibility var(--aura-transition-duration) allow-discrete; }
+  details.disclosure[open]::details-content { block-size: auto; padding: 8px 0 0; border-top: 1px solid var(--aura-border); transition: block-size var(--aura-transition-duration) var(--aura-ease-in-out); }
+}
+
+/* Reduced motion: styles.css kills transitions for *, ::before and ::after —
+   but ::details-content is its own pseudo-element that this selector does not
+   match, so the fold animation needs its own kill here. Verified manually in
+   Electron with prefers-reduced-motion on and off (task-4-report.md). */
+@media (prefers-reduced-motion: reduce) {
+  details.disclosure::details-content { transition: none !important; }
+}
+
+/* Surfaces that carried their own arrow glyph or ID-anchored muted styling
+   before the component existed: the shared chevron replaces the surface glyphs
+   so every fold reads as the same component. */
+details.disclosure.plan-detail > summary::before { content: none; }
+details.disclosure.work-progress-card > summary::after { transform: none; }
+#deployment-dialog details.disclosure > summary { color: var(--aura-ink); }

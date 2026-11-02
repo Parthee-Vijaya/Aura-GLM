@@ -67,7 +67,7 @@
       box.append(input, document.createTextNode(`${change} · ${file.file}`)); row.append(box);
       if (file.blocked) row.append(node('p', file.blocked, 'hint'));
       else if (file.binary) row.append(node('p', 'Binær billed- eller skrifttypefil. Indholdet vises ikke her; kontrollér filen før tilvalg.', 'hint'));
-      else { const details = node('details'); details.append(node('summary', 'Se indhold før og efter'), node('h4', 'Før'), node('pre', file.before ?? '(ny fil)'), node('h4', 'Efter'), node('pre', file.text ?? '(slettet fil)')); row.append(details); }
+      else { const details = node('details', undefined, 'disclosure'); details.append(node('summary', 'Se indhold før og efter'), node('h4', 'Før'), node('pre', file.before ?? '(ny fil)'), node('h4', 'Efter'), node('pre', file.text ?? '(slettet fil)')); row.append(details); }
       input.onchange = () => { $('#git-save').disabled = !$('#git-files input:checked'); }; $('#git-files').append(row);
     }
     if (!gitReview.files.length) $('#git-files').append(node('p', 'Ingen ændringer at gemme.'));
@@ -252,7 +252,7 @@
     ].filter(Boolean);
     $('#restore-data').replaceChildren(...data.map(text => node('li', text)));
     for (const file of files.filter(f => f.outcome !== 'conflict')) {
-      const row = node('details'); row.append(node('summary', `${file.action}: ${file.file}`));
+      const row = node('details', undefined, 'disclosure'); row.append(node('summary', `${file.action}: ${file.file}`));
       if (file.binary) row.append(node('p', `Binær fil. Kontrollér billedet eller skrifttypen efter ${review.kind === 'merge' ? 'indfletning' : 'gendannelse'}.`));
       else row.append(node('h4', 'Nu'), node('pre', file.before ?? '(findes ikke)'), node('h4', 'Efter'), node('pre', file.after ?? '(slettes)'));
       $('#restore-files').append(row);

@@ -92,7 +92,7 @@
     const option = guides.find(item => item.id === id), target = $(selector); target.replaceChildren(); if (!option) return;
     const text = (tag, value) => { const el = document.createElement(tag); el.textContent = value; return el; };
     target.append(text('p', option.summary));
-    const detail = document.createElement('details'); detail.append(text('summary', 'Opsætning, data og aftaler'), text('p', option.scope));
+    const detail = document.createElement('details'); detail.className = 'disclosure'; detail.append(text('summary', 'Opsætning, data og aftaler'), text('p', option.scope));
     const steps = document.createElement('ol'); steps.append(...option.steps.map(value => text('li', value))); detail.append(steps, text('p', option.data), text('p', 'Priser og eventuelle gratis kvoter følger din konto. Kontrollér vilkårene hos udbyderen.'));
     for (const kind of Object.keys(option.links)) { const button = text('button', { guide: 'Åbn udbyderens vejledning', data: 'Se aftaler og databehandling', region: 'Se regioner' }[kind]); button.type = 'button'; button.className = 'text-button'; button.onclick = () => api('deploymentGuideOpen', { id, kind }).catch(error => { if (!error.stale) $('#deployment-feedback').textContent = error.message; }); detail.append(button); }
     detail.append(text('small', 'Kilder gennemgået ' + new Date(option.checkedAt + 'T12:00:00Z').toLocaleDateString('da-DK') + '. Jeres konto og aftale er ikke kontrolleret.')); target.append(detail);

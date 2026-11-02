@@ -20,7 +20,7 @@ const FILES = [
   'provider-brand.js', 'connection-overview.js', 'chat-display.js', 'context-display.js', 'conversation-mode.js',
   'live-work.js', 'server.js', 'viewport.js', 'share-view.js', 'hosting.js', 'deployment-setup.js',
   'promte-preview.js', 'komplai-preview.js', 'deployment.js', 'styles.css', 'demo.css', 'onboarding-b.js', 'onboarding-b.css',
-  'run-state.js', 'diff-review.js', 'shortcuts.js', 'request-log-view.js', 'profile-icons.js', 'profile-save.js', 'profile-chip.js', 'composer-help.js', 'settings.js', 'settings.css'
+  'run-state.js', 'diff-review.js', 'shortcuts.js', 'request-log-view.js', 'profile-icons.js', 'profile-save.js', 'profile-chip.js', 'composer-help.js', 'settings.js', 'settings.css', 'components.css'
 ];
 function allowed(name) {
   return DYNAMIC_ASSETS.includes(name) || PROVIDER_ASSETS.test(name) || ONBOARDING_ASSETS.includes(name) || name === 'provider-cloudflare.png' || FILES.includes(name);

@@ -1183,7 +1183,7 @@ function showData(data, canSend) {
     if (['fileReferences', 'brief', 'previewReferenceText'].includes(key) && !value?.length) continue;
     const text = key === 'mode' ? ({ chat: 'Samtale', plan: 'Planlæg', build: 'Byg den valgte plan', free: 'Byg' }[value]) : key === 'conversation' && !value ? 'Medsendes ikke. Den aktive samtale og en valgt plan indgår stadig.' : Array.isArray(value) ? value.join(', ') || 'Ingen' : value && typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value || 'Ingen');
     const dd = node('dd');
-    if (text.length > 160) { const fold = node('details'); fold.append(node('summary', `Vis (${text.split(/\s+/).length} ord)`), node('pre', text)); dd.append(fold); }
+    if (text.length > 160) { const fold = node('details', undefined, 'disclosure'); fold.append(node('summary', `Vis (${text.split(/\s+/).length} ord)`), node('pre', text)); dd.append(fold); }
     else dd.textContent = text;
     $('#data-details').append(node('dt', label), dd);
   }
@@ -1192,12 +1192,12 @@ function showData(data, canSend) {
     const dd = node('dd'), list = node('div');
     list.append(node('p', data.appContext.scope, 'hint'));
     for (const part of data.appContext.components) {
-      const fold = node('details'); fold.append(node('summary', part.title), node('p', `${part.source} · revision ${part.revision}`, 'hint'), node('p', `SHA-256: ${part.hash}`, 'hint'), node('pre', part.text)); list.append(fold);
+      const fold = node('details', undefined, 'disclosure'); fold.append(node('summary', part.title), node('p', `${part.source} · revision ${part.revision}`, 'hint'), node('p', `SHA-256: ${part.hash}`, 'hint'), node('pre', part.text)); list.append(fold);
     }
     dd.append(list); $('#data-details').append(node('dt', 'Sporbar kontekst · vis præcis tekst'), dd);
   }
   if (data.modelSupport) {
-    const support = data.modelSupport, dd = node('dd'), fold = node('details');
+    const support = data.modelSupport, dd = node('dd'), fold = node('details', undefined, 'disclosure');
     fold.append(node('summary', 'Katalogoplysninger og faktiske prøver'));
     const word = value => value === true ? 'angivet' : value === false ? 'ikke angivet som understøttet' : 'ukendt';
     fold.append(node('p', `Katalog · værktøjer: ${word(support.catalog.model.tools)} · billeder: ${word(support.catalog.model.images)}`));
@@ -1982,7 +1982,7 @@ function renderToolsCatalog() {
   $('#tools-skill-count').textContent = base;
   $('#tools-included-summary').textContent = `Hvad følger med? Grundregler og ${base} skills${extra ? ` · ${extra} ${extra === 1 ? 'integration' : 'integrationer'} kan vælges til` : ''}`;
   $('#tools-skills').replaceChildren(...toolsCatalog.skills.map(skill => {
-    const details = node('details', undefined, 'tools-skill');
+    const details = node('details', undefined, 'tools-skill disclosure');
     const summary = node('summary'); summary.append(node('strong', skill.title), node('span', ` · ${skill.summary}`));
     const list = node('dl');
     for (const [label, key] of [['Hvad gør den?', 'hvad'], ['Hvornår bruges den?', 'hvornaar'], ['Hvad får du?', 'resultat'], ['Hvad gør den ikke?', 'ikke']]) list.append(node('dt', label), node('dd', skill.faq[key]));
@@ -2060,14 +2060,14 @@ function renderOperations(target, operations) {
   const groups = new Map();
   for (const op of operations) { if (!groups.has(op.action)) groups.set(op.action, []); groups.get(op.action).push(op); }
   target.replaceChildren(...[...groups].map(([actionName, ops]) => {
-    const details = node('details', undefined, `tools-ops tools-ops-${actionName}`);
+    const details = node('details', undefined, `tools-ops tools-ops-${actionName} disclosure`);
     details.open = ['konflikt', 'tilfoej', 'bevar'].includes(actionName) || ops.length <= 4;
     details.append(node('summary', `${operationText[actionName]} · ${ops.length}`));
     const list = node('ul');
     for (const op of ops) {
       const item = node('li'); item.append(node('code', op.path));
       if (op.reason) item.append(node('span', ` ${op.reason}`, 'hint'));
-      if (op.preview) { const view = node('details'); view.append(node('summary', op.kind === 'blok' ? 'Se afsnittet' : 'Se filen'), node('pre', op.preview)); item.append(view); }
+      if (op.preview) { const view = node('details', undefined, 'disclosure'); view.append(node('summary', op.kind === 'blok' ? 'Se afsnittet' : 'Se filen'), node('pre', op.preview)); item.append(view); }
       list.append(item);
     }
     details.append(list);
@@ -2361,7 +2361,7 @@ function resultActions(result, v = view) {
     })));
   }
   const undo = undoAction(result, 'Fortryd opgaven', 'Fortryd opgaven', v);
-  if (undo) { const menu = node('details', undefined, 'result-options'); menu.append(node('summary', 'Flere valg'), undo); actions.append(menu); }
+  if (undo) { const menu = node('details', undefined, 'result-options disclosure'); menu.append(node('summary', 'Flere valg'), undo); actions.append(menu); }
   return actions;
 }
 function syncResultPreview() {
@@ -2450,7 +2450,7 @@ function renderRunReview(result, v = view) {
     actions.append(reviewButton('Prøv igen', retrySend, info.action === 'retry'));
     if (result.files.length) actions.append(resultActions(result, v));
     box.append(actions);
-    if (result.failure?.message) { const fold = node('details', undefined, 'review-details'); fold.append(node('summary', 'Se detaljer'), node('pre', result.failure.message)); box.append(fold); }
+    if (result.failure?.message) { const fold = node('details', undefined, 'review-details disclosure'); fold.append(node('summary', 'Se detaljer'), node('pre', result.failure.message)); box.append(fold); }
     return;
   }
   if (result.status === 'stopped') {

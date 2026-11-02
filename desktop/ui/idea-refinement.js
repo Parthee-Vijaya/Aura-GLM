@@ -4,7 +4,7 @@
   const connection = $('#idea-connection'), model = $('#idea-model'), route = $('#idea-route');
   let busy = false, generation = 0, answer = null, accepted = null, review = null;
   const dialog = node('dialog'); dialog.id = 'idea-review-dialog'; dialog.setAttribute('aria-labelledby','idea-review-title'); dialog.setAttribute('data-size','confirm');
-  dialog.innerHTML = '<h2 id="idea-review-title">Gennemgå din AI-forbindelse</h2><p>Kun idéhjælp. Ingen projektfiler eller værktøjer åbnes.</p><dl id="idea-review-details"></dl><details><summary>Se præcis teksten, der sendes</summary><pre id="idea-review-content"></pre></details><div class="dialog-actions"><button type="button" id="idea-review-cancel">Annuller</button><button type="button" id="idea-review-send" class="primary">Send til idéhjælp</button></div>';
+  dialog.innerHTML = '<h2 id="idea-review-title">Gennemgå din AI-forbindelse</h2><p>Kun idéhjælp. Ingen projektfiler eller værktøjer åbnes.</p><dl id="idea-review-details"></dl><details class="disclosure"><summary>Se præcis teksten, der sendes</summary><pre id="idea-review-content"></pre></details><div class="dialog-actions"><button type="button" id="idea-review-cancel">Annuller</button><button type="button" id="idea-review-send" class="primary">Send til idéhjælp</button></div>';
   document.body.append(dialog);
   function working(value, text) {
     busy=value;panel.setAttribute('aria-busy',String(value));status.textContent=text||'';status.classList.toggle('is-thinking',value);
