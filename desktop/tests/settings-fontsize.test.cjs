@@ -347,9 +347,12 @@ test('settings.js: font-styringen spejler core/profile.cjs FONT_SIZE-kontrakten'
 // The secure key-entry window follows the profile zoom too, so "Skalerer hele
 // appen" stays honest through the key flow. Main hands the current factor to
 // core/credential-entry.cjs, which reads it per request — no stored copy, so
-// a later profile change reaches the next window.
-test('main.cjs: det sikre nøglevindue får den aktuelle profilfaktor', () => {
+// a later profile change reaches the next window — and grows the fixed frame
+// by the same factor, so a zoomed copy does not cut off its own button.
+test('main.cjs: det sikre nøglevindue får den aktuelle profilfaktor — indhold og ramme', () => {
   assert.ok(main.includes('zoomFactor:() => profileFontSize / FONT_SIZE.base,'), 'main giver nøglevinduet den aktuelle profilfaktor');
   const entrySource = fs.readFileSync(path.join(__dirname, '..', 'core', 'credential-entry.cjs'), 'utf8');
-  assert.ok(entrySource.includes('...(zoomFactor ? { zoomFactor: zoomFactor() } : {})'), 'nøglevinduet læser faktoren pr. anmodning — en senere størrelse når det næste vindue');
+  assert.ok(entrySource.includes('const factor = zoomFactor ? zoomFactor() : 1;'), 'faktoren læses pr. anmodning — en senere størrelse når det næste vindue');
+  assert.ok(entrySource.includes('width:Math.round(560 * factor), height:Math.round(450 * factor)'), 'rammen vokser med faktoren, så knappen står inden for kanten');
+  assert.ok(entrySource.includes('...(zoomFactor ? { zoomFactor: factor } : {})'), 'indholdet får samme faktor som rammen');
 });

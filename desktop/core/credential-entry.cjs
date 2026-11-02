@@ -48,11 +48,14 @@ function createCredentialEntry({ BrowserWindow, ipcMain, safeStorage, parent, cr
     if (!safeStorage.isEncryptionAvailable() || process.platform === 'linux' && safeStorage.getSelectedStorageBackend?.() === 'basic_text') throw new Error('Sikker nøglebeskyttelse er ikke tilgængelig. Ingen nøgle blev gemt.');
     const channel = `aura-secret-${crypto.randomBytes(16).toString('hex')}`, owner = parent();
     const secureSession = createSession?.();
-    // The entry window rides along with the profile's font-size zoom, so the
-    // whole-app scaling copy stays honest and the secure flow matches the
-    // app the user is looking at. The factor is read per request, so a later
-    // profile change reaches the next window without any stored state here.
-    const win = new BrowserWindow({ width:560, height:450, resizable:false, minimizable:false, maximizable:false, show:false, title:'Aura · sikker nøgle', backgroundColor:'#ffffff', ...(owner ? { parent:owner, modal:true } : {}), webPreferences:{ preload:path.join(__dirname,'credential-entry-preload.cjs'), additionalArguments:[`--aura-secret-channel=${channel}`], ...(secureSession ? { session:secureSession } : {}), ...(zoomFactor ? { zoomFactor: zoomFactor() } : {}), sandbox:true, contextIsolation:true, nodeIntegration:false, devTools:false } });
+    // The entry window rides along with the profile's font-size zoom: the
+    // content gets the factor, and the fixed frame grows by the same factor —
+    // a zoomed copy needs a proportionally larger window, or the fields and
+    // the button fall below the edge of a resizable:false frame. The factor
+    // is read per request, so a later profile change reaches the next window
+    // without any stored state here.
+    const factor = zoomFactor ? zoomFactor() : 1;
+    const win = new BrowserWindow({ width:Math.round(560 * factor), height:Math.round(450 * factor), resizable:false, minimizable:false, maximizable:false, show:false, title:'Aura · sikker nøgle', backgroundColor:'#ffffff', ...(owner ? { parent:owner, modal:true } : {}), webPreferences:{ preload:path.join(__dirname,'credential-entry-preload.cjs'), additionalArguments:[`--aura-secret-channel=${channel}`], ...(secureSession ? { session:secureSession } : {}), ...(zoomFactor ? { zoomFactor: factor } : {}), sandbox:true, contextIsolation:true, nodeIntegration:false, devTools:false } });
     return new Promise((resolve, reject) => {
       let settled = false;
       function finish(value) { if (settled) return; settled = true; ipcMain.removeHandler(channel); active = undefined; resolve(value); if (!win.isDestroyed()) win.destroy(); }

@@ -80,6 +80,7 @@ test('the native entry is sandboxed, modal, navigation-restricted, and returns o
   assert.equal(win.options.webPreferences.sandbox, true); assert.equal(win.options.webPreferences.contextIsolation, true);
   assert.equal(win.options.webPreferences.nodeIntegration, false); assert.equal(win.options.webPreferences.devTools, false);
   assert.equal('zoomFactor' in win.options.webPreferences, false, 'uden en zoom-kilde arver vinduet Electrons standard — ingen gemt tilstand');
+  assert.deepEqual([win.options.width, win.options.height], [560, 450], 'uden en zoom-kilde er rammen de neutrale 560×450');
   assert.deepEqual(win.openHandler(), { action: 'deny' });
   const context = f.invoke({ action: 'context' });
   assert.equal(context.name, configuration.name); assert.equal(context.endpoint, configuration.baseURL);
@@ -133,17 +134,22 @@ test('a crashed secure renderer cancels its pending operation and permits a fres
   assert.deepEqual(await retry, { canceled: true }); f.entry.close();
 });
 
-// The profile's font-size zoom rides along (main hands in the current factor),
-// and it is read per request: a later profile change reaches the next window.
+// The profile's font-size zoom rides along (main hands in the current factor):
+// the content gets the factor and the fixed frame grows by the same factor, so
+// the secure flow matches the app the user is looking at — at font 16 the
+// window no longer cuts off its own button. Both are read per request: a later
+// profile change reaches the next window.
 test('the entry window follows the profile zoom, re-read for every request', async () => {
   let factor = 16 / 13;
   const f = electronFixture({ zoomFactor: () => factor });
   const first = f.entry.request({ configuration: metadata() });
   assert.ok(Math.abs(f.current().options.webPreferences.zoomFactor - 16 / 13) < 1e-9, 'font 16 giver det sikre vindue faktoren 1.231');
+  assert.deepEqual([f.current().options.width, f.current().options.height], [Math.round(560 * 16 / 13), Math.round(450 * 16 / 13)], 'rammen vokser med faktoren — 560×450 bliver til 689×554');
   f.invoke({ action: 'cancel' }); await first;
   factor = 1;
   const second = f.entry.request({ configuration: metadata() });
   assert.equal(f.current().options.webPreferences.zoomFactor, 1, 'et nyt trin til 13 læses ved den næste anmodning — ingen gemt kopi');
+  assert.deepEqual([f.current().options.width, f.current().options.height], [560, 450], 'ved 100 % er rammen de neutrale 560×450');
   f.invoke({ action: 'cancel' }); await second;
 });
 
