@@ -178,12 +178,15 @@ function setupControls() {
   $('#setup-add-another').hidden = !id || verifiedConnection !== id;
   syncOnboardingVisuals();
 }
-function moveConnectionForm(guided) {
-  const parent = guided ? $('#setup-provider-body') : $('#connection-form-home');
+function moveConnectionForm(guided, addFlow = false) {
+  // Formularen har tre hjem: den guidede opsætning, dialogens redigeringsvisning
+  // og dialogens lette tilføj-flow. Det samme formular- og feedbackelement flytter.
+  const parent = addFlow ? $('#add-connection-home') : guided ? $('#setup-provider-body') : $('#connection-form-home');
   if (!guided) $('#connection-advanced').hidden = false;
   parent.append($('#connection-form'), $('#connection-feedback'));
-  $('#save-connection').textContent = guided ? 'Gem og kontrollér' : 'Gem forbindelse';
-  $('#clear-key-row').hidden = guided && !$('#connection-id').value;
+  $('#save-connection').textContent = guided || addFlow ? 'Gem og kontrollér' : 'Gem forbindelse';
+  // En helt ny forbindelse i tilføj-flowet har endnu ingen gemt nøgle at fjerne.
+  $('#clear-key-row').hidden = addFlow || guided && !$('#connection-id').value;
 }
 function setupPage(step) {
   ++setupGeneration;
@@ -285,16 +288,21 @@ function chooseProvider(kind) {
   $('#setup-provider-body').hidden = false; $('#setup-title').focus();
   syncOnboardingVisuals();
 }
-function renderProviderCards() {
-  $('#provider-cards').replaceChildren(...providerCards.map(item => {
+function renderProviderCards(container = $('#provider-cards'), onChoose = chooseProvider, setup = true) {
+  // Opsætningsskærmen og dialogens tilføj-flow deler gengivelsen: de samme kort,
+  // logoer og statuslinjer. Preview-håndtagene og onboarding-markeringen (valg-
+  // krydset) hører kun til opsættelsens gitter og har ingen styles i dialogen.
+  container.replaceChildren(...providerCards.map(item => {
     const card = node('button', undefined, 'provider-card'); card.type = 'button'; card.dataset.kind = item.kind;
     const logo = node('img'); logo.src = `provider-${item.kind}.svg`; logo.alt = ''; logo.width = 28; logo.height = 28;
     const status = node('small'); status.dataset.providerStatus = item.kind;
     card.append(logo, node('strong', item.name), node('span', item.text), status);
-    window.OnboardingB?.decorateProviderCard(card, item.kind);
-    card.addEventListener('focus', () => { onboardingPreviewKind = item.kind; syncOnboardingVisuals(); });
-    card.addEventListener('pointerenter', () => { onboardingPreviewKind = item.kind; syncOnboardingVisuals(); });
-    card.onclick = () => chooseProvider(item.kind); return card;
+    if (setup) {
+      window.OnboardingB?.decorateProviderCard(card, item.kind);
+      card.addEventListener('focus', () => { onboardingPreviewKind = item.kind; syncOnboardingVisuals(); });
+      card.addEventListener('pointerenter', () => { onboardingPreviewKind = item.kind; syncOnboardingVisuals(); });
+    }
+    card.onclick = () => onChoose(item.kind); return card;
   }));
   updateProviderStatuses();
 }
@@ -741,7 +749,10 @@ $('#connections-check').onclick = () => action(async () => {
 });
 function connectionView(view) {
   $('#connections-list').hidden = view !== 'list'; $('#connection-edit').hidden = view !== 'edit';
-  $('#connections-heading').textContent = view === 'edit' ? 'Din forbindelse' : 'AI-forbindelser';
+  $('#connection-add-flow').hidden = view !== 'add';
+  // Enhver anden visning afslutter tilføj-flowet, så ingen kladde lægger i formularen.
+  if (view !== 'add') addingConnectionStage = '';
+  $('#connections-heading').textContent = view === 'edit' ? 'Din forbindelse' : view === 'add' ? 'Tilføj forbindelse' : 'AI-forbindelser';
 }
 function fillConnection(connection) {
   $('#connection-name').value = connection.name; $('#base-url').value = connection.baseURL;
@@ -757,7 +768,61 @@ function editConnection(connection) {
   $('#connection-use').focus();
 }
 $('#connection-back').onclick = () => { clearConnectionReceipt(); connectionView('list'); renderConnectionList(); $('#connections-search').focus(); };
-$('#connection-add').onclick = () => { $('#connections-dialog').close(); showSetup(); };
+// Det lette "Tilføj forbindelse"-flow: udbydergitter og formularen ligger inde i
+// AI-forbindelsesdialogen, så opsætningsskærmen ikke genåbnes. Rækkefølgen er
+// udfyld → gem → kontrollér, fordi kontrollen kræver en gemt forbindelses-id.
+let addingConnectionStage = '';
+function openAddConnection() {
+  clearConnectionReceipt();
+  $('#connection-form').reset(); $('#connection-id').value = ''; $('#connection-feedback').textContent = '';
+  renderProviderCards($('#add-provider-cards'), chooseAddProvider, false);
+  $('#connection-add-lead').textContent = 'Vælg den udbyder eller server, du har adgang til';
+  $('#add-provider-cards').hidden = false; $('#add-connection-home').hidden = true;
+  addingConnectionStage = 'choose'; connectionView('add');
+  ($('#add-provider-cards').querySelector('button') || $('#connection-add-cancel')).focus();
+}
+function chooseAddProvider(kind) {
+  moveConnectionForm(false, true);
+  $('#provider-kind').value = kind; updateProvider();
+  $('#add-provider-cards').hidden = true; $('#add-connection-home').hidden = false;
+  $('#connection-add-lead').textContent = `Forbind ${providerCards.find(item => item.kind === kind)?.name || kind}`;
+  $('#connection-feedback').textContent = '';
+  addingConnectionStage = 'form';
+  (['ollama', 'compatible'].includes(kind) ? $('#base-url') : $('#credential-open')).focus();
+}
+function resetAddConnection() {
+  addingConnectionStage = '';
+  clearConnectionReceipt();
+  $('#connection-form').reset(); $('#connection-id').value = ''; $('#connection-feedback').textContent = '';
+  moveConnectionForm(false);
+}
+function closeAddConnection() {
+  resetAddConnection();
+  connectionView('list'); renderConnectionList();
+  $('#connection-add').focus();
+}
+async function verifyAddedConnection(connection) {
+  // Udfyld → gem → kontrollér: resultatet tilhører den gemte forbindelse. Ved fejl
+  // forbliver den oprettet med fejlteksten synlig og redigering/fjernelse i listen.
+  const generation = setupGeneration;
+  $('#connection-id').value = connection.id;
+  $('#connection-feedback').textContent = 'Forbindelsen er gemt. Kontrollerer adgangen …';
+  const result = await checkConnection(connection.id);
+  renderConnectionList();
+  if (generation !== setupGeneration || !$('#connections-dialog').open || addingConnectionStage !== 'form') return;
+  if (result?.status === 'ok' && result.count) {
+    $('#connections-feedback').textContent = `${connection.name} er gemt. ${result.detail}`;
+    closeAddConnection();
+  } else {
+    $('#connection-feedback').textContent = `${result?.detail || 'Kontrollen mislykkedes.'} Forbindelsen er gemt — ret oplysningerne, og gem igen, eller annullér for at redigere eller fjerne den i listen.`;
+  }
+}
+$('#connection-add').onclick = () => openAddConnection();
+$('#connection-add-cancel').onclick = () => closeAddConnection();
+// Escape opfører sig som Annullér, mens flowet er åbent; ellers lukker dialogen som før.
+$('#connections-dialog').addEventListener('cancel', event => {
+  if (addingConnectionStage) { event.preventDefault(); closeAddConnection(); }
+});
 $('#connections-setup').onclick = () => {
   repeatSetup = { autoConnect }; $('#connections-dialog').close(); showSetup('', true);
 };
@@ -1209,18 +1274,23 @@ $('#connection-form').onsubmit = event => {
   event.preventDefault(); action(async () => {
     $('#save-connection').disabled = true;
     const generation = setupGeneration, guided = setupActive && setupStep === 'provider';
+    const addFlow = !guided && addingConnectionStage === 'form';
     const previousIDs = new Set(state.connections.map(c => c.id));
     const input = connectionInput(); if(connectionReceipt)input.keyReceipt=connectionReceipt; connectionReceipt=null;
     try {
       state = await call('saveConnection', input); if (input.id) connectionChecks.clear(input.id);
       const stillGuided = guided && setupActive && setupStep === 'provider' && generation === setupGeneration;
+      const stillAddFlow = addFlow && generation === setupGeneration && addingConnectionStage === 'form';
       ++setupGeneration; verifiedConnection = ''; acceptedFingerprint = null; renderConnections();
       const selected = state.connections.find(c => c.id === input.id || !previousIDs.has(c.id));
       if (selected) $('#setup-connection').value = selected.id;
       setupControls(); $('#connection-feedback').textContent = 'Forbindelsen er gemt.';
-      $('#connection-form').reset(); $('#connection-id').value = ''; updateProvider();
-      if (stillGuided && selected) { setupPage('saved'); await testSetupConnection(); }
-      else if (!guided) { connectionView('list'); $('#connections-feedback').textContent = 'Forbindelsen er gemt.'; }
+      if (stillAddFlow && selected) await verifyAddedConnection(selected);
+      else {
+        $('#connection-form').reset(); $('#connection-id').value = ''; updateProvider();
+        if (stillGuided && selected) { setupPage('saved'); await testSetupConnection(); }
+        else if (!guided) { connectionView('list'); $('#connections-feedback').textContent = 'Forbindelsen er gemt.'; }
+      }
     } catch (error) {
       $('#connection-feedback').textContent = error.message;
     } finally { $('#save-connection').disabled = false; }
@@ -1277,7 +1347,11 @@ for (const id of ['support-dialog', 'connections-dialog', 'features-dialog']) do
   const active = document.activeElement;
   if (active === document.body || !active?.checkVisibility({ checkVisibilityCSS: true })) $('#settings-toggle').focus();
 });
-$('#connections-dialog').addEventListener('close', () => { clearConnectionReceipt(); });
+$('#connections-dialog').addEventListener('close', () => {
+  clearConnectionReceipt();
+  // Lukning midt i tilføj-flowet efterlader formularen ren — ingen kladre lægger i setup senere.
+  if (addingConnectionStage) { resetAddConnection(); connectionView('list'); }
+});
 setInterval(async () => { if (!current || polling) return; polling = true; const project = current, root = current.workspaceRoot; try { const next = await call('revision'); if (current !== project || current.workspaceRoot !== root || !next) return; if (revision && next !== revision) $('#preview').src = current.previewURL; revision = next; $('#preview-status').textContent = 'Lokal forhåndsvisning'; } catch { $('#preview-status').textContent = 'Kan ikke læse siden – kontrollér projektfilerne'; } finally { polling = false; } }, 1500);
 void applyProfilePresentation();
 action(async () => { syncCreateAvailability(); try { state = await call('connectionState'); renderConnections(); updateProvider(); await loadDesigns(); await loadStartup(); applyFeatures(); renderLocation(await call('projectLocation')); restoreIdeaDraft(); showIdeaExamples(); await refreshRecent(); setupControls(); for (const id of ['#welcome-build', '#welcome-example', '#welcome-open']) $(id).disabled = false; if ($('#welcome-dialog').open) $('#welcome-title').focus(); else { $('#purpose').focus(); await reopenLast(); } } finally { projectLoading = false; applyRunning(); } });

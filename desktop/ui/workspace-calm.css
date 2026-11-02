@@ -187,3 +187,18 @@ body.workspace-calm[data-workspace-theme="light"] {
 .workspace-calm .chat-choice-icon { font-size: 20px; color: var(--aura-accent); flex-shrink: 0; width: 28px; text-align: center; }
 .workspace-calm .chat-choice-card strong { display: block; font-size: 14px; margin-bottom: 4px; color: var(--ink); }
 .workspace-calm .chat-choice-card small { font-size: 12px; line-height: 1.5; color: var(--muted); }
+
+/* Det lette "Tilføj forbindelse"-flow i AI-forbindelsesdialogen (profilplanens
+   femte skive). Gitteret genbruger opsættelsens .provider-cards-markup, og
+   DSH-udtrykket arves fra aura-tokens: radius, svage kanter og rolige overgange.
+   Vælgerne står uden .workspace-calm-scope, fordi dialogen også åbnes fra
+   opsættningsskærmen, hvor arbejdsområdet — og dermed klassen — er skjult. */
+#connection-add-flow .provider-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 2px 0 16px; }
+#connection-add-flow .provider-card { min-height: 84px; padding: 14px 16px; border-radius: var(--aura-radius-md); align-content: center; }
+#connection-add-flow .provider-card img { grid-row: 1 / 4; }
+#connection-add-flow .provider-card small { grid-column: 2; font-size: 11px; line-height: 1.5; color: var(--muted); }
+#connection-add-flow .provider-card small[data-state="connected"] { color: var(--success); }
+#connection-add-flow .provider-card small[data-state="error"] { color: var(--error); }
+#connection-add-flow .provider-card small:empty { display: none; }
+#connection-add-flow .dialog-actions { margin-top: 6px; }
+#connection-add-flow #add-connection-home .dialog-actions { margin-top: 18px; }
