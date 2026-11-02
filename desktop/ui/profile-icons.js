@@ -50,7 +50,6 @@
     // The upload slot's action glyph — a picture, not a profile choice.
     upload: '<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="9.5" r="1.7"/><path d="m5.5 17.5 4-4 2.8 2.8 3.2-3.2 3 3"/>'
   });
-  // The avatar <img> markup: same fixed source everywhere it is displayed.
   function svg(id) {
     if (typeof id !== 'string' || !Object.hasOwn(GLYPHS, id)) return '';
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${GLYPHS[id]}</svg>`;
