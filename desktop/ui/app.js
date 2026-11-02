@@ -316,6 +316,14 @@ async function applyProfilePresentation() {
     // so removing both classes restores the standing hints.
     document.body.classList.toggle('help-delvis', profile.helpLevel === 'delvis');
     document.body.classList.toggle('help-ingen', profile.helpLevel === 'ingen');
+    // The transcript detail level maps the same way, but every level carries
+    // its own class — 'standard' (Nøgletrin) is the neutral default, and the
+    // workspace writers key on the explicit class. An unreadable value folds
+    // to 'standard', like the lenient read in the main process.
+    const transcriptView = ['compact', 'detailed'].includes(profile.transcriptView) ? profile.transcriptView : 'standard';
+    document.body.classList.toggle('transcript-compact', transcriptView === 'compact');
+    document.body.classList.toggle('transcript-standard', transcriptView === 'standard');
+    document.body.classList.toggle('transcript-detailed', transcriptView === 'detailed');
     window.calmWorkspace?.setTheme?.(profile.appearance?.theme);
   } catch { /* the profile is optional at startup */ }
 }

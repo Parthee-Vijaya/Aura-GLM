@@ -210,6 +210,7 @@ test('seks sektioner i fast rækkefølge med navne og ærlige beskrivelser', () 
     assert.ok(description.length >= 30, `${id} beskriver, hvad sektionen kommer til at indeholde`);
     assert.doesNotMatch(description, /snart|næste trin|placeholder|todo/i, `${id} er ikke en "kommer snart"-pladsholder`);
   }
+  assert.ok(sectionOf('appearance').description.includes('AI’ens arbejde'), 'Udseende nævner arbejdsdetaljerne — D4a flytter niveauet hertil');
 });
 
 test('open(profile) viser dialogen med sektionen aktiv og felter udfyldt fra profilen', async () => {
@@ -453,6 +454,52 @@ test('temaændring bevarer en gemt lukket starttilstand for panelet', async () =
   await flush();
   assert.deepEqual(harness.saves[0], { appearance: { theme: 'light', panelOpen: false } }, 'panelOpen bevares i den sendte enhed');
   assert.deepEqual(themes.at(-1), 'light', 'lys tema gives videre gennem temamodulet');
+});
+
+// Arbejdsdetaljer (D4a): Udseende-sektionen viser tre valgkort fra profilen,
+// og hvert valg gemmer kun sit eget felt — hjælpeniveauet og detaljeniveauet
+// er uafhængige (R7: alle 3×3 kombinationer forbliver skrivbare).
+test('open(appearance) viser arbejdsdetaljerne som tre valgkort fra profilen', async () => {
+  const dom = makeDom();
+  const harness = makeHarness({ profile: { ...blank(), transcriptView: 'compact', appearance: { theme: 'light', panelOpen: true } } });
+  const settings = makeSettings(dom, harness);
+  await openSection(settings, 'appearance');
+  const radios = dom.content.querySelectorAll('#settings-transcript input');
+  assert.deepEqual(radios.map(radio => radio.value), ['compact', 'standard', 'detailed'], 'de tre trin er Kun resultater, Nøgletrin og Alle detaljer');
+  assert.deepEqual(radios.map(radio => radio.checked), [true, false, false], 'det gemte niveau er forvalgt');
+  assert.ok(dom.content.textContent.includes('Arbejdsdetaljer'), 'sektionen har sit danske navn');
+  for (const word of ['Kun resultater', 'Nøgletrin', 'Alle detaljer']) assert.ok(dom.content.textContent.includes(word), `${word} har sin danske titel`);
+  for (const card of dom.content.querySelectorAll('#settings-transcript label')) assert.ok(card.textContent.trim().length > 15, 'hvert kort har en ærlig kort forklaring');
+  assert.equal(dom.body.classList.contains('transcript-compact'), true, 'det gemte niveau sætter sin kropsklasse straks');
+  assert.equal(dom.body.classList.contains('transcript-standard'), false);
+  assert.equal(dom.body.classList.contains('transcript-detailed'), false);
+});
+
+test('et detaljeniveauvalg gemmer kun transcriptView og skifter kropsklassen straks', async () => {
+  const dom = makeDom();
+  const harness = makeHarness({ profile: { ...blank(), helpLevel: 'delvis', transcriptView: 'standard', appearance: { theme: 'system', panelOpen: true } } });
+  const settings = makeSettings(dom, harness);
+  await openSection(settings, 'appearance');
+  const detailed = dom.content.querySelectorAll('#settings-transcript input').find(radio => radio.value === 'detailed');
+  detailed.checked = true; detailed.emit('change');
+  await flush();
+  assert.deepEqual(harness.saves[0], { transcriptView: 'detailed' }, 'gemningen bærer kun detaljeniveauet');
+  assert.equal(dom.body.classList.contains('transcript-detailed'), true, 'Alle detaljer sætter sin kropsklasse');
+  assert.equal(dom.body.classList.contains('transcript-standard'), false);
+  assert.equal(dom.body.classList.contains('help-delvis'), true, 'hjælpeniveauet består uændret — niveauerne er uafhængige');
+  const compact = dom.content.querySelectorAll('#settings-transcript input').find(radio => radio.value === 'compact');
+  compact.checked = true; compact.emit('change');
+  await flush();
+  assert.deepEqual(harness.saves[1], { transcriptView: 'compact' });
+  assert.equal(dom.body.classList.contains('transcript-compact'), true);
+  assert.equal(dom.body.classList.contains('transcript-detailed'), false);
+  // A neighboring field write in the same section (appearance is one unit)
+  // never drags the detail level along: the merge keeps only the sent keys.
+  const light = dom.content.querySelectorAll('#settings-theme input').find(radio => radio.value === 'light');
+  light.checked = true; light.emit('change');
+  await flush();
+  assert.equal(harness.profile.transcriptView, 'compact', 'detaljeniveauet overlever en udseende-gemning i samme sektion');
+  assert.equal(dom.body.classList.contains('transcript-compact'), true, 'kropsklassen består efter naboens gemning');
 });
 
 // Skriftstørrelse-stepperen (4K-skalering): feltet viser profilens størrelse

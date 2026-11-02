@@ -349,6 +349,37 @@ test('app.js: applyProfilePresentation oversætter alle tre hjælpeniveauer til 
   assert.equal((await run('fuld')).contains('help-ingen'), false, 'fuld fjerner ingen-klassen');
 });
 
+// app.js — the transcript detail level follows the same presentation pass:
+// every level carries its own body class, and an unreadable value folds to
+// the neutral 'standard' (help level and detail level stay independent).
+test('app.js: applyProfilePresentation oversætter alle tre detaljeniveauer til kropsklasser', async () => {
+  const run = async transcriptView => {
+    const document = { body: new El('body') };
+    const context = {
+      document,
+      profileState: { helpLevel: 'fuld', transcriptView, appearance: { theme: 'system' } },
+      window: { calmWorkspace: { setTheme: () => {} } }
+    };
+    vm.runInNewContext(appSlice('async function applyProfilePresentation', '// The profile is adopted'), context);
+    await context.applyProfilePresentation();
+    return document.body.classList;
+  };
+  for (const view of ['compact', 'standard', 'detailed']) {
+    const classes = await run(view);
+    assert.equal(classes.contains(`transcript-${view}`), true, `${view} sætter sin egen klasse`);
+    for (const other of ['compact', 'standard', 'detailed']) if (other !== view) assert.equal(classes.contains(`transcript-${other}`), false, `${view} lader ${other}s klasse være ude`);
+    assert.equal(classes.contains('help-delvis'), false, 'detaljeniveauet rører ikke hjælpeniveaus klasser');
+  }
+  // An unreadable value folds to the neutral standard — the class set is the
+  // same as a fresh profile's.
+  for (const bad of [undefined, 'ultra', null]) {
+    const classes = await run(bad);
+    assert.equal(classes.contains('transcript-standard'), true, `${String(bad)} folder til standard-klassen`);
+    assert.equal(classes.contains('transcript-compact'), false);
+    assert.equal(classes.contains('transcript-detailed'), false);
+  }
+});
+
 // Hint key has exactly one writer: workspace-calm.js. settings.js only
 // calls calmWorkspace.setTheme — the double write is gone.
 test('hintnøglen har én skriver, og den gamle nøgle er borte', () => {

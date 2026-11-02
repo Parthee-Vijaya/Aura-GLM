@@ -24,7 +24,7 @@
     },
     {
       id: 'appearance', label: 'Udseende',
-      description: 'Om appen følger systemets tema eller er lys eller mørk, om sidepanelet er åbnet ved start, og hvor stor appens tekst skal være.'
+      description: 'Om appen følger systemets tema eller er lys eller mørk, om sidepanelet er åbnet ved start, hvor stor appens tekst skal være, og hvor meget af AI’ens arbejde der vises undervejs.'
     },
     {
       id: 'connections', label: 'AI-forbindelser',
@@ -53,6 +53,16 @@
   const THEMES = Object.freeze([['system', 'Følg system'], ['light', 'Lyst'], ['dark', 'Mørkt']]);
   const WORK_MODES = Object.freeze([['chat', 'Samtale · beskriv og byg'], ['plan', 'Planlæg · afklar og byg en plan først']]);
   const HELP_LEVELS = Object.freeze([['fuld', 'Fuld hjælp · forklaringer og forslag undervejs'], ['delvis', 'Hjælp ved behov · "?"-knappen viser tips ved skrivefeltet'], ['ingen', 'Ingen hjælp · hverken tips eller "?"-knap']]);
+  // The transcript detail levels mirror core/profile.cjs's TRANSCRIPT_VALUES
+  // contract (one test pins the two together): compact shows the answers,
+  // standard (Nøgletrin) adds the key steps, detailed shows every allowed
+  // work detail. The titles and descriptions are the exact texts the
+  // onboarding detail step (D6) uses, so the choice reads the same everywhere.
+  const TRANSCRIPT_LEVELS = Object.freeze([
+    ['compact', 'Kun resultater', 'Du ser svaret og det færdige resultat — ikke arbejdet undervejs.'],
+    ['standard', 'Nøgletrin', 'Du ser svaret og de vigtigste trin undervejs.'],
+    ['detailed', 'Alle detaljer', 'Du ser alle trin undervejs: filer, kommandoer og status.']
+  ]);
   const HOSTINGS = Object.freeze([['', 'Beslut senere'], ['vercel', 'Vercel'], ['azure', 'Azure'], ['own', 'Organisationens løsning / egen server']]);
   const TEST_STYLES = Object.freeze([['senere', 'Beslut senere'], ['manuel', 'Manuel gennemgang af brugerrejsen'], ['automatiske', 'Automatiske tests og manuel gennemgang']]);
   // The font-size range mirrors core/profile.cjs's FONT_SIZE contract (one
@@ -146,6 +156,16 @@
       document.body.classList.toggle('help-delvis', helpLevel === 'delvis');
       document.body.classList.toggle('help-ingen', helpLevel === 'ingen');
     }
+    // The transcript detail level maps to its own body class at all three
+    // levels: 'standard' (Nøgletrin) is the neutral default but still carries
+    // its explicit class, and an unreadable value folds to it — the same
+    // mapping app.js's applyProfilePresentation applies at startup.
+    function applyTranscript(level) {
+      const choice = ['compact', 'detailed'].includes(level) ? level : 'standard';
+      document.body.classList.toggle('transcript-compact', choice === 'compact');
+      document.body.classList.toggle('transcript-standard', choice === 'standard');
+      document.body.classList.toggle('transcript-detailed', choice === 'detailed');
+    }
     // The font-size stepper's paint: the current value and honest bounds —
     // the buttons stop at 10 and 16, because the profile accepts nothing else.
     function fontClamp(value) { return Number.isInteger(value) && value >= FONT.min && value <= FONT.max ? value : FONT.base; }
@@ -165,6 +185,7 @@
       if (!profile) return;
       applyTheme(profile.appearance?.theme);
       applyHelp(profile.helpLevel);
+      applyTranscript(profile.transcriptView);
       const name = byId('settings-name');
       // Never overwrite text the user is still typing; committed saves refill.
       if (name && document.activeElement !== name) name.value = profile.name || '';
@@ -212,6 +233,11 @@
       if (panel) panel.checked = profile.appearance?.panelOpen !== false;
       const theme = byId('settings-theme');
       if (theme) for (const input of theme.querySelectorAll('input')) input.checked = input.value === (profile.appearance?.theme || 'system');
+      const transcript = byId('settings-transcript');
+      if (transcript) {
+        const level = ['compact', 'detailed'].includes(profile.transcriptView) ? profile.transcriptView : 'standard';
+        for (const input of transcript.querySelectorAll('input')) input.checked = input.value === level;
+      }
       if (byId('settings-font-size-value')) paintFontSize(fontClamp(profile.appearance?.fontSize));
     }
 
@@ -537,6 +563,33 @@
       size.append(sizeDown, sizeValue, sizeUp);
       content.append(field('Skriftstørrelse', size, 'settings-font-size-value'));
       content.append(note('Skalerer hele appen — tekst, knapper og forhåndsvisning. 13 px er normal størrelse.'));
+
+      // Arbejdsdetaljer (D4a): three radio cards with the same titles and
+      // honest one-line descriptions as the onboarding detail step (D6).
+      // Each choice saves only its own field through the shared queue, so
+      // the level never travels with a theme or font-size write.
+      const transcript = document.createElement('fieldset');
+      transcript.id = 'settings-transcript';
+      transcript.className = 'settings-transcript';
+      const transcriptLegend = document.createElement('legend');
+      transcriptLegend.textContent = 'Arbejdsdetaljer';
+      transcript.append(transcriptLegend);
+      for (const [value, title, text] of TRANSCRIPT_LEVELS) {
+        const wrap = document.createElement('label');
+        const input = document.createElement('input');
+        input.type = 'radio';
+        input.name = 'settings-transcript';
+        input.value = value;
+        input.addEventListener('change', () => { void saveSection({ transcriptView: input.value }); });
+        const heading = document.createElement('strong');
+        heading.textContent = title;
+        const description = document.createElement('small');
+        description.textContent = text;
+        wrap.append(input, heading, description);
+        transcript.append(wrap);
+      }
+      content.append(transcript);
+      content.append(note('Hvor meget af AI’ens arbejde du ser i samtalen. Det ændrer kun visningen — aldrig hvad Aura kan, og aldrig dine godkendelser.'));
       feedbackArea();
     }
 

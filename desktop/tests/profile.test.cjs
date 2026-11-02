@@ -4,12 +4,12 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 const { Store } = require('../core/store.cjs');
-const { Profile } = require('../core/profile.cjs');
+const { Profile, blank } = require('../core/profile.cjs');
 const { Preferences } = require('../core/preferences.cjs');
 const { Workbench } = require('../core/workbench.cjs');
 
 // Standardprofilen fra designdokumentet; get() på en tom settings.json svarer præcis denne form.
-const standardProfile = () => ({ name: '', icon: '', helpLevel: 'fuld', appearance: { theme: 'system', panelOpen: true, fontSize: 13 }, standardAI: { connectionID: '', modelID: '' }, workMode: 'chat', projectDefaults: { hosting: '', designID: '', tests: 'senere' }, migrated: 0 });
+const standardProfile = () => ({ name: '', icon: '', helpLevel: 'fuld', transcriptView: 'standard', appearance: { theme: 'system', panelOpen: true, fontSize: 13 }, standardAI: { connectionID: '', modelID: '' }, workMode: 'chat', projectDefaults: { hosting: '', designID: '', tests: 'senere' }, migrated: 0 });
 
 async function fixture(t, setup) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'aura-profil-'));
@@ -45,7 +45,7 @@ test('save() erstatter kun de angivne felter; appearance flettes felt for felt',
 test('save() afviser ugyldige værdier uden at gemme noget', async t => {
   const store = await fixture(t), profile = new Profile(store);
   await profile.save({ name: 'Parthee' });
-  const invalid = [{ icon: 7 }, { icon: null }, { helpLevel: 'megen' }, { helpLevel: 'minimal' }, { appearance: { theme: 'blå' } }, { appearance: { theme: 'dark', panelOpen: 'ja' } }, { appearance: { theme: null } }, { appearance: { fontSize: 9 } }, { appearance: { fontSize: 17 } }, { appearance: { fontSize: 13.5 } }, { appearance: { fontSize: '14' } }, { appearance: { fontSize: null } }, { workMode: 'byg' }, { name: 'x'.repeat(61) }, { name: 'navn\tmed fane' }, { standardAI: { connectionID: 'x'.repeat(101) } }, { standardAI: 'ai' }, { projectDefaults: { hosting: 'andet' } }];
+  const invalid = [{ icon: 7 }, { icon: null }, { helpLevel: 'megen' }, { helpLevel: 'minimal' }, { transcriptView: 'megen' }, { transcriptView: null }, { appearance: { theme: 'blå' } }, { appearance: { theme: 'dark', panelOpen: 'ja' } }, { appearance: { theme: null } }, { appearance: { fontSize: 9 } }, { appearance: { fontSize: 17 } }, { appearance: { fontSize: 13.5 } }, { appearance: { fontSize: '14' } }, { appearance: { fontSize: null } }, { workMode: 'byg' }, { name: 'x'.repeat(61) }, { name: 'navn\tmed fane' }, { standardAI: { connectionID: 'x'.repeat(101) } }, { standardAI: 'ai' }, { projectDefaults: { hosting: 'andet' } }];
   for (const values of invalid) await assert.rejects(() => profile.save(values));
   assert.deepEqual((await profile.get()).profile, { ...standardProfile(), name: 'Parthee' }, 'afviste kald ændrer intet');
   assert.deepEqual(Profile.ICON_IDS, ['aura-1', 'aura-2', 'aura-3']);
@@ -165,11 +165,45 @@ test('hjælpeniveauet har tre trin; gemningen er streng, læsningen migrerer', a
   assert.deepEqual(unknown.warnings, ['Dit hjælpeniveau kunne ikke læses og er nulstillet.']);
 });
 
+// ---------- Arbejdsdetaljer: tre trin, gemning streng, læsning blid ----------
+test('arbejdsdetaljerne har tre trin; gemningen er streng, læsningen er blid — hjælpeniveauet er uafhængigt', async t => {
+  const store = await fixture(t), profile = new Profile(store);
+  assert.deepEqual(Profile.TRANSCRIPT_VALUES, ['compact', 'standard', 'detailed'], 'kontrakten er eksporteret til brugerfladen');
+  assert.equal(blank().transcriptView, 'standard', 'en ny bruger starter på Nøgletrin');
+  // Saving is strict on the three values — all three round-trip.
+  for (const view of ['compact', 'standard', 'detailed']) assert.equal((await profile.save({ transcriptView: view })).profile.transcriptView, view);
+  // An unknown value from a stale renderer is rejected without a write.
+  await assert.rejects(() => profile.save({ transcriptView: 'maximal' }), /Ukendt detaljeniveau/);
+  assert.equal((await store.read()).profile.transcriptView, 'detailed', 'en afvist gemning ændrer intet');
+  // R7: the help level and the detail level are independent fields — each save
+  // carries only its own, so all 3×3 combinations stay freely combinable and
+  // one writer can never drag the other level back over a newer save.
+  await profile.save({ helpLevel: 'delvis' });
+  assert.equal((await profile.get()).profile.transcriptView, 'detailed', 'en hjælpeniveau-gemning rører ikke detaljeniveauet');
+  await profile.save({ transcriptView: 'compact' });
+  const after = await profile.get();
+  assert.equal(after.profile.helpLevel, 'delvis', 'en detaljeniveau-gemning rører ikke hjælpeniveauet');
+  assert.equal(after.profile.transcriptView, 'compact');
+  // Reading is lenient: an unknown value from a newer beta folds to 'standard'
+  // with a Danish warning — the field can never lock the settings or the app.
+  await store.update(state => { state.profile.transcriptView = 'ultra'; });
+  const unknown = await profile.get();
+  assert.equal(unknown.profile.transcriptView, 'standard');
+  assert.deepEqual(unknown.warnings, ['Dine arbejdsdetaljer kunne ikke læses og er nulstillet.']);
+  // Migration reads through the same lenient path: an unreadable value never
+  // blocks the startup fold — the marker is set and the field folds quietly.
+  await store.update(state => { state.profile.transcriptView = 7; state.profile.migrated = 0; });
+  const migrated = await profile.migrate({});
+  assert.equal(migrated.profile.migrated, 1, 'migrationen gennemføres trods det ulæselige detaljeniveau');
+  assert.equal(migrated.profile.transcriptView, 'standard', 'det ulæselige detaljeniveau er foldet til standard');
+  assert.equal((await store.read()).profile.transcriptView, 'standard', 'foldningen er gemt med markøren');
+});
+
 // ---------- Læsning er eftergivende: en ukendt værdi låser aldrig appen ----------
 test('get() læser en profil fra en nyere version felt for felt med fallback og advarsler', async t => {
   const store = await fixture(t, s => {
     s.designs = [{ id: 'd1' }];
-    s.profile = { name: 'Parthee', icon: 'drage', helpLevel: 'megen', appearance: { theme: 'blå', panelOpen: 'ja' }, standardAI: { connectionID: 7, modelID: 'm1' }, workMode: 'byg', projectDefaults: { hosting: 'udgået', designID: 'd1', tests: 'auto-godkend' }, migrated: 0 };
+    s.profile = { name: 'Parthee', icon: 'drage', helpLevel: 'megen', transcriptView: 'alt', appearance: { theme: 'blå', panelOpen: 'ja' }, standardAI: { connectionID: 7, modelID: 'm1' }, workMode: 'byg', projectDefaults: { hosting: 'udgået', designID: 'd1', tests: 'auto-godkend' }, migrated: 0 };
   });
   const read = await new Profile(store).get();
   assert.deepEqual(read.profile, {
@@ -180,6 +214,7 @@ test('get() læser en profil fra en nyere version felt for felt med fallback og 
   assert.deepEqual(read.warnings, [
     'Dit profilikon kunne ikke læses og er nulstillet.',
     'Dit hjælpeniveau kunne ikke læses og er nulstillet.',
+    'Dine arbejdsdetaljer kunne ikke læses og er nulstillet.',
     'Dit udseende kunne ikke læses og er nulstillet.',
     'Din standard-AI kunne ikke læses og er nulstillet.',
     'Din arbejdsmåde kunne ikke læses og er nulstillet.',

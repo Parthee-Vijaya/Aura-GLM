@@ -48,6 +48,19 @@
 .settings-fontsize button { width: 30px; height: 30px; padding: 0; font-size: 15px; line-height: 1; border-radius: var(--aura-radius-sm); }
 .settings-fontsize output { min-width: 5ch; text-align: center; font-weight: 550; font-variant-numeric: tabular-nums; }
 
+/* "Arbejdsdetaljer" (D4a): three radio cards, one honest line each. The
+   native radio stays visible and focusable; the row's border carries the
+   selected state, and the description reads in the muted help tone (12 px,
+   AA on the raised surface in both themes). */
+.settings-transcript { display: grid; gap: 10px; border: 0; padding: 0; margin: 18px 0 0; }
+.settings-transcript legend { padding: 0 0 4px; font-size: 12px; font-weight: 550; color: var(--aura-ink); }
+.settings-transcript label { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 10px; row-gap: 2px; align-items: center; padding: 11px 14px; border: 1px solid var(--aura-border); border-radius: var(--aura-radius-md); cursor: pointer; }
+.settings-transcript input { grid-row: 1 / span 2; margin: 0; width: 15px; height: 15px; accent-color: var(--aura-accent); }
+.settings-transcript strong { font-size: 13px; font-weight: 600; color: var(--aura-ink); }
+.settings-transcript small { font-size: 12px; line-height: 1.5; color: var(--aura-ink-muted); }
+.settings-transcript label:has(input:checked) { border-color: var(--aura-accent); background: var(--aura-accent-faint); }
+.settings-transcript label:focus-within { outline: 2px solid var(--aura-accent); outline-offset: 2px; }
+
 /* "Glem projektstandarder" is a quiet reset under the project defaults. */
 .settings-forget { display: flex; justify-content: flex-end; margin: 4px 0 0; }
 

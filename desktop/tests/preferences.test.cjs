@@ -57,7 +57,7 @@ test('save uden profil opretter profilen med standardform og markerer den migrer
   const store = await fixture(t, s => { s.connections = [{ id: 'ai' }]; });
   await new Preferences(store).save({ hosting: 'vercel', connectionID: 'ai', designID: '', tests: 'senere' });
   assert.deepEqual((await store.read()).profile, {
-    name: '', icon: '', helpLevel: 'fuld', appearance: { theme: 'system', panelOpen: true, fontSize: 13 }, standardAI: { connectionID: '', modelID: '' }, workMode: 'chat',
+    name: '', icon: '', helpLevel: 'fuld', transcriptView: 'standard', appearance: { theme: 'system', panelOpen: true, fontSize: 13 }, standardAI: { connectionID: '', modelID: '' }, workMode: 'chat',
     projectDefaults: { hosting: 'vercel', designID: '', tests: 'senere' }, migrated: 1,
   }, 'brugeren har truffet et eksplicit valg — profilen tæller som migreret, og connectionID gemmes ikke');
 });
