@@ -360,23 +360,30 @@ test('hintnøglen har én skriver, og den gamle nøgle er borte', () => {
   assert.ok(!calm.includes('harness-workspace-theme-v1'), 'workspace-calm.js bruger ikke længere den gamle temanøgle');
 });
 
-// Help levels "delvis" and "ingen": only the three designated hints are
+// Help levels "delvis" and "ingen": only the designated standing hints are
 // hidden — never privacy texts, warnings, approvals or "Før du sender"
 // content. The "?" button is the only extra affordance and only at 'delvis'.
-test('settings.css: delvis og ingen skjuler udelukkende de tre udpegede hint', () => {
+// The resume notice's caveat is a data-sharing text and carries the essential
+// marking, so the hiding selectors exempt essential-marked hints: the rule
+// can never match it, at either level.
+test('settings.css: delvis og ingen skjuler udelukkende de udpegede hint — aldrig essentielle', () => {
   const settingsCss = fs.readFileSync(path.join(ui, 'settings.css'), 'utf8');
-  const designated = ['#composer-shortcut', '#resume-notice .hint', '#idea-options .hint'];
+  const designated = [
+    '#composer-shortcut',
+    '#resume-notice .hint:not([data-help="essential"])',
+    '#idea-options .hint:not([data-help="essential"])'
+  ];
   const selectors = [...settingsCss.matchAll(/body\.help-(?:delvis|ingen)[^\n{]*?(?=\s*[,{])/g)]
     .map(match => match[0].trim())
     .filter(selector => !selector.includes('#composer-help'));
   assert.deepEqual(selectors, [
     'body.help-delvis #composer-shortcut',
-    'body.help-delvis #resume-notice .hint',
-    'body.help-delvis #idea-options .hint',
+    'body.help-delvis #resume-notice .hint:not([data-help="essential"])',
+    'body.help-delvis #idea-options .hint:not([data-help="essential"])',
     'body.help-ingen #composer-shortcut',
-    'body.help-ingen #resume-notice .hint',
-    'body.help-ingen #idea-options .hint'
-  ], 'udelukkende genvejslinjen, resume-hintet og projektintroens forklaringer skjules — ved begge niveauer');
+    'body.help-ingen #resume-notice .hint:not([data-help="essential"])',
+    'body.help-ingen #idea-options .hint:not([data-help="essential"])'
+  ], 'udelukkende genvejslinjen og projektintroens forklaringer skjules — resume-hintet er undtaget som essentielt, ved begge niveauer');
   // Every hiding selector is one of the designated hints: nothing else can
   // ever be caught by a help-level rule, at either level.
   for (const selector of selectors) {
@@ -403,12 +410,17 @@ test('settings.css: delvis og ingen skjuler udelukkende de tre udpegede hint', (
   assert.ok(index.includes('id="composer-shortcut"'), 'composer-genvejslinjen findes');
   assert.ok(index.includes('id="resume-notice"'), 'resume-bemærkningen findes');
   assert.ok(index.includes('id="idea-options"'), 'projektintroens ønsker findes');
+  // The resume caveat itself is marked essential: the hiding rule never
+  // matches it, so the data-sharing text stands at every help level.
+  const resume = index.slice(index.indexOf('id="resume-notice"'), index.indexOf('</details>', index.indexOf('id="resume-notice"')));
+  assert.ok(/class="hint" data-help="essential"/.test(resume), 'resume-hintet er markeret data-help="essential" i teksten');
 });
 
 // The essential surfaces — privacy texts, warnings, approvals, "Før du sender"
-// and consent — carry data-help="essential" in the markup. No help-level
-// selector may name them (directly or as a subtree), so they stay displayed at
-// every level — also at 'ingen', where nothing else survives.
+// and consent, and the resume notice's data-sharing caveat — carry
+// data-help="essential" in the markup. No help-level rule can ever match them
+// (directly or as a subtree), so they stay displayed at every level — also at
+// 'ingen', where nothing else survives.
 test('settings.css og index.html: essential-fladerne vises altid — også ved ingen hjælp', () => {
   const index = fs.readFileSync(path.join(ui, 'index.html'), 'utf8');
   const settingsCss = fs.readFileSync(path.join(ui, 'settings.css'), 'utf8');
@@ -416,6 +428,10 @@ test('settings.css og index.html: essential-fladerne vises altid — også ved i
   for (const id of essentialIds) {
     assert.ok(new RegExp(`<[^>]*id="${id}"[^>]*data-help="essential"`).test(index), `${id} er markeret data-help="essential" i teksten`);
   }
+  // The resume notice's caveat is a data-sharing text: it carries the marking
+  // where it lives (inside #resume-notice), so the level rules exempt it.
+  const resume = index.slice(index.indexOf('id="resume-notice"'), index.indexOf('</details>', index.indexOf('id="resume-notice"')));
+  assert.ok(/class="hint" data-help="essential"/.test(resume), 'resume-hintet om tidligere delte referencer er markeret essential');
   // The privacy gate's dynamic elements carry the same annotation.
   const privacyGate = fs.readFileSync(path.join(ui, 'privacy-gate.js'), 'utf8');
   assert.ok((privacyGate.match(/setAttribute\('data-help', 'essential'\)/g) || []).length >= 3, 'privacy-fladerne fra privacy-gate bærer også markeringen');
@@ -428,10 +444,14 @@ test('settings.css og index.html: essential-fladerne vises altid — også ved i
   for (const match of settingsCss.matchAll(/body\.help-(?:delvis|ingen)[^\n{]*?(?=\s*[,{])/g)) {
     for (const id of essentialIds) assert.ok(!match[0].includes(`#${id}`), `${match[0]} må ikke ramme ${id}`);
   }
-  // No rule anywhere hides an element annotated as essential (comments are
-  // stripped first, so only real selectors are scanned).
+  // No rule anywhere can match an element annotated as essential: a selector
+  // may mention the marking only inside its :not([data-help="essential"])
+  // exemption guard — anything else would be a hiding rule against an
+  // essential surface. Comments are stripped first, so only real selectors
+  // are scanned.
   const rules = settingsCss.replace(/\/\*[\s\S]*?\*\//g, '');
   for (const rule of rules.matchAll(/([^{}]+)\{[^}]*display:\s*none/g)) {
-    assert.ok(!rule[1].includes('data-help='), `settings.css må aldrig skjule en essential-flade: ${rule[1].trim()}`);
+    const bare = rule[1].replace(/:not\(\[data-help="essential"\]\)/g, '');
+    assert.ok(!bare.includes('data-help='), `settings.css må aldrig kunne ramme en essential-flade: ${rule[1].trim()}`);
   }
 });

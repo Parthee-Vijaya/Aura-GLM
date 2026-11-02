@@ -55,19 +55,24 @@
 .settings-content .hint[role="status"] { min-height: 1.6em; }
 .settings-content .hint[role="status"].error { color: var(--aura-error); }
 
-/* Help levels "delvis" and "ingen" hide ONLY the three designated hints —
+/* Help levels "delvis" and "ingen" hide ONLY designated standing hints —
    never privacy texts, warnings, approvals or "Før du sender" content: the
    essential surfaces carry data-help="essential" in the markup, and no rule
-   here may ever name them, so they stay displayed at every level. The targets:
+   here can ever match an essential-marked element, so they stay displayed at
+   every level. The targets:
    - #composer-shortcut: the shortcut line under the message field.
-   - #resume-notice .hint: the resume notice's explanation about shared references.
-   - #idea-options .hint: the project intro's "Ønsker til løsningen" explanations. */
+   - #resume-notice .hint: the resume notice's explanation about shared
+     references — itself marked essential (it is a data-sharing text), so the
+     :not([data-help="essential"]) guard means the rule never matches it: it
+     stands whenever the resume notice is open, at every help level.
+   - #idea-options .hint: the project intro's "Ønsker til løsningen"
+     explanations. */
 body.help-delvis #composer-shortcut,
-body.help-delvis #resume-notice .hint,
-body.help-delvis #idea-options .hint,
+body.help-delvis #resume-notice .hint:not([data-help="essential"]),
+body.help-delvis #idea-options .hint:not([data-help="essential"]),
 body.help-ingen #composer-shortcut,
-body.help-ingen #resume-notice .hint,
-body.help-ingen #idea-options .hint { display: none; }
+body.help-ingen #resume-notice .hint:not([data-help="essential"]),
+body.help-ingen #idea-options .hint:not([data-help="essential"]) { display: none; }
 
 /* The on-demand help at 'delvis': a quiet "?" where the shortcut line stood.
    'fuld' keeps the hints standing and never shows the button; 'ingen' asked

@@ -39,8 +39,13 @@
     for (const info of copy.querySelectorAll('.info')) info.remove();
     return String(copy.textContent).trim();
   }
-  // The designated hint targets — the same three the help-level CSS hides.
-  // The texts are read live, so the copy has exactly one source.
+  // The designated hint targets — the two groups the help-level CSS hides
+  // (the shortcut line and the project intro's explanations) plus the resume
+  // notice's caveat about previously shared references. That caveat is marked
+  // data-help="essential" and never hides (settings.css exempts essential-
+  // marked hints), so it stands whenever the resume notice is open — the
+  // popover keeps it answerable also with the details closed. The texts are
+  // read live, so the copy has exactly one source.
   function hints() {
     const texts = [];
     const add = element => { if (element && stands(element)) texts.push(hintText(element)); };
