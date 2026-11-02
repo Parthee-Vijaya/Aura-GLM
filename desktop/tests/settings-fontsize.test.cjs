@@ -267,20 +267,25 @@ test('workspace-calm.css: bredere indholdsbredder på store skærme — intet un
     throw new Error('Ubalancerede CSS-blokke');
   };
   const rules = css => {
-    const inner = css.replace(/^@media[^{]*\{/, '').replace(/\}\s*$/, '');
+    // Comments are stripped first (the repo's CSS-parse pattern), so only real
+    // selectors become keys — the panel-closed composer rule carries one.
+    const inner = css.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^@media[^{]*\{/, '').replace(/\}\s*$/, '');
     return Object.fromEntries([...inner.matchAll(/([^{}]+)\{([^}]*)\}/g)].map(match => [match[1].trim(), match[2].trim()]));
   };
   const wide = rules(block(1600));
   assert.equal(wide['.workspace-calm .chat-content'], 'max-width: 960px;', 'samtalen vokser til 960 px ved 1600');
   assert.equal(wide['.workspace-calm .composer'], 'max-width: 960px;', 'composeren følger med til 960 px');
+  assert.equal(wide['.workspace-calm .work-grid[data-surface="off"] .composer'], 'max-width: 960px;', 'den panel-lukkede composer følger også med — 720px-reglen (0,4,0) slår ellers kappen');
   assert.equal(wide['.workspace-calm .work-grid[data-surface="off"] #chat-panel'], 'max-width: 1080px;', 'fuldbredde samtale med lukket panel vokser til 1080 px');
   assert.equal(wide['.workspace-calm #project-intro'], 'max-width: 560px;', 'projektintroen vokser moderat til 560 px');
   assert.equal(wide['.workspace-calm #chat-choice'], 'max-width: 560px;', 'valgkortene vokser moderat til 560 px');
+  assert.equal(Object.keys(wide).length, 6, '1600-trinnet rører de seks breddefelter');
   const widest = rules(block(2000));
   assert.equal(widest['.workspace-calm .chat-content'], 'max-width: 1040px;', 'samtalen når 1040 px ved 2000');
   assert.equal(widest['.workspace-calm .composer'], 'max-width: 1040px;', 'composeren når 1040 px ved 2000');
+  assert.equal(widest['.workspace-calm .work-grid[data-surface="off"] .composer'], 'max-width: 1040px;', 'den panel-lukkede composer når også 1040 px ved 2000');
   assert.equal(widest['.workspace-calm .work-grid[data-surface="off"] #chat-panel'], 'max-width: 1200px;', 'panel-lukket samtale når 1200 px ved 2000');
-  assert.equal(Object.keys(widest).length, 3, '2000-trinnet rører kun de tre breddefelter — heroerne forbliver ved 560');
+  assert.equal(Object.keys(widest).length, 4, '2000-trinnet rører kun de fire breddefelter — heroerne forbliver ved 560');
   // The base widths are untouched: the caps are additive, and every min-width
   // rule sits after its base rule so the cascade order carries the override.
   assert.ok(calmCss.includes('.workspace-calm .chat-content { padding:20px 22px; max-width:800px;'), 'basis 800 px består');
@@ -302,4 +307,14 @@ test('settings.js: font-styringen spejler core/profile.cjs FONT_SIZE-kontrakten'
   assert.ok(settingsSource.includes(`saveSection({ appearance: { fontSize: next } })`), 'trinnet gemmer kun sit eget felt gennem den delte kø');
   assert.ok(settingsSource.includes('Skriftstørrelse'), 'feltet har sit danske navn');
   assert.ok(settingsSource.includes('Skalerer hele appen'), 'beskrivelsen er ærlig: hele appen skaleres');
+});
+
+// The secure key-entry window follows the profile zoom too, so "Skalerer hele
+// appen" stays honest through the key flow. Main hands the current factor to
+// core/credential-entry.cjs, which reads it per request — no stored copy, so
+// a later profile change reaches the next window.
+test('main.cjs: det sikre nøglevindue får den aktuelle profilfaktor', () => {
+  assert.ok(main.includes('zoomFactor:() => profileFontSize / FONT_SIZE.base,'), 'main giver nøglevinduet den aktuelle profilfaktor');
+  const entrySource = fs.readFileSync(path.join(__dirname, '..', 'core', 'credential-entry.cjs'), 'utf8');
+  assert.ok(entrySource.includes('...(zoomFactor ? { zoomFactor: zoomFactor() } : {})'), 'nøglevinduet læser faktoren pr. anmodning — en senere størrelse når det næste vindue');
 });

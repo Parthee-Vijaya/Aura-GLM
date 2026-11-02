@@ -216,6 +216,11 @@ body.workspace-calm[data-workspace-theme="light"] {
 @media (min-width: 1600px) {
   .workspace-calm .chat-content { max-width: 960px; }
   .workspace-calm .composer { max-width: 960px; }
+  /* Den panel-lukkede composer (720px, specificitet 0,4,0) ville ellers slå
+     kappen ovenfor: ved lukket panel vokser den med samtalen, så composeren
+     ikke står snoret under en bred beskedkolonne. Tom-chat-heron under 1600
+     beholder de 720px fra basisdesignet. */
+  .workspace-calm .work-grid[data-surface="off"] .composer { max-width: 960px; }
   .workspace-calm .work-grid[data-surface="off"] #chat-panel { max-width: 1080px; }
   .workspace-calm #project-intro { max-width: 560px; }
   .workspace-calm #chat-choice { max-width: 560px; }
@@ -223,5 +228,6 @@ body.workspace-calm[data-workspace-theme="light"] {
 @media (min-width: 2000px) {
   .workspace-calm .chat-content { max-width: 1040px; }
   .workspace-calm .composer { max-width: 1040px; }
+  .workspace-calm .work-grid[data-surface="off"] .composer { max-width: 1040px; }
   .workspace-calm .work-grid[data-surface="off"] #chat-panel { max-width: 1200px; }
 }

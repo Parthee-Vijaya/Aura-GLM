@@ -10,7 +10,7 @@ const { CredentialReceipts, createCredentialEntry, credentialResourceURL, bindin
 const metadata = () => ({ id: 'fixture-connection', kind: 'compatible', name: 'Synthetic connection', baseURL: 'http://127.0.0.1:19431/v1', deployment: '', protocol: 'responses', clearKey: false });
 const key = 'synthetic-test-value-not-a-credential';
 
-function electronFixture({ encrypted = true, loadError, resourceScheme } = {}) {
+function electronFixture({ encrypted = true, loadError, resourceScheme, zoomFactor } = {}) {
   const windows = [], handlers = new Map(), owner = {};
   class BrowserWindow extends EventEmitter {
     constructor(options) {
@@ -25,7 +25,7 @@ function electronFixture({ encrypted = true, loadError, resourceScheme } = {}) {
     isDestroyed() { return this.destroyed; }
     destroy() { if (!this.destroyed) { this.destroyed = true; this.emit('closed'); } }
   }
-  const entry = createCredentialEntry({ BrowserWindow, ipcMain: { handle: (channel, handler) => { assert.equal(handlers.has(channel), false); handlers.set(channel, handler); }, removeHandler: channel => handlers.delete(channel) }, safeStorage: { isEncryptionAvailable: () => encrypted }, parent: () => owner, resourceScheme });
+  const entry = createCredentialEntry({ BrowserWindow, ipcMain: { handle: (channel, handler) => { assert.equal(handlers.has(channel), false); handlers.set(channel, handler); }, removeHandler: channel => handlers.delete(channel) }, safeStorage: { isEncryptionAvailable: () => encrypted }, parent: () => owner, zoomFactor, resourceScheme });
   const current = () => windows.at(-1);
   const invoke = (message, event) => {
     const win = current(), handler = [...handlers.values()].at(-1);
@@ -79,6 +79,7 @@ test('the native entry is sandboxed, modal, navigation-restricted, and returns o
   assert.equal(win.options.parent, f.owner); assert.equal(win.options.modal, true);
   assert.equal(win.options.webPreferences.sandbox, true); assert.equal(win.options.webPreferences.contextIsolation, true);
   assert.equal(win.options.webPreferences.nodeIntegration, false); assert.equal(win.options.webPreferences.devTools, false);
+  assert.equal('zoomFactor' in win.options.webPreferences, false, 'uden en zoom-kilde arver vinduet Electrons standard — ingen gemt tilstand');
   assert.deepEqual(win.openHandler(), { action: 'deny' });
   const context = f.invoke({ action: 'context' });
   assert.equal(context.name, configuration.name); assert.equal(context.endpoint, configuration.baseURL);
@@ -130,6 +131,20 @@ test('a crashed secure renderer cancels its pending operation and permits a fres
   assert.deepEqual(outcome.value, { canceled: true }); assert.equal(f.handlers.size, 0);
   const retry = f.entry.request({ configuration: metadata() }); f.invoke({ action: 'cancel' });
   assert.deepEqual(await retry, { canceled: true }); f.entry.close();
+});
+
+// The profile's font-size zoom rides along (main hands in the current factor),
+// and it is read per request: a later profile change reaches the next window.
+test('the entry window follows the profile zoom, re-read for every request', async () => {
+  let factor = 16 / 13;
+  const f = electronFixture({ zoomFactor: () => factor });
+  const first = f.entry.request({ configuration: metadata() });
+  assert.ok(Math.abs(f.current().options.webPreferences.zoomFactor - 16 / 13) < 1e-9, 'font 16 giver det sikre vindue faktoren 1.231');
+  f.invoke({ action: 'cancel' }); await first;
+  factor = 1;
+  const second = f.entry.request({ configuration: metadata() });
+  assert.equal(f.current().options.webPreferences.zoomFactor, 1, 'et nyt trin til 13 læses ved den næste anmodning — ingen gemt kopi');
+  f.invoke({ action: 'cancel' }); await second;
 });
 
 test('connection updates without a new key preserve metadata while raw-key bypasses are rejected', () => {

@@ -235,6 +235,29 @@ function tinyPNG() {
     await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).setSize(980,720));
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth <= window.innerWidth),true);
     assert.deepEqual(errors,[]);
-    console.log(JSON.stringify({passed:['designpakke genbrugt efter genstart og slettede originaler','projektoprettelse','annulleret dialog','logo og reference','ægte preview','automatisk opdatering fra disk','skærmstørrelser, rotation, egne mål, skalering og trækbar skillelinje','ingen Node eller IPC i preview','genåbning efter genstart','eksisterende projekt bevaret','profil udfyldes i onboarding og ændres i Indstillinger','profil genindlæses efter genstart','skriftstørrelse trin, app-zoom og nulstilling'],testRoot,projectDir,screenshots:[path.join(testRoot, 'opstart.png'),path.join(testRoot, 'arbejdsflade.png')]}));
+    // Skriftstørrelsen persisterer over genstart: sæt 16, luk appen, og læs
+    // zoomfaktoren i den nye instans — fra profilen, ikke et session-zoom.
+    // Genstarten går uden launch(): h1-ventet på forhåndsvisningen hører til
+    // projektets egen prøve, og et helt nyt projekt uden samtaler genoptager
+    // ikke forhåndsvisningen — zoomen er hovedprocessens, ikke previewets.
+    // Tilbage på 13 bagefter, så prøven efterlader profilen neutral.
+    await page.click('#settings-toggle'); await page.click('#settings-appearance-button');
+    await page.waitForSelector('#settings-font-up');
+    for (let step = 0; step < 3; step++) await page.click('#settings-font-up');
+    await page.waitForFunction(() => window.harness.profileGet().then(result => result.value.profile.appearance.fontSize === 16));
+    assert.ok(Math.abs(await zoomFactor() - 16 / 13) < 0.01, 'font 16 står i profilen, og zoomen følger med her');
+    await page.click('[data-close="settings-dialog"]'); await app.close();
+    app = await electron.launch({ executablePath, args: [path.join(root, 'desktop'), '--user-data-dir=' + path.join(testRoot, 'electron-data')], env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined } });
+    await require('./ui-test-helpers.cjs').isolateDocuments(app, path.join(testRoot, 'Dokumenter'));
+    page = await app.firstWindow();
+    await page.waitForSelector('#workspace:not([hidden])');
+    assert.equal(await page.locator('#project-name').textContent(), 'Fælleshaven', 'det sidste projekt genåbnes efter genstarten');
+    assert.ok(Math.abs(await zoomFactor() - 16 / 13) < 0.01, 'font 16 overlever genstart — faktoren er anvendt fra opstarten');
+    await page.click('#settings-toggle'); await page.click('#settings-appearance-button');
+    for (let step = 0; step < 3; step++) await page.click('#settings-font-down');
+    await page.waitForFunction(() => window.harness.profileGet().then(result => result.value.profile.appearance.fontSize === 13));
+    await page.click('[data-close="settings-dialog"]');
+    assert.ok(Math.abs(await zoomFactor() - 1) < 0.01, 'tilbage på 13 er zoomen 100%');
+    console.log(JSON.stringify({passed:['designpakke genbrugt efter genstart og slettede originaler','projektoprettelse','annulleret dialog','logo og reference','ægte preview','automatisk opdatering fra disk','skærmstørrelser, rotation, egne mål, skalering og trækbar skillelinje','ingen Node eller IPC i preview','genåbning efter genstart','eksisterende projekt bevaret','profil udfyldes i onboarding og ændres i Indstillinger','profil genindlæses efter genstart','skriftstørrelse: trin, app-zoom, nulstilling og persistens efter genstart'],testRoot,projectDir,screenshots:[path.join(testRoot, 'opstart.png'),path.join(testRoot, 'arbejdsflade.png')]}));
   } finally {if(app) await app.close().catch(()=>{});}
 })().catch(error=>{console.error(error);process.exitCode=1;});

@@ -143,7 +143,7 @@ async function confirmDiscardWork() {
   } finally { discardingWork = false; }
 }
 const uiURL = 'harness://app/index.html';
-const credentialEntry = require('./core/credential-entry.cjs').createCredentialEntry({ BrowserWindow, ipcMain, safeStorage, parent:() => window, createSession:() => {
+const credentialEntry = require('./core/credential-entry.cjs').createCredentialEntry({ BrowserWindow, ipcMain, safeStorage, parent:() => window, zoomFactor:() => profileFontSize / FONT_SIZE.base, createSession:() => {
   const isolated = session.fromPartition(`credential-${crypto.randomUUID()}`, { cache:false });
   const files = ['credential-entry.html','credential-entry.css','credential-entry.js'].map(file => require('node:url').pathToFileURL(path.join(__dirname, 'ui', file)).href);
   isolated.webRequest.onBeforeRequest((details, callback) => callback({ cancel:!files.includes(details.url) }));
