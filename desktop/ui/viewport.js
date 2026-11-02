@@ -29,6 +29,14 @@
     for (const btn of preset.querySelectorAll('.viewport-icon')) btn.setAttribute('aria-pressed', btn.dataset.preset === settings.preset ? 'true' : 'false'); width.value = settings.width; height.value = settings.height; zoom.value = settings.zoom;
     el('viewport-dimensions').hidden = settings.preset === 'fluid'; zoom.disabled = settings.preset === 'fluid';
   }
+  // The fit calculation is zoom-safe: Chromium's page zoom (the profile's
+  // font size, applied by the main process) scales every CSS pixel uniformly,
+  // so surface.clientWidth, the stage and the iframe's transform all live in
+  // the same zoomed CSS-pixel space. A zoomed window simply has fewer CSS
+  // pixels available (1600 physical px at factor 1.23 reads ~1301), and the
+  // scale below shrinks to fit them — 'fit' still fits. That is also the
+  // honest behaviour for the device emulation: the emulated width stays the
+  // chosen CSS pixels, only the on-screen rendering grows.
   function render() {
     if (!surface.clientWidth || !surface.clientHeight) return;
     const fluid = settings.preset === 'fluid';

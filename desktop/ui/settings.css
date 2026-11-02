@@ -41,6 +41,13 @@
 .settings-theme label { display: inline-flex; align-items: center; gap: 8px; margin: 10px 28px 4px 0; font-size: 13px; }
 .settings-check { display: flex; align-items: center; gap: 10px; margin: 14px 0 0; padding: 10px 14px; border: 1px solid var(--aura-border); border-radius: var(--aura-radius-sm); font-size: 13px; font-weight: 500; cursor: pointer; }
 
+/* The font-size stepper: − / value / + walk the profile's whole 10-16 px
+   range. The output (a live region by default) reads the current size; the
+   buttons stop disabled at the bounds, matching what the profile accepts. */
+.settings-fontsize { display: inline-flex; align-items: center; gap: 8px; }
+.settings-fontsize button { width: 30px; height: 30px; padding: 0; font-size: 15px; line-height: 1; border-radius: var(--aura-radius-sm); }
+.settings-fontsize output { min-width: 5ch; text-align: center; font-weight: 550; font-variant-numeric: tabular-nums; }
+
 /* "Glem projektstandarder" is a quiet reset under the project defaults. */
 .settings-forget { display: flex; justify-content: flex-end; margin: 4px 0 0; }
 

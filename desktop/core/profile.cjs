@@ -17,6 +17,16 @@ const ICON_IDS = Object.freeze(['aura-1', 'aura-2', 'aura-3']);
 const UPLOAD_ICON = 'upload';
 const PROJECT_DEFAULTS = Object.freeze({ hosting: '', designID: '', tests: 'senere' });
 const THEME_VALUES = Object.freeze(['system', 'light', 'dark']);
+// The font size is one integer step range, 10-16 px with 13 px as the neutral
+// default. It is applied as the window's zoom factor (13 => 1.0), so the
+// whole app scales, not just text. Saving is strict: anything but an integer
+// in the range is rejected. The lenient read (and the main process at apply
+// time) folds an out-of-range or invalid value back to 13.
+const FONT_SIZE = Object.freeze({ min: 10, max: 16, base: 13 });
+function strictFontSize(value) { if (!Number.isInteger(value) || value < FONT_SIZE.min || value > FONT_SIZE.max) throw new Error('Ugyldig skriftstørrelse.'); return value; }
+// The apply-time clamp for the main process: never trust a stored or renderer
+// value blindly — anything unreadable is the honest neutral 13, not an error.
+function clampFontSize(value) { return Number.isInteger(value) && value >= FONT_SIZE.min && value <= FONT_SIZE.max ? value : FONT_SIZE.base; }
 // The three help levels: full standing hints, on-demand help ('delvis' hides
 // the standing hints and shows the "?" button by the composer), and no help
 // at all ('ingen' hides the "?" button too). Privacy texts, warnings,
@@ -29,7 +39,7 @@ const WORK_MODES = Object.freeze(['chat', 'plan']);
 // A fresh profile: no name or icon, full help, system theme, panel open,
 // no standard AI, chat as the work mode and undecided project standards.
 function blank() {
-  return { name: '', icon: '', helpLevel: 'fuld', appearance: { theme: 'system', panelOpen: true }, standardAI: { connectionID: '', modelID: '' }, workMode: 'chat', projectDefaults: { ...PROJECT_DEFAULTS }, migrated: 0 };
+  return { name: '', icon: '', helpLevel: 'fuld', appearance: { theme: 'system', panelOpen: true, fontSize: FONT_SIZE.base }, standardAI: { connectionID: '', modelID: '' }, workMode: 'chat', projectDefaults: { ...PROJECT_DEFAULTS }, migrated: 0 };
 }
 
 function cleanID(value) { return typeof value === 'string' && value.length <= 100 && !/[\x00-\x1f]/.test(value) ? value : null; }
@@ -72,6 +82,7 @@ function normalizeAppearance(input = {}, { partial = false } = {}) {
   const result = {};
   if (!partial || input.theme !== undefined) result.theme = input.theme === undefined ? 'system' : cleanChoice(input.theme, THEME_VALUES, 'Ukendt tema.');
   if (!partial || input.panelOpen !== undefined) result.panelOpen = input.panelOpen === undefined ? true : cleanChoice(input.panelOpen, [true, false], 'Ugyldig starttilstand for panelet.');
+  if (!partial || input.fontSize !== undefined) result.fontSize = input.fontSize === undefined ? FONT_SIZE.base : strictFontSize(input.fontSize);
   return result;
 }
 
@@ -147,7 +158,7 @@ function readProfile(input, hasAvatar = () => false) {
     name: field(READ_WARNINGS.name, '', () => input.name === undefined ? '' : cleanName(input.name)),
     icon: field(READ_WARNINGS.icon, '', () => input.icon === undefined ? '' : cleanIcon(input.icon, hasAvatar)),
     helpLevel: field(READ_WARNINGS.helpLevel, 'fuld', () => input.helpLevel === undefined ? 'fuld' : readHelpLevel(input.helpLevel)),
-    appearance: group(input.appearance, fresh.appearance, normalizeAppearance, ['theme', 'panelOpen'], READ_WARNINGS.appearance),
+    appearance: group(input.appearance, fresh.appearance, normalizeAppearance, ['theme', 'panelOpen', 'fontSize'], READ_WARNINGS.appearance),
     standardAI: group(input.standardAI, fresh.standardAI, normalizeStandardAI, ['connectionID', 'modelID'], READ_WARNINGS.standardAI),
     workMode: field(READ_WARNINGS.workMode, 'chat', () => input.workMode === undefined ? 'chat' : cleanChoice(input.workMode, WORK_MODES, 'Ukendt arbejdsmåde.')),
     projectDefaults: readProjectDefaults(input.projectDefaults, warn).values,
@@ -250,4 +261,5 @@ class Profile {
 }
 Profile.ICON_IDS = ICON_IDS;
 Profile.UPLOAD_ICON = UPLOAD_ICON;
-module.exports = { Profile, ICON_IDS, UPLOAD_ICON, blank };
+Profile.FONT_SIZE = FONT_SIZE;
+module.exports = { Profile, ICON_IDS, UPLOAD_ICON, FONT_SIZE, strictFontSize, clampFontSize, blank };

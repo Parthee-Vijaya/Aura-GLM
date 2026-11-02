@@ -112,22 +112,25 @@ test('main.cjs: applyProfileTheme oversætter profilens tema til Electron-temaki
 });
 
 test('main.cjs: profilen læses og temaet sættes, før vinduet skabes', async () => {
-  const call = 'applyProfileTheme((await profileStore().get()).profile.appearance.theme)';
-  const line = mainSlice(`try { ${call}`, '\n');
-  const applied = [];
+  const line = mainSlice('try { const appearance = (await profileStore().get()).profile.appearance', '\n');
+  const applied = [], zooms = [];
   const context = {
     applyProfileTheme: theme => applied.push(theme),
-    profileStore: () => ({ get: async () => ({ profile: { appearance: { theme: 'dark' } } }) })
+    applyProfileFontSize: size => zooms.push(size),
+    profileStore: () => ({ get: async () => ({ profile: { appearance: { theme: 'dark', fontSize: 16 } } }) })
   };
   await vm.runInNewContext(`(async () => {\n${line}\n})()`, context);
   assert.deepEqual(applied, ['dark'], 'profilens tema sættes ved opstart');
+  assert.deepEqual(zooms, [16], 'profilens skriftstørrelse afleveres til zoom-anvendelsen ved opstart');
   const failing = {
     applyProfileTheme: theme => applied.push(theme),
+    applyProfileFontSize: size => zooms.push(size),
     profileStore: () => ({ get: async () => { throw new Error('datamappen er låst'); } })
   };
   await vm.runInNewContext(`(async () => {\n${line}\n})()`, failing);
   assert.deepEqual(applied, ['dark'], 'en ulæselig profil efterlader systemtemaet og stopper ikke opstarten');
-  assert.ok(main.indexOf(call) < main.indexOf('createWindow();'), 'temaet håndhæves før createWindow()');
+  assert.deepEqual(zooms, [16], 'en ulæselig profil efterlader også den neutrale zoom');
+  assert.ok(main.indexOf('applyProfileTheme(appearance.theme);') < main.indexOf('createWindow();'), 'temaet håndhæves før createWindow()');
 });
 
 test('main.cjs: profile:save håndhæver temaet efter en gemning, der inkluderer tema', async () => {

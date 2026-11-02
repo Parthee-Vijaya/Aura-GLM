@@ -18,7 +18,7 @@ const { GitHub } = require('./core/github.cjs');
 const { Deployments } = require('./core/deployments.cjs');
 const { Publishing } = require('./core/publishing.cjs');
 const { Preferences } = require('./core/preferences.cjs');
-const { Profile } = require('./core/profile.cjs');
+const { Profile, FONT_SIZE, clampFontSize } = require('./core/profile.cjs');
 const { Designs } = require('./core/designs.cjs');
 const projectFiles = require('./core/project-files.cjs');
 const previewEdit = require('./core/preview-edit.cjs');
@@ -412,8 +412,31 @@ require('./core/profile-avatar.cjs').installProfileAvatar({
 // operating system, the manual choices force their palette, and anything
 // unknown falls back to 'system' — 'default' is not a valid theme source.
 function applyProfileTheme(theme) { nativeTheme.themeSource = theme === 'dark' ? 'dark' : theme === 'light' ? 'light' : 'system'; }
+// The profile's font size drives Chromium's page zoom for the app renderer:
+// setZoomFactor scales every surface uniformly (a px-literal codebase needs
+// no rem refactor) and keeps fixed-position popovers and dialogs anchored,
+// where a CSS zoom on the app root would break their positioning. 13 px is
+// the neutral factor 1.0, and the 10-16 range maps to 0.769-1.231. The value
+// is clamped here again — the renderer is never trusted blindly at apply time.
+let profileFontSize = FONT_SIZE.base;
+function applyProfileFontSize(fontSize) {
+  profileFontSize = clampFontSize(fontSize);
+  if (window && !window.isDestroyed()) window.webContents.setZoomFactor(profileFontSize / FONT_SIZE.base);
+}
+// The View menu's zoom entries walk the profile's font size instead of
+// Chromium's unmanaged zoom level: every step persists like a settings change,
+// so the zoom survives restarts and never drifts from the saved profile. A
+// busy or failing save leaves the zoom untouched — the step is UI, not data.
+async function stepFontSize(delta) {
+  const target = delta === 0 ? FONT_SIZE.base : Math.min(FONT_SIZE.max, Math.max(FONT_SIZE.min, profileFontSize + delta));
+  if (target === profileFontSize) return;
+  try {
+    const result = await exclusive(async () => profileStore().save({ appearance: { fontSize: target } }));
+    applyProfileFontSize(result.profile.appearance.fontSize);
+  } catch { /* The saved profile and the zoom stay as they were. */ }
+}
 handle('profile:get', () => profileStore().get());
-handle('profile:save', input => exclusive(async () => { const result = await profileStore().save(input); if (input?.appearance?.theme !== undefined) applyProfileTheme(result.profile.appearance.theme); return result; }));
+handle('profile:save', input => exclusive(async () => { const result = await profileStore().save(input); if (input?.appearance?.theme !== undefined) applyProfileTheme(result.profile.appearance.theme); if (input?.appearance?.fontSize !== undefined) applyProfileFontSize(result.profile.appearance.fontSize); return result; }));
 handle('profile:migrate', input => exclusive(() => profileStore().migrate(input)));
 handle('profile:suggest', () => { try { return require('node:os').userInfo().username || ''; } catch { return ''; } });
 handle('designs:clear', () => exclusive(() => { assets = []; return []; }));
@@ -980,8 +1003,13 @@ app.whenReady().then(async () => {
       { label: 'Sæt ind', role: 'paste' }, { label: 'Vælg alt', role: 'selectAll' }
     ] },
     { label: 'Vis', submenu: [
-      { label: 'Faktisk størrelse', role: 'resetZoom' }, { label: 'Zoom ind', role: 'zoomIn' },
-      { label: 'Zoom ud', role: 'zoomOut' }, { type: 'separator' }, { label: 'Fuld skærm', role: 'togglefullscreen' },
+      // Zoom walks the profile's font size (10-16 px, persisted through the
+      // profile); Electron's unmanaged role zoom is gone, so Cmd +/-/0 can no
+      // longer create a zoom the profile does not know about.
+      { label: 'Faktisk størrelse', accelerator: 'CmdOrCtrl+0', click: () => void stepFontSize(0) },
+      { label: 'Zoom ind', accelerator: 'CmdOrCtrl+Plus', click: () => void stepFontSize(1) },
+      { label: 'Zoom ud', accelerator: 'CmdOrCtrl+-', click: () => void stepFontSize(-1) },
+      { type: 'separator' }, { label: 'Fuld skærm', role: 'togglefullscreen' },
       ...(!app.isPackaged ? [{ type: 'separator' }, { label: 'Udviklerværktøjer', role: 'toggleDevTools' }] : [])
     ] },
     { label: 'Vindue', submenu: [
@@ -1071,8 +1099,11 @@ app.whenReady().then(async () => {
     if (details.resourceType === 'subFrame' && previewAllowed(details.url)) remember(previewLog.documents, { at: Date.now(), status: details.statusCode, url: details.url });
   });
   function createWindow() {
-    window = new BrowserWindow({ width: 1440, height: 940, minWidth: 980, minHeight: 720, backgroundColor: nativeTheme.shouldUseDarkColors ? '#0d1219' : '#F8FAFC', title: DISPLAY_NAME, icon: appIcon, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, webviewTag: false } });
+    window = new BrowserWindow({ width: 1440, height: 940, minWidth: 980, minHeight: 720, backgroundColor: nativeTheme.shouldUseDarkColors ? '#0d1219' : '#F8FAFC', title: DISPLAY_NAME, icon: appIcon, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, webviewTag: false, zoomFactor: profileFontSize / FONT_SIZE.base } });
     window.maximize(); // Almindeligt maksimeret vindue, ikke macOS-fuldskærm.
+    // The profile's font size rides along from the first paint: the zoom factor
+    // is set before the first load, so the app never flashes the base size.
+    window.webContents.setZoomFactor(profileFontSize / FONT_SIZE.base);
     window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     // Fejl, som forhåndsvisningens side selv skriver i konsollen. Kun previewets ramme; appens egne meddelelser tælles ikke.
     window.webContents.on('console-message', event => {
@@ -1124,9 +1155,11 @@ app.whenReady().then(async () => {
     created.on('closed', () => { window = null; assets = []; registry.deselect(); });
     window.loadURL(uiURL);
   }
-  // The profile's theme must be in effect before the window is created, so the
-  // first paint matches the profile instead of flashing the system theme.
-  try { applyProfileTheme((await profileStore().get()).profile.appearance.theme); } catch { /* an unreadable profile keeps the system theme */ }
+  // The profile's theme and font size must be in effect before the window is
+  // created, so the first paint matches the profile instead of flashing the
+  // system theme or the base zoom. The font size is kept in profileFontSize
+  // until createWindow applies it through the webContents zoom factor.
+  try { const appearance = (await profileStore().get()).profile.appearance; applyProfileTheme(appearance.theme); applyProfileFontSize(appearance.fontSize); } catch { /* an unreadable profile keeps the system theme and the base zoom */ }
   if (process.platform === 'darwin') app.dock.setIcon(appIcon);
   createWindow();
   app.on('activate', () => { if (!window) createWindow(); });

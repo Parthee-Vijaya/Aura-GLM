@@ -9,7 +9,7 @@ const { Preferences } = require('../core/preferences.cjs');
 const { Workbench } = require('../core/workbench.cjs');
 
 // Standardprofilen fra designdokumentet; get() på en tom settings.json svarer præcis denne form.
-const standardProfile = () => ({ name: '', icon: '', helpLevel: 'fuld', appearance: { theme: 'system', panelOpen: true }, standardAI: { connectionID: '', modelID: '' }, workMode: 'chat', projectDefaults: { hosting: '', designID: '', tests: 'senere' }, migrated: 0 });
+const standardProfile = () => ({ name: '', icon: '', helpLevel: 'fuld', appearance: { theme: 'system', panelOpen: true, fontSize: 13 }, standardAI: { connectionID: '', modelID: '' }, workMode: 'chat', projectDefaults: { hosting: '', designID: '', tests: 'senere' }, migrated: 0 });
 
 async function fixture(t, setup) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'aura-profil-'));
@@ -32,23 +32,63 @@ test('save() erstatter kun de angivne felter; appearance flettes felt for felt',
   assert.equal(second.profile.icon, 'aura-1');
   assert.equal(second.profile.helpLevel, 'delvis');
   assert.equal(second.profile.workMode, 'plan');
-  assert.deepEqual(second.profile.appearance, { theme: 'dark', panelOpen: false });
+  assert.deepEqual(second.profile.appearance, { theme: 'dark', panelOpen: false, fontSize: 13 });
   // Appearance merges per field: a writer that owns only the theme can never
   // drag the panel's saved state back over a newer write (or vice versa).
   const third = await profile.save({ appearance: { theme: 'light' } });
-  assert.deepEqual(third.profile.appearance, { theme: 'light', panelOpen: false }, 'theme skifter og panelOpen bevares fra profilen');
+  assert.deepEqual(third.profile.appearance, { theme: 'light', panelOpen: false, fontSize: 13 }, 'theme skifter og panelOpen bevares fra profilen');
   const fourth = await profile.save({ appearance: { panelOpen: true } });
-  assert.deepEqual(fourth.profile.appearance, { theme: 'light', panelOpen: true }, 'panelet skifter og temaet bevares fra profilen');
+  assert.deepEqual(fourth.profile.appearance, { theme: 'light', panelOpen: true, fontSize: 13 }, 'panelet skifter og temaet bevares fra profilen');
   assert.deepEqual((await store.read()).profile, fourth.profile);
 });
 
 test('save() afviser ugyldige værdier uden at gemme noget', async t => {
   const store = await fixture(t), profile = new Profile(store);
   await profile.save({ name: 'Parthee' });
-  const invalid = [{ icon: 7 }, { icon: null }, { helpLevel: 'megen' }, { helpLevel: 'minimal' }, { appearance: { theme: 'blå' } }, { appearance: { theme: 'dark', panelOpen: 'ja' } }, { appearance: { theme: null } }, { workMode: 'byg' }, { name: 'x'.repeat(61) }, { name: 'navn\tmed fane' }, { standardAI: { connectionID: 'x'.repeat(101) } }, { standardAI: 'ai' }, { projectDefaults: { hosting: 'andet' } }];
+  const invalid = [{ icon: 7 }, { icon: null }, { helpLevel: 'megen' }, { helpLevel: 'minimal' }, { appearance: { theme: 'blå' } }, { appearance: { theme: 'dark', panelOpen: 'ja' } }, { appearance: { theme: null } }, { appearance: { fontSize: 9 } }, { appearance: { fontSize: 17 } }, { appearance: { fontSize: 13.5 } }, { appearance: { fontSize: '14' } }, { appearance: { fontSize: null } }, { workMode: 'byg' }, { name: 'x'.repeat(61) }, { name: 'navn\tmed fane' }, { standardAI: { connectionID: 'x'.repeat(101) } }, { standardAI: 'ai' }, { projectDefaults: { hosting: 'andet' } }];
   for (const values of invalid) await assert.rejects(() => profile.save(values));
   assert.deepEqual((await profile.get()).profile, { ...standardProfile(), name: 'Parthee' }, 'afviste kald ændrer intet');
   assert.deepEqual(Profile.ICON_IDS, ['aura-1', 'aura-2', 'aura-3']);
+});
+
+// ---------- Skriftstørrelse: 10-16, gemning streng, læsning blid ----------
+test('skriftstørrelsen er hele trin 10-16 med 13 som neutral; flettet felt for felt', async t => {
+  const store = await fixture(t), profile = new Profile(store);
+  // Both ends round-trip; the neutral default is 13.
+  assert.equal((await profile.save({ appearance: { fontSize: 10 } })).profile.appearance.fontSize, 10);
+  assert.equal((await profile.save({ appearance: { fontSize: 16 } })).profile.appearance.fontSize, 16);
+  assert.equal((await profile.save({ appearance: { fontSize: 13 } })).profile.appearance.fontSize, 13);
+  // The range contract is exported for the main process and the settings UI.
+  assert.deepEqual(Profile.FONT_SIZE, { min: 10, max: 16, base: 13 });
+  assert.deepEqual(require('../core/profile.cjs').FONT_SIZE, { min: 10, max: 16, base: 13 });
+  // Saving only the font size preserves the theme and the panel start, and a
+  // theme or panel write drags a stale font size back over a newer save.
+  await profile.save({ appearance: { theme: 'dark', panelOpen: false } });
+  const sized = await profile.save({ appearance: { fontSize: 16 } });
+  assert.deepEqual(sized.profile.appearance, { theme: 'dark', panelOpen: false, fontSize: 16 }, 'skriftstørrelsen er sit eget felt — tema og panel bevares');
+  const themed = await profile.save({ appearance: { theme: 'light' } });
+  assert.deepEqual(themed.profile.appearance, { theme: 'light', panelOpen: false, fontSize: 16 }, 'en temaskrivning bevarer skriftstørrelsen');
+  assert.equal((await store.read()).profile.appearance.fontSize, 16, 'den flettede profil er den gemte');
+});
+
+test('læsningen folder en ulæselig skriftstørrelse til 13 med advarsel — søsterfelterne overlever', async t => {
+  // Out-of-range and invalid values from a hand-edited or newer settings.json
+  // read back as the neutral 13; theme and panelOpen survive the field reset.
+  for (const bad of [20, 9, 13.5, '14', null]) {
+    const store = await fixture(t, state => { state.profile = { appearance: { theme: 'dark', panelOpen: false, fontSize: bad } }; });
+    const answer = await new Profile(store).get();
+    assert.deepEqual(answer.profile.appearance, { theme: 'dark', panelOpen: false, fontSize: 13 }, `${JSON.stringify(bad)} læses som det neutrale 13`);
+    assert.ok(answer.warnings.includes('Dit udseende kunne ikke læses og er nulstillet.'), 'advarslen er den blide læsnings');
+  }
+  // A valid stored size survives untouched, without a warning.
+  const store = await fixture(t, state => { state.profile = { appearance: { theme: 'dark', panelOpen: false, fontSize: 15 } }; });
+  const read = await new Profile(store).get();
+  assert.deepEqual(read.profile.appearance, { theme: 'dark', panelOpen: false, fontSize: 15 });
+  assert.deepEqual(read.warnings, []);
+  // clampFontSize is the main process's apply-time clamp: valid values pass,
+  // everything unreadable folds to the neutral 13.
+  const { clampFontSize } = require('../core/profile.cjs');
+  assert.deepEqual([clampFontSize(10), clampFontSize(13), clampFontSize(16), clampFontSize(9), clampFontSize(17), clampFontSize(13.5), clampFontSize('14'), clampFontSize(undefined)], [10, 13, 16, 13, 13, 13, 13, 13]);
 });
 
 // ---------- Ikon-semantik: initialer, tre Aura-varianter, upload ----------

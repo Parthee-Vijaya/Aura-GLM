@@ -436,6 +436,60 @@ test('temaændring bevarer en gemt lukket starttilstand for panelet', async () =
   assert.deepEqual(themes.at(-1), 'light', 'lys tema gives videre gennem temamodulet');
 });
 
+// Skriftstørrelse-stepperen (4K-skalering): feltet viser profilens størrelse
+// med ærlige grænser, hvert trin gemmer kun sit eget felt gennem den delte
+// kø, og en fejlslagen gemning ruller visningen tilbage.
+test('open(appearance) viser skriftstørrelsen med ærlige grænser', async () => {
+  const dom = makeDom();
+  const harness = makeHarness({ profile: { ...blank(), appearance: { theme: 'system', panelOpen: true, fontSize: 13 } } });
+  const settings = makeSettings(dom, harness);
+  await openSection(settings, 'appearance');
+  const q = selector => dom.content.querySelector(selector);
+  assert.equal(q('#settings-font-size-value').textContent, '13 px', 'profilens størrelse vises med enhed');
+  assert.equal(q('#settings-font-down').disabled, false, 'fra 13 kan der trinsættes ned');
+  assert.equal(q('#settings-font-up').disabled, false, 'fra 13 kan der trinsættes op');
+  assert.ok(q('#settings-font-down').getAttribute('aria-label').length > 3, 'ned-knappen har sit danske navn');
+  assert.ok(q('#settings-font-up').getAttribute('aria-label').length > 3, 'op-knappen har sit danske navn');
+  const topDom = makeDom();
+  const top = makeSettings(topDom, makeHarness({ profile: { ...blank(), appearance: { fontSize: 16 } } }));
+  await openSection(top, 'appearance');
+  assert.equal(topDom.content.querySelector('#settings-font-size-value').textContent, '16 px', 'en gemt 16 vises');
+  assert.equal(topDom.content.querySelector('#settings-font-up').disabled, true, 'op-knappen står disabled ved øvre grænse');
+  assert.equal(topDom.content.querySelector('#settings-font-down').disabled, false, 'ned er stadig mulig');
+  const bottomDom = makeDom();
+  const bottom = makeSettings(bottomDom, makeHarness({ profile: { ...blank(), appearance: { fontSize: 10 } } }));
+  await openSection(bottom, 'appearance');
+  assert.equal(bottomDom.content.querySelector('#settings-font-down').disabled, true, 'ned-knappen står disabled ved nedre grænse');
+});
+
+test('et trin i skriftstørrelsen gemmer kun font-feltet gennem den delte kø', async () => {
+  const dom = makeDom();
+  const harness = makeHarness({ profile: { ...blank(), appearance: { theme: 'dark', panelOpen: false, fontSize: 13 } } });
+  const settings = makeSettings(dom, harness);
+  await openSection(settings, 'appearance');
+  dom.content.querySelector('#settings-font-up').click();
+  assert.equal(dom.content.querySelector('#settings-font-size-value').textContent, '14 px', 'visningen følger klikket straks — før svaret lander');
+  await flush();
+  assert.deepEqual(harness.saves, [{ appearance: { fontSize: 14 } }], 'kun font-feltet sendes — tema og panel flettes main-side (profiltestene) og bevares');
+  assert.equal(dom.content.querySelector('#settings-font-size-value').textContent, '14 px', 'den gemte profil bekræfter visningen');
+  dom.content.querySelector('#settings-font-down').click();
+  await flush();
+  assert.deepEqual(harness.saves[1], { appearance: { fontSize: 13 } }, 'et trin ned går tilbage til det neutrale 13');
+});
+
+test('en fejlslagen skriftstørrelsesgemning ruller visningen tilbage', async () => {
+  const dom = makeDom();
+  const harness = makeHarness({ profile: { ...blank(), appearance: { fontSize: 13 } }, saveError: 'Datamappen er låst.' });
+  const settings = makeSettings(dom, harness);
+  await openSection(settings, 'appearance');
+  dom.content.querySelector('#settings-font-up').click();
+  assert.equal(dom.content.querySelector('#settings-font-size-value').textContent, '14 px', 'klikket vises straks');
+  await flush();
+  assert.equal(dom.content.querySelector('#settings-font-size-value').textContent, '13 px', 'den sidste kendte profil ruller visningen tilbage');
+  assert.match(dom.content.querySelector('#settings-feedback').textContent, /Datamappen er låst/, 'fejlen annonceres på dansk');
+  assert.equal(harness.saves.length, 1, 'gemningen blev forsøgt præcis én gang');
+});
+
 test('valg af standard-AI gemmer hele standardAI-enheden', async () => {
   const dom = makeDom();
   const harness = makeHarness({

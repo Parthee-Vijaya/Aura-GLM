@@ -204,3 +204,24 @@ body.workspace-calm[data-workspace-theme="light"] {
 #connection-add-flow .provider-card small:empty { display: none; }
 #connection-add-flow .dialog-actions { margin-top: 6px; }
 #connection-add-flow #add-connection-home .dialog-actions { margin-top: 18px; }
+
+/* Bredder på store skærme (4K-skalering): under 1600 CSS-px er intet ændret.
+   Første trin ved 1600 gør samtalen bredere (800 → 960) og den fuldbredde
+   samtale med lukket panel bredere (900 → 1080); hero-felterne vokser moderat
+   (520 → 560). Ved 2000 går bredderne én tak højere (1040 / 1200). Skaleringen
+   i Indstillinger › Udseende ændrer, hvornår trinnene rammer: app-zoom gør
+   CSS-visningsfladen mindre i fysiske pixelpunkter, så en zoomet 4K-skærm
+   rammer 1600 senere end en uskaleret — det er korrekt, bredderne følger det
+   synlige layout, ikke panelets rå pixelantal. */
+@media (min-width: 1600px) {
+  .workspace-calm .chat-content { max-width: 960px; }
+  .workspace-calm .composer { max-width: 960px; }
+  .workspace-calm .work-grid[data-surface="off"] #chat-panel { max-width: 1080px; }
+  .workspace-calm #project-intro { max-width: 560px; }
+  .workspace-calm #chat-choice { max-width: 560px; }
+}
+@media (min-width: 2000px) {
+  .workspace-calm .chat-content { max-width: 1040px; }
+  .workspace-calm .composer { max-width: 1040px; }
+  .workspace-calm .work-grid[data-surface="off"] #chat-panel { max-width: 1200px; }
+}

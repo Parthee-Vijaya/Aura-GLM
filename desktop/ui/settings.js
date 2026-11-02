@@ -7,9 +7,11 @@
 // The profile and appearance sections render real controls from the profile:
 // fill(profile) shows the current values, each control saves its own field
 // group through the shared profile save queue (ui/profile-save.js), and the
-// units travel whole from this dialog (appearance { theme, panelOpen },
-// standardAI, projectDefaults). The profile is pure UI state: names and icons
-// never reach prompts, the model log, diagnostics or feedback reports.
+// units travel whole from this dialog (appearance merges field by field in
+// the main process: { theme, panelOpen } writes and the font-size stepper's
+// { fontSize } write can never overwrite each other). The profile is pure UI
+// state: names and icons never reach prompts, the model log, diagnostics or
+// feedback reports.
 (function (root) {
   'use strict';
   // Section order is the popover and nav order. Profile and appearance are
@@ -22,7 +24,7 @@
     },
     {
       id: 'appearance', label: 'Udseende',
-      description: 'Om appen følger systemets tema eller er lys eller mørk, og om sidepanelet er åbent, når appen starter.'
+      description: 'Om appen følger systemets tema eller er lys eller mørk, om sidepanelet er åbnet ved start, og hvor stor appens tekst skal være.'
     },
     {
       id: 'connections', label: 'AI-forbindelser',
@@ -53,6 +55,12 @@
   const HELP_LEVELS = Object.freeze([['fuld', 'Fuld hjælp · forklaringer og forslag undervejs'], ['delvis', 'Hjælp ved behov · "?"-knappen viser tips ved skrivefeltet'], ['ingen', 'Ingen hjælp · hverken tips eller "?"-knap']]);
   const HOSTINGS = Object.freeze([['', 'Beslut senere'], ['vercel', 'Vercel'], ['azure', 'Azure'], ['own', 'Organisationens løsning / egen server']]);
   const TEST_STYLES = Object.freeze([['senere', 'Beslut senere'], ['manuel', 'Manuel gennemgang af brugerrejsen'], ['automatiske', 'Automatiske tests og manuel gennemgang']]);
+  // The font-size range mirrors core/profile.cjs's FONT_SIZE contract (one
+  // test pins the two together): whole steps 10-16 with 13 as the neutral
+  // size. The main process applies each saved size as the window's zoom
+  // factor (13 => 100%), so the whole app scales — this stepper only writes
+  // its own field; it never touches the zoom itself.
+  const FONT = Object.freeze({ min: 10, max: 16, base: 13 });
   // The empty project defaults, identical to core/preferences.cjs's blank values.
   const BLANK_STANDARDS = Object.freeze({ hosting: '', designID: '', tests: 'senere' });
   const inert = { open: async () => false, register: () => {}, fill: () => {}, saveSection: async () => null };
@@ -128,6 +136,16 @@
       document.body.classList.toggle('help-delvis', helpLevel === 'delvis');
       document.body.classList.toggle('help-ingen', helpLevel === 'ingen');
     }
+    // The font-size stepper's paint: the current value and honest bounds —
+    // the buttons stop at 10 and 16, because the profile accepts nothing else.
+    function fontClamp(value) { return Number.isInteger(value) && value >= FONT.min && value <= FONT.max ? value : FONT.base; }
+    function paintFontSize(value) {
+      const sizeValue = byId('settings-font-size-value');
+      if (sizeValue) sizeValue.textContent = `${value} px`;
+      const down = byId('settings-font-down'), up = byId('settings-font-up');
+      if (down) down.disabled = value <= FONT.min;
+      if (up) up.disabled = value >= FONT.max;
+    }
 
     // Renders the current profile into the open section's controls. Controls
     // that belong to another section are simply absent, so every lookup is
@@ -184,6 +202,7 @@
       if (panel) panel.checked = profile.appearance?.panelOpen !== false;
       const theme = byId('settings-theme');
       if (theme) for (const input of theme.querySelectorAll('input')) input.checked = input.value === (profile.appearance?.theme || 'system');
+      if (byId('settings-font-size-value')) paintFontSize(fontClamp(profile.appearance?.fontSize));
     }
 
     // Saves are serialized through the one shared renderer queue
@@ -458,6 +477,38 @@
       panel.append(checkbox, panelText);
       content.append(panel);
       content.append(note('Bestemmer, om arbejdsfladen vises ved siden af samtalen, når appen starter.'));
+
+      // Skriftstørrelse: a compact − / value / + stepper over the whole 10-16
+      // range. Each step saves only its own field; the main process applies
+      // the saved size as the window's zoom factor, so the whole app scales
+      // while the user steps. The display follows the click at once — a failed
+      // save refills the last known profile, so the stepper never lies.
+      const size = document.createElement('div');
+      size.className = 'settings-fontsize';
+      const sizeDown = document.createElement('button');
+      sizeDown.id = 'settings-font-down';
+      sizeDown.type = 'button';
+      sizeDown.textContent = '−';
+      sizeDown.setAttribute('aria-label', 'Mindre tekst');
+      const sizeValue = document.createElement('output');
+      sizeValue.id = 'settings-font-size-value';
+      const sizeUp = document.createElement('button');
+      sizeUp.id = 'settings-font-up';
+      sizeUp.type = 'button';
+      sizeUp.textContent = '+';
+      sizeUp.setAttribute('aria-label', 'Større tekst');
+      const sizeStep = delta => {
+        const current = fontClamp(profile?.appearance?.fontSize);
+        const next = Math.min(FONT.max, Math.max(FONT.min, current + delta));
+        if (next === current) return;
+        paintFontSize(next);
+        void saveSection({ appearance: { fontSize: next } });
+      };
+      sizeDown.addEventListener('click', () => sizeStep(-1));
+      sizeUp.addEventListener('click', () => sizeStep(1));
+      size.append(sizeDown, sizeValue, sizeUp);
+      content.append(field('Skriftstørrelse', size, 'settings-font-size-value'));
+      content.append(note('Skalerer hele appen — tekst, knapper og forhåndsvisning. 13 px er normal størrelse.'));
       feedbackArea();
     }
 

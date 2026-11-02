@@ -138,6 +138,18 @@ function tinyPNG() {
     await page.waitForFunction(() => document.querySelector('#settings-icons button[data-icon=""]')?.getAttribute('aria-checked') === 'true');
     await page.click('[data-settings-section="appearance"]');
     await page.waitForFunction(theme => document.querySelector(`#settings-theme input[value="${theme}"]`)?.checked === true, PROFILE.theme);
+    // Skriftstørrelse (4K-skalering): trin til 16, og zoomen følger med som
+    // app-zoom (16/13); tilbage på 13 gendanner 100%. Zoomfaktoren læses i
+    // hovedprocessen — den er ikke renderens eget, og den er persisteret
+    // gennem profilen, ikke et uadministreret zoomniveau.
+    const zoomFactor = () => app.evaluate(({BrowserWindow}) => BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).webContents.getZoomFactor());
+    for (let step = 0; step < 3; step++) await page.click('#settings-font-up');
+    await page.waitForFunction(() => window.harness.profileGet().then(result => result.value.profile.appearance.fontSize === 16));
+    assert.ok(Math.abs(await zoomFactor() - 16 / 13) < 0.01, 'font size 16 anvendes som app-zoom (1.231)');
+    assert.equal(await page.locator('#settings-font-up').isDisabled(), true, 'op-knappen står disabled ved 16');
+    for (let step = 0; step < 3; step++) await page.click('#settings-font-down');
+    await page.waitForFunction(() => window.harness.profileGet().then(result => result.value.profile.appearance.fontSize === 13));
+    assert.ok(Math.abs(await zoomFactor() - 1) < 0.01, 'tilbage på 13 er zoomen 100%');
     await page.click('[data-close="settings-dialog"]');
     await page.waitForFunction(() => document.querySelector('#design-select').options.length === 2);
     await require('./ui-test-helpers.cjs').projectOptions(page); await page.click('#design-options > summary'); await page.selectOption('#design-select', { label: 'Genbrugeligt design · 2 filer' });
@@ -223,6 +235,6 @@ function tinyPNG() {
     await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).setSize(980,720));
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth <= window.innerWidth),true);
     assert.deepEqual(errors,[]);
-    console.log(JSON.stringify({passed:['designpakke genbrugt efter genstart og slettede originaler','projektoprettelse','annulleret dialog','logo og reference','ægte preview','automatisk opdatering fra disk','skærmstørrelser, rotation, egne mål, skalering og trækbar skillelinje','ingen Node eller IPC i preview','genåbning efter genstart','eksisterende projekt bevaret','profil udfyldes i onboarding og ændres i Indstillinger','profil genindlæses efter genstart'],testRoot,projectDir,screenshots:[path.join(testRoot, 'opstart.png'),path.join(testRoot, 'arbejdsflade.png')]}));
+    console.log(JSON.stringify({passed:['designpakke genbrugt efter genstart og slettede originaler','projektoprettelse','annulleret dialog','logo og reference','ægte preview','automatisk opdatering fra disk','skærmstørrelser, rotation, egne mål, skalering og trækbar skillelinje','ingen Node eller IPC i preview','genåbning efter genstart','eksisterende projekt bevaret','profil udfyldes i onboarding og ændres i Indstillinger','profil genindlæses efter genstart','skriftstørrelse trin, app-zoom og nulstilling'],testRoot,projectDir,screenshots:[path.join(testRoot, 'opstart.png'),path.join(testRoot, 'arbejdsflade.png')]}));
   } finally {if(app) await app.close().catch(()=>{});}
 })().catch(error=>{console.error(error);process.exitCode=1;});
