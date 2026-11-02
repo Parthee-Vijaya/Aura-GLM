@@ -35,9 +35,15 @@ const http = require('node:http');
     assert.equal(await page.isDisabled('#setup-continue'), true);
     assert.equal(requests, 0);
     await page.screenshot({ path: path.join(root, 'opstart.png'), fullPage: true });
-    await page.click('#setup-local'); await page.waitForSelector('#create-form');
+    // Repeat-opsætningen genåbner AI-forbindelser efter "Vælg senere"; dialogen
+    // lukkes, så prøven står ved projektopstarten (godkendt forløb).
+    await page.click('#setup-local');
+    await page.waitForSelector('#connections-dialog[open]'); await page.click('[data-close="connections-dialog"]');
+    await page.waitForSelector('#create-form');
     await page.fill('#name', 'Min kladde'); await page.fill('#purpose', 'Bevar denne idé.');
     await require('./ui-test-helpers.cjs').openSetup(page); await page.click('#setup-local');
+    await page.waitForSelector('#connections-dialog[open]'); await page.click('[data-close="connections-dialog"]');
+    await page.waitForFunction(() => !document.querySelector('#connections-dialog').open);
     assert.equal(await page.inputValue('#name'), 'Min kladde');
     await require('./ui-test-helpers.cjs').openSetup(page); await page.click('#setup-add-provider');
     assert.equal(await page.isVisible('#setup-choice'),false);
@@ -98,7 +104,9 @@ const http = require('node:http');
     assert.equal(await page.inputValue('#setup-connection'), connection.id);
     assert.equal(await page.isDisabled('#setup-continue'), true);
     assert.equal(requests, count);
-    await page.click('#setup-local'); await page.waitForSelector('#create-form');
+    await page.click('#setup-local');
+    await page.waitForSelector('#connections-dialog[open]'); await page.click('[data-close="connections-dialog"]');
+    await page.waitForSelector('#create-form');
     await app.evaluate(({ dialog }, project) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [project] }); }, project);
     await page.click('#open'); await page.waitForSelector('#workspace:not([hidden])');
     assert.equal(await page.inputValue('#connection-select'), ''); assert.equal(requests, count);

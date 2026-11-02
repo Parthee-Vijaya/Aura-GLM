@@ -53,6 +53,8 @@ const helpers = require('./ui-test-helpers.cjs');
     await helpers.taskOptions(page); await page.selectOption('#connection-select', connection.id);
     await page.waitForFunction(() => document.querySelector('#model-select').options.length === 2); await page.locator('#model-shortlist button').first().click();
   }
+  // Arbejdsmåden vælges i popoberen ved skrivefeltet — også uden nogen AI endnu.
+  async function chooseMode(mode) { await page.click('#composer-mode'); await page.click(`#composer-mode-menu [data-work-mode="${mode}"]`); }
   async function sendTask(text, expectVersion) {
     if (text) await page.fill('#prompt', text);
     const before = prompts.length;
@@ -70,8 +72,11 @@ const helpers = require('./ui-test-helpers.cjs');
     await launch();
     // 1. Første start: AI vælges senere, derefter ét spørgsmål om funktioner.
     await page.click('#path-app'); await page.click('#welcome-build'); await page.waitForSelector('#setup:not([hidden])');
+    // Første guidede start viser profil-trinnet (godkendt gating); Fortsæt gemmer
+    // og fører til valget, så prøven tester sit eget trin.
+    await helpers.continuePastProfileStep(page);
     await page.click('#setup-local');
-    await page.locator('#setup-title').filter({ hasText: 'Hvad skal Aura hjælpe med?' }).waitFor();
+    await page.locator('#setup-title').filter({ hasText: 'Hvad skal Aura Prime hjælpe med?' }).waitFor();
     assert.equal((await features()).chosen, '');
     await page.click('#features-pick');
     await page.locator('#setup-title').filter({ hasText: 'Hvad vil du slå til?' }).waitFor();
@@ -113,15 +118,16 @@ const helpers = require('./ui-test-helpers.cjs');
     await page.click('#project-menu-toggle');
     assert.equal(await page.isVisible('#git-button'), true); assert.equal(await page.isVisible('#publish-button'), false);
     await page.keyboard.press('Escape');
-    // Standardtilstanden er Samtale; prøven arbejder direkte, som uden planlægning.
-    assert.equal(await page.inputValue('#work-mode'), 'chat');
-    await page.click('#composer-mode'); await page.selectOption('#work-mode', 'free'); await page.click('[data-close="task-dialog"]');
+    // Første projektopgave bygger frit (DESIGN.md); prøven arbejder direkte, som uden planlægning.
+    assert.equal(await page.inputValue('#work-mode'), 'free');
+    // Arbejdsmåden vælges i popoberen ved skrivefeltet — også uden nogen AI endnu.
+    await chooseMode('free');
     assert.match(await page.inputValue('#prompt'), /tre fiktive mødelokaler/);
     // 3. Første opgave: designgrundpakken og Git-skillen kan hentes, og appens regler følger funktionerne.
     await helpers.addConnection(page, { name: 'Kontrolleret model', baseURL: `http://127.0.0.1:${server.address().port}/v1` });
     await chooseModel();
     await page.click('#send'); await page.waitForSelector('#data-dialog[open]');
-    assert.match(await page.textContent('#data-details'), /Skills, AI’en kan hente\s*Git og samarbejde/);
+    assert.match(await page.textContent('#data-details'), /Skills, AI’en kan hente[\s\S]*Git og samarbejde/);
     await page.click('#accept-send');
     await page.locator('#approvals button').filter({ hasText: 'Tillad for denne opgave' }).click({ timeout: 90000 });
     await heading('Udkast 1'); await page.locator('#run-review button').filter({ hasText: 'Fortryd opgaven' }).waitFor({ timeout: 90000 });
@@ -165,7 +171,7 @@ const helpers = require('./ui-test-helpers.cjs');
     await page.locator('#features-always > summary, .features-always > summary').first().click();
     await shot('funktioner-panel');
     await page.click('[data-close="features-dialog"]');
-    await page.click('#composer-mode'); await page.selectOption('#work-mode', 'free'); await page.click('[data-close="task-dialog"]');
+    await chooseMode('free');
     // 5. Næste opgave starter en ny modelsession med de nye skills og regler.
     const second = await sendTask('Gør overskriften tydeligere.', true);
     assert.deepEqual(second.skills, ['harness-afproevning-og-fejlretning', 'harness-aura-design', 'harness-design-og-tilgaengelighed', 'harness-git-og-samarbejde', 'harness-integration-adresser', 'harness-kodestil', 'harness-overdragelse-og-drift', 'harness-udgivelse-og-gendannelse']);
@@ -184,7 +190,7 @@ const helpers = require('./ui-test-helpers.cjs');
     await assert.rejects(fs.access(path.join(project, '.git')), 'intet Git-repository uden versioner');
     await page.click('#project-menu-toggle'); assert.equal(await page.isVisible('#git-button'), false); await page.keyboard.press('Escape');
     await chooseModel();
-    await page.click('#composer-mode'); await page.selectOption('#work-mode', 'free'); await page.click('[data-close="task-dialog"]');
+    await chooseMode('free');
     const third = await sendTask('', false);
     assert.equal(await page.locator('#run-review button').filter({ hasText: 'Gem version' }).count(), 0);
     assert.ok(third.system.includes('slået versioner fra')); assert.ok(!third.skills.includes('harness-git-og-samarbejde'));

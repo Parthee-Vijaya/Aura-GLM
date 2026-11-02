@@ -33,7 +33,11 @@ const { run } = require('../core/git.cjs');
  let app;
  try {
   app=await electron.launch({executablePath:process.env.HARNESS_TEST_PACKAGE || require('electron'),args:[...(process.env.HARNESS_TEST_PACKAGE ? [] : [path.join(__dirname,'..')]),'--user-data-dir='+path.join(root,'appdata')],env:{...process.env,PATH:bin+path.delimiter+process.env.PATH,HARNESS_OPENCODE_PATH:opencode,ELECTRON_RUN_AS_NODE:undefined}});
-  const page=await app.firstWindow(); await require('./ui-test-helpers.cjs').skipIntroduction(page); await page.waitForSelector('#onboarding'); await page.waitForFunction(() => !document.querySelector('#new').disabled); await require('./ui-test-helpers.cjs').openSetup(page); await page.click('#setup-local'); await page.waitForSelector('#create-form');
+  const page=await app.firstWindow(); await require('./ui-test-helpers.cjs').skipIntroduction(page); await page.waitForSelector('#onboarding'); await page.waitForFunction(() => !document.querySelector('#new').disabled); await require('./ui-test-helpers.cjs').openSetup(page); await page.click('#setup-local');
+  // Repeat-opsætningen genåbner AI-forbindelser; dialogen lukkes, så prøven kan
+  // fortsætte ved projektopstarten.
+  await page.waitForSelector('#connections-dialog[open]'); await page.click('[data-close="connections-dialog"]');
+  await page.waitForSelector('#create-form');
   await app.evaluate(({dialog},project)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[project]});},project);
   await page.click('#open'); await page.waitForSelector('#workspace:not([hidden])');
   await require('./ui-test-helpers.cjs').menuClick(page, '#git-button'); await page.click('#git-init');

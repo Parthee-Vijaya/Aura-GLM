@@ -32,6 +32,9 @@ const { run } = require('../core/git.cjs');
   assert.equal(await page.locator('#welcome-dialog').evaluate(e=>e.open),false);assert.equal(await page.inputValue('#name'),'Mit bibliotek');
   assert.equal(await page.inputValue('#purpose'),'Vi vil bygge en oversigt til biblioteket');
   await page.click('#intro-button');await page.click('#path-app');await page.click('#welcome-build');await page.waitForSelector('#setup:not([hidden])');
+  // Første guidede start viser profil-trinnet (godkendt gating); Fortsæt gemmer
+  // felterne og fører til valget, som prøven her gennemgår.
+  await require('./ui-test-helpers.cjs').continuePastProfileStep(page);
   assert.equal(await page.isDisabled('#setup-continue'),true);
   assert.equal(await page.locator('#setup-choice button:visible').count(),2);
   assert.equal(await page.isVisible('.local-discovery'),false);
@@ -72,7 +75,7 @@ const { run } = require('../core/git.cjs');
   await page.click('#setup-back');await page.click('#setup-find-local');await page.click('#local-discovery-use');
   await page.waitForFunction(()=>!document.querySelector('#local-discovery-use').disabled);
   assert.equal((await page.evaluate(()=>window.harness.connectionState())).value.connections.length,1);
-  await page.click('#setup-back');await page.click('#setup-back');assert.equal(await page.locator('#welcome-dialog').evaluate(el=>el.open),true);await page.click('#welcome-build');await page.click('#setup-local');
+  await page.click('#setup-back');await page.click('#setup-back');await page.click('#setup-back');assert.equal(await page.locator('#welcome-dialog').evaluate(el=>el.open),true);await page.click('#welcome-build');await page.click('#setup-local');
   // Første start: ét spørgsmål om funktioner med to valg. Hele pakken står først og er markeret som anbefalet.
   await page.locator('#setup-title').filter({hasText:'Hvad skal Aura Prime hjælpe med?'}).waitFor();
   assert.equal(await page.locator('#setup-feature-choice button:visible').count(),2);

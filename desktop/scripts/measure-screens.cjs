@@ -85,14 +85,17 @@ const server = http.createServer(async (req, res) => {
     await win.click('#path-app'); await measure('velkomst-start', '#welcome-dialog', 'Velkomst: start');
     await win.click('#welcome-example'); await win.frameLocator('#demo-preview').locator('h1').waitFor(); await measure('demonstration', '#welcome-dialog', 'Demonstration'); await win.click('#demo-back');
     begin('Forbind Claude med en nøgle');
-    await click('#welcome-build'); await win.waitForSelector('#setup:not([hidden])'); await measure('ai-valg', '#setup', 'Opsætning: hvordan forbinder du AI');
+    await click('#welcome-build'); await win.waitForSelector('#setup:not([hidden])'); await measure('profil', '#setup', 'Opsætning: din profil');
+    // Første guidede start viser profil-trinnet; Fortsæt gemmer og fører til
+    // valget af adgang, som de følgende målinger gælder.
+    await helpers.continuePastProfileStep(win); await measure('ai-valg', '#setup', 'Opsætning: hvordan forbinder du AI');
     await click('#setup-add-provider'); await measure('udbydere', '#setup', 'Opsætning: udbyder');
     await click('#provider-cards [data-kind="anthropic"]'); await measure('noegle', '#setup', 'Opsætning: nøgle til Claude');
     task = null; await win.locator('.key-guide > summary').click(); await measure('noeglehjaelp', '#setup', 'Opsætning: sådan får du en nøgle'); await win.locator('.key-guide > summary').click(); task = 'Forbind Claude med en nøgle';
     await require('./ui-test-helpers.cjs').enterCredential(win, 'syntetisk-noegle-kun-til-maaling'); await click('#save-connection');
     await win.locator('#setup-ai').filter({ hasText: /virker|svarer/ }).waitFor(); await measure('forbindelse', '#setup', 'Opsætning: forbindelsen virker');
     await click('#setup-continue'); task = null;
-    await win.locator('#setup-title').filter({ hasText: 'Hvad skal Aura hjælpe med?' }).waitFor(); await measure('funktioner-start', '#setup', 'Første start: funktioner');
+    await win.locator('#setup-title').filter({ hasText: 'Hvad skal Aura Prime hjælpe med?' }).waitFor(); await measure('funktioner-start', '#setup', 'Første start: funktioner');
     await win.click('#features-pick'); await measure('funktioner-vaelg', '#setup', 'Første start: vælg selv');
     await win.click('#setup-back'); await win.click('#features-all'); await win.waitForSelector('#create-form');
     // Projektopstart.

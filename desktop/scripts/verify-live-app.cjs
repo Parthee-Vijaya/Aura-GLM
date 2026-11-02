@@ -165,7 +165,10 @@ async function main() {
       await helpers.skipIntroduction(page);
       await helpers.addConnection(page, { name: 'Kontrolleret lokal prøve', baseURL: `http://127.0.0.1:${server.address().port}/v1`, apiKey: 'syntetisk-noegle' });
     } else {
-      await page.click('#path-app'); await page.click('#welcome-build'); await page.click('#setup-add-provider');
+      await page.click('#path-app'); await page.click('#welcome-build'); await page.waitForSelector('#setup:not([hidden])');
+      // Første guidede start viser profil-trinnet; Fortsæt fører til valget af adgang.
+      await helpers.continuePastProfileStep(page);
+      await page.click('#setup-add-provider');
       await page.click(`#provider-cards [data-kind="${provider}"]`); await page.locator('.key-guide > summary').click();
       // Intet skærmbillede eller DOM-udtræk af feltet, mens nøglen tastes.
       note(`KLAR TIL NØGLE: Indtast ${provider}-nøglen direkte i dette Aura-vindue, og klik Gem og kontrollér. Ingen nøgle i chat eller terminal.`);

@@ -15,6 +15,9 @@ const {launchTestApp}=require('./electron-test-launch.cjs');
  await helpers.isolateDocuments(app,documents);
  page=await app.firstWindow();page.on('pageerror',e=>errors.push(e.message));
  await helpers.skipIntroduction(page);await helpers.toOnboarding(page);await helpers.openSetup(page);await page.click('#setup-local');
+ // Repeat-opsætningen genåbner AI-forbindelser; dialogen lukkes, så prøven står
+ // ved projektopstarten.
+ await page.waitForSelector('#connections-dialog[open]');await page.click('[data-close="connections-dialog"]');
  await page.fill('#name','Privacy Gate UI proof');await page.fill('#purpose','Et syntetisk eksempel uden rigtige borgerdata.');
  await helpers.chooseLocation(app,page,documents);await page.click('#create');await page.waitForSelector('#workspace:not([hidden])');
  assert.equal(await page.locator('#privacy-gate-button').count(),1);

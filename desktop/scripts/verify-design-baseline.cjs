@@ -25,7 +25,10 @@ const helpers = require('./ui-test-helpers.cjs');
   try {
     await launch();
     await page.click('#path-app'); await page.click('#welcome-build');
-    await page.waitForSelector('#setup:not([hidden])'); await page.click('#setup-local');
+    await page.waitForSelector('#setup:not([hidden])');
+    // Første guidede start viser profil-trinnet; Fortsæt fører til valget af adgang.
+    await helpers.continuePastProfileStep(page);
+    await page.click('#setup-local');
     await page.click('#features-pick');
     check('Setup offers five optional functions and no design opt-out',
       await page.locator('#setup-features-list input[data-feature]').count() === 5 &&

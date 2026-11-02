@@ -27,7 +27,13 @@ async function menuClick(page, selector) {
   if (selector === '#attach-preview' && !await page.locator('#server-manual').evaluate(el => el.open)) await page.click('#server-manual > summary');
 }
 async function taskOptions(page) {
-  if (!await page.locator('#task-dialog').evaluate(el => el.open)) await page.click('#model-chip');
+  // #model-chip åbner popoberen med modelvælgeren; "Flere indstillinger" fører
+  // derfra til den fulde AI-dialog (#task-dialog) med alle valg.
+  if (!await page.locator('#task-dialog').evaluate(el => el.open)) {
+    if (!await page.locator('#model-picker').evaluate(el => el.matches(':popover-open'))) await page.click('#model-chip');
+    await page.click('#model-picker-more');
+    await page.waitForSelector('#task-dialog[open]');
+  }
   if (!await page.locator('#model-options').evaluate(el => el.open)) await page.click('#model-summary');
 }
 async function closeTaskOptions(page) {
@@ -95,15 +101,32 @@ async function enableSharing(page) {
   if (!result.ok) throw new Error(result.error);
   await page.reload(); await page.waitForFunction(() => !document.querySelector('#create').disabled && !document.querySelector('#new').disabled);
 }
-// Den guidede opsætning åbnes fra Indstillinger › AI-forbindelser › Tilføj forbindelse.
+// Den guidede opsætning åbnes fra Indstillinger › AI-forbindelser › Gennemgå
+// opsætningen. Med en tom profil starter opsætningen på profil-trinnet (godkendt
+// profil-gating): Fortsæt gemmer felterne og fører videre til valget af adgang,
+// så kaldet altid ender ved trinnet "choice".
 async function openSetup(page) {
+  // En allerede åben forbindelsesdialog lukkes først: showModal på en åben
+  // dialog er en fejl, og gentagne kald skal altid kunne genåbne opsætningen.
+  if (await page.locator('#connections-dialog').evaluate(el => el.open)) { await page.click('[data-close="connections-dialog"]'); await page.waitForFunction(() => !document.querySelector('#connections-dialog').open); }
   await menuClick(page, '#connections-button');
   // Dialogen glider ind; klikket venter, til den står stille.
   await page.waitForFunction(() => { const dialog = document.querySelector('#connections-dialog'); return dialog.open && !dialog.getAnimations().some(animation => animation.playState === 'running'); });
-  await page.click('#connection-add'); await page.waitForSelector('#setup:not([hidden])');
+  await page.click('#connections-setup'); await page.waitForSelector('#setup:not([hidden])');
+  await continuePastProfileStep(page);
 }
-// En forbindelse tilføjes ad samme vej som en bruger: Tilføj forbindelse › Jeg har en adgangsnøgle › udbyderens kort.
-// Svarer serveren med modeller, fortsætter prøven med forbindelsen; ellers vælger den senere.
+// Profil-trinnet vises ved første guidede introduktion og ved tom profil
+// (godkendt profil-gating). Fortsæt gemmer felterne og fører til valget af
+// adgang, så prøver, der ikke tester selve trinnet, kommer sikkert forbi det.
+async function continuePastProfileStep(page) {
+  if (await page.locator('#setup-profile').isVisible()) {
+    await page.click('#profile-continue');
+    await page.waitForSelector('#setup-choice:not([hidden])');
+  }
+}
+// En forbindelse tilføjes ad samme vej som en bruger: Gennemgå opsætningen ›
+// Jeg har en adgangsnøgle › udbyderens kort. Svarer serveren med modeller,
+// fortsætter prøven med forbindelsen; ellers vælger den senere.
 async function enterCredential(page, value) {
   const opened = page.context().waitForEvent('page', { timeout:20000 });
   await page.click('#credential-open');
@@ -120,7 +143,14 @@ async function addConnection(page, { kind = 'compatible', name, baseURL, apiKey 
   if (apiKey) await enterCredential(page, apiKey);
   await page.click('#save-connection');
   await page.waitForFunction(() => document.querySelector('#setup').dataset.step === 'saved' && !/Henter/.test(document.querySelector('#setup-ai').textContent));
-  if (await page.isVisible('#setup-continue') && await page.isEnabled('#setup-continue')) await page.click('#setup-continue'); else await page.click('#setup-local');
+  if (await page.isVisible('#setup-continue') && await page.isEnabled('#setup-continue')) await page.click('#setup-continue');
+  else {
+    // Uden modeller fuldfører "Vælg senere" repeat-opsætningen, som genåbner
+    // AI-forbindelser: dialogen lukkes, så prøven står ved projektopstarten.
+    await page.click('#setup-local');
+    await page.waitForSelector('#connections-dialog[open]');
+    await page.click('[data-close="connections-dialog"]');
+  }
   await page.waitForSelector('#setup', { state: 'hidden' });
   return (await page.evaluate(() => window.harness.connectionState())).value.connections.at(-1);
 }
@@ -133,4 +163,4 @@ async function firstVersion(page, projectDir, title) {
   await fs.writeFile(index, (await fs.readFile(index, 'utf8')).replace('HER BEGYNDER DIN IDÉ', 'FØRSTE VERSION'));
   await page.frameLocator('#preview').locator('h1').filter({ hasText: title }).waitFor({ timeout: 15000 });
 }
-module.exports = { enterCredential, firstVersion, openSetup, addConnection, enableSharing, skipIntroduction, toOnboarding, menuClick, taskOptions, closeTaskOptions, selectMode, previewOptions, projectOptions, isolateDocuments, chooseLocation, openExistingProject, forbidGitWrites, assertNoGitWrites };
+module.exports = { enterCredential, firstVersion, openSetup, addConnection, enableSharing, skipIntroduction, toOnboarding, menuClick, taskOptions, closeTaskOptions, selectMode, previewOptions, projectOptions, isolateDocuments, chooseLocation, openExistingProject, forbidGitWrites, assertNoGitWrites, continuePastProfileStep };

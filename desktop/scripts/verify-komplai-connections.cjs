@@ -123,7 +123,12 @@ async function installFixture(app, mode, project) {
         await page.click('#setup-use-saved'); await page.selectOption('#setup-connection', 'anden-ai'); await page.click('#setup-test');
         await page.locator('#setup-ai').filter({ hasText: 'Forbindelsen svarer.' }).waitFor();
         await page.click('#setup-continue');
-      } else await page.click('#setup-local');
+      } else {
+        await page.click('#setup-local');
+        // Repeat-opsætningen genåbner AI-forbindelser; dialogen lukkes, så prøven
+        // kan fortsætte ved projektopstarten.
+        await page.waitForSelector('#connections-dialog[open]');await page.click('[data-close="connections-dialog"]');
+      }
       const beforeOpenCalls = await app.evaluate(() => globalThis.komplaiFixtureCalls.length);
       await page.click('#open'); await page.waitForSelector('#workspace:not([hidden])');
       if (mode === 'begge') {

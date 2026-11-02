@@ -24,6 +24,9 @@ const readline = require('node:readline');
   }
   app=await electron.launch({executablePath:require('electron'),args:[path.join(__dirname,'..'),'--user-data-dir='+path.join(root,'appdata')],env:{...process.env,ELECTRON_RUN_AS_NODE:undefined}});
   const page=await app.firstWindow(); await require('./ui-test-helpers.cjs').skipIntroduction(page);await page.waitForSelector('#onboarding'); await page.waitForFunction(() => !document.querySelector('#new').disabled); await require('./ui-test-helpers.cjs').openSetup(page);await page.click('#setup-local');
+  // Repeat-opsætningen genåbner AI-forbindelser; dialogen lukkes, så prøven kan
+  // fortsætte ved projektopstarten.
+  await page.waitForSelector('#connections-dialog[open]');await page.click('[data-close="connections-dialog"]');
   await app.evaluate(({dialog},project)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[project]});},project);await page.click('#open');await page.waitForSelector('#workspace:not([hidden])');
   const result=await page.evaluate(value=>window.harness.saveConnection(value),{kind:provider,name:'Afgrænset modelprøve',baseURL:provider==='openrouter'?'':process.env.HARNESS_LIVE_URL||'http://127.0.0.1:11434',apiKey:key});if(!result.ok)throw new Error(result.error);
   const connection=result.value.connections[0];if(key)assert.equal(JSON.stringify(result).includes(key),false);

@@ -30,7 +30,11 @@ const output = path.join(process.env.AURA_REVIEW_OUTPUT || path.join(os.tmpdir()
         const measured=await page.evaluate(()=>({width:innerWidth,height:innerHeight,scroll:document.documentElement.scrollHeight,actions:[...document.querySelectorAll('#setup-local,#setup-advanced')].map(e=>e.getBoundingClientRect().bottom)}));sizes.push(measured);
         if(label.endsWith('after')) {check('Startup fits '+w,measured.scroll<=h);check('Actions visible '+w,measured.actions.every(y=>y<=h));}
       }
-      await page.click('#setup-local');await page.fill('#name','Borgermøder');await page.fill('#purpose','En lokal oversigt over kommende borgermøder.');await size(1280,800);await shot('project-form');
+      await page.click('#setup-local');
+      // Repeat-opsætningen genåbner AI-forbindelser; dialogen lukkes, så felterne
+      // på projektopstarten kan udfyldes.
+      await page.waitForSelector('#connections-dialog[open]');await page.click('[data-close="connections-dialog"]');
+      await page.fill('#name','Borgermøder');await page.fill('#purpose','En lokal oversigt over kommende borgermøder.');await size(1280,800);await shot('project-form');
       if(label.endsWith('after'))check('Name before idea',await page.locator('#name').evaluate(n=>n.getBoundingClientRect().top<document.querySelector('#purpose').getBoundingClientRect().top));
       await page.click('#project-options-summary');check('Optional project choices work',await page.locator('#project-options').evaluate(n=>n.open));
     } else {

@@ -40,6 +40,9 @@ const { run } = require('../core/git.cjs');
   const publicState=await page.evaluate(()=>window.harness.hostingState());assert.equal(JSON.stringify(publicState).includes('syntetisk_github_token'),false);
   const appdata=await app.evaluate(({app})=>app.getPath('userData'));assert.equal((await fs.readFile(path.join(appdata,'harness/settings.json'),'utf8')).includes('syntetisk_github_token'),false);
   await page.click('[data-close="hosting-dialog"]');await page.click('#setup-local');
+  // Repeat-opsætningen genåbner AI-forbindelser; dialogen lukkes, så prøven kan
+  // fortsætte ved projektopstarten.
+  await page.waitForSelector('#connections-dialog[open]');await page.click('[data-close="connections-dialog"]');
   await app.evaluate(({dialog},project)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[project]});},project);
   await page.click('#open');await page.waitForSelector('#workspace:not([hidden])');await require('./ui-test-helpers.cjs').menuClick(page, '#git-button');await page.click('#git-init');
   await page.waitForFunction(()=>document.querySelector('#git-init').hidden&&!document.querySelector('#git-init').disabled);
