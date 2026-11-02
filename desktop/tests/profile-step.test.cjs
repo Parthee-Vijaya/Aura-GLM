@@ -227,7 +227,8 @@ test('index.html har profil-trinnet med felter og fire nummererede fremgangspunk
   assert.ok(section.includes('value="system"') && section.includes('value="light"') && section.includes('value="dark"'), 'temavalgene er system, lyst og mørkt');
   assert.ok(section.includes('Temaet følger dit system, medmindre du vælger selv.'));
   assert.match(section, /id="profile-help"/);
-  assert.ok(section.includes('value="fuld"') && section.includes('value="minimal"'), 'hjælpeniveauet er fuld eller minimal');
+  assert.ok(section.includes('value="fuld"') && section.includes('value="delvis"') && section.includes('value="ingen"'), 'hjælpeniveauet har de tre trin: fuld, delvis og ingen');
+  assert.ok(section.includes('Fuld hjælp') && section.includes('Hjælp ved behov') && section.includes('Ingen hjælp'), 'trinene har deres danske navne');
   assert.match(section, /id="profile-continue"/);
   const progressStart = index.indexOf('<ol class="onboarding-b-progress"');
   const progress = index.slice(progressStart, index.indexOf('</ol>', progressStart));
@@ -306,12 +307,12 @@ test('en gemt profil vises i trinnet, og forslaget bruges kun, når navnet er to
   assert.ok(upload, 'upload-pladsen er en handlingsknap uden et gemt billede');
   assert.equal(upload.getAttribute('role'), null, 'upload er ikke et ikonvalg endnu');
   assert.ok(upload.innerHTML.includes('<svg'), 'upload-knappen bærer sit billede-stregikon');
-  await f.context.prepareProfileStep({ name: 'Anna', icon: 'aura-1', helpLevel: 'minimal', appearance: { theme: 'dark', panelOpen: true } });
+  await f.context.prepareProfileStep({ name: 'Anna', icon: 'aura-1', helpLevel: 'delvis', appearance: { theme: 'dark', panelOpen: true } });
   const row = f.document.querySelectorAll('#profile-icon-row button');
   assert.equal(f.registry.get('profile-name').value, 'Anna', 'et gemt navn vises');
   assert.equal(row.find(button => button.dataset.icon === 'aura-1').getAttribute('aria-checked'), 'true', 'det gemte ikon er forvalgt');
   assert.equal(f.document.querySelectorAll('#profile-theme input').find(input => input.checked).value, 'dark', 'det gemte tema er forvalgt');
-  assert.equal(f.registry.get('profile-help').value, 'minimal', 'det gemte hjælpeniveau er forvalgt');
+  assert.equal(f.registry.get('profile-help').value, 'delvis', 'det gemte hjælpeniveau er forvalgt');
   assert.equal(f.calls.filter(call => call === 'profileSuggest').length, 1, 'forslaget overskriver aldrig et gemt navn');
 });
 
@@ -384,11 +385,13 @@ test('Fortsæt gemmer alle fire feltgrupper og går videre til forbindelsesvalge
   f.registry.get('profile-name').value = 'Anna Klit';
   f.document.querySelectorAll('#profile-icon-row button').find(button => button.dataset.icon === 'aura-2').onclick();
   for (const input of f.document.querySelectorAll('#profile-theme input')) input.checked = input.value === 'dark';
-  f.registry.get('profile-help').value = 'minimal';
+  f.registry.get('profile-help').value = 'ingen';
   await f.registry.get('profile-continue').onclick();
   assert.equal(f.context.setupStep, 'choice');
   assert.equal(f.registry.get('setup-profile').hidden, true);
-  assert.deepEqual(plain(f.saves[0]), { name: 'Anna Klit', icon: 'aura-2', helpLevel: 'minimal', appearance: { theme: 'dark', panelOpen: true } });
+  assert.deepEqual(plain(f.saves[0]), { name: 'Anna Klit', icon: 'aura-2', helpLevel: 'ingen', appearance: { theme: 'dark', panelOpen: true } });
+  assert.equal(f.document.body.classList.contains('help-ingen'), true, 'det valgte hjælpeniveau gælder straks — ikke først efter genstart');
+  assert.equal(f.document.body.classList.contains('help-delvis'), false);
   assert.equal(progressItem(f, 'profile').dataset.complete, 'true', 'profilpunktet mærkes gennemført');
   assert.equal(progressItem(f, 'profile').querySelector('span').textContent, '✓');
 });

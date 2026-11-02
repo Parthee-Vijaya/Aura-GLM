@@ -26,11 +26,11 @@ test('get() på tom settings.json returnerer standardprofilen uden advarsler', a
 
 test('save() erstatter kun de angivne felter; appearance flettes felt for felt', async t => {
   const store = await fixture(t), profile = new Profile(store);
-  await profile.save({ name: 'Parthee', icon: 'aura-1', helpLevel: 'minimal', workMode: 'plan', appearance: { theme: 'dark', panelOpen: false } });
+  await profile.save({ name: 'Parthee', icon: 'aura-1', helpLevel: 'delvis', workMode: 'plan', appearance: { theme: 'dark', panelOpen: false } });
   const second = await profile.save({ name: 'Anna' });
   assert.equal(second.profile.name, 'Anna');
   assert.equal(second.profile.icon, 'aura-1');
-  assert.equal(second.profile.helpLevel, 'minimal');
+  assert.equal(second.profile.helpLevel, 'delvis');
   assert.equal(second.profile.workMode, 'plan');
   assert.deepEqual(second.profile.appearance, { theme: 'dark', panelOpen: false });
   // Appearance merges per field: a writer that owns only the theme can never
@@ -45,7 +45,7 @@ test('save() erstatter kun de angivne felter; appearance flettes felt for felt',
 test('save() afviser ugyldige værdier uden at gemme noget', async t => {
   const store = await fixture(t), profile = new Profile(store);
   await profile.save({ name: 'Parthee' });
-  const invalid = [{ icon: 7 }, { icon: null }, { helpLevel: 'megen' }, { appearance: { theme: 'blå' } }, { appearance: { theme: 'dark', panelOpen: 'ja' } }, { appearance: { theme: null } }, { workMode: 'byg' }, { name: 'x'.repeat(61) }, { name: 'navn\tmed fane' }, { standardAI: { connectionID: 'x'.repeat(101) } }, { standardAI: 'ai' }, { projectDefaults: { hosting: 'andet' } }];
+  const invalid = [{ icon: 7 }, { icon: null }, { helpLevel: 'megen' }, { helpLevel: 'minimal' }, { appearance: { theme: 'blå' } }, { appearance: { theme: 'dark', panelOpen: 'ja' } }, { appearance: { theme: null } }, { workMode: 'byg' }, { name: 'x'.repeat(61) }, { name: 'navn\tmed fane' }, { standardAI: { connectionID: 'x'.repeat(101) } }, { standardAI: 'ai' }, { projectDefaults: { hosting: 'andet' } }];
   for (const values of invalid) await assert.rejects(() => profile.save(values));
   assert.deepEqual((await profile.get()).profile, { ...standardProfile(), name: 'Parthee' }, 'afviste kald ændrer intet');
   assert.deepEqual(Profile.ICON_IDS, ['aura-1', 'aura-2', 'aura-3']);
@@ -89,6 +89,27 @@ test('get() bærer hasAvatar for hver eneste læsning', async t => {
   assert.equal((await withAvatar.get()).hasAvatar, true);
   const saved = await withAvatar.save({ name: 'Anna' });
   assert.equal(saved.hasAvatar, true, 'svaret fra save() bærer det samme grundlag');
+});
+
+// ---------- Hjælpeniveau: tre trin med blid læsemigration ----------
+test('hjælpeniveauet har tre trin; gemningen er streng, læsningen migrerer', async t => {
+  const store = await fixture(t), profile = new Profile(store);
+  // Saving is strict on the three values — all three round-trip.
+  for (const level of ['fuld', 'delvis', 'ingen']) assert.equal((await profile.save({ helpLevel: level })).profile.helpLevel, level);
+  // The retired two-step value 'minimal' is no longer a saveable choice.
+  await assert.rejects(() => profile.save({ helpLevel: 'minimal' }), /Ukendt hjælpeniveau/);
+  assert.equal((await store.read()).profile.helpLevel, 'ingen', 'en afvist gemning ændrer intet');
+  // Reading migrates: a stored 'minimal' wanted less help, and 'delvis' is the
+  // honest successor — silently, because the choice was read, not reset.
+  await store.update(state => { state.profile = { helpLevel: 'minimal' }; });
+  const migrated = await profile.get();
+  assert.equal(migrated.profile.helpLevel, 'delvis', 'minimal bliver delvis');
+  assert.deepEqual(migrated.warnings, [], 'den kendte gamle værdi migreres uden advarsel');
+  // An unknown value from a newer beta falls back to 'fuld' with the warning.
+  await store.update(state => { state.profile.helpLevel = 'maximal'; });
+  const unknown = await profile.get();
+  assert.equal(unknown.profile.helpLevel, 'fuld');
+  assert.deepEqual(unknown.warnings, ['Dit hjælpeniveau kunne ikke læses og er nulstillet.']);
 });
 
 // ---------- Læsning er eftergivende: en ukendt værdi låser aldrig appen ----------
@@ -192,6 +213,7 @@ test('migrate() lader udfyldte profilfelter vinde over gamle værdier', async t 
   assert.equal(profile.standardAI.modelID, 'm1');
   assert.equal(profile.appearance.theme, 'light');
   assert.equal(profile.appearance.panelOpen, false);
+  assert.equal(profile.helpLevel, 'delvis', 'det gamle minimal-mønster migreres til delvis undervejs');
   assert.equal(profile.projectDefaults.hosting, 'own');
   assert.equal(profile.projectDefaults.tests, 'manuel');
   assert.equal(profile.projectDefaults.designID, 'd1', 'tomme felter udfyldes stadig');

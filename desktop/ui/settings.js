@@ -50,7 +50,7 @@
   // the per-project "Flere valg" so the same choices read the same everywhere.
   const THEMES = Object.freeze([['system', 'Følg system'], ['light', 'Lyst'], ['dark', 'Mørkt']]);
   const WORK_MODES = Object.freeze([['chat', 'Samtale · beskriv og byg'], ['plan', 'Planlæg · afklar og byg en plan først']]);
-  const HELP_LEVELS = Object.freeze([['fuld', 'Fuld hjælp · forklaringer og forslag undervejs'], ['minimal', 'Minimal · kun det vigtigste']]);
+  const HELP_LEVELS = Object.freeze([['fuld', 'Fuld hjælp · forklaringer og forslag undervejs'], ['delvis', 'Hjælp ved behov · "?"-knappen viser tips ved skrivefeltet'], ['ingen', 'Ingen hjælp · hverken tips eller "?"-knap']]);
   const HOSTINGS = Object.freeze([['', 'Beslut senere'], ['vercel', 'Vercel'], ['azure', 'Azure'], ['own', 'Organisationens løsning / egen server']]);
   const TEST_STYLES = Object.freeze([['senere', 'Beslut senere'], ['manuel', 'Manuel gennemgang af brugerrejsen'], ['automatiske', 'Automatiske tests og manuel gennemgang']]);
   // The empty project defaults, identical to core/preferences.cjs's blank values.
@@ -123,7 +123,10 @@
       themeHost()?.setTheme?.(choice);
     }
     function applyHelp(helpLevel) {
-      document.body.classList.toggle('help-minimal', helpLevel === 'minimal');
+      // All three levels map to their own body class; 'fuld' clears both, so
+      // the standing hints return.
+      document.body.classList.toggle('help-delvis', helpLevel === 'delvis');
+      document.body.classList.toggle('help-ingen', helpLevel === 'ingen');
     }
 
     // Renders the current profile into the open section's controls. Controls
@@ -414,7 +417,7 @@
       help.replaceChildren(...HELP_LEVELS.map(([value, label]) => option(value, label)));
       help.addEventListener('change', () => { void saveSection({ helpLevel: help.value }); });
       content.append(field('Hjælp i appen', help, 'settings-help'));
-      content.append(note('Minimal hjælp fjerner korte genvejs- og forklaringslinjer. Advarsler og vigtige beskeder vises altid.'));
+      content.append(note('Hjælp ved behov skjuler de stående tips — "?"-knappen ved skrivefeltet viser dem. Ingen hjælp skjuler også "?"-knappen. Advarsler, godkendelser og "Før du sender" vises altid.'));
       feedbackArea();
     }
 

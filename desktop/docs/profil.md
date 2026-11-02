@@ -13,7 +13,7 @@ Den guidede opstart begynder med trinnet **Din profil**. Du kan skrive dit navn,
 - **Standard arbejdsmåde.** Om helt nye samtaler starter i Samtale eller Planlæg.
 - **Udseende.** Temaet (Følg system, Lyst, Mørkt) og om sidepanelet er åbent, når appen starter.
 - **Projektstandarder.** Udgivelse, designpakke og tests, som forudfylder Flere valg, når du opretter et projekt.
-- **Hjælpeniveau.** Fuld hjælp eller Minimal, der fjerner korte genvejs- og forklaringslinjer — aldrig advarsler eller vigtige beskeder.
+- **Hjælpeniveau.** Tre trin: Fuld hjælp (forklaringer undervejs), Hjælp ved behov (hintene samles bag en "?"-knap ved skrivefeltet) og Ingen hjælp. Advarsler, godkendelser, Før du sender og privacyvalg vises altid.
 
 ## Sådan ændres profilen
 

@@ -48,14 +48,40 @@
 .settings-content .hint[role="status"] { min-height: 1.6em; }
 .settings-content .hint[role="status"].error { color: var(--aura-error); }
 
-/* Help level "minimal" hides ONLY the three designated hints — never privacy
-   texts, warnings, approvals or "Før du sender" content. The targets:
+/* Help levels "delvis" and "ingen" hide ONLY the three designated hints —
+   never privacy texts, warnings, approvals or "Før du sender" content: the
+   essential surfaces carry data-help="essential" in the markup, and no rule
+   here may ever name them, so they stay displayed at every level. The targets:
    - #composer-shortcut: the shortcut line under the message field.
    - #resume-notice .hint: the resume notice's explanation about shared references.
    - #idea-options .hint: the project intro's "Ønsker til løsningen" explanations. */
-body.help-minimal #composer-shortcut,
-body.help-minimal #resume-notice .hint,
-body.help-minimal #idea-options .hint { display: none; }
+body.help-delvis #composer-shortcut,
+body.help-delvis #resume-notice .hint,
+body.help-delvis #idea-options .hint,
+body.help-ingen #composer-shortcut,
+body.help-ingen #resume-notice .hint,
+body.help-ingen #idea-options .hint { display: none; }
+
+/* The on-demand help at 'delvis': a quiet "?" where the shortcut line stood.
+   'fuld' keeps the hints standing and never shows the button; 'ingen' asked
+   for no help affordance at all, so neither body class shows it. A surface
+   without hints sets the hidden attribute — the honest answer to "nothing to
+   show" — and the :not([hidden]) guard keeps the body class from overriding
+   it. The popover carries the same live hint texts the standing hints would
+   have shown on the current surface. */
+.composer-help-wrap { position: relative; display: flex; justify-content: flex-end; }
+#composer-help { display: none; margin: 2px 16px 6px; padding: 1px 11px 2px; font-size: 12px; line-height: 1.5; color: var(--aura-ink-muted); background: transparent; border: 1px solid var(--aura-border); border-radius: var(--aura-radius-xl); cursor: pointer; }
+#composer-help:hover { color: var(--aura-ink); border-color: var(--aura-border-strong); background: var(--aura-bg-hover); }
+#composer-help:focus-visible { outline: 2px solid var(--aura-accent); outline-offset: 2px; }
+body.help-delvis #composer-help:not([hidden]) { display: inline-flex; align-items: center; }
+/* Like the composer's mode menu: the popover lives in the top layer, so the
+   containing block is the viewport — inset is reset and the coordinates come
+   from the button's rectangle at open time (composer-help.js). */
+#composer-help-popover { position: fixed; inset: auto; margin: 0; width: min(360px, calc(100vw - 24px)); max-width: min(360px, calc(100vw - 24px)); padding: 10px 12px 12px; }
+#composer-help-popover:popover-open { display: block; }
+.composer-help-title { margin: 2px 2px 8px; font-size: 11px; font-weight: 600; color: var(--aura-ink-muted); }
+.composer-help-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.composer-help-list li { font-size: 12px; line-height: 1.5; color: var(--aura-ink-secondary); }
 
 @media (max-width: 720px) {
   .settings-layout { grid-template-columns: 1fr; min-height: 0; }

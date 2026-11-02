@@ -215,7 +215,7 @@ test('open(profile) viser dialogen med sektionen aktiv og felter udfyldt fra pro
   const dom = makeDom();
   const themes = [];
   const harness = makeHarness({
-    profile: { ...blank(), name: 'Anna Klit', icon: 'aura-1', helpLevel: 'minimal', workMode: 'plan', appearance: { theme: 'dark', panelOpen: false }, standardAI: { connectionID: 'c2', modelID: 'gpt-mini' }, projectDefaults: { hosting: 'vercel', designID: 'd1', tests: 'automatiske' } },
+    profile: { ...blank(), name: 'Anna Klit', icon: 'aura-1', helpLevel: 'delvis', workMode: 'plan', appearance: { theme: 'dark', panelOpen: false }, standardAI: { connectionID: 'c2', modelID: 'gpt-mini' }, projectDefaults: { hosting: 'vercel', designID: 'd1', tests: 'automatiske' } },
     connections: [{ id: 'c1', name: 'Corti' }, { id: 'c2', name: 'Ollama hjem' }],
     designs: [{ id: 'd1', name: 'Gentofte design', files: 3 }]
   });
@@ -241,7 +241,9 @@ test('open(profile) viser dialogen med sektionen aktiv og felter udfyldt fra pro
   assert.equal(grid.find(button => button.dataset.icon === 'aura-3').getAttribute('aria-label'), 'Aura · kredsløb');
   assert.equal(grid.find(button => button.dataset.icon === '').textContent, 'AK', 'initialer-knappen viser profilens initialer');
   assert.equal(q('#settings-work-mode').value, 'plan');
-  assert.equal(q('#settings-help').value, 'minimal');
+  assert.deepEqual(q('#settings-help').children.map(option => option.value), ['fuld', 'delvis', 'ingen'], 'hjælpeniveauet har de tre trin');
+  assert.ok(q('#settings-help').children.every(option => option.textContent.length > 3), 'hvert trin har en ærlig beskrivelse');
+  assert.equal(q('#settings-help').value, 'delvis');
   const connection = q('#settings-standard-connection');
   assert.equal(connection.value, 'c2');
   assert.deepEqual(connection.children.map(option => option.value), ['', 'c1', 'c2']);
@@ -253,7 +255,8 @@ test('open(profile) viser dialogen med sektionen aktiv og felter udfyldt fra pro
   assert.deepEqual(design.children.map(option => option.textContent), ['Intet design', 'Gentofte design · 3 filer']);
   assert.equal(q('#settings-tests').value, 'automatiske');
   assert.ok(q('#settings-forget-standards'), 'Glem projektstandarder-knappen findes');
-  assert.equal(dom.body.classList.contains('help-minimal'), true, 'minimal hjælp sætter klassen straks');
+  assert.equal(dom.body.classList.contains('help-delvis'), true, 'delvis hjælp sætter klassen straks');
+  assert.equal(dom.body.classList.contains('help-ingen'), false, 'ingen-klassen følger kun sit eget trin');
   assert.deepEqual(themes, ['dark'], 'profilens tema håndteres gennem temamodulet — den eneste skriver af hint og datasæt');
   assert.equal(dom.body.dataset.workspaceTheme, 'dark', 'temaværten har anvendt temaet');
 });
@@ -375,24 +378,31 @@ test('avatar-valget skifter som ethvert andet ikon — og tilbage igen', async (
   assert.deepEqual(harness.saves[1], { icon: '' }, 'et nyt klik rydder til initialerne');
 });
 
-test('arbejdsmåde og hjælpeniveau gemmer deres eget felt', async () => {
+test('arbejdsmåde og hjælpeniveau gemmer deres eget felt; alle tre trin slår igennem', async () => {
   const dom = makeDom();
   const harness = makeHarness({ profile: { ...blank(), workMode: 'chat', helpLevel: 'fuld' } });
   const settings = makeSettings(dom, harness);
   await openSection(settings, 'profile');
-  assert.equal(dom.body.classList.contains('help-minimal'), false);
+  assert.equal(dom.body.classList.contains('help-delvis'), false);
+  assert.equal(dom.body.classList.contains('help-ingen'), false);
   const mode = dom.content.querySelector('#settings-work-mode');
   mode.value = 'plan'; mode.emit('change');
   await flush();
   assert.deepEqual(harness.saves[0], { workMode: 'plan' });
   const help = dom.content.querySelector('#settings-help');
-  help.value = 'minimal'; help.emit('change');
+  help.value = 'delvis'; help.emit('change');
   await flush();
-  assert.deepEqual(harness.saves[1], { helpLevel: 'minimal' });
-  assert.equal(dom.body.classList.contains('help-minimal'), true, 'klassen sættes straks efter gemning');
+  assert.deepEqual(harness.saves[1], { helpLevel: 'delvis' }, 'hjælpeniveauet er et egentligt topnøglefelt i patchen');
+  assert.equal(dom.body.classList.contains('help-delvis'), true, 'klassen sættes straks efter gemning');
+  help.value = 'ingen'; help.emit('change');
+  await flush();
+  assert.deepEqual(harness.saves[2], { helpLevel: 'ingen' });
+  assert.equal(dom.body.classList.contains('help-ingen'), true, 'ingen-klassen sættes straks');
+  assert.equal(dom.body.classList.contains('help-delvis'), false, 'delvis-klassen fjernes igen');
   help.value = 'fuld'; help.emit('change');
   await flush();
-  assert.equal(dom.body.classList.contains('help-minimal'), false, 'klassen fjernes igen ved fuld hjælp');
+  assert.equal(dom.body.classList.contains('help-delvis'), false, 'klassen fjernes igen ved fuld hjælp');
+  assert.equal(dom.body.classList.contains('help-ingen'), false, 'fuld hjælp fjerner begge klasser');
 });
 
 test('temavalg gemmer hele udseende-enheden og giver temaet til temamodulet', async () => {

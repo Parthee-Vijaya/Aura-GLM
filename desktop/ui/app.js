@@ -29,6 +29,9 @@ const views = new Map();
 function makeView(id) {
   const v = { id, historyPending:[], historyLoaded:false, historyNotice:'', log: node('div'), approvals: node('div'), review: node('section', undefined, 'journey-card'), roles: new Map(), parts: new Map(), partTypes: new Map(), assistantText: new Map(), pendingMarkdown: new Set(), activityGroup: null, lastSentText: '', lastTarget: '', lastTargetRef: null, lastCheckpoint: null, rejectedThisRun: false, lastRejection: null, running: false, runStartedAt: 0, runLabel: '', statusDetail: '', waitingFor: [], plan: null, planCard: false, unread: false, draft: null, followChat: true, scrollTop: 0, lastSignalAt: 0, receivedChars: 0 };
   v.log.setAttribute('role', 'log'); v.review.hidden = true; v.review.setAttribute('aria-live', 'polite');
+  // Every view's approvals surface is essential (godkendelser): the help level
+  // can never hide it — mountView swaps this element into the page.
+  v.approvals.setAttribute('data-help', 'essential');
   if (id) views.set(id, v);
   return v;
 }
@@ -293,9 +296,11 @@ async function saveProfileStep() {
     // every recommendation follow the saved values without a restart.
     adoptProfile(saved.profile);
     announceProfileSaved(saved.profile);
-    // Every profile save that includes a theme hands it to the calm workspace,
-    // so the hint copy never goes stale against the profile.
-    window.calmWorkspace?.setTheme?.(patch.appearance?.theme);
+    // The presentation applies the save at once: the theme hands over to the
+    // calm workspace (so the hint copy never goes stale), and the chosen help
+    // level applies from this moment — not after a restart. The first session
+    // is exactly when the help choice matters.
+    await applyProfilePresentation();
   } catch { /* saving the profile never blocks the setup */ }
 }
 // The profile is presentation state: after a restart the help level and theme
@@ -306,7 +311,10 @@ async function applyProfilePresentation() {
     // After the startup pass the profile is already read; only without it is
     // it fetched here, so the presentation never shows a stale theme.
     const { profile } = profileState ? { profile: profileState } : await call('profileGet');
-    document.body.classList.toggle('help-minimal', profile.helpLevel === 'minimal');
+    // All three help levels map to their own body class; 'fuld' carries none,
+    // so removing both classes restores the standing hints.
+    document.body.classList.toggle('help-delvis', profile.helpLevel === 'delvis');
+    document.body.classList.toggle('help-ingen', profile.helpLevel === 'ingen');
     window.calmWorkspace?.setTheme?.(profile.appearance?.theme);
   } catch { /* the profile is optional at startup */ }
 }
@@ -493,7 +501,10 @@ async function leaveSetup(useAI) {
       const saved = await call('profileSave', patch);
       adoptProfile(saved.profile);
       announceProfileSaved(saved.profile);
-      if (patch.appearance?.theme) window.calmWorkspace?.setTheme?.(patch.appearance.theme);
+      // The presentation hands the theme over from the saved profile and
+      // applies the help level chosen in the profile step before the setup
+      // hands over to the first session.
+      await applyProfilePresentation();
     }
   } catch { /* saving the profile never blocks completing the setup */ }
   profileStepShown = false; profileStepDone = false;
@@ -751,6 +762,9 @@ function fillChat(next, fresh) {
   // Anbefalingen følger profilen, også når chat-choice netop er blevet vist.
   applyChatChoiceRecommendation();
   window.planning?.onProject(next);
+  // "?"-knappens grundlag følger med fladen: projektintroen og
+  // resume-bemærkningen kan være kommet eller gået med dette skift.
+  window.composerHelp?.refresh?.();
 }
 // Skift til en anden samtale i samme projekt. En samtale, der arbejder, fortsætter i baggrunden.
 async function showChat(next) {

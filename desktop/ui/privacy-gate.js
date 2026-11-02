@@ -330,15 +330,15 @@
   window.PrivacyGate = { connect(value) {
     if (connected || !value || typeof value.read !== 'function' || typeof value.invoke !== 'function') return;
     api = value; connected = true;
-    settingsDialog = make('dialog', undefined, 'privacy-dialog privacy-settings'); settingsDialog.id = 'privacy-settings-dialog'; settingsDialog.setAttribute('data-i18n-content', '');
-    sharingDialog = make('dialog', undefined, 'privacy-dialog privacy-sharing'); sharingDialog.id = 'privacy-sharing-dialog'; sharingDialog.setAttribute('data-i18n-content', '');
+    settingsDialog = make('dialog', undefined, 'privacy-dialog privacy-settings'); settingsDialog.id = 'privacy-settings-dialog'; settingsDialog.setAttribute('data-i18n-content', ''); settingsDialog.setAttribute('data-help', 'essential');
+    sharingDialog = make('dialog', undefined, 'privacy-dialog privacy-sharing'); sharingDialog.id = 'privacy-sharing-dialog'; sharingDialog.setAttribute('data-i18n-content', ''); sharingDialog.setAttribute('data-help', 'essential');
     settingsDialog.addEventListener('cancel', event => { event.preventDefault(); closeDialog(settingsDialog); });
     sharingDialog.addEventListener('cancel', event => { event.preventDefault(); if (allowedDecisions(reviewing).includes('cancel')) void decide('cancel'); else if (!allowedDecisions(reviewing).length) closeReview(); });
     document.body.append(settingsDialog, sharingDialog);
     for (const [anchor, id, placement] of [[get('connections-button'), 'privacy-settings-button', 'after'], [get('advanced-model-context'), 'privacy-model-button', 'before'], [get('context-status'), 'privacy-gate-button', 'after']]) {
       if (!anchor) continue; const entry = button(t('Datakontrol og arbejdsform', 'Data control and work mode'), open, 'text-button privacy-entry'); entry.id = id; entry.setAttribute('aria-haspopup', 'dialog'); entry.setAttribute('aria-controls', settingsDialog.id); anchor[placement](entry);
     }
-    statusLine = make('p', '', 'privacy-status'); statusLine.id = 'privacy-gate-status'; statusLine.setAttribute('role', 'status'); statusLine.hidden = true; get('chat-form')?.before(statusLine);
+    statusLine = make('p', '', 'privacy-status'); statusLine.id = 'privacy-gate-status'; statusLine.setAttribute('role', 'status'); statusLine.setAttribute('data-help', 'essential'); statusLine.hidden = true; get('chat-form')?.before(statusLine);
     window.addEventListener('aura:languagechange', () => { renderStatus(); if (settingsDialog.open) renderSettings({ preserve: true }); if (reviewing) renderReview(); });
     sync();
   }, open, sync, onEvent, refresh: () => refresh(), settled: () => refreshPromise };

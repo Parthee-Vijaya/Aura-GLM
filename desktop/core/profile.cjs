@@ -16,7 +16,13 @@ const ICON_IDS = Object.freeze(['aura-1', 'aura-2', 'aura-3']);
 const UPLOAD_ICON = 'upload';
 const PROJECT_DEFAULTS = Object.freeze({ hosting: '', designID: '', tests: 'senere' });
 const THEME_VALUES = Object.freeze(['system', 'light', 'dark']);
-const HELP_VALUES = Object.freeze(['fuld', 'minimal']);
+// The three help levels: full standing hints, on-demand help ('delvis' hides
+// the standing hints and shows the "?" button by the composer), and no help
+// at all ('ingen' hides the "?" button too). Privacy texts, warnings,
+// approvals and "Før du sender" are essential surfaces and never follow the
+// level — the CSS annotation data-help="essential" pins them in the markup.
+const HELP_VALUES = Object.freeze(['fuld', 'delvis', 'ingen']);
+const LEGACY_HELP = 'minimal';
 const WORK_MODES = Object.freeze(['chat', 'plan']);
 
 // A fresh profile: no name or icon, full help, system theme, panel open,
@@ -45,6 +51,16 @@ function cleanIconPatch(value, hasAvatar = () => false) {
   return ICON_IDS.includes(value) ? value : '';
 }
 function cleanChoice(value, allowed, message) { if (!allowed.includes(value)) throw new Error(message); return value; }
+// The read side migrates the retired two-step level: 'minimal' wanted less
+// help, and 'delvis' (on demand) is its honest successor, so the stored
+// choice folds silently — it was read and mapped, not reset. Anything else
+// unknown throws, and the lenient read falls back to 'fuld' with a warning.
+// Saving stays strict: only the three current levels are writable, so a
+// stale renderer writing 'minimal' is rejected instead of silently changed.
+function readHelpLevel(value) {
+  if (value === LEGACY_HELP) return 'delvis';
+  return cleanChoice(value, HELP_VALUES, 'Ukendt hjælpeniveau.');
+}
 
 // partial keeps only the fields the patch actually carries: appearance saves
 // merge field by field in Profile.save, so a writer that owns only the theme
@@ -129,7 +145,7 @@ function readProfile(input, hasAvatar = () => false) {
   const profile = {
     name: field(READ_WARNINGS.name, '', () => input.name === undefined ? '' : cleanName(input.name)),
     icon: field(READ_WARNINGS.icon, '', () => input.icon === undefined ? '' : cleanIcon(input.icon, hasAvatar)),
-    helpLevel: field(READ_WARNINGS.helpLevel, 'fuld', () => input.helpLevel === undefined ? 'fuld' : cleanChoice(input.helpLevel, HELP_VALUES, 'Ukendt hjælpeniveau.')),
+    helpLevel: field(READ_WARNINGS.helpLevel, 'fuld', () => input.helpLevel === undefined ? 'fuld' : readHelpLevel(input.helpLevel)),
     appearance: group(input.appearance, fresh.appearance, normalizeAppearance, ['theme', 'panelOpen'], READ_WARNINGS.appearance),
     standardAI: group(input.standardAI, fresh.standardAI, normalizeStandardAI, ['connectionID', 'modelID'], READ_WARNINGS.standardAI),
     workMode: field(READ_WARNINGS.workMode, 'chat', () => input.workMode === undefined ? 'chat' : cleanChoice(input.workMode, WORK_MODES, 'Ukendt arbejdsmåde.')),

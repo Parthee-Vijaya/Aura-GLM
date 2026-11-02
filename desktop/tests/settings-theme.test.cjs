@@ -8,8 +8,10 @@ const vm = require('node:vm');
 // Theme and help-level slice: main.cjs sets Electron's theme source from the
 // profile before the window exists, workspace-calm.js reads the synchronous
 // hint copy (aura.theme-hint.v1) and saves through the profile, settings.js
-// applies theme and help class after each save, and the help-minimal CSS hides
-// only the designated hints. Real source slices run in synthetic contexts.
+// applies theme and help class after each save, and the help-delvis and
+// help-ingen CSS hides only the designated hints — the essential surfaces
+// (privacy, warnings, approvals, "Før du sender", consent) never hide.
+// Real source slices run in synthetic contexts.
 const ui = path.join(__dirname, '..', 'ui');
 const main = fs.readFileSync(path.join(__dirname, '..', 'main.cjs'), 'utf8');
 const app = fs.readFileSync(path.join(ui, 'app.js'), 'utf8');
@@ -302,9 +304,14 @@ test('app.js: en profilgemning med tema opdaterer hintet gennem calmWorkspace', 
   assert.equal(context.profileState.name, 'Anna', 'cachen følger den gemte profil med det samme');
   assert.deepEqual(announced.map(event => event.type), ['aura:profile-saved'], 'den gemte profil annonceres');
   assert.equal(announced[0].detail.name, 'Anna');
+  // The step save applies the chosen help level right away: fuld leaves both
+  // classes out, and the presentation call re-reads the saved profile.
+  assert.equal(context.document.body.classList.contains('help-delvis'), false, 'gemningen i profil-trinnet anvender hjælpeniveauet straks');
+  assert.equal(context.document.body.classList.contains('help-ingen'), false);
   // After a restart the same slice re-applies the presentation from the profile.
   await context.applyProfilePresentation();
-  assert.equal(context.document.body.classList.contains('help-minimal'), false, 'fuld hjælp efterlader klassen ude');
+  assert.equal(context.document.body.classList.contains('help-delvis'), false, 'fuld hjælp efterlader klassen ude');
+  assert.equal(context.document.body.classList.contains('help-ingen'), false, 'fuld hjælp efterlader ingen-klassen ude');
   assert.deepEqual(themes, ['dark', 'dark'], 'opstarten giver temaet videre til calmWorkspace');
   const failingThemes = [];
   const failingAnnounced = [];
@@ -317,7 +324,29 @@ test('app.js: en profilgemning med tema opdaterer hintet gennem calmWorkspace', 
   assert.deepEqual(failingThemes, [], 'ingen temaudbredelse uden profil');
 });
 
-// The hint key has exactly one writer: workspace-calm.js. settings.js only
+// app.js — applyProfilePresentation maps all three help levels to their own
+// body class: 'delvis' and 'ingen' each set one class, 'fuld' removes both.
+test('app.js: applyProfilePresentation oversætter alle tre hjælpeniveauer til kropsklasser', async () => {
+  const run = async level => {
+    const document = { body: new El('body') };
+    const context = {
+      document,
+      profileState: { helpLevel: level, appearance: { theme: 'system' } },
+      window: { calmWorkspace: { setTheme: () => {} } }
+    };
+    vm.runInNewContext(appSlice('async function applyProfilePresentation', '// The profile is adopted'), context);
+    await context.applyProfilePresentation();
+    return document.body.classList;
+  };
+  assert.equal((await run('delvis')).contains('help-delvis'), true, 'delvis sætter sin klasse');
+  assert.equal((await run('delvis')).contains('help-ingen'), false, 'delvis sætter ikke ingen-klassen');
+  assert.equal((await run('ingen')).contains('help-ingen'), true, 'ingen sætter sin klasse');
+  assert.equal((await run('ingen')).contains('help-delvis'), false, 'ingen sætter ikke delvis-klassen');
+  assert.equal((await run('fuld')).contains('help-delvis'), false, 'fuld fjerner delvis-klassen');
+  assert.equal((await run('fuld')).contains('help-ingen'), false, 'fuld fjerner ingen-klassen');
+});
+
+// Hint key has exactly one writer: workspace-calm.js. settings.js only
 // calls calmWorkspace.setTheme — the double write is gone.
 test('hintnøglen har én skriver, og den gamle nøgle er borte', () => {
   const settingsSource = fs.readFileSync(path.join(ui, 'settings.js'), 'utf8');
@@ -328,22 +357,42 @@ test('hintnøglen har én skriver, og den gamle nøgle er borte', () => {
   assert.ok(!calm.includes('harness-workspace-theme-v1'), 'workspace-calm.js bruger ikke længere den gamle temanøgle');
 });
 
-// Help level "minimal": only the designated hints are hidden — never privacy
-// texts, warnings, approvals or "Før du sender" content.
-test('settings.css: help-minimal skjuler udelukkende de tre udpegede hint', () => {
+// Help levels "delvis" and "ingen": only the three designated hints are
+// hidden — never privacy texts, warnings, approvals or "Før du sender"
+// content. The "?" button is the only extra affordance and only at 'delvis'.
+test('settings.css: delvis og ingen skjuler udelukkende de tre udpegede hint', () => {
   const settingsCss = fs.readFileSync(path.join(ui, 'settings.css'), 'utf8');
-  const selectors = [...settingsCss.matchAll(/body\.help-minimal[^\n{]*?(?=\s*[,{])/g)].map(match => match[0].trim());
+  const designated = ['#composer-shortcut', '#resume-notice .hint', '#idea-options .hint'];
+  const selectors = [...settingsCss.matchAll(/body\.help-(?:delvis|ingen)[^\n{]*?(?=\s*[,{])/g)]
+    .map(match => match[0].trim())
+    .filter(selector => !selector.includes('#composer-help'));
   assert.deepEqual(selectors, [
-    'body.help-minimal #composer-shortcut',
-    'body.help-minimal #resume-notice .hint',
-    'body.help-minimal #idea-options .hint'
-  ], 'udelukkende genvejslinjen, resume-hintet og projektintroens forklaringer skjules');
-  assert.match(settingsCss, /body\.help-minimal[^}]*\{\s*display:\s*none/, 'reglen skjuler med display: none');
-  assert.match(settingsCss, /Help level "minimal"/, 'kommentaren forklarer udpegelsen');
+    'body.help-delvis #composer-shortcut',
+    'body.help-delvis #resume-notice .hint',
+    'body.help-delvis #idea-options .hint',
+    'body.help-ingen #composer-shortcut',
+    'body.help-ingen #resume-notice .hint',
+    'body.help-ingen #idea-options .hint'
+  ], 'udelukkende genvejslinjen, resume-hintet og projektintroens forklaringer skjules — ved begge niveauer');
+  // Every hiding selector is one of the designated hints: nothing else can
+  // ever be caught by a help-level rule, at either level.
+  for (const selector of selectors) {
+    const bare = selector.replace(/^body\.help-(?:delvis|ingen)\s*/, '');
+    assert.ok(designated.includes(bare), `${selector} er et udpeget hint — intet andet må skjules`);
+  }
+  assert.match(settingsCss, /body\.help-delvis[^}]*\{\s*display:\s*none/, 'reglen skjuler med display: none');
+  assert.match(settingsCss, /Help levels "delvis" and "ingen"/, 'kommentaren forklarer udpegelsen');
+  assert.ok(!settingsCss.includes('help-minimal'), 'det gamle to-trins-mønster er helt væk');
+  // The "?" button: only 'delvis' shows it, and the hidden attribute wins over
+  // the body class, so a surface without hints never offers an empty popover.
+  assert.match(settingsCss, /body\.help-delvis #composer-help:not\(\[hidden\]\)\s*\{\s*display:\s*inline-flex/, '"?"-knappen står kun frem ved delvis');
+  assert.ok(!/body\.help-ingen[^{]*#composer-help/.test(settingsCss), 'ingen hjælp skjuler også "?"-knappen');
+  const showRules = [...settingsCss.matchAll(/([^{}]*#composer-help[^{}]*)\{[^}]*display:\s*inline-flex/g)].map(match => match[1].trim());
+  assert.deepEqual(showRules, ['body.help-delvis #composer-help:not([hidden])'], 'den eneste fremvisningsregel kræver både delvis-klassen og et grundlag at vise');
   for (const file of fs.readdirSync(ui).filter(name => name.endsWith('.css'))) {
     if (file === 'settings.css') continue;
     const css = fs.readFileSync(path.join(ui, file), 'utf8');
-    assert.ok(!css.includes('help-minimal'), `${file} har ingen help-minimal-regler`);
+    assert.ok(!css.includes('help-delvis') && !css.includes('help-ingen') && !css.includes('help-minimal'), `${file} har ingen hjælpeniveau-regler`);
   }
   // The index markup keeps the designated targets; the rule set above is the
   // exhaustive list, so approvals and privacy content can never be hidden.
@@ -351,4 +400,35 @@ test('settings.css: help-minimal skjuler udelukkende de tre udpegede hint', () =
   assert.ok(index.includes('id="composer-shortcut"'), 'composer-genvejslinjen findes');
   assert.ok(index.includes('id="resume-notice"'), 'resume-bemærkningen findes');
   assert.ok(index.includes('id="idea-options"'), 'projektintroens ønsker findes');
+});
+
+// The essential surfaces — privacy texts, warnings, approvals, "Før du sender"
+// and consent — carry data-help="essential" in the markup. No help-level
+// selector may name them (directly or as a subtree), so they stay displayed at
+// every level — also at 'ingen', where nothing else survives.
+test('settings.css og index.html: essential-fladerne vises altid — også ved ingen hjælp', () => {
+  const index = fs.readFileSync(path.join(ui, 'index.html'), 'utf8');
+  const settingsCss = fs.readFileSync(path.join(ui, 'settings.css'), 'utf8');
+  const essentialIds = ['connection-warning', 'approvals', 'data-dialog', 'startup-warning', 'hosting-consent'];
+  for (const id of essentialIds) {
+    assert.ok(new RegExp(`<[^>]*id="${id}"[^>]*data-help="essential"`).test(index), `${id} er markeret data-help="essential" i teksten`);
+  }
+  // The privacy gate's dynamic elements carry the same annotation.
+  const privacyGate = fs.readFileSync(path.join(ui, 'privacy-gate.js'), 'utf8');
+  assert.ok((privacyGate.match(/setAttribute\('data-help', 'essential'\)/g) || []).length >= 3, 'privacy-fladerne fra privacy-gate bærer også markeringen');
+  // #approvals is swapped per conversation view (mountView): the replacement
+  // carries the annotation too, or the guarantee would die with the first chat.
+  const appSource = fs.readFileSync(path.join(ui, 'app.js'), 'utf8');
+  assert.match(appSource, /v\.approvals\.setAttribute\('data-help', 'essential'\)/, 'hver samtalevisnings godkendelsesflade er markeret essential fra fødslen');
+  // No help-level selector names an essential element: 'ingen' can therefore
+  // never hide a warning, an approval, the send review or a consent surface.
+  for (const match of settingsCss.matchAll(/body\.help-(?:delvis|ingen)[^\n{]*?(?=\s*[,{])/g)) {
+    for (const id of essentialIds) assert.ok(!match[0].includes(`#${id}`), `${match[0]} må ikke ramme ${id}`);
+  }
+  // No rule anywhere hides an element annotated as essential (comments are
+  // stripped first, so only real selectors are scanned).
+  const rules = settingsCss.replace(/\/\*[\s\S]*?\*\//g, '');
+  for (const rule of rules.matchAll(/([^{}]+)\{[^}]*display:\s*none/g)) {
+    assert.ok(!rule[1].includes('data-help='), `settings.css må aldrig skjule en essential-flade: ${rule[1].trim()}`);
+  }
 });
