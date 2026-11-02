@@ -47,3 +47,14 @@ test('the UI keeps using the current product name consistently', async () => {
   const used = files.filter(({ text }) => text.includes(distribution.displayName));
   assert.ok(used.length >= 10, 'Produktnavnet forventes brugt bredt i UI; mangler det helt, er noget gledet.');
 });
+
+// C7: README'ens levende tekst følger også navnet og det aktuelle
+// onboardingforløb — appens navn er Aura Prime, og den guidede opstart har
+// tre trin med profil-trinnet først (funktionstrinnet er væk).
+test('the README names the product and the guided onboarding honestly', async () => {
+  const readme = await fs.readFile(path.join(__dirname, '..', 'README.md'), 'utf8');
+  assert.ok(readme.includes('Appens navn og egne menuer er **Aura Prime**.'), 'README navngiver produktet Aura Prime');
+  assert.ok(readme.includes('**1 Din profil · 2 Forbindelse · 3 Din idé**'), 'README beskriver opstartens tre trin med profil-trinnet først');
+  assert.ok(!readme.includes('Byg i Aura-appen'), 'introduktionens første valg bærer det aktuelle produktnavn');
+  assert.ok(!/Funktioner.*-trin/i.test(readme.slice(readme.indexOf('### Den guidede opstart'), readme.indexOf('###', readme.indexOf('### Den guidede opstart') + 4))), 'opstarten spørger ikke længere om funktioner');
+});
