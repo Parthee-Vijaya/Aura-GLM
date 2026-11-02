@@ -231,12 +231,15 @@ handle('project:choose-location', () => exclusive(async () => {
   return projectLocation();
 }));
 handle('project:create', input => exclusive(async () => {
-  // New projects start from the profile's standards; the renderer's filled-in choices win.
+  // New projects start from the profile's standards; the renderer's filled-in
+  // choices win. An explicit "Beslut senere"/"Intet design" is the empty string —
+  // a real choice that must survive — so only a missing field (undefined)
+  // falls back to the profile's standard.
   const standards = (await profileStore().get()).profile.projectDefaults;
   const startup = await new Preferences(workbench.store).available({
-    hosting: input.startup?.hosting || standards.hosting,
+    hosting: input.startup?.hosting ?? standards.hosting,
     connectionID: input.startup?.connectionID,
-    designID: input.startup?.designID || standards.designID,
+    designID: input.startup?.designID ?? standards.designID,
     tests: input.tests || standards.tests,
   });
   const parent = chosenParent || defaultProjectParent();
@@ -390,9 +393,11 @@ handle('preferences:save', input => exclusive(() => new Preferences(workbench.st
 // The profile is app-owned UI state; name and icon never reach prompts, model log, diagnostics or feedback.
 const profileStore = () => new Profile(workbench.store);
 // The profile's appearance.theme drives Electron's theme source, so the renderer's
-// prefers-color-scheme matches the profile before the first paint: 'system' follows
-// the operating system, the manual choices force their palette.
-function applyProfileTheme(theme) { nativeTheme.themeSource = theme === 'dark' ? 'dark' : theme === 'light' ? 'light' : 'default'; }
+// prefers-color-scheme matches the profile before the first paint. Electron's
+// contract allows only 'dark' | 'light' | 'system': 'system' follows the
+// operating system, the manual choices force their palette, and anything
+// unknown falls back to 'system' — 'default' is not a valid theme source.
+function applyProfileTheme(theme) { nativeTheme.themeSource = theme === 'dark' ? 'dark' : theme === 'light' ? 'light' : 'system'; }
 handle('profile:get', () => profileStore().get());
 handle('profile:save', input => exclusive(async () => { const result = await profileStore().save(input); if (input?.appearance?.theme !== undefined) applyProfileTheme(result.profile.appearance.theme); return result; }));
 handle('profile:migrate', input => exclusive(() => profileStore().migrate(input)));

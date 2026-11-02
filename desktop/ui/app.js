@@ -248,7 +248,11 @@ async function prepareProfileStep(profile) {
 async function saveProfileStep() {
   const patch = profilePatch();
   try {
-    await call('profileSave', patch);
+    const saved = await call('profileSave', patch);
+    // The cache and the announcement carry the canonical profile: the chip and
+    // every recommendation follow the saved values without a restart.
+    adoptProfile(saved.profile);
+    announceProfileSaved(saved.profile);
     // Every profile save that includes a theme hands it to the calm workspace,
     // so the hint copy never goes stale against the profile.
     window.calmWorkspace?.setTheme?.(patch.appearance?.theme);
@@ -272,6 +276,12 @@ function adoptProfile(profile) {
   profileState = profile || null;
   preferredConnection = profile?.standardAI?.connectionID || '';
   applyChatChoiceRecommendation();
+}
+// Every successful profile save from this file is announced with the canonical
+// profile, like the saves from Indstillinger and the workspace writers: the
+// sidebar chip and the cache follow along without a restart.
+function announceProfileSaved(profile) {
+  try { window.dispatchEvent(new CustomEvent('aura:profile-saved', { detail: profile })); } catch { /* an announcement never blocks the flow */ }
 }
 // The startup one-shot migration: the three retired localStorage keys are sent
 // to profile:migrate and deleted only after the confirmed save — otherwise
@@ -416,6 +426,7 @@ async function leaveSetup(useAI) {
     if (Object.keys(patch).length) {
       const saved = await call('profileSave', patch);
       adoptProfile(saved.profile);
+      announceProfileSaved(saved.profile);
       if (patch.appearance?.theme) window.calmWorkspace?.setTheme?.(patch.appearance.theme);
     }
   } catch { /* saving the profile never blocks completing the setup */ }
@@ -1607,6 +1618,7 @@ $('#model-standard').onclick = () => action(async () => {
   if (!connectionID || !modelID) { message('Vælg en forbindelse og en model, før du gør dem til din standard.', true); return; }
   const saved = await call('profileSave', { standardAI: { connectionID, modelID } });
   adoptProfile(saved.profile);
+  announceProfileSaved(saved.profile);
   message(`${$('#model-select').selectedOptions[0]?.textContent || modelID} er nu din standard-AI. Nye projekter starter med den.`);
 });
 

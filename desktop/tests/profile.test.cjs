@@ -24,7 +24,7 @@ test('get() på tom settings.json returnerer standardprofilen uden advarsler', a
   assert.deepEqual(await new Profile(store).get(), { profile: standardProfile(), warnings: [] });
 });
 
-test('save() erstatter kun de angivne felter; appearance erstattes som én enhed', async t => {
+test('save() erstatter kun de angivne felter; appearance flettes felt for felt', async t => {
   const store = await fixture(t), profile = new Profile(store);
   await profile.save({ name: 'Parthee', icon: 'star', helpLevel: 'minimal', workMode: 'plan', appearance: { theme: 'dark', panelOpen: false } });
   const second = await profile.save({ name: 'Anna' });
@@ -33,18 +33,87 @@ test('save() erstatter kun de angivne felter; appearance erstattes som én enhed
   assert.equal(second.profile.helpLevel, 'minimal');
   assert.equal(second.profile.workMode, 'plan');
   assert.deepEqual(second.profile.appearance, { theme: 'dark', panelOpen: false });
+  // Appearance merges per field: a writer that owns only the theme can never
+  // drag the panel's saved state back over a newer write (or vice versa).
   const third = await profile.save({ appearance: { theme: 'light' } });
-  assert.deepEqual(third.profile.appearance, { theme: 'light', panelOpen: true }, 'appearance erstattes som én enhed');
-  assert.deepEqual((await store.read()).profile, third.profile);
+  assert.deepEqual(third.profile.appearance, { theme: 'light', panelOpen: false }, 'theme skifter og panelOpen bevares fra profilen');
+  const fourth = await profile.save({ appearance: { panelOpen: true } });
+  assert.deepEqual(fourth.profile.appearance, { theme: 'light', panelOpen: true }, 'panelet skifter og temaet bevares fra profilen');
+  assert.deepEqual((await store.read()).profile, fourth.profile);
 });
 
 test('save() afviser ugyldige værdier uden at gemme noget', async t => {
   const store = await fixture(t), profile = new Profile(store);
   await profile.save({ name: 'Parthee' });
-  const invalid = [{ icon: 'drage' }, { icon: 7 }, { helpLevel: 'megen' }, { appearance: { theme: 'blå' } }, { appearance: { theme: 'dark', panelOpen: 'ja' } }, { workMode: 'byg' }, { name: 'x'.repeat(61) }, { name: 'navn\tmed fane' }, { standardAI: { connectionID: 'x'.repeat(101) } }, { standardAI: 'ai' }, { projectDefaults: { hosting: 'andet' } }];
+  const invalid = [{ icon: 'drage' }, { icon: 7 }, { helpLevel: 'megen' }, { appearance: { theme: 'blå' } }, { appearance: { theme: 'dark', panelOpen: 'ja' } }, { appearance: { theme: null } }, { workMode: 'byg' }, { name: 'x'.repeat(61) }, { name: 'navn\tmed fane' }, { standardAI: { connectionID: 'x'.repeat(101) } }, { standardAI: 'ai' }, { projectDefaults: { hosting: 'andet' } }];
   for (const values of invalid) await assert.rejects(() => profile.save(values));
   assert.deepEqual((await profile.get()).profile, { ...standardProfile(), name: 'Parthee' }, 'afviste kald ændrer intet');
   assert.deepEqual(Profile.ICON_IDS, ['star', 'bolt', 'leaf', 'moon', 'box', 'bird', 'wave', 'compass', 'flame', 'heart', 'cube', 'spark']);
+});
+
+// ---------- Læsning er eftergivende: en ukendt værdi låser aldrig appen ----------
+test('get() læser en profil fra en nyere version felt for felt med fallback og advarsler', async t => {
+  const store = await fixture(t, s => {
+    s.designs = [{ id: 'd1' }];
+    s.profile = { name: 'Parthee', icon: 'drage', helpLevel: 'megen', appearance: { theme: 'blå', panelOpen: 'ja' }, standardAI: { connectionID: 7, modelID: 'm1' }, workMode: 'byg', projectDefaults: { hosting: 'udgået', designID: 'd1', tests: 'auto-godkend' }, migrated: 0 };
+  });
+  const read = await new Profile(store).get();
+  assert.deepEqual(read.profile, {
+    ...standardProfile(), name: 'Parthee',
+    standardAI: { connectionID: '', modelID: 'm1' },
+    projectDefaults: { hosting: '', designID: 'd1', tests: 'senere' },
+  }, 'hvert ukendt felt falder tilbage alene — de læsbare søsterfelter overlever');
+  assert.deepEqual(read.warnings, [
+    'Dit profilikon kunne ikke læses og er nulstillet.',
+    'Dit hjælpeniveau kunne ikke læses og er nulstillet.',
+    'Dit udseende kunne ikke læses og er nulstillet.',
+    'Din standard-AI kunne ikke læses og er nulstillet.',
+    'Din arbejdsmåde kunne ikke læses og er nulstillet.',
+    'Dine projektstandarder kunne ikke læses og er nulstillet.',
+  ], 'hvert nulstillet felt advarses på dansk');
+  assert.equal((await store.read()).profile.icon, 'drage', 'get() er læsevej og ændrer ikke filen');
+  // En senere gemning reparerer filen: patch'et er stadig strengt valideret.
+  const saved = await new Profile(store).save({ name: 'Anna' });
+  assert.equal(saved.profile.icon, '', 'den ulæselige værdi er nu gemt som standarden');
+  assert.equal((await store.read()).profile.icon, '');
+  assert.equal((await new Profile(store).get()).warnings.length, 0, 'den reparerede profil læses uden advarsler');
+});
+
+test('get() håndterer en profil, der slet ikke er et objekt', async t => {
+  const store = await fixture(t, s => { s.profile = 'ævl'; });
+  const read = await new Profile(store).get();
+  assert.deepEqual(read.profile, standardProfile());
+  assert.deepEqual(read.warnings, ['Din profil kunne ikke læses og er nulstillet.']);
+  assert.equal((await store.read()).profile, 'ævl', 'filen røres ikke af læsningen');
+  await new Profile(store).save({ name: 'Anna' });
+  assert.deepEqual((await new Profile(store).get()).profile, { ...standardProfile(), name: 'Anna' }, 'gemningen genopretter en læsbar profil');
+});
+
+test('migrate() tåler startupDefaults med udgåede værdier og folder kun de læsbare', async t => {
+  const store = await fixture(t, s => {
+    s.connections = [{ id: 'ai', name: 'Egen model', kind: 'ollama', baseURL: 'http://127.0.0.1:11434' }];
+    s.startupDefaults = { hosting: 'udgået-hosting', connectionID: 'ai', designID: 'd1', tests: 'auto-godkend' };
+  });
+  const profile = new Profile(store);
+  const { profile: migrated } = await profile.migrate({});
+  assert.equal(migrated.migrated, 1, 'migrationen gennemføres trods de udgåede værdier');
+  assert.equal(migrated.standardAI.connectionID, 'ai', 'den læsbare forbindelse folder ind');
+  assert.equal(migrated.projectDefaults.designID, 'd1', 'den læsbare designpakke folder ind');
+  assert.deepEqual(migrated.projectDefaults, { hosting: '', designID: 'd1', tests: 'senere' }, 'de udgåede værdier bliver til standarden — ikke til en fejl');
+});
+
+test('migrate() læser en korrupt profil eftergivende og sætter markøren alligevel', async t => {
+  const store = await fixture(t, s => {
+    s.startupDefaults = { hosting: 'vercel', designID: '', tests: 'manuel' };
+    s.profile = { name: 'Parthee', icon: 'drage', helpLevel: 'megen', appearance: { theme: 'blå' }, standardAI: 'ai', workMode: 7, projectDefaults: 'ævl', migrated: 0 };
+  });
+  const { profile: migrated } = await new Profile(store).migrate({ workspaceTheme: 'dark' });
+  assert.equal(migrated.migrated, 1);
+  assert.equal(migrated.name, 'Parthee', 'de læsbare felter bevares');
+  assert.equal(migrated.icon, '', 'det ulæselige ikon er nulstillet');
+  assert.equal(migrated.appearance.theme, 'dark', 'rendererens temavalg folder ind i det nulstillede felt');
+  assert.deepEqual(migrated.projectDefaults, { hosting: 'vercel', designID: '', tests: 'manuel' }, 'startupDefaults folder ind i de tomme standarder');
+  assert.deepEqual((await store.read()).profile, migrated, 'migrationen gemmer den læselige profil');
 });
 
 test('migrate() folder gemte opstartsvalg og gamle renderer-nøgler ind i tomme felter', async t => {
@@ -129,6 +198,7 @@ test('præferencer læser og skriver profilens projektstandarder', async t => {
   assert.deepEqual((await prefs.get()).values, { hosting: 'vercel', connectionID: '', designID: 'design', tests: 'automatiske' }, 'profilen svarer, ikke de gamle opstartsvalg');
   await prefs.save({ hosting: 'azure', connectionID: 'ai', designID: '', tests: 'senere' });
   const state = await store.read();
-  assert.deepEqual(state.profile.projectDefaults, { hosting: 'azure', connectionID: 'ai', designID: '', tests: 'senere' }, 'save skriver tilbage til profilens projektstandarder');
+  assert.deepEqual(state.profile.projectDefaults, { hosting: 'azure', designID: '', tests: 'senere' }, 'save skriver tilbage til profilens projektstandarder');
+  assert.ok(!('connectionID' in state.profile.projectDefaults), 'connectionID hører til standardAI og gemmes aldrig i projectDefaults');
   assert.equal(state.startupDefaults.hosting, 'own', 'de gamle opstartsvalg røres ikke');
 });

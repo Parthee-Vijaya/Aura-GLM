@@ -6,10 +6,10 @@
 // their .open guards, [open] wait steps and close buttons are untouched.
 // The profile and appearance sections render real controls from the profile:
 // fill(profile) shows the current values, each control saves its own field
-// group through harness.profileSave, and nested units are always saved whole
-// (appearance { theme, panelOpen }, standardAI, projectDefaults). The profile
-// is pure UI state: names and icons never reach prompts, the model log,
-// diagnostics or feedback reports.
+// group through the shared profile save queue (ui/profile-save.js), and the
+// units travel whole from this dialog (appearance { theme, panelOpen },
+// standardAI, projectDefaults). The profile is pure UI state: names and icons
+// never reach prompts, the model log, diagnostics or feedback reports.
 (function (root) {
   'use strict';
   // Section order is the popover and nav order. Profile and appearance are
@@ -43,10 +43,9 @@
   ].map(Object.freeze));
   const INLINE_SECTIONS = ['profile', 'appearance'];
   const HEADING_ID = 'settings-section-title';
-  // Read-only renderer copy of appearance.theme, read by workspace-calm.js to
-  // apply the theme synchronously at startup. Written only by profile/theme
-  // code: this module and workspace-calm.js. The profile stays the single source.
-  const THEME_HINT_KEY = 'aura.theme-hint.v1';
+  // The theme hint key (aura.theme-hint.v1) has one writer: workspace-calm.js.
+  // This module only calls calmWorkspace.setTheme, so the hint copy, the body
+  // dataset and the button state always agree. The profile stays the single source.
   // Option sets reuse the exact labels from the onboarding profile step and
   // the per-project "Flere valg" so the same choices read the same everywhere.
   const THEMES = Object.freeze([['system', 'Følg system'], ['light', 'Lyst'], ['dark', 'Mørkt']]);
@@ -58,7 +57,7 @@
   const BLANK_STANDARDS = Object.freeze({ hosting: '', designID: '', tests: 'senere' });
   const inert = { open: async () => false, register: () => {}, fill: () => {}, saveSection: async () => null };
 
-  function create({ document = root.document, sections = SECTIONS, toggle = '#settings-toggle', harness = root.harness, icons = root.ProfileIcons, storage = root.localStorage, matchMedia = root.matchMedia, themeHost = () => root.calmWorkspace } = {}) {
+  function create({ document = root.document, sections = SECTIONS, toggle = '#settings-toggle', harness = root.harness, icons = root.ProfileIcons, themeHost = () => root.calmWorkspace, saveQueue = root.profileSaveQueued } = {}) {
     const dialog = document && document.querySelector('#settings-dialog');
     const content = document && document.querySelector('#settings-content');
     if (!dialog || !content) return inert;
@@ -114,17 +113,12 @@
       try { document.dispatchEvent(new CustomEvent('aura:profile-saved', { detail: profile, bubbles: true })); } catch { /* a missing event target never blocks a save */ }
     }
 
-    // Theme and help application, shared by open and every save: the hint copy
-    // is written first (workspace-calm.js reads it at startup), then the body
-    // dataset follows immediately; the calm workspace syncs its own button
-    // state when it is loaded. 'system' follows prefers-color-scheme.
+    // Theme and help application, shared by open and every save. The hint
+    // copy, the body dataset and the button state are written by one writer —
+    // workspace-calm.js's setTheme — so this module only hands the choice
+    // over; 'system' follows prefers-color-scheme there.
     function applyTheme(theme) {
       const choice = theme === 'light' || theme === 'dark' ? theme : 'system';
-      try { storage?.setItem(THEME_HINT_KEY, choice); } catch { /* presentation only */ }
-      const resolved = choice === 'system'
-        ? (typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)')?.matches ? 'dark' : 'light')
-        : choice;
-      document.body.dataset.workspaceTheme = resolved;
       themeHost()?.setTheme?.(choice);
     }
     function applyHelp(helpLevel) {
@@ -176,20 +170,22 @@
       if (theme) for (const input of theme.querySelectorAll('input')) input.checked = input.value === (profile.appearance?.theme || 'system');
     }
 
-    // Saves are serialized through one queue: main.cjs's exclusive() rejects
-    // overlapping profile writes, so rapid field changes must never race each
-    // other (a rejected save would revert the field the user just changed).
-    let saveQueue = Promise.resolve();
-    function queued(task) {
-      const run = saveQueue.then(task, task);
-      saveQueue = run.catch(() => {});
-      return run;
-    }
+    // Saves are serialized through the one shared renderer queue
+    // (ui/profile-save.js), which the theme button and the panel toggle use
+    // as well: main.cjs's exclusive() rejects overlapping profile writes, so
+    // rapid field changes must never race each other (a rejected save would
+    // revert the field the user just changed).
+    function saveSection(partial) { return saveQueue.queued(() => saveProfile(partial)); }
+
+    // Every save bumps a generation; a read that started earlier refuses its
+    // own answer, so an older UI state can never be dragged back on screen.
+    let profileGeneration = 0;
 
     // Saves a partial profile patch and refreshes everything from the answer:
     // values, theme and help level. A rejected save shows its Danish error and
     // restores the last known values.
     async function saveProfile(partial) {
+      ++profileGeneration;
       try {
         const result = await invoke('profileSave', partial);
         fill(result.profile);
@@ -202,18 +198,21 @@
         return null;
       }
     }
-    function saveSection(partial) { return queued(() => saveProfile(partial)); }
 
     // "Glem projektstandarder": preferencesSave writes the profile's project
     // defaults (core/preferences.cjs owns the same validation), then the
-    // profile is fetched again so the fields show the canonical answer.
+    // profile is fetched again so the fields show the canonical answer. The
+    // refreshed profile is announced, so the app cache and the startup screen
+    // follow the cleared standards.
     async function forgetStandards() {
-      return queued(async () => {
+      return saveQueue.queued(async () => {
         try {
           const cleared = await invoke('preferencesSave', { ...BLANK_STANDARDS });
           const next = await invoke('profileGet');
+          if (!next || !next.profile) return;
           fill(next.profile);
           announce(['Projektstandarderne er nulstillet.', ...(cleared?.warnings || []), ...(next.warnings || [])]);
+          dispatchSaved(next.profile);
         } catch (error) {
           announce([error.message], true);
           if (profile) fill(profile);
@@ -378,6 +377,11 @@
       navButtons.get(section)?.focus();
     }
     async function load(section) {
+      // A read that started before the newest save must never refill the
+      // controls when its answer lands late — it would drag an older UI state
+      // (fx a saved theme) back on screen. Only a save bumps the generation;
+      // the read refuses its own answer when a save has happened since.
+      const generation = profileGeneration;
       try {
         const reads = [invoke('profileGet')];
         if (section === 'profile') {
@@ -385,6 +389,7 @@
           reads.push(invoke('connectionState').catch(() => null), invoke('listDesigns').catch(() => null));
         }
         const [profileResult, connectionResult, designResult] = await Promise.all(reads);
+        if (generation !== profileGeneration) return;
         if (connectionResult) connections = connectionResult.connections || [];
         if (designResult) designs = designResult || [];
         fill(profileResult.profile);

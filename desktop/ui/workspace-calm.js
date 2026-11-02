@@ -6,9 +6,10 @@
   const narrow = matchMedia('(max-width: 720px)');
   const overlaySidebar = matchMedia('(max-width: 900px)');
   // Theme: the profile is the single source; aura.theme-hint.v1 is the
-  // read-only renderer copy, written only by profile/theme code (this module
-  // and settings.js) so the theme applies synchronously at startup. Without a
-  // stored choice the app follows the system's light/dark state.
+  // read-only renderer copy, written only by this module (settings.js and
+  // the profile code call setTheme below) so the theme applies synchronously
+  // at startup. Without a stored choice the app follows the system's
+  // light/dark state.
   const themeHintKey = 'aura.theme-hint.v1';
   const systemDark = matchMedia('(prefers-color-scheme: dark)');
   function storedChoice() { try { const v = localStorage.getItem(themeHintKey); return ['system', 'light', 'dark'].includes(v) ? v : null; } catch { return null; } }
@@ -50,16 +51,19 @@
     return response.value;
   }
   // The project-menu button cycles light/dark: the visual change and the hint
-  // are synchronous; the profile persists asynchronously as the single source.
+  // are synchronous; the profile persists as the single source. The save goes
+  // through the shared queue with only the theme field — main merges the
+  // sister fields, so the panel's saved state can never be dragged along
+  // stale — and the saved profile is announced for the app cache and the chip.
   themeButton.onclick = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
     setTheme(next);
-    void (async () => {
+    void window.profileSaveQueued.queued(async () => {
       try {
-        const current = await invoke('profileGet');
-        await invoke('profileSave', { appearance: { theme: next, panelOpen: current.profile?.appearance?.panelOpen !== false } });
+        const result = await invoke('profileSave', { appearance: { theme: next } });
+        window.profileSaveQueued.saved(result.profile);
       } catch { /* The hint keeps this session's choice; the profile stays authoritative. */ }
-    })();
+    });
   };
   // Follows the system's light/dark change unless a stored choice overrides it.
   systemDark.addEventListener('change', () => { theme = resolveTheme(); applyTheme(); });

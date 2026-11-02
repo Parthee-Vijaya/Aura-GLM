@@ -466,59 +466,55 @@ test('Brug som standard kræver både forbindelse og model', async () => {
 });
 
 // ---------- Arbejdsfladen: panelstart fra profilen ----------
-test('arbejdsfladen: starttilstanden kommer fra aura:profile, og skift gemmes i profilen — ikke localStorage', async () => {
+// Helper-modulet (ui/profile-save.js) er den delte gemkø: panelet sender kun
+// sit eget felt, og den gemte profil annonceres.
+const ProfileSave = require('../ui/profile-save.js');
+function runPanelSurface({ profile = { appearance: { theme: 'dark' } }, panelSaveQueued = ProfileSave } = {}) {
   const grid = { dataset: {} };
   const toggle = { attributes: new Map(), textContent: '', listeners: {}, setAttribute(name, value) { this.attributes.set(name, String(value)); }, addEventListener(name, handler) { (this.listeners[name] ||= []).push(handler); } };
   const windowListeners = {};
-  const storage = [], saves = [];
+  const storage = [], saves = [], announced = [];
+  const capture = { queued: ProfileSave.queued, saved: value => announced.push(JSON.parse(JSON.stringify(value))) };
   const context = {
     document: { querySelector: selector => selector === '.work-grid' ? grid : null, getElementById: id => id === 'surface-toggle' ? toggle : null },
     window: {
       addEventListener: (name, handler) => { (windowListeners[name] ||= []).push(handler); },
+      profileSaveQueued: panelSaveQueued === ProfileSave ? capture : panelSaveQueued,
       harness: {
         // Harness-methoderne svarer med { ok, value } som preloads indpakning.
-        profileGet: async () => ({ ok: true, value: { profile: { appearance: { theme: 'dark' } }, warnings: [] } }),
-        profileSave: async value => { saves.push(plain(value)); return { ok: true, value: { profile: { appearance: { ...value.appearance } }, warnings: [] } }; }
+        profileGet: async () => ({ ok: true, value: { profile, warnings: [] } }),
+        profileSave: async value => { saves.push(JSON.parse(JSON.stringify(value))); return { ok: true, value: { profile: { ...profile, appearance: { ...value.appearance } }, warnings: [] } }; }
       }
     },
     localStorage: { getItem: key => { storage.push(['getItem', key]); return null; }, setItem: (key, value) => { storage.push(['setItem', key]); }, removeItem: key => { storage.push(['removeItem', key]); } },
     show: () => {}
   };
   vm.runInNewContext(sliceOf(workspaceSource, '// ── DSH-stil: arbejdsfladen er et valgfrit højrepanel ──', 'function show(name, { focus = false } = {}) {'), context);
-  assert.equal(grid.dataset.surface, undefined, 'indtil profilen lander, står panelet åbent som skærmens udgangspunkt');
-  for (const handler of windowListeners['aura:profile'] || []) handler({ detail: { appearance: { panelOpen: false } } });
-  assert.equal(grid.dataset.surface, 'off', 'profilens panelOpen: false lukker panelet');
-  assert.equal(toggle.attributes.get('aria-pressed'), 'false');
+  return { context, grid, toggle, windowListeners, saves, storage, announced };
+}
+test('arbejdsfladen: starttilstanden kommer fra aura:profile, og skift gemmes i profilen — ikke localStorage', async () => {
+  const f = runPanelSurface({ profile: { appearance: { theme: 'dark' } } });
+  assert.equal(f.grid.dataset.surface, undefined, 'indtil profilen lander, står panelet åbent som skærmens udgangspunkt');
+  for (const handler of f.windowListeners['aura:profile'] || []) handler({ detail: { appearance: { panelOpen: false } } });
+  assert.equal(f.grid.dataset.surface, 'off', 'profilens panelOpen: false lukker panelet');
+  assert.equal(f.toggle.attributes.get('aria-pressed'), 'false');
   await flush();
-  assert.deepEqual(saves, [], 'starttilstanden skrives ikke tilbage');
-  for (const handler of toggle.listeners.click) handler();
-  assert.equal(grid.dataset.surface, 'on', 'brugerens klik åbner panelet');
+  assert.deepEqual(f.saves, [], 'starttilstanden skrives ikke tilbage');
+  for (const handler of f.toggle.listeners.click) handler();
+  assert.equal(f.grid.dataset.surface, 'on', 'brugerens klik åbner panelet');
   await flush();
-  assert.deepEqual(saves, [{ appearance: { theme: 'dark', panelOpen: true } }], 'appearance gemmes som én enhed med temaet fra profilen');
-  assert.deepEqual(storage, [], 'den gamle localStorage-nøgle er pensioneret — ingen læsninger eller skrivninger');
+  assert.deepEqual(f.saves, [{ appearance: { panelOpen: true } }], 'panelet sender kun sit eget felt — main fletter søsterfelterne');
+  assert.deepEqual(f.announced.map(profile => profile.appearance.panelOpen), [true], 'den gemte profil annonceres som aura:profile-saved');
+  assert.deepEqual(f.storage, [], 'den gamle localStorage-nøgle er pensioneret — ingen læsninger eller skrivninger');
 });
-test('arbejdsfladen: hurtige skift gemmer i rækkefølge, så det sidste klik vinder', async () => {
-  const grid = { dataset: {} };
-  const toggle = { attributes: new Map(), textContent: '', listeners: {}, setAttribute(name, value) { this.attributes.set(name, String(value)); }, addEventListener(name, handler) { (this.listeners[name] ||= []).push(handler); } };
-  const windowListeners = {};
-  const saves = [];
-  const context = {
-    document: { querySelector: selector => selector === '.work-grid' ? grid : null, getElementById: id => id === 'surface-toggle' ? toggle : null },
-    window: {
-      addEventListener: (name, handler) => { (windowListeners[name] ||= []).push(handler); },
-      harness: {
-        profileGet: async () => ({ ok: true, value: { profile: { appearance: { theme: 'system' } }, warnings: [] } }),
-        profileSave: async value => { saves.push(plain(value)); return { ok: true, value: { profile: { appearance: { ...value.appearance } }, warnings: [] } }; }
-      }
-    },
-    localStorage: { getItem: () => null, setItem: () => {}, removeItem: () => {} },
-    show: () => {}
-  };
-  vm.runInNewContext(sliceOf(workspaceSource, '// ── DSH-stil: arbejdsfladen er et valgfrit højrepanel ──', 'function show(name, { focus = false } = {}) {'), context);
-  for (const handler of toggle.listeners.click) handler();
-  for (const handler of toggle.listeners.click) handler();
+test('arbejdsfladen: hurtige skift gemmer i rækkefølge gennem den delte kø, så det sidste klik vinder', async () => {
+  const f = runPanelSurface({ profile: { appearance: { theme: 'system' } } });
+  for (const handler of f.windowListeners['aura:profile'] || []) handler({ detail: { appearance: { panelOpen: false } } });
+  for (const handler of f.toggle.listeners.click) handler();
+  for (const handler of f.toggle.listeners.click) handler();
   await flush();
-  assert.deepEqual(saves, [{ appearance: { theme: 'system', panelOpen: true } }, { appearance: { theme: 'system', panelOpen: false } }], 'den sidste skrivning matcher det sidste klik');
+  assert.deepEqual(f.saves, [{ appearance: { panelOpen: true } }, { appearance: { panelOpen: false } }], 'den sidste skrivning matcher det sidste klik — ingen gemning afvises');
+  assert.deepEqual(f.announced.map(profile => profile.appearance.panelOpen), [true, false], 'hver gemning annonceres');
 });
 
 // ---------- Pensionering: kilder og copy ----------

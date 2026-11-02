@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const Settings = require('../ui/settings.js');
+const ProfileSave = require('../ui/profile-save.js');
 const ProfileIcons = require('../ui/profile-icons.js');
 const { blank } = require('../core/profile.cjs');
 
@@ -146,11 +147,6 @@ function mergeProfile(profile, patch) {
 function makeHarness({ profile = blank(), connections = [], designs = [], warnings = [], saveError = null } = {}) {
   let current = profile;
   const saves = [], preferencesSaves = [], calls = [];
-  // A localStorage-shaped store so the hint key writes land and are assertable.
-  const store = {};
-  store.getItem = key => (key in store ? store[key] : null);
-  store.setItem = (key, value) => { store[key] = String(value); };
-  store.removeItem = key => { delete store[key]; };
   const copy = value => JSON.parse(JSON.stringify(value));
   const api = {
     profileGet: async () => { calls.push('profileGet'); return { ok: true, value: { profile: copy(current), warnings: [...warnings] } }; },
@@ -169,12 +165,23 @@ function makeHarness({ profile = blank(), connections = [], designs = [], warnin
     connectionState: async () => { calls.push('connectionState'); return { ok: true, value: { connections } }; },
     listDesigns: async () => { calls.push('listDesigns'); return { ok: true, value: designs }; }
   };
-  return { api, saves, preferencesSaves, calls, store, get profile() { return current; } };
+  return { api, saves, preferencesSaves, calls, get profile() { return current; } };
 }
-function makeSettings(dom, harness, extra = {}) {
+// The theme host records the choice settings.js hands over: workspace-calm.js
+// is the one writer of hint, dataset and button state, so the tests assert the
+// hand-over instead of a duplicated write.
+function makeThemeHost(dom, themes = []) {
+  return () => ({
+    setTheme: choice => {
+      themes.push(choice);
+      dom.body.dataset.workspaceTheme = choice;
+    }
+  });
+}
+function makeSettings(dom, harness, { themes = [] } = {}) {
   return Settings.create({
     document: dom.document, harness: harness?.api, icons: ProfileIcons,
-    storage: harness?.store ?? {}, matchMedia: () => ({ matches: false }), ...extra
+    themeHost: makeThemeHost(dom, themes), saveQueue: ProfileSave
   });
 }
 const openSection = async (settings, section) => { await settings.open(section); await flush(); };
@@ -194,12 +201,13 @@ test('seks sektioner i fast rækkefølge med navne og ærlige beskrivelser', () 
 
 test('open(profile) viser dialogen med sektionen aktiv og felter udfyldt fra profilen', async () => {
   const dom = makeDom();
+  const themes = [];
   const harness = makeHarness({
     profile: { ...blank(), name: 'Anna Klit', icon: 'moon', helpLevel: 'minimal', workMode: 'plan', appearance: { theme: 'dark', panelOpen: false }, standardAI: { connectionID: 'c2', modelID: 'gpt-mini' }, projectDefaults: { hosting: 'vercel', designID: 'd1', tests: 'automatiske' } },
     connections: [{ id: 'c1', name: 'Corti' }, { id: 'c2', name: 'Ollama hjem' }],
     designs: [{ id: 'd1', name: 'Gentofte design', files: 3 }]
   });
-  const settings = makeSettings(dom, harness);
+  const settings = makeSettings(dom, harness, { themes });
   const profileButton = navButton(dom, 'profile');
   await openSection(settings, 'profile');
   assert.equal(dom.dialog.open, true);
@@ -231,19 +239,22 @@ test('open(profile) viser dialogen med sektionen aktiv og felter udfyldt fra pro
   assert.equal(q('#settings-tests').value, 'automatiske');
   assert.ok(q('#settings-forget-standards'), 'Glem projektstandarder-knappen findes');
   assert.equal(dom.body.classList.contains('help-minimal'), true, 'minimal hjælp sætter klassen straks');
-  assert.equal(dom.body.dataset.workspaceTheme, 'dark', 'profilens tema anvendes straks');
+  assert.deepEqual(themes, ['dark'], 'profilens tema håndteres gennem temamodulet — den eneste skriver af hint og datasæt');
+  assert.equal(dom.body.dataset.workspaceTheme, 'dark', 'temaværten har anvendt temaet');
 });
 
 test('open(appearance) udfylder tema og panelstart fra profilen', async () => {
   const dom = makeDom();
+  const themes = [];
   const harness = makeHarness({ profile: { ...blank(), appearance: { theme: 'light', panelOpen: false } } });
-  const settings = makeSettings(dom, harness);
+  const settings = makeSettings(dom, harness, { themes });
   await openSection(settings, 'appearance');
   const q = selector => dom.content.querySelector(selector);
   const radios = dom.content.querySelectorAll('#settings-theme input');
   assert.deepEqual(radios.map(radio => radio.value), ['system', 'light', 'dark']);
   assert.deepEqual(radios.map(radio => radio.checked), [false, true, false]);
   assert.equal(q('#settings-panel-open').checked, false);
+  assert.deepEqual(themes, ['light'], 'temavalget gives videre til temamodulet');
   assert.equal(dom.body.dataset.workspaceTheme, 'light');
 });
 
@@ -296,17 +307,18 @@ test('arbejdsmåde og hjælpeniveau gemmer deres eget felt', async () => {
   assert.equal(dom.body.classList.contains('help-minimal'), false, 'klassen fjernes igen ved fuld hjælp');
 });
 
-test('temavalg gemmer hele udseende-enheden og anvender temaet straks', async () => {
+test('temavalg gemmer hele udseende-enheden og giver temaet til temamodulet', async () => {
   const dom = makeDom();
+  const themes = [];
   const harness = makeHarness({ profile: { ...blank(), appearance: { theme: 'system', panelOpen: true } } });
-  const settings = makeSettings(dom, harness);
+  const settings = makeSettings(dom, harness, { themes });
   await openSection(settings, 'appearance');
   const dark = dom.content.querySelectorAll('#settings-theme input').find(radio => radio.value === 'dark');
   dark.checked = true; dark.emit('change');
   await flush();
   assert.deepEqual(harness.saves[0], { appearance: { theme: 'dark', panelOpen: true } }, 'både tema og paneltilstand sendes — appearance er én enhed');
-  assert.equal(dom.body.dataset.workspaceTheme, 'dark', 'temaet anvendes straks');
-  assert.equal(harness.store['aura.theme-hint.v1'], 'dark', 'hintnøglen skrives som kopi af appearance.theme');
+  assert.deepEqual(themes.at(-1), 'dark', 'temavalget gives videre straks gennem setTheme');
+  assert.equal(dom.body.dataset.workspaceTheme, 'dark', 'temamodulet ejer hint og datasæt — Indstillinger skriver ikke selv');
   const panel = dom.content.querySelector('#settings-panel-open');
   panel.checked = false; panel.emit('change');
   await flush();
@@ -315,14 +327,15 @@ test('temavalg gemmer hele udseende-enheden og anvender temaet straks', async ()
 
 test('temaændring bevarer en gemt lukket starttilstand for panelet', async () => {
   const dom = makeDom();
+  const themes = [];
   const harness = makeHarness({ profile: { ...blank(), appearance: { theme: 'system', panelOpen: false } } });
-  const settings = makeSettings(dom, harness);
+  const settings = makeSettings(dom, harness, { themes });
   await openSection(settings, 'appearance');
   const light = dom.content.querySelectorAll('#settings-theme input').find(radio => radio.value === 'light');
   light.checked = true; light.emit('change');
   await flush();
   assert.deepEqual(harness.saves[0], { appearance: { theme: 'light', panelOpen: false } }, 'panelOpen bevares i den sendte enhed');
-  assert.equal(harness.store['aura.theme-hint.v1'], 'light');
+  assert.deepEqual(themes.at(-1), 'light', 'lys tema gives videre gennem temamodulet');
 });
 
 test('valg af standard-AI gemmer hele standardAI-enheden', async () => {
@@ -387,11 +400,13 @@ test('projektstandarder gemmes som én enhed med alle tre felter', async () => {
   assert.deepEqual(harness.saves[2], { projectDefaults: { hosting: 'vercel', designID: 'd1', tests: 'automatiske' } });
 });
 
-test('Glem projektstandarder nulstiller gennem preferencesSave med tomme værdier', async () => {
+test('Glem projektstandarder nulstiller gennem preferencesSave og annoncerer den nye profil', async () => {
   const dom = makeDom();
   const harness = makeHarness({ profile: { ...blank(), projectDefaults: { hosting: 'vercel', designID: 'd1', tests: 'automatiske' } } });
   const settings = makeSettings(dom, harness);
   await openSection(settings, 'profile');
+  const saved = [];
+  dom.document.addEventListener('aura:profile-saved', event => saved.push(event.detail));
   dom.content.querySelector('#settings-forget-standards').click();
   await flush();
   assert.deepEqual(harness.preferencesSaves, [{ hosting: '', designID: '', tests: 'senere' }], 'preferencesSave kaldes med de tomme standardværdier');
@@ -402,6 +417,8 @@ test('Glem projektstandarder nulstiller gennem preferencesSave med tomme værdie
   const feedback = dom.content.querySelector('#settings-feedback');
   assert.match(feedback.textContent, /nulstillet/i);
   assert.equal(feedback.classList.contains('error'), false);
+  assert.equal(saved.length, 1, 'den opdaterede profil annonceres — cachen og projektopstarten følger med');
+  assert.equal(saved[0].projectDefaults.hosting, '');
 });
 
 test('en afvist gemning viser fejlen og gendanner de sidste kendte værdier', async () => {
@@ -448,6 +465,34 @@ test('hurtige ændringer i træk køres efter hinanden — ingen gemning afvises
   const feedback = dom.content.querySelector('#settings-feedback');
   assert.equal(feedback.classList.contains('error'), false, 'ingen gemning er blevet afvist undervejs');
   assert.equal(dom.content.querySelector('#settings-work-mode').value, 'chat', 'feltet viser den sidste gemte værdi');
+});
+
+// Fund 3: et læsesvar, der er ældre end den seneste gemning, må aldrig udfylde
+// felterne igen — ellers vender et gammelt tema UI-tilstanden tilbage efter en
+// nyere gemning.
+test('et læsesvar, der er ældre end den seneste gemning, udfylder ikke felterne igen', async () => {
+  const dom = makeDom();
+  const themes = [];
+  let releaseStale = null;
+  const harness = makeHarness({ profile: { ...blank(), appearance: { theme: 'dark', panelOpen: false } } });
+  // Åbningens læsning hænger: svaret bærer det GAMLE mørke tema og lander først
+  // efter en nyere gemning har vist lyst tema.
+  harness.api.profileGet = async () => {
+    await new Promise(resolve => { releaseStale = resolve; });
+    return { ok: true, value: { profile: { ...blank(), appearance: { theme: 'dark', panelOpen: true } }, warnings: [] } };
+  };
+  const settings = makeSettings(dom, harness, { themes });
+  await settings.open('appearance');
+  const light = dom.content.querySelectorAll('#settings-theme input').find(radio => radio.value === 'light');
+  light.checked = true; light.emit('change');
+  await flush(); await flush();
+  assert.deepEqual(themes.at(-1), 'light', 'den nye gemning har vist lyst tema');
+  assert.equal(dom.content.querySelector('#settings-panel-open').checked, false, 'gemningen har udfyldt paneltilstanden');
+  releaseStale();
+  await flush(); await flush();
+  assert.deepEqual(themes, ['light'], 'det forældede svar vender ikke mørkt tema tilbage');
+  assert.equal(dom.content.querySelectorAll('#settings-theme input').find(radio => radio.checked)?.value, 'light', 'radio-knapperne viser fortsat den gemte værdi');
+  assert.equal(dom.content.querySelector('#settings-panel-open').checked, false, 'det forældede svar ændrer ikke paneltilstanden');
 });
 
 test('sektionsskift flytter aria-current, indhold og fokus', async () => {

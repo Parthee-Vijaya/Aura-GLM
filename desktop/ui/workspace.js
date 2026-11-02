@@ -15,25 +15,22 @@
   // Panelet åbner aldrig af sig selv; AI-hændelser opdaterer kun badges.
   // Starttilstanden kommer fra profilen gennem aura:profile; indtil hændelsen
   // lander, står panelet åbent, som skærmen starter. Skift gemmes i profilen —
-  // appearance er én enhed, så temaet hentes fra den gemte profil ved gemning,
-  // og den gamle localStorage-nøgle er pensioneret.
-  let panelSave = Promise.resolve();
+  // panelet sender kun sit eget felt gennem den delte gemkø, main fletter
+  // søsterfelterne, og den gamle localStorage-nøgle er pensioneret.
   async function profileInvoke(method, value) {
     const response = await window.harness[method](value);
     if (!response?.ok) throw new Error(response?.error || 'Profilen kunne ikke gemmes.');
     return response.value;
   }
   function savePanelChoice(open) {
-    // Én kø: hurtige skift gemmer i rækkefølge, så den sidste skrivning
-    // matcher det sidste klik.
-    panelSave = panelSave.catch(() => {}).then(async () => {
+    // Én fælles kø med temaknappen og Indstillinger: hurtige skift gemmer i
+    // rækkefølge, og den gemte profil annonseres, så cachen og chippen følger med.
+    return window.profileSaveQueued.queued(async () => {
       try {
-        const { profile } = await profileInvoke('profileGet');
-        const theme = profile?.appearance?.theme;
-        await profileInvoke('profileSave', { appearance: { theme: theme === 'light' || theme === 'dark' ? theme : 'system', panelOpen: open } });
+        const result = await profileInvoke('profileSave', { appearance: { panelOpen: open } });
+        window.profileSaveQueued.saved(result.profile);
       } catch { /* Starttilstanden er præsentation; profilen forbliver kilden. */ }
     });
-    return panelSave;
   }
   function surfaceOpen(open, { select, persist = true } = {}) {
     const grid = document.querySelector('.work-grid');

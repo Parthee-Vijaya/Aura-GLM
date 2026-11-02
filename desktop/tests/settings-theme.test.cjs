@@ -102,9 +102,11 @@ test('main.cjs: applyProfileTheme oversætter profilens tema til Electron-temaki
   context.applyProfileTheme('light');
   assert.equal(context.nativeTheme.themeSource, 'light');
   context.applyProfileTheme('system');
-  assert.equal(context.nativeTheme.themeSource, 'default', "'system' følger operativsystemet");
+  // Electron-kontrakten er nativeTheme.themeSource ∈ {'dark','light','system'}:
+  // 'default' er ikke en gyldig værdi — følg-system hedder 'system'.
+  assert.equal(context.nativeTheme.themeSource, 'system', "'system' følger operativsystemet");
   context.applyProfileTheme(undefined);
-  assert.equal(context.nativeTheme.themeSource, 'default', 'et ukendt tema giver aldrig et tvangstema');
+  assert.equal(context.nativeTheme.themeSource, 'system', 'et ukendt tema giver aldrig et tvangstema');
 });
 
 test('main.cjs: profilen læses og temaet sættes, før vinduet skabes', async () => {
@@ -146,7 +148,10 @@ test('main.cjs: profile:save håndhæver temaet efter en gemning, der inkluderer
 });
 
 // workspace-calm.js — the whole presentation module over a synthetic workspace.
-function runCalm({ store = {}, harness = null, systemDark = false } = {}) {
+// The theme button saves through the shared queue (ui/profile-save.js), so the
+// real module is injected and its behaviour is asserted directly.
+const ProfileSave = require('../ui/profile-save.js');
+function runCalm({ store = {}, harness = null, systemDark = false, profileSaveQueued = ProfileSave } = {}) {
   const document = { activeElement: null, listeners: {} };
   document.addEventListener = (name, handler) => { (document.listeners[name] ||= []).push(handler); };
   const registry = new Map();
@@ -156,7 +161,7 @@ function runCalm({ store = {}, harness = null, systemDark = false } = {}) {
   const root = make('div', 'workspace'); root.hidden = false;
   const bar = new El('div'); bar.className = 'workspace-bar'; root.append(bar);
   for (const id of ['project-menu', 'sidebar-toggle', 'sidebar', 'chat-panel', 'work-surface', 'prompt']) make('div', id);
-  const window = { harness, previewLayout: null, calmWorkspace: null };
+  const window = { harness, previewLayout: null, calmWorkspace: null, profileSaveQueued };
   const context = {
     document, window, registry,
     localStorage: { getItem: key => (key in store ? store[key] : null), setItem: (key, value) => { store[key] = String(value); }, removeItem: key => { delete store[key]; } },
@@ -187,13 +192,15 @@ test('workspace-calm: hintet "system" og et fraværende hint følger systemet', 
   assert.equal(runCalm({ store: {}, systemDark: false }).body.dataset.workspaceTheme, 'light');
 });
 
-test('workspace-calm: temaknappen skifter synkront, skriver hintet og gemmer appearance-enheden', async () => {
+test('workspace-calm: temaknappen skifter synkront, skriver hintet og gemmer kun sit eget felt', async () => {
   const saves = [];
+  const announced = [];
   const harness = {
     profileGet: async () => ({ ok: true, value: { profile: { appearance: { theme: 'dark', panelOpen: false } } } }),
-    profileSave: async value => { saves.push(value); return { ok: true, value: { profile: {} } }; }
+    profileSave: async value => { saves.push(value); return { ok: true, value: { profile: { appearance: { ...value.appearance }, name: 'Gemt' } } }; }
   };
-  const run = runCalm({ store: {}, harness, systemDark: true });
+  const capture = { queued: ProfileSave.queued, saved: profile => announced.push(profile) };
+  const run = runCalm({ store: {}, harness, systemDark: true, profileSaveQueued: capture });
   const button = run.themeButton();
   assert.equal(run.body.dataset.workspaceTheme, 'dark');
   button.click();
@@ -203,25 +210,48 @@ test('workspace-calm: temaknappen skifter synkront, skriver hintet og gemmer app
   assert.equal(run.store['harness-workspace-theme-v1'], undefined, 'den gamle nøgle skrives aldrig');
   assert.equal(saves.length, 0, 'profilgemningen er stadig i gang — det visuelle er synkront først');
   await flush(); await flush();
-  assert.deepEqual(plain(saves), [{ appearance: { theme: 'light', panelOpen: false } }], 'appearance gemmes som én enhed med panelOpen fra profilen');
+  // Appearance merges main-side: the button owns only the theme and never
+  // fetches the profile first — a stale panelOpen can no longer race back.
+  assert.deepEqual(plain(saves), [{ appearance: { theme: 'light' } }], 'kun temafeltet sendes gennem den delte kø');
+  assert.deepEqual(plain(announced), [{ appearance: { theme: 'light' }, name: 'Gemt' }], 'den gemte profil annonceres som aura:profile-saved');
   assert.equal(button.getAttribute('aria-checked'), 'false');
   button.click();
   assert.equal(run.body.dataset.workspaceTheme, 'dark', 'knappen cykler tilbage');
   await flush(); await flush();
-  assert.deepEqual(plain(saves[1]), { appearance: { theme: 'dark', panelOpen: false } });
+  assert.deepEqual(plain(saves[1]), { appearance: { theme: 'dark' } });
 });
 
-test('workspace-calm: en fejlslagen profilhentning gemmer intet og crasjer ikke', async () => {
+test('workspace-calm: et hurtigt dobbeltklik gemmer begge skrift i rækkefølge — ingen afvises', async () => {
+  const saves = [];
+  const order = [];
+  const gate = new Promise(resolve => { order.release = resolve; });
+  const harness = {
+    profileSave: async value => { saves.push(value); if (saves.length === 1) await gate; return { ok: true, value: { profile: { appearance: { ...value.appearance } } } }; }
+  };
+  const run = runCalm({ store: {}, harness, systemDark: true });
+  const button = run.themeButton();
+  button.click();
+  button.click();
+  assert.equal(run.body.dataset.workspaceTheme, 'dark', 'skærmen viser det sidste klik');
+  await flush(); await flush();
+  assert.equal(saves.length, 1, 'den første gemning er alene i køen — exclusive() afviser ingen');
+  order.release();
+  await flush(); await flush();
+  assert.deepEqual(plain(saves), [{ appearance: { theme: 'light' } }, { appearance: { theme: 'dark' } }], 'begge skrift når profilen i klikrækkefølgen');
+  assert.deepEqual(run.store['aura.theme-hint.v1'], 'dark', 'hintet følger det sidste klik');
+});
+
+test('workspace-calm: en fejlslagen gemning crasjer ikke — hintet beholder sessens valg', async () => {
   const saves = [];
   const harness = {
-    profileGet: async () => ({ ok: false, error: 'Datamappen er låst.' }),
-    profileSave: async value => { saves.push(value); return { ok: true, value: {} }; }
+    profileSave: async value => { saves.push(value); return { ok: false, error: 'Datamappen er låst.' }; }
   };
   const run = runCalm({ store: {}, harness, systemDark: false });
   run.themeButton().click();
   assert.equal(run.body.dataset.workspaceTheme, 'dark', 'det visuelle valg skifter straks alligevel');
   await flush(); await flush();
-  assert.deepEqual(saves, [], 'profilen røres ikke, når den ikke kan læses');
+  assert.deepEqual(plain(saves), [{ appearance: { theme: 'dark' } }], 'gemningen er forsøgt gennem køen');
+  assert.equal(run.store['aura.theme-hint.v1'], 'dark', 'hintet beholder sessens valg, mens profilen forbliver kilden');
 });
 
 test('workspace-calm: setTheme opdaterer hintet og arbejdsvisningen for profilens skrivere', () => {
@@ -251,6 +281,7 @@ test('app.js: en profilgemning med tema opdaterer hintet gennem calmWorkspace', 
   document.body = new El('body');
   const saves = [];
   const themes = [];
+  const announced = [];
   const context = {
     document,
     $: selector => registry.get(selector.replace(/^#/, '')),
@@ -258,32 +289,42 @@ test('app.js: en profilgemning med tema opdaterer hintet gennem calmWorkspace', 
     profileIconChoice: 'bird',
     call: async (method, value) => {
       if (method === 'profileGet') return { profile: { helpLevel: 'fuld', appearance: { theme: 'dark' } }, warnings: [] };
-      saves.push([method, value]); return { profile: value, warnings: [] };
+      saves.push([method, value]); return { profile: { ...value }, warnings: [] };
     },
-    window: { calmWorkspace: { setTheme: theme => themes.push(theme) } }
+    window: { calmWorkspace: { setTheme: theme => themes.push(theme) }, dispatchEvent: event => announced.push(event) },
+    CustomEvent: class { constructor(type, init) { this.type = type; this.detail = init?.detail; } },
+    applyChatChoiceRecommendation: () => {}
   };
   vm.runInNewContext(`${appSlice('function profilePatch() {', 'async function prepareProfileStep')}\n${appSlice('async function saveProfileStep', '$(\'#profile-continue\').onclick')}`, context);
   await context.saveProfileStep();
   assert.deepEqual(plain(saves), [['profileSave', { name: 'Anna', icon: 'bird', helpLevel: 'fuld', appearance: { theme: 'dark', panelOpen: true } }]]);
   assert.deepEqual(themes, ['dark'], 'temaet gives videre straks efter gemningen');
+  assert.equal(context.profileState.name, 'Anna', 'cachen følger den gemte profil med det samme');
+  assert.deepEqual(announced.map(event => event.type), ['aura:profile-saved'], 'den gemte profil annonceres');
+  assert.equal(announced[0].detail.name, 'Anna');
   // After a restart the same slice re-applies the presentation from the profile.
   await context.applyProfilePresentation();
   assert.equal(context.document.body.classList.contains('help-minimal'), false, 'fuld hjælp efterlader klassen ude');
   assert.deepEqual(themes, ['dark', 'dark'], 'opstarten giver temaet videre til calmWorkspace');
   const failingThemes = [];
-  const failing = { ...context, call: async () => { throw new Error('nøglecenter utilgængelig'); }, window: { calmWorkspace: { setTheme: theme => failingThemes.push(theme) } } };
+  const failingAnnounced = [];
+  const failing = { ...context, profileState: null, call: async () => { throw new Error('nøglecenter utilgængelig'); }, window: { calmWorkspace: { setTheme: theme => failingThemes.push(theme) }, dispatchEvent: event => failingAnnounced.push(event) } };
   vm.runInNewContext(`${appSlice('function profilePatch() {', 'async function prepareProfileStep')}\n${appSlice('async function saveProfileStep', '$(\'#profile-continue\').onclick')}`, failing);
   await failing.saveProfileStep();
   assert.deepEqual(failingThemes, [], 'en mislykket gemning opdaterer ikke hintet');
+  assert.deepEqual(failingAnnounced, [], 'en mislykket gemning annonceres aldrig');
   await assert.doesNotReject(() => failing.applyProfilePresentation(), 'en ulæselig profil stopper ikke opstarten');
   assert.deepEqual(failingThemes, [], 'ingen temaudbredelse uden profil');
 });
 
-// The hint key must be one key across both writers.
-test('hint-nøglen aura.theme-hint.v1 er fælles for skriverne, og den gamle nøgle er borte', () => {
+// The hint key has exactly one writer: workspace-calm.js. settings.js only
+// calls calmWorkspace.setTheme — the double write is gone.
+test('hintnøglen har én skriver, og den gamle nøgle er borte', () => {
   const settingsSource = fs.readFileSync(path.join(ui, 'settings.js'), 'utf8');
-  assert.ok(settingsSource.includes("'aura.theme-hint.v1'"), 'settings.js skriver hintnøglen');
-  assert.ok(calm.includes("'aura.theme-hint.v1'"), 'workspace-calm.js læser og skriver hintnøglen');
+  assert.ok(!settingsSource.includes('setItem'), 'settings.js skriver ikke selv til den lokale lagring');
+  assert.ok(!settingsSource.includes('workspaceTheme'), 'settings.js skriver ikke selv til body-datasættet');
+  assert.ok(settingsSource.includes('themeHost()?.setTheme?.(choice)'), 'settings.js håndterer temaet gennem temamodulet');
+  assert.ok(calm.includes("'aura.theme-hint.v1'"), 'workspace-calm.js læser og skriver hintnøglen som den eneste skriver');
   assert.ok(!calm.includes('harness-workspace-theme-v1'), 'workspace-calm.js bruger ikke længere den gamle temanøgle');
 });
 

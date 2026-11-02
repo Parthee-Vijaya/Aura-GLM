@@ -123,10 +123,10 @@ function makeDom() {
 }
 function runSetup({ profile = blank(), suggestion = 'Parthee', repeat = null } = {}) {
   const dom = makeDom();
-  const saves = [], calls = [], visuals = [], store = {};
+  const saves = [], calls = [], visuals = [], store = {}, announced = [], adoptCalls = [];
   const harness = {
     profileGet: async () => { calls.push('profileGet'); return { profile: typeof profile === 'function' ? profile() : { ...profile }, warnings: [] }; },
-    profileSave: async value => { calls.push('profileSave'); saves.push(value); return { profile: value, warnings: [] }; },
+    profileSave: async value => { calls.push('profileSave'); saves.push(value); return { profile: { ...value }, warnings: [] }; },
     profileSuggest: async () => { calls.push('profileSuggest'); return suggestion; }
   };
   const $ = selector => {
@@ -137,13 +137,14 @@ function runSetup({ profile = blank(), suggestion = 'Parthee', repeat = null } =
   };
   const context = {
     $, document: dom.document,
-    window: { OnboardingB: { render: (element, state) => visuals.push(state.phase) }, ProfileIcons, scrollTo: () => {} },
+    window: { OnboardingB: { render: (element, state) => visuals.push(state.phase) }, ProfileIcons, scrollTo: () => {}, dispatchEvent: event => { if (event.type === 'aura:profile-saved') announced.push(event.detail); } },
+    CustomEvent: class { constructor(type, init) { this.type = type; this.detail = init?.detail; } },
     node: (tag, text, className) => { const el = new El(tag); if (text !== undefined) el.textContent = text; if (className) el.className = className; return el; },
     state: { connections: [], features: { chosen: true } },
     current: null, projectLoading: false, setupActive: false, setupStep: 'choice', guidedSetup: false,
     repeatSetup: repeat, pendingAI: false, verifiedConnection: '', setupGeneration: 0, localDiscoveryGeneration: 0,
     connectionChecks: { get: () => undefined }, acceptedFingerprint: null, pendingSend: null, connectionReceipt: null,
-    applyChatChoiceRecommendation: () => {},
+    applyChatChoiceRecommendation: () => { adoptCalls.push('adopt'); },
     localStorage: { getItem: key => store[key] ?? null, setItem: (key, value) => { store[key] = String(value); } },
     call: async (method, value) => { if (!harness[method]) throw new Error(`Uventet kald: ${method}`); return harness[method](value); },
     action: async fn => fn(),
@@ -152,7 +153,7 @@ function runSetup({ profile = blank(), suggestion = 'Parthee', repeat = null } =
     showIntroduction: () => { context.introductions = (context.introductions || 0) + 1; }
   };
   vm.runInNewContext(setupCode, context);
-  return { context, $, document: dom.document, registry: dom.registry, progress: dom.progress, harness, saves, calls, visuals };
+  return { context, $, document: dom.document, registry: dom.registry, progress: dom.progress, harness, saves, calls, visuals, announced, adoptCalls };
 }
 const progressItem = (fixture, phase) => fixture.progress.children.find(item => item.dataset.phase === phase);
 // Objects created inside the vm context belong to another realm; a JSON round
@@ -290,6 +291,19 @@ test('Fortsæt gemmer alle fire feltgrupper og går videre til forbindelsesvalge
   assert.deepEqual(plain(f.saves[0]), { name: 'Anna Klit', icon: 'bird', helpLevel: 'minimal', appearance: { theme: 'dark', panelOpen: true } });
   assert.equal(progressItem(f, 'profile').dataset.complete, 'true', 'profilpunktet mærkes gennemført');
   assert.equal(progressItem(f, 'profile').querySelector('span').textContent, '✓');
+});
+
+test('Fortsæt adopterer den gemte profil og annoncerer den som aura:profile-saved', async () => {
+  const f = runSetup();
+  await f.context.showSetup('', true);
+  f.registry.get('profile-name').value = 'Anna Klit';
+  f.document.querySelectorAll('#profile-icon-grid button').find(button => button.dataset.icon === 'bird').onclick();
+  await f.registry.get('profile-continue').onclick();
+  // Cachen følger den gemte profil med det samme — adoptProfile genberegner
+  // anbefalingen, og chippen og anbefalingerne arbejder aldrig på et forældet
+  // grundlag.
+  assert.equal(f.adoptCalls.length >= 1, true, 'den gemte profil adopteres straks');
+  assert.deepEqual(plain(f.announced), [{ name: 'Anna Klit', icon: 'bird', helpLevel: 'fuld', appearance: { theme: 'system', panelOpen: true } }], 'den gemte profil annonceres til vinduet');
 });
 
 test('Fortsæt virker uden udfyldte felter — tomme værdier er gyldige profilværdier', async () => {
