@@ -111,7 +111,11 @@ html:has(#workspace:not([hidden])), body:has(#workspace:not([hidden])) { height:
 .workspace-storage { margin: 5px 0 0; font-size: 11px; }
 .actions { display: flex; flex-shrink: 0; gap: 8px; }
 .actions button { font-size: 12px; }
-.work-grid { display: grid; grid-template-columns: var(--chat-width, 420px) 7px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); flex: 1; min-height: 0; overflow: clip; }
+/* Panel-open chat column: fresh installs scale with the viewport — 35% of
+   the grid, floored at 420px and capped at 720px. viewport.js writes
+   --chat-width inline only once the user has dragged or keyed a width;
+   that chosen width then wins over this fallback. */
+.work-grid { display: grid; grid-template-columns: var(--chat-width, clamp(420px, 35%, 720px)) 7px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); flex: 1; min-height: 0; overflow: clip; }
 .chat { display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: clip; }
 .chat .section-title { padding: 10px 20px; min-height: 46px; border-bottom: 1px solid var(--line); justify-content: space-between; }
 .chat .section-title h2 { font-size: 12px; margin: 0; }
