@@ -51,8 +51,11 @@ body.workspace-calm[data-workspace-theme="light"] {
 .workspace-calm :is(.chat,.work-panel,.panel-bar,.work-tabs,.preview-toolbar,.code-browser) { background:var(--surface); }
 .workspace-calm .chat .section-title { padding:0 16px; min-height:46px; gap:8px; }
 .workspace-calm #run-status { font-size:10px; font-weight:400; white-space:nowrap; }
-/* DSH-stil: centreret samtaleindhold med maks. bredde (som DSH 920px). */
-.workspace-calm .chat-content { padding:20px 22px; max-width:800px; margin:0 auto; width:100%; }
+/* DSH-stil: centreret samtaleindhold med maks. bredde (som DSH 920px).
+   Indholdsrammen er --chat-col fra aura-tokens; gutteren (--chat-gutter)
+   er padding her på kolonnen, så composeren kan trække den fra og ramme
+   tekstkolonnens kant. */
+.workspace-calm .chat-content { padding:20px var(--chat-gutter); max-width:var(--chat-col); margin:0 auto; width:100%; }
 .workspace-calm .chat-message { font-size:13px; line-height:1.8; }
 /* DSH-stil: brugerbobler er neutrale og symmetriske (radius 20 som DSH). */
 .workspace-calm .chat-message.user { background:var(--aura-bg-tint); border-radius:20px; margin-left:auto; margin-right:0; max-width:75%; padding:12px 16px; }
@@ -62,8 +65,12 @@ body.workspace-calm[data-workspace-theme="light"] {
 .workspace-calm .activity-spinner { border-color:var(--line); border-top-color:var(--accent); width:11px; height:11px; }
 .workspace-calm #workspace-divider { background:var(--surface); border-color:var(--line); }
 .workspace-calm #workspace-divider:hover { background:var(--calm-hover); }
-/* DSH-stil: composer er et blødt kort med radius 28, skygge og diskret kant. */
-.workspace-calm .composer { margin:8px auto 5px; max-width:800px; padding:12px; border-radius:var(--aura-radius-panel); border:1px solid var(--aura-border); background:var(--aura-bg-raised); box-shadow:var(--aura-shadow-composer); }
+/* DSH-stil: composer er et blødt kort med radius 28, skygge og diskret kant.
+   Én indholdsramme: kortet lukker ved --chat-col minus gutteren og fylder
+   panelet minus gutteren — kant mod kant med tekstkolonnen i alle bredder.
+   max-width alene er ikke nok, når panelet er smallere end rammen (åbent
+   panel starter ved ~420 px): width sikrer, at kortet følger kolonnen. */
+.workspace-calm .composer { margin:8px auto 5px; max-width:calc(var(--chat-col) - var(--chat-gutter) * 2); width:calc(100% - var(--chat-gutter) * 2); padding:12px; border-radius:var(--aura-radius-panel); border:1px solid var(--aura-border); background:var(--aura-bg-raised); box-shadow:var(--aura-shadow-composer); }
 .workspace-calm .composer:focus-within { border-color:var(--calm-focus); box-shadow:none; }
 .workspace-calm .composer textarea { min-height:53px; max-height:150px; background:transparent; color:var(--ink); padding:5px; border:0; }
 .workspace-calm .composer-toolbar { gap:5px; flex-wrap:nowrap; }
@@ -113,7 +120,10 @@ body.workspace-calm[data-workspace-theme="light"] {
 .calm-navigation,.calm-mobile-tabs { display:none; }
 @media(max-width:1100px) {
   body.workspace-calm:not(.sidebar-collapsed) { --sidebar:175px; }
-  .workspace-calm .chat-content { padding:18px; }
+  /* Det smalle trin gælder både kolonnens padding og composeren: gutteren
+     er én kilde, så rammens kant-mod-kant-kontrakt består også her. */
+  body.workspace-calm { --chat-gutter:18px; }
+  .workspace-calm .chat-content { padding:18px var(--chat-gutter); }
   .workspace-calm .work-tab { padding-inline:6px; font-size:10px; }
 }
 @media(max-width:900px) {
@@ -170,8 +180,8 @@ body.workspace-calm[data-workspace-theme="light"] {
 .workspace-calm #project-intro details { margin-top: 18px; text-align: left; border: 1px solid var(--aura-border); border-radius: var(--aura-radius-md); padding: 12px 14px; background: var(--aura-bg-raised); }
 .workspace-calm #project-intro summary { font-weight: var(--aura-font-weight-medium); cursor: pointer; }
 .workspace-calm #start-idea { display: block; margin: 12px auto; font-size: 13px; }
-/* Når chatten er tom, rykker composeren sig til midten. */
-.workspace-calm .work-grid[data-surface="off"] .composer { max-width: 720px; }
+/* Når chatten er tom, står composeren i rammen som ved beskeder — samme
+   kant som tekstkolonnen (den tidligere egenbredde på 720 px er væk). */
 
 /* DSH-stil: composerens genvejslinje er diskret. */
 .workspace-calm #composer-shortcut { font-size: 10px; color: var(--aura-ink-faint); text-align: center; margin: 4px 0 2px; }
@@ -206,28 +216,21 @@ body.workspace-calm[data-workspace-theme="light"] {
 #connection-add-flow #add-connection-home .dialog-actions { margin-top: 18px; }
 
 /* Bredder på store skærme (4K-skalering): under 1600 CSS-px er intet ændret.
-   Første trin ved 1600 gør samtalen bredere (800 → 960) og den fuldbredde
-   samtale med lukket panel bredere (900 → 1080); hero-felterne vokser moderat
-   (520 → 560). Ved 2000 går bredderne én tak højere (1040 / 1200). Skaleringen
-   i Indstillinger › Udseende ændrer, hvornår trinnene rammer: app-zoom gør
-   CSS-visningsfladen mindre i fysiske pixelpunkter, så en zoomet 4K-skærm
-   rammer 1600 senere end en uskaleret — det er korrekt, bredderne følger det
-   synlige layout, ikke panelets rå pixelantal. */
+   Første trin ved 1600 gør indholdsrammen bredere (--chat-col 800 → 960 —
+   samtale og composer vokser sammen) og den fuldbredde samtale med lukket
+   panel bredere (900 → 1080); hero-felterne vokser moderat (520 → 560).
+   Ved 2000 går rammen og panel-kappen én tak højere (1040 / 1200).
+   Skaleringen i Indstillinger › Udseende ændrer, hvornår trinnene rammer:
+   app-zoom gør CSS-visningsfladen mindre i fysiske pixelpunkter, så en
+   zoomet 4K-skærm rammer 1600 senere end en uskaleret — det er korrekt,
+   bredderne følger det synlige layout, ikke panelets rå pixelantal. */
 @media (min-width: 1600px) {
-  .workspace-calm .chat-content { max-width: 960px; }
-  .workspace-calm .composer { max-width: 960px; }
-  /* Den panel-lukkede composer (720px, specificitet 0,4,0) ville ellers slå
-     kappen ovenfor: ved lukket panel vokser den med samtalen, så composeren
-     ikke står snoret under en bred beskedkolonne. Tom-chat-heron under 1600
-     beholder de 720px fra basisdesignet. */
-  .workspace-calm .work-grid[data-surface="off"] .composer { max-width: 960px; }
+  body.workspace-calm { --chat-col: 960px; }
   .workspace-calm .work-grid[data-surface="off"] #chat-panel { max-width: 1080px; }
   .workspace-calm #project-intro { max-width: 560px; }
   .workspace-calm #chat-choice { max-width: 560px; }
 }
 @media (min-width: 2000px) {
-  .workspace-calm .chat-content { max-width: 1040px; }
-  .workspace-calm .composer { max-width: 1040px; }
-  .workspace-calm .work-grid[data-surface="off"] .composer { max-width: 1040px; }
+  body.workspace-calm { --chat-col: 1040px; }
   .workspace-calm .work-grid[data-surface="off"] #chat-panel { max-width: 1200px; }
 }

@@ -154,7 +154,9 @@ html:has(#workspace:not([hidden])), body:has(#workspace:not([hidden])) { height:
 .workflow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .workflow select { padding: 5px 8px; font-size: 12px; flex: 1; width: auto; }
 .workflow .hint { width: 100%; margin: 0; font-size: 11px; }
-.composer { margin: 8px 16px 6px; border: 1px solid var(--line); border-radius: 14px; padding: 10px; background: var(--surface); box-shadow: 0 3px 12px #1b3a6410; text-align: right; }
+/* Én indholdsramme: kortet lukker ved --chat-col minus gutteren og fylder
+   panelet minus gutteren (aura-tokens) — kant mod kant med tekstkolonnen. */
+.composer { margin: 8px auto 6px; max-width: calc(var(--chat-col) - var(--chat-gutter) * 2); width: calc(100% - var(--chat-gutter) * 2); border: 1px solid var(--line); border-radius: 14px; padding: 10px; background: var(--surface); box-shadow: 0 3px 12px #1b3a6410; text-align: right; }
 .composer:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px #e8f1ff; }
 .composer textarea { border: 0; border-radius: 6px; background: transparent; resize: none; min-height: 68px; font-size: 13px; padding: 7px; }
 .composer textarea:focus-visible { outline: none; }

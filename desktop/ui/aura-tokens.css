@@ -28,6 +28,15 @@
   --aura-radius-xl: 20px;
   --aura-radius-panel: 28px;
 
+  /* ── Indholdsramme ── */
+  /* Samtalekolonnen har én bredde: --chat-col. Gutteren (--chat-gutter) står
+     uden for rammen som padding på tekstkolonnen, som composeren trækker fra
+     sin egen bredde — dermed rammer tekst og composer samme kant i alle
+     tilstande. Trinene 960/1040 ved ≥1600/≥2000 sættes i
+     workspace-calm.css (samme skærmtrin som før). */
+  --chat-col: 800px;
+  --chat-gutter: 22px;
+
   /* ── Lyst tema (standard) ── */
   /* Accent: DSH-blå til valgt tilstand, links, aktivitet og markering. */
   --aura-accent: rgb(65, 118, 230);

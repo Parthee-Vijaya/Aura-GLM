@@ -286,8 +286,11 @@ test('viewport.js: fit-beregningen holder under app-zoom — udtrykket læser ku
 });
 
 // workspace-calm.css: the wide content caps. Below 1600 CSS px nothing changes;
-// at 1600 the chat, the composer and the panel-closed chat grow, the heroes
-// grow moderately; at 2000 the two chat widths grow one more step.
+// at 1600 the shared --chat-col token grows the chat text and the composer
+// together, and the panel-closed chat grows; the heroes grow moderately; at
+// 2000 the token and the panel cap go one more step. The frame contract
+// itself (--chat-col/--chat-gutter, gutter outside the frame) is pinned by
+// tests/ui-frame.test.cjs.
 test('workspace-calm.css: bredere indholdsbredder på store skærme — intet under 1600', () => {
   const block = query => {
     const start = calmCss.indexOf(`@media (min-width: ${query}px)`);
@@ -307,22 +310,18 @@ test('workspace-calm.css: bredere indholdsbredder på store skærme — intet un
     return Object.fromEntries([...inner.matchAll(/([^{}]+)\{([^}]*)\}/g)].map(match => [match[1].trim(), match[2].trim()]));
   };
   const wide = rules(block(1600));
-  assert.equal(wide['.workspace-calm .chat-content'], 'max-width: 960px;', 'samtalen vokser til 960 px ved 1600');
-  assert.equal(wide['.workspace-calm .composer'], 'max-width: 960px;', 'composeren følger med til 960 px');
-  assert.equal(wide['.workspace-calm .work-grid[data-surface="off"] .composer'], 'max-width: 960px;', 'den panel-lukkede composer følger også med — 720px-reglen (0,4,0) slår ellers kappen');
+  assert.equal(wide['body.workspace-calm'], '--chat-col: 960px;', 'rammen vokser til 960 px ved 1600 — samtale og composer følger med sammen');
   assert.equal(wide['.workspace-calm .work-grid[data-surface="off"] #chat-panel'], 'max-width: 1080px;', 'fuldbredde samtale med lukket panel vokser til 1080 px');
   assert.equal(wide['.workspace-calm #project-intro'], 'max-width: 560px;', 'projektintroen vokser moderat til 560 px');
   assert.equal(wide['.workspace-calm #chat-choice'], 'max-width: 560px;', 'valgkortene vokser moderat til 560 px');
-  assert.equal(Object.keys(wide).length, 6, '1600-trinnet rører de seks breddefelter');
+  assert.equal(Object.keys(wide).length, 4, '1600-trinnet rører de fire breddefelter');
   const widest = rules(block(2000));
-  assert.equal(widest['.workspace-calm .chat-content'], 'max-width: 1040px;', 'samtalen når 1040 px ved 2000');
-  assert.equal(widest['.workspace-calm .composer'], 'max-width: 1040px;', 'composeren når 1040 px ved 2000');
-  assert.equal(widest['.workspace-calm .work-grid[data-surface="off"] .composer'], 'max-width: 1040px;', 'den panel-lukkede composer når også 1040 px ved 2000');
+  assert.equal(widest['body.workspace-calm'], '--chat-col: 1040px;', 'rammen når 1040 px ved 2000');
   assert.equal(widest['.workspace-calm .work-grid[data-surface="off"] #chat-panel'], 'max-width: 1200px;', 'panel-lukket samtale når 1200 px ved 2000');
-  assert.equal(Object.keys(widest).length, 4, '2000-trinnet rører kun de fire breddefelter — heroerne forbliver ved 560');
+  assert.equal(Object.keys(widest).length, 2, '2000-trinnet rører kun de to breddefelter — heroerne forbliver ved 560');
   // The base widths are untouched: the caps are additive, and every min-width
   // rule sits after its base rule so the cascade order carries the override.
-  assert.ok(calmCss.includes('.workspace-calm .chat-content { padding:20px 22px; max-width:800px;'), 'basis 800 px består');
+  assert.ok(calmCss.includes('.workspace-calm .chat-content { padding:20px var(--chat-gutter); max-width:var(--chat-col);'), 'basen deler rammen med composeren — 800 px kommer fra --chat-col');
   assert.ok(calmCss.includes('max-width: 900px; margin: 0 auto; width: 100%; }'), 'basis 900 px for lukket panel består');
   assert.ok(calmCss.includes('#project-intro { text-align: center; max-width: 520px;'), 'projektintroens basis 520 px består');
   assert.ok(calmCss.includes('#chat-choice { text-align: center; max-width: 520px;'), 'valgkortenes basis 520 px består');
