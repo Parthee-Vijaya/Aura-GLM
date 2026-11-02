@@ -68,6 +68,15 @@ test('med upload som ikon viser chippen det gemte billede', () => {
   assert.equal(f.registry.get('profile-chip-name').textContent, 'Anna Klit');
 });
 
+test('chippen følger revisionen — en ny upload kan ikke vise det gamle billede', () => {
+  const f = makeModule();
+  ProfileIcons.setAvatarRevision(1690000000002);
+  for (const handler of f.listeners['aura:profile-saved']) handler({ detail: { name: 'Anna Klit', icon: 'upload' } });
+  assert.ok(f.registry.get('profile-chip-mark').innerHTML.includes('<img src="avatar.png?v=1690000000002"'), 'billedet bærer revisionen som cache-buster');
+  assert.ok(source.includes('attachAvatarFallback(mark, text)'), 'chippen binder initialer-fallbacken til det billede, der ikke kan læses');
+  ProfileIcons.setAvatarRevision(0);
+});
+
 test('kun et ikon er også et gyldigt grundlag — mærket nævner ikonet', () => {
   const f = makeModule();
   for (const handler of f.listeners['aura:profile-saved']) handler({ detail: { name: '', icon: 'aura-2' } });

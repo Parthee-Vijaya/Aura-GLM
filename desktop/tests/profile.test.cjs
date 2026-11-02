@@ -21,7 +21,7 @@ async function fixture(t, setup) {
 
 test('get() på tom settings.json returnerer standardprofilen uden advarsler', async t => {
   const store = await fixture(t);
-  assert.deepEqual(await new Profile(store).get(), { profile: standardProfile(), warnings: [], hasAvatar: false });
+  assert.deepEqual(await new Profile(store).get(), { profile: standardProfile(), warnings: [], hasAvatar: false, avatarRevision: 0 });
 });
 
 test('save() erstatter kun de angivne felter; appearance flettes felt for felt', async t => {
@@ -129,6 +129,19 @@ test('get() bærer hasAvatar for hver eneste læsning', async t => {
   assert.equal((await withAvatar.get()).hasAvatar, true);
   const saved = await withAvatar.save({ name: 'Anna' });
   assert.equal(saved.hasAvatar, true, 'svaret fra save() bærer det samme grundlag');
+});
+
+// A5: hver eneste profil-lesning og -gemning bærer billedets egen revision —
+// rendererens cache-buster får sin friske værdi her. Revisionen beregnes pr.
+// svar og gemmes aldrig i profilen.
+test('svarene bærer avatar-revisionen — den gemmes aldrig i profilen', async t => {
+  const store = await fixture(t);
+  const withAvatar = new Profile(store, { hasAvatar: () => true, avatarRevision: () => 1234 });
+  assert.equal((await withAvatar.get()).avatarRevision, 1234, 'get() bærer revisionen');
+  assert.equal((await withAvatar.save({ name: 'Anna' })).avatarRevision, 1234, 'save() bærer revisionen');
+  assert.equal((await withAvatar.migrate({})).avatarRevision, 1234, 'migrate() bærer revisionen');
+  assert.equal((await store.read()).avatarRevision, undefined, 'revisionen gemmes aldrig i indstillingsfilen');
+  assert.equal((await new Profile(store).get()).avatarRevision, 0, 'uden funktion er revisionen det neutrale 0');
 });
 
 // ---------- Hjælpeniveau: tre trin med blid læsemigration ----------

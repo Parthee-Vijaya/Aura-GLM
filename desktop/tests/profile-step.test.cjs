@@ -136,7 +136,7 @@ function runSetup({ profile = blank(), suggestion = 'Parthee', repeat = null, av
       if (uploadCanceled) return { canceled: true };
       if (uploadFails) throw new Error(uploadFails);
       avatarAvailable = true;
-      return { canceled: false, profile: { ...current(), icon: 'upload' }, warnings: [], hasAvatar: true };
+      return { canceled: false, profile: { ...current(), icon: 'upload' }, warnings: [], hasAvatar: true, avatarRevision: 1690000000001 };
     },
     profileRemoveAvatar: async () => {
       calls.push('profileRemoveAvatar');
@@ -329,7 +329,7 @@ test('upload-knappen beder hovedprocessen om filvælgeren — og billedet bliver
   const row = f.document.querySelectorAll('#profile-icon-row button');
   const avatar = row.find(button => button.dataset.icon === 'upload');
   assert.ok(avatar, 'efter gemningen er avatar-pladsen et valg');
-  assert.ok(avatar.innerHTML.includes('<img src="avatar.png"'), 'billedet vises som forhåndsvisning fra det faste navn');
+  assert.ok(avatar.innerHTML.includes('<img src="avatar.png?v=1690000000001"'), 'billedet vises som forhåndsvisning fra det faste navn — med uploadens revision som cache-buster');
   assert.equal(avatar.getAttribute('role'), 'radio', 'billedet er nu med i valget');
   assert.equal(avatar.getAttribute('aria-checked'), 'true', 'upload er det valgte ikon');
   assert.equal(avatar.getAttribute('aria-label'), 'Eget billede');

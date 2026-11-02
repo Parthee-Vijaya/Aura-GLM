@@ -233,6 +233,7 @@
       ++profileGeneration;
       try {
         const result = await invoke('profileSave', partial);
+        icons?.setAvatarRevision?.(result.avatarRevision || 0);
         fill(result.profile);
         announce(result.warnings);
         dispatchSaved(result.profile);
@@ -255,6 +256,7 @@
           const cleared = await invoke('preferencesSave', { ...BLANK_STANDARDS });
           const next = await invoke('profileGet');
           if (!next || !next.profile) return;
+          icons?.setAvatarRevision?.(next.avatarRevision || 0);
           fill(next.profile);
           announce(['Projektstandarderne er nulstillet.', ...(cleared?.warnings || []), ...(next.warnings || [])]);
           dispatchSaved(next.profile);
@@ -277,6 +279,7 @@
           // En afbrudt vælger er en status, ikke en fejl: intet er rørt, og rækken står.
           if (result?.canceled) { announce(['Billedvalget blev afbrudt.']); return; }
           avatarAvailable = result.hasAvatar === true;
+          icons?.setAvatarRevision?.(result.avatarRevision || 0);
           profile = result.profile;
           refreshProfileSection();
           announce(['Dit profilbillede er gemt.', ...(result.warnings || [])]);
@@ -292,6 +295,7 @@
         try {
           const result = await invoke('profileRemoveAvatar');
           avatarAvailable = result.hasAvatar === true;
+          icons?.setAvatarRevision?.(result.avatarRevision || 0);
           profile = result.profile;
           refreshProfileSection();
           announce(['Dit profilbillede er fjernet.', ...(result.warnings || [])]);
@@ -366,6 +370,7 @@
         slot.setAttribute('aria-checked', 'false');
         slot.setAttribute('aria-label', icons?.LABELS?.upload || 'Eget billede');
         slot.innerHTML = icons?.avatarImage() || '';
+        icons?.attachAvatarFallback?.(slot, profile?.name || '');
         slot.onclick = () => { void saveSection({ icon: slot.getAttribute('aria-checked') === 'true' ? '' : 'upload' }); };
       } else {
         slot.id = 'settings-avatar-slot';
@@ -576,6 +581,7 @@
         if (connectionResult) connections = connectionResult.connections || [];
         if (designResult) designs = designResult || [];
         avatarAvailable = profileResult.hasAvatar === true;
+        icons?.setAvatarRevision?.(profileResult.avatarRevision || 0);
         fill(profileResult.profile);
         announce(profileResult.warnings);
       } catch (error) {

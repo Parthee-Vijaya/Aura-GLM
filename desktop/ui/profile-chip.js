@@ -21,7 +21,7 @@
     // Without a name and an icon there is nothing honest to show: the chip
     // stays hidden until the profile has at least one of them.
     if (!icon && !text.trim()) { chip.hidden = true; return chip; }
-    if (icon === 'upload') { mark.innerHTML = root.ProfileIcons.avatarImage(); mark.title = 'Eget billede'; }
+    if (icon === 'upload') { mark.innerHTML = root.ProfileIcons.avatarImage(); root.ProfileIcons.attachAvatarFallback(mark, text); mark.title = 'Eget billede'; }
     else if (icon) { mark.innerHTML = root.ProfileIcons.svg(icon); mark.removeAttribute('title'); }
     else { mark.innerHTML = ''; mark.textContent = root.ProfileIcons.initials(text); mark.title = 'Initialer'; }
     name.textContent = text;

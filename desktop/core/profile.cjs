@@ -200,7 +200,11 @@ function resolveReferences(profile, state) {
 class Profile {
   // hasAvatar is the main process's synchronous existence check for the stored
   // avatar file: 'upload' is a valid icon only while that file exists.
-  constructor(store, { hasAvatar = () => false } = {}) { this.store = store; this.hasAvatar = hasAvatar; }
+  // avatarRevision is the same file's own revision (its mtime): the renderer
+  // turns it into the avatar URL's cache-buster, so a new picture in the same
+  // session can never be served from Chromium's cached copy of the old one.
+  // It is computed per answer and never stored in the profile.
+  constructor(store, { hasAvatar = () => false, avatarRevision = () => 0 } = {}) { this.store = store; this.hasAvatar = hasAvatar; this.avatarRevision = avatarRevision; }
   async get() {
     const state = await this.store.read();
     // Reading is lenient: an unknown value from a newer version falls back per
@@ -209,12 +213,12 @@ class Profile {
     // the honest answer, not a warning.
     const read = readProfile(state.profile, this.hasAvatar);
     const result = resolveReferences(read.profile, state);
-    return { profile: result.profile, warnings: [...read.warnings, ...result.warnings], hasAvatar: this.hasAvatar() };
+    return { profile: result.profile, warnings: [...read.warnings, ...result.warnings], hasAvatar: this.hasAvatar(), avatarRevision: this.avatarRevision() };
   }
   async save(input) {
     // Validate the patch before the write, so a rejected save never touches the file.
     const patch = normalizePatch(input, this.hasAvatar);
-    return this.store.update(state => {
+    const answer = await this.store.update(state => {
       // The stored profile is read leniently, so a corrupt field never blocks
       // saving the fields the renderer just changed. appearance merges field by
       // field: a writer that only owns the theme can never drag a stale
@@ -224,8 +228,9 @@ class Profile {
       if (patch.appearance) merged.appearance = { ...read.profile.appearance, ...patch.appearance };
       const result = resolveReferences(merged, state);
       state.profile = result.profile;
-      return { profile: result.profile, warnings: [...read.warnings, ...result.warnings], hasAvatar: this.hasAvatar() };
+      return { profile: result.profile, warnings: [...read.warnings, ...result.warnings], hasAvatar: this.hasAvatar(), avatarRevision: this.avatarRevision() };
     });
+    return answer;
   }
   // Renderer-initiated one-shot migration in a single atomic update: the saved
   // startup defaults fold in first, then the renderer's three legacy values,
@@ -236,10 +241,10 @@ class Profile {
   // same update (before the marker guard, with its own one-shot latch), so
   // every real app start evaluates the package default exactly once.
   async migrate(input) {
-    return this.store.update(state => {
+    const answer = await this.store.update(state => {
       pinDefault(state);
       const profile = readProfile(state.profile, this.hasAvatar).profile;
-      if (profile.migrated === 1) return { profile, hasAvatar: this.hasAvatar() };
+      if (profile.migrated === 1) return { profile, hasAvatar: this.hasAvatar(), avatarRevision: this.avatarRevision() };
       const legacyDefaults = state.startupDefaults && typeof state.startupDefaults === 'object' && !Array.isArray(state.startupDefaults) ? state.startupDefaults : null;
       if (legacyDefaults) {
         const legacy = readProjectDefaults(legacyDefaults).values;
@@ -255,8 +260,9 @@ class Profile {
       if (profile.appearance.panelOpen === true && (input?.surfaceOpen === 'true' || input?.surfaceOpen === 'false')) profile.appearance.panelOpen = input.surfaceOpen === 'true';
       profile.migrated = 1;
       state.profile = profile;
-      return { profile, hasAvatar: this.hasAvatar() };
+      return { profile, hasAvatar: this.hasAvatar(), avatarRevision: this.avatarRevision() };
     });
+    return answer;
   }
 }
 Profile.ICON_IDS = ICON_IDS;

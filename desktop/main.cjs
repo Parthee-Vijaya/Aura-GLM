@@ -395,7 +395,12 @@ handle('preferences:save', input => exclusive(() => new Preferences(workbench.st
 // The avatar is one fixed file in the app's private harness folder: icon 'upload' is valid only while it exists.
 const avatarFile = () => path.join(app.getPath('userData'), 'harness', 'avatar.png');
 const avatarExists = () => { try { return fsSync.statSync(avatarFile()).isFile(); } catch { return false; } };
-const profileStore = () => new Profile(workbench.store, { hasAvatar: avatarExists });
+// The stored picture's own revision: the file's mtime, read per answer. The
+// renderer turns it into the avatar URL's cache-buster (?v=), so a new picture
+// in the same session can never be served from Chromium's cached copy of the
+// old one — the fixed name routes on the pathname, and the query only busts.
+const avatarRevision = () => { try { return Math.max(0, Math.trunc(fsSync.statSync(avatarFile()).mtimeMs)); } catch { return 0; } };
+const profileStore = () => new Profile(workbench.store, { hasAvatar: avatarExists, avatarRevision });
 // The avatar upload is the main process's alone: the renderer can only ask for
 // the native picker and receives the outcome — never paths, never bytes. The
 // stored file is served to the app's own renderer through the harness protocol.

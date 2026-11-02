@@ -147,26 +147,27 @@ function mergeProfile(profile, patch) {
 function makeHarness({ profile = blank(), connections = [], designs = [], warnings = [], saveError = null, avatar = false, uploadCancel = false } = {}) {
   let current = profile;
   let avatarAvailable = avatar;
+  let revision = 0;
   const saves = [], preferencesSaves = [], calls = [];
   const copy = value => JSON.parse(JSON.stringify(value));
   const api = {
-    profileGet: async () => { calls.push('profileGet'); return { ok: true, value: { profile: copy(current), warnings: [...warnings], hasAvatar: avatarAvailable } }; },
+    profileGet: async () => { calls.push('profileGet'); return { ok: true, value: { profile: copy(current), warnings: [...warnings], hasAvatar: avatarAvailable, avatarRevision: revision } }; },
     profileSave: async value => {
       calls.push('profileSave'); saves.push(value);
       if (saveError) return { ok: false, error: saveError };
       current = mergeProfile(current, value);
-      return { ok: true, value: { profile: copy(current), warnings: [], hasAvatar: avatarAvailable } };
+      return { ok: true, value: { profile: copy(current), warnings: [], hasAvatar: avatarAvailable, avatarRevision: revision } };
     },
     profileUploadAvatar: async () => {
       calls.push('profileUploadAvatar');
       if (uploadCancel) return { ok: true, value: { canceled: true } };
-      avatarAvailable = true; current = { ...current, icon: 'upload' };
-      return { ok: true, value: { canceled: false, profile: copy(current), warnings: [], hasAvatar: true } };
+      avatarAvailable = true; revision = 1690000000000; current = { ...current, icon: 'upload' };
+      return { ok: true, value: { canceled: false, profile: copy(current), warnings: [], hasAvatar: true, avatarRevision: revision } };
     },
     profileRemoveAvatar: async () => {
       calls.push('profileRemoveAvatar');
-      avatarAvailable = false; current = { ...current, icon: '' };
-      return { ok: true, value: { profile: copy(current), warnings: [], hasAvatar: false } };
+      avatarAvailable = false; revision = 0; current = { ...current, icon: '' };
+      return { ok: true, value: { profile: copy(current), warnings: [], hasAvatar: false, avatarRevision: 0 } };
     },
     preferencesSave: async value => {
       calls.push('preferencesSave'); preferencesSaves.push(value);
@@ -321,7 +322,7 @@ test('upload i Indstillinger beder hovedprocessen og gør billedet til det valgt
   assert.equal(harness.calls.includes('profileUploadAvatar'), true, 'filvælgeren håndteres af hovedprocessen');
   const avatar = dom.content.querySelector('#settings-icons button[data-icon="upload"]');
   assert.ok(avatar, 'efter gemningen er billedet et valg');
-  assert.ok(avatar.innerHTML.includes('<img src="avatar.png"'), 'forhåndsvisningen kommer fra det faste navn');
+  assert.ok(avatar.innerHTML.includes('<img src="avatar.png?v=1690000000000"'), 'forhåndsvisningen kommer fra det faste navn — med uploadens revision som cache-buster');
   assert.equal(avatar.getAttribute('aria-checked'), 'true', 'billedet er valgt straks efter gemningen');
   assert.equal(avatar.getAttribute('aria-label'), 'Eget billede');
   assert.ok(dom.content.querySelector('#settings-avatar-remove'), 'fjern-knappen står frem');
@@ -376,6 +377,24 @@ test('avatar-valget skifter som ethvert andet ikon — og tilbage igen', async (
   avatar.click();
   await flush();
   assert.deepEqual(harness.saves[1], { icon: '' }, 'et nyt klik rydder til initialerne');
+});
+
+// A5: en ny upload i samme session skal kunne ses med det samme — Chromium
+// kan genbruge det gamle billede fra cachen trods no-store, så svarets
+// revision bliver URL'ens cache-buster (?v=), og fjernelsen nulstiller den.
+test('en ny upload giver avatar-kilden en frisk cache-buster', async () => {
+  const dom = makeDom();
+  const harness = makeHarness({ profile: { ...blank(), name: 'Anna Klit', icon: 'aura-1' }, avatar: false });
+  const settings = makeSettings(dom, harness);
+  await openSection(settings, 'profile');
+  dom.content.querySelector('#settings-avatar-slot').click();
+  await flush();
+  const avatar = dom.content.querySelector('#settings-icons button[data-icon="upload"]');
+  assert.ok(avatar.innerHTML.includes('<img src="avatar.png?v=1690000000000"'), 'uploadens revision bliver cache-busteren — det gamle billede kan ikke genbruges');
+  dom.content.querySelector('#settings-avatar-remove').click();
+  await flush();
+  assert.equal(dom.content.querySelector('#settings-icons button[data-icon="upload"]'), null, 'fjernelsen rydder pladsen');
+  assert.ok(!ProfileIcons.avatarImage().includes('?v='), 'efter fjernelsen er der ingen forespørgsel på kilden');
 });
 
 test('arbejdsmåde og hjælpeniveau gemmer deres eget felt; alle tre trin slår igennem', async () => {

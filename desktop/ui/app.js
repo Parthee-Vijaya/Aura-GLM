@@ -243,6 +243,7 @@ function renderProfileIconRow() {
     slot.setAttribute('role', 'radio'); slot.setAttribute('aria-checked', 'false');
     slot.setAttribute('aria-label', window.ProfileIcons?.LABELS?.upload || 'Eget billede');
     slot.innerHTML = window.ProfileIcons.avatarImage();
+    window.ProfileIcons?.attachAvatarFallback?.(slot, initialsPreview());
     slot.onclick = () => selectProfileIcon('upload');
   } else {
     slot.id = 'profile-avatar-slot';
@@ -354,7 +355,7 @@ async function migrateLegacyProfile() {
 // action's applyFeatures() applies what the store now says.
 async function startupProfile() {
   await migrateLegacyProfile();
-  try { const read = await call('profileGet'); profileAvatarAvailable = read.hasAvatar === true; adoptProfile(read.profile); } catch { /* the profile is optional at startup */ }
+  try { const read = await call('profileGet'); profileAvatarAvailable = read.hasAvatar === true; window.ProfileIcons?.setAvatarRevision?.(read.avatarRevision || 0); adoptProfile(read.profile); } catch { /* the profile is optional at startup */ }
   window.dispatchEvent(new CustomEvent('aura:profile', { detail: profileState || {} }));
   await applyProfilePresentation();
   try { if (state?.features) state.features = await call('featuresGet'); } catch { /* the features keep the connectionState answer */ }
@@ -370,6 +371,7 @@ async function uploadProfileAvatar() {
   // En afbrudt vælger er en status, ikke en fejl: intet er rørt, og rækken står.
   if (result?.canceled) { message('Billedvalget blev afbrudt.'); return; }
   profileAvatarAvailable = result.hasAvatar === true;
+  window.ProfileIcons?.setAvatarRevision?.(result.avatarRevision || 0);
   adoptProfile(result.profile);
   announceProfileSaved(result.profile);
   renderProfileIconRow();
@@ -378,6 +380,7 @@ async function uploadProfileAvatar() {
 async function removeProfileAvatar() {
   const result = await call('profileRemoveAvatar');
   profileAvatarAvailable = result.hasAvatar === true;
+  window.ProfileIcons?.setAvatarRevision?.(result.avatarRevision || 0);
   adoptProfile(result.profile);
   announceProfileSaved(result.profile);
   renderProfileIconRow();
@@ -466,7 +469,7 @@ async function showSetup(reason = '', fromIntroduction = false) {
   // a first guided introduction always has one, and a filled profile is never asked
   // again — repeat setup goes straight to the connection choice.
   let profile = null, readProfile = false;
-  if (fromIntroduction) { try { const read = await call('profileGet'); profile = read.profile; profileAvatarAvailable = read.hasAvatar === true; readProfile = true; adoptProfile(profile); } catch { /* without a readable profile the setup starts at the connection choice */ } }
+  if (fromIntroduction) { try { const read = await call('profileGet'); profile = read.profile; profileAvatarAvailable = read.hasAvatar === true; window.ProfileIcons?.setAvatarRevision?.(read.avatarRevision || 0); readProfile = true; adoptProfile(profile); } catch { /* without a readable profile the setup starts at the connection choice */ } }
   setupActive = true; $('#setup').hidden = false; $('#workspace').hidden = true; $('#onboarding').hidden = true;
   $('#view-title').textContent = 'Opsætning'; $('#setup-reason').textContent = reason; $('#setup-reason').hidden = !reason;
   renderSetup(); profileStepShown = readProfile && !profile?.name && !profile?.icon; profileStepDone = false;
