@@ -121,6 +121,8 @@ function appendMessage(text, role = 'assistant', v = view) {
   const active = v === view;
   if (active) { $('#project-intro').hidden = true; $('#start-idea').hidden = true; $('#chat-choice').hidden = true; }
   const el = node('div', text, `chat-message ${role}`); if (role === 'assistant' && text) markdownInto(el, text); v.log.append(el);
+  // Første besked flytter samtalen fra hero til active — composeren dokker.
+  if (active) applyChatPhase();
   if (active && role === 'user') view.followChat = true;
   return el;
 }
@@ -693,6 +695,10 @@ async function displayProject(project, { firstTask = false } = {}) {
   $('#new').removeAttribute('aria-current'); $('#view-title').textContent = 'Arbejdsområde';
   $('#onboarding').hidden = true; $('#workspace').hidden = false; $('#skills-button').disabled = false;
   $('#project-name').textContent = project.name; $('#project-purpose').textContent = project.purpose || 'Eksisterende mappe. Beskriv din opgave i samtalen.'; $('#project-path').textContent = project.root;
+  // Projekt-chippen (§4): navnet på chippen, og »Projektoplysninger« som ⓘ
+  // ved chippen — stien og opstartsvalgene står i data-info, id'erne består
+  // som skjult tekst (prøverne læser dem).
+  $('#project-chip-name').textContent = project.name; $('#project-chip').title = `Projekt: ${project.name}`;
   $('#reference-choices').replaceChildren();
   for (const asset of (project.assets || []).filter(a => a.kind === 'reference')) {
     const label = node('label', undefined, 'check-label'); const input = node('input'); input.type = 'checkbox'; input.value = asset.file;
@@ -728,6 +734,9 @@ async function displayProject(project, { firstTask = false } = {}) {
     }
   }
   $('#project-startup').textContent = startup ? `Hostingønske: ${hostingLabel(startup.hosting)} · Tests: ${testLabel(startup.tests)}` : 'Ingen opstartsvalg gemt for dette projekt.';
+  // ⓘ'ens tekst på projekt-chippen sammensættes af de samme kilder (§4):
+  // sti, opstartsvalg og den faste sætning om lokal kørsel.
+  $('#project-chip-info').dataset.info = `${$('#project-path').textContent}\n${$('#project-startup').textContent}\nFiler og agent kører på denne computer. Ingen installationer eller Git-handlinger udføres ved åbning.`;
   $('#model-options').open = !$('#model-select').value; $('#start-idea').textContent = project.purpose ? 'Forbered første besked' : 'Beskriv din idé'; updateModelSummary();
   if (saved && state.connections.some(c => c.id === saved.connectionID) && !$('#model-select').value) {
     $('#connection-select').value = saved.connectionID; $('#model-select').replaceChildren(option(saved.modelID, saved.modelID));
@@ -1331,6 +1340,10 @@ function setRunning(value, status, v = view) {
 function applyRunning() {
   const busy = projectLoading || running;
   clearInterval(runTimer); runTimer = running ? setInterval(renderStatus, 1000) : null;
+  // Samtalerodens fase følger indlæsning og beskeder (settling → hero/active).
+  applyChatPhase();
+  // Afsendelsesbuen: Send viser en roterende bue, mens besedden forberedes.
+  $('#chat-form').dataset.submitting = String(Boolean(view.submitting));
   // Den tomme forhåndsvisning ånder roligt, mens AI'en arbejder. Animationen slås fra ved reduceret bevægelse.
   $('#preview-empty').classList.toggle('is-working', busy);
   // En samtale, der ikke arbejder, viser sin egen seneste status, fx Stoppet eller Fejl. Linjen over skrivefeltet siger, hvis en anden arbejder.
@@ -1766,6 +1779,9 @@ $('#repair-connection').onclick = () => showSetup($('#connection-warning-text').
 $('#dismiss-connection').onclick = () => { $('#connection-warning').hidden = true; $('#prompt').focus(); };
 $('#model-manage').onclick = () => { $('#task-dialog').close(); showSetup(); };
 // Forbered første besked vises kun, når skrivefeltet er tomt og samtalen ikke er begyndt. Så står der aldrig to måder at starte på.
+// Helten (§4) står, når samtalen er tom; purpose og idé-chips hører til projektets
+// første opgave, og chat-choice-kortene er fjernet visuelt (arbejdsmåde-chippen er
+// den synlige vej — id'erne og deres logik bevares til testene).
 function updateStartIdea() {
   // Vis kun intro-elementer, når samtalen er tom og der ikke er skrevet i feltet.
   const emptyPrompt = !$('#prompt').value.trim();
@@ -1775,10 +1791,115 @@ function updateStartIdea() {
   $('#project-intro').hidden = !(show && firstChat);
   $('#start-idea').hidden = !(show && firstChat);
   $('#chat-choice').hidden = !(show && !firstChat);
+  // Så snart der står en kladde i feltet, trækker helt-dekorationerne sig
+  // (§4): composeren står alene i ro — ingen layoutspring midt i skrivningen.
+  $('#chat-panel').dataset.heroQuiet = emptyPrompt ? 'false' : 'true';
+}
+// Samtalerodens fase (§4): hero (tom samtale — centreret helt med composeren),
+// active (beskeder — composeren dokket i bunden) eller settling (indlæsning —
+// composeren er visibility:hidden, så det forkerte layout aldrig blinker frem,
+// mens en gemt samtale genindlæses). Composeren, resume-banneret, YOLO-baren og
+// arbejdsmåde-chippen er de samme noder, der flyttes mellem de to pladser —
+// kladder og fokus overlever flytningen, og bredden er --chat-col-rammen fra T1
+// i begge tilstande.
+function applyChatPhase() {
+  const panel = $('#chat-panel');
+  if (!panel) return;
+  const hero = !view?.log?.children.length;
+  const phase = projectLoading ? 'settling' : hero ? 'hero' : 'active';
+  if (panel.dataset.phase === phase) return;
+  panel.dataset.phase = phase;
+  const heroRoot = $('#conversation-hero'), slot = $('#hero-composer-slot');
+  const form = $('#chat-form'), mode = $('#composer-mode'), resume = $('#resume-notice'), bar = $('#conversation-permission-status');
+  if (phase === 'hero') {
+    // Chip over composeren (B3), banneret over composeren, composeren i stakken.
+    $('#hero-chips').append(mode);
+    slot.append(resume, ...(bar ? [bar] : []), form);
+    heroRoot.hidden = false;
+  } else {
+    heroRoot.hidden = true;
+    $('#chat-content').prepend(resume);
+    $('#model-chip').before(mode);
+    // Composeren dokkes først; baren sættes derefter ind umiddelbart før den
+    // (before virker i formens NUVÆRENDE forælder — rækkefølgen er kontrakten).
+    $('#context-status').before(form);
+    if (bar) form.before(bar);
+  }
+  updateWorkMode();
 }
 function v_logHasMessages() { return Boolean(view?.log?.children.length); }
 $('#choice-plan').onclick = () => { $('#chat-choice').hidden = true; $('#work-mode').value = 'plan'; updateWorkMode(); if (!$('#prompt').value.trim()) $('#prompt').value = 'Lad os lave en plan for det, jeg vil bygge.'; $('#prompt').focus(); };
 $('#choice-chat').onclick = () => { $('#chat-choice').hidden = true; $('#work-mode').value = 'chat'; updateWorkMode(); $('#prompt').focus(); };
+// Projekt-chip og idé-chips (§4/T5) bindes ved start; syntetiske testkontekster
+// uden de rigtige select-elementer (ingen .options) har intet at binde.
+function wireHeroComposer() {
+  if (!$('#idea-platform') || !$('#idea-platform').options || !$('#idea-chip-platform')) return;
+  // Projekt-chippen: listen svarer til sidepanelet — samme openProject-handler
+  // — med »Åbn mappe …« nederst som #open's egen klikvej (R5: ingen logikduplikat).
+  // Det åbne projekt står som valgt og kan ikke klikkes (openProject ville blot
+  // folde sidepanelet ud).
+  $('#project-chip').onclick = () => {
+    const list = $('#project-chip-list'); list.replaceChildren();
+    for (const project of window.chats?.projects() || []) {
+      const item = node('button', project.name, 'project-chip-item'); item.type = 'button'; item.title = project.root;
+      if (project.root === current?.root) { item.setAttribute('aria-current', 'true'); item.disabled = true; }
+      else item.onclick = () => action(() => window.chats.openProject(project));
+      list.append(item);
+    }
+    window.PopoverLayer.open({ layer: $('#project-chip-menu'), invoker: $('#project-chip'), align: 'start', place: 'below', gap: 8, width: () => 288 });
+  };
+  $('#project-chip-open').onclick = () => { window.PopoverLayer.close(); $('#open').click(); };
+  const IDEA_CHIP_PICKS = [
+    { chip: 'idea-chip-platform', menu: 'idea-chip-platform-menu', label: 'idea-chip-platform-label', select: 'idea-platform', name: 'Platform' },
+    { chip: 'idea-chip-data', menu: 'idea-chip-data-menu', label: 'idea-chip-data-label', select: 'idea-data', name: 'Data' }
+  ];
+  const IDEA_TECHNIQUE_GROUPS = [['idea-ui', 'Brugerflade'], ['idea-design', 'Designværktøjer'], ['idea-backend', 'Backend']];
+  // En radioregel bygger alt fra select'ens egne valg — ét kilde, én sandhed.
+  function ideaRadio(text, value, onChoose) {
+    const item = node('button', text, 'idea-menu-item'); item.type = 'button'; item.dataset.value = value;
+    item.setAttribute('role', 'menuitemradio'); item.onclick = onChoose;
+    return item;
+  }
+  function checkRadios(container, value) { for (const item of container.querySelectorAll('[role="menuitemradio"],[role="radio"]')) item.setAttribute('aria-checked', String(item.dataset.value === value)); }
+  function syncIdeaChipLabels() {
+    for (const pick of IDEA_CHIP_PICKS) {
+      const value = $(`#${pick.select}`).value;
+      $(`#${pick.label}`).textContent = value ? `${pick.name} · ${value}` : pick.name;
+    }
+    const chosen = IDEA_TECHNIQUE_GROUPS.filter(([id]) => $(`#${id}`).value);
+    $('#idea-chip-technique-label').textContent = !chosen.length ? 'Tekniske ønsker' : chosen.length === 1 ? `Teknik · ${$(`#${chosen[0][0]}`).value}` : `Teknik · ${chosen.length} valgte`;
+  }
+  for (const pick of IDEA_CHIP_PICKS) {
+    const menu = $(`#${pick.menu}`), select = $(`#${pick.select}`), chip = $(`#${pick.chip}`);
+    for (const option of [...select.options]) menu.append(ideaRadio(option.textContent, option.value, () => {
+      select.value = option.value; syncIdeaChipLabels(); window.PopoverLayer.close(); chip.focus();
+    }));
+    chip.onclick = () => {
+      checkRadios(menu, select.value);
+      window.PopoverLayer.open({ layer: menu, invoker: chip, align: 'start', place: 'below', gap: 8, width: () => 288 });
+    };
+  }
+  // Den flade tekniksektion bygges én gang fra select'ernes egne valg.
+  const ideaTechniqueGroups = new Map();
+  for (const [id, name] of IDEA_TECHNIQUE_GROUPS) {
+    const group = node('div', undefined, 'idea-menu-group'); group.setAttribute('role', 'group'); group.setAttribute('aria-label', name);
+    group.append(node('p', name, 'idea-menu-group-title'));
+    const select = $(`#${id}`);
+    for (const option of [...select.options]) {
+      const radio = ideaRadio(option.textContent, option.value, () => { select.value = option.value; checkRadios(group, select.value); syncIdeaChipLabels(); });
+      radio.setAttribute('role', 'radio');
+      group.append(radio);
+    }
+    ideaTechniqueGroups.set(id, group);
+    $('#idea-technique-groups').append(group);
+  }
+  $('#idea-chip-technique').onclick = () => {
+    for (const [id, group] of ideaTechniqueGroups) checkRadios(group, $(`#${id}`).value);
+    window.PopoverLayer.open({ layer: $('#idea-chip-technique-panel'), invoker: $('#idea-chip-technique'), align: 'start', place: 'below', gap: 8, width: () => 320 });
+  };
+  syncIdeaChipLabels();
+}
+wireHeroComposer();
 $('#start-idea').onclick = () => {
   if (running) return;
   if ($('#prompt').value.trim()) { message('Din kladde er bevaret. Send eller ryd den, før du forbereder en ny besked.'); $('#prompt').focus(); return; }
@@ -2356,7 +2477,16 @@ function updateWorkMode() {
   const mode = $('#work-mode').value;
   view.composerMode = mode;
   $('#composer-mode').textContent = ({ chat: 'Samtale', plan: 'Planlæg', build: 'Byg', free: 'Byg' })[mode];
-  $('#prompt').placeholder = window.workspace?.target() ? 'Hvad skal AI’en ændre her? Fx Gør teksten kortere.' : mode === 'chat' ? 'Stil et spørgsmål, eller beskriv din idé …' : 'Beskriv det, du vil bygge eller ændre …';
+  // Chip-glyfferne (◌ ≡ ◇) følger datattributten via CSS — D0-ikonsættet er
+  // afvist af Parthee, så de eksisterende glyffer genbruges.
+  $('#composer-mode').dataset.mode = mode;
+  // Helteoverskriften følger arbejdsmåden (§4).
+  $('#hero-heading').textContent = ({ chat: 'Hvad vil du tale om?', plan: 'Hvad skal vi planlægge?', build: 'Hvad skal vi bygge?', free: 'Hvad skal vi bygge?' })[mode];
+  // Ærlig pladsholder pr. tilstand (§5.1): helt for den tomme samtale, aktiv
+  // under beskeder — og der loves intet om »/« eller »@« (R5: ingen
+  // slash- eller mention-parser findes i dag).
+  const hero = $('#chat-panel')?.dataset.phase === 'hero';
+  $('#prompt').placeholder = window.workspace?.target() ? 'Hvad skal AI’en ændre her? Fx Gør teksten kortere.' : hero ? (mode === 'chat' ? 'Stil et spørgsmål, eller beskriv din idé …' : 'Beskriv hvad du vil bygge …') : ['chat', 'plan'].includes(mode) ? 'Skriv en besked …' : 'Beskriv det, du vil bygge eller ændre …';
   $('#mode-help').textContent = mode === 'chat' ? 'Tal med AI’en om projektet. Filerne ændres ikke.' : mode === 'plan' ? 'Lav en plan sammen med AI’en, før den ændrer appen.' : mode === 'build' ? 'AI’en bygger efter den plan, du har valgt. Handlinger kræver fortsat godkendelse.' : 'AI’en ændrer appen efter din besked og projektets tilladelser.';
   window.ConversationPermission?.sync(); window.ComposerWorkMode?.sync();
 }

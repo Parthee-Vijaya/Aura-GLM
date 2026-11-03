@@ -74,7 +74,18 @@
   /* Skygger. */
   --aura-shadow-panel: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 14px rgba(0, 0, 0, 0.06);
   --aura-shadow-overlay: 0 4px 20px rgba(0, 0, 0, 0.12);
-  --aura-shadow-composer: 0 1px 2px rgba(0, 0, 0, 0.03), 0 2px 8px rgba(0, 0, 0, 0.06);
+  /* Composerens bløde kortskygge (DSH design-platform: soft) plus 0,5 px kant. */
+  --aura-shadow-composer: 0 4px 16px rgba(0, 0, 0, 0.03), 0 0 24px rgba(0, 0, 0, 0.03);
+  /* Menuers fremtrædende skygge (DSH: prominent). */
+  --aura-shadow-menu: 0 3px 8px rgba(0, 0, 0, 0.04), 0 0 20px rgba(0, 0, 0, 0.05);
+
+  /* Menu-materiale: alpha + blur (DSH) med uigennemsigtig fallback (R4). */
+  --aura-menu-bg: rgba(252, 253, 254, 0.7);
+
+  /* Læsbar status- og advarselstekst (R4): --aura-warning måler kun 3,15:1
+     på hvid og 2,92:1 på warning-subtle i lyst tema — tekst bærer denne
+     mørkere variant (målt 5,59:1 på hvid, 5,17:1 på warning-subtle). */
+  --aura-warning-ink: rgb(146, 92, 15);
 
   /* Status. */
   --aura-success: rgb(34, 154, 96);
@@ -127,7 +138,15 @@
 
     --aura-shadow-panel: 0 1px 3px rgba(0, 0, 0, 0.2), 0 4px 14px rgba(0, 0, 0, 0.3);
     --aura-shadow-overlay: 0 4px 20px rgba(0, 0, 0, 0.4);
-    --aura-shadow-composer: 0 1px 2px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.25);
+    /* Composerens bløde kortskygge holdes synlig på det mørke lærred. */
+    --aura-shadow-composer: 0 4px 16px rgba(0, 0, 0, 0.25), 0 0 24px rgba(0, 0, 0, 0.2);
+    --aura-shadow-menu: 0 3px 8px rgba(0, 0, 0, 0.24), 0 0 20px rgba(0, 0, 0, 0.3);
+
+    /* Menu-materiale (DSH, mørk) — den sammensatte baggrund er målt 12,88:1. */
+    --aura-menu-bg: rgba(48, 49, 54, 0.64);
+
+    /* Den mørke advarselsfarve består kontrasten som tekst (7,24:1 på raised). */
+    --aura-warning-ink: rgb(220, 160, 60);
 
     --aura-success: rgb(72, 180, 120);
     --aura-success-subtle: rgb(22, 48, 36);
@@ -169,7 +188,10 @@
   --aura-border-faint: rgba(0, 0, 0, 0.04);
   --aura-shadow-panel: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 14px rgba(0, 0, 0, 0.06);
   --aura-shadow-overlay: 0 4px 20px rgba(0, 0, 0, 0.12);
-  --aura-shadow-composer: 0 1px 2px rgba(0, 0, 0, 0.03), 0 2px 8px rgba(0, 0, 0, 0.06);
+  --aura-shadow-composer: 0 4px 16px rgba(0, 0, 0, 0.03), 0 0 24px rgba(0, 0, 0, 0.03);
+  --aura-shadow-menu: 0 3px 8px rgba(0, 0, 0, 0.04), 0 0 20px rgba(0, 0, 0, 0.05);
+  --aura-menu-bg: rgba(252, 253, 254, 0.7);
+  --aura-warning-ink: rgb(146, 92, 15);
   --aura-success: rgb(34, 154, 96);
   --aura-success-subtle: rgb(230, 247, 239);
   --aura-warning: rgb(200, 130, 20);

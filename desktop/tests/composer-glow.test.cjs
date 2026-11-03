@@ -37,7 +37,7 @@ function fixture() {
     Date: class extends Date { static now() { return 20000; } },
     clearInterval() {}, setInterval: () => 1, elapsedText: ms => `${Math.floor(ms / 1000)} s`,
     anyRunning: () => [...views.values()].some(view => view.running),
-    updateModelSummary() { calls.model++; }, setupControls() {}, showConnectionWarning() {}, updateBadgeClass() {},
+    updateModelSummary() { calls.model++; }, setupControls() {}, showConnectionWarning() {}, updateBadgeClass() {}, applyChatPhase() {},
     document: { querySelectorAll: () => [] },
     window: { ChatDisplay: { phase: ChatDisplay.phase, progress: view => ChatDisplay.progress(view, 20000) },
       liveWork: { render() { calls.liveWork++; } },

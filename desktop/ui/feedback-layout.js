@@ -42,8 +42,10 @@
   function fitComposer() {
     if (workspace.hidden || !composer.clientWidth) return;
     composer.style.height = 'auto';
-    composer.style.height = `${Math.max(34, Math.min(150, composer.scrollHeight))}px`;
-    composer.style.overflowY = composer.scrollHeight > 150 ? 'auto' : 'hidden';
+    // 36 px gulv dokket (52 px i helten via CSS-min), 336 px loft — derefter
+    // scroller feltet internt (§5.1).
+    composer.style.height = `${Math.max(36, Math.min(336, composer.scrollHeight))}px`;
+    composer.style.overflowY = composer.scrollHeight > 336 ? 'auto' : 'hidden';
   }
   // Hide the shortcut only when the actual question and its answer control are visible.
   // Tool/plan/data approvals remain visible and keep their existing review handlers.
@@ -79,9 +81,12 @@
 })();
 
 // FB11: the composer exposes existing modes; policy and draft changes use the existing select handler.
+// Tilladelses-pillen bor her med arbejdsmåde-menuen (§5.3/§5.4): de to deler
+// samme tilstand (arbejdsmåde + YOLO) og samme disabled-forløb (R1).
 (() => {
   const menu = $('#composer-mode-menu'), toggle = $('#composer-mode'), select = $('#work-mode');
   const choices = [...menu.querySelectorAll('[data-work-mode]')], yolo = $('#composer-yolo');
+  const pill = $('#permission-pill'), pillLabel = $('#permission-pill-label'), permissionMenu = $('#permission-menu'), menuText = $('#permission-menu-text'), boundary = $('#composer-mode-boundary');
   let owner = null;
   const same = () => owner && current?.root === owner.root && view?.id === owner.chat;
   const blocked = () => running || projectLoading || Boolean(view?.submitting) || toggle.disabled;
@@ -109,9 +114,24 @@
       button.hidden = Boolean(option?.hidden); button.disabled = blocked() || Boolean(option?.disabled);
       button.setAttribute('aria-checked', String(chosen)); button.tabIndex = chosen ? 0 : -1;
     }
-    const build = ['build', 'free'].includes(select.value), active = Boolean(view?.conversationPermission?.active);
-    yolo.hidden = !build; yolo.disabled = blocked(); yolo.textContent = active ? 'YOLO · slå fra' : 'YOLO · slå til …'; yolo.setAttribute('aria-pressed', String(active));
-    $('#composer-mode-boundary').textContent = !build ? 'YOLO giver ingen ekstra rettigheder i denne arbejdsmåde.' : active ? 'Kun denne samtale. Planer og dataregler gælder stadig.' : 'Kun under Byg. Du gennemgår en advarsel først.';
+    const active = Boolean(view?.conversationPermission?.active);
+    // Tilladelses-pillen er et RESUMÉ, ikke reglen (R1): fire interne værdier
+    // gengives ærligt, »Spørg før ændringer« hævdes kun, når det faktisk
+    // gælder, og YOLO-punktet bor nu her (§5.4). Deaktiveringen forsvinder
+    // aldrig — en armeret YOLO kan slås fra i enhver arbejdsmåde.
+    const state = window.PermissionPill?.summary(select.value, { active });
+    if (state) {
+      pillLabel.textContent = state.label;
+      pill.dataset.tone = state.tone;
+      menuText.textContent = state.explanation;
+      yolo.hidden = state.yolo === 'none';
+      boundary.hidden = state.yolo === 'none';
+      yolo.textContent = state.yolo === 'disable' ? 'Slå YOLO fra' : 'Slå YOLO til …';
+      yolo.setAttribute('aria-pressed', String(active));
+      boundary.textContent = state.yolo === 'disable' ? 'Kun denne samtale. Planer og dataregler gælder stadig.' : 'Kun under Byg. Du gennemgår en advarsel først.';
+      pill.setAttribute('aria-label', `Tilladelser: ${state.label}`);
+    }
+    yolo.disabled = blocked();
     $('#composer-build-help').textContent = activePlan ? 'Byg videre på den valgte plan. Planens godkendelse, dataregler og værktøjsgodkendelser gælder stadig.' : 'Byg eller ret appen ud fra din besked. Planvalg, dataregler og værktøjsgodkendelser gælder stadig.';
     position();
   }
@@ -130,7 +150,15 @@
     const next = event.key === 'Home' ? 0 : event.key === 'End' ? visible.length - 1 : (index + (['ArrowUp', 'ArrowLeft'].includes(event.key) ? -1 : 1) + visible.length) % visible.length;
     event.preventDefault(); choose(visible[next], true);
   });
-  yolo.addEventListener('click', () => { if (!same() || blocked()) return; close(); $('#yolo-toggle').click(); });
+  // YOLO aktiveres aldrig fra pillen uden dialogen: klikket går gennem
+  // #yolo-toggle til den eksisterende advarselsdialog (conversation-permission.js),
+  // og deaktiveringen er ét klik. Intet gemmes til næste appstart.
+  yolo.addEventListener('click', () => { if (!same() || blocked()) return; window.PopoverLayer.close(); $('#yolo-toggle').click(); });
+  pill.addEventListener('click', () => {
+    sync();
+    window.PopoverLayer.open({ layer: permissionMenu, invoker: pill, align: 'start', gap: 4, width: () => 320 });
+  });
+  permissionMenu.addEventListener('toggle', () => { pill.setAttribute('aria-expanded', String(permissionMenu.matches(':popover-open'))); });
   menu.addEventListener('toggle', () => { toggle.setAttribute('aria-expanded', String(isOpen())); if (!isOpen()) owner = null; });
   toggle.addEventListener('keydown', event => { if (event.key === 'ArrowDown') { event.preventDefault(); window.ComposerWorkMode.open(); } });
   window.ComposerWorkMode = { sync, close, open() {
@@ -138,10 +166,10 @@
     if (blocked() || !current?.root || !view?.id) return;
     owner = selectedOwner(); sync();
     // Menen åbner gennem det fælles popover-lag: venstrestillet ved chippen,
-    // 12 px over, bredde følger composeren. Laget genankorer ved zoom, rulning
-    // og vinduesstørrelse — ingen faste koordinater.
+    // 4 px fra ankeret (§5.4), bredde følger composeren. Laget genankorer ved
+    // zoom, rulning og vinduesstørrelse — ingen faste koordinater.
     window.PopoverLayer.open({
-      layer: menu, invoker: toggle, gap: 12,
+      layer: menu, invoker: toggle, gap: 4,
       width: () => { const composer = $('#chat-form').getBoundingClientRect(); return Math.min(380, Math.max(300, composer.width), innerWidth - 24); }
     });
     toggle.setAttribute('aria-expanded', 'true'); position();

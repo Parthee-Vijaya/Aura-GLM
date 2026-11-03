@@ -8,7 +8,7 @@ const handler = source.slice(source.indexOf('// Låsen tilhører samtalen'), sou
 function fixture() {
   const elements = new Map();
   const $ = selector => {
-    if (!elements.has(selector)) elements.set(selector, { value: '', checked: false, hidden: false, disabled: false, listeners: {}, focus() {}, setAttribute() {}, addEventListener(name, fn) { this.listeners[name] = fn; } });
+    if (!elements.has(selector)) elements.set(selector, { value: '', checked: false, hidden: false, disabled: false, dataset: {}, style: {}, listeners: {}, focus() {}, setAttribute() {}, addEventListener(name, fn) { this.listeners[name] = fn; } });
     return elements.get(selector);
   };
   const actions = [], prepared = [], sent = [], dataShown = [];

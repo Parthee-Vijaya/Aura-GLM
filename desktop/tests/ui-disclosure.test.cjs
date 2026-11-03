@@ -23,9 +23,11 @@ const stripLineComments = source => source.split('\n').map(line => line.replace(
 test('static census: every <details> in index.html carries the .disclosure class', () => {
   const index = read('index.html');
   const tags = [...index.matchAll(/<details\b[^>]*>/g)].map(match => match[0]);
-  // Task 4's grep census: 50 static folds. New folds must take the class, so
-  // the floor stays honest in both directions.
-  assert.ok(tags.length >= 50, `Task 4 counted 50 static folds — index.html now has ${tags.length}`);
+  // Task 4 counted 50 static folds. D2+D3 removed three of them (the idea
+  // options and the technique/projekt folds became the hero's chip pickers —
+  // T5: "Tekniske ønsker" is ONE flat section, no nested details), so the
+  // floor is 47: new folds must still take the class, in both directions.
+  assert.ok(tags.length >= 47, `Task 4 counted 50 static folds; D2+D3 replaced three with chips — index.html now has ${tags.length}`);
   const missing = tags.filter(tag => !/ class="[^"]*\bdisclosure\b[^"]*"/.test(tag));
   assert.deepEqual(missing, [], 'static <details> without .disclosure');
 });

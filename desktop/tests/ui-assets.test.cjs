@@ -41,10 +41,10 @@ test('avatar-ruten er ét fast navn — protokollen åbner aldrig en fri sti', (
   for (const name of ['avatar2.png', 'avatar.png.png', 'avatar.jpeg', 'avatar/../avatar.png', 'avatar.png?x=1']) assert.equal(allowed(name), false, name);
 });
 
-test('composer-bundbjælkens knaprækkefølge er låst: plus, arbejdsmåde, model, Stop/Send', async () => {
+test('composer-bundbjælkens knaprækkefølge er låst: plus, tilladelses-pille, arbejdsmåde, model, Stop/Send', async () => {
   const index = await fs.readFile(path.join(ui, 'index.html'), 'utf8');
   const start = index.indexOf('<div class="composer-toolbar">');
   const toolbar = index.slice(start, index.indexOf('</form>', start));
-  const order = [...toolbar.matchAll(/id="(chat-materials-plus|composer-mode|model-chip|stop|send)"/g)].map(match => match[1]);
-  assert.deepEqual(order, ['chat-materials-plus', 'composer-mode', 'model-chip', 'stop', 'send']);
+  const order = [...toolbar.matchAll(/id="(chat-materials-plus|permission-pill|composer-mode|model-chip|stop|send)"/g)].map(match => match[1]);
+  assert.deepEqual(order, ['chat-materials-plus', 'permission-pill', 'composer-mode', 'model-chip', 'stop', 'send']);
 });

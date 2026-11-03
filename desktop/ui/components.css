@@ -67,3 +67,115 @@ details.disclosure[open] > summary { margin-bottom: 6px; }
 details.disclosure.plan-detail > summary::before { content: none; }
 details.disclosure.work-progress-card > summary::after { transform: none; }
 #deployment-dialog details.disclosure > summary { color: var(--aura-ink); }
+
+/* ── .menu-material — D2+D3: det delte menu-materiale for ankrede lag ──
+   Alle menuer over det fælles popover-lag (arbejdsmåde, tilladelser,
+   projekt-chip, idé-chips) bærer det samme halvgennemsigtige materiale med
+   blur (DSH §2). R4: kontrasten er målt over den SAMMENSATTE baggrund
+   (18,01:1 lyst / 12,88:1 mørkt over lærredet), og uden backdrop-filter
+   falder materialet tilbage til en uigennemsigtig flade. */
+.menu-material { position: fixed; inset: auto; margin: 0; padding: 6px 4px; border: 0.5px solid var(--aura-border); border-radius: var(--aura-radius-lg); background: var(--aura-menu-bg); -webkit-backdrop-filter: blur(40px) saturate(150%); backdrop-filter: blur(40px) saturate(150%); box-shadow: var(--aura-shadow-menu); color: var(--aura-ink); }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .menu-material { background: var(--aura-bg-raised); }
+}
+@media (forced-colors: active) {
+  .menu-material { background: Canvas; border: 1px solid CanvasText; -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+.menu-material[popover]:popover-open { display: block; }
+
+/* Menuens rækker: mindst 34 px klikhøjde (§5.4), radius 12, titel 13/20 i
+   primær farve over en beskrivelse i 12/16 sekundær (wrapper-strukturen
+   findes allerede i arbejdsmåde-menuens opmærkning). */
+.menu-material button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 34px; padding: 6px 8px; border: 0; border-radius: var(--aura-radius-md); background: transparent; color: var(--aura-ink); text-align: left; font-size: 13px; line-height: 20px; }
+.menu-material button:hover:not(:disabled) { background: var(--aura-bg-hover); }
+.menu-material button:focus-visible { outline: 2px solid var(--aura-accent); outline-offset: 1px; }
+.menu-material button:disabled { color: var(--aura-ink-muted); }
+.menu-material button[aria-checked="true"] { background: var(--aura-bg-hover); }
+.menu-material small { display: block; font-size: 12px; line-height: 16px; color: var(--aura-ink-secondary); }
+
+/* Radiomarkering i chip-menuerne: det lille flueben til højre er tekst-ærligt
+   (aria-checked) og dekoreret med accent (4,23:1 ≥ 3:1 for grafik). */
+.menu-material [role="menuitemradio"]::after, .menu-material [role="radio"]::after { content: ""; width: 14px; height: 14px; margin-left: auto; flex: none; }
+.menu-material [aria-checked="true"]::after { content: "✓"; margin-left: auto; color: var(--aura-accent); font-size: 13px; text-align: right; }
+
+/* ── Samtalerodens faser (§4): hero · active · settling ── */
+/* Settling: mens en gemt samtale genindlæses, er de flytbare dele skjult med
+   visibility (pladsen reserveres), så det forkerte layout aldrig blinker frem. */
+#chat-panel[data-phase="settling"] :is(#chat-form, #composer-mode, #conversation-permission-status) { visibility: hidden; }
+/* Hero: indholdet i samtalekolonnen centreres; stakken står lidt over midten
+   (padding-bottom 32 px, §4) — ingen vh-luft også ved lave vinduer. */
+#chat-panel[data-phase="hero"] .chat-content { display: flex; flex-direction: column; }
+#conversation-hero { display: flex; flex-direction: column; align-items: center; gap: 12px; margin: auto 0; padding-bottom: 32px; text-align: center; }
+.hero-mark { width: 40px; height: 40px; }
+.hero-heading { margin: 0; font-size: 26px; line-height: 32px; font-weight: var(--aura-font-weight-medium); color: var(--aura-ink); }
+/* Kladde i feltet: dekorationerne trækker sig — kun composeren står tilbage
+   (ingen layoutspring midt i en skrivning; fasen skifter først ved besked). */
+#chat-panel[data-phase="hero"][data-hero-quiet="true"] #conversation-hero > :not(#hero-composer-slot) { display: none; }
+/* Forbrugs- og kontekstlinjen hører til den aktive samtale: i helten står
+   kun stakken (§4-skitsen) — linjen dukker op, når samtalen er i gang. */
+#chat-panel[data-phase="hero"] :is(.composer-status, #context-status) { display: none; }
+/* Composeren har samme bredde i begge tilstande (T1-rammen): i helten fylder
+   kortet pladsen (chat-content er allerede gutter-paddet), dokket trækker den
+   fra — begge ender ved --chat-cols kant. */
+#conversation-hero .composer { margin: 0; width: 100%; max-width: none; }
+#hero-composer-slot { width: 100%; margin-top: 12px; display: grid; gap: 10px; }
+#conversation-hero #resume-notice { text-align: left; margin: 0; }
+#conversation-hero #conversation-permission-status { margin: 0; }
+#project-intro { max-width: 640px; }
+#project-intro > p { margin: 0; font-size: 14px; line-height: 22px; color: var(--aura-ink-muted); }
+
+/* ── .hero-chip — projekt- og arbejdsmåde-chips over composeren (§4) ── */
+.hero-chips { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; }
+.project-chip-wrap { display: inline-flex; align-items: center; gap: 4px; }
+.hero-chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 0.5px solid var(--aura-border); border-radius: var(--aura-radius-sm); background: var(--aura-bg-tint); color: var(--aura-ink-secondary); font-size: 13px; line-height: 20px; font-weight: var(--aura-font-weight-medium); }
+.hero-chip:hover:not(:disabled) { background: var(--aura-bg-hover); color: var(--aura-ink); }
+.hero-chip:focus-visible { outline: 2px solid var(--aura-accent); outline-offset: 2px; }
+.hero-chip-caret { color: var(--aura-ink-caption); font-size: 11px; }
+.hero-chip-glyph { color: var(--aura-accent); }
+.project-chip-name { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#project-chip-list { display: grid; gap: 2px; }
+.project-chip-item { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#project-chip-list .project-chip-item[aria-current="true"] { color: var(--aura-ink-muted); background: var(--aura-bg-hover); }
+.project-chip-open { border-top: 0.5px solid var(--aura-border); border-radius: 0; margin-top: 4px; }
+
+/* Arbejdsmåde-chippen (den flyttede #composer-mode) læses som chip i helten;
+   glyfferne følger data-mode gennem CSS (◌ ≡ ◇ — D0-ikonsættet er afvist). */
+#chat-panel[data-phase="hero"] #composer-mode { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 0.5px solid var(--aura-border); border-radius: var(--aura-radius-sm); background: var(--aura-bg-tint); color: var(--aura-ink-secondary); font-size: 13px; line-height: 20px; font-weight: var(--aura-font-weight-medium); }
+#chat-panel[data-phase="hero"] #composer-mode:hover:not(:disabled) { background: var(--aura-bg-hover); color: var(--aura-ink); }
+#composer-mode[data-mode="chat"]::before, #composer-mode[data-mode="plan"]::before, #composer-mode[data-mode="free"]::before, #composer-mode[data-mode="build"]::before { content: "◌"; }
+#composer-mode[data-mode="plan"]::before { content: "≡"; }
+#composer-mode[data-mode="free"]::before, #composer-mode[data-mode="build"]::before { content: "◇"; }
+#composer-mode::before { color: var(--aura-accent); margin-right: 4px; }
+
+/* ── .permission-pill — tilladelses-pillen i bundrækken (§5.3) ──
+   Et ærligt resumé (R1), 28 px høj; YOLO-tonen bærer den målte læsbare
+   advarselsfarve (--aura-warning-ink: 5,59:1 lyst / 7,24:1 mørkt) på et
+   svagt advarselsfyld. */
+.permission-pill { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 0.5px solid var(--aura-border); border-radius: var(--aura-radius-sm); background: var(--aura-bg-tint); color: var(--aura-ink-secondary); font-size: 13px; line-height: 20px; font-weight: var(--aura-font-weight-medium); flex-shrink: 0; }
+.permission-pill:hover:not(:disabled) { background: var(--aura-bg-hover); color: var(--aura-ink); }
+.permission-pill:focus-visible { outline: 2px solid var(--aura-accent); outline-offset: 2px; }
+.permission-pill[data-tone="yolo"] { background: var(--aura-warning-subtle); color: var(--aura-warning-ink); border-color: color-mix(in srgb, var(--aura-warning) 45%, transparent); }
+.permission-pill[data-tone="yolo"] .permission-shield { color: var(--aura-warning-ink); }
+.permission-shield { width: 14px; height: 14px; flex: none; }
+.permission-menu-text { margin: 4px 10px 8px; font-size: 12px; line-height: 17px; color: var(--aura-ink-secondary); text-align: left; }
+.permission-menu-actions { border-top: 0.5px solid var(--aura-border); margin-top: 2px; padding: 4px 0 2px; }
+.permission-menu-actions button { color: var(--aura-ink); }
+.permission-menu-boundary { margin: 4px 10px 6px; font-size: 12px; line-height: 17px; color: var(--aura-ink-muted); text-align: left; }
+.permission-menu-boundary[hidden] { display: none; }
+
+/* ── .idea-chip — T5's idé-valg som chips under composeren (§4) ──
+   De dæmpede chips bærer den valgte værdi synligt; select'erne forbliver
+   værdikilden (payloaden er byte-identisk). */
+.idea-chips { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.idea-chips > .hint { margin: 0; font-size: 12px; line-height: 17px; color: var(--aura-ink-muted); }
+.idea-chip-row { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 8px; }
+.idea-chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border: 0.5px solid var(--aura-border); border-radius: var(--aura-radius-sm); background: var(--aura-bg-raised); color: var(--aura-ink-secondary); font-size: 13px; line-height: 20px; }
+.idea-chip:hover:not(:disabled) { background: var(--aura-bg-hover); color: var(--aura-ink); }
+.idea-chip:focus-visible { outline: 2px solid var(--aura-accent); outline-offset: 2px; }
+.idea-chip#start-idea { border-color: transparent; background: transparent; color: var(--aura-ink-muted); }
+.idea-chip#start-idea:hover:not(:disabled) { background: var(--aura-bg-hover); color: var(--aura-ink); }
+.idea-source { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.idea-menu-group-title { margin: 6px 10px 4px; font-size: 12px; line-height: 17px; font-weight: var(--aura-font-weight-medium); color: var(--aura-ink-secondary); text-align: left; }
+.idea-menu-group { display: grid; gap: 2px; }
+.idea-menu-group + .idea-menu-group { margin-top: 4px; border-top: 0.5px solid var(--aura-border); padding-top: 4px; }
+#idea-chip-technique-panel > .hint { margin: 4px 10px 6px; text-align: left; }

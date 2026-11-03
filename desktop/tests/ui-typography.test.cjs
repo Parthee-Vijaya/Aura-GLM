@@ -207,7 +207,9 @@ test('kontrast: de løftede 11-12 px-tekster holder mindst 4,5:1 i begge temaer'
     ['--aura-accent-hover', '--aura-bg-tint', '.answer-choice .recommended (11 px pille)'],
     ['--aura-accent-hover', '--aura-bg-sidebar', '.chat-meta.is-running/is-unread (11 px tidsstempel)'],
     ['--aura-button-primary-text', '--aura-button-primary', '.tab-badge (11 px optælling)'],
-    ['--aura-ink', '--aura-bg-raised', '.work-progress-technical pre (11 px teknisk uddrag)']
+    ['--aura-ink', '--aura-bg-raised', '.work-progress-technical pre (11 px teknisk uddrag)'],
+    ['--aura-warning-ink', '--aura-bg-raised', 'D2+D3: YOLO-pillens 13 px tekst/ikon på composer-fyldet (R4)'],
+    ['--aura-warning-ink', '--aura-warning-subtle', 'D2+D3: YOLO-pillen på det svage advarselsfyld (R4)']
   ];
   for (const [fg, bg, label] of pairs) {
     for (const theme of ['light', 'dark']) {

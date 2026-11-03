@@ -664,6 +664,8 @@ function makeProjectChoiceDom() {
   make('select', 'connection-select'); make('select', 'model-select'); make('div', 'route-row');
   make('select', 'route-select'); make('details', 'model-options'); make('button', 'start-idea');
   make('p', 'project-startup');
+  // D2+D3: projekt-chippen (navnet + ⓘ'en med projektoplysningerne).
+  make('span', 'project-chip-name'); make('button', 'project-chip-info'); make('p', 'project-path');
   return { ...makeDocument(body), registry };
 }
 function runProjectChoice({ saved = null, startup = null, autoConnect = false, connections = [{ id: 'c1' }], standardAI = { connectionID: '', modelID: '' } } = {}) {

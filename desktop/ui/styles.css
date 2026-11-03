@@ -135,10 +135,9 @@ html:has(#workspace:not([hidden])), body:has(#workspace:not([hidden])) { height:
 .markdown pre code { background: none; padding: 0; }
 .chat-message.tool, .chat-message.system { font-size: 11px; color: var(--muted); border-left: 2px solid var(--line); padding-left: 10px; }
 .chat-message.error { color: #d26b68; background: #4c231f; padding: 12px; border-radius: 8px; }
-#project-intro details { margin-top: 14px; }
 #project-path { font: 11px/1.6 ui-monospace, monospace; overflow-wrap: anywhere; }
-#idea-options { padding: 12px; background: var(--canvas); border: 1px solid var(--line); border-radius: 10px; }
-#start-idea { margin-top: 14px; padding: 9px 12px; background: var(--tint); color: var(--accent); }
+/* #idea-options og #start-idea bærer nu chip-udseendet fra components.css
+   (.idea-chips/.idea-chip); select'erne er værdikilden (visually-hidden). */
 .agent-activity { margin: 0; padding: 9px 18px; background: var(--tint); color: #214f91; border-bottom: 1px solid var(--line); font-size: 11px; min-height: 36px; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; }
 .agent-activity.is-idle { opacity: 0; visibility: hidden; pointer-events: none; min-height: 36px; border-bottom: none; }
 .journey-card { padding: 16px; margin: 18px 0; border: 1px solid var(--line); border-radius: 12px; background: #f8faff; animation: step-arrive var(--motion-step) var(--ease-out); overflow-wrap: anywhere; }

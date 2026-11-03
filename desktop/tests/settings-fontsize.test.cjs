@@ -312,19 +312,19 @@ test('workspace-calm.css: bredere indholdsbredder på store skærme — intet un
   const wide = rules(block(1600));
   assert.equal(wide['body.workspace-calm'], '--chat-col: 960px;', 'rammen vokser til 960 px ved 1600 — samtale og composer følger med sammen');
   assert.equal(wide['.workspace-calm .work-grid[data-surface="off"] #chat-panel'], 'max-width: 1080px;', 'fuldbredde samtale med lukket panel vokser til 1080 px');
-  assert.equal(wide['.workspace-calm #project-intro'], 'max-width: 560px;', 'projektintroen vokser moderat til 560 px');
-  assert.equal(wide['.workspace-calm #chat-choice'], 'max-width: 560px;', 'valgkortene vokser moderat til 560 px');
-  assert.equal(Object.keys(wide).length, 4, '1600-trinnet rører de fire breddefelter');
+  assert.equal(Object.keys(wide).length, 2, '1600-trinnet rører de to breddefelter — helten (D2+D3) følger rammen, ikke egne trin');
   const widest = rules(block(2000));
   assert.equal(widest['body.workspace-calm'], '--chat-col: 1040px;', 'rammen når 1040 px ved 2000');
   assert.equal(widest['.workspace-calm .work-grid[data-surface="off"] #chat-panel'], 'max-width: 1200px;', 'panel-lukket samtale når 1200 px ved 2000');
-  assert.equal(Object.keys(widest).length, 2, '2000-trinnet rører kun de to breddefelter — heroerne forbliver ved 560');
+  assert.equal(Object.keys(widest).length, 2, '2000-trinnet rører kun de to breddefelter');
   // The base widths are untouched: the caps are additive, and every min-width
   // rule sits after its base rule so the cascade order carries the override.
   assert.ok(calmCss.includes('.workspace-calm .chat-content { padding:20px var(--chat-gutter); max-width:var(--chat-col);'), 'basen deler rammen med composeren — 800 px kommer fra --chat-col');
   assert.ok(calmCss.includes('max-width: 900px; margin: 0 auto; width: 100%; }'), 'basis 900 px for lukket panel består');
-  assert.ok(calmCss.includes('#project-intro { text-align: center; max-width: 520px;'), 'projektintroens basis 520 px består');
-  assert.ok(calmCss.includes('#chat-choice { text-align: center; max-width: 520px;'), 'valgkortenes basis 520 px består');
+  // D2+D3: helten (§4) har overtaget intro-formularmuren — #chat-choice er
+  // fjernet visuelt (chips ejes af components.css), og #project-intro står i
+  // heltens ramme uden egne breddefelter.
+  assert.ok(calmCss.includes('.workspace-calm #chat-choice { display: none; }'), 'chat-choice-kortene er fjernet visuelt — id’erne og logikken bevares til testene');
   const minWidths = [...calmCss.matchAll(/@media\s*\(min-width:\s*(\d+)px\)/g)].map(match => Number(match[1]));
   assert.deepEqual(minWidths.sort((a, b) => a - b), [1600, 2000], 'præcis de to nye min-width-trin findes — ingen andre');
   for (const width of minWidths) {

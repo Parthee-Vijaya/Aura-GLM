@@ -70,13 +70,22 @@ const { run } = require('../core/git.cjs');
   assert.equal(await page.inputValue('#model-select'),'test-model');
   // Et klik på et modelkort vælger modellen og lukker dialogen.
   assert.equal(await page.locator('#task-dialog').evaluate(el=>el.open),false);
-  await page.locator('#idea-options').evaluate(el => el.open = true);
-  await page.selectOption('#idea-platform',{label:'Browser'});
-  await page.selectOption('#idea-data',{label:'Ja, flere brugere med fælles data'});
-  await page.locator('#idea-options details').evaluate(el => el.open = true);
-  await page.selectOption('#idea-ui',{label:'React og TypeScript'});
-  await page.selectOption('#idea-design',{label:'Tailwind CSS med shadcn/ui'});
-  await page.selectOption('#idea-backend',{label:'Serverless-funktioner'});
+  // Idé-chips (D2+D3): chips er den synlige vælger; select'erne forbliver
+  // værdikilden. Valgene sættes gennem chip-menuerne — samme værdier, samme
+  // ønske-payload som før (byte-identisk).
+  await page.click('#idea-chip-platform');
+  await page.getByRole('menuitemradio', { name: 'Browser' }).click();
+  await page.click('#idea-chip-data');
+  await page.getByRole('menuitemradio', { name: 'Ja, flere brugere med fælles data' }).click();
+  await page.click('#idea-chip-technique');
+  for (const choice of [['Brugerflade', 'React og TypeScript'], ['Designværktøjer', 'Tailwind CSS med shadcn/ui'], ['Backend', 'Serverless-funktioner']]) {
+    const group = page.locator(`#idea-technique-groups [aria-label="${choice[0]}"]`);
+    await group.getByRole('radio', { name: choice[1] }).click();
+  }
+  assert.equal(await page.textContent('#idea-chip-platform-label'), 'Platform · Browser', 'den valgte værdi står på chippen');
+  assert.equal(await page.textContent('#idea-chip-data-label'), 'Data · Ja, flere brugere med fælles data');
+  assert.equal(await page.textContent('#idea-chip-technique-label'), 'Teknik · 3 valgte');
+  await page.keyboard.press('Escape');
   // Med en kladde i skrivefeltet er der kun én måde at starte på, så kladden kan ikke overskrives.
   await page.fill('#prompt','Min eksisterende kladde'); assert.equal(await page.isVisible('#start-idea'),false);
   assert.equal(await page.inputValue('#prompt'),'Min eksisterende kladde');
