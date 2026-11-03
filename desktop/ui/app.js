@@ -1243,8 +1243,8 @@ async function loadRoutes(saved = '') {
   if (routes.some(route => route.id === saved)) $('#route-select').value = saved;
   renderStatusLine();
 }
-function selection() { return { text: $('#prompt').value, chatMaterials:window.chatMaterials?.selection() || null, effort: view?.effort || null, includeHistory: $('#include-history').checked, mode: $('#work-mode').value, planID: activePlan?.id, connectionID: $('#connection-select').value, modelID: $('#model-select').value, routeID: $('#route-select').value, references: [...document.querySelectorAll('#reference-choices input:checked')].map(el => el.value), fileRefs: window.workspace?.references() || [], previewTarget: window.workspace?.target()?.id || null, view: window.previewViewSize?.() || null, chat: view.id }; }
-const detailLabels = { rules: 'Fælles grundregler, der sendes', projectInstructions: 'Projektets egne regler, der sendes', workspace: 'Arbejdsmappe', mode: 'Arbejdsmåde', brief: 'Projektbrief, der sendes', previewReferenceText: 'Valgt element, der sendes', conversation: 'Tidligere samtale, der sendes', projectGuidance: 'Appens vejledning om projektvalg og design', planContext: 'Plan og afklaring, der sendes', projectChoices: 'Projektets opstartsvalg', projectDesign: 'Projektets designvalg', fileReferences: 'Filhenvisninger i beskeden', connection: 'Forbindelse', model: 'Model', endpoint: 'Serveradresse', recipients: 'Modtagere', region: 'Behandlingssted', retention: 'Opbevaring', training: 'Brug til træning', price: 'Pris og gratisbegrænsninger', capabilities: 'Modelmuligheder', material: 'Hvad sendes?', references: 'Udvalgte private referencer', skills: 'Skills, AI’en kan hente', localStorage: 'Lokal historik og yderligere netværk', security: 'Forbindelsens sikkerhed', source: 'Kilde', checkedAt: 'Dokumentation kontrolleret', evidence: 'Grundlag' };
+function selection() { return { text: $('#prompt').value, chatMaterials:window.chatMaterials?.selection() || null, effort: view?.effort || null, includeHistory: $('#include-history').checked, mode: $('#work-mode').value, planID: activePlan?.id, connectionID: $('#connection-select').value, modelID: $('#model-select').value, routeID: $('#route-select').value, references: [...document.querySelectorAll('#reference-choices input:checked')].map(el => el.value), fileRefs: window.workspace?.references() || [], previewTarget: window.workspace?.target()?.id || null, view: window.previewViewSize?.() || null, chat: view.id, invokedSkills: window.SlashCommands?.inserted() || [] }; }
+const detailLabels = { rules: 'Fælles grundregler, der sendes', projectInstructions: 'Projektets egne regler, der sendes', workspace: 'Arbejdsmappe', mode: 'Arbejdsmåde', brief: 'Projektbrief, der sendes', previewReferenceText: 'Valgt element, der sendes', conversation: 'Tidligere samtale, der sendes', projectGuidance: 'Appens vejledning om projektvalg og design', planContext: 'Plan og afklaring, der sendes', projectChoices: 'Projektets opstartsvalg', projectDesign: 'Projektets designvalg', fileReferences: 'Filhenvisninger i beskeden', connection: 'Forbindelse', model: 'Model', endpoint: 'Serveradresse', recipients: 'Modtagere', region: 'Behandlingssted', retention: 'Opbevaring', training: 'Brug til træning', price: 'Pris og gratisbegrænsninger', capabilities: 'Modelmuligheder', material: 'Hvad sendes?', references: 'Udvalgte private referencer', skills: 'Skills, AI’en kan hente', commandInvocations: 'Kommandoer aktiveret i beskeden', localStorage: 'Lokal historik og yderligere netværk', security: 'Forbindelsens sikkerhed', source: 'Kilde', checkedAt: 'Dokumentation kontrolleret', evidence: 'Grundlag' };
 // Kort resumé i almindeligt dansk. Alle oplysninger ligger under "Se alle oplysninger".
 function showData(data, canSend) {
   $('#data-summary').replaceChildren();
@@ -1270,7 +1270,7 @@ function showData(data, canSend) {
   for (const [key, label] of Object.entries(detailLabels)) {
     const value = data[key];
     if (key === 'projectInstructions' && !value) continue;
-    if (['fileReferences', 'brief', 'previewReferenceText'].includes(key) && !value?.length) continue;
+    if (['fileReferences', 'brief', 'previewReferenceText', 'commandInvocations'].includes(key) && !value?.length) continue;
     const text = key === 'mode' ? ({ chat: 'Samtale', plan: 'Planlæg', build: 'Byg den valgte plan', free: 'Byg' }[value]) : key === 'conversation' && !value ? 'Medsendes ikke. Den aktive samtale og en valgt plan indgår stadig.' : Array.isArray(value) ? value.join(', ') || 'Ingen' : value && typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value || 'Ingen');
     const dd = node('dd');
     if (text.length > 160) { const fold = node('details', undefined, 'disclosure'); fold.append(node('summary', `Vis (${text.split(/\s+/).length} ord)`), node('pre', text)); dd.append(fold); }
@@ -1658,9 +1658,23 @@ $('#chat-form').onsubmit = event => {
 };
 $('#prompt').addEventListener('keydown', event => {
   if (event.key !== 'Enter' || event.altKey || event.shiftKey || event.isComposing || event.keyCode === 229) return;
+  // S2: En åben slash-popup ejer Enter — indsættelsen må aldrig sende beskeden.
+  // Popuppen stopper selv tasten her; dette er det andet led i samme garanti.
+  if (window.SlashCommands?.open()) return;
   event.preventDefault();
   if (event.repeat || !$('#prompt').value.trim() || $('#send').disabled || view.submitting || pendingSend) return;
   $('#chat-form').requestSubmit();
+});
+// S2: Den generiske slash-popup kobles til skrivefeltet. Ingen kommandoer
+// registreres her — /stil og /design er reserveret til S4-S5 — så rækkerne er
+// skills fra skills:list. Skills hentes gennem den samme IPC som
+// Skills-dialogen; uden projekt svarer udbyderen med en tom liste, og
+// popuppen åbner ikke. selection() fører de indsatte tokens videre som
+// invokedSkills; værten genvaliderer aktiveringen fra selve beskedteksten.
+window.SlashCommands?.init({
+  prompt: $('#prompt'),
+  layer: document.getElementById('slash-menu'),
+  skills: async () => call('skills', undefined, selectedOwner())
 });
 $('#send').setAttribute('aria-keyshortcuts', 'Enter Meta+Enter Control+Enter');
 $('#send').title = 'Enter sender. Shift+Enter giver en ny linje.';

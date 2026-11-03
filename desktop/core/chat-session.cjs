@@ -16,6 +16,7 @@ const contextEngine = 'opencode@' + require('../runtime-lock.json').opencode;
 const modelConsent = require('./model-consent.cjs');
 const { projectInstructions, instructionText } = require('./project-instructions.cjs');
 const { guidanceFor, appRules } = require('./project-guidance.cjs');
+const slashCommands = require('./slash-commands.cjs');
 const { primaryBuildGuidance } = require('./build-design.cjs');
 const { startGateway } = require('./gateway.cjs');
 const { toolEntry, toolFiles, approvalTarget, approvalTitles } = require('./activity.cjs');
@@ -278,6 +279,16 @@ class ChatSession {
     if (input.chatMaterials != null && !chatMaterials) throw new Error('Gennemgå filvalget igen.');
     const context = await bench.skills.context(projectRoot);
     context.projectInstructions = await projectInstructions(this.root);
+    // S2 slash-framework: værten genvaliderer beskedens /-tokens fra selve
+    // teksten — både indsatte og håndskrevne — og aktiverer de navngivne
+    // skills for DENNE afsendelse. Fjernes tokenet, fjernes aktiveringen.
+    // Rendererens invokedSkills er kun en formvalideret meddelelse; aktiveringen
+    // kommer aldrig fra den. Grundreglerne, de altid-aktive skills og projektets
+    // funktionsvalg kan ikke slås fra gennem kommandoen — aktivering tilføjer.
+    if (input.invokedSkills !== undefined && (!Array.isArray(input.invokedSkills) || input.invokedSkills.length > 8 || input.invokedSkills.some(name => typeof name !== 'string' || name.length > 64))) throw new Error('Ugyldige kommandoer i beskeden.');
+    const command = slashCommands.resolve(typeof input.text === 'string' ? input.text : '', await bench.skills.list(projectRoot));
+    const runContext = await bench.skills.effective(projectRoot, command.skills);
+    runContext.projectInstructions = context.projectInstructions;
     const settings = await bench.store.project(projectRoot);
     const approvalSettings = await bench.approvalsPolicy.settings(projectRoot);
     const autoCommandsSnapshot = !['chat', 'plan'].includes(mode) && approvalSettings.autoCommands === true;
@@ -312,7 +323,11 @@ class ChatSession {
     disclosure.effort = input.effort || null;
     disclosure.planID = mode === 'build' ? this.plan.id : null;
     disclosure.references = references;
-    disclosure.skills = context.titles;
+    disclosure.skills = runContext.titles;
+    // Før du sender viser de aktiverede kommandoer; nøglen findes kun, når der
+    // er aktiveringer, så fingeraftrykket for en besked uden kommandoer er
+    // byte-identisk med tidligere versioner (ældre modelsessioner genkendes).
+    if (command.invocations.length) disclosure.commandInvocations = command.invocations.map(item => `${item.token} · ${item.title}`);
     // Briefen følger med, når planlægning er slået til eller bruges. Den står under Se alle oplysninger.
     disclosure.brief = (context.features.planlaegning !== false || mode !== 'free') ? brief.briefText(bench.brief) : '';
     disclosure.fileReferences = checkedRefs.map(projectFiles.referenceLabel);
@@ -328,14 +343,14 @@ class ChatSession {
     // Indsatsen sættes på gatewayen ved hver besked og starter ikke en ny modelsession; samtalens historik bevares.
     const { planContext, conversation, historyIncluded, fileReferences, fileReferenceText, previewReference, previewReferenceText, brief: briefContext, workspace: localWorkspace, effort: chosenEffort, effortLevels, ...consent } = disclosure;
     // Den fulde afsendelsesbinding genstarter motoren med den aktuelle tilladelsespolitik.
-    disclosure.fingerprint = crypto.createHash('sha256').update(JSON.stringify(consent) + JSON.stringify({ connectionRevision: selection.connection.revision || null, rules: context.rules, skills: context.skills, features: context.features, projectInstructions: context.projectInstructions, surface: bench.surface, autoCheckpoint, commandIsolation, commandStandby, autoCommandsSnapshot })).digest('hex');
+    disclosure.fingerprint = crypto.createHash('sha256').update(JSON.stringify(consent) + JSON.stringify({ connectionRevision: selection.connection.revision || null, rules: context.rules, skills: runContext.skills, features: context.features, projectInstructions: context.projectInstructions, surface: bench.surface, autoCheckpoint, commandIsolation, commandStandby, autoCommandsSnapshot })).digest('hex');
     // Hukommelsen følger samme konto, model, regler og referenceadgang gennem
     // Planlæg/Byg og planrevisioner. Den giver ingen nye værktøjstilladelser.
     // Startpunktet beskriver aktuelle projektfiler; øvrige designvalg er bundet.
     const { mode: policyMode, planID: approvedPlan, projectDesign, ...sessionConsent } = consent;
     const { startingPoint, ...sessionDesign } = projectDesign;
     const engineVersion = require('./engine.cjs').VERSION;
-    const fingerprintForVersion = version => crypto.createHash('sha256').update(JSON.stringify({ version: 1, connectionID: selection.connection.id, engineVersion: version, workspaceRoot: this.root, ...sessionConsent, material: sessionMaterial, projectDesign: sessionDesign }) + JSON.stringify({ connectionRevision: selection.connection.revision || null, rules: context.rules, skills: context.skills, features: context.features, projectInstructions: context.projectInstructions, surface: bench.surface, autoCheckpoint, autoCommands: approvalSettings.autoCommands === true })).digest('hex');
+    const fingerprintForVersion = version => crypto.createHash('sha256').update(JSON.stringify({ version: 1, connectionID: selection.connection.id, engineVersion: version, workspaceRoot: this.root, ...sessionConsent, material: sessionMaterial, projectDesign: sessionDesign }) + JSON.stringify({ connectionRevision: selection.connection.revision || null, rules: context.rules, skills: runContext.skills, features: context.features, projectInstructions: context.projectInstructions, surface: bench.surface, autoCheckpoint, autoCommands: approvalSettings.autoCommands === true })).digest('hex');
     const sessionFingerprint = fingerprintForVersion(engineVersion);
     const previousEngine = this.data.opencode;
     // A runtime upgrade must not silently discard same-account conversational
@@ -370,7 +385,7 @@ class ChatSession {
     // Forhåndsvisningens størrelse til før/efter-billederne. Kun tal; siden findes i hovedprocessen.
     const view = input.view && Number.isFinite(input.view.width) && Number.isFinite(input.view.height) ? { width: Math.round(input.view.width), height: Math.round(input.view.height) } : null;
     if ((bench.connectionVersions.get(input.connectionID) || 0) !== connectionVersion) throw new Error('Forbindelsen blev ændret. Gennemgå oplysningerne igen.');
-    this.prepared = { mode, engineFingerprint, chatMaterials, ...selection, disclosure, sessionFingerprint, engineVersion, engineMigration, references, fileRefs: checkedRefs, previewTarget: target, view, context, autoCheckpoint, commandIsolation, commandStandby, commandSandboxSupported: commandSupport.available, autoCommandsSnapshot, startup, runtime: settings.runtime, root: this.root };
+    this.prepared = { mode, engineFingerprint, chatMaterials, ...selection, disclosure, sessionFingerprint, engineVersion, engineMigration, references, fileRefs: checkedRefs, previewTarget: target, view, context: runContext, autoCheckpoint, commandIsolation, commandStandby, commandSandboxSupported: commandSupport.available, autoCommandsSnapshot, startup, runtime: settings.runtime, root: this.root };
     const prepared = this.prepared;
     prepared.privacy = await bench.privacyRuntimeProvider?.prepareChat(this, prepared);
     prepared.handoff = engineMigration ? disclosure.conversation : this.engineIdentity === engineFingerprint && this.engine?.active ? this.engineConversation || '' : this.data.opencode?.sessionFingerprint === sessionFingerprint ? this.data.opencode.conversation || '' : disclosure.conversation || '';

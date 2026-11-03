@@ -1,10 +1,14 @@
 // S1 DATAKONTROL-SKJOLD preview probe — the three shield states (off · on ·
 // pending) in light and dark theme, at both button locations (composer status
 // row and the settings-menu popover entry), plus MEASURED contrast against the
-// adjacent surfaces and the focus ring via keyboard. Scratch probe for the
-// preview gate; untracked. Pending er sættes ved at sætte data-privacy-state og
-// fjerne tegnet på de to knapper — samme markup renderStatus producerer
-// (enhedstestene dækker den rigtige renderer).
+// adjacent surfaces and the focus ring via keyboard. Committed S1 probe for
+// Parthee's after-the-fact review. Probe practice in this repo: probes and
+// scratch verify scripts stay UNTRACKED, and only what a test in tests/*.test.cjs
+// actually depends on is committed. This file landed in the S1 commit by
+// mistake and stays in the tree (local source is never deleted), so it
+// documents the exception, not the rule. Pending er sættes ved at sætte
+// data-privacy-state og fjerne tegnet på de to knapper — samme markup
+// renderStatus producerer (enhedstestene dækker den rigtige renderer).
 const { _electron: electron } = require('playwright');
 const fs = require('node:fs/promises');
 const os = require('node:os');
