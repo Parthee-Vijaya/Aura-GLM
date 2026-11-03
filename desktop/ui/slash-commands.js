@@ -49,6 +49,13 @@
   // (beginning of the text or after whitespace), never inside a fenced code
   // block, never part of a URL or path (a word containing :, . or / is not a
   // token). Duplicated names are returned once, first occurrence first.
+  // Decision (S2 review, Minor-3): a token must end at whitespace or the end
+  // of the text — trailing punctuation does NOT activate (`/harness-kodestil,
+  // tak!` is inert). The rule is deliberately conservative and identical for
+  // the popup and the host: it is what keeps `/foo.baz` and `[se /design]`
+  // from activating by accident, and popup-inserted tokens always carry their
+  // own trailing space. S3-S5 keep this rule and document it in their
+  // registration guidance rather than widening the accepted set.
   function parseTokens(text) {
     if (typeof text !== 'string' || !text.includes('/')) return [];
     const tokens = [];
@@ -137,6 +144,10 @@
   function close() {
     if (!state.open) return;
     state.open = false; state.rows = []; state.buttons = []; state.active = -1; state.skills = [];
+    // Discard the fetched list with the session: the next open re-reads
+    // skills:list, so a project or chat switch can never show the previous
+    // project's enabled-markings (review finding 1).
+    skillsRequest = null;
     options.layer?.hidePopover?.();
     promptAria(false);
   }
@@ -207,9 +218,22 @@
     return true;
   }
 
+  // One skills fetch per popup session (the review's "samtaleskift" fix): the
+  // fetch is started when the popup opens and reused while it stands open —
+  // filtering is local — but every close path DISCARDS it, so the next open
+  // re-reads skills:list for the CURRENT project, exactly like the Skills
+  // dialog does at each opening. Empty or failed answers are never kept, not
+  // even for this session: a first "Åbn et projekt først." or a failed fetch
+  // can never leave the popup permanently dead — the next evaluation tries
+  // again. (A skillsKey per owner would also work, but needs app.js; fetching
+  // per open is equally correct and stays inside this module.)
   let skillsRequest = null;
   function ensureSkills() {
-    if (!skillsRequest) skillsRequest = (async () => { try { return await options.skills(); } catch { return []; } })().catch(() => []);
+    if (!skillsRequest) {
+      const request = (async () => { try { return await options.skills(); } catch { return []; } })();
+      skillsRequest = request;
+      request.then(list => { if (skillsRequest === request && (!Array.isArray(list) || !list.length)) skillsRequest = null; });
+    }
     return skillsRequest;
   }
 
@@ -281,6 +305,9 @@
     layer.addEventListener('toggle', event => {
       if (event?.newState === 'closed' && state.open) {
         state.open = false; state.rows = []; state.buttons = []; state.active = -1; state.skills = [];
+        // The browser's own dismissal (light dismiss, Escape close watcher)
+        // is a close path too: the fetched list goes with the session.
+        skillsRequest = null;
         promptAria(false);
       }
     });

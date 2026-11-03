@@ -296,6 +296,84 @@ test('fravalgte skills kan vælges til for én besked og står markeret som såd
   assert.deepEqual(plain(api.inserted()), ['harness-kodestil']);
 });
 
+// ─── 3b · Review-finding 1: hentningen følger projektet og gemmer aldrig et tomt svar ──
+
+test('samtaleskift: hver åbning genhenter skills — to projekter viser hver sin liste', async () => {
+  const dom = makeDom();
+  const api = freshModule(dom);
+  let calls = 0;
+  const projectA = [{ id: 'harness-a', title: 'Projekt A-skill', summary: 's', enabled: true }];
+  const projectB = [{ id: 'harness-b', title: 'Projekt B-skill', summary: 's', enabled: false }];
+  runModule(dom, api, { skills: async () => (calls++ === 0 ? projectA : projectB) });
+  dom.prompt.value = '/'; dom.prompt.selectionStart = 1; dom.prompt.emit('input');
+  await settle();
+  assert.equal(api.open(), true);
+  assert.deepEqual(plain(api.rows().map(row => row.id)), ['harness-a'], 'første åbning viser det første projekts liste');
+  // Filtrering under den åbne popup genbruger listen — én hentning pr. åben session.
+  dom.prompt.value = '/harness'; dom.prompt.selectionStart = 8; dom.prompt.emit('input');
+  await settle();
+  assert.equal(calls, 1, 'ingen ny hentning, mens popuppen står åben');
+  // Projekt-/samtaleskift: luk og åbn igen — skills:list genlæses for det nuværende projekt.
+  dom.prompt.emit('keydown', { key: 'Escape', preventDefault() {}, stopPropagation() {} });
+  dom.prompt.value = '/'; dom.prompt.selectionStart = 1; dom.prompt.emit('input');
+  await settle();
+  assert.equal(calls, 2, 'den nye åbning henter igen (per åbning, som Skills-dialogen)');
+  assert.equal(api.open(), true);
+  const rows = api.rows();
+  assert.deepEqual(plain(rows.map(row => row.id)), ['harness-b'], 'andet projekt viser sin egen liste');
+  assert.equal(rows[0].enabled, false, 'enabled-markeringen følger det åbne projekt');
+  assert.match(rows[0].description, /slået fra i projektet/, 'markeringen lyver ikke om det nye projekt');
+});
+
+test('en fejet første hentning ("Åbn et projekt først.") cachelagres aldrig — popuppen kommer til live', async () => {
+  const dom = makeDom();
+  const api = freshModule(dom);
+  let fail = true, calls = 0;
+  runModule(dom, api, { skills: async () => { calls++; if (fail) throw new Error('Åbn et projekt først.'); return [{ id: 'harness-a', title: 'Projekt A-skill', summary: 's', enabled: true }]; } });
+  dom.prompt.value = '/'; dom.prompt.selectionStart = 1; dom.prompt.emit('input');
+  await settle();
+  assert.equal(api.open(), false, 'den fejet hentning åbner ikke popuppen');
+  assert.equal(calls, 1);
+  fail = false;
+  // Brugeren skriver videre — intet tomt svar er gemt, så næste evaluering henter igen.
+  dom.prompt.value = '/h'; dom.prompt.selectionStart = 2; dom.prompt.emit('input');
+  await settle();
+  assert.equal(calls, 2, 'det fejlede svar var ikke memoiseret');
+  assert.equal(api.open(), true, 'popuppen er ikke permanent død efter den første fejl');
+  assert.deepEqual(plain(api.rows().map(row => row.id)), ['harness-a']);
+});
+
+test('en tom første hentning cachelagres heller ikke — genåbning efter tom katalogåbning virker', async () => {
+  const dom = makeDom();
+  const api = freshModule(dom);
+  let calls = 0;
+  runModule(dom, api, { skills: async () => (calls++ === 0 ? [] : [{ id: 'harness-b', title: 'Projekt B-skill', summary: 's', enabled: true }]) });
+  dom.prompt.value = '/'; dom.prompt.selectionStart = 1; dom.prompt.emit('input');
+  await settle();
+  assert.equal(api.open(), false, 'et tomt første svar åbner ikke popuppen');
+  dom.prompt.value = '/ha'; dom.prompt.selectionStart = 3; dom.prompt.emit('input');
+  await settle();
+  assert.equal(calls, 2, 'det tomme svar var ikke memoiseret');
+  assert.equal(api.open(), true, 'anden evaluering henter igen og popuppen åbner');
+});
+
+// Review Minor-2 (kladder): indsættelsen skal udløse input på skrivefeltet,
+// netop fordi kladde-gemningen lytter på den — ingen fremtidig refactor må
+// stille afskære kladden fra popuppen.
+test('indsættelsen udløser en input-hændelse på #prompt, så kladde-gemningen reagerer', async () => {
+  const dom = makeDom();
+  const api = freshModule(dom);
+  runModule(dom, api, { skills: async () => [{ id: 'harness-kodestil', title: 'Kodestil', summary: 's', enabled: true }] });
+  dom.prompt.value = '/'; dom.prompt.selectionStart = 1; dom.prompt.emit('input');
+  await settle();
+  assert.equal(api.open(), true);
+  const inputs = [];
+  dom.prompt.addEventListener('input', event => inputs.push(event.type));
+  dom.prompt.emit('keydown', { key: 'Enter', preventDefault() {}, stopPropagation() {} });
+  assert.equal(dom.prompt.value, '/harness-kodestil ');
+  assert.deepEqual(inputs, ['input'], 'indsættelsen dispatcher input — kladde-gemningens vej');
+});
+
 // ─── 4 · Før du sender og selection() i app.js ───────────────────────────────
 
 test('app.js fører de indsatte tokens videre og viser aktiverede kommandoer i Før du sender', () => {
