@@ -301,12 +301,15 @@ details.disclosure.step.step-group[open] > summary .step-glyph::after { opacity:
 .workspace-calm #surface-toggle { flex: none; min-width: 30px; padding: 4px 8px; font-size: 15px; line-height: 1; }
 @media (max-width: 700px) { .topbar-mode { display: none; } .workspace-calm .workspace-bar h1 .workspace-crumb { max-width: 30%; } }
 
-/* ── Indstillingsmenuens ikonkolonne (P1, audit §2.5) ──
+/* ── Indstillingsmenuens ikonkolonne (P1, audit §2.5 → review F2) ──
    #settings-menu bærer .menu-material; ikonerne — både svg'erne og
    Datakontrol-skjoldet — står i én fast 16 px-boks, så tekst og ikoner
-   flugter på tværs af rækkerne (skjoldet stod ~3 px til venstre). */
-#settings-menu button > span { display: grid; place-items: center; width: 16px; flex: none; }
-#settings-menu button > span svg { width: 16px; height: 16px; }
+   flugter på tværs af rækkerne (skjoldet stod ~3 px til venstre).
+   Selektoren er skræmmet til IKON-spans'ene (span[aria-hidden="true"]):
+   privacy-gate.js' span.privacy-entry-word er også et direkte span-barn, og
+   den uskremmede regel klemte "Datakontrol" til ét bogstav pr. linje. */
+#settings-menu button > span[aria-hidden="true"] { display: grid; place-items: center; width: 16px; flex: none; }
+#settings-menu button > span[aria-hidden="true"] svg { width: 16px; height: 16px; }
 #settings-menu .privacy-entry .privacy-shield { width: 16px; height: 16px; }
 
 /* ── Container queries på samtalepanelet (P1, audit §3) ──

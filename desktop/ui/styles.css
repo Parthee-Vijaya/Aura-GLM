@@ -202,7 +202,9 @@ html:has(#workspace:not([hidden])), body:has(#workspace:not([hidden])) { height:
 .provider-brand-icon { flex: 0 0 18px; width: 18px; height: 18px; object-fit: contain; }
 .provider-brand-label, .provider-brand-heading > span { min-width: 0; overflow-wrap: anywhere; }
 .model-choice .provider-brand-heading > span { margin-top: 0; font-size: inherit; color: inherit; }
-#composer-mode { font-size: 11px; margin: 0; white-space: nowrap; padding: 4px; }
+/* Review F4: chippen står på typeskalaen — det femte reelle 11 px (audit §3 +
+   T3-gulvet). Calm-reglen (13 px) og heltefasen (13 px) består uændret. */
+#composer-mode { font-size: var(--aura-text-12); margin: 0; white-space: nowrap; padding: 4px; }
 .composer button { padding: 6px 13px; font-size: 12px; }
 /* "Aura har set": Auras egne målinger på resultatkortet — facts, ikke modellens tekst. */
 .run-evidence { margin: 10px 0; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; }
@@ -519,7 +521,10 @@ body.setup-guided .app-content { margin-left: 0; }
 /* Skjoldet som segment: samme pill-grammatik som linjen (padding 1/8,
    radius 8) — ikonbæreren, ikke en egen venstrestillet række. */
 .composer-status > #privacy-gate-button { padding: 1px 8px; border-radius: var(--radius-xs); min-height: 24px; font-size: var(--aura-text-12); }
-.status-line-help { max-width: 380px; padding: 10px 12px; }
+/* Review F3: paddingen står på ID-reglen — .menu-material (components.css,
+   indlæses sidst) vinder ellers kildeorden ved samme specificitet, og 6/4
+   er for trangt til tekst. Id (1,0,0) slår klasse (0,1,0). */
+#status-line-help { max-width: 380px; padding: 10px 12px; }
 .status-line-help p { margin: 0 0 6px; font-size: var(--aura-text-12); line-height: 17px; color: var(--ink); }
 .status-line-help p:last-child { margin-bottom: 0; }
 .features-list { display: grid; gap: 8px; margin: 0 0 12px; }
@@ -549,8 +554,10 @@ input[type=checkbox][role=switch]:disabled { cursor: not-allowed; opacity: .5; }
 .info:hover:not(:disabled) { background: var(--tint); border-color: var(--accent); }
 .info[aria-expanded="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
 /* Boblen bærer menu-materialet (P1: ét popover-grammatik) — teksten er
-   12/1,6 og forudformateret; materialet kommer fra .menu-material. */
-.info-pop { margin: 0; padding: 10px 12px; font-size: var(--aura-text-12); line-height: 1.6; white-space: pre-line; }
+   12/1,6 og forudformateret; materialet kommer fra .menu-material.
+   Review F3: paddingen står på ID-reglen — ellers vinder .menu-materialets
+   6/4 på kildeorden, og 4 px er for trangt til tekst. */
+#info-pop { margin: 0; padding: 10px 12px; font-size: var(--aura-text-12); line-height: 1.6; white-space: pre-line; }
 .info-pop:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .label-row { display: flex; align-items: center; margin: 16px 0 7px; }
 .label-row label { margin: 0; }
