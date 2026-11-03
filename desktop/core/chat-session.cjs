@@ -10,6 +10,7 @@ const { content } = require('./git.cjs');
 const { capture, changes } = require('./changes.cjs');
 const connections = require('./connections.cjs');
 const { ContextUsage } = require('./context-usage.cjs');
+const { StepTiming, toDTO: speedDTO } = require('./step-timing.cjs');
 const { localMetrics } = require('./run-metrics.cjs');
 const contextEngine = 'opencode@' + require('../runtime-lock.json').opencode;
 const modelConsent = require('./model-consent.cjs');
@@ -105,6 +106,10 @@ class ChatSession {
     this.bench = bench; this.projectContext = bench.project; this.id = data.id; this.data = data; this.root = root;
     this.plan = data.plan || null; this.planConversation = [...(data.planConversation || [])]; this.lastPlan = data.lastPlan || null;
     this.usageBase = { ...emptyUsage(), ...(data.usage || {}) };
+    // D5a: den seneste afsluttede turs hastighedsmåling (indholdsfri DTO). Ukendt
+    // forbliver ukendt — 0 i statuslinjen er en visningsværdi, ikke en måling.
+    this.speedBase = speedDTO(data.speed);
+    this.runStepTiming = null;
     this.contextUsage = new ContextUsage();
     this.running = false; this.starting = false; this.finishing = null; this.stopping = null; this.closing = null; this.qualityChecking = null; this.generation = 0; this.task = null; this.prepared = null;
     this.engine = null; this.gateway = null; this.engineIdentity = null; this.allowProjectEdits = false; this.historyWarning = '';
@@ -130,8 +135,20 @@ class ChatSession {
     for (const [id,tokens] of this.runSteps || []) addStep(usage, tokens, this.runPrices?.has(id)?this.runPrices.get(id):this.runPrice);
     return usage;
   }
+  // Den aktuelle turs observerede svarhastighed (D5a). Kører en tur, er det
+  // turens eget aggregat (ukendt, indtil et gyldigt trin er målt); Privacy
+  // Gate-runtid måler ikke. Efter turen vises den afsluttede turs resultat.
+  currentSpeed() {
+    if (this.running || this.starting || this.sending) {
+      if (!this.runStepTiming) return null;
+      const dto = this.runStepTiming.dto();
+      const ttft = this.runMeasurement?.data?.ttft_ms;
+      return Number.isFinite(ttft) ? { ...dto, ttftMs: Math.round(ttft) } : dto;
+    }
+    return this.speedBase || null;
+  }
   // Det, brugerfladen skal bruge for at vise samtalen.
-  view() { return { id: this.id, title: this.title, workspace: this.data, plan: this.plan, lastPlan: this.lastPlan, usage: this.currentUsage(), contextUsage: this.contextUsage.snapshot(), running: this.running, historyWarning: this.historyWarning }; }
+  view() { return { id: this.id, title: this.title, workspace: this.data, plan: this.plan, lastPlan: this.lastPlan, usage: this.currentUsage(), speed: this.currentSpeed(), contextUsage: this.contextUsage.snapshot(), running: this.running, historyWarning: this.historyWarning }; }
   checkpointEvent(event) {
     if (event.type !== 'git.checkpoint') return;
     this.lastCheckpoint = event;
@@ -198,7 +215,7 @@ class ChatSession {
   historySnapshot(status, clearDraft = false) {
     const messages = this.runUser ? [this.runUser] : [];
     for (const part of this.runText?.values() || []) if (this.runRoles?.get(part.messageID) === 'assistant') messages.push({ id: part.id, role: 'assistant', text: conversationMode.visible(part.text || '') });
-    return { messages, plan: this.plan || null, lastPlan: this.lastPlan || null, planConversation: [...(this.planConversation || [])], status, mode: this.runMode || 'chat', clearDraft, usage: this.currentUsage() };
+    return { messages, plan: this.plan || null, lastPlan: this.lastPlan || null, planConversation: [...(this.planConversation || [])], status, mode: this.runMode || 'chat', clearDraft, usage: this.currentUsage(), speed: this.currentSpeed() };
   }
   async saveHistory(status, clearDraft = false) {
     if (this.historyWarning) return;
@@ -407,6 +424,9 @@ class ChatSession {
     this.runQuality = null; this.qualityFingerprints = new Set(); this.qualityAwaitingReply = null; this.runRejected = false; this.runSystem = null; this.qualityBinding = null;
     this.runMode = prepared.mode; this.runConnectionID = prepared.connection.id; this.runText = new Map(); this.runTools = new Map(); this.runRoles = new Map(); this.allowProjectEdits = false; this.taskRules = new Set(); this.approvals.clear(); this.runFinish = null; this.runFailure = null;
     this.usageBase = this.currentUsage(); this.runSteps = new Map(); this.runPrices = new Map(); this.runPrice = connections.priceFor(prepared.connection, prepared.model, prepared.route);
+    // D5a: denne turs trinregister — bundet til samtalen, generationen og den
+    // valgte forbindelse, model og rute. Privacy Gate-runtiden måler ikke.
+    this.runStepTiming = prepared.privacy ? null : new StepTiming({ chatID: this.id, engineID: contextEngine, connectionID: prepared.connection.id, modelID: prepared.model.id, routeID: prepared.route?.id || '' });
     if (prepared.mode === 'plan') {
       if (this.planConversation.join('\n').length + text.length > 120000) throw new Error('Afklaringen er blevet for lang. Start en ny samtale for at lave en ny plan.');
       this.retirePlan('ny'); this.planConversation.push(text);
@@ -498,6 +518,11 @@ class ChatSession {
       }
       }
       this.contextUsage.bind({ connectionID: prepared.connection.id || '', modelID: prepared.model.id, routeID: prepared.route?.id || '', engineID: contextEngine, sessionID: this.engine.session?.id || '', model: prepared.model });
+      // Motorens session er nu kendt: registraturet bindes til den. En ny tur
+      // nulstiller hastighedsmålingen (D5a/Codex): linjen viser 0, indtil
+      // denne tur leverer en gyldig måling — kontekstbindingen er også ny.
+      this.runStepTiming?.bindSession(this.engine.session?.id || '');
+      this.emit({ type: 'usage', usage: this.currentUsage(), contextUsage: this.contextUsage.snapshot(), speed: this.currentSpeed() });
       let system = prepared.appContext ? prepared.appContext.system : composeAppContext({ prepared, project: this.project, plan: this.plan, planConversation: this.planConversation, dismissed: this.data.planOffersDismissed, handoff: this.engineConversation, surface: bench.surface }).system;
       if (this.copy && !prepared.privacy) system += '\nArbejd kun i denne samtales kopi: ' + this.root + '. Projektets oprindelige mappe er ikke dit arbejdsområde. Aura håndterer indfletning separat efter brugerens gennemgang.';
       system += prepared.privacy ? '\nMidlertidige hjælpefiler skal blive i det isolerede arbejdsområde, som denne kørsel stiller til rådighed. Aura gennemgår tilbageførsel til projektet separat.' : '\nMidlertidige hjælpefiler til denne opgave kan ligge i ' + JSON.stringify(this.scratchRoot) + '. Brug kun denne midlertidige mappe; den hører til denne samtale.';
@@ -580,6 +605,13 @@ class ChatSession {
   }
   // En afsluttet opgave gemmes med sine ændringer, så Ændringer kan vise dem og sige, hvem der lavede dem.
   async finishTask(status, diff) {
+    // D5a: turens hastighedsmåling afsluttes med turen — resultatet bevares til
+    // genåbning, sene trin kan ikke lægge tal til en lukket tur, og en tur uden
+    // kvalificeret måling (fx Privacy Gate-runtid) efterlader ukendt: 0 i linjen
+    // er en visningsværdi. Diagnostics får tallet ved siden af ttft_ms.
+    this.speedBase = this.currentSpeed();
+    this.runMeasurement?.speed(this.speedBase);
+    this.runStepTiming = null;
     this.runMeasurement?.finish(status === 'idle' ? 'completed' : status === 'stopped' ? 'stopped' : 'error');
     const task = this.task; if (!task) return null;
     this.task = null;
@@ -837,10 +869,14 @@ class ChatSession {
       return;
     }
     if (event.compacting || this.compacting) {
-      if (event.type === 'message.part.updated' && p.part?.type === 'step-finish' && this.runSteps && !this.runSteps.has(p.part.id)) { this.runSteps.set(p.part.id, p.part.tokens || {}); if(Object.hasOwn(event,'privacyPrice')) (this.runPrices ||= new Map()).set(p.part.id,event.privacyPrice); observeRunContext(this, event, p.part); this.emit({ type: 'usage', usage: this.currentUsage(), contextUsage: this.contextUsage.snapshot() }); }
+      if (event.type === 'message.part.updated' && p.part?.type === 'step-finish' && this.runSteps && !this.runSteps.has(p.part.id)) { this.runSteps.set(p.part.id, p.part.tokens || {}); if(Object.hasOwn(event,'privacyPrice')) (this.runPrices ||= new Map()).set(p.part.id,event.privacyPrice); observeRunContext(this, event, p.part); this.emit({ type: 'usage', usage: this.currentUsage(), contextUsage: this.contextUsage.snapshot(), speed: this.currentSpeed() }); }
       if (['session.error', 'engine.error'].includes(event.type)) this.runFailure = { kind: event.failure?.kind || sessionFailure(p.error), message: String(event.message || p.error?.data?.message || 'Sammenfatningen mislykkedes.').slice(0, 800) };
       return;
     }
+    // D5a: trinregistret ser turens hændelser (start, første indhold, streamed,
+    // afslutning) — det afviser selv fremmede sessioner, recovery-tider og
+    // dubletter. Sammenfatningstrin (compacting) når aldrig hertil.
+    if (this.runStepTiming) this.runStepTiming.observe(event);
     if (event.type === 'permission.asked') return this.permissionAsked(event).catch(() => this.emit({ type: 'engine.error', message: 'Godkendelsen kunne ikke vises. Stop opgaven, og prøv igen.' }));
     if (event.type === 'permission.replied') { if (p.reply === 'reject') this.runRejected = true; this.approvals.delete(p.requestID); this.waiting = this.approvals.size > 0; bench.chatsChanged(); const entry = this.changes.activity.get(`approval-${p.requestID}`); if (entry?.status === 'waiting') this.log({ id: entry.id, status: p.reply === 'reject' ? 'rejected' : 'answered', ended: Date.now() }); }
     if (event.type === 'question.asked') {
@@ -862,7 +898,7 @@ class ChatSession {
       observeRunContext(this, event, p.part);
       // Grunden til modellens sidste stop, fx "length", når svaret blev afskåret ved grænsen for svarlængde.
       this.runFinish = p.part.reason || null;
-      this.emit({ type: 'usage', usage: this.currentUsage(), contextUsage: this.contextUsage.snapshot() });
+      this.emit({ type: 'usage', usage: this.currentUsage(), contextUsage: this.contextUsage.snapshot(), speed: this.currentSpeed() });
     }
     if (this.qualityAwaitingReply) {
       const awaiting = this.qualityAwaitingReply;

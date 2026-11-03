@@ -201,7 +201,7 @@ test('kontrast: de løftede 11-12 px-tekster holder mindst 4,5:1 i begge temaer'
   const themes = tokenThemes();
   // Token-parrene bag de løftede tekststørrelser (elementerne i kommentaren).
   const pairs = [
-    ['--aura-ink-muted', '--aura-bg-raised', '12 px-hjælp/status på kort: #draft-status, .preview-footer, .run-evidence h4, .result-eyebrow, #composer-shortcut, .composer-status, #context-status, effort-labels'],
+    ['--aura-ink-muted', '--aura-bg-raised', '12 px-hjælp/status på kort: #draft-status, .preview-footer, .run-evidence h4, .result-eyebrow, #composer-shortcut, .composer-status + .status-line (D5b-statuslinjen), effort-labels'],
     ['--aura-ink-secondary', '--aura-bg-sidebar', '12 px-sidepanel: .nav-label, .sidebar-bottom, .badge, 11 px .chat-meta'],
     ['--aura-ink-secondary', '--aura-bg-tint', '.diff-stat-badge (lys tint-baggrund)'],
     ['--aura-accent-hover', '--aura-bg-tint', '.answer-choice .recommended (11 px pille)'],

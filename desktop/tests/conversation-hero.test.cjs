@@ -54,10 +54,13 @@ function makeDom() {
   const modelChip = make('button', 'model-chip', toolbar);
   make('button', 'stop', toolbar); make('button', 'send', toolbar);
   make('select', 'work-mode', toolbar);
-  const contextStatus = make('div', 'context-status', panel);
+  // Statusrækken (D5b): Datakontrol · linjen · kladdestatus — spejler index.html.
+  const statusRow = make('div', 'status-line-row', panel);
+  const contextStatus = make('button', 'context-status', statusRow);
+  make('span', 'draft-status', statusRow);
   const bar = make('div', 'conversation-permission-status', panel);
   form.before(bar);
-  return { byId, panel, chatContent, hero, heroChips, slot, form, prompt, mode, modelChip, resume, bar, contextStatus, toolbar, pill };
+  return { byId, panel, chatContent, hero, heroChips, slot, form, prompt, mode, modelChip, resume, bar, statusRow, contextStatus, toolbar, pill };
 }
 function runSlices(dom, context = {}) {
   const $ = selector => {
@@ -102,7 +105,7 @@ test('active: første besked dokker composeren i bunden — samme noder, samme r
   assert.equal(dom.panel.dataset.phase, 'active');
   assert.equal(dom.hero.hidden, true, 'helten er væk');
   assert.equal(dom.form.parentElement, dom.panel, 'composeren er dokket i panelet igen');
-  assert.equal(dom.panel.children[dom.panel.children.indexOf(dom.form) + 1], dom.contextStatus, 'composeren står før kontekst-linjen som før');
+  assert.equal(dom.panel.children[dom.panel.children.indexOf(dom.form) + 1], dom.statusRow, 'composeren står før statusrækken som før — linjen og kladden bor i rækken');
   assert.equal(dom.mode.parentElement, dom.toolbar, 'arbejdsmåde-chippen er tilbage i bundrækken');
   assert.equal(dom.toolbar.children[dom.toolbar.children.indexOf(dom.mode) + 1], dom.modelChip, 'chippen står før model-chippen som før');
   assert.equal(dom.resume.parentElement, dom.chatContent, 'resume-banneret er tilbage øverst i samtalen');

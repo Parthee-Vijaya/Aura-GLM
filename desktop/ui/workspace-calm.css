@@ -106,8 +106,8 @@ body.workspace-calm[data-workspace-theme="light"] {
 .workspace-calm #stop { background:var(--calm-button); color:var(--calm-button-text); border-color:transparent; }
 .workspace-calm #stop::after { content:'■'; font-size:13px; }
 .workspace-calm #composer-shortcut { font-size:12px; margin:2px 5px 6px; color:var(--muted); }
-.workspace-calm :is(.composer-status,#context-status) { font-size:12px; color:var(--muted); padding-inline:15px; }
-.workspace-calm .composer-status { flex-wrap:wrap; gap:3px 10px; padding-bottom:9px; }
+.workspace-calm :is(.composer-status,#context-status) { font-size:12px; color:var(--muted); }
+.workspace-calm .composer-status { padding-inline:15px; padding-bottom:9px; }
 .workspace-calm #chat-form::before { inset:-2px; padding:2px; border-radius:18px; }
 .workspace-calm #chat-form::after { inset:-4px; padding:3px; border-radius:20px; filter:blur(5px); }
 .workspace-calm #chat-form[data-metal-state="working"]::before,

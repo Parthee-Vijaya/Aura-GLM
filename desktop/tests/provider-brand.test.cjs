@@ -93,11 +93,11 @@ function fixture() {
   $('#connection-select').value = connection.id; $('#model-select').value = 'anthropic/claude-prøve';
   $('#model-select').selectedOptions = [{ textContent: 'Claude prøve' }];
   $('#route-select').value = 'konkret-rute'; $('#prompt').value = 'Bevar kladde';
-  const context = { $, renderContextUsage() {}, syncOnboardingVisuals() {}, state: { connections: [connection], definitions: { openrouter: { provider: 'OpenRouter' } } }, view: { running: false, effort: null },
+  const context = { $, renderContextUsage() {}, renderStatusLine() {}, syncOnboardingVisuals() {}, state: { connections: [connection], definitions: { openrouter: { provider: 'OpenRouter' } } }, view: { running: false, effort: null },
     window: { ProviderBrand: brand, ModelAdvice: advice }, acceptedFingerprint: 'godkendt-materiale', activePlan: Object.freeze({ id: 'godkendt-plan' }) };
   vm.createContext(context);
   const source = fs.readFileSync(path.join(__dirname, '../ui/app.js'), 'utf8');
-  vm.runInContext(source.slice(source.indexOf('const effortNames ='), source.indexOf('// Forbruget i samtalen:')), context);
+  vm.runInContext(source.slice(source.indexOf('const effortNames ='), source.indexOf('// Forbrugets tal står i statuslinjen')), context);
   return { context, $ };
 }
 

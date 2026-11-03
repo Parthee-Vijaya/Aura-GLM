@@ -112,8 +112,10 @@ details.disclosure.work-progress-card > summary::after { transform: none; }
    (ingen layoutspring midt i en skrivning; fasen skifter først ved besked). */
 #chat-panel[data-phase="hero"][data-hero-quiet="true"] #conversation-hero > :not(#hero-composer-slot) { display: none; }
 /* Forbrugs- og kontekstlinjen hører til den aktive samtale: i helten står
-   kun stakken (§4-skitsen) — linjen dukker op, når samtalen er i gang. */
-#chat-panel[data-phase="hero"] :is(.composer-status, #context-status) { display: none; }
+   kun stakken (§4-skitsen) — linjens felter dukker op, når samtalen er i gang.
+   Rækken selv står, så Datakontrol-knappen (sattes efter #context-status) er
+   fortsat en altid-synlig sikkerhedsflade. */
+#chat-panel[data-phase="hero"] :is(#context-status, #draft-status) { display: none; }
 /* Composeren har samme bredde i begge tilstande (T1-rammen): i helten fylder
    kortet pladsen (chat-content er allerede gutter-paddet), dokket trækker den
    fra — begge ender ved --chat-cols kant. */

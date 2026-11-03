@@ -98,8 +98,8 @@ async function saveChatDraft(required = false) {
   view.draft = { text, mode };
   try { localStorage.setItem(`harness.chatDraft.${root}.${chat}`, JSON.stringify({ text, mode })); } catch {}
   $('#draft-status').textContent = 'Gemmer kladde …';
-  try { await call('saveDraft', { root, chat, text, mode }, { root, chat }); if (current?.root === root && view.id === chat && $('#prompt').value === text) $('#draft-status').textContent = 'Kladde gemt på denne computer'; }
-  catch { if (current?.root === root && view.id === chat) $('#draft-status').textContent = 'Kladden kunne ikke gemmes. Kopiér teksten, før du lukker.'; if (required === true) throw new Error('Kladden kunne ikke gemmes. Kopiér teksten, før du opdaterer.'); }
+  try { await call('saveDraft', { root, chat, text, mode }, { root, chat }); if (current?.root === root && view.id === chat && $('#prompt').value === text) setDraftStatus('Kladde gemt på denne computer'); }
+  catch { if (current?.root === root && view.id === chat) setDraftStatus('Kladden kunne ikke gemmes. Kopiér teksten, før du lukker.', false); if (required === true) throw new Error('Kladden kunne ikke gemmes. Kopiér teksten, før du opdaterer.'); }
 }
 function option(value, label) { const el = node('option', label); el.value = value; return el; }
 // Keep model text inert; external links cross the validated main-process boundary.
@@ -850,8 +850,9 @@ function fillChat(next, fresh) {
     }).catch(() => { /* Ventende valg kan ikke genfindes; statuslinjen viser fortsat arbejdet. */ });
     renderStatus();
   }
-  renderUsage(v.usage || next.usage);
-  updateWorkMode(); $('#draft-status').textContent = history?.draft ? 'Kladde hentet fra denne computer' : '';
+  v.usage = v.usage || next.usage; v.speed = next.speed || v.speed || null;
+  renderStatusLine();
+  updateWorkMode(); setDraftStatus(history?.draft ? 'Kladde hentet fra denne computer' : '');
   updateStartIdea(); applyRunning();
   // Anbefalingen følger profilen, også når chat-choice netop er blevet vist.
   applyChatChoiceRecommendation();
@@ -1240,7 +1241,7 @@ async function loadRoutes(saved = '') {
   $('#route-select').replaceChildren(option('', 'Vælg udbyder – ingen automatisk routing'));
   for (const route of routes) $('#route-select').append(option(route.id, route.name));
   if (routes.some(route => route.id === saved)) $('#route-select').value = saved;
-  renderContextUsage();
+  renderStatusLine();
 }
 function selection() { return { text: $('#prompt').value, chatMaterials:window.chatMaterials?.selection() || null, effort: view?.effort || null, includeHistory: $('#include-history').checked, mode: $('#work-mode').value, planID: activePlan?.id, connectionID: $('#connection-select').value, modelID: $('#model-select').value, routeID: $('#route-select').value, references: [...document.querySelectorAll('#reference-choices input:checked')].map(el => el.value), fileRefs: window.workspace?.references() || [], previewTarget: window.workspace?.target()?.id || null, view: window.previewViewSize?.() || null, chat: view.id }; }
 const detailLabels = { rules: 'Fælles grundregler, der sendes', projectInstructions: 'Projektets egne regler, der sendes', workspace: 'Arbejdsmappe', mode: 'Arbejdsmåde', brief: 'Projektbrief, der sendes', previewReferenceText: 'Valgt element, der sendes', conversation: 'Tidligere samtale, der sendes', projectGuidance: 'Appens vejledning om projektvalg og design', planContext: 'Plan og afklaring, der sendes', projectChoices: 'Projektets opstartsvalg', projectDesign: 'Projektets designvalg', fileReferences: 'Filhenvisninger i beskeden', connection: 'Forbindelse', model: 'Model', endpoint: 'Serveradresse', recipients: 'Modtagere', region: 'Behandlingssted', retention: 'Opbevaring', training: 'Brug til træning', price: 'Pris og gratisbegrænsninger', capabilities: 'Modelmuligheder', material: 'Hvad sendes?', references: 'Udvalgte private referencer', skills: 'Skills, AI’en kan hente', localStorage: 'Lokal historik og yderligere netværk', security: 'Forbindelsens sikkerhed', source: 'Kilde', checkedAt: 'Dokumentation kontrolleret', evidence: 'Grundlag' };
@@ -1460,7 +1461,7 @@ window.harness.onEvent(event => {
   if (event.type === 'chat.workspace' && event.chat === view.id) { window.workspace?.onChat(); return; }
   if (event.type === 'preview.runtime' && event.workspaceRoot && event.workspaceRoot !== current?.workspaceRoot) return;
   if (event.type === 'preview.runtime') return window.previewServer?.update(event);
-  if (event.type === 'history.error' && (!event.chat || event.chat === view.id) && (!event.root || event.root === current?.root)) { $('#draft-status').textContent = event.message; message(event.message, true); }
+  if (event.type === 'history.error' && (!event.chat || event.chat === view.id) && (!event.root || event.root === current?.root)) { setDraftStatus(event.message, false); message(event.message, true); }
   if (event.type === 'preview.ready' && event.workspaceRoot && event.workspaceRoot !== current?.workspaceRoot) return;
   if (event.type === 'preview.ready') { showPreview(event.url); window.previewServer?.refresh(); return; }
   if (event.type === 'chats.updated') { Promise.resolve(window.chats?.update(event)).then(applyRunning, () => {}); return; }
@@ -1476,14 +1477,14 @@ window.harness.onEvent(event => {
   if (event.type === 'files.written') { if (v.modelProgress) v.modelProgress.draft = null; if (active) renderStatus(); }
   if (event.type === 'model.progress') { if (v.running) { v.modelProgress = event.progress; v.lastSignalAt = event.progress.lastContentAt; if (active) renderStatus(); } return; }
   if (event.type === 'message.part.delta' && typeof p.delta === 'string' && v.partTypes.get(p.partID) === 'text') { v.receivedChars += p.delta.length; if (active) renderStatus(); }
-  if (event.type === 'usage') { v.usage = event.usage; v.contextUsage = event.contextUsage || null; if (active) renderUsage(event.usage); return; }
+  if (event.type === 'usage') { v.usage = event.usage; v.contextUsage = event.contextUsage || null; v.speed = event.speed || null; if (active) renderStatusLine(); return; }
   if (event.type === 'plan.offer') { v.planOffer = event.offered; updatePlanOffer(v); }
   if (event.type === 'plan.retired') { v.plan = null; v.planCard = false; if (active) { activePlan = null; $('#plan-card').hidden = true; } }
   if (event.type === 'plan.ready') { v.plan = event.plan; v.planCard = true; if (v.buildOffer) { v.buildOffer = false; v.review.hidden = true; } updatePlanOffer(v); if (active) { activePlan = event.plan; window.planning?.onPlan(event.plan); $('#plan-card').hidden = false; if (v.followChat) requestAnimationFrame(() => $('#plan-card').scrollIntoView({ block: 'nearest' })); } }
   if (event.type === 'run.review') { renderRunReview(event, v); if (!active) { v.unread = true; window.chats?.render(); } }
   // Versionen efter opgaven vises på resultatkortet. Kun en oversprunget version nævnes i samtalen.
   if (event.type === 'git.checkpoint') { v.lastCheckpoint = event; if (event.status === 'skipped') appendMessage(event.message, 'system', v); return; }
-  if (event.type === 'session.new') { v.contextUsage = null; if (active) renderContextUsage(); v.roles.clear(); v.parts.clear(); v.partTypes.clear(); }
+  if (event.type === 'session.new') { v.contextUsage = null; if (active) renderStatusLine(); v.roles.clear(); v.parts.clear(); v.partTypes.clear(); }
   if (event.type === 'run.status') {
     const working = ['starting', 'working'].includes(event.status);
     const statuses = { starting: 'Starter agent …', working: 'Arbejder …', idle: 'Klar', error: 'Fejl', stopped: 'Stoppet', rejected: 'Klar' };
@@ -1783,38 +1784,83 @@ function updateModelSummary() {
   const brand = view.running && view.activeModelSummary ? view.activeModelBrand : { kind: connection?.kind, modelID: model.value };
   window.ProviderBrand.decorate($('#model-chip'), { ...brand, label: view.running && view.activeModelSummary ? view.activeModelSummary : name, note: view.running && view.activeModelSummary ? '' : effortLabel });
   $('#model-chip').title = chosen ? `Du har valgt ${chosen} indsats i denne samtale. Klik for at skifte model eller indsats.` : effort ? `${effort[0].toUpperCase()}${effort.slice(1)} indsats er udbyderens standard for modellen. Klik for at skifte model.` : connection?.kind === 'mistral' ? 'Aura Prime sender ikke et valg af indsats. Mistrals standard gælder; niveauet er ikke verificeret. Klik for at skifte model eller forbindelse.' : 'Klik for at skifte model eller forbindelse.';
-  renderContextUsage();
+  renderStatusLine();
   $('#connection-status').textContent = model.value ? (state?.connections.find(c => c.id === $('#connection-select').value)?.name || 'Valgt forbindelse') + ' · ' + model.value : 'Ingen model valgt';
   syncOnboardingVisuals();
 }
-// Forbruget i samtalen: tokens ind og ud og en anslået pris ud fra udbyderens prisliste. Det faktiske forbrug står hos udbyderen.
-const tokenCount = value => Math.round(value).toLocaleString('da-DK');
-function renderUsage(usage) {
-  renderContextUsage();
-  const target = $('#usage-status');
-  if (!usage || !usage.calls) { target.textContent = 'Intet forbrug i denne samtale endnu'; target.title = ''; return; }
-  const input = usage.input + usage.cacheRead + usage.cacheWrite;
-  const amounts = [];
-  if (usage.calls > usage.unpriced + (usage.otherCalls || 0)) amounts.push(usage.cost < 0.01 ? 'under 0,01 USD' : `ca. ${usage.cost.toLocaleString('da-DK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`);
-  if (usage.otherCosts?.DKK != null) amounts.push(usage.otherCosts.DKK < 0.01 ? 'under 0,01 DKK' : `ca. ${usage.otherCosts.DKK.toLocaleString('da-DK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} DKK`);
-  if (usage.unpriced) amounts.push('pris ukendt');
-  const price = amounts.join(' + ');
-  target.textContent = `Denne samtale: ${tokenCount(input)} tokens ind · ${tokenCount(usage.output + usage.reasoning)} ud · ${price}`;
-  target.title = `${usage.calls} modelkald. Ind: ${tokenCount(usage.input)} nye, ${tokenCount(usage.cacheRead)} fra cache og ${tokenCount(usage.cacheWrite)} skrevet til cache. Ud: ${tokenCount(usage.output)} svar og ${tokenCount(usage.reasoning)} ræsonnement. Prisen er et overslag ud fra udbyderens listepris og kan afvige fra din faktura; se det faktiske forbrug hos udbyderen.`;
+// Forbrugets tal står i statuslinjen; det faktiske forbrug står hos udbyderen.
+// Én statuslinje under composeren (D5b §7): kontekst · tok/s · tokens · pris — altid
+// alle fire felter, og manglende data viser 0 (Parthee/Codex-varianten), aldrig
+// »ukendt« og aldrig en udeladt del. Linjen har bevidst INGEN aria-live — den
+// opdaterer hver tur og ville støje i skærmlæseren (den gamle forbrugsstatus'
+// aria-live="polite" er bortfaldet med den); nuancerne står i tooltippet.
+function statusSelection() {
+  return view.running && view.runContextSelection ? view.runContextSelection : { connectionID: $('#connection-select').value, modelID: $('#model-select').value, routeID: $('#route-row').hidden ? '' : $('#route-select').value };
 }
-// Viser kun den åbne samtales seneste måling for den valgte AI. Ingen deling eller estimeret historik.
-function renderContextUsage() {
-  const selected = view.running && view.runContextSelection ? view.runContextSelection : { connectionID: $('#connection-select').value, modelID: $('#model-select').value, routeID: $('#route-row').hidden ? '' : $('#route-select').value };
+function renderStatusLine() {
+  const line = $('#context-status');
+  if (!line) return;
+  const selected = statusSelection();
+  const connection = state?.connections.find(item => item.id === selected.connectionID) || null;
   const model = modelCatalog?.find(item => item.id === selected.modelID);
-  const value = window.ContextDisplay.project(selected, view.contextUsage, model, $('#connection-select').value);
-  const text = window.ContextDisplay.format(value), target = $('#context-status'), meter = $('#context-meter');
-  target.hidden = !current || !view.id || !selected.modelID;
-  $('#context-label').textContent = text.label; target.title = text.description;
-  meter.hidden = value.percentage === null;
-  if (value.percentage !== null) { meter.value = Math.min(value.percentage, 100); meter.setAttribute('aria-label', text.description); meter.setAttribute('aria-valuetext', text.label); }
-  else { meter.removeAttribute('value'); meter.removeAttribute('aria-label'); meter.removeAttribute('aria-valuetext'); }
+  const shaped = window.StatusLine.format({
+    selected, connection, modelName: model?.name || selected.modelID || '',
+    contextValue: window.ContextDisplay.project(selected, view.contextUsage, model, $('#connection-select').value),
+    usage: view.usage || null, speed: view.speed || null,
+  });
+  line.hidden = !current || !view.id;
+  $('#context-field').textContent = shaped.context;
+  $('#speed-field').textContent = shaped.speed;
+  $('#tokens-field').textContent = shaped.tokens;
+  $('#price-field').textContent = shaped.price;
+  line.setAttribute('aria-label', [shaped.context, shaped.speed, shaped.tokens, shaped.price].join(' · '));
+  const help = $('#status-line-help');
+  help.replaceChildren(...shaped.tooltip.map(text => node('p', text)));
+  if (help.matches(':popover-open')) window.PopoverLayer?.position();
 }
-$('#route-select').addEventListener('change', renderContextUsage);
+// Tooltippet åbnes ved hover, tastaturfokus og klik/touch (native »title« er
+// utilstrækkeligt). Popover-laget ejer placeringen; browseren ejer lukning —
+// og et klik udenfor må ikke straks åbne boblen igen.
+let statusHelpClosed = { at: 0 };
+function openStatusHelp() {
+  const line = $('#context-status');
+  if (!line) return;
+  window.PopoverLayer.open({ layer: $('#status-line-help'), invoker: line, align: 'center', place: 'above', gap: 6, margin: 16, width: () => Math.min(380, innerWidth - 32) });
+}
+function wireStatusLineHelp() {
+  const line = $('#context-status'), help = $('#status-line-help');
+  if (!line || !help) return;
+  help.addEventListener('beforetoggle', event => { if (event.newState === 'closed') statusHelpClosed = { at: performance.now() }; });
+  line.addEventListener('mouseenter', openStatusHelp);
+  line.addEventListener('focus', openStatusHelp);
+  line.addEventListener('blur', () => { if (!line.matches(':hover')) window.PopoverLayer.close(); });
+  line.addEventListener('mouseleave', () => { if (document.activeElement !== line) window.PopoverLayer.close(); });
+  line.addEventListener('click', () => {
+    if (help.matches(':popover-open')) window.PopoverLayer.close();
+    else if (performance.now() - statusHelpClosed.at > 400) openStatusHelp();
+  });
+}
+wireStatusLineHelp();
+// Kladdestatus: kortvarig role=status yderst til højre i samme række. Succes-
+// tekster fader ud efter ca. 2,5 s (teksten består til skærmlæseren); fejl står
+// synligt, indtil de er løst (Codex). verify-chats/verify-resume/verify-demo
+// afhænger af "Kladde gemt/hentet på denne computer".
+let draftFadeTimer = null;
+function setDraftStatus(text, fade = true) {
+  const el = $('#draft-status');
+  if (!el) return;
+  clearTimeout(draftFadeTimer);
+  el.textContent = text || '';
+  el.classList.remove('draft-faded', 'draft-gone');
+  // Transient: fad ud efter ca. 2,5 s og giv pladsen tilbage (Codex: ingen
+  // permanent plads under talrækken). Teksten bliver i DOM'en til skærmlæseren
+  // og prøverne; fejltekster står, indtil de er løst.
+  if (text && fade) draftFadeTimer = setTimeout(() => {
+    el.classList.add('draft-faded');
+    draftFadeTimer = setTimeout(() => el.classList.add('draft-gone'), 700);
+  }, 2500);
+}
+$('#route-select').addEventListener('change', renderStatusLine);
 function showConnectionWarning(reason) {
   $('#connection-warning-text').textContent = reason;
   $('#connection-warning').hidden = false;
@@ -1865,9 +1911,10 @@ function applyChatPhase() {
     heroRoot.hidden = true;
     $('#chat-content').prepend(resume);
     $('#model-chip').before(mode);
-    // Composeren dokkes først; baren sættes derefter ind umiddelbart før den
-    // (before virker i formens NUVÆRENDE forælder — rækkefølgen er kontrakten).
-    $('#context-status').before(form);
+    // Composeren dokker først; statusrækken sættes derefter ind umiddelbart før
+    // den (before virker i formens NUVÆRENDE forælder — rækkefølgen er
+    // kontrakten; #context-status forblever i rækken som privacy-gate-anker).
+    $('#status-line-row').before(form);
     if (bar) form.before(bar);
   }
   updateWorkMode();

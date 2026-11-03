@@ -238,7 +238,7 @@ function runChat({ profile = null, storage = {}, view = freshView() } = {}) {
     current: { root: '/projekt' }, activePlan: null,
     appendMessage: () => { const element = new El('div'); view.log.children.push(element); return element; },
     renderHistoryControls: () => {}, updatePlanOffer: () => {}, defaultMode: () => 'chat',
-    setRunning: () => {}, renderStatus: () => {}, renderUsage: () => {},
+    setRunning: () => {}, renderStatus: () => {}, renderStatusLine: () => {}, setDraftStatus: () => {},
     updateWorkMode: () => {}, updateStartIdea: () => {}, applyRunning: () => {}, node
   };
   vm.runInNewContext([

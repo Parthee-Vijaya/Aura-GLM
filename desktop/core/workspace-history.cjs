@@ -201,13 +201,16 @@ class WorkspaceHistory {
       if (run.lastPlan !== undefined) data.lastPlan = run.lastPlan;
       data.status = run.status; data.mode = run.mode; data.lastRunMode = run.mode;
       if (run.usage && typeof run.usage === 'object') data.usage = run.usage;
+      // D5a: den afsluttede turs hastighedsmåling (indholdsfri, valideret DTO).
+      const speed = require('./step-timing.cjs').toDTO(run.speed);
+      if (speed) data.speed = speed; else delete data.speed;
       if (run.clearDraft) data.draft = '';
     });
   }
 }
 // Samtalens felter fra en ældre fil.
 function pick(data) {
-  const keys = ['draft', 'mode', 'messages', 'plan', 'planConversation', 'lastPlan', 'status', 'usage', 'trimmed', 'restorationID'];
+  const keys = ['draft', 'mode', 'messages', 'plan', 'planConversation', 'lastPlan', 'status', 'usage', 'speed', 'trimmed', 'restorationID'];
   return Object.fromEntries(keys.filter(key => data[key] !== undefined).map(key => [key, data[key]]));
 }
 module.exports = { WorkspaceHistory, titleFrom };

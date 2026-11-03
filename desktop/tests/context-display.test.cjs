@@ -1,26 +1,31 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { project, format } = require('../ui/context-display.js');
+const { project } = require('../ui/context-display.js');
+const { format } = require('../ui/status-line.js');
 const { ContextUsage } = require('../core/context-usage.cjs');
 const binding = { connectionID: 'chosen', modelID: 'vendor/model', routeID: 'exact', engineID: 'opencode@1.18.33', sessionID: 'session-a', model: { limits: { context: 1000 } } };
 const step = { type: 'step-finish', tokens: { input: 100, output: 99999, cache: { read: 20, write: 10 } } };
 function sample() { const usage = new ContextUsage(); usage.bind(binding); return usage.observe(step); }
+// Statuslinjens kontekstfelt (D5b): contextValue = project(...), formateret af
+// ui/status-line.js — 0 er visningsværdi for manglende måling.
+const contextField = (selected, snapshot, model, catalog) => format({ selected, connection: null, contextValue: project(selected, snapshot, model, catalog), usage: null, speed: null }).context;
+const tooltipText = (selected, snapshot, model, catalog) => format({ selected, connection: null, contextValue: project(selected, snapshot, model, catalog), usage: null, speed: null }).tooltip.join('\n');
 
 test('visningen adskiller målt input med cache fra samtalens total og fra output', () => {
   const projected = project(binding, sample());
   assert.deepEqual(projected, { inputTokens: 130, windowTokens: 1000, percentage: 13 });
-  const text = format(projected);
-  assert.equal(text.label, 'Kontekst · 130 / 1.000 · 13 %');
-  assert.match(text.description, /senest afsluttede modelkald/);
-  assert.match(text.description, /ikke samtalens samlede forbrug/);
+  assert.equal(contextField(binding, sample()), '130/1k (13%)');
+  assert.match(tooltipText(binding, sample()), /senest afsluttede modelkald/);
+  assert.match(tooltipText(binding, sample()), /ikke samtalens samlede forbrug/);
 });
 test('ændret forbindelse, model eller OpenRouter-rute viser aldrig gammel måling', () => {
   for (const key of ['connectionID', 'modelID', 'routeID']) {
     const value = project({ ...binding, [key]: 'changed' }, sample(), { limits: { context: 2000 } });
     assert.deepEqual(value, { inputTokens: null, windowTokens: 2000, percentage: null });
+    assert.equal(contextField({ ...binding, [key]: 'changed' }, sample(), { limits: { context: 2000 } }), '0/2k (0%)', 'manglende måling viser 0 — aldrig en gammel');
   }
 });
-test('ukendte og ufuldstændige målinger vises som ukendte, også ved store samtaletotaler', () => {
+test('ukendte og ufuldstændige målinger vises som 0 i linjen med nuancen i tooltippet', () => {
   const invalid = [null, { inputTokens: 500, windowTokens: 1000, known: true },
     { ...sample(), source: 'conversation-total', inputTokens: 1000000 },
     { ...sample(), known: false }, { ...sample(), inputTokens: -1 },
@@ -28,18 +33,18 @@ test('ukendte og ufuldstændige målinger vises som ukendte, også ved store sam
     { ...sample(), binding: { ...binding, sessionID: '' } },
     { ...sample(), binding: { ...binding, engineID: '' } }];
   for (const snapshot of invalid) assert.equal(project(binding, snapshot).percentage, null);
-  assert.equal(format(project(binding, null)).label, 'Kontekst ukendt');
-  assert.equal(format(project(binding, null, binding.model)).label, 'Kontekst ukendt · vindue 1.000');
+  assert.equal(contextField(binding, null, binding.model), '0/1k (0%)', 'vinduet fra kataloget vises uden opdigtet måling');
+  assert.match(tooltipText(binding, null, binding.model), /afventer den seneste måling/i);
 });
 test('gyldigt nul er en måling, og et overskredet vindue skjules ikke i teksten', () => {
-  assert.equal(format(project(binding, { ...sample(), inputTokens: 0 })).label, 'Kontekst · 0 / 1.000 · 0 %');
-  assert.equal(format(project(binding, { ...sample(), inputTokens: 1200 })).label, 'Kontekst · 1.200 / 1.000 · 120 %');
+  assert.equal(contextField(binding, { ...sample(), inputTokens: 0 }), '0/1k (0%)');
+  assert.equal(contextField(binding, { ...sample(), inputTokens: 1200 }), '1,2k/1k (120%)');
 });
 test('et andet forbindelseskatalog kan ikke levere vinduet til den aktive opgaves model med samme id', () => {
   const unknownWindow = { ...sample(), windowTokens: null };
   const otherCatalogModel = { id: binding.modelID, limits: { context: 64000 } };
   assert.deepEqual(project(binding, unknownWindow, otherCatalogModel, 'another-connection'), { inputTokens: 130, windowTokens: null, percentage: null });
-  assert.equal(format(project(binding, unknownWindow, otherCatalogModel, 'another-connection')).label, 'Kontekst ukendt');
+  assert.equal(contextField(binding, unknownWindow, otherCatalogModel, 'another-connection'), '130', 'intet vindue: tal uden /vindue og uden procent');
   assert.equal(project(binding, sample(), otherCatalogModel, 'another-connection').windowTokens, 1000, 'en faktisk måling beholder sit eget vindue');
 });
 
@@ -62,6 +67,7 @@ test('den rigtige ChatSession videresender kun sidste unikke afsluttede trin til
   assert.equal(events.length, 2);
   assert.equal(events[1].contextUsage.inputTokens, 50);
   assert.equal(events[1].chat, chat.id);
+  assert.equal(events[1].speed, null, 'uden trinregister er hastigheden ukendt — 0 er visningsværdi');
   chat.runUser = { id: 'user-a', role: 'user', text: 'Et syntetisk spørgsmål.' };
   await chat.saveHistory('idle');
   await bench.newConversation();
