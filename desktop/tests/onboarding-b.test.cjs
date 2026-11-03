@@ -122,6 +122,28 @@ test('fuldvinduesfladen: apprammen er væk, mens onboarding vises — og vender 
   assert.match(css, /:is\(#setup\.onboarding-simple, #onboarding\.onboarding-simple\)\s*\{\s*display:\s*flex;\s*flex-direction:\s*column;\s*min-height:\s*100dvh/, 'onboardingfladerne fylder hele vinduet');
 });
 
+test('idéfladen har én stille vej tilbage — kun når et projekt ligger bagved', () => {
+  const index = fs.readFileSync(path.join(__dirname, '..', 'ui', 'index.html'), 'utf8');
+  const app = fs.readFileSync(path.join(__dirname, '..', 'ui', 'app.js'), 'utf8');
+  const css = fs.readFileSync(path.join(__dirname, '..', 'ui', 'onboarding-simple.css'), 'utf8');
+  // Markup: linket står i idéfladens backline, skjult som udgangspunkt (første
+  // start har intet at vende tilbage til) og med sin danske tekst.
+  const onboarding = index.slice(index.indexOf('<main id="onboarding"'), index.indexOf('</main>', index.indexOf('<main id="onboarding"')));
+  assert.ok(onboarding.includes('id="idea-back"'), 'tilbage-linket findes på idéfladen');
+  assert.match(onboarding, /id="idea-back"[^>]*hidden/, 'linket er skjult fra starten — første start viser det ikke');
+  assert.ok(onboarding.includes('← Tilbage til arbejdsfladen'), 'linket har sin danske tekst');
+  // Wiring: "Nyt projekt" stasher projektet bagved og viser linket kun dér;
+  // displayProject rydder stasen igen, og linket ender i displayProject —
+  // samme flow som panelets åbn-knap — uden at oprette noget.
+  assert.ok(app.includes('ideaReturn = current; $(\'#idea-back\').hidden = !ideaReturn;'), 'Nyt projekt stasher projektet og viser kun linket, når et projekt ligger bagved');
+  assert.ok(app.includes('ideaReturn = null; $(\'#idea-back\').hidden = true;'), 'enhver projektvisning rydder stasen og skjuler linket');
+  const handler = app.slice(app.indexOf("$('#idea-back').onclick"), app.indexOf("$('#create-form').onsubmit"));
+  assert.ok(handler.includes('await displayProject(project);'), 'linket bruger displayProject — vej tilbage uden oprettelse');
+  assert.ok(!handler.includes('createProject'), 'linket opretter intet');
+  // CSS: den tomme backline kollapser, så førstestarts-fladen ikke får luft.
+  assert.ok(css.includes('#onboarding.onboarding-simple .setup-backline:has(#idea-back[hidden]) { display: none; }'), 'den tomme backline fylder intet på førstestarts-fladen');
+});
+
 test('profil-trinnet tilføjer ingen ny visuel fase i Onboarding B', () => {
   const { root } = documentFixture();
   // The setup progress line gained a profile item, but the visual phases stay

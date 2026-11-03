@@ -44,11 +44,15 @@ body:has(#onboarding.onboarding-simple:not([hidden])) .app-content { margin-left
 body:has(#setup.onboarding-simple:not([hidden])) .app-content > header,
 body:has(#onboarding.onboarding-simple:not([hidden])) .app-content > header { display: none; }
 
-/* Back line: "← Tilbage" top-left with the discrete step counter under it. */
-#setup.onboarding-simple .setup-backline { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; padding: 18px 0 8px; }
-#setup.onboarding-simple .setup-backline .text-button { padding: 6px 2px; font-size: 13px; color: var(--os-muted); }
-#setup.onboarding-simple .setup-backline .text-button:hover { color: var(--os-ink); }
-#setup.onboarding-simple .setup-backline .text-button:focus-visible { outline: 2px solid var(--os-accent); outline-offset: 2px; }
+/* Back line: "← Tilbage" top-left with the discrete step counter under it.
+   The idea surface carries the same line for its quiet return link ("←
+   Tilbage til arbejdsfladen"); an empty line collapses, so the first-run
+   idea screen — which has nothing to return to — shows no blank space. */
+:is(#setup.onboarding-simple, #onboarding.onboarding-simple) .setup-backline { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; padding: 18px 0 8px; }
+:is(#setup.onboarding-simple, #onboarding.onboarding-simple) .setup-backline .text-button { padding: 6px 2px; font-size: 13px; color: var(--os-muted); }
+:is(#setup.onboarding-simple, #onboarding.onboarding-simple) .setup-backline .text-button:hover { color: var(--os-ink); }
+:is(#setup.onboarding-simple, #onboarding.onboarding-simple) .setup-backline .text-button:focus-visible { outline: 2px solid var(--os-accent); outline-offset: 2px; }
+#onboarding.onboarding-simple .setup-backline:has(#idea-back[hidden]) { display: none; }
 #setup.onboarding-simple .setup-step-state { margin: 0 0 0 2px; font-size: 12px; line-height: 1.4; color: var(--os-muted); }
 
 /* The centered step column. The per-step width keys off #setup[data-step],

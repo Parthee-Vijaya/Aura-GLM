@@ -206,18 +206,35 @@ const helpers = require('./ui-test-helpers.cjs');
     assert.equal(motion.length, 0, 'fladen står stille ved reduceret bevægelse');
     passed('Responsiv flade ved 1440/980, zoom 150 %, smalle CSS-stressprøver og reduceret bevægelse');
 
-    // Guided "Vælg senere" ends the setup at the idea screen: the surface is
+    // Guidet "Vælg senere" afslutter ved idéfladen: the surface is
     // still frame-less there, and Opret is the way back to the workspace —
     // where the sidebar (and its setup entry) returns.
     await page.click('#setup-local'); await page.waitForSelector('#setup', { state: 'hidden' });
     await page.waitForSelector('#onboarding:not([hidden])');
     await assertFrame({ hidden: true });
+    assert.equal(await page.isVisible('#idea-back'), false, 'første start har intet projekt bagved — Tilbage-linket vises ikke');
     assert.equal(await page.inputValue('#name'), '', 'den guidede afslutning står ved en frisk idéflade');
     await page.fill('#name', 'Bevar min F20-kladde'); await page.fill('#purpose', 'En lokal, syntetisk aktivitetsoversigt.');
     await shot('projektide');
     await page.click('#create'); await page.waitForSelector('#workspace:not([hidden])');
     await assertFrame({ hidden: false });
     passed('Vælg senere afslutter den guidede opsætning ved idéfladen; Opret og fortsæt giver app-rammen tilbage');
+    // Regression: idéfladens stille vej tilbage — kun når et projekt ligger
+    // bagved. Klikket vender gennem displayProject uden at oprette noget, og
+    // kladden står gemt, før linket bruges.
+    await page.click('#new'); await page.waitForSelector('#onboarding:not([hidden])');
+    await assertFrame({ hidden: true });
+    assert.equal(await page.isVisible('#idea-back'), true, 'med et åbent projekt bagved står Tilbage-linket fremme');
+    await page.fill('#name', 'Kladde på tværs');
+    const draft = await page.evaluate(() => localStorage.getItem('harness.ideaDraft.v1'));
+    assert.ok(draft.includes('Kladde på tværs'), 'idékladden står gemt, før Tilbage-linket bruges');
+    await page.click('#idea-back'); await page.waitForSelector('#workspace:not([hidden])');
+    assert.equal(await page.locator('#project-name').textContent(), 'Bevar min F20-kladde', 'Tilbage-linket vender tilbage til det åbne projekt uden at oprette noget');
+    assert.equal(await page.isVisible('#idea-back'), false, 'tilbage i arbejdsfladen er linket væk igen');
+    assert.match(await page.inputValue('#prompt'), /En lokal, syntetisk aktivitetsoversigt\./, 'arbejdsfladens kladde og visning er bevaret af rundturen');
+    const draftAfter = await page.evaluate(() => localStorage.getItem('harness.ideaDraft.v1'));
+    assert.ok(String(draftAfter).includes('Kladde på tværs'), 'Tilbage-klikket rydder ikke den gemte idékladde');
+    passed('Idéfladen har én stille vej tilbage til arbejdsfladen — uden oprettelse og med kladden i behold');
 
     // Repeat setup from the workspace sidebar — the entry that remains.
     await helpers.openSetup(page); await page.click('#setup-add-provider'); await page.click('#provider-cards [data-kind="compatible"]');

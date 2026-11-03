@@ -1,5 +1,9 @@
 const $ = selector => document.querySelector(selector);
 let current = null, revision = null, polling = false, state = null, modelRequest = 0, acceptedFingerprint = null, pendingSend = null, running = false;
+// The project "Nyt projekt" left open in the background — the idea surface's
+// quiet return link (hidden on the first-run surface, where there is nothing
+// behind it) brings it back through displayProject.
+let ideaReturn = null;
 let projectLoading = true, projectDisplayRequest = 0, navigationRequest = 0, startupLoads = 0;
 // All owners contribute to availability. Finishing one task must not unlock a
 // form still owned by startup, project creation or idea refinement.
@@ -678,6 +682,9 @@ async function displayProject(project, { firstTask = false } = {}) {
   modelCatalog = []; $('#model-shortlist').replaceChildren(); $('#work-mode').value = 'chat'; updateWorkMode();
   if (current?.workspaceRoot) previewRevisions.set(current.workspaceRoot, revision);
   current = project; revision = null; acceptedFingerprint = null;
+  // Every project display closes the idea surface's return link: the
+  // workspace is back, and the next "Nyt projekt" stashes a fresh one.
+  ideaReturn = null; $('#idea-back').hidden = true;
   window.dispatchEvent(new CustomEvent('aura:project', { detail: { root: project.root } }));
   // Projekter beholder samtaler, godkendelser og forhåndsvisning i baggrunden.
   const known = views.has(project.workbench.chat);
@@ -1480,6 +1487,10 @@ $('#new').onclick = () => action(async () => {
   document.body.classList.remove('setup-guided'); setupActive = false; $('#setup').hidden = true;
   ++modelRequest; ++projectDisplayRequest; recovery = ''; $('#connection-warning').hidden = true;
   if (current?.workspaceRoot) previewRevisions.set(current.workspaceRoot, revision);
+  // The frame-less idea surface offers one quiet way back: when "Nyt projekt"
+  // leaves a project open in the background, the link returns to it. A
+  // first-run idea screen has nothing behind it and never shows the link.
+  ideaReturn = current; $('#idea-back').hidden = !ideaReturn;
   current = null; window.harness.selectContext?.(null);
   window.dispatchEvent(new CustomEvent('aura:project', { detail: { root: null } })); revision = null; acceptedFingerprint = null;
   mountView(makeView(null)); $('#workspace').hidden = true; $('#onboarding').hidden = false; $('#skills-button').disabled = true;
@@ -1487,6 +1498,14 @@ $('#new').onclick = () => action(async () => {
   const features = await call('featuresGet', undefined, null); if (request !== navigationRequest || current) return;
   state.features = features; await loadStartup(); if (request !== navigationRequest || current) return;
   applyFeatures(); nameTouched = false; saveIdeaDraft(); showIdeaExamples(); $('#purpose').focus();
+});
+// The return link uses the very flow the sidebar's open button ends in —
+// displayProject re-mounts the retained view, restores the frame and brings
+// the workspace back without creating anything. The idea draft stays a
+// draft: it survives the round-trip untouched.
+$('#idea-back').onclick = () => action(async () => {
+  const project = ideaReturn; if (!project) return;
+  await displayProject(project);
 });
 $('#create-form').onsubmit = event => {
   event.preventDefault();
