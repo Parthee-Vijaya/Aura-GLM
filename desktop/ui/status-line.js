@@ -63,7 +63,7 @@
     } else lines.push('Vælg en AI, før kontekst og hastighed kan måles.');
     if (chosen) lines.push(`Målt på ${modelName || selected.modelID}${connection?.name ? ` hos ${connection.name}` : ''}.`);
     if (speed && speed.known === true && Number.isSafeInteger(speed.value)) {
-      lines.push(`Observeret svarhastighed (inkl. ræsonnement, ekskl. værktøjstid): ${number(speed.value)} tok/s i den aktuelle tur — målt over ${number(speed.stepCount || 0)} trin.`);
+      lines.push(`Observeret svarhastighed (inkl. ræsonnement, ekskl. værktøjstid): ${number(speed.value)} tok/s i den seneste tur — målt over ${number(speed.stepCount || 0)} trin.`);
       if (Number.isSafeInteger(speed.ttftMs) && speed.ttftMs >= 0) lines.push(`TTFT: ${number(speed.ttftMs)} ms.`);
     } else lines.push('Afventer første gyldige hastighedsmåling. 0 er visningsværdi.');
     const calls = Number.isSafeInteger(usage?.calls) && usage.calls >= 0 ? usage.calls : 0;

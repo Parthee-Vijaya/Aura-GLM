@@ -97,7 +97,7 @@ async function saveChatDraft(required = false) {
   if (!chat) return;
   view.draft = { text, mode };
   try { localStorage.setItem(`harness.chatDraft.${root}.${chat}`, JSON.stringify({ text, mode })); } catch {}
-  $('#draft-status').textContent = 'Gemmer kladde …';
+  setDraftStatus('Gemmer kladde …');
   try { await call('saveDraft', { root, chat, text, mode }, { root, chat }); if (current?.root === root && view.id === chat && $('#prompt').value === text) setDraftStatus('Kladde gemt på denne computer'); }
   catch { if (current?.root === root && view.id === chat) setDraftStatus('Kladden kunne ikke gemmes. Kopiér teksten, før du lukker.', false); if (required === true) throw new Error('Kladden kunne ikke gemmes. Kopiér teksten, før du opdaterer.'); }
 }

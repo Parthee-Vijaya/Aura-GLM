@@ -139,12 +139,22 @@ class ChatSession {
   // turens eget aggregat (ukendt, indtil et gyldigt trin er målt); Privacy
   // Gate-runtid måler ikke. Efter turen vises den afsluttede turs resultat.
   currentSpeed() {
-    if (this.running || this.starting || this.sending) {
-      if (!this.runStepTiming) return null;
+    if (this.running || this.starting || this.sending) return this.turnSpeed();
+    return this.speedBase || null;
+  }
+  // Turens EGEN måling — registret vinder, også når kørselsflagene allerede er
+  // sat fra (afbrudt tur i closeCurrentRun og fejlstien i sendPrepared): den
+  // afsluttende tur må aldrig genindlæse den forrige turs tal, og en tur uden
+  // register (Privacy Gate) eller uden gyldige trin efterlader ukendt — 0 i
+  // linjen er en visningsværdi. Faldet tilbage til speedBase gælder kun, når
+  // ingen tur er i gang.
+  turnSpeed() {
+    if (this.runStepTiming) {
       const dto = this.runStepTiming.dto();
       const ttft = this.runMeasurement?.data?.ttft_ms;
       return Number.isFinite(ttft) ? { ...dto, ttftMs: Math.round(ttft) } : dto;
     }
+    if (this.running || this.starting || this.sending) return null;
     return this.speedBase || null;
   }
   // Det, brugerfladen skal bruge for at vise samtalen.
@@ -557,10 +567,13 @@ class ChatSession {
       return true;
     } catch (error) {
       if ((this.copy || bench.checkpointOwner === this)) { this.checkpoints.cancel(); await this.checkpoints.finish(); }
-      this.running = false; bench.release(this);
+      bench.release(this);
       if (!this.runStopped) this.log({ kind: 'error', title: 'Opgaven kunne ikke starte', detail: error.message, status: 'error', task: this.task?.id });
       const diff = this.runStopped && this.runBefore ? await changes(this.root, this.runBefore).catch(() => null) : null;
+      // finishTask fryser turens EGEN måling, mens kørselsflaget endnu står —
+      // ellers ville den fejlslagne tur arve den forrige turs tal (D5a).
       const task = await this.finishTask(this.runStopped ? 'stopped' : 'error', diff);
+      this.running = false;
       if (this.runStopped) { this.emit(this.runReview('stopped', diff, task)); this.afterImage(task); }
       await this.saveHistory(this.runStopped ? 'stopped' : 'error'); await this.close(); this.emit({ type: 'run.status', status: this.runStopped ? 'stopped' : 'error' }); bench.chatsChanged(); throw error;
     } finally { this.starting = false; }
@@ -605,11 +618,12 @@ class ChatSession {
   }
   // En afsluttet opgave gemmes med sine ændringer, så Ændringer kan vise dem og sige, hvem der lavede dem.
   async finishTask(status, diff) {
-    // D5a: turens hastighedsmåling afsluttes med turen — resultatet bevares til
-    // genåbning, sene trin kan ikke lægge tal til en lukket tur, og en tur uden
-    // kvalificeret måling (fx Privacy Gate-runtid) efterlader ukendt: 0 i linjen
-    // er en visningsværdi. Diagnostics får tallet ved siden af ttft_ms.
-    this.speedBase = this.currentSpeed();
+    // D5a: turens hastighedsmåling afsluttes med turen — fra TURENS EGET register,
+    // også når kørselsflagene er sat fra på forhånd (afbrudt/fejlet tur): resultatet
+    // bevares til genåbning, sene trin kan ikke lægge tal til en lukket tur, og en
+    // tur uden kvalificeret måling (fx Privacy Gate-runtid) efterlader ukendt:
+    // 0 i linjen er en visningsværdi. Diagnostics får tallet ved siden af ttft_ms.
+    this.speedBase = this.turnSpeed();
     this.runMeasurement?.speed(this.speedBase);
     this.runStepTiming = null;
     this.runMeasurement?.finish(status === 'idle' ? 'completed' : status === 'stopped' ? 'stopped' : 'error');
@@ -1221,7 +1235,7 @@ class ChatSession {
         if ((this.copy || this.bench.checkpointOwner === this)) this.checkpoints.cancel();
         await this.stopping;
         await this.finishing;
-        if (this.running) { ++this.generation; this.runStopped = true; this.running = false; await this.finishTask('interrupted', null); await this.saveHistory('interrupted'); this.bench.release(this); }
+        if (this.running) { ++this.generation; this.runStopped = true; await this.finishTask('interrupted', null); this.running = false; await this.saveHistory('interrupted'); this.bench.release(this); }
         clearTimeout(this.historyTimer); this.historyTimer = null;
         await this.bench.history.queue;
       } catch (error) { failures.push(error); }

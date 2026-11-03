@@ -82,7 +82,7 @@ test('tooltip: ærlige nuancer — målekvalifikation, hastighedens dækning, R9
   assert.match(text, /79\.800 tokens/);
   assert.match(text, /kontekstvindue: 1\.000\.000 tokens/);
   assert.match(text, /modellens kapacitet, ikke mod Auras arbejdsgrænse/);
-  assert.match(text, /Observeret svarhastighed \(inkl\. ræsonnement, ekskl\. værktøjstid\): 229 tok\/s/);
+  assert.match(text, /Observeret svarhastighed \(inkl\. ræsonnement, ekskl\. værktøjstid\): 229 tok\/s i den seneste tur/, 'værdien er den seneste/afsluttede turs — også efter turafslutning og genåbning');
   assert.match(text, /målt over 2 trin/);
   assert.match(text, /TTFT: 1\.234 ms/);
   assert.match(text, /100\.000 nye, 20\.000 fra cache og 4\.800 skrevet til cache/);

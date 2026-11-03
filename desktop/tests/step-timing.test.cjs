@@ -304,6 +304,45 @@ test('ChatSession: ny tur nulstiller målingen; stop midt i turen viser kun fær
   assert.equal(chat.view().speed.value, 45, 'stop midt i turen bevare det målte');
 });
 
+test('ChatSession: en afbrudt eller mislykket tur fryser SIN EGEN måling — aldrig den forrige turs', async t => {
+  const { workbench } = await bench(t, 'Afbrudtprøve');
+  const chat = workbench.chat;
+  const buffer = createMetricsBuffer({ now: () => 0 });
+  // Tur 1: færdig og målt til 75 (150 tokens på 2 s).
+  const first = arm(chat);
+  chat.event(engineStep('message.updated', { info: { id: 'msg_1', role: 'assistant' } }));
+  first(ms(500)); chat.event(engineStep('message.part.updated', { part: { id: 'msg_1:text:0', messageID: 'msg_1', type: 'text', text: 'Første svar' } }));
+  first(ms(2500)); chat.event(engineStep('message.part.streamed', { messageID: 'msg_1' }));
+  chat.event(engineStep('message.part.updated', { part: { id: 'msg_1:step:finish', messageID: 'msg_1', type: 'step-finish', tokens: { input: 10, output: 150, reasoning: 0 } } }));
+  await chat.finishTask('idle', null); chat.running = false;
+  assert.equal(chat.view().speed.value, 75);
+  // Tur 2: målt 50 undervejs (100 tokens på 2 s) — men afbrudt, som
+  // closeCurrentRun (:1224) gør det: flagene er sat fra, FØR finishTask kaldes.
+  const measurement = buffer.create({ mode: 'chat', origin: 'conversation' });
+  chat.runMeasurement = measurement;
+  const second = arm(chat);
+  chat.event(engineStep('message.updated', { info: { id: 'msg_2', role: 'assistant' } }));
+  second(ms(100)); chat.event(engineStep('message.part.updated', { part: { id: 'msg_2:text:0', messageID: 'msg_2', type: 'text', text: 'Andet svar' } }));
+  second(ms(2100)); chat.event(engineStep('message.part.streamed', { messageID: 'msg_2' }));
+  chat.event(engineStep('message.part.updated', { part: { id: 'msg_2:step:finish', messageID: 'msg_2', type: 'step-finish', tokens: { input: 10, output: 100, reasoning: 0 } } }));
+  assert.equal(chat.view().speed.value, 50, 'turens delmåling står undervejs');
+  chat.running = false;
+  await chat.finishTask('interrupted', null);
+  const interrupted = chat.view().speed;
+  assert.equal(interrupted.value, 50, 'afbrudt tur fryser sin egen måling — ikke den forrige turs 75');
+  assert.equal(measurement.snapshot().tps, 50, 'run-metrics tildeles DENNE turs tal, ikke den forrige turs');
+  assert.equal(measurement.snapshot().outcome, 'error', 'interrupt-registreringen er terminal');
+  // Send-fejlstien (catch i sendPrepared): en tur uden gyldige trin efterlader
+  // ukendt — 0 er visningsværdi, den forrige turs tal genindlæses aldrig.
+  const failed = buffer.create({ mode: 'chat', origin: 'conversation' });
+  chat.runMeasurement = failed;
+  arm(chat); chat.running = false;
+  await chat.finishTask('error', null);
+  assert.equal(chat.view().speed.known, false, 'en tur uden måling gemmer ukendt');
+  assert.equal(chat.view().speed.value, null);
+  assert.equal(failed.snapshot().tps, null, 'ingen opdigtet tps til den mislykkede tur');
+});
+
 test('ChatSession: Privacy Gate-runtid giver ingen måling — 0 er visningsværdi', async t => {
   const { workbench, emitted } = await bench(t, 'Privacyprøve');
   const chat = workbench.chat;
@@ -316,6 +355,11 @@ test('ChatSession: Privacy Gate-runtid giver ingen måling — 0 er visningsvær
   assert.equal(emitted.filter(event => event.type === 'usage').at(-1).speed, null);
   await chat.finishTask('idle', null);
   assert.equal(chat.view().speed, null, 'ukendt måling gemmes som ukendt — ikke som 0');
+  // Den samme kontrakt gælder afbrudte Privacy Gate-ture (closeCurrentRun kalder
+  // finishTask, mens running stadig er sand): ingen måling, aldrig den forrige turs tal.
+  chat.runStepTiming = null; chat.running = true;
+  await chat.finishTask('interrupted', null); chat.running = false;
+  assert.equal(chat.view().speed, null, 'en afbrudt Privacy Gate-tur efterlader ukendt — ikke den forrige turs tal');
 });
 
 test('ChatSession: modelskift pr. tur binder målingen til den nye model', async t => {
