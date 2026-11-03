@@ -39,7 +39,7 @@ const { launchTestApp } = require('./electron-test-launch.cjs');
     await page.fill('#prompt', Array(9).fill('Min kladde bliver bevaret.').join('\n'));
     assert.ok((await page.locator('#prompt').boundingBox()).height > 100); pass('composer-grows-for-multiline-draft');
     await page.fill('#prompt', 'Kort kladde'); assert.ok((await page.locator('#prompt').boundingBox()).height < 60); pass('composer-shrinks-and-preserves-text');
-    await page.fill('#prompt', ''); await page.click('.section-title h2');
+    await page.fill('#prompt', ''); await page.click('#project-name');
     const sidebar = page.locator('#sidebar-divider'); await sidebar.focus(); await sidebar.press('ArrowRight'); assert.equal(await sidebar.getAttribute('aria-valuenow'), '218');
     await sidebar.press('Home'); assert.equal(await sidebar.getAttribute('aria-valuenow'), '180'); await sidebar.press('End'); assert.equal(await sidebar.getAttribute('aria-valuenow'), '320'); pass('sidebar-keyboard-and-width-bounds');
     const handle = await sidebar.boundingBox(); await page.mouse.move(handle.x + 3, 350); await page.mouse.down(); await page.mouse.move(250, 350, {steps:5}); await page.mouse.up(); assert.equal(await sidebar.getAttribute('aria-valuenow'), '250'); pass('sidebar-pointer-resize');

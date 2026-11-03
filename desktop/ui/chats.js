@@ -78,6 +78,8 @@
     try { projects = await call('recentProjects'); } catch { projects = []; }
     if (current && !projects.some(project => project.root === current.root)) projects.unshift({ id: '', root: current.root, name: current.name, chats: [] });
     render();
+    // Omdøb og nye titler lander også i topbjælkens brødkrumme (§6.1).
+    window.topbarSync?.();
   }
   // Det åbne projekts samtaler opdateres med status fra hovedprocessen; andre projekter hentes ved næste opdatering.
   function update(event) {

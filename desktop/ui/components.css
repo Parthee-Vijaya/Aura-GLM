@@ -179,3 +179,134 @@ details.disclosure.work-progress-card > summary::after { transform: none; }
 .idea-menu-group { display: grid; gap: 2px; }
 .idea-menu-group + .idea-menu-group { margin-top: 4px; border-top: 0.5px solid var(--aura-border); padding-top: 4px; }
 #idea-chip-technique-panel > .hint { margin: 4px 10px 6px; text-align: left; }
+
+/* ── .step — trinrækkerne (D4b, §6.3) ──
+   AI'ens arbejde som 24 px enlinje-rækker: 16 px glyf-boks, verb + detalje i
+   tertiær med · imellem (hover → sekundær), tid og udfald (✓/!/×) til højre i
+   tabelcifre. Detaljeniveauet (body.transcript-*, D4a) bestemmer om den
+   igangværende tur viser alle rækker (detailed) eller én live-linje
+   (compact/standard); en færdig tur folder altid til én grupperække.
+   Farverne er målt: --aura-ink-muted på lærredet 4,69:1 lyst / 5,56:1 mørkt,
+   --aura-success 3,4:1 og --aura-error 5,2:1 som grafik (≥3:1). */
+.turn-steps { display: grid; gap: 4px; margin: 8px 0 14px; }
+
+/* Rækken: den kompakte variant af .disclosure-summary — 24 px, én linje. */
+details.disclosure.step { padding-bottom: 0; }
+details.disclosure.step > summary { display: flex; align-items: center; gap: 6px; min-height: 24px; padding: 0 2px; font-size: 12px; line-height: 16px; font-weight: 450; color: var(--aura-ink-muted); border-radius: var(--aura-radius-xs); }
+details.disclosure.step > summary:hover { color: var(--aura-ink-secondary); }
+details.disclosure.step > summary::after { content: none; } /* chevronen bor i glyf-boksen */
+details.disclosure.step[open] > summary { margin-bottom: 0; color: var(--aura-ink-secondary); }
+details.disclosure.step[open] { padding-bottom: 0; }
+.step-text { flex: 1; min-width: 0; display: flex; align-items: baseline; overflow: hidden; white-space: nowrap; }
+.step-verb { flex: none; font-weight: 500; }
+.step-sep { flex: none; }
+.step-detail { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.step-meta { flex: none; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; line-height: 16px; font-variant-numeric: tabular-nums; color: var(--aura-ink-muted); }
+.step-mark { font-size: 12px; }
+.step.status-completed .step-mark { color: var(--aura-success); }
+.step.status-error > summary .step-mark, .step.status-error[open] .step-error { color: var(--aura-error); }
+.step.status-waiting > summary .step-mark, .step.status-waiting > summary .step-verb { color: var(--aura-warning-ink); }
+.step.status-stopped .step-mark { color: var(--aura-ink-muted); }
+
+/* Glyf-boksen med krydsfade til chevron (100 ms) ved hover og fokus (O2:
+   tastaturfokus bærer samme tydelighed som hover). */
+.step-glyph { position: relative; flex: none; width: 16px; height: 16px; display: grid; place-content: center; color: var(--aura-ink-muted); }
+.step-glyph-char { font-size: 13px; line-height: 1; transition: opacity var(--aura-transition-duration-fast) var(--aura-ease-in-out), rotate var(--aura-transition-duration) var(--aura-ease-in-out); }
+.step-glyph::after { content: ""; position: absolute; inset: 0; background-color: currentColor; opacity: 0; transition: opacity var(--aura-transition-duration-fast) var(--aura-ease-in-out); mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 6 6 6-6 6'/%3E%3C/svg%3E") center / contain no-repeat; }
+details.disclosure.step > summary:hover .step-glyph-char, details.disclosure.step > summary:focus-visible .step-glyph-char { opacity: 0; }
+details.disclosure.step > summary:hover .step-glyph::after, details.disclosure.step > summary:focus-visible .step-glyph::after { opacity: 1; }
+/* Grupperækkens ▸ drejer 90°, når den er foldet ud. */
+details.disclosure.step.step-group[open] > summary .step-glyph-char { rotate: 90deg; }
+details.disclosure.step.step-group[open] > summary .step-glyph::after { opacity: 0; }
+
+/* Kørende række: tekst-shimmer (1,5 s, steps(48), 0,3 s forsinkelse). Ved
+   reduceret bevægelse er der ingen shimmer — kun "· kører". */
+.step.status-running .step-text { background: linear-gradient(100deg, currentColor 0%, color-mix(in srgb, currentColor 40%, transparent) 50%, currentColor 100%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; animation: aura-step-shimmer 1.5s steps(48) 0.3s infinite; }
+@keyframes aura-step-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+.step-running-note { display: none; color: var(--aura-ink-muted); }
+@media (prefers-reduced-motion: reduce) {
+  .step.status-running .step-text { animation: none; background: none; }
+  .step-running-note { display: inline; }
+}
+
+/* Det foldede indhold: målet står altid fuldt og umaskeret øverst, fejl er
+   aldrig fanget af maskerne — kun det lange output ruller bag en 24 px
+   fade-maske (O2) med maks. højde min(400px, 50vh) og intern scroll. */
+.step-content { padding: 4px 2px 8px 22px; }
+.step-content > :last-child { margin-bottom: 0; }
+.step-target, .step-error, .step-output, .step-draft, .step-draft-head { margin: 0 0 8px; font: 12px/1.6 var(--aura-font-family-code); white-space: pre-wrap; overflow-wrap: anywhere; }
+.step-target { color: var(--aura-ink-secondary); }
+.step-error { color: var(--aura-error); border-inline-start: 2px solid var(--aura-error); padding-left: 8px; }
+.step-exit { margin: 0 0 8px; font-size: 12px; line-height: 16px; color: var(--aura-ink-muted); }
+.step-output { max-height: min(400px, 50vh); overflow: auto; padding: 8px 10px; border: 0.5px solid var(--aura-border); border-radius: var(--aura-radius-sm); background: var(--aura-bg-raised); color: var(--aura-ink); -webkit-mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 24px), transparent 100%); mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 24px), transparent 100%); }
+.step-draft-note { margin: 0 0 8px; }
+.step-content .text-button { justify-self: start; padding: 4px 6px; font-size: 12px; min-height: 24px; }
+.step-group-rows { display: grid; gap: 4px; margin: 4px 0 2px 7px; padding: 4px 0 2px 16px; border-inline-start: 1px solid var(--aura-border); }
+.step-content .step-group-rows { margin: 0; padding: 0; border: 0; }
+
+/* Aktivitetspanelet: de eksisterende tekniske folds (activity-output) får
+   samme udfoldede behandling — mono pre, maks. højde og 24 px maske (O2).
+   DOM og id'er er uændrede; kun udseendet følger rækkerne. */
+.activity-output pre { max-height: min(400px, 50vh); overflow: auto; -webkit-mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 24px), transparent 100%); mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 24px), transparent 100%); }
+
+/* ── Live-indikatoren (§6.4) ──
+   "≋ Arbejder · 12 s" i accentblanding med tabelcifre og sekundur; uret
+   opdateres af den eksisterende status-render. Venter-tilstanden er
+   "● Venter på dig · godkend ændring" i den målte advarselsfarve og linker
+   til godkendelsen (is-actionable-overlayet består). Skillelinjen står kun,
+   når der er AI-indhold ovenover (data-sep, app.js). Farver målt:
+   --aura-accent-ink 6,08:1 lyst / 6,56:1 mørkt; --aura-warning-ink
+   5,59:1 / 7,24:1 — begge ≥4,5:1 (12 px tekst, R4). */
+.workspace-calm #agent-activity { display: flex; flex-wrap: wrap; align-items: center; align-content: center; gap: 4px 10px; min-height: 30px; margin: 0 14px; padding: 5px 3px 7px; border: 0; background: none; color: var(--aura-accent-ink); font-size: 12px; line-height: 22px; font-variant-numeric: tabular-nums; }
+.workspace-calm #agent-activity[data-sep="on"] { border-top: 0.5px solid var(--aura-border); margin-top: 4px; }
+.workspace-calm #agent-activity.is-waiting { color: var(--aura-warning-ink); background: none; font-weight: 400; }
+.workspace-calm #agent-activity .activity-spinner { display: inline; width: auto; height: auto; margin: 0; border: 0; background: none; animation: none; opacity: 1; flex: none; color: inherit; font-size: 13px; line-height: 1; }
+.workspace-calm #agent-activity .activity-spinner::before { content: '≋'; }
+.workspace-calm #agent-activity.is-waiting .activity-spinner::before { content: '●'; }
+.workspace-calm #agent-activity-text { min-width: 0; flex: 1; color: var(--aura-accent-ink); font-weight: var(--aura-font-weight-medium); }
+.workspace-calm #agent-activity.is-waiting #agent-activity-text { color: var(--aura-warning-ink); }
+.workspace-calm #agent-activity:not(.is-idle):not(.is-waiting) #agent-activity-text { background: linear-gradient(100deg, currentColor 0%, color-mix(in srgb, currentColor 40%, transparent) 50%, currentColor 100%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; animation: aura-step-shimmer 1.5s steps(48) 0.3s infinite; }
+.workspace-calm #agent-progress { flex-basis: 100%; margin: 0; font-size: 12px; line-height: 16px; color: var(--aura-ink-muted); }
+.workspace-calm #agent-activity button { font-size: 12px; padding: 4px 6px; min-height: 24px; }
+.workspace-calm #agent-activity.is-actionable { color: var(--aura-warning-ink); background: none; }
+.workspace-calm #agent-activity.is-actionable:hover { background: var(--aura-warning-subtle); }
+@media (prefers-reduced-motion: reduce) { .workspace-calm #agent-activity:not(.is-idle):not(.is-waiting) #agent-activity-text { animation: none; background: none; } }
+
+/* ── Topbjælken (§6.1) ──
+   Mindst 52 px, titel 15/22 vægt 500, projektnavnet som tertiær brødkrumme,
+   arbejdsmåde-chippen (B3) 22 px, 0,5 px bundlinje. #run-status er skjult som
+   role=status; status står i live-indikatoren. */
+.workspace-calm .workspace-bar { min-height: 52px; padding: 10px 20px 0; border-bottom: 0.5px solid var(--aura-border); gap: 12px; }
+.workspace-calm .workspace-bar h1 { display: flex; align-items: baseline; gap: 6px; min-width: 0; flex: 1; margin: 0; font-size: 15px; line-height: 22px; font-weight: var(--aura-font-weight-medium); }
+.workspace-calm .workspace-bar h1 .workspace-chat-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--aura-ink); }
+.workspace-calm .workspace-bar h1 .workspace-crumb { flex: none; max-width: 42%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--aura-ink-muted); font-weight: 400; }
+.workspace-calm .workspace-bar h1 .workspace-crumb:empty { display: none; }
+.workspace-calm .workspace-bar h1 .workspace-crumb::before { content: '·'; margin-right: 6px; color: var(--aura-ink-muted); }
+.topbar-mode { display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border: 0.5px solid var(--aura-border); border-radius: var(--aura-radius-sm); background: var(--aura-bg-tint); color: var(--aura-ink-secondary); font-size: 12px; line-height: 22px; font-weight: var(--aura-font-weight-medium); flex: none; }
+.topbar-mode:hover:not(:disabled) { background: var(--aura-bg-hover); color: var(--aura-ink); border-color: var(--aura-border-strong); }
+.topbar-mode:focus-visible { outline: 2px solid var(--aura-accent); outline-offset: 2px; }
+.topbar-mode::after { content: '⌄'; font-size: 11px; line-height: 1; color: var(--aura-ink-caption); }
+.topbar-mode[data-mode="chat"]::before, .topbar-mode[data-mode="plan"]::before, .topbar-mode[data-mode="free"]::before, .topbar-mode[data-mode="build"]::before { content: "◌"; }
+.topbar-mode[data-mode="plan"]::before { content: "≡"; }
+.topbar-mode[data-mode="free"]::before, .topbar-mode[data-mode="build"]::before { content: "◇"; }
+.topbar-mode::before { color: var(--aura-accent); }
+.workspace-calm #surface-toggle { flex: none; min-width: 30px; padding: 4px 8px; font-size: 15px; line-height: 1; }
+@media (max-width: 700px) { .topbar-mode { display: none; } .workspace-calm .workspace-bar h1 .workspace-crumb { max-width: 30%; } }
+
+/* ── Brugerbobler (§6.2) ──
+   Højrestillet med maks. 70% af kolonnen (ét tal — Codex' nit), padding
+   10/16, radius 20. Handlingsrækken (tid 13 px tertiær + kopi-glyf) er 28 px;
+   på den seneste besked er den altid synlig, på ældre fader den ind ved
+   hover/fokus på 80 ms. O2: tastatur- og touch-paritet — fokus-within viser
+   rækken, og uden hover-enhed står den altid frem. */
+.workspace-calm .chat-message.user { display: flex; flex-direction: column; gap: 2px; margin: 10px 0 2px auto; max-width: 70%; padding: 10px 16px; border-radius: var(--aura-radius-xl); }
+.workspace-calm .chat-message.user .chat-message-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; height: 28px; margin: 0 -6px 0 0; opacity: 0; transition: opacity 80ms var(--aura-ease-in-out); }
+.workspace-calm .chat-message.user:hover .chat-message-actions, .workspace-calm .chat-message.user:focus-within .chat-message-actions, .workspace-calm .chat-message.user.message-latest .chat-message-actions { opacity: 1; }
+@media (hover: none) { .workspace-calm .chat-message.user .chat-message-actions { opacity: 1; } }
+.chat-message-time { font-size: 13px; line-height: 18px; color: var(--aura-ink-muted); font-variant-numeric: tabular-nums; }
+.chat-message-time[hidden] { display: none; }
+.chat-message-copy { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; border: 0; background: none; color: var(--aura-ink-muted); }
+.chat-message-copy:hover:not(:disabled) { background: none; border: 0; color: var(--aura-ink); }
+.chat-message-copy:focus-visible { outline: 2px solid var(--aura-accent); outline-offset: 2px; }
+.chat-message-copy svg { width: 14px; height: 14px; }
+@media (prefers-reduced-motion: reduce) { .workspace-calm .chat-message.user .chat-message-actions { transition: none; } }

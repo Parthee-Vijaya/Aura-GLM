@@ -71,7 +71,7 @@ test('en faktisk kørende opgave markerer skrivefeltet og bevarer den læsbare f
   f.context.renderStatus();
   assert.equal(f.state(), 'working'); assert.equal(f.busy(), 'true');
   assert.equal(f.$('#agent-activity').classList.contains('is-idle'), false);
-  assert.equal(f.$('#agent-activity-text').textContent, 'AI’en skriver et svar …');
+  assert.equal(f.$('#agent-activity-text').textContent, 'Arbejder · 0 s');
   assert.equal(f.$('#agent-progress').textContent, '230 tegn modtaget');
   assert.equal(f.$('#run-status').textContent, 'Arbejder 0 s');
   assert.equal(f.$('#stop').hidden, false); assert.equal(f.$('#send').disabled, true);
@@ -83,12 +83,12 @@ test('ventende godkendelser og spørgsmål dæmper arbejdet indtil alle er besva
   f.context.waitFor('permission', 'Godkend filændringen', { isConnected: true });
   f.context.waitFor('question', 'Vælg en mulighed', { isConnected: true });
   assert.equal(f.state(), 'waiting'); assert.equal(f.busy(), 'true');
-  assert.equal(f.$('#agent-activity-text').textContent, 'Venter på dig: Godkend filændringen Og 1 mere.');
+  assert.equal(f.$('#agent-activity-text').textContent, 'Venter på dig · Godkend filændringen Og 1 mere.');
   assert.equal(f.$('#agent-activity').classList.contains('is-waiting'), true);
   assert.equal(f.$('#agent-activity-jump').hidden, false); assert.equal(f.$('#agent-progress').hidden, true);
   f.context.doneWaiting('permission');
   assert.equal(f.state(), 'waiting');
-  assert.equal(f.$('#agent-activity-text').textContent, 'Venter på dig: Vælg en mulighed');
+  assert.equal(f.$('#agent-activity-text').textContent, 'Venter på dig · Vælg en mulighed');
   f.context.doneWaiting('question');
   assert.equal(f.state(), 'working'); assert.equal(f.busy(), 'true');
   assert.equal(f.$('#agent-activity').classList.contains('is-waiting'), false);

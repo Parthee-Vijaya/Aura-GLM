@@ -87,14 +87,19 @@
   const menu = $('#composer-mode-menu'), toggle = $('#composer-mode'), select = $('#work-mode');
   const choices = [...menu.querySelectorAll('[data-work-mode]')], yolo = $('#composer-yolo');
   const pill = $('#permission-pill'), pillLabel = $('#permission-pill-label'), permissionMenu = $('#permission-menu'), menuText = $('#permission-menu-text'), boundary = $('#composer-mode-boundary');
-  let owner = null;
+  const topbarToggle = $('#topbar-mode');
+  // B3: topbjælke-chippen og composer-chippen er to visninger af én tilstand;
+  // begge spejler menuens åbningstilstand, og fokus vender tilbage til den
+  // chip, der åbnede menuen.
+  let owner = null, invoker = toggle;
   const same = () => owner && current?.root === owner.root && view?.id === owner.chat;
   const blocked = () => running || projectLoading || Boolean(view?.submitting) || toggle.disabled;
   const isOpen = () => menu.matches(':popover-open');
+  function expanded(open) { toggle.setAttribute('aria-expanded', String(open)); topbarToggle?.setAttribute('aria-expanded', String(open)); }
   function close({ focus = false } = {}) {
     if (isOpen()) menu.hidePopover();
-    toggle.setAttribute('aria-expanded', 'false'); owner = null;
-    if (focus) toggle.focus();
+    expanded(false); owner = null;
+    if (focus) invoker.focus();
   }
   function position() {
     if (!isOpen()) return;
@@ -159,20 +164,21 @@
     window.PopoverLayer.open({ layer: permissionMenu, invoker: pill, align: 'start', gap: 4, width: () => 320 });
   });
   permissionMenu.addEventListener('toggle', () => { pill.setAttribute('aria-expanded', String(permissionMenu.matches(':popover-open'))); });
-  menu.addEventListener('toggle', () => { toggle.setAttribute('aria-expanded', String(isOpen())); if (!isOpen()) owner = null; });
+  menu.addEventListener('toggle', () => { expanded(isOpen()); if (!isOpen()) owner = null; });
   toggle.addEventListener('keydown', event => { if (event.key === 'ArrowDown') { event.preventDefault(); window.ComposerWorkMode.open(); } });
-  window.ComposerWorkMode = { sync, close, open() {
+  topbarToggle?.addEventListener('keydown', event => { if (event.key === 'ArrowDown') { event.preventDefault(); window.ComposerWorkMode.open(topbarToggle); } });
+  window.ComposerWorkMode = { sync, close, open(from = toggle) {
     if (isOpen()) { close({ focus: true }); return; }
     if (blocked() || !current?.root || !view?.id) return;
-    owner = selectedOwner(); sync();
+    owner = selectedOwner(); invoker = from === toggle || from === topbarToggle ? from : toggle; sync();
     // Menen åbner gennem det fælles popover-lag: venstrestillet ved chippen,
     // 4 px fra ankeret (§5.4), bredde følger composeren. Laget genankorer ved
     // zoom, rulning og vinduesstørrelse — ingen faste koordinater.
     window.PopoverLayer.open({
-      layer: menu, invoker: toggle, gap: 4,
+      layer: menu, invoker, gap: 4,
       width: () => { const composer = $('#chat-form').getBoundingClientRect(); return Math.min(380, Math.max(300, composer.width), innerWidth - 24); }
     });
-    toggle.setAttribute('aria-expanded', 'true'); position();
+    expanded(true); position();
     choices.find(item => item.getAttribute('aria-checked') === 'true' && !item.hidden)?.focus();
   } };
 })();

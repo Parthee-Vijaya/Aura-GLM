@@ -37,7 +37,8 @@
     if (!grid) return;
     grid.dataset.surface = open ? 'on' : 'off';
     const toggle = document.getElementById('surface-toggle');
-    if (toggle) { toggle.setAttribute('aria-pressed', String(open)); toggle.textContent = open ? '◧ Arbejdsflade' : '◨ Arbejdsflade'; }
+    // §6.1: ren panel-knap — glyffen ◧/◨, navnet og genvejen følger titel/aria-label.
+    if (toggle) { toggle.setAttribute('aria-pressed', String(open)); toggle.setAttribute('aria-label', open ? 'Skjul arbejdsfladen' : 'Vis arbejdsfladen'); toggle.title = 'Vis eller skjul arbejdsfladen (⌘1–5)'; toggle.textContent = open ? '◧' : '◨'; }
     if (persist) void savePanelChoice(open);
     if (open && select) show(select, { focus: true });
   }

@@ -117,14 +117,39 @@ function showAssistant(id, text, v = view) {
   if (!v.pendingMarkdown.size) requestAnimationFrame(() => { for (const part of v.pendingMarkdown) markdownInto(partElement(part, 'assistant', v), v.assistantText.get(part)); v.pendingMarkdown.clear(); });
   v.pendingMarkdown.add(id);
 }
-function appendMessage(text, role = 'assistant', v = view) {
+function appendMessage(text, role = 'assistant', v = view, at) {
   const active = v === view;
   if (active) { $('#project-intro').hidden = true; $('#start-idea').hidden = true; $('#chat-choice').hidden = true; }
-  const el = node('div', text, `chat-message ${role}`); if (role === 'assistant' && text) markdownInto(el, text); v.log.append(el);
+  const el = node('div', '', `chat-message ${role}`);
+  if (role === 'user') {
+    // §6.2: boblen bærer teksten; handlingsrækken (tid + kopiér) står under
+    // boblen på lærredet. Tiden er modtagelsestidspunktet, når det er kendt
+    // (gemt med beskeden fra D4b) — der opfindes intet tidspunkt.
+    el.append(node('div', text, 'user-bubble'));
+    el.append(userActions(text, at));
+    if (active) for (const message of v.log.querySelectorAll('.chat-message.user.message-latest')) message.classList.remove('message-latest');
+    el.classList.add('message-latest');
+  } else if (text) markdownInto(el, text);
+  v.log.append(el);
   // Første besked flytter samtalen fra hero til active — composeren dokker.
   if (active) applyChatPhase();
   if (active && role === 'user') view.followChat = true;
   return el;
+}
+// Handlingsrækken under brugerboblen (§6.2): tid i 13 px tertiær med
+// tabelcifre og et kopiér-ikon. Rækken fader ind ved hover/fokus; den seneste
+// besked har den altid synlig (CSS: .message-latest).
+function userActions(text, at) {
+  const row = node('div', undefined, 'chat-message-actions');
+  const time = node('time', Number.isFinite(at) ? new Date(at).toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' }) : '', 'chat-message-time');
+  if (Number.isFinite(at)) time.dateTime = new Date(at).toISOString();
+  time.hidden = !Number.isFinite(at);
+  const copy = node('button', '', 'chat-message-copy'); copy.type = 'button';
+  copy.setAttribute('aria-label', 'Kopiér beskeden'); copy.title = 'Kopiér beskeden';
+  copy.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H15"/></svg>';
+  copy.onclick = async () => { try { await navigator.clipboard.writeText(text); copy.setAttribute('aria-label', 'Kopieret'); setTimeout(() => copy.setAttribute('aria-label', 'Kopiér beskeden'), 1500); } catch { copy.setAttribute('aria-label', 'Kunne ikke kopiere'); } };
+  row.append(time, copy);
+  return row;
 }
 const chatContent = $('#chat-content');
 function updateChatScroll() { $('#chat-latest').hidden = chatContent.scrollHeight - chatContent.scrollTop - chatContent.clientHeight < 48; }
@@ -697,7 +722,7 @@ async function displayProject(project, { firstTask = false } = {}) {
   window.HeroComposer?.syncIdeaChips();
   $('#new').removeAttribute('aria-current'); $('#view-title').textContent = 'Arbejdsområde';
   $('#onboarding').hidden = true; $('#workspace').hidden = false; $('#skills-button').disabled = false;
-  $('#project-name').textContent = project.name; $('#project-purpose').textContent = project.purpose || 'Eksisterende mappe. Beskriv din opgave i samtalen.'; $('#project-path').textContent = project.root;
+  $('#project-name').textContent = project.name; $('#project-purpose').textContent = project.purpose || 'Eksisterende mappe. Beskriv din opgave i samtalen.'; $('#project-path').textContent = project.root; syncTopbar();
   // Projekt-chippen (§4): navnet på chippen, og »Projektoplysninger« som ⓘ
   // ved chippen — stien og opstartsvalgene står i data-info, id'erne består
   // som skjult tekst (prøverne læser dem).
@@ -778,7 +803,7 @@ function fillChat(next, fresh) {
   // Startup events can create an empty view before displayProject receives the
   // stored conversation. Its existence does not mean its plan was restored.
   fresh ||= !v.historyLoaded && !v.log.children.length;
-  if (fresh || !v.historyLoaded && !v.log.children.length) { const page=window.HistoryPages.takePrevious(history?.messages || []);v.historyPending=page.older;v.historyLoaded=true;for(const item of page.recent){const element=appendMessage(item.text,item.role);if(typeof item.id==='string')element.dataset.messageId=item.id;} }
+  if (fresh || !v.historyLoaded && !v.log.children.length) { const page=window.HistoryPages.takePrevious(history?.messages || []);v.historyPending=page.older;v.historyLoaded=true;for(const item of page.recent){const element=appendMessage(item.text,item.role,undefined,item.at);if(typeof item.id==='string')element.dataset.messageId=item.id;} }
   renderHistoryControls();
   const empty = !v.log.children.length;
   // Første samtale i projektet viser den fulde intro med projektdetaljerne.
@@ -868,7 +893,7 @@ window.openStoredMessage = async result => {
     // Reload only the transcript. A same-chat search must not reset an unsaved
     // brief/plan editor, model selection, draft or approval controls.
     owner.log.replaceChildren(); owner.parts.clear(); owner.assistantText.clear(); owner.pendingMarkdown.clear();
-    for (const item of next.workspace?.messages || []) { const element = appendMessage(item.text, item.role, owner); if (typeof item.id === 'string') element.dataset.messageId = item.id; }
+    for (const item of next.workspace?.messages || []) { const element = appendMessage(item.text, item.role, owner, item.at); if (typeof item.id === 'string') element.dataset.messageId = item.id; }
     owner.historyPending=[];owner.historyLoaded=true;owner.historyNotice='';renderHistoryControls();
   }
   const target = find(); if (!target) throw new Error('Beskeden findes ikke længere i den gemte samtale. Søg igen.');
@@ -1283,7 +1308,7 @@ async function sendNow(data, text) {
   if ($('#work-mode').value === 'free') { activePlan = null; $('#plan-card').hidden = true; }
   $('#run-review').hidden = true; if ($('#work-mode').value === 'build') $('#plan-card').hidden = true; if ($('#work-mode').value === 'plan') { activePlan = null; $('#plan-card').hidden = true; }
   Object.assign(v, { lastSentText: text, lastTarget: data.previewReference || '', lastTargetRef: window.workspace?.target() || null, lastCheckpoint: null, rejectedThisRun: false, lastRejection: null });
-  appendMessage(text + (data.fileReferenceText || '') + (v.lastTarget ? `\n\nMål i forhåndsvisningen: ${v.lastTarget}` : ''), 'user', v); $('#prompt').value = ''; await saveChatDraft();
+  appendMessage(text + (data.fileReferenceText || '') + (v.lastTarget ? `\n\nMål i forhåndsvisningen: ${v.lastTarget}` : ''), 'user', v, Date.now()); $('#prompt').value = ''; await saveChatDraft();
   const compact = v.compactNext === true; v.compactNext = false; v.effortLevels = data.effortLevels || [];
   try { await call('send', { text, fingerprint: data.fingerprint, contextBinding: data.contextBinding, chat: v.id, compact }, owner); if (view === v) { acceptedFingerprint = reviewKey(data); window.workspace?.clearReferences(); } }
   catch (error) { if (error.message === 'Opgaven blev stoppet før afsendelse.') { setRunning(false, 'Stoppet', v); return; } if (view === v) { $('#prompt').value = text; await saveChatDraft(); } setRunning(false, 'Fejl', v); renderRunReview({ status: 'error', files: [], tools: [], failure: { kind: 'start', message: error.message } }, v); }
@@ -1308,14 +1333,30 @@ function updateBadgeClass() {
 function setStatusDetail(text, v = view) { v.statusDetail = text; if (v === view) { renderStatus(); updateBadgeClass(); } }
 function waitFor(id, title, element, v = view) { v.waitingFor = [...v.waitingFor.filter(item => item.id !== id), { id, title, element }]; if (v === view) renderStatus(); window.chats?.render(); }
 function doneWaiting(id, v = view) { v.waitingFor = v.waitingFor.filter(item => item.id !== id); if (v === view) renderStatus(); window.chats?.render(); }
+// Topbjælken (§6.1): samtaletitlen 15/22 vægt 500, projektnavnet som teriær
+// brødkrumme. Titlen læses fra sidepanelets projektliste — ingen ny kilde.
+function syncTopbar() {
+  if (typeof document === 'undefined' || !document.getElementById) return;
+  const chat = window.chats?.projects().find(project => project.root === current?.root)?.chats?.find(item => item.id === view.id)?.title || 'Ny samtale';
+  const title = view.id ? chat : 'Ny samtale';
+  if ($('#chat-title').textContent !== title) $('#chat-title').textContent = title;
+  const name = current?.name || '';
+  if ($('#project-name').textContent !== name) $('#project-name').textContent = name;
+}
+// Sidepanelets opdatering (omdøb, ny titel) skubber titlen op i bjælken.
+window.topbarSync = syncTopbar;
 function renderStatus() {
   const v = view, waiting = v.running && v.waitingFor.length > 0;
-  // Båndet hører til samtalefladen; idle skjules medopacity, så pladsen altid er reserveret.
+  // Båndet hører til samtalefladen; idle skjules med opacity, så pladsen altid er reserveret.
   $('#agent-activity').hidden = false;
+  // Skillelinjen over live-indikatoren (§6.4) står kun, når der er indhold i loggen.
+  $('#agent-activity').dataset.sep = v.log.childElementCount > 0 ? 'on' : 'off';
   // Lyskanten følger kun den aktive samtale; ventende valg står stille.
   $('#chat-form').dataset.metalState = v.running ? (waiting ? 'waiting' : 'working') : 'idle';
   $('#agent-activity').classList.toggle('is-idle', !v.running); $('#agent-activity').classList.toggle('is-waiting', waiting);
-  $('#agent-activity-text').textContent = waiting ? `Venter på dig: ${v.waitingFor[0].title}${v.waitingFor.length > 1 ? ` Og ${v.waitingFor.length - 1} mere.` : ''}` : `${window.ChatDisplay.phase(v) || v.statusDetail}${v.repeat ? ` · Gentager samme handling (${v.repeat.count}. gang)` : ''}`;
+  // Live-indikatoren (§6.4): "Arbejder · 12 s" med sekundur — fasen og det
+  // aktuelle trin står i samtalens trinrækker (§6.3/§6.5), ikke her.
+  $('#agent-activity-text').textContent = waiting ? `Venter på dig · ${v.waitingFor[0].title}${v.waitingFor.length > 1 ? ` Og ${v.waitingFor.length - 1} mere.` : ''}` : v.running ? `Arbejder · ${elapsedText(Date.now() - v.runStartedAt)}${v.repeat ? ` · Gentager samme handling (${v.repeat.count}. gang)` : ''}` : v.runLabel || 'Klar';
   $('#agent-activity-jump').hidden = !waiting; $('#agent-follow').hidden = waiting;
   window.liveWork?.render();
   window.previewWorking?.render();
@@ -1325,6 +1366,7 @@ function renderStatus() {
   window.feedbackLayout?.update({ running: v.running, waitingTarget: waiting ? v.waitingFor[0].element : null });
   $('#chat-form').setAttribute('aria-busy', String(v.running));
   if (v.running) $('#run-status').textContent = waiting ? 'Venter på dig' : `${v.runLabel} ${elapsedText(Date.now() - v.runStartedAt)}`;
+  syncTopbar();
 }
 $('#agent-activity-jump').onclick = () => { const item = view.waitingFor[0]; if (!item?.element?.isConnected) return; item.element.scrollIntoView({ block: 'nearest' }); item.element.querySelector('button, textarea, input')?.focus(); };
 function setRunning(value, status, v = view) {
@@ -1359,7 +1401,7 @@ function applyRunning() {
   $('#copy-wait').hidden = !current?.isolated || running || !mainRunning;
   const value = projectLoading;
   for (const selector of ['#new', '#open', '#connections-button', '#skills-button', '#features-button', '#publish-button', '#setup-hosting', '#deploy-button', '#intro-button']) $(selector).disabled = value;
-  for (const selector of ['#composer-mode', '#accept-plan-offer', '#work-mode', '#build-plan', '#revise-plan', '#start-idea']) $(selector).disabled = running;
+  for (const selector of ['#composer-mode', '#topbar-mode', '#accept-plan-offer', '#work-mode', '#build-plan', '#revise-plan', '#start-idea']) $(selector).disabled = running;
   for (const selector of ['#model-chip', '#model-load', '#model-search', '#connection-select', '#model-select', '#route-select']) $(selector).disabled = projectLoading;
   for (const button of document.querySelectorAll('#model-shortlist button')) button.disabled = projectLoading;
   $('#task-next-note').hidden = !running;
@@ -2482,10 +2524,16 @@ $('#model-search').oninput = () => { const query = $('#model-search').value.toLo
 function updateWorkMode() {
   const mode = $('#work-mode').value;
   view.composerMode = mode;
-  $('#composer-mode').textContent = ({ chat: 'Samtale', plan: 'Planlæg', build: 'Byg', free: 'Byg' })[mode];
+  const label = ({ chat: 'Samtale', plan: 'Planlæg', build: 'Byg', free: 'Byg' })[mode];
+  $('#composer-mode').textContent = label;
+  // Topbjælke-chippen (B3) er en anden visning af SAMME tilstand: samme etiket,
+  // samme datamarkør, samme disabled-forløb — de fire interne værdier
+  // (chat/plan/free/build) og "Byg den valgte plan"-forløbet er urørt.
+  $('#topbar-mode').textContent = label;
   // Chip-glyfferne (◌ ≡ ◇) følger datattributten via CSS — D0-ikonsættet er
   // afvist af Parthee, så de eksisterende glyffer genbruges.
   $('#composer-mode').dataset.mode = mode;
+  $('#topbar-mode').dataset.mode = mode;
   // Helteoverskriften følger arbejdsmåden (§4).
   $('#hero-heading').textContent = ({ chat: 'Hvad vil du tale om?', plan: 'Hvad skal vi planlægge?', build: 'Hvad skal vi bygge?', free: 'Hvad skal vi bygge?' })[mode];
   // Ærlig pladsholder pr. tilstand (§5.1): helt for den tomme samtale, aktiv
@@ -2502,6 +2550,9 @@ $('#work-mode').onchange = () => {
   if ($('#work-mode').value === 'chat') { view.planCard = false; $('#plan-card').hidden = true; }
 };
 $('#composer-mode').onclick = () => { if (window.ComposerWorkMode) return window.ComposerWorkMode.open(); $('#task-dialog').showModal(); $('#task-dialog .workflow').open = true; $('#work-mode').focus(); };
+// B3: topbjælke-chippen åbner den samme forankrede arbejdsmåde-menu (§5.4) —
+// to visninger af én tilstand, ét ændringsforløb.
+$('#topbar-mode').onclick = () => { if (window.ComposerWorkMode) return window.ComposerWorkMode.open($('#topbar-mode')); $('#task-dialog').showModal(); $('#task-dialog .workflow').open = true; $('#work-mode').focus(); };
 $('#accept-plan-offer').onclick = () => {
   if (running) return;
   if (activePlan) { view.planCard = true; $('#plan-card').hidden = false; updatePlanOffer(); $('#build-plan').focus(); return; }
@@ -2987,7 +3038,7 @@ $('#history-load').onclick=()=>{
   const v=view,container=$('#chat-content'),height=container.scrollHeight,top=container.scrollTop;
   const page=window.HistoryPages.takePrevious(v.historyPending);if(!page.recent.length)return;
   const fragment=document.createDocumentFragment(),staging={...v,log:fragment};
-  for(const item of page.recent){const element=appendMessage(item.text,item.role,staging);if(typeof item.id==='string')element.dataset.messageId=item.id;}
+  for(const item of page.recent){const element=appendMessage(item.text,item.role,staging,item.at);if(typeof item.id==='string')element.dataset.messageId=item.id;}
   v.followChat=false;v.log.prepend(fragment);v.historyPending=page.older;v.historyNotice=`${page.recent.length} tidligere beskeder indlæst fra denne computer.`;renderHistoryControls();
   const position=top+container.scrollHeight-height;container.scrollTop=position;v.scrollTop=position;
   if(!page.older.length)$('#history-load-status').focus({preventScroll:true});

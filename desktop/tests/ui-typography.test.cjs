@@ -207,9 +207,14 @@ test('kontrast: de løftede 11-12 px-tekster holder mindst 4,5:1 i begge temaer'
     ['--aura-accent-hover', '--aura-bg-tint', '.answer-choice .recommended (11 px pille)'],
     ['--aura-accent-hover', '--aura-bg-sidebar', '.chat-meta.is-running/is-unread (11 px tidsstempel)'],
     ['--aura-button-primary-text', '--aura-button-primary', '.tab-badge (11 px optælling)'],
-    ['--aura-ink', '--aura-bg-raised', '.work-progress-technical pre (11 px teknisk uddrag)'],
+    ['--aura-ink', '--aura-bg-raised', '.step-output (12 px teknisk uddrag i trinrækken, D4b §6.3)'],
     ['--aura-warning-ink', '--aura-bg-raised', 'D2+D3: YOLO-pillens 13 px tekst/ikon på composer-fyldet (R4)'],
-    ['--aura-warning-ink', '--aura-warning-subtle', 'D2+D3: YOLO-pillen på det svage advarselsfyld (R4)']
+    ['--aura-ink-muted', '--aura-bg', 'D4b §6.3: trinrækkens verb/detalje/tid (12 px, teriær på lærredet)'],
+    ['--aura-ink-secondary', '--aura-bg', 'D4b §6.3: trinrækkens hover/fokus-tekst + boblens tid (13 px)'],
+    ['--aura-accent-ink', '--aura-bg', 'D4b §6.4: live-indikatoren ≋ Arbejder · 12 s (12 px)'],
+    ['--aura-warning-ink', '--aura-bg', 'D4b §6.4: Venter på dig-indikatoren (12 px)'],
+    ['--aura-warning-ink', '--aura-warning-subtle', 'D2+D3: YOLO-pillen på det svage advarselsfyld (R4)'],
+    ['--aura-error', '--aura-bg', 'D4b §6.3: mislykket trins udfaldsmærke og fejltekst (12 px)']
   ];
   for (const [fg, bg, label] of pairs) {
     for (const theme of ['light', 'dark']) {

@@ -87,6 +87,12 @@
      mørkere variant (målt 5,59:1 på hvid, 5,17:1 på warning-subtle). */
   --aura-warning-ink: rgb(146, 92, 15);
 
+  /* Læsbar accent-tekst (R4/§6.4): accent selv måler kun 4,23:1 på hvid, så
+     den lille 12 px live-indikator bærer denne accentblanding (DSH §6.4:
+     color-mix(accent 70%, #172554) — målt 6,08:1 på lærredet, se
+     d4b-report.md). */
+  --aura-accent-ink: rgb(52, 94, 186);
+
   /* Status. */
   --aura-success: rgb(34, 154, 96);
   --aura-success-subtle: rgb(230, 247, 239);
@@ -148,6 +154,10 @@
     /* Den mørke advarselsfarve består kontrasten som tekst (7,24:1 på raised). */
     --aura-warning-ink: rgb(220, 160, 60);
 
+    /* Accent-tekst i mørkt tema (DSH §6.4: color-mix(accent 55%, #ADB2B8) —
+       målt 6,56:1 på lærredet, se d4b-report.md). */
+    --aura-accent-ink: rgb(125, 154, 222);
+
     --aura-success: rgb(72, 180, 120);
     --aura-success-subtle: rgb(22, 48, 36);
     --aura-warning: rgb(220, 160, 60);
@@ -192,6 +202,7 @@
   --aura-shadow-menu: 0 3px 8px rgba(0, 0, 0, 0.04), 0 0 20px rgba(0, 0, 0, 0.05);
   --aura-menu-bg: rgba(252, 253, 254, 0.7);
   --aura-warning-ink: rgb(146, 92, 15);
+  --aura-accent-ink: rgb(52, 94, 186);
   --aura-success: rgb(34, 154, 96);
   --aura-success-subtle: rgb(230, 247, 239);
   --aura-warning: rgb(200, 130, 20);

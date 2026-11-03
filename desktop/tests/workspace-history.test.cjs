@@ -51,6 +51,15 @@ test('historikken har en øvre grænse, og værktøjsdata lagres ikke', async t 
   const stored=await history.readChat(root,id); assert.equal(stored.messages.length,200); assert.equal(stored.trimmed,true); assert.equal(stored.messages.at(-1).text,'Svar 219');
   assert.equal(JSON.stringify(stored).includes('hemmeligt'),false);
 });
+test('modtagelsestidspunktet gemmes med beskeden — og opfindes aldrig for ældre beskeder', async t => {
+  const {root,history}=await setup(t); const {active:id}=await history.open({root,name:'Tider'});
+  await history.saveRun(root,id,run([{id:'u',role:'user',text:'Med tid',at:1730000000000},{id:'g',role:'user',text:'Uden tid'}]));
+  const stored=await history.readChat(root,id);
+  assert.equal(stored.messages[0].at,1730000000000,'D4b §6.2: brugerrækkens tidspunkt overlever gemningen');
+  assert.equal(stored.messages[1].at,undefined,'en besked uden målt tidspunkt får intet opfundet');
+  assert.deepEqual(Object.keys(stored.messages[0]).sort(),['at','id','role','text'],'saneringen lukker alle andre felter ude');
+});
+
 test('ny samtale efter en beskadiget projektfil gemmer filen til side og finder samtalerne igen', async t => {
   const {root,history}=await setup(t);
   const {active:id}=await history.open({root,name:'Arkiv'});

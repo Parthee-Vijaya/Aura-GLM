@@ -412,7 +412,9 @@ class ChatSession {
       this.retirePlan('ny'); this.planConversation.push(text);
     }
     const runPlan = JSON.stringify({ plan: this.plan, conversation: this.planConversation, dismissed: this.data.planOffersDismissed });
-    this.runUser = { id: crypto.randomUUID(), role: 'user', text: shown };
+    // at er modtagelsestidspunktet til brugerrækken i samtalen (§6.2) — et
+    // faktisk observationstidspunkt, aldrig et bagefter opfundet tidspunkt.
+    this.runUser = { id: crypto.randomUUID(), role: 'user', text: shown, at: Date.now() };
     this.running = true; this.starting = true; bench.chatsChanged();
     await this.saveHistory('working', true);
     this.emit({ type: 'run.status', status: 'starting' });

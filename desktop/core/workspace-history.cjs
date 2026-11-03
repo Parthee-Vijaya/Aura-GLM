@@ -190,6 +190,9 @@ class WorkspaceHistory {
         const existing = data.messages.findIndex(m => m.id === message.id);
         if (message.text.length > 30000) data.trimmed = true;
         const safe = { id: message.id, role: message.role, text: message.text.slice(0, 30000) };
+        // Modtagelsestidspunktet (brugerrækken i samtalen, D4b) bevares, når
+        // det er målt; ældre filer uden feltet får intet opfundet tidspunkt.
+        if (Number.isFinite(message.at)) safe.at = message.at;
         if (existing < 0) data.messages.push(safe); else data.messages[existing] = safe;
       }
       let size = data.messages.reduce((n,m) => n + m.text.length, 0);
