@@ -25,7 +25,11 @@
       return `${count} ${types[type]?.[language === 'en' ? 1 : 0] || (language === 'en' ? 'protected finding' : 'beskyttet fund')}`;
     }).join(' · ');
   }
-  if (typeof module !== 'undefined' && module.exports) module.exports = { contextKey, allowedDecisions, settingsInput, findingSummary };
+  function shieldState(snapshot) {
+    if (!snapshot) return 'pending';
+    return snapshot.enabled === true || snapshot.settings?.enabled === true ? 'on' : 'off';
+  }
+  if (typeof module !== 'undefined' && module.exports) module.exports = { contextKey, allowedDecisions, settingsInput, findingSummary, shieldState };
   if (typeof document === 'undefined') return;
 
   const make = (tag, text, className) => { const value = document.createElement(tag); if (text !== undefined) value.textContent = text; if (className) value.className = className; return value; };
@@ -35,7 +39,7 @@
   const classLabel = value => ({ public: t('Offentligt', 'Public'), internal: t('Internt', 'Internal'), confidential: t('Fortroligt', 'Confidential'), strict: t('Strengt beskyttet', 'Strictly protected') })[value] || t('Ikke oplyst', 'Not reported');
   const locality = value => ({ device: t('Denne computer', 'This computer'), local: t('Denne computer', 'This computer'), organization: t('Organisationens server · en anden maskine', 'Organization server · another machine'), cloud: t('Cloud', 'Cloud'), external: t('Ekstern destination', 'External destination') })[value] || t('Behandlingssted ikke dokumenteret', 'Processing location not documented');
   const textValue = value => typeof value === 'string' ? value : '';
-  let api = null, connected = false, snapshot = null, context = null, scope = 'project', generation = 0, busy = false, reviewing = null, lastFocus = null, expiryTimer = null, pendingQueue = [], reviewGeneration = 0, refreshPromise = null;
+  let api = null, connected = false, snapshot = null, context = null, scope = 'project', generation = 0, busy = false, reviewing = null, lastFocus = null, expiryTimer = null, pendingQueue = [], reviewGeneration = 0, refreshPromise = null, announcedState = null;
   let settingsDialog, sharingDialog, statusLine, loadingReviewID = null, choicesLoading = false;
 
   function button(text, action, className = '') { const value = make('button', text, className); value.type = 'button'; value.onclick = action; return value; }
@@ -53,12 +57,41 @@
     row.append(heading); if (close) row.append(button(t('Luk', 'Close'), close, 'text-button'));
     dialog.setAttribute('aria-labelledby', heading.id); return row;
   }
+  // Datakontrol-skjoldet: farve OG form bærer tilstanden (WCAG 1.4.1) — grøn
+  // fyldt med ✓, rødt omrids med ✕, gråt omrids uden tegn, mens status hentes.
+  // Stien genbruges fra tilladelses-pillens .permission-shield (ui/index.html).
+  const SHIELD_PATH = 'M12 3.4l6.6 2.6v5c0 4.3-2.8 8.1-6.6 9.6-3.8-1.5-6.6-5.3-6.6-9.6v-5z';
+  const SHIELD_MARKS = { on: 'M8.7 12.3l2.4 2.4 4.5-5', off: 'M9.3 9.5l5.4 5.4M14.7 9.5l-5.4 5.4' };
+  function shieldMarkup(state) {
+    const mark = SHIELD_MARKS[state] ? `<path class="privacy-shield-mark" d="${SHIELD_MARKS[state]}" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>` : '';
+    return `<svg class="privacy-shield" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="privacy-shield-shape" d="${SHIELD_PATH}" fill="none"/>${mark}</svg>`;
+  }
+  // Én sætning i den eksisterende statuslinje — kun ved reelt on/off-skift efter
+  // første indlæsning, aldrig ved pending, uændret tilstand eller igangværende
+  // gennemgang. Første kendte tilstand er grundlag, ikke en besked.
+  function announceStateChange(state) {
+    if (reviewing) return;
+    if (state !== 'on' && state !== 'off') return;
+    if (announcedState === state) return;
+    const previous = announcedState; announcedState = state;
+    if (!previous || !statusLine) return;
+    statusLine.textContent = state === 'on' ? t('Datakontrol er slået til.', 'Data control is now on.') : t('Datakontrol er slået fra.', 'Data control is now off.');
+    statusLine.hidden = false;
+  }
   function renderStatus() {
-    const enabled = snapshot?.enabled === true || snapshot?.settings?.enabled === true;
+    const state = shieldState(snapshot);
     const mode = snapshot?.effective?.workMode || snapshot?.settings?.workMode;
-    const title = !snapshot ? t('Datakontrol · hent status', 'Data control · load status') : enabled ? mode === 'local' ? t('Kun lokal · modelkald', 'Local only · model calls') : mode === 'hybrid' ? t('Hybrid · datakontrol', 'Hybrid · data control') : t('Cloud med datakontrol', 'Cloud with data control') : t('Datakontrol · ikke aktiveret', 'Data control · not enabled');
-    for (const id of ['privacy-gate-button', 'privacy-model-button', 'privacy-settings-button']) { const value = get(id); if (value) { value.textContent = title; value.title = snapshot?.capabilities?.isolation === true ? t('Arbejdsform og dataregler. Lokal og ekstern behandling holdes adskilt; planer og værktøjsgodkendelser gælder fortsat.', 'Work mode and data rules. Local and external processing stay separate; plans and tool approvals still apply.') : t('Arbejdsform og dataregler. Leverance 1 kontrollerer modelkald; værktøjer er endnu ikke isoleret.', 'Work mode and data rules. Delivery 1 controls model calls; tools are not yet isolated.'); } }
+    const title = !snapshot ? t('Datakontrol · hent status', 'Data control · load status') : state === 'on' ? mode === 'local' ? t('Kun lokal · modelkald', 'Local only · model calls') : mode === 'hybrid' ? t('Hybrid · datakontrol', 'Hybrid · data control') : t('Cloud med datakontrol', 'Cloud with data control') : t('Datakontrol · ikke aktiveret', 'Data control · not enabled');
+    const scope = snapshot?.capabilities?.isolation === true ? t('Arbejdsform og dataregler. Lokal og ekstern behandling holdes adskilt; planer og værktøjsgodkendelser gælder fortsat.', 'Work mode and data rules. Local and external processing stay separate; plans and tool approvals still apply.') : t('Arbejdsform og dataregler. Leverance 1 kontrollerer modelkald; værktøjer er endnu ikke isoleret.', 'Work mode and data rules. Delivery 1 controls model calls; tools are not yet isolated.');
+    for (const id of ['privacy-gate-button', 'privacy-model-button', 'privacy-settings-button']) {
+      const value = get(id); if (!value) continue;
+      value.dataset.privacyState = state;
+      value.setAttribute('aria-label', t(`Datakontrol: ${title}. Åbn dataregler`, `Data control: ${title}. Open data rules`));
+      value.title = `${title}. ${scope}`;
+      value.innerHTML = `${shieldMarkup(state)}<span class="privacy-entry-word">${t('Datakontrol', 'Data control')}</span>`;
+    }
     if (statusLine && !reviewing) statusLine.hidden = true;
+    announceStateChange(state);
   }
   function destinationRows() {
     const list = make('ul', undefined, 'privacy-destination-list');

@@ -20,7 +20,25 @@
 .privacy-actions{display:flex;justify-content:flex-end;align-items:center;gap:10px;flex-wrap:wrap;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}.privacy-actions button{font-size:12px}.privacy-feedback{font-size:12px;color:var(--muted);min-height:1.6em}.privacy-feedback.is-error{color:var(--danger)}
 .privacy-review-meta{display:grid;grid-template-columns:1fr 1fr;gap:10px 22px;margin:18px 0}.privacy-review-meta>div{min-width:0}.privacy-review-meta dt{font-size:11px;color:var(--muted)}.privacy-review-meta dd{margin:0;overflow-wrap:anywhere;font-size:13px}.privacy-findings{background:var(--soft);border:1px solid var(--line);border-radius:9px;padding:10px 13px;color:var(--muted)}.privacy-scope{font-size:11px;color:var(--muted);margin:4px 0 0}
 .privacy-sharing h3{font-size:14px;margin:18px 0 8px}.privacy-payload{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;overflow:auto;max-height:38dvh;border:1px solid var(--line);border-radius:10px;background:var(--canvas);padding:14px;font:12px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink);tab-size:2}.privacy-footnote{font-size:11px;color:var(--muted)}
-.privacy-status{font-size:11px;color:var(--muted);padding:8px 14px;margin:0}.privacy-entry{font-size:12px!important;overflow-wrap:anywhere;text-align:left}#settings-menu .privacy-entry{font-size:12px!important}#privacy-gate-button{flex:none;max-width:100%;padding:0 2px}.privacy-dialog :is(button,select,pre):focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.privacy-status{font-size:11px;color:var(--muted);padding:8px 14px;margin:0}
+/* Datakontrol-skjoldet (S1): farve OG form bærer tilstanden (WCAG 1.4.1) — grøn
+   fyldt med ✓, rødt omrids med ✕, gråt omrids uden tegn, mens status hentes.
+   Kontrast målt mod de tilstødende flader (lærred og hævet overflade) i begge
+   temaer: success 3,58:1 lyst / 6,40:1 mørkt, error 5,27:1 / 4,71:1,
+   ink-muted 4,69:1 / 5,08:1 — alle ≥3:1 mod omgivelserne (WCAG 1.4.11). */
+.privacy-entry{display:inline-flex;align-items:center;gap:6px;min-height:32px;font-size:12px!important;overflow-wrap:anywhere;text-align:left}
+.privacy-entry .privacy-shield{width:20px;height:20px;flex:none}
+.privacy-entry .privacy-shield-shape{fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.privacy-entry .privacy-shield-mark{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.privacy-entry[data-privacy-state="on"] .privacy-shield-shape{fill:var(--aura-success);stroke:var(--aura-success)}
+.privacy-entry[data-privacy-state="on"] .privacy-shield-mark{stroke:var(--aura-bg)}
+.privacy-entry[data-privacy-state="off"] .privacy-shield-shape{stroke:var(--aura-error)}
+.privacy-entry[data-privacy-state="off"] .privacy-shield-mark{stroke:var(--aura-error)}
+.privacy-entry[data-privacy-state="pending"] .privacy-shield-shape{stroke:var(--aura-ink-muted)}
+#settings-menu .privacy-entry{font-size:12px!important}#privacy-gate-button{flex:none;max-width:100%;padding:0 2px}
+@media(pointer:coarse){.privacy-entry{min-height:44px}}
+@media(forced-colors:active){.privacy-entry[data-privacy-state] .privacy-shield-shape{fill:none;stroke:CanvasText}.privacy-entry[data-privacy-state] .privacy-shield-mark{stroke:CanvasText}}
+.privacy-dialog :is(button,select,pre):focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 @media(max-width:680px){.privacy-dialog{padding:18px;width:calc(100vw - 20px);max-height:calc(100dvh - 20px);border-radius:12px}.privacy-heading h2{font-size:21px}.privacy-mode-grid{grid-template-columns:1fr;gap:9px}.privacy-mode-card{padding:13px 15px;gap:5px}.privacy-mode-card strong{font-size:14px}.privacy-settings-grid,.privacy-review-meta,.privacy-source-row{grid-template-columns:1fr;gap:8px}.privacy-actions{position:sticky;bottom:-18px;background:var(--surface);padding:14px 0 4px}.privacy-actions button{flex:1 1 auto}.privacy-payload{max-height:34dvh}}
 @media(prefers-reduced-motion:reduce){.privacy-dialog *{transition:none!important;animation:none!important}}
 @media(forced-colors:active){.privacy-mode-card[aria-pressed=true]{outline:2px solid Highlight}.privacy-dialog{border:1px solid CanvasText}}
