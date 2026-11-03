@@ -24,12 +24,16 @@
     image.setAttribute('aria-hidden', 'true');
     return image;
   }
-  function decorate(button, { kind, modelID, label } = {}) {
+  function decorate(button, { kind, modelID, label, note } = {}) {
     if (!button?.replaceChildren || !button.ownerDocument?.createElement) return;
     const text = button.ownerDocument.createElement('span'); text.className = 'provider-brand-label';
     text.textContent = label == null ? button.textContent : String(label);
+    // An optional trailing note (the model chip's effort) rides in its own
+    // span so the chip can give it a readable muted tone — the separator
+    // stays inside the span, so the concatenated text is unchanged.
+    const effort = note ? (() => { const span = button.ownerDocument.createElement('span'); span.className = 'provider-brand-note'; span.textContent = ` · ${note}`; return span; })() : null;
     const image = modelID ? icon(kind, modelID, button.ownerDocument) : null;
-    button.replaceChildren(...(image ? [image, text] : [text]));
+    button.replaceChildren(...(image ? [image, text] : [text]), ...(effort ? [effort] : []));
   }
   const api = Object.freeze({ asset, icon, decorate });
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

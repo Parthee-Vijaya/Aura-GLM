@@ -50,6 +50,7 @@ class El {
     return copy;
   }
   addEventListener(name, handler) { (this.listeners[name] ||= []).push(handler); }
+  getBoundingClientRect() { return this._rect ? { ...this._rect } : { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 }; }
   emit(name, fields = {}) { const event = { target: this, ...fields }; for (const handler of this.listeners[name] || []) handler(event); return event; }
   focus() { if (this._document) this._document.activeElement = this; }
   showPopover() { this.open = true; }
@@ -94,6 +95,7 @@ const plain = value => JSON.parse(JSON.stringify(value));
 // attached for the 'ingen' pass.
 function makeDom({ hints = true, essential = false } = {}) {
   const document = { activeElement: null };
+  document.addEventListener = () => {};
   document.createElement = tag => { const el = new El(tag); el._document = document; return el; };
   const registry = new Map();
   const make = (tag, id) => { const el = new El(tag); el._document = document; el.id = id || ''; if (id) registry.set(id, el); return el; };
@@ -131,10 +133,15 @@ function makeDom({ hints = true, essential = false } = {}) {
   return { document, registry, body, form, button, popover, list, essentials };
 }
 
-// The module runs with window as its scope, like the browser loads it.
+// The module runs with window as its scope, like the browser loads it. The
+// shared popover layer anchors the popover, so its source runs in the same
+// window first (under plain require it would meet no document and return a
+// stub — the same UMD shape this module itself has).
+const layerSource = fs.readFileSync(path.join(ui, 'popover-layer.js'), 'utf8');
 function runModule(dom) {
   const window = { document: dom.document };
   window.addEventListener = (name, handler) => { (window.listeners ||= {}); (window.listeners[name] ||= []).push(handler); };
+  vm.runInNewContext(layerSource, { window, document: dom.document, module: undefined });
   const context = { window, document: dom.document, module: undefined };
   vm.runInNewContext(source, context);
   return { api: window.composerHelp, window };
@@ -214,10 +221,13 @@ test('en åben popover genankrer ved zoom og vinduesstørrelse', () => {
   const dom = makeDom();
   const { api, window } = runModule(dom);
   // Det syntetiske DOM har intet layout: knappens rektangel erstattes af en
-  // flytbar pladsholder, så genberegningen kan iagttages.
+  // flytbar pladsholder, så genberegningen kan iagttages. Det fælles popover-lag
+  // læser det LEVENDE rektangel i CSS-pixel-rummet — zoom behøver ingen
+  // kompensation (Task-12-kontrakten) — så en flyttet knap flytter popoveren.
   let left = 400, top = 600;
-  dom.button.getBoundingClientRect = () => ({ left, top });
+  dom.button.getBoundingClientRect = () => ({ left, top, right: left + 28, bottom: top + 28, width: 28, height: 28 });
   Object.defineProperty(window, 'innerWidth', { value: 1280, configurable: true });
+  Object.defineProperty(window, 'innerHeight', { value: 800, configurable: true });
   dom.popover.offsetHeight = 120;
   dom.popover.style = {};
   api.open();

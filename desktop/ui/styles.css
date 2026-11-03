@@ -1319,7 +1319,7 @@ details.plan-detail > .plan-detail-body { padding: 0 14px 12px 14px; font-size: 
 @keyframes effortShimmer { 0% { background-position: 0% 0; } 100% { background-position: 200% 0; } }
 @keyframes effortPuls { 0%, 100% { opacity: .45; transform: scale(.75); } 50% { opacity: 1; transform: scale(1.18); } }
 @keyframes effortPop { 0% { transform: translate(-50%, -50%) scale(1); } 55% { transform: translate(-50%, -50%) scale(1.26); } 100% { transform: translate(-50%, -50%) scale(1); } }
-#model-picker { position: fixed; left: 220px; bottom: 120px; width: 340px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); box-shadow: 0 12px 32px #00000030; margin: 0; }
+#model-picker { position: fixed; inset: auto; width: 340px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); box-shadow: 0 12px 32px #00000030; margin: 0; }
 #model-picker-search { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--canvas); color: var(--ink); font: inherit; margin: 0; }
 #model-picker-search:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 32%, transparent); }
 #model-picker-list { max-height: 260px; overflow-y: auto; display: grid; gap: 2px; margin-top: 8px; }

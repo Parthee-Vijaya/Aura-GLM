@@ -76,8 +76,13 @@ body.workspace-calm[data-workspace-theme="light"] {
 .workspace-calm .composer:focus-within { border-color:var(--calm-focus); box-shadow:none; }
 .workspace-calm .composer textarea { min-height:53px; max-height:150px; background:transparent; color:var(--ink); padding:5px; border:0; }
 .workspace-calm .composer-toolbar { gap:5px; flex-wrap:nowrap; }
-.workspace-calm #model-chip { flex:0 1 auto; overflow:hidden; min-width:0; font-size:11px; padding:5px 2px; gap:6px; white-space:nowrap; }
+/* Modelchips §5.2.4: navnet i 13/20 vægt 400 i sekundær farve; indsatsen i en
+   læsbar dæmpet tone (R4: --aura-ink-muted, målt 4,69:1 lyst / 5,08:1 mørkt —
+   caption må ikke bære tekst). */
+.workspace-calm #model-chip { flex:0 1 auto; overflow:hidden; min-width:0; font-size:13px; line-height:20px; padding:5px 2px; gap:6px; white-space:nowrap; }
 .workspace-calm #model-chip span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.workspace-calm #model-chip .provider-brand-label { color:var(--aura-ink-secondary); font-weight:400; }
+.workspace-calm #model-chip .provider-brand-note { color:var(--aura-ink-muted); font-weight:400; }
 .workspace-calm #model-chip .provider-brand-icon { width:17px; height:17px; flex:none; }
 .workspace-calm #composer-mode { padding:5px 3px; font-size:13px; flex-shrink:0; }
 .workspace-calm #chat-materials-plus { width:28px; height:28px; min-height:28px; font-size:23px; padding:0; }
@@ -154,7 +159,7 @@ body.workspace-calm[data-workspace-theme="light"] {
   .workspace-calm .preview-actions { flex-wrap:wrap; }
   .workspace-calm .preview-actions select { max-width:108px; }
   .workspace-calm .composer-toolbar { gap:3px; }
-  .workspace-calm #model-chip { font-size:11px; }
+  .workspace-calm #model-chip { font-size:12px; line-height:18px; }
   .workspace-calm #composer-mode { font-size:12px; }
 }
 @media(max-height:650px) {

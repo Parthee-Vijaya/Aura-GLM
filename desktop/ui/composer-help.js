@@ -73,26 +73,22 @@
     }));
   }
   let openState = false;
-  // In the top layer the popover's containing block is the viewport, so the
-  // anchor is computed from the button's viewport rectangle — the same way the
-  // composer's mode menu positions itself. Without rectangle support (the
-  // synthetic DOM) the popover simply keeps its default centered position.
-  function position() {
-    if (typeof button.getBoundingClientRect !== 'function' || typeof root.innerWidth !== 'number') return;
-    const anchor = button.getBoundingClientRect();
-    const width = Math.min(360, root.innerWidth - 24);
-    const height = popover.offsetHeight || 0;
-    popover.style.left = `${Math.max(8, Math.min(anchor.left, root.innerWidth - width - 8))}px`;
-    popover.style.top = `${Math.max(8, anchor.top - height - 8)}px`;
+  // The popover anchors through the shared popover layer: left-aligned with
+  // the "?" button, 8px above it, and it re-anchors on resize, scroll and the
+  // profile events (a font-size step changes the button's rectangle; Chromium
+  // fires resize for the zoom change as well). Without the layer (the
+  // synthetic DOM) the popover keeps its default centered position.
+  function anchor() {
+    root.PopoverLayer?.open({ layer: popover, invoker: button, gap: 8, width: () => Math.min(360, root.innerWidth - 24) });
   }
   function open() {
     refresh();
     if (button.hidden) return false;
     render();
     popover.showPopover();
+    anchor();
     openState = true;
     expanded(true);
-    position();
     // Focus moves into the popover (tabindex="-1"), so keyboard users land
     // on the help text and Escape has an anchor inside to close from.
     popover.focus();
@@ -118,24 +114,19 @@
       openState = true;
       expanded(true);
       render();
-      position();
+      anchor();
       popover.focus();
     } else { openState = false; expanded(false); }
   });
-  // Escape closes from inside the popover and returns focus to the button.
+  // Escape closes from inside the popover and returns focus to the button
+  // (the popover layer shares the contract).
   popover.addEventListener('keydown', event => {
     if (event.key === 'Escape') { event.preventDefault(); close(); }
   });
-  // An open popover re-anchors when its ground moves: a window resize and a
-  // profile zoom step both change the button's rectangle and the viewport
-  // (Chromium fires resize for a zoom change as well), so the position is
-  // recomputed while the popover stands open. The profile events are the
-  // belt-and-braces for a zoom step whose resize notification races the
-  // event; recomputing beats closing, because the help stays where it was
-  // asked for.
-  root.addEventListener?.('resize', () => { if (openState) position(); });
-  // The startup read and every save from any writer re-check the surface.
-  for (const type of ['aura:profile', 'aura:profile-saved']) root.addEventListener?.(type, () => { refresh(); if (openState) position(); });
+  // The startup read and every save from any writer re-check the surface; the
+  // shared popover layer owns the re-anchoring on resize, scroll and the same
+  // profile events.
+  for (const type of ['aura:profile', 'aura:profile-saved']) root.addEventListener?.(type, () => { refresh(); });
   refresh();
   return Object.freeze({ hints, refresh, open, close });
 });

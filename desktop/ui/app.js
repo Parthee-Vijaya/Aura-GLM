@@ -73,12 +73,10 @@ function showInfo(button) {
   if (open && infoSource === button) return;
   infoSource = button; infoPop.textContent = button.dataset.info; infoPop.setAttribute('aria-label', button.getAttribute('aria-label') || 'Forklaring');
   (button.closest('dialog[open]') || document.body).append(infoPop);
-  infoPop.showPopover(); button.setAttribute('aria-expanded', 'true');
-  const box = button.getBoundingClientRect(), width = Math.min(320, innerWidth - 32);
-  infoPop.style.width = `${width}px`;
-  const left = Math.min(Math.max(16, box.left + box.width / 2 - width / 2), innerWidth - width - 16);
-  const below = box.bottom + 8 + infoPop.offsetHeight <= innerHeight - 16;
-  Object.assign(infoPop.style, { left: `${left}px`, top: `${below ? box.bottom + 8 : Math.max(16, box.top - 8 - infoPop.offsetHeight)}px` });
+  // Boblen anker centreret under knappen gennem det fælles popover-lag og
+  // følger zoom, rulning og vinduesstørrelse, mens den står åben.
+  window.PopoverLayer.open({ layer: infoPop, invoker: button, align: 'center', place: 'below', gap: 8, margin: 16, width: () => Math.min(320, innerWidth - 32) });
+  button.setAttribute('aria-expanded', 'true');
   infoPop.focus();
 }
 // beforetoggle kommer med det samme, når et klik udenfor lukker boblen; toggle kommer først efter klikket.
@@ -1719,10 +1717,13 @@ function updateModelSummary() {
   const effortRow = typeof document !== 'undefined' ? document.getElementById('model-effort') : null;
   if (effortRow) effortRow.hidden = allowedEfforts.length === 0;
   if (typeof document !== 'undefined' && document.querySelectorAll) for (const chip of document.querySelectorAll('.effort-chip')) { const active = chip.dataset.effort === view?.effort; chip.setAttribute('aria-checked', active ? 'true' : 'false'); chip.hidden = !allowedEfforts.includes(chip.dataset.effort); chip.disabled = !allowedEfforts.includes(chip.dataset.effort); }
-  const label = model.value ? [pentModelNavn(model.value, model.selectedOptions[0]?.textContent), provider, effortLabel].filter(Boolean).join(' · ') : 'Vælg AI';
+  // Chippen deler navn og indsats: navnet (model + modtager) står i 13/20 i
+  // sekundær farve, indsatsen i en læsbar dæmpet tone (§5.2.4; R4-målt
+  // 4,69:1 lyst / 5,08:1 mørkt — caption er for svag til tekst).
+  const name = model.value ? [pentModelNavn(model.value, model.selectedOptions[0]?.textContent), provider].filter(Boolean).join(' · ') : 'Vælg AI';
   $('#model-summary').textContent = model.value ? pentModelNavn(model.value, model.selectedOptions[0]?.textContent) : 'Vælg din AI';
   const brand = view.running && view.activeModelSummary ? view.activeModelBrand : { kind: connection?.kind, modelID: model.value };
-  window.ProviderBrand.decorate($('#model-chip'), { ...brand, label: view.running && view.activeModelSummary ? view.activeModelSummary : label });
+  window.ProviderBrand.decorate($('#model-chip'), { ...brand, label: view.running && view.activeModelSummary ? view.activeModelSummary : name, note: view.running && view.activeModelSummary ? '' : effortLabel });
   $('#model-chip').title = chosen ? `Du har valgt ${chosen} indsats i denne samtale. Klik for at skifte model eller indsats.` : effort ? `${effort[0].toUpperCase()}${effort.slice(1)} indsats er udbyderens standard for modellen. Klik for at skifte model.` : connection?.kind === 'mistral' ? 'Aura Prime sender ikke et valg af indsats. Mistrals standard gælder; niveauet er ikke verificeret. Klik for at skifte model eller forbindelse.' : 'Klik for at skifte model eller forbindelse.';
   renderContextUsage();
   $('#connection-status').textContent = model.value ? (state?.connections.find(c => c.id === $('#connection-select').value)?.name || 'Valgt forbindelse') + ' · ' + model.value : 'Ingen model valgt';
@@ -2628,26 +2629,17 @@ function openTaskSettings() {
   if (!state?.connections?.length) { showSetup('Tilslut en AI for at bygge videre. Din kladde er bevaret.'); return; }
   $('#model-options').open = true; if (!$('#task-dialog').open) $('#task-dialog').showModal();
 }
-// Codex 1:1: vælgeren anker ved Vælg AI-knappen inde i chatvinduet — ikke ved siden af eller centreret.
-function placerModelVaelger() {
-  const p = document.getElementById('model-picker');
-  const r = document.getElementById('model-chip')?.getBoundingClientRect();
-  const chatLeft = document.getElementById('chat-panel')?.getBoundingClientRect().left || 10;
-  if (!p || !r) return;
-  p.style.width = '340px'; p.style.maxWidth = '340px';
-  const bredde = p.offsetWidth, marg = 8;
-  const hoyde = p.offsetHeight || 380;
-  let venstre = Math.max(chatLeft + 4, r.right - bredde);
-  venstre = Math.min(venstre, innerWidth - bredde - 10);
-  let topp;
-  if (r.top - hoyde - marg > 50) topp = r.top - hoyde - marg;
-  else topp = Math.min(innerHeight - hoyde - 10, r.bottom + marg);
-  p.style.left = `${Math.round(venstre)}px`; p.style.top = `${Math.round(topp)}px`;
-}
-$('#model-chip').onclick = async () => { await buildModelPicker(); document.getElementById('model-picker').showPopover(); placerModelVaelger(); document.getElementById('model-picker-search')?.focus(); };
+// Modelvælgeren anker ved chippen gennem det fælles popover-lag: højre kant
+// ved chippen (align 'end'), så vælgeren følger kolonnen og aldrig krydser
+// skillelinjen i nogen chatbredde. Zoom og vinduesstørrelse genankorer gennem
+// lagets resize-lyttere — der er ingen faste koordinater.
+$('#model-chip').onclick = async () => {
+  await buildModelPicker();
+  window.PopoverLayer.open({ layer: document.getElementById('model-picker'), invoker: $('#model-chip'), align: 'end', width: 340 });
+  document.getElementById('model-picker-search')?.focus();
+};
 // Combobox-relationen: aria-expanded følger popoberen, så skærmlæseren ved, om listen er åben.
 document.getElementById('model-picker').addEventListener('toggle', () => { document.getElementById('model-picker-search')?.setAttribute('aria-expanded', String(document.getElementById('model-picker').matches(':popover-open'))); });
-addEventListener('resize', () => { if (document.getElementById('model-picker')?.matches(':popover-open')) placerModelVaelger(); });
 let pickerEntries = [];
 function syncPickerEffort() {
   const range = document.getElementById('picker-effort-range');

@@ -93,12 +93,12 @@
   }
   function position() {
     if (!isOpen()) return;
-    const anchor = toggle.getBoundingClientRect(), composer = $('#chat-form').getBoundingClientRect();
-    const width = Math.min(380, Math.max(300, composer.width), innerWidth - 24);
-    menu.style.width = `${width}px`; menu.style.maxHeight = `${Math.max(140, innerHeight - 24)}px`;
-    const height = menu.getBoundingClientRect().height;
-    menu.style.left = `${Math.max(12, Math.min(composer.left, innerWidth - width - 12))}px`;
-    menu.style.top = `${Math.max(12, Math.min(anchor.top - height - 12, innerHeight - height - 12))}px`;
+    // Bredden følger composeren (som før), højden låses til visningsfladen;
+    // selve forankringen — og genankringen ved zoom, rulning og resize —
+    // ejer det fælles popover-lag.
+    const composer = $('#chat-form').getBoundingClientRect();
+    menu.style.maxHeight = `${Math.max(140, innerHeight - 24)}px`;
+    if (window.PopoverLayer) window.PopoverLayer.position(); else menu.hidePopover();
   }
   function sync() {
     if (isOpen() && (!same() || blocked())) close();
@@ -133,11 +133,18 @@
   yolo.addEventListener('click', () => { if (!same() || blocked()) return; close(); $('#yolo-toggle').click(); });
   menu.addEventListener('toggle', () => { toggle.setAttribute('aria-expanded', String(isOpen())); if (!isOpen()) owner = null; });
   toggle.addEventListener('keydown', event => { if (event.key === 'ArrowDown') { event.preventDefault(); window.ComposerWorkMode.open(); } });
-  window.addEventListener('resize', position);
   window.ComposerWorkMode = { sync, close, open() {
     if (isOpen()) { close({ focus: true }); return; }
     if (blocked() || !current?.root || !view?.id) return;
-    owner = selectedOwner(); sync(); menu.showPopover(); toggle.setAttribute('aria-expanded', 'true'); position();
+    owner = selectedOwner(); sync();
+    // Menen åbner gennem det fælles popover-lag: venstrestillet ved chippen,
+    // 12 px over, bredde følger composeren. Laget genankorer ved zoom, rulning
+    // og vinduesstørrelse — ingen faste koordinater.
+    window.PopoverLayer.open({
+      layer: menu, invoker: toggle, gap: 12,
+      width: () => { const composer = $('#chat-form').getBoundingClientRect(); return Math.min(380, Math.max(300, composer.width), innerWidth - 24); }
+    });
+    toggle.setAttribute('aria-expanded', 'true'); position();
     choices.find(item => item.getAttribute('aria-checked') === 'true' && !item.hidden)?.focus();
   } };
 })();
