@@ -39,7 +39,14 @@ function harness({ viewport = { width: 1280, height: 800 } } = {}) {
   const make = (tag, id) => { const el = new El(tag); el._document = document; el.id = id || ''; if (id) registry.set(id, el); return el; };
   document.createElement = tag => make(tag, '');
   document.body = make('body', 'body'); document.body.parentElement = null;
-  document.addEventListener = (name, handler) => { (document.listeners ||= {}); (document.listeners[name] ||= []).push(handler); };
+  // document-lyttere bærer capture-flaget som den rigtige DOM: en fjernelse
+  // matcher KUN ved samme capture-værdi (pin for Fund 3's scroll-lækage).
+  document.listeners = {};
+  document.addEventListener = (name, handler, options) => { (document.listeners[name] ||= []).push({ handler, capture: Boolean(options && options.capture) }); };
+  document.removeEventListener = (name, handler, options) => {
+    const capture = Boolean(options && options.capture);
+    document.listeners[name] = (document.listeners[name] || []).filter(listener => !(listener.handler === handler && listener.capture === capture));
+  };
   const window = { document, innerWidth: viewport.width, innerHeight: viewport.height, listeners: {} };
   window.addEventListener = (name, handler) => { (window.listeners[name] ||= []).push(handler); };
   window.removeEventListener = (name, handler) => { window.listeners[name] = (window.listeners[name] || []).filter(item => item !== handler); };
@@ -120,7 +127,7 @@ test('reposition ved resize/scroll/profilhændelser læser det LEVENDE rektangel
   assert.equal(layer.style.top, `${380 - 200 - 8}px`);
   // Scroll i en indre beholder (chat-indholdet) fanges i capture-fasen.
   setRect(invoker, 300, 420, 120, 28);
-  for (const handler of f.document.listeners['scroll']) handler({ target: f.registry.get('body') });
+  for (const listener of f.document.listeners['scroll']) listener.handler({ target: f.registry.get('body') });
   assert.equal(layer.style.left, `${420 - 340}px`, 'scroll genankorer gennem capture-lytteren');
   // Profilhændelserne er sikkerhednet for zoomtrin, der ræser resize.
   setRect(invoker, 240, 360, 120, 28);
@@ -163,6 +170,27 @@ test('genåbning af samme lag udskifter lyttersættet uden lækage', () => {
   f.layer.open({ layer, invoker, align: 'center', place: 'below' });
   assert.equal(layer.open, true);
   assert.equal(f.window.listeners['resize'].length, 1, 'én resize-lytter — ikke én pr. genåbning');
+});
+
+test('scroll-lytteren fjernes REELT ved lukning — capture-flaget skal matche (Fund 3)', () => {
+  const f = harness();
+  const invoker = f.make('button', 'chip'); setRect(invoker, 100, 400, 28, 28);
+  const layer = f.make('div', 'menu'); layer.offsetWidth = 300; layer.offsetHeight = 140;
+  f.layer.open({ layer, invoker });
+  // Laget tilføjede scroll med capture:true — fjernelsen skal matche flaget.
+  assert.equal(f.document.listeners['scroll'].length, 1, 'én scroll-lytter mens laget står åbent');
+  assert.equal(f.document.listeners['scroll'][0].capture, true, 'scroll-lytteren er tilføjet i capture-fasen');
+  f.layer.close();
+  assert.equal(f.document.listeners['scroll'].length, 0, 'scroll-lytteren er reel fjernet fra document — ingen lækage pr. åbn/luk-cyklus');
+  // Flere cykler akkumulerer intet, og genåbning opfører sig uændret.
+  for (let cycle = 0; cycle < 3; cycle++) {
+    f.layer.open({ layer, invoker });
+    assert.equal(f.document.listeners['scroll'].length, 1, `cyklus ${cycle}: én lytter`);
+    f.layer.close();
+    assert.equal(f.document.listeners['scroll'].length, 0, `cyklus ${cycle}: ryddet igen`);
+  }
+  assert.equal(f.layer.open({ layer, invoker }), true, 'dobbelte åbninger er uændrede efter oprydningen');
+  assert.equal(layer.open, true);
 });
 
 test('ét ankeret lag ad gangen: en ny åbning lukker den forrige', () => {

@@ -50,8 +50,9 @@
 #composer-mode-menu [data-work-mode] strong { display:block; font-size:13px; line-height:20px; margin-bottom:2px; font-weight:600; }
 #composer-mode-menu [data-work-mode] small { display:block; font-size:12px; line-height:16px; color:var(--aura-ink-secondary); }
 #composer-mode-menu .mode-menu-icon { flex:none; width:20px; font-size:21px; line-height:1.15; text-align:center; color:var(--accent); }
-#composer-mode-menu .mode-menu-check { visibility:hidden; font-size:14px; color:var(--accent); }
-#composer-mode-menu [aria-checked="true"] .mode-menu-check { visibility:visible; }
+/* ÉT flueben (§5.4): .menu-material [aria-checked="true"]::after ejer det;
+   det gamle span-flueben er slukket, så den valgte række ikke viser to. */
+#composer-mode-menu .mode-menu-check { display: none; }
 #composer-yolo { font-size:13px; white-space:nowrap; }
 #composer-mode-boundary { margin:0; font-size:12px; line-height:1.6; color:var(--muted); }
 .workspace-calm #composer-mode::after { content:'⌄'; display:inline-block; margin-left:4px; }

@@ -154,6 +154,48 @@ test('updateStartIdea sætter heroQuiet — dekorationerne trækker sig ved en k
   assert.equal(dom.byId.get('project-intro').hidden, true, 'intro-chips skjules ved kladde — som før');
 });
 
+test('idé-chips: projektskift nulstiller select’erne — chip-etiketterne følger med (Fund 2)', () => {
+  // wireHeroComposer kører med rigtige select’er (med options) og eksponerer
+  // synkroniseringen; displayProject nulstiller select’erne og må kalde den —
+  // ellers står det gamle valg på chippen, mens payloadkilden er ryddet.
+  const byId = new Map();
+  const make = (tag, id, options) => {
+    const el = new El(tag, id);
+    if (options) { el.options = options.map(([value, text]) => ({ value, textContent: text })); el.value = ''; }
+    if (id) byId.set(id, el);
+    return el;
+  };
+  const platform = make('select', 'idea-platform', [['', 'Lad AI’en foreslå det'], ['Browser', 'Browser']]);
+  const data = make('select', 'idea-data', [['', 'Afklar ud fra min idé'], ['Ja, flere brugere med fælles data', 'Ja, flere brugere med fælles data']]);
+  const ui = make('select', 'idea-ui', [['', 'Anbefal en løsning'], ['React og TypeScript', 'React og TypeScript']]);
+  const design = make('select', 'idea-design', [['', 'Anbefal ud fra design og platform']]);
+  const backend = make('select', 'idea-backend', [['', 'Anbefal ud fra behovet for data']]);
+  for (const id of ['idea-chip-platform', 'idea-chip-platform-menu', 'idea-chip-platform-label', 'idea-chip-data', 'idea-chip-data-menu', 'idea-chip-data-label', 'idea-chip-technique', 'idea-chip-technique-panel', 'idea-chip-technique-label', 'idea-technique-groups', 'idea-options', 'project-chip', 'project-chip-list', 'project-chip-menu', 'project-chip-open']) make(id.includes('menu') || id.includes('groups') || id === 'idea-options' || id === 'project-chip-list' ? 'div' : 'button', id);
+  const window = { PopoverLayer: { open: () => true, close: () => {} }, HeroComposer: null };
+  const $ = selector => byId.get(selector.replace(/^#/, ''));
+  const context = { $, document: { querySelectorAll: () => [] }, window, current: { root: '/projekt' }, action: fn => fn(), node: (tag, text, cls) => { const el = new El(tag); el.textContent = text; el.className = cls || ''; return el; } };
+  vm.createContext(context);
+  const start = app.indexOf('function wireHeroComposer()');
+  const end = app.indexOf('wireHeroComposer();', start) + 'wireHeroComposer();'.length;
+  vm.runInContext(app.slice(start, end), context);
+  assert.ok(window.HeroComposer && typeof window.HeroComposer.syncIdeaChips === 'function', 'synkroniseringen er eksponeret som window.HeroComposer.syncIdeaChips');
+  // Brugeren vælger gennem chip-menuerne (eller select’erne — samme kilde).
+  platform.value = 'Browser'; data.value = 'Ja, flere brugere med fælles data'; ui.value = 'React og TypeScript';
+  window.HeroComposer.syncIdeaChips();
+  assert.equal(byId.get('idea-chip-platform-label').textContent, 'Platform · Browser');
+  assert.equal(byId.get('idea-chip-data-label').textContent, 'Data · Ja, flere brugere med fælles data');
+  assert.equal(byId.get('idea-chip-technique-label').textContent, 'Teknik · React og TypeScript');
+  // displayProject nulstiller select’erne ved projektskift (app.js) —
+  // chip-etiketterne SKAL følge med, ellers lyver chippen om payloadkilden.
+  for (const el of [platform, data, ui, design, backend]) el.value = '';
+  window.HeroComposer.syncIdeaChips();
+  assert.equal(byId.get('idea-chip-platform-label').textContent, 'Platform', 'etiketten følger nulstillingen');
+  assert.equal(byId.get('idea-chip-data-label').textContent, 'Data');
+  assert.equal(byId.get('idea-chip-technique-label').textContent, 'Tekniske ønsker');
+  // Kilde-pin: displayProject kalder synkroniseringen umiddelbart efter nulstillingen.
+  assert.match(app, /\$\('#idea-options'\)\.open = false; for \(const el of document\.querySelectorAll\('#idea-options select'\)\) el\.value = '';\s*\/\/[^\n]*\n\s*\/\/[^\n]*\n\s*window\.HeroComposer\?\.syncIdeaChips\(\);/, 'displayProject re-synkroniserer chip-etiketterne ved nulstillingen');
+});
+
 test('helteoverskrift og pladsholder følger arbejdsmåde og fase (§4/§5.1 — uden »/«-løfter)', () => {
   const dom = makeDom();
   const c = runSlices(dom, {

@@ -71,7 +71,9 @@
   function detach(state) {
     const { window: rootWindow, document: doc, handlers } = state;
     rootWindow.removeEventListener?.('resize', handlers.resize);
-    doc.removeEventListener?.('scroll', handlers.scroll);
+    // addEventListener tilføjede scroll med capture:true — fjernelsen skal
+    // matche det samme flag, ellers bliver lytteren aldrig taget af.
+    doc.removeEventListener?.('scroll', handlers.scroll, { capture: true });
     for (const type of ['aura:profile', 'aura:profile-saved']) rootWindow.removeEventListener?.(type, handlers.profile);
     state.layer.removeEventListener?.('keydown', handlers.keydown);
     state.layer.removeEventListener?.('toggle', handlers.toggle);

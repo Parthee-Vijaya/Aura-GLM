@@ -81,6 +81,18 @@ test('index.html: pillen og menuens opmærkning — YOLO-punktet bor hos pillen,
   assert.ok(modeMenu.includes('data-work-mode="chat"') && modeMenu.includes('data-work-mode="plan"') && modeMenu.includes('data-work-mode="free"'), 'de tre synlige valg består');
 });
 
+test('arbejdsmåde-menuen viser ÉT flueben: span’et er slukket, ::after ejer mærket (Fund 1)', () => {
+  const fs2 = require('node:fs');
+  const feedback = fs2.readFileSync(path.join(__dirname, '..', 'ui', 'feedback-layout.css'), 'utf8');
+  const components = fs2.readFileSync(path.join(__dirname, '..', 'ui', 'components.css'), 'utf8');
+  // Det gamle span-flueben (visibility:visible ved valgt) er slukket — ellers
+  // renderede den valgte række TO fluebæn (spån + ::after).
+  assert.match(feedback, /#composer-mode-menu \.mode-menu-check\s*\{\s*display:\s*none/, 'det gamle span-flueben er slukket med display:none');
+  assert.ok(!/\.mode-menu-check\s*\{[^}]*visibility:\s*visible/.test(feedback) && !/\[aria-checked="true"\] \.mode-menu-check\s*\{[^}]*visibility:\s*visible/.test(feedback), 'ingen synlighedsregel vækker span’et igen');
+  // .menu-material-ejeren: det ene flueben står i ::after ved aria-checked.
+  assert.match(components, /\.menu-material \[aria-checked="true"\]::after\s*\{[^}]*content:\s*"\u2713"/, 'menu-materialets ::after ejer det ene flueben');
+});
+
 test('index.html: genvejslinjen lever videre som aria-describedby-mål og Send-tooltip (Parthee-beslutning)', () => {
   const index = fs.readFileSync(path.join(__dirname, '..', 'ui', 'index.html'), 'utf8');
   const SHORTCUT = 'Enter sender · Shift+Enter giver en ny linje';

@@ -692,6 +692,9 @@ async function displayProject(project, { firstTask = false } = {}) {
   if (firstTask) view.firstProjectTask = true;
   try { localStorage.setItem(lastProjectKey, project.root); } catch {}
   $('#idea-options').open = false; for (const el of document.querySelectorAll('#idea-options select')) el.value = '';
+  // Chip-etiketterne følger select-nulstillingen (kompas-fix 2): ellers står
+  // det gamle valg på chippen, efter at payloadkilden er ryddet.
+  window.HeroComposer?.syncIdeaChips();
   $('#new').removeAttribute('aria-current'); $('#view-title').textContent = 'Arbejdsområde';
   $('#onboarding').hidden = true; $('#workspace').hidden = false; $('#skills-button').disabled = false;
   $('#project-name').textContent = project.name; $('#project-purpose').textContent = project.purpose || 'Eksisterende mappe. Beskriv din opgave i samtalen.'; $('#project-path').textContent = project.root;
@@ -1898,6 +1901,9 @@ function wireHeroComposer() {
     window.PopoverLayer.open({ layer: $('#idea-chip-technique-panel'), invoker: $('#idea-chip-technique'), align: 'start', place: 'below', gap: 8, width: () => 320 });
   };
   syncIdeaChipLabels();
+  // displayProject nulstiller select'erne ved projektskift — synkroniseringen
+  // skal kunne kaldes derfra, så chippen aldrig viser et valg, kilden ikke har.
+  window.HeroComposer = { syncIdeaChips: syncIdeaChipLabels };
 }
 wireHeroComposer();
 $('#start-idea').onclick = () => {
