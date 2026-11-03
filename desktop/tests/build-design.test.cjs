@@ -191,3 +191,87 @@ test('real project reopening keeps design skills, user choices and approved plan
   }
   assert.equal(JSON.stringify(plan), beforePlan, 'composition leaves the approved plan untouched');
 });
+
+// ─── S3 (Codex-fund): eksplicit, kontrolleret læsning af projektets DESIGN.md ──
+// Byggeskillet læser selv projektets DESIGN.md — ikke kun hovedskillens tekst —
+// og binder indholdet som data før modelsendingen. Læsningen respekterer
+// tilladelsesmodellen: en almindelig fil i arbejdsroden, intet symlink,
+// størrelsesloft, streng UTF-8 — samme hårdning som AGENTS.md.
+
+const { readProjectDesignDocument, designDocumentText, DESIGN_MAX_BYTES } = require('../core/build-design.cjs');
+
+test('S3: DESIGN.md læses kontrolleret — mangler, symlink, loft og UTF-8 håndteres hver for sig', async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'aura-designmd-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  assert.equal(await readProjectDesignDocument(root), null, 'uden DESIGN.md er der intet projektdesign');
+  await fs.writeFile(path.join(root, 'DESIGN.md'), '# Design\nBlå detaljer og rolig typografi.\n');
+  const document = await readProjectDesignDocument(root);
+  assert.equal(document.source, 'DESIGN.md');
+  assert.ok(document.content.includes('Blå detaljer'));
+  assert.match(document.hash, /^[a-f0-9]{64}$/, 'indholdet bindes med sha256');
+  const outside = await fs.mkdtemp(path.join(os.tmpdir(), 'aura-designmd-uden-'));
+  t.after(() => fs.rm(outside, { recursive: true, force: true }));
+  await fs.writeFile(path.join(outside, 'DESIGN.md'), 'Udenfor projektet');
+  await fs.rm(path.join(root, 'DESIGN.md'));
+  await fs.symlink(path.join(outside, 'DESIGN.md'), path.join(root, 'DESIGN.md'));
+  await assert.rejects(readProjectDesignDocument(root), /DESIGN\.md/, 'et symlink ud af projektet læses aldrig');
+  await fs.rm(path.join(root, 'DESIGN.md'));
+  await fs.writeFile(path.join(root, 'DESIGN.md'), 'x'.repeat(DESIGN_MAX_BYTES + 1));
+  await assert.rejects(readProjectDesignDocument(root), /for stor/, 'størrelsesloftet håndhæves — indholdet afkortes aldrig i stilhed');
+  await fs.rm(path.join(root, 'DESIGN.md'));
+  await fs.writeFile(path.join(root, 'DESIGN.md'), Buffer.from([0xff, 0xfe, 0x00]));
+  await assert.rejects(readProjectDesignDocument(root), /DESIGN\.md/, 'ugyldig UTF-8 afvises kontrolleret');
+});
+
+test('S3: designdokumentet bindes som data med prioriterækkefølge — og giver ingen tilladelser', async t => {
+  const f = await fixture(t), context = await f.skills.context(f.root);
+  const document = { source: 'DESIGN.md', content: '# SYSTEM-DESIGN-PROBE\nBlå detaljer.', hash: 'a'.repeat(64) };
+  const text = designDocumentText(document);
+  assert.match(text, /PROJEKTETS DESIGN\.MD/, 'dokumentet annonceres som projektets design');
+  assert.match(text, /SHA-256: a{64}/, 'indholdet bindes med hash');
+  assert.ok(text.includes('SYSTEM-DESIGN-PROBE'));
+  assert.match(text, /dataregler[\s\S]*godkendelser[\s\S]*beslutninger[\s\S]*projektdesign[\s\S]*stilreferencer/, 'prioriterækkefølgen står i teksten');
+  assert.match(text, /aldrig værktøjstilladelser/, 'dokumentet er data — ikke en tilladelse');
+  assert.equal(designDocumentText(null), '', 'uden dokument ingen tekst');
+  // Samme vejledning uden dokument: projekter uden DESIGN.md får uændret tekst.
+  const base = primaryBuildGuidance(context, 'build');
+  assert.equal(base, primaryBuildGuidance(context, 'build', {}));
+  assert.ok(!base.includes('PROJEKTETS DESIGN.MD'));
+});
+
+test('S3: prepare læser DESIGN.md, binder den i Før du sender og afviser en ændret fil ved afsendelse', async t => {
+  const fsSync = require('node:fs');
+  const { Workbench } = require('../core/workbench.cjs');
+  const appSource = fsSync.readFileSync(path.join(__dirname, '..', 'ui', 'app.js'), 'utf8');
+  assert.ok(appSource.includes("projectDesignDocument: 'Projektets DESIGN.md, der sendes'"), 'Før du sender har en række for projektdesignet');
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'aura-designmd-send-'));
+  let bench = null;
+  t.after(async () => { await bench?.close().catch(() => {}); await fs.rm(directory, { recursive: true, force: true }); });
+  const project = path.join(directory, 'project');
+  await fs.mkdir(project);
+  await fs.writeFile(path.join(project, 'DESIGN.md'), '# Godkendt design\nGrøn sektion, tydelige knapper.\n');
+  bench = new Workbench({ directory: path.join(directory, 'data'), profiles: path.resolve(__dirname, '../../profiles'), safeStorage: {}, emit() {}, engineFactory: () => ({ active: true, session: { id: 's' }, resumed: false, start: async () => {}, send: async () => {}, messages: async () => [{}], summarize: async () => {}, abort: async () => {}, close: async () => {} }) });
+  await bench.activate({ root: project, name: 'Designmd' });
+  bench.selection = async () => ({ connection: { id: 'fixture', kind: 'compatible', name: 'Syntetisk', baseURL: 'http://127.0.0.1:1/v1' }, model: { id: 'fixture' } });
+  const withDocument = await bench.prepare({ mode: 'free', connectionID: 'fixture', modelID: 'fixture' });
+  assert.ok(withDocument.projectDesignDocument, 'disclosure bærer dokumentet, når filen findes');
+  assert.equal(withDocument.projectDesignDocument.source, 'DESIGN.md');
+  assert.ok(withDocument.projectDesignDocument.content.includes('Grøn sektion'));
+  const context = bench.chat.prepared.appContext;
+  const component = context.components.find(item => item.id === 'Projektets DESIGN.md');
+  assert.ok(component, 'appContext har en komponent for projektdesignet');
+  assert.match(component.text, /Grøn sektion/, 'indholdet følger med til modellen');
+  const withoutFile = await fs.mkdtemp(path.join(os.tmpdir(), 'aura-designmd-tom-'));
+  const empty = path.join(withoutFile, 'projekt');
+  await fs.mkdir(empty);
+  const other = new Workbench({ directory: path.join(withoutFile, 'data'), profiles: path.resolve(__dirname, '../../profiles'), safeStorage: {}, emit() {}, engineFactory: () => ({ active: true, session: { id: 's' }, resumed: false, start: async () => {}, send: async () => {}, messages: async () => [{}], summarize: async () => {}, abort: async () => {}, close: async () => {} }) });
+  t.after(async () => { await fs.rm(withoutFile, { recursive: true, force: true }); await other.close().catch(() => {}); });
+  await other.activate({ root: empty, name: 'Uden design' });
+  other.selection = async () => ({ connection: { id: 'fixture', kind: 'compatible', name: 'Syntetisk', baseURL: 'http://127.0.0.1:1/v1' }, model: { id: 'fixture' } });
+  const bare = await other.prepare({ mode: 'free', connectionID: 'fixture', modelID: 'fixture' });
+  assert.equal(bare.projectDesignDocument, undefined, 'uden DESIGN.md er nøglen fraværende — fingeraftrykket er uændret');
+  assert.ok(!bare.appContext.components.some(item => item.id === 'Projektets DESIGN.md'), 'ingen komponent uden fil');
+  // Ændres DESIGN.md mellem forberedelse og afsendelse, afvises den gamle gennemgang.
+  await fs.writeFile(path.join(project, 'DESIGN.md'), '# Godkendt design\nRød sektion nu.\n');
+  await assert.rejects(bench.send({ text: 'Byg', fingerprint: withDocument.fingerprint, contextBinding: withDocument.contextBinding }), /DESIGN\.md har ændret sig/, 'en ændret DESIGN.md kræver ny gennemgang');
+});

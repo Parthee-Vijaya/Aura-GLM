@@ -472,10 +472,13 @@ test('fjernes tokenet, fjernes aktiveringen — værten genvaliderer fra selve t
 
 test('grundregler og altid-aktive skills kan ikke slås fra gennem kommandoen', async t => {
   const f = await workbenchFixture(t);
+  const design = (await f.bench.skills.list(f.project)).find(skill => skill.id === 'harness-design');
   const rules = await f.prepare({ text: '/faelles-grundregler og /design i samme besked' });
-  assert.equal(rules.commandInvocations, undefined, 'grundreglerne er ikke en kommando, og /design er reserveret');
-  assert.ok(!f.bench.chat.prepared.context.skills.some(skill => skill.name === 'design'), 'reserverede navne aktiverer intet i S2');
+  // S3: /design er ikke længere inert — aliaset aktiverer GradientDeck-skilllet
+  // (harness-design). Grundreglerne er stadig ikke en kommando.
+  assert.deepEqual(rules.commandInvocations, [`/design · ${design.title}`], 'grundreglerne aktiverer intet; /design aktiverer GradientDeck');
   const context = f.bench.chat.prepared.context;
+  assert.ok(context.skills.some(skill => skill.name === 'harness-design'), '/design aktiverer harness-design for denne afsendelse');
   assert.ok(context.skills.some(skill => skill.name === 'harness-aura-design'), 'den altid-aktive designhjælper består');
   assert.ok(context.rules && context.rules.length > 0, 'grundreglerne sender altid med');
   await f.prepare({ text: 'Byg uden kommandoer', invokedSkills: ['harness-kodestil'] });
@@ -557,3 +560,118 @@ function runModule(dom, api, options) {
 }
 
 const settle = () => new Promise(resolve => setImmediate(resolve));
+
+// ─── 6 · S3: /design aktiverer GradientDeck-skilllet (harness-design) ────────
+// Det reserverede navn hævdes af den fuldportede skill: harness-design er
+// SKILL-navnet, /design er kaldenavnet. Én aliaskilde deles af popup og vært.
+
+test('S3: /design er skillaliaset — registerCommand afviser stadig navnet', () => {
+  assert.ok(Object.isFrozen(shared.SKILL_TOKENS), 'aliastabellen er frossen');
+  assert.deepEqual(shared.SKILL_TOKENS, { 'harness-design': 'design' }, 'harness-design aktiveres som /design');
+  assert.equal(shared.skillToken('harness-design'), 'design');
+  assert.equal(shared.skillToken('harness-kodestil'), 'harness-kodestil', 'uden alias er tokenet id\'et');
+  assert.equal(shared.tokenSkill('design'), 'harness-design');
+  assert.equal(shared.tokenSkill('harness-kodestil'), null, 'almindelige navne er ikke alias');
+  const api = freshModule();
+  assert.equal(api.registerCommand({ name: 'design', description: 'x' }), false, 'navnet tilhører skillaliaset — aldrig en registreret kommando');
+  assert.equal(api.registerCommand({ name: 'stil', description: 'x' }), false, '/stil forbliver reserveret til S4-S5');
+});
+
+test('S3: resolve aktiverer harness-design fra /design; uden skillen er navnet igen inert', () => {
+  const list = [
+    { id: 'faelles-grundregler', title: 'Grundregler' },
+    { id: 'harness-design', title: 'GradientDeck-design' },
+    { id: 'harness-kodestil', title: 'Kodestil og vedligeholdelse' }
+  ];
+  const claimed = core.resolve('Brug /design nu', list);
+  assert.deepEqual(claimed.skills, ['harness-design'], 'aliastokenet aktiverer skillen');
+  assert.deepEqual(claimed.invocations, [{ token: '/design', name: 'harness-design', title: 'GradientDeck-design' }]);
+  assert.deepEqual(claimed.reserved, [], '/design er hævet — ikke længere inert');
+  assert.deepEqual(claimed.unknown, []);
+  const byId = core.resolve('/harness-design', list);
+  assert.deepEqual(byId.skills, ['harness-design'], 'det fulde navn virker også');
+  assert.equal(byId.invocations[0].token, '/harness-design', 'gennemgangen viser tokenet, som det står');
+  const both = core.resolve('/design /harness-design', list);
+  assert.deepEqual(both.skills, ['harness-design'], 'dubletter aktiveres én gang');
+  const denied = core.resolve('/design /stil', list.filter(entry => entry.id !== 'harness-design'));
+  assert.deepEqual(denied.skills, [], 'uden skillen i kataloget aktiverer /design intet');
+  assert.deepEqual(denied.reserved, ['design', 'stil'], 'og rapporteres igen som reserveret');
+  assert.deepEqual(core.resolve('/faelles-grundregler', list).skills, [], 'grundreglerne er stadig ikke en kommando');
+});
+
+test('S3: popuppen tilbyder /design-rækken og indsætter /design-tokenet', async () => {
+  const dom = makeDom();
+  const api = freshModule(dom);
+  runModule(dom, api, { skills: async () => [
+    { id: 'harness-aura-design', title: 'Aura-design', summary: 's', enabled: true },
+    { id: 'harness-design', title: 'GradientDeck-design', summary: 'Retninger og kvalitet', enabled: false }
+  ] });
+  dom.prompt.value = '/'; dom.prompt.selectionStart = 1; dom.prompt.emit('input');
+  await settle();
+  const row = api.rows().find(item => item.id === 'design');
+  assert.ok(row, 'skillens række bærer alias-tokenet');
+  assert.equal(row.kind, 'skill');
+  assert.match(row.description, /GradientDeck-design/, 'titlen står i beskrivelsen');
+  assert.match(row.description, /slået fra i projektet/, 'den fravalgte funktion aktiveres kun for denne besked');
+  dom.prompt.value = '/desi'; dom.prompt.selectionStart = 5; dom.prompt.emit('input');
+  await settle();
+  assert.deepEqual(plain(api.rows().map(item => item.id)), ['harness-aura-design', 'design'], 'filtrering rammer aliaset — og aura-designsegmentet som i S2');
+  dom.prompt.emit('keydown', { key: 'ArrowDown', preventDefault() {}, stopPropagation() {} });
+  dom.prompt.emit('keydown', { key: 'Enter', preventDefault() {}, stopPropagation() {} });
+  assert.equal(dom.prompt.value, '/design ', 'indsættelsen sætter alias-tokenet med mellemrum');
+  assert.deepEqual(plain(api.inserted()), ['design'], 'rendererens regnskab bærer tokenet');
+});
+
+test('S3: /design aktiverer harness-design for afsendelsen gennem prepare', async t => {
+  const f = await workbenchFixture(t);
+  const list = await f.bench.skills.list(f.project);
+  const design = list.find(skill => skill.id === 'harness-design');
+  assert.ok(design, 'den portede GradientDeck-skill er i kataloget');
+  assert.equal(design.enabled, false, 'funktionen er fravalgt som standard — /design aktiverer pr. besked');
+  const plainMessage = await f.prepare({ text: 'Byg en landingpage' });
+  assert.equal(plainMessage.commandInvocations, undefined, 'uden token er konsollen uændret');
+  const activated = await f.prepare({ text: 'Byg en landingpage /design' });
+  assert.deepEqual(activated.commandInvocations, [`/design · ${design.title}`], 'Før du sender viser aktiveringen');
+  assert.ok(activated.skills.includes(design.title), 'oversigten over skills omfatter den aktiverede');
+  assert.notEqual(activated.fingerprint, plainMessage.fingerprint, 'fingeraftrykket regner /design med');
+  const context = f.bench.chat.prepared.context;
+  assert.ok(context.skills.some(skill => skill.name === 'harness-design'), 'den effektive kontekst omfatter GradientDeck');
+  assert.ok(context.skills.some(skill => skill.name === 'harness-aura-design'), 'den altid-aktive designhjælp består');
+  // Fjernes tokenet, fjernes aktiveringen — det dækker 'fjernes tokenet'-testen ovenfor.
+  await f.bench.send({ text: 'Byg en landingpage /design', fingerprint: activated.fingerprint, contextBinding: activated.contextBinding });
+  const engineSkills = f.engines.at(-1).skills;
+  const skill = engineSkills.find(item => item.name === 'harness-design');
+  assert.ok(skill, 'motoren får skillens filer med i denne kørsel');
+  for (const file of ['worlds/worlds.json', 'photos/photos.json', 'scripts/roll.mjs', 'LICENSE']) {
+    assert.ok(skill.files.some(item => item.path === file), `${file} følger med som fuldgyldig skill`);
+  }
+  const permission = engineModule.permissions('/root', [], 'free', { directory: '/engine', names: engineSkills.map(item => item.name) });
+  assert.equal(permission.skill['harness-design'], 'allow', 'den aktiverede skill er tilladt i kørslen');
+  assert.equal(permission.bash, 'ask', 'roll-scriptet kræver fortsat kommandogodkendelse — aktiveringen giver ingen kommandotilladelse');
+});
+
+test('S3: writeSkills kopierer datafilerne og skriver kommandogodkendelses-bilaget', async t => {
+  const f = await workbenchFixture(t);
+  await f.prepare({ text: '/design' });
+  const skill = f.bench.chat.prepared.context.skills.find(item => item.name === 'harness-design');
+  assert.ok(skill, 'aktiveringen bringer skillens filer med');
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'aura-s3-engine-'));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  await engineModule.writeSkills(directory, [skill]);
+  const root = path.join(directory, 'config', 'skills', 'harness-design');
+  for (const file of ['SKILL.md', 'worlds/worlds.json', 'photos/photos.json', 'scripts/roll.mjs', 'LICENSE']) {
+    assert.ok((await fs.stat(path.join(root, file))).isFile(), `${file} er kopieret til motorens konfigmappe`);
+  }
+  const text = await fs.readFile(path.join(root, 'SKILL.md'), 'utf8');
+  for (const file of ['worlds/worlds.json', 'photos/photos.json', 'scripts/roll.mjs']) {
+    assert.ok(text.includes(JSON.stringify(path.join(root, file))), `${file} står med præcis absolut sti i bilaget`);
+  }
+  assert.match(text, /kommandogodkendelse/, 'bilaget kræver kommandogodkendelse af rollen');
+  assert.match(text, /almindelig tekst/, 'bilaget beskriver faldetbagever til worlds.json som tekst');
+  const other = await fs.mkdtemp(path.join(os.tmpdir(), 'aura-s3-afvis-'));
+  t.after(() => fs.rm(other, { recursive: true, force: true }));
+  await assert.rejects(engineModule.writeSkills(other, [{ name: 'harness-design', files: [
+    { path: 'SKILL.md', content: '---\nname: harness-design\ndescription: x\n---\n' },
+    { path: 'scripts/evil.sh', content: 'rm -rf' }
+  ] }]), /ugyldig fil/, 'vilkårlige scripts accepteres aldrig i motoren');
+});

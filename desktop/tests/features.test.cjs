@@ -12,8 +12,8 @@ const { Skills } = require('../core/skills.cjs');
 const profiles = path.join(__dirname, '../../profiles');
 async function temp(t) { const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'harness-funktioner-'))); t.after(() => fs.rm(root, { recursive: true, force: true })); return root; }
 const definitions = [{ id: 'versioner' }, { id: 'design', alwaysOn: true }, { id: 'deling', requires: ['versioner'], default: false }];
-// Katalogets "hele pakke": alt undtagen Udgivelse og integrationer, som er fravalgt uden et login.
-const full = { versioner: true, planlaegning: true, design: true, sikkerhed: true, kvalitet: true, deling: false, 'integration-adresser': false, 'integration-cvr': false, 'integration-promte': false, 'integration-komplai-run': false };
+// Katalogets "hele pakke": alt undtagen Udgivelse, integrationer og GradientDeck, som er fravalgt uden et bevidst valg.
+const full = { versioner: true, planlaegning: true, design: true, gradientdesign: false, sikkerhed: true, kvalitet: true, deling: false, 'integration-adresser': false, 'integration-cvr': false, 'integration-promte': false, 'integration-komplai-run': false };
 // Grundpakken: designhjælpen (altid aktiv) — resten tilvælges ad gangen.
 const base = { ...full, versioner: false, planlaegning: false, sikkerhed: false, kvalitet: false };
 
@@ -31,7 +31,7 @@ test('uden valg gælder grundpakken; hele pakken følger katalogets anbefaling',
 test('standarden gælder alle projekter; undtagelser gemmes kun, når de afviger', async t => {
   const store = new Store(await temp(t)), features = new Features(store, () => loadLibrary(profiles));
   const first = await features.get();
-  assert.equal(first.chosen, ''); assert.equal(first.list.filter(feature => !feature.group).length, 6);
+  assert.equal(first.chosen, ''); assert.equal(first.list.filter(feature => !feature.group).length, 7);
   assert.deepEqual(first.list.filter(feature => feature.group === 'integrationer').map(feature => feature.id), ['integration-adresser', 'integration-cvr', 'integration-promte', 'integration-komplai-run']);
   assert.equal(first.list.find(feature => feature.id === 'integration-cvr').skills[0].integration.owner, 'Erhvervsstyrelsen');
   assert.deepEqual(first.defaults, base, 'uden valg gælder grundpakken: kun designhjælpen er slået til');

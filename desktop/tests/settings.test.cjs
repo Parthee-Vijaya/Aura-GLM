@@ -842,7 +842,7 @@ test('Funktioner-panelet viser grundpakken for en ny bruger og hele pakken for e
   const fresh = await dialog(null);
   assert.equal(fresh.state.features.chosen, '', 'en ny bruger har ikke valgt en pakke');
   const freshInputs = fresh.dom.document.querySelectorAll('#features-list input[data-feature]');
-  assert.equal(freshInputs.length, 9, 'fem funktioner og fire integrationer');
+  assert.equal(freshInputs.length, 10, 'seks funktioner og fire integrationer');
   assert.ok(freshInputs.every(input => input.checked === false), 'grundpakken har ingen tilvalg');
   assert.equal(fresh.toggles('versioner')?.checked, false, 'versioner er fra indtil tilvalgt');
   assert.equal(fresh.dom.document.querySelectorAll('#features-list .feature-row[data-feature="design"]').length, 0, 'designhjælpen er altid aktiv og ikke en kontakt');

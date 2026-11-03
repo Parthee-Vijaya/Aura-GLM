@@ -39,7 +39,10 @@ async function findExecutable({ bundled = require('./runtime.cjs').get(), timeou
   throw new Error(`OpenCode ${VERSION} blev ikke fundet. Kør npm run runtime:prepare, eller angiv HARNESS_OPENCODE_PATH ved start. Din eksisterende installation ændres ikke.`);
 }
 const SKILL_NAME = /^harness-[a-z0-9]+(-[a-z0-9]+)*$/;
-const SKILL_FILE = /^(SKILL\.md|references\/[a-z0-9-]+\.md)$/;
+const SKILL_FILE = /^(SKILL\.md|references\/[a-z0-9-]+\.md|worlds\/worlds\.json|photos\/photos\.json|scripts\/roll\.mjs|LICENSE)$/;
+// S3: de filer, der får deres egen bilagslinje i SKILL.md — de porterede
+// datatyper og den bevarede licens. Rollen erklæres kommandogodkendelsespligtig.
+const DATA_FILE = /^(worlds\/worlds\.json|photos\/photos\.json|scripts\/roll\.mjs|LICENSE)$/;
 // OpenCode sammenligner fil- og læsetilladelser med stien i forhold til projektets Git-rod, eller til computerens rod uden Git.
 // En mappe spærres derfor både som "mappe/…" og "…/mappe/…"; en fuld sti ville aldrig blive ramt. Sidste regel, der passer, gælder.
 // Aktive skills ligger i motorens egen konfigurationsmappe uden for projektet. Mappens navn er projektets nøgle, så mønsteret kun rammer den.
@@ -72,9 +75,15 @@ async function writeSkills(directory, skills) {
       const target = path.join(root, skill.name, file.path);
       await fs.mkdir(path.dirname(target), { recursive: true, mode: 0o700 });
       const references = skill.files.filter(item => item.path.startsWith('references/'));
-      const content = file.path === 'SKILL.md' && references.length
-        ? file.content + '\n\n## Referencefiler i denne kørsel\n\nLæs referencer med read-værktøjet og disse præcise filstier. De er en del af denne skill, ikke projektets private references-mappe.\n' + references.map(item => `- ${JSON.stringify(path.join(root, skill.name, item.path))}`).join('\n') + '\n'
-        : file.content;
+      // S3: datatyperne står i deres eget bilag med de præcise stier. Rollen
+      // er et Node-script: kørsel kræver Auras kommandogodkendelse, og uden
+      // godkendelse (eller Node) bruges worlds.json som almindelig tekst.
+      // Aktiveringen af skillen giver i sig selv ingen kommandotilladelse.
+      const dataFiles = skill.files.filter(item => DATA_FILE.test(item.path));
+      let appendix = '';
+      if (references.length) appendix += '\n\n## Referencefiler i denne kørsel\n\nLæs referencer med read-værktøjet og disse præcise filstier. De er en del af denne skill, ikke projektets private references-mappe.\n' + references.map(item => `- ${JSON.stringify(path.join(root, skill.name, item.path))}`).join('\n') + '\n';
+      if (dataFiles.length) appendix += '\n## Datafiler i denne kørsel\n\nSkillens datafiler ligger i motorens konfigurationsmappe og læses med read-værktøjet på de præcise stier.\n' + dataFiles.map(item => `- ${item.path}: ${JSON.stringify(path.join(root, skill.name, item.path))}${item.path === 'scripts/roll.mjs' ? ' — kørsel kræver Auras kommandogodkendelse. Nægtes den, eller mangler Node, læses worlds/worlds.json ovenfor som almindelig tekst, og verdenerne vælges selv.' : ''}`).join('\n') + '\n';
+      const content = file.path === 'SKILL.md' ? file.content + appendix : file.content;
       await fs.writeFile(target, content, { mode: 0o600 });
     }
   }

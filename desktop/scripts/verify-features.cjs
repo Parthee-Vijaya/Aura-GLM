@@ -90,14 +90,14 @@ const helpers = require('./ui-test-helpers.cjs');
     await page.click('#create'); await page.waitForSelector('#workspace:not([hidden])');
     // Skills ad gangen: funktioner tilvælges under Indstillinger › Funktioner — her Versioner og fortryd.
     await helpers.menuClick(page, '#features-button'); await page.waitForSelector('#features-dialog[open]');
-    assert.equal(await page.locator('#features-list .feature-row').count(), 9, 'fem funktioner og fire integrationer i panelet');
+    assert.equal(await page.locator('#features-list .feature-row').count(), 10, 'seks funktioner og fire integrationer i panelet');
     assert.equal(await toggle('#features-list', 'versioner').isChecked(), false, 'grundpakken starter uden tilvalg');
     await toggle('#features-list', 'versioner').check();
     await page.locator('#features-feedback').filter({ hasText: 'Gemt for alle projekter' }).waitFor();
     await page.click('[data-close="features-dialog"]');
     const chosen = await features();
     assert.equal(chosen.chosen, '', 'et tilvalg i panelet er ikke en pakke');
-    assert.deepEqual(chosen.defaults, { versioner: true, planlaegning: false, design: true, sikkerhed: false, kvalitet: false, deling: false, 'integration-adresser': false, 'integration-cvr': false, 'integration-promte': false, 'integration-komplai-run': false });
+    assert.deepEqual(chosen.defaults, { versioner: true, planlaegning: false, design: true, gradientdesign: false, sikkerhed: false, kvalitet: false, deling: false, 'integration-adresser': false, 'integration-cvr': false, 'integration-promte': false, 'integration-komplai-run': false });
     // 2. Startsiden bevarer designgrundpakken; hostingønsket er fortsat fravalgt.
     // Idéfladen igen: prøveidéen oprettes via Nyt projekt, og panelet er skjult
     // dér — felterne og foldene tjekkes i dette besøg, før hovedidéen oprettes.
@@ -142,7 +142,7 @@ const helpers = require('./ui-test-helpers.cjs');
     assert.match((await log())[0], /^AI-opgave: /);
     // 4. Indstillinger › Funktioner: en undtagelse for projektet og en ændring for alle projekter.
     await helpers.menuClick(page, '#features-button'); await page.waitForSelector('#features-dialog[open]');
-    assert.equal(await page.isVisible('#features-scope'), true); assert.equal(await page.locator('#features-list .feature-row').count(), 9);
+    assert.equal(await page.isVisible('#features-scope'), true); assert.equal(await page.locator('#features-list .feature-row').count(), 10);
     assert.equal(await page.textContent('#features-list .features-group'), 'Integrationer');
     // Projektvalgets skjulte radioknapper fik før den generelle input-bredde og gav dialogen en vandret rullebjælke.
     assert.deepEqual(await page.locator('#features-dialog').evaluate(el => el.scrollWidth <= el.clientWidth), true, 'dialogen har ingen vandret rullebjælke');

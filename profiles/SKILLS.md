@@ -2,7 +2,7 @@
 
 Genereret fra `profiles/catalog.json` af `scripts/build-packages.cjs`. Ret kataloget eller skillfilerne, ikke denne fil.
 
-Aura Harness indeholder fælles grundregler og 13 skills samt fire integrationer. Grundreglerne gælder altid. En skill er en kort vejledning til kodeagenten om én arbejdsopgave, som bruges, når opgaven passer. En integration er en skill om ét bestemt system, fx et offentligt register. Integrationerne følger ikke med pakkerne til kodeværktøjerne; de vælges til for de systemer, man bruger. I Aura-appen kan kategorier, enkelte skills og integrationer slås til og fra.
+Aura Harness indeholder fælles grundregler og 14 skills samt fire integrationer. Grundreglerne gælder altid. En skill er en kort vejledning til kodeagenten om én arbejdsopgave, som bruges, når opgaven passer. En integration er en skill om ét bestemt system, fx et offentligt register. Integrationerne følger ikke med pakkerne til kodeværktøjerne; de vælges til for de systemer, man bruger. I Aura-appen kan kategorier, enkelte skills og integrationer slås til og fra.
 
 ## Grundregler · altid med
 
@@ -77,6 +77,20 @@ Kilder: [Lov om tilgængelighed af offentlige organers websteder og mobilapplika
 **Hvad gør den ikke?** Den ændrer ikke Auras egen brugerflade, giver ingen ekstra værktøjs- eller datatilladelser og erklærer ikke automatisk en app tilgængelig. Hjælpekode er læsbart referenceindhold og køres ikke ved indlæsning.
 
 Kilder: [Aura Design — metode og referencer af Parthee Vijayamohan](https://github.com/Parthee-Vijaya/skills_claude/tree/88ef16cf3f8916911f5f26cb5a334dbdf332d1f5/aura-design)
+
+### GradientDeck-design
+
+`harness-design` · [SKILL.md](skills/harness-design/SKILL.md)
+
+**Hvad gør den?** Vælger og gennemfører én visuel retning til nyt arbejde med GradientDecks metode: en række konkrete verdener at bygge i, konsekvent typografi, farve og komposition, og en kritisk gennemgang af det renderede resultat. Aktiveres pr. besked med /design oven på den altid-aktive designhjælp og ændrer ikke grundmetoden, planer eller godkendelser.
+
+**Hvornår bruges den?** Når et nyt produkt eller en ny side skal have en egen visuel retning, før koden skrives, eller når en færdig brugerflade skal kritisk gennemgås, poleres eller gøres mindre generisk.
+
+**Hvad får du?** En gennemført retning med planfil i .gradientdeck/pages/, et første udkast bygget konsekvent i retningen og en kort gennemgang af fundne og rettede problemer. Rollen kræver kommandogodkendelse; uden den vælges verdenerne i teksten.
+
+**Hvad gør den ikke?** Den erstatter ikke Auras grundmetode og designhjælp, godkender ingen planer og giver ingen fil-, kommando- eller netværkstilladelser. Den henter aldrig billeder eller stile fra nettet uden egen godkendelse.
+
+Kilder: [GradientDeck-skillen (MIT-licens)](https://github.com/VenoM9078/gradientdeck-skill), [GradientDeck](https://gradientdeck.com)
 
 ## Kode og kvalitet
 

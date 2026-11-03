@@ -14,9 +14,12 @@ const shared = require('../ui/slash-commands.js');
 const RULES = 'faelles-grundregler';
 
 // Resolve the message's slash tokens against the project's skill catalog.
-// Known skills become activations (in first-occurrence order, deduplicated);
-// reserved names (/design, /stil, /style) and the ground rules never activate
-// anything in S2; unknown names stay inert message text for the model to read.
+// Known skills become activations (in first-occurrence order, deduplicated).
+// S3: /design is the claimed invocation alias of the ported GradientDeck
+// skill (harness-design) — the alias resolves to the skill when it is in the
+// catalog, and falls back to inert reserved text when it is not. Other
+// reserved names (/stil, /style) and the ground rules never activate
+// anything; unknown names stay inert message text for the model to read.
 function resolve(text, skillsList) {
   const tokens = shared.parseTokens(typeof text === 'string' ? text : '');
   const known = new Map((Array.isArray(skillsList) ? skillsList : [])
@@ -26,15 +29,18 @@ function resolve(text, skillsList) {
   const seen = new Set();
   for (const token of tokens) {
     const name = token.name;
-    if (shared.RESERVED.includes(name)) { if (!reserved.includes(name)) reserved.push(name); continue; }
-    const entry = known.get(name);
-    if (!entry) { if (!unknown.includes(name)) unknown.push(name); continue; }
+    const entry = known.get(shared.tokenSkill(name) || name);
+    if (!entry) {
+      if (shared.RESERVED.includes(name)) { if (!reserved.includes(name)) reserved.push(name); }
+      else if (!unknown.includes(name)) unknown.push(name);
+      continue;
+    }
     if (seen.has(entry.id)) continue;
     seen.add(entry.id);
     skills.push(entry.id);
-    invocations.push({ token: '/' + entry.id, name: entry.id, title: entry.title || entry.id });
+    invocations.push({ token: '/' + name, name: entry.id, title: entry.title || entry.id });
   }
   return { tokens, skills, invocations, unknown, reserved };
 }
 
-module.exports = { resolve, parseTokens: shared.parseTokens, tokenAt: shared.tokenAt, RESERVED: shared.RESERVED, RULES };
+module.exports = { resolve, parseTokens: shared.parseTokens, tokenAt: shared.tokenAt, RESERVED: shared.RESERVED, SKILL_TOKENS: shared.SKILL_TOKENS, skillToken: shared.skillToken, tokenSkill: shared.tokenSkill, RULES };

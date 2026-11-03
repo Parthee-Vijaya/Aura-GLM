@@ -17,7 +17,7 @@ const modelConsent = require('./model-consent.cjs');
 const { projectInstructions, instructionText } = require('./project-instructions.cjs');
 const { guidanceFor, appRules } = require('./project-guidance.cjs');
 const slashCommands = require('./slash-commands.cjs');
-const { primaryBuildGuidance } = require('./build-design.cjs');
+const { primaryBuildGuidance, readProjectDesignDocument, designDocumentText } = require('./build-design.cjs');
 const { startGateway } = require('./gateway.cjs');
 const { toolEntry, toolFiles, approvalTarget, approvalTitles } = require('./activity.cjs');
 const { taskSummary, sessionSummary, fileDetail, sessionAttribution, hash } = require('./change-review.cjs');
@@ -46,6 +46,9 @@ function composeAppContext({ prepared, project, plan, planConversation, dismisse
     primaryColor: prepared.disclosure.projectDesign?.primaryColor
   });
   if (design) system += add('Hovedskill til bygning', '\n' + design);
+  // S3: projektets egen DESIGN.md sendes som en selvstændig, hashbundet komponent —
+  // data med kilde og kontrolsum, aldrig en tilladelse.
+  if (prepared.projectDesignDocument) system += add('Projektets DESIGN.md', '\n' + designDocumentText(prepared.projectDesignDocument));
   system += add('Projektets AGENTS.md', '\n' + instructionText(prepared.context.projectInstructions));
   system += add('Samtaleregler', '\n' + conversationMode.rules);
   if (prepared.mode === 'chat') system += add('Arbejdsmåde', '\nAktuel arbejdsmåde: Samtale. Besvar brugerens spørgsmål; skriv ikke en byggeplan.');
@@ -279,6 +282,11 @@ class ChatSession {
     if (input.chatMaterials != null && !chatMaterials) throw new Error('Gennemgå filvalget igen.');
     const context = await bench.skills.context(projectRoot);
     context.projectInstructions = await projectInstructions(this.root);
+    // S3 (Codex finding): byggevejledningen læser selv projektets DESIGN.md —
+    // en kontrolleret læsning (almindelig fil, intet symlink, loft, streng
+    // UTF-8), bundet som data med sha256. Nøglen findes kun, når filen findes,
+    // så projekter uden DESIGN.md beholder et byte-identisk fingeraftryk.
+    const projectDesignDocument = await readProjectDesignDocument(this.root);
     // S2 slash-framework: værten genvaliderer beskedens /-tokens fra selve
     // teksten — både indsatte og håndskrevne — og aktiverer de navngivne
     // skills for DENNE afsendelse. Fjernes tokenet, fjernes aktiveringen.
@@ -313,6 +321,7 @@ class ChatSession {
     disclosure.projectDesign = require('./projects.cjs').designContext(currentProject);
     disclosure.projectGuidance = guidanceFor(bench.surface, settings.runtime);
     disclosure.projectInstructions = context.projectInstructions;
+    if (projectDesignDocument) disclosure.projectDesignDocument = projectDesignDocument;
     const sessionMaterial = disclosure.material;
     disclosure.rules = context.rules;
     if (['plan', 'build'].includes(mode)) disclosure.material += ' Plan og tidligere afklaring medsendes. De kan indeholde oplysninger fra tidligere valgte referencer, også efter at referencerne fravælges. Gennemgå indholdet nedenfor.';
@@ -385,7 +394,7 @@ class ChatSession {
     // Forhåndsvisningens størrelse til før/efter-billederne. Kun tal; siden findes i hovedprocessen.
     const view = input.view && Number.isFinite(input.view.width) && Number.isFinite(input.view.height) ? { width: Math.round(input.view.width), height: Math.round(input.view.height) } : null;
     if ((bench.connectionVersions.get(input.connectionID) || 0) !== connectionVersion) throw new Error('Forbindelsen blev ændret. Gennemgå oplysningerne igen.');
-    this.prepared = { mode, engineFingerprint, chatMaterials, ...selection, disclosure, sessionFingerprint, engineVersion, engineMigration, references, fileRefs: checkedRefs, previewTarget: target, view, context: runContext, autoCheckpoint, commandIsolation, commandStandby, commandSandboxSupported: commandSupport.available, autoCommandsSnapshot, startup, runtime: settings.runtime, root: this.root };
+    this.prepared = { mode, engineFingerprint, chatMaterials, ...selection, disclosure, sessionFingerprint, engineVersion, engineMigration, references, fileRefs: checkedRefs, previewTarget: target, view, context: runContext, autoCheckpoint, commandIsolation, commandStandby, commandSandboxSupported: commandSupport.available, autoCommandsSnapshot, startup, runtime: settings.runtime, projectDesignDocument, root: this.root };
     const prepared = this.prepared;
     prepared.privacy = await bench.privacyRuntimeProvider?.prepareChat(this, prepared);
     prepared.handoff = engineMigration ? disclosure.conversation : this.engineIdentity === engineFingerprint && this.engine?.active ? this.engineConversation || '' : this.data.opencode?.sessionFingerprint === sessionFingerprint ? this.data.opencode.conversation || '' : disclosure.conversation || '';
@@ -428,6 +437,8 @@ class ChatSession {
     this.runMeasurement = this.preparedMeasurement;
     const checkStopped = () => { if (generation !== this.generation) throw new Error('Opgaven blev stoppet før afsendelse.'); };
     if (Object.hasOwn(prepared.context, 'projectInstructions') && JSON.stringify(await projectInstructions(this.root)) !== JSON.stringify(prepared.context.projectInstructions)) throw new Error('Projektets AGENTS.md har ændret sig. Gennemgå oplysningerne igen før afsendelse.');
+    // S3: et ændret projektdesign ugyldiggør gennemgangen — indholdet er bundet med sha256, ikke genlæst i stilhed.
+    if (prepared.projectDesignDocument != null && JSON.stringify(await readProjectDesignDocument(this.root)) !== JSON.stringify(prepared.projectDesignDocument)) throw new Error('Projektets DESIGN.md har ændret sig. Gennemgå oplysningerne igen.');
     if (prepared.guard) {
       if (prepared.messageText !== null && prepared.messageText !== input.text) throw new Error('Beskeden er ændret. Gennemgå konteksten igen.');
       if (input.contextBinding !== prepared.disclosure.contextBinding) throw new Error('Gennemgå den aktuelle kontekst før afsendelse.');

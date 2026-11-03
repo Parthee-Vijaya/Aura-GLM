@@ -9,9 +9,10 @@
 // commands.cjs requires this module's pure grammar), so a removed token is a
 // removed activation and a hand-typed token follows the same rules.
 //
-// No commands are registered in S2: /stil and /design are RESERVED for
-// S4-S5, and registerCommand refuses those names so later slices can add
-// them without touching this framework.
+// S3 claims the reserved name /design as a skill alias (SKILL_TOKENS): the
+// ported GradientDeck skill harness-design is invoked as /design in both the
+// popup and the host. No command is registered under the name — RESERVED
+// still guards it. /stil (alias /style) remains reserved for S4.
 //
 // Trigger rules: word start only (beginning of the text or after
 // whitespace); never inside fenced code blocks or URL-ish words; never
@@ -26,9 +27,19 @@
   'use strict';
 
   // ── Pure token grammar (shared with core/slash-commands.cjs) ──
-  // Reserved command names (Parthee's decision): /stil (alias /style) and
-  // /design belong to S4-S5. The framework must never register them.
+  // Reserved command names (Parthee's decision): /stil (alias /style) is
+  // reserved for S4. The framework must never register them.
   const RESERVED = Object.freeze(['design', 'stil', 'style']);
+  // S3 claims /design for the ported GradientDeck skill: the skill carries id
+  // harness-design and is INVOKED as /design. This alias table is the single
+  // source shared with core/slash-commands.cjs — the popup shows and inserts
+  // /design, and the host resolves the token to the skill for that send.
+  // registerCommand still refuses the name (RESERVED): it belongs to the
+  // skill alias, never to a registered command. If the skill is absent from
+  // skills:list, the token is inert like any other reserved name.
+  const SKILL_TOKENS = Object.freeze({ 'harness-design': 'design' });
+  const skillToken = id => (typeof id === 'string' && Object.hasOwn(SKILL_TOKENS, id) ? SKILL_TOKENS[id] : id);
+  const tokenSkill = name => { for (const [id, token] of Object.entries(SKILL_TOKENS)) if (token === name) return id; return null; };
   // The ground-rules entry in skills:list is not a skill row and never a
   // command — the rules always ship, so they cannot be "activated".
   const RULES_ID = 'faelles-grundregler';
@@ -164,17 +175,18 @@
 
   // Row descriptions: skills carry title and summary, and a disabled skill says
   // that the activation is for this message only — the project's own feature
-  // choice is never touched.
+  // choice is never touched. S3: a skill with an invocation alias (harness-
+  // design → /design) is shown and inserted under its alias token.
   function buildRows(query) {
     const needle = String(query || '').toLowerCase();
     const matches = (...parts) => parts.some(part => typeof part === 'string' && part.toLowerCase().startsWith(needle));
     const commandRows = [...commands.values()]
       .filter(command => matches(command.name))
       .map(command => ({ kind: 'command', id: command.name, description: command.description, enabled: true, activate: command.activate }));
-    const skills = state.skills.filter(entry => entry?.id && entry.id !== RULES_ID && matches(entry.id, ...(entry.id || '').split('-'), entry.title));
+    const skills = state.skills.filter(entry => entry?.id && entry.id !== RULES_ID && matches(skillToken(entry.id), entry.id, ...(entry.id || '').split('-'), entry.title));
     skills.sort((a, b) => (b.enabled === true) - (a.enabled === true) || String(a.title || '').localeCompare(String(b.title || ''), 'da'));
     const skillRows = skills.map(entry => ({
-      kind: 'skill', id: entry.id, enabled: entry.enabled === true,
+      kind: 'skill', id: skillToken(entry.id), enabled: entry.enabled === true,
       description: `${entry.title || entry.id} · ${entry.summary || ''}${entry.enabled === true ? '' : ' · slået fra i projektet · aktiveres kun for denne besked'}`
     }));
     return [...commandRows, ...skillRows].slice(0, MAX_ROWS);
@@ -334,7 +346,7 @@
   }
 
   return Object.freeze({
-    RESERVED, RULES_ID, MAX_ROWS,
+    RESERVED, RULES_ID, MAX_ROWS, SKILL_TOKENS, skillToken, tokenSkill,
     parseTokens, tokenAt, insideFence,
     registerCommand, commands: () => [...commands.values()],
     init, open: () => state.open, close, rows: () => [...state.rows], inserted

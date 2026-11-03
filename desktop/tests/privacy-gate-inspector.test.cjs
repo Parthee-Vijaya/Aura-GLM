@@ -120,12 +120,25 @@ test('exact built-in public reference paths are not opaque; suffixes, unknown UR
 
 test('the shipped skill references are inspectable without suppressing their actual sensitivity findings', async () => {
   const library = await require('../core/library.cjs').loadLibrary(require('node:path').resolve(__dirname, '../../profiles'));
+  const opaque = [];
   let count = 0;
   for (const skill of library.skills) for (const file of skill.files) {
-    const checked = inspectRequest(body(JSON.stringify({ path: '.aura-skills/' + skill.name + '/' + file.path, content: file.content })), policy);
-    if (skill.name === 'harness-integration-adresser' && file.path === 'references/datafordeleren.md') assert.equal(checked.hasSecrets, true, 'the literal apiKey example is still detected, never globally exempted');
+    const payload = JSON.stringify({ path: '.aura-skills/' + skill.name + '/' + file.path, content: file.content });
+    // S3: GradientDecks fotobibliotek indeholder lange Wikimedia-sti-segmenter,
+    // som inspektørens base64-heuristik korrekt afviser som uigennemsigtige —
+    // en reel, konservativ konstatering (PRIVACY_LOCAL_REQUIRED), ikke en
+    // undertrykkelse. Ingen skillfil er nogensinde fritaget for kontrol; alle
+    // øvrige filer skal kunne inspiceres, og fundene må aldrig maskeres.
+    try {
+      const checked = inspectRequest(body(payload), policy);
+      if (skill.name === 'harness-integration-adresser' && file.path === 'references/datafordeleren.md') assert.equal(checked.hasSecrets, true, 'the literal apiKey example is still detected, never globally exempted');
+    } catch (error) {
+      if (error.code !== 'PRIVACY_LOCAL_REQUIRED') throw error;
+      opaque.push(`${skill.name}/${file.path}`);
+    }
     count++;
   }
+  assert.deepEqual(opaque, ['harness-design/photos/photos.json'], 'kun fotobiblioteket kræver lokal behandling — alle øvrige skillfiler kan inspiceres');
   assert(count >= 40);
 });
 

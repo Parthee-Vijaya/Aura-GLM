@@ -38,7 +38,8 @@
         "harness-eksisterende-projekt",
         "harness-arkitektur-og-teknologi",
         "harness-design-og-tilgaengelighed",
-        "harness-aura-design"
+        "harness-aura-design",
+        "harness-design"
       ]
     },
     {
@@ -109,6 +110,15 @@
       "skills": [
         "harness-design-og-tilgaengelighed",
         "harness-aura-design"
+      ]
+    },
+    {
+      "id": "gradientdesign",
+      "title": "GradientDeck-design",
+      "summary": "GradientDecks fulde designmetode med verdener, billeder og rollen. Aktiveres pr. besked med /design; slås kun til her, hvis den skal gælde alle beskeder.",
+      "default": false,
+      "skills": [
+        "harness-design"
       ]
     },
     {
@@ -409,6 +419,27 @@
         {
           "title": "Aura Design — metode og referencer af Parthee Vijayamohan",
           "url": "https://github.com/Parthee-Vijaya/skills_claude/tree/88ef16cf3f8916911f5f26cb5a334dbdf332d1f5/aura-design"
+        }
+      ]
+    },
+    {
+      "name": "harness-design",
+      "title": "GradientDeck-design",
+      "summary": "GradientDecks designbedømmelse til en ny visuel retning og en kritisk kvalitetsgennemgang af brugerflader. Aktiveres pr. besked med /design og supplerer den altid-aktive designhjælp.",
+      "faq": {
+        "hvad": "Vælger og gennemfører én visuel retning til nyt arbejde med GradientDecks metode: en række konkrete verdener at bygge i, konsekvent typografi, farve og komposition, og en kritisk gennemgang af det renderede resultat. Aktiveres pr. besked med /design oven på den altid-aktive designhjælp og ændrer ikke grundmetoden, planer eller godkendelser.",
+        "hvornaar": "Når et nyt produkt eller en ny side skal have en egen visuel retning, før koden skrives, eller når en færdig brugerflade skal kritisk gennemgås, poleres eller gøres mindre generisk.",
+        "resultat": "En gennemført retning med planfil i .gradientdeck/pages/, et første udkast bygget konsekvent i retningen og en kort gennemgang af fundne og rettede problemer. Rollen kræver kommandogodkendelse; uden den vælges verdenerne i teksten.",
+        "ikke": "Den erstatter ikke Auras grundmetode og designhjælp, godkender ingen planer og giver ingen fil-, kommando- eller netværkstilladelser. Den henter aldrig billeder eller stile fra nettet uden egen godkendelse."
+      },
+      "sources": [
+        {
+          "title": "GradientDeck-skillen (MIT-licens)",
+          "url": "https://github.com/VenoM9078/gradientdeck-skill"
+        },
+        {
+          "title": "GradientDeck",
+          "url": "https://gradientdeck.com"
         }
       ]
     },
