@@ -121,7 +121,7 @@ test('skjoldet genbruger .permission-shield-stien som inline-SVG med aria-hidden
 });
 
 test('dialogåbningen er uændret: de tre id-er beholdes med aria-haspopup og open-handler', () => {
-  assert.match(source, /\[get\('connections-button'\), 'privacy-settings-button', 'after'\], \[get\('advanced-model-context'\), 'privacy-model-button', 'before'\], \[get\('context-status'\), 'privacy-gate-button', 'after'\]/, 'ankerlisten er uændret');
+  assert.match(source, /\[get\('connections-button'\), 'privacy-settings-button', 'after'\], \[get\('advanced-model-context'\), 'privacy-model-button', 'before'\], \[get\('context-status'\), 'privacy-gate-button', 'before'\]/, 'P1: skjoldet er første segment i statusrækken; de to andre ankre er uændrede');
   assert.match(source, /const entry = button\(t\('Datakontrol og arbejdsform', 'Data control and work mode'\), open, 'text-button privacy-entry'\)/, 'open-handleren er stadig knappen handler');
   assert.match(source, /entry\.setAttribute\('aria-haspopup', 'dialog'\)/, 'aria-haspopup består');
   assert.match(source, /function open\(\) \{ sync\(\); void refresh\(\{ show: true \}\); \}/, 'open() åbner fortsat dialogen efter sync');

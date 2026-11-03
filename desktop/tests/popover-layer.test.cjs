@@ -98,6 +98,29 @@ test('mellemstilling og nedenunder-præference (ⓘ-boblen) med flip opad', () =
   assert.equal(layer2.style.top, `${760 - 120 - 8}px`, 'flipper op når der ikke er plads nedenunder');
 });
 
+test('P1 · topLimit: laget over composeren dækker aldrig topbjælkens titel', () => {
+  // Først den rene clamp: hverken over (topbjælken) eller under (viewPorten)
+  // har plads — laget holdes på grænsen i stedet for at dække bjælken.
+  const tight = harness({ viewport: { width: 1280, height: 280 } });
+  const invokerTight = tight.make('textarea', 'prompt-tight'); setRect(invokerTight, 200, 100, 400, 36);
+  const layerTight = tight.make('div', 'slash-tight'); layerTight.offsetWidth = 400; layerTight.offsetHeight = 140;
+  tight.layer.open({ layer: layerTight, invoker: invokerTight, gap: 8, width: 400, topLimit: () => 56 });
+  assert.equal(layerTight.style.top, '56px', 'laget står PÅ grænsen — aldrig over topbjælkens bund');
+
+  const f = harness({ viewport: { width: 1280, height: 800 } });
+  // Er der plads over feltet UDEN at røre bjælken, bruges rummet der.
+  const invoker = f.make('textarea', 'prompt'); setRect(invoker, 200, 420, 400, 36);
+  const layer2 = f.make('div', 'slash2'); layer2.offsetWidth = 400; layer2.offsetHeight = 140;
+  f.layer.open({ layer: layer2, invoker, gap: 8, width: 400, topLimit: () => 56 });
+  assert.equal(layer2.style.top, `${420 - 140 - 8}px`, 'rummet over feltet bruges, når bjælken er fri');
+  // Uden topLimit gælder fortsat den gamle flip-logik (uændret grundadfærd):
+  // ingen plads over feltet → laget folder ned i stedet.
+  const layer3 = f.make('div', 'slash3'); layer3.offsetWidth = 400; layer3.offsetHeight = 140;
+  setRect(invoker, 200, 120, 400, 36);
+  f.layer.open({ layer: layer3, invoker, gap: 8, width: 400 });
+  assert.equal(layer3.style.top, `${120 + 36 + 8}px`, 'uden topLimit folder laget ned som før');
+});
+
 test('ingen plads over: læggen falder nedenunder, og begge kanter clamper ind i visningsfladen', () => {
   const f = harness();
   const invoker = f.make('button', 'mode'); setRect(invoker, 4, 80, 120, 28);

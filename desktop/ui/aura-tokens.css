@@ -14,6 +14,14 @@
     'Liberation Mono', Menlo, Courier, 'PingFang SC', 'Microsoft YaHei';
   --aura-font-weight-medium: 500;
 
+  /* ── Typeskala (DSH §2: brødtekst 14/22, sekundær 13/20, status 12/16,
+     overskrift 15/22, helt 26/32) — ét par pr. trin, tema-uafhængigt. ── */
+  --aura-text-12: 12px; --aura-text-12-line: 16px;
+  --aura-text-13: 13px; --aura-text-13-line: 20px;
+  --aura-text-14: 14px; --aura-text-14-line: 22px;
+  --aura-text-15: 15px; --aura-text-15-line: 22px;
+  --aura-text-26: 26px; --aura-text-26-line: 32px;
+
   /* ── Bevægelse ── */
   --aura-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
   --aura-transition-duration-fast: 0.1s;
@@ -55,8 +63,13 @@
   --aura-bg-raised: rgb(255, 255, 255);
   --aura-bg-overlay: rgb(255, 255, 255);
   --aura-bg-tint: rgb(243, 244, 246);
-  --aura-bg-hover: rgb(243, 244, 246);
+  /* Hover er DSH's alfa-fyld (§2 interaktion): rgba(38,49,72,.06) lys /
+     rgba(255,255,255,.08) mørk — den samme svage hævning på alle flader,
+     målt med teksterne ovenpå (P1-rapporten). */
+  --aura-bg-hover: rgba(38, 49, 72, 0.06);
   --aura-bg-active: rgb(237, 238, 241);
+  /* Brugerboblen er sin egen flade (DSH §2): #EDF3FE lys / #2C2C2E mørk. */
+  --aura-bg-bubble: rgb(237, 243, 254);
 
   /* Tekst. */
   --aura-ink: rgb(21, 21, 23);
@@ -65,10 +78,12 @@
   --aura-ink-caption: rgb(145, 148, 155);
   --aura-ink-faint: rgb(180, 182, 187);
 
-  /* Kanter — meget diskrete alpha-værdier. */
+  /* Kanter — meget diskrete alpha-værdier i DSH's fire styrker
+     (sort .04/.08/.12/.16, hvid .04/.08/.12/.20); .16/.20 er fokus-kanten. */
   --aura-border: rgba(0, 0, 0, 0.08);
   --aura-border-strong: rgba(0, 0, 0, 0.12);
   --aura-border-faint: rgba(0, 0, 0, 0.04);
+  --aura-border-strongest: rgba(0, 0, 0, 0.16);
   --aura-border-invert: rgba(255, 255, 255, 0.08);
 
   /* Skygger. */
@@ -125,21 +140,29 @@
 
     --aura-bg: rgb(21, 21, 23);
     --aura-bg-sidebar: rgb(27, 27, 28);
-    --aura-bg-raised: rgb(30, 30, 32);
-    --aura-bg-overlay: rgb(30, 30, 32);
+    /* Composer-kortet løfter sig fra lærredet som DSH's input-major-flade
+       #2C2C2E (44) — ikke 30,30,32, der kun giver 1,1:1 mod lærredet. */
+    --aura-bg-raised: rgb(44, 44, 46);
+    --aura-bg-overlay: rgb(44, 44, 46);
     --aura-bg-tint: rgb(38, 38, 40);
-    --aura-bg-hover: rgb(38, 38, 40);
-    --aura-bg-active: rgb(45, 45, 47);
+    --aura-bg-hover: rgba(255, 255, 255, 0.08);
+    --aura-bg-active: rgb(51, 51, 53);
+    /* DSH §2: brugerboblen er #2C2C2E — samme flade som composer-kortet. */
+    --aura-bg-bubble: rgb(44, 44, 46);
 
     --aura-ink: rgb(238, 238, 240);
     --aura-ink-secondary: rgb(190, 192, 196);
-    --aura-ink-muted: rgb(140, 142, 148);
+    /* Mørk muted er løftet til 150/152/158: den nye hævede flade #2C2C2E er
+       lysere end 30,30,32, og muted skal holde 4,5:1 ovenpå den (målt 4,69:1
+       på raised, 6,23:1 på lærredet — P1-rapporten). */
+    --aura-ink-muted: rgb(150, 152, 158);
     --aura-ink-caption: rgb(110, 112, 118);
     --aura-ink-faint: rgb(75, 77, 82);
 
     --aura-border: rgba(255, 255, 255, 0.08);
     --aura-border-strong: rgba(255, 255, 255, 0.12);
     --aura-border-faint: rgba(255, 255, 255, 0.04);
+    --aura-border-strongest: rgba(255, 255, 255, 0.2);
     --aura-border-invert: rgba(0, 0, 0, 0.08);
 
     --aura-shadow-panel: 0 1px 3px rgba(0, 0, 0, 0.2), 0 4px 14px rgba(0, 0, 0, 0.3);
@@ -186,8 +209,9 @@
   --aura-bg-raised: rgb(255, 255, 255);
   --aura-bg-overlay: rgb(255, 255, 255);
   --aura-bg-tint: rgb(243, 244, 246);
-  --aura-bg-hover: rgb(243, 244, 246);
+  --aura-bg-hover: rgba(38, 49, 72, 0.06);
   --aura-bg-active: rgb(237, 238, 241);
+  --aura-bg-bubble: rgb(237, 243, 254);
   --aura-ink: rgb(21, 21, 23);
   --aura-ink-secondary: rgb(64, 64, 68);
   --aura-ink-muted: rgb(112, 116, 124);
@@ -196,6 +220,7 @@
   --aura-border: rgba(0, 0, 0, 0.08);
   --aura-border-strong: rgba(0, 0, 0, 0.12);
   --aura-border-faint: rgba(0, 0, 0, 0.04);
+  --aura-border-strongest: rgba(0, 0, 0, 0.16);
   --aura-shadow-panel: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 14px rgba(0, 0, 0, 0.06);
   --aura-shadow-overlay: 0 4px 20px rgba(0, 0, 0, 0.12);
   --aura-shadow-composer: 0 4px 16px rgba(0, 0, 0, 0.03), 0 0 24px rgba(0, 0, 0, 0.03);

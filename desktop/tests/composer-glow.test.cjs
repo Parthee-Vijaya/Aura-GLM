@@ -92,7 +92,11 @@ test('ventende godkendelser og spørgsmål dæmper arbejdet indtil alle er besva
   f.context.doneWaiting('question');
   assert.equal(f.state(), 'working'); assert.equal(f.busy(), 'true');
   assert.equal(f.$('#agent-activity').classList.contains('is-waiting'), false);
-  assert.equal(f.$('#agent-activity-jump').hidden, true); assert.equal(f.$('#agent-progress').hidden, false);
+  assert.equal(f.$('#agent-activity-jump').hidden, true);
+  // P1 (audit §2.3): nuance-linjen står kun med indhold — der er endnu ikke
+  // modtaget tegn i denne fixture, så linjen er skjult i stedet for at vise
+  // et tredje "Venter på svar fra AI'en"-signal ved siden af live-indikatoren.
+  assert.equal(f.$('#agent-progress').hidden, true);
 });
 
 test('afslutning, stop og fejl fjerner markeringen uden at fjerne kladden eller planen', () => {

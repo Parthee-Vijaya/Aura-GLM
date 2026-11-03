@@ -20,6 +20,7 @@ const plain = value => JSON.parse(JSON.stringify(value));
 const appSource = fsSync.readFileSync(path.join(ui, 'app.js'), 'utf8');
 const indexSource = fsSync.readFileSync(path.join(ui, 'index.html'), 'utf8');
 const stylesSource = fsSync.readFileSync(path.join(ui, 'styles.css'), 'utf8');
+const slashSource = fsSync.readFileSync(path.join(ui, 'slash-commands.js'), 'utf8');
 const shared = require('../ui/slash-commands.js');
 const core = require('../core/slash-commands.cjs');
 
@@ -385,13 +386,31 @@ test('app.js fører de indsatte tokens videre og viser aktiverede kommandoer i F
 });
 
 test('index.html og styles.css: popuppen er et ankeret popover-lag i Auras tokens', () => {
-  assert.ok(indexSource.includes('<div id="slash-menu" popover role="listbox"'), 'popuppen er et popover-element med listbox-rolle');
+  assert.ok(indexSource.includes('<div id="slash-menu" popover class="menu-material" role="listbox"'), 'P1: popuppen er et popover-element med listbox-rolle på menu-materialet');
   assert.ok(/<script src="slash-commands\.js" defer><\/script>/.test(indexSource), 'modulet indlæses med defer');
   assert.ok(indexSource.indexOf('slash-commands.js') < indexSource.indexOf('app.js'), 'modulet indlæses før app.js');
   const block = stylesSource.slice(stylesSource.indexOf('#slash-menu'), stylesSource.indexOf('#slash-menu button strong'));
   assert.ok(/max-width:\s*420px/.test(block), 'bredden er højst 420 px');
   assert.ok(/max-height:\s*320px/.test(block), 'højden er cirka 320 px');
   assert.ok(!/#[0-9a-fA-F]{3,8}\b/.test(block), 'ingen rå hexfarver — kun Auras tokens');
+  // P1: samme popover-grammatik som resten af appen — DSH-menu-materiale,
+  // neutral hover/aktiv-række (ingen accent-fyldte rækker).
+  assert.ok(!stylesSource.includes('#slash-menu button:hover, #slash-menu button[aria-selected="true"] { background: var(--aura-accent-faint); }'), 'P1: ingen blå aktiv-række i slash-popuppen');
+  assert.match(stylesSource, /#slash-menu button:hover, #slash-menu button\[aria-selected="true"\] \{ background: var\(--aura-bg-hover\); \}/, 'P1: hover og aktiv-række er det neutrale alpha-fyld');
+  assert.match(stylesSource, /#slash-menu\.menu-material:popover-open \{ display: grid; gap: 2px; \}/, 'P1: rækkerne forbliver et gitter oven på menu-materialet');
+});
+
+test('P1: popuppen følger COMPOSEREN og holder sig under topbjælken', () => {
+  // Bredden læses fra det kort, feltet står i — aldrig fra vinduet, der også
+  // rækker ind over topbjælken og arbejdsfladen (audit §2.6).
+  const show = slashSource.slice(slashSource.indexOf('function showLayer()'), slashSource.indexOf('function close()'));
+  assert.ok(!show.includes('innerWidth'), 'P1: vinduets bredde styrer ikke længere popuppen');
+  assert.match(show, /closest\?\.\('\.composer'\)/, 'P1: bredden følger composer-kortet');
+  assert.match(show, /width:\s*\(\) => \{ const rect = card\?\.getBoundingClientRect\?\.\(\); return Math\.min\(420, Math\.max\(220, rect\?\.width \|\| 320\)\); \}/, 'P1: bredden er composerens bredde, loftet 420, gulvet 220');
+  assert.match(show, /topLimit:/, 'P1: topgrænsen med i åbningen');
+  assert.match(show, /querySelector\?\.\('\.workspace-bar'\)/, 'P1: grænsen er topbjælkens bund — titelen dækkes aldrig');
+  const place = fsSync.readFileSync(path.join(ui, 'popover-layer.js'), 'utf8');
+  assert.match(place, /options\.topLimit/, 'popover-laget kender topLimit-optionen');
 });
 
 // ─── 5 · Aktiveringen gennem prepare/chat-session ────────────────────────────

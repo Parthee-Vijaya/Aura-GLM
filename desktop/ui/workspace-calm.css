@@ -14,7 +14,10 @@ body.workspace-calm[data-workspace-theme="light"] {
 }
 .workspace-calm :where(button,input,textarea,select,dialog,[popover]) { color:var(--ink); border-color:var(--line); }
 .workspace-calm :where(dialog,[popover],input:not([type=checkbox]):not([type=radio]),select,textarea) { background:var(--surface); }
-.workspace-calm :is(dialog,[popover]) { box-shadow:0 14px 38px #0004; }
+/* Fælles popover-fald: :where (ikke :is) giver reglen specificiteten (0,1,0),
+   så .menu-material i components.css vinder kildeordens-kaskaden og DSH-menuerne
+   bærer --aura-shadow-menu i stedet for denne tunge skygge (audit §4). */
+.workspace-calm :where(dialog,[popover]) { box-shadow:0 14px 38px #0004; }
 .workspace-calm dialog::backdrop { background:#080b105c; }
 .workspace-calm :is(input,textarea)::placeholder { color:var(--calm-faint); }
 .workspace-calm :is(button,summary,a,input,textarea,select,[tabindex]):focus-visible { outline-color:var(--calm-focus); }
@@ -38,7 +41,7 @@ body.workspace-calm[data-workspace-theme="light"] {
 .workspace-calm .workspace-bar { min-height:51px; padding:8px 18px; background:var(--calm-side); gap:10px; }
 .workspace-calm .workspace-bar h1 { font-size:13px; font-weight:500; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .workspace-calm .workspace-bar .actions { gap:5px; }
-.workspace-calm .workspace-bar button { font-size:11px; padding:5px 9px; }
+.workspace-calm .workspace-bar button { font-size:var(--aura-text-12); padding:5px 9px; }
 /* DSH-stil: chat er fuld bredde, når panelet er lukket (data-surface="off"). */
 .workspace-calm .work-grid[data-surface="off"] { grid-template-columns: 1fr; }
 .workspace-calm .work-grid[data-surface="off"] #workspace-divider { display: none; }
@@ -52,15 +55,18 @@ body.workspace-calm[data-workspace-theme="light"] {
 .workspace-calm .work-grid[data-dragging] { transition: none; }
 .workspace-calm :is(.chat,.work-panel,.panel-bar,.work-tabs,.preview-toolbar,.code-browser) { background:var(--surface); }
 .workspace-calm .chat .section-title { padding:0 16px; min-height:46px; gap:8px; }
-.workspace-calm #run-status { font-size:11px; font-weight:400; white-space:nowrap; }
+.workspace-calm #run-status { font-size:var(--aura-text-12); font-weight:400; white-space:nowrap; }
 /* DSH-stil: centreret samtaleindhold med maks. bredde (som DSH 920px).
    Indholdsrammen er --chat-col fra aura-tokens; gutteren (--chat-gutter)
    er padding her på kolonnen, så composeren kan trække den fra og ramme
    tekstkolonnens kant. */
 .workspace-calm .chat-content { padding:20px var(--chat-gutter); max-width:var(--chat-col); margin:0 auto; width:100%; }
-.workspace-calm .chat-message { font-size:13px; line-height:1.8; }
-/* DSH-stil: brugerbobler er neutrale og symmetriske (radius 20 som DSH). */
-.workspace-calm .chat-message.user { background:var(--aura-bg-tint); border-radius:20px; margin-left:auto; margin-right:0; max-width:75%; padding:12px 16px; }
+/* DSH §2: brødteksten — den flade man læser mest — er 14/22, ikke 13/1.8. */
+.workspace-calm .chat-message { font-size:var(--aura-text-14); line-height:var(--aura-text-14-line); }
+/* DSH-stil: brugerbobler er neutrale og symmetriske (radius 20 som DSH), med
+   boblefyldet fra --aura-bg-bubble (#EDF3FE / #2C2C2E). Den indre .user-bubble
+   er kun tekstbærer — fyld og padding findes én gang, her (én boble). */
+.workspace-calm .chat-message.user { background:var(--aura-bg-bubble); border-radius:20px; margin-left:auto; margin-right:0; max-width:75%; padding:12px 16px; }
 /* DSH-stil: assistentens svar er ren, fuldt læsbar prosa — ikke dæmpet. */
 .workspace-calm .chat-message.assistant { color:var(--ink); }
 .workspace-calm :is(.agent-activity,.agent-activity.is-waiting,.agent-activity.is-quiet,#connection-warning) { background:var(--surface); color:var(--muted); border-color:var(--line); padding:10px 16px; }
@@ -74,7 +80,10 @@ body.workspace-calm[data-workspace-theme="light"] {
    smallere end rammen (åbent panel starter ved ~420 px): width sikrer, at
    kortet følger kolonnen. */
 .workspace-calm .composer { margin:8px auto 5px; max-width:calc(var(--chat-col) - var(--chat-gutter) * 2); width:calc(100% - var(--chat-gutter) * 2); padding:12px; border-radius:var(--aura-radius-panel); border:0.5px solid var(--aura-border); background:var(--aura-bg-raised); box-shadow:var(--aura-shadow-composer); }
-.workspace-calm .composer:focus-within { border-color:var(--calm-focus); box-shadow:none; }
+/* Rolig composer (DSH §5.1): fokus er en neutral, stærkere hårlinje
+   (--aura-border-strongest: sort .16 / hvid .20) — skyggen BESTÅR, og ringen
+   vises kun ved :focus-visible (styles.css' outline-regel). Ingen accentkant. */
+.workspace-calm .composer:focus-within { border-color:var(--aura-border-strongest); box-shadow:var(--aura-shadow-composer); }
 /* Tekstfeltet (§5.1): 14/24, padding 4/8/0/14, accent-markør; minimum 36 px
    dokket og 52 px i helten (fase-reglen), maks. 336 px — derefter scroller
    feltet internt. Pladsholderen bærer læsbar dæmpet tekst (R4: --aura-ink-muted
@@ -119,7 +128,7 @@ body.workspace-calm[data-workspace-theme="light"] {
 .workspace-calm #chat-form[data-metal-state="working"]::after { opacity:.25; }
 .workspace-calm #chat-form[data-metal-state="waiting"]::before { inset:-1px; padding:1px; background:var(--calm-warning); opacity:.7; }
 .workspace-calm .work-tabs { flex-wrap:nowrap; overflow-x:auto; min-height:46px; padding:6px 8px; gap:2px; }
-.workspace-calm .work-tab { font-size:11px; font-weight:450; padding:6px 9px; border-radius:5px; }
+.workspace-calm .work-tab { font-size:var(--aura-text-12); font-weight:450; padding:6px 9px; border-radius:var(--aura-radius-sm); }
 .workspace-calm .work-tab[aria-selected="true"] { background:var(--calm-hover); border-color:transparent; color:var(--ink); }
 .workspace-calm .preview-toolbar { padding:5px 12px; min-height:43px; }
 .workspace-calm .preview-actions select { max-width:140px; }
@@ -146,7 +155,7 @@ body.workspace-calm[data-workspace-theme="light"] {
      er én kilde, så rammens kant-mod-kant-kontrakt består også her. */
   body.workspace-calm { --chat-gutter:18px; }
   .workspace-calm .chat-content { padding:18px var(--chat-gutter); }
-  .workspace-calm .work-tab { padding-inline:6px; font-size:11px; }
+  .workspace-calm .work-tab { padding-inline:6px; font-size:var(--aura-text-12); }
 }
 @media(max-width:900px) {
   body.workspace-calm,body.workspace-calm.sidebar-collapsed { --sidebar:0px; }
@@ -193,7 +202,8 @@ body.workspace-calm[data-workspace-theme="light"] {
 .workspace-calm .sidebar nav button { padding:8px; font-size:12px; }
 .workspace-calm .composer #prompt { background:transparent; }
 
-.workspace-calm .provider-brand-icon { background:#fff; border-radius:4px; padding:1px; }
+/* Modelchippens udbyderikon står direkte på kortet — ingen hvid firkant,
+   der skriger i mørkt tema (audit §2). Ikonet beholder sin egen form. */
 .workspace-calm input:not([type=checkbox]):not([type=radio]):not([type=color]) { background:var(--surface); color:var(--ink); border-color:var(--line); }
 
 /* DSH-stil: tom samtale er en hero (§4) — helt-fladen ejes af components.css

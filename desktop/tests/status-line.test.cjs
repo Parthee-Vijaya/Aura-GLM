@@ -130,9 +130,9 @@ test('linjen er én fokuserbar knap med tooltip-forbindelse og UDEN aria-live', 
   assert.doesNotMatch(row, /aria-live/, 'linjen og rækken har ingen aria-live — den opdateres hver tur');
   assert.doesNotMatch(html, /id="usage-status"/, 'den gamle forbrugsstatus er erstattet af den ene linje');
   assert.doesNotMatch(html, /id="context-label"|id="context-meter"/, 'meter og etiket fra R3-visningen er fjernet');
-  assert.match(html, /<div id="status-line-help" popover/, 'tooltippet er et ankeret popover-lag');
+  assert.match(html, /<div id="status-line-help" popover class="status-line-help menu-material"/, 'tooltippet er et ankeret popover-lag på menu-materialet');
   assert.match(app, /\$\('#status-line-row'\)\.before\(form\)/, 'composeren dokker før statusrækken (flyttet anker, samme rækkefølge)');
-  assert.match(privacyGate, /\[get\('context-status'\), 'privacy-gate-button', 'after'\]/, 'privacy-gate-ankeredet er uændret: knappen sættes efter linjen');
+  assert.match(privacyGate, /\[get\('context-status'\), 'privacy-gate-button', 'before'\]/, 'P1: skjoldet er det FØRSTE segment — knappen sættes foran linjen');
 });
 
 test('heltefasen skjuler linjen og kladden — datakontrol-knappen består i rækken', () => {
@@ -141,10 +141,24 @@ test('heltefasen skjuler linjen og kladden — datakontrol-knappen består i ræ
   assert.ok(hiding, 'heltefasen skjuler fortsat statuslinjen');
   assert.match(hiding, /:is\(#context-status,\s*#draft-status\)/);
   assert.doesNotMatch(hiding, /\.composer-status/, 'rækken selv står — Datakontrol-knappen er en altid-synlig sikkerhedsflade');
-  assert.match(strip(styles), /\.composer-status[^{]*\{[^}]*display:\s*grid/, 'statusrækken er gitteret: linje · kladde · datakontrol');
-  assert.match(strip(styles), /#draft-status[^{]*\{[^}]*grid-row:\s*2/, 'kladdestatus står yderst til højre under linjen — og fader til ingen plads');
-  assert.match(strip(styles), /#privacy-gate-button[^{]*\{[^}]*grid-row:\s*3/, 'datakontrol-knappen beholder sin egen linje i rækken');
   assert.match(strip(calm), /\.workspace-calm :is\(\.composer-status,#context-status\)\s*\{[^}]*font-size:\s*12px[^}]*var\(--muted\)/, 'kontrast-reglen fra ui-typografipinnen består');
+});
+
+test('P1 (§7.1): statuslinjen er ÉN centreret række — skjold · linje · transient kladde', () => {
+  const clean = strip(styles);
+  const rowRule = /\.composer-status\s*\{[^}]*\}/.exec(clean)[0];
+  assert.match(rowRule, /display:\s*flex/, 'rækken er én flex-række — ikke et gitter med tre justeringer');
+  assert.match(rowRule, /justify-content:\s*center/, 'rækken er centreret');
+  assert.match(rowRule, /gap:\s*16px/, 'segmenterne er adskilt af 16 px');
+  assert.doesNotMatch(clean, /\.composer-status[^{]*\{[^}]*grid/, 'intet gitter mere — én række');
+  assert.doesNotMatch(clean, /#draft-status[^{]*\{[^}]*grid-row/, 'kladdestatus har ingen egen række længere — forbigående segment på raden');
+  assert.doesNotMatch(clean, /#privacy-gate-button[^{]*\{[^}]*grid-row/, 'datakontrol-knappen har ingen egen række længere');
+  assert.match(clean, /\.composer-status > #privacy-gate-button\s*\{[^}]*padding:\s*1px 8px[^}]*border-radius:\s*var\(--radius-xs\)/, 'skjoldet bærer segmentgrammatikken: padding 1/8 og radius 8');
+  assert.match(clean, /:root\s*\{[^}]*--radius-xs:\s*var\(--aura-radius-sm\)/, '--radius-xs er defineret (8 px) — pillens hjørner er ikke firkantede');
+  const lineRule = /\.status-line\s*\{[^}]*\}/.exec(clean)[0];
+  assert.match(lineRule, /padding:\s*1px 8px/, 'segmentpadding er 1/8 (§7.1)');
+  assert.match(lineRule, /border-radius:\s*var\(--radius-xs\)/, 'radius 8');
+  assert.match(lineRule, /font-size:\s*var\(--aura-text-12\)/, '12 px fra typeskalaen');
 });
 
 test('WCAG: tabellariske cifre, 24px-klikmål, dæmpet kontrastfarve og feltombrydning', () => {

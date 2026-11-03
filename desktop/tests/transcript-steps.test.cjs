@@ -139,29 +139,29 @@ test('detailed: alle trinrækker vises og opdateres live med verb, glyf og udfal
   assert.equal(run.querySelector('.step-content .step-target').textContent, 'npm test -- composer', 'O2: det fulde mål står læsbart i den foldede række');
 });
 
-test('compact og standard: én live-linje — standard med det aktuelle trin, compact kun Arbejder', async () => {
+test('compact og standard: én live-linje — P1: rækken bærer det aktuelle trin, ordet "Arbejder" står kun i live-indikatoren', async () => {
   const compact = makeWorld(['transcript-compact']);
   compact.view.modelProgress = { phase: 'reasoning', reasoningChars: 5432 };
   await render(compact);
   let line = rows(compact);
   assert.equal(line.length, 1, 'compact viser én live-linje');
   assert.match(line[0].className, /step-live/);
-  assert.equal(line[0].querySelector('.step-verb').textContent, 'Arbejder', 'compact viser kun Arbejder + uret (§6.5)');
+  assert.equal(line[0].querySelector('.step-verb').textContent, 'Forbereder svaret', 'compact viser den offentlige fase — ikke et andet Arbejder (P1)');
   assert.equal(line[0].querySelectorAll('.step-detail').length, 0);
 
   const standard = makeWorld(['transcript-standard']);
   await emit(standard, { id: 't1', kind: 'tool', tool: 'bash', title: 'Kører et arbejdstrin', target: 'npm test -- composer', status: 'running', started: 3200, at: 3200 });
   line = rows(standard);
   assert.equal(line.length, 1, 'standard viser én live-linje');
-  assert.equal(line[0].querySelector('.step-verb').textContent, 'Arbejder');
-  assert.equal(line[0].querySelector('.step-detail').textContent, 'Kører · npm test -- composer', 'standard viser det aktuelle trin');
+  assert.equal(line[0].querySelector('.step-verb').textContent, 'Kører', 'P1: verbet er trinets eget (Arbejder står i §6.4-båndet)');
+  assert.equal(line[0].querySelector('.step-detail').textContent, 'npm test -- composer', 'standard viser det aktuelle trins mål');
 
   const standardPhase = makeWorld(['transcript-standard']);
   standardPhase.view.modelProgress = { phase: 'reasoning', reasoningChars: 1234 };
   await render(standardPhase);
   const phase = rows(standardPhase)[0];
-  assert.equal(phase.querySelector('.step-verb').textContent, 'Arbejder');
-  assert.equal(phase.querySelector('.step-detail').textContent, 'Forbereder svaret · 1.234 tegn');
+  assert.equal(phase.querySelector('.step-verb').textContent, 'Forbereder svaret');
+  assert.equal(phase.querySelector('.step-detail').textContent, '1.234 tegn');
 });
 
 test('færdig tur folder til én grupperække på alle tre niveauer', async () => {

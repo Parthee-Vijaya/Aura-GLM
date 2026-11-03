@@ -137,7 +137,17 @@
   function showLayer() {
     const layer = options.layer, prompt = options.prompt;
     const anchor = currentLayer();
-    if (anchor?.open) anchor.open({ layer, invoker: prompt, width: () => Math.min(420, Math.max(220, (root.innerWidth || 1024) - 16)), gap: 8 });
+    // P1 (audit §2.6): bredden følger COMPOSEREN — det kort, feltet står i —
+    // ikke vinduet. Popuppen rækker altså aldrig over i topbjælken eller
+    // arbejdsfladen, og lange navne afkortes med ellipsis i stedet for at
+    // scrolle vandret. topLimit holder laget under topbjælkens titel: er der
+    // ikke plads over feltet, folder laget ned i stedet for at dække den.
+    const card = prompt?.closest?.('.composer') || prompt;
+    if (anchor?.open) anchor.open({
+      layer, invoker: prompt, gap: 8,
+      width: () => { const rect = card?.getBoundingClientRect?.(); return Math.min(420, Math.max(220, rect?.width || 320)); },
+      topLimit: () => { const bar = root.document?.querySelector?.('.workspace-bar'); const rect = bar?.getBoundingClientRect?.(); return rect?.bottom ? rect.bottom + 4 : 0; }
+    });
     else layer.showPopover?.();
   }
 

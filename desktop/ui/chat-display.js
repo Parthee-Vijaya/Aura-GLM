@@ -34,7 +34,10 @@
     if (p && silence < 15 && p.phase === 'reasoning') return { quiet: false, text: 'Der kommer fortsat signaler fra modellen. Intet nyt svar eller filindhold endnu.' };
     if (p && silence < 15 && p.phase === 'tool') return { quiet: false, text: p.draft ? (p.draft.hidden ? 'Indhold med mulige nøgler skjules.' : `${p.draft.lines} linjer modtaget · ikke gemt endnu`) : 'Handlingen vises, når modellen har sendt dens oplysninger.' };
     const received = view.receivedChars ? `${view.receivedChars.toLocaleString('da-DK')} tegn modtaget` : '';
-    return { quiet: silence >= 15, text: silence >= 15 ? `Ingen nye signaler i ${silence} s. Du kan vente eller stoppe.` : received || 'Venter på svar fra AI’en.' };
+    // P1 (audit §2.3): ingen "Venter på svar fra AI'en."-fyldtektst — det var
+    // et tredje signal ved siden af trinrækken og live-indikatoren. Linjen
+    // står kun, når der er en reel nuance at vise (tegn, tavshed).
+    return { quiet: silence >= 15, text: silence >= 15 ? `Ingen nye signaler i ${silence} s. Du kan vente eller stoppe.` : received };
   }
   // Presentation only: never infer a test result, business milestone or permission
   // from a command or from the model's private reasoning. Exact data stays available

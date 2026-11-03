@@ -62,7 +62,7 @@ const anyRunning = () => running || [...views.values()].some(v => v.running);
 const chatTitle = id => window.chats?.projects().find(project => project.root === current?.root)?.chats?.find(chat => chat.id === id)?.title || 'Ny samtale';
 // ⓘ: en kort forklaring, der åbnes med et klik og lukkes med Escape eller et klik udenfor. Teksten står i knappens data-info.
 // Boblen flyttes ind i den åbne dialog, så den ikke bliver utilgængelig bag en modal dialog.
-const infoPop = node('div', '', 'info-pop'); infoPop.id = 'info-pop'; infoPop.popover = 'auto'; infoPop.setAttribute('role', 'dialog'); infoPop.tabIndex = -1;
+const infoPop = node('div', '', 'info-pop menu-material'); infoPop.id = 'info-pop'; infoPop.popover = 'auto'; infoPop.setAttribute('role', 'dialog'); infoPop.tabIndex = -1;
 let infoSource = null, infoClosed = { at: 0, source: null };
 function info(label, text) { const button = node('button', 'i', 'info'); button.type = 'button'; button.setAttribute('aria-label', `Mere om ${label}`); button.setAttribute('aria-expanded', 'false'); button.dataset.info = text; return button; }
 function showInfo(button) {
@@ -1362,7 +1362,9 @@ function renderStatus() {
   window.liveWork?.render();
   window.previewWorking?.render();
   const progress = window.ChatDisplay.progress(v);
-  $('#agent-progress').textContent = progress.text; $('#agent-progress').hidden = waiting;
+  // P1: nuance-linjen står kun med indhold — aldrig som fyld ved siden af
+  // live-indikatorens ene "Arbejder · 12 s".
+  $('#agent-progress').textContent = progress.text; $('#agent-progress').hidden = waiting || progress.text === '';
   $('#agent-activity').classList.toggle('is-quiet', progress.quiet && !waiting);
   window.feedbackLayout?.update({ running: v.running, waitingTarget: waiting ? v.waitingFor[0].element : null });
   $('#chat-form').setAttribute('aria-busy', String(v.running));

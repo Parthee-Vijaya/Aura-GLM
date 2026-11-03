@@ -147,7 +147,10 @@ details.disclosure.work-progress-card > summary::after { transform: none; }
 #composer-mode[data-mode="chat"]::before, #composer-mode[data-mode="plan"]::before, #composer-mode[data-mode="free"]::before, #composer-mode[data-mode="build"]::before { content: "◌"; }
 #composer-mode[data-mode="plan"]::before { content: "≡"; }
 #composer-mode[data-mode="free"]::before, #composer-mode[data-mode="build"]::before { content: "◇"; }
-#composer-mode::before { color: var(--aura-accent); margin-right: 4px; }
+/* P1 (audit §2.5): tekstglyfferne bor i én fast 16 px-boks med samme
+   font-size/line-height overalt — samme grundlinje i chip, topbjælke og
+   indstillingsmenu, uanset font. */
+#composer-mode::before { display: inline-grid; place-items: center; width: 16px; height: 16px; font-size: 13px; line-height: 1; color: var(--aura-accent); margin-right: 6px; }
 
 /* ── .permission-pill — tilladelses-pillen i bundrækken (§5.3) ──
    Et ærligt resumé (R1), 28 px høj; YOLO-tonen bærer den målte læsbare
@@ -201,7 +204,9 @@ details.disclosure.step[open] > summary { margin-bottom: 0; color: var(--aura-in
 details.disclosure.step[open] { padding-bottom: 0; }
 .step-text { flex: 1; min-width: 0; display: flex; align-items: baseline; overflow: hidden; white-space: nowrap; }
 .step-verb { flex: none; font-weight: 500; }
-.step-sep { flex: none; }
+/* P1 (audit §2.2): flex folder mellemrummene omkring · væk — adskilleren
+   bærer sit eget luftrum, så rækken læser "Læser · skolemælk.txt". */
+.step-sep { flex: none; margin-inline: 4px; }
 .step-detail { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .step-meta { flex: none; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; line-height: 16px; font-variant-numeric: tabular-nums; color: var(--aura-ink-muted); }
 .step-mark { font-size: 12px; }
@@ -262,7 +267,7 @@ details.disclosure.step.step-group[open] > summary .step-glyph::after { opacity:
 .workspace-calm #agent-activity { display: flex; flex-wrap: wrap; align-items: center; align-content: center; gap: 4px 10px; min-height: 30px; margin: 0 14px; padding: 5px 3px 7px; border: 0; background: none; color: var(--aura-accent-ink); font-size: 12px; line-height: 22px; font-variant-numeric: tabular-nums; }
 .workspace-calm #agent-activity[data-sep="on"] { border-top: 0.5px solid var(--aura-border); margin-top: 4px; }
 .workspace-calm #agent-activity.is-waiting { color: var(--aura-warning-ink); background: none; font-weight: 400; }
-.workspace-calm #agent-activity .activity-spinner { display: inline; width: auto; height: auto; margin: 0; border: 0; background: none; animation: none; opacity: 1; flex: none; color: inherit; font-size: 13px; line-height: 1; }
+.workspace-calm #agent-activity .activity-spinner { display: inline-grid; place-items: center; width: 16px; height: 16px; margin: 0; border: 0; background: none; animation: none; opacity: 1; flex: none; color: inherit; font-size: 13px; line-height: 1; }
 .workspace-calm #agent-activity .activity-spinner::before { content: '≋'; }
 .workspace-calm #agent-activity.is-waiting .activity-spinner::before { content: '●'; }
 .workspace-calm #agent-activity-text { min-width: 0; flex: 1; color: var(--aura-accent-ink); font-weight: var(--aura-font-weight-medium); }
@@ -291,9 +296,37 @@ details.disclosure.step.step-group[open] > summary .step-glyph::after { opacity:
 .topbar-mode[data-mode="chat"]::before, .topbar-mode[data-mode="plan"]::before, .topbar-mode[data-mode="free"]::before, .topbar-mode[data-mode="build"]::before { content: "◌"; }
 .topbar-mode[data-mode="plan"]::before { content: "≡"; }
 .topbar-mode[data-mode="free"]::before, .topbar-mode[data-mode="build"]::before { content: "◇"; }
-.topbar-mode::before { color: var(--aura-accent); }
+/* Samme faste 16 px-glyfboks som composer-chippen (P1 §2.5). */
+.topbar-mode::before { display: inline-grid; place-items: center; width: 16px; height: 16px; font-size: 13px; line-height: 1; color: var(--aura-accent); }
 .workspace-calm #surface-toggle { flex: none; min-width: 30px; padding: 4px 8px; font-size: 15px; line-height: 1; }
 @media (max-width: 700px) { .topbar-mode { display: none; } .workspace-calm .workspace-bar h1 .workspace-crumb { max-width: 30%; } }
+
+/* ── Indstillingsmenuens ikonkolonne (P1, audit §2.5) ──
+   #settings-menu bærer .menu-material; ikonerne — både svg'erne og
+   Datakontrol-skjoldet — står i én fast 16 px-boks, så tekst og ikoner
+   flugter på tværs af rækkerne (skjoldet stod ~3 px til venstre). */
+#settings-menu button > span { display: grid; place-items: center; width: 16px; flex: none; }
+#settings-menu button > span svg { width: 16px; height: 16px; }
+#settings-menu .privacy-entry .privacy-shield { width: 16px; height: 16px; }
+
+/* ── Container queries på samtalepanelet (P1, audit §3) ──
+   Composeren kender sin egen bredde: panelet kan trækkes (og zoomes) uden,
+   at vinduets mediabrek kanter afgør layoutet. Under 480 px: arbejdsmåde-
+   chippen i AKTIV fase er skjult (B3 — topbjælken har den), tilladelsespillen
+   er et 28 px ikon, og værktøjslinjens gap går op på 8 px (§5.2). Heltefasen
+   beholder sin chip — dér er den eneste vælger. */
+#chat-panel { container: chat / inline-size; }
+@container chat (width < 480px) {
+  #chat-panel:not([data-phase="hero"]) #composer-mode { display: none; }
+  #permission-pill { width: 28px; height: 28px; padding: 0; gap: 0; justify-content: center; }
+  /* Etiketten fjernes visuelt men forbliver i tilgængelighedstræet som
+     pillens navn (wcag-mønsteret fra .visually-hidden) — et 28 px ikon uden
+     navn er ikke en kontrol. */
+  #permission-pill #permission-pill-label, #permission-pill .hero-chip-caret { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  /* #chat-panel-scopet slår .workspace-calm .composer-toolbar (0,2,0) —
+     panelets bredde, ikke vinduets, styrer gap'et (§5.2: 8 px under 560 px). */
+  #chat-panel .composer-toolbar { gap: 8px; }
+}
 
 /* ── Brugerbobler (§6.2) ──
    Højrestillet med maks. 70% af kolonnen (ét tal — Codex' nit), padding

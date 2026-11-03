@@ -3,7 +3,10 @@ const assert = require('node:assert/strict');
 const { progress, phase, activityEntry, activitySummary } = require('../ui/chat-display.js');
 test('status skelner mellem svar, tavshed og brugerens godkendelse uden at opfinde tokens', () => {
   const v = { runStartedAt: 1000, lastSignalAt: 1000, receivedChars: 0, waitingFor: [] };
-  assert.match(progress(v, 1100).text, /Venter på svar/);
+  // P1 (audit §2.3): ingen "Venter på svar fra AI'en."-fyldtektst — den var et
+  // tredje signal ved siden af trinrækken og live-indikatoren. Linjen står
+  // først, når der er en reel nuance (tegn modtaget, tavshed).
+  assert.equal(progress(v, 1100).text, '');
   assert.deepEqual(progress(v, 17000), { quiet: true, text: 'Ingen nye signaler i 16 s. Du kan vente eller stoppe.' });
   v.lastSignalAt = 17000; v.receivedChars = 200;
   assert.deepEqual(progress(v, 18000), { quiet: false, text: '200 tegn modtaget' });

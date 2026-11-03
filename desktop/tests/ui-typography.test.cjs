@@ -224,15 +224,17 @@ test('kontrast: de løftede 11-12 px-tekster holder mindst 4,5:1 i begge temaer'
     }
   }
   // Faste værdier, der ikke kommer fra aura-tokens (styles.css' mørke blok og
-  // status-farverne på .chat-meta): målt med deres konkrete tal.
+  // status-farverne på .chat-meta): målt med deres konkrete tal. P1: den gamle
+  // navy-palet (#233043, #e0b34d …) er udskiftet med tokens — parrene er
+  // målt igen på de nye flader (P1-rapporten).
   const fixed = [
-    [[190, 192, 196], [35, 48, 67], 7.3, '.diff-stat-badge mørk: --aura-ink-secondary på #233043'],
+    [[190, 192, 196], [38, 38, 40], 8.3, '.diff-stat-badge mørk (P1): --aura-ink-secondary på --aura-bg-tint'],
     [[138, 83, 0], [249, 250, 251], 6.0, '.chat-meta.is-waiting (lys): #8a5300 på sidepanelet'],
-    [[224, 179, 77], [27, 27, 28], 8.8, '.chat-meta.is-waiting (mørk): #e0b34d på sidepanelet'],
+    [[220, 160, 60], [27, 27, 28], 7.5, '.chat-meta.is-waiting (mørk, P1): --aura-warning-ink på sidepanelet'],
     [[21, 21, 23], [238, 242, 247], 16.2, '.change-tag (lys): --aura-ink på #eef2f7'],
-    [[196, 210, 224], [35, 48, 67], 8.7, '.change-tag (mørk): #c4d2e0 på #233043'],
+    [[238, 238, 240], [38, 38, 40], 13.0, '.change-tag (mørk, P1): --aura-ink på --aura-bg-tint'],
     [[29, 107, 67], [227, 244, 234], 5.6, '.change-tag.change-ny (lys)'],
-    [[110, 207, 143], [29, 58, 42], 6.5, '.change-tag.change-ny (mørk)'],
+    [[72, 180, 120], [22, 48, 36], 5.5, '.change-tag.change-ny (mørk, P1): --aura-success på --aura-success-subtle'],
     [[163, 40, 42], [251, 233, 233], 6.2, '.change-tag.change-slettet (lys og mørk)']
   ];
   for (const [fg, bg, expected, label] of fixed) {

@@ -55,15 +55,21 @@
       : options.align === 'center' ? anchor.left + anchor.width / 2 - width / 2
       : anchor.left;
     left = Math.min(Math.max(margin, left), Math.max(margin, view.width - width - margin));
+    // P1: en nedre grænse for lagets øverste kant (options.topLimit, tal eller
+    // funktion). Popuppen over composeren må aldrig dække topbjælkens titel:
+    // grænsen er bjælkens bund (fx .workspace-bar) — og der er ikke plads
+    // deroppe, folder laget i stedet ned under ankeret.
+    const limitRaw = typeof options.topLimit === 'function' ? number(options.topLimit(), 0) : number(options.topLimit, 0);
+    const topLimit = limitRaw > 0 ? limitRaw : margin;
     // Vertical: 'above' (default) or 'below' preference, flipping to the
     // other side when there is no room; a layer that fits nowhere keeps the
     // viewport margin and lets its own overflow handle the rest.
     const above = anchor.top - height - gap, below = anchor.bottom + gap;
     let top;
     if (options.place === 'below') top = below + height <= view.height - margin ? below : above;
-    else if (options.place === 'above') top = above >= margin ? above : below;
-    else top = above >= margin ? above : (below + height <= view.height - margin ? below : Math.min(Math.max(margin, above), below));
-    top = Math.min(Math.max(margin, top), Math.max(margin, view.height - height - margin));
+    else if (options.place === 'above') top = above >= topLimit ? above : below;
+    else top = above >= topLimit ? above : (below + height <= view.height - margin ? below : Math.min(Math.max(topLimit, above), below));
+    top = Math.min(Math.max(topLimit, top), Math.max(topLimit, view.height - height - margin));
     layer.style.left = `${Math.round(left)}px`;
     layer.style.top = `${Math.round(top)}px`;
   }

@@ -368,7 +368,10 @@
     settingsDialog.addEventListener('cancel', event => { event.preventDefault(); closeDialog(settingsDialog); });
     sharingDialog.addEventListener('cancel', event => { event.preventDefault(); if (allowedDecisions(reviewing).includes('cancel')) void decide('cancel'); else if (!allowedDecisions(reviewing).length) closeReview(); });
     document.body.append(settingsDialog, sharingDialog);
-    for (const [anchor, id, placement] of [[get('connections-button'), 'privacy-settings-button', 'after'], [get('advanced-model-context'), 'privacy-model-button', 'before'], [get('context-status'), 'privacy-gate-button', 'after']]) {
+    // P1 (§7.1): skjoldet er statuslinjens FØRSTE segment — 'before' sætter
+    // knappen foran forbrugslinjen i den centrerede række (én række, ikke
+    // en egen venstrestillet linje). De andre to ankere er uændrede.
+    for (const [anchor, id, placement] of [[get('connections-button'), 'privacy-settings-button', 'after'], [get('advanced-model-context'), 'privacy-model-button', 'before'], [get('context-status'), 'privacy-gate-button', 'before']]) {
       if (!anchor) continue; const entry = button(t('Datakontrol og arbejdsform', 'Data control and work mode'), open, 'text-button privacy-entry'); entry.id = id; entry.setAttribute('aria-haspopup', 'dialog'); entry.setAttribute('aria-controls', settingsDialog.id); anchor[placement](entry);
     }
     statusLine = make('p', '', 'privacy-status'); statusLine.id = 'privacy-gate-status'; statusLine.setAttribute('role', 'status'); statusLine.setAttribute('data-help', 'essential'); statusLine.hidden = true; get('chat-form')?.before(statusLine);

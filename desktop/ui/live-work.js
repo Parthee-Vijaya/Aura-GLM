@@ -143,25 +143,23 @@
     summary.setAttribute('aria-label', phase.status === 'waiting' ? `Venter: ${phase.title} ${phase.detail}` : `${phase.title}${phase.detail ? ` ${phase.detail}` : ''}`);
     return summary;
   }
-  // Enkelt live-linje (compact/standard, §6.5): "Arbejder · {aktuelt trin}" med
-  // uret til højre; indholdet bag klik er det aktuelle trins tekniske detaljer.
-  // Compact viser kun "Arbejder · 12 s" — undtagen ventetilstanden, der er en
-  // altid-synlig tilstand (§6.3) og derfor står frem på alle niveauer.
+  // Enkelt live-linje (compact/standard, §6.5 → P1): P1 samler "Arbejder" til
+  // ÉT signal — live-indikatoren under samtalen (app.js §6.4) ejer ordet og
+  // uret. Rækken her bærer det aktuelle trin (verb + glyf + mål) eller den
+  // offentlige fase; compact viser kun verbet. Ventetilstanden er en
+  // altid-synlig tilstand (§6.3) og står derfor frem på alle niveauer.
   function liveRow(v, run) {
     const lvl = level(document);
     const tools = [...run.entries.values()].filter(entry => entry.kind === 'tool');
     const current = [...tools].reverse().find(entry => entry.status === 'running') || tools.at(-1) || null;
     const phase = phaseRow(v, run);
-    // Ventetilstanden er en altid-synlig tilstand (§6.3): verbet skifter fra
-    // "Arbejder" til "Venter på dit valg" på alle niveauer.
     const waiting = Boolean(v.waitingFor?.length);
-    const detail = waiting ? v.waitingFor[0].title
-      : lvl === 'compact' ? ''
-      : current ? `${VERBS[current.tool] || 'Udfører'}${current.target ? ` · ${current.target}` : phase?.draft ? ` · ${phase.draft.file}` : ''}`
-      : phase ? `${phase.title}${phase.detail ? ` · ${phase.detail}` : ''}`
-      : '';
-    const details = node('details', undefined, `disclosure step step-live status-${waiting ? 'waiting' : 'running'}`);
-    const summary = phaseLine({ title: waiting ? 'Venter på dit valg' : 'Arbejder', detail, glyph: waiting ? '●' : '✦', status: waiting ? 'waiting' : 'running' }, run, v);
+    const head = waiting ? { title: 'Venter på dit valg', detail: v.waitingFor[0].title, glyph: '●', status: 'waiting' }
+      : current ? { title: VERBS[current.tool] || 'Udfører', detail: lvl === 'compact' ? '' : current.target || (phase?.draft ? phase.draft.file : ''), glyph: GLYPHS[current.tool] || '▤', status: 'running' }
+      : phase ? { ...phase, detail: lvl === 'compact' ? '' : phase.detail, status: 'running' }
+      : { title: 'Forbereder svaret', detail: '', glyph: '✦', status: 'running' };
+    const details = node('details', undefined, `disclosure step step-live status-${head.status}`);
+    const summary = phaseLine(head, run, v);
     details.append(summary, contentFor(current || {}, v));
     const all = node('button', 'Se hele aktiviteten', 'text-button step-all'); all.type = 'button';
     all.onclick = () => window.workspace.show('activity', { focus: true });
@@ -188,7 +186,9 @@
     // Færdig tur → ÉN grupperække (§6.3): "▸ 6 trin · 3 filer læst · 1 rettet · 14 s".
     // Igangværende tur → alle rækker live (detailed) eller én live-linje (compact/standard).
     const mode = finished ? 'group' : lvl === 'detailed' ? 'rows' : 'live';
-    const phase = finished ? null : phaseRow(v, run) || { title: window.ChatDisplay.phase(v) || v.statusDetail || 'AI’en arbejder', detail: '', glyph: '✦', status: 'running' };
+    // P1: fallback-titlen er den ærlige offentlige fase — ikke et andet
+    // "arbejder"-signal ved siden af live-indikatoren (§6.4).
+    const phase = finished ? null : phaseRow(v, run) || { title: window.ChatDisplay.phase(v) || v.statusDetail || 'Forbereder svaret', detail: '', glyph: '✦', status: 'running' };
     const signature = JSON.stringify([mode, lvl, tools.map(entry => [entry.id, entry.status, entry.target, entry.error, entry.output?.length, entry.exit]), phase && [phase.title, phase.detail, phase.status], v.waitingFor?.length, v.modelProgress?.draft?.id]);
     if (signature !== run.signature) {
       run.signature = signature;
