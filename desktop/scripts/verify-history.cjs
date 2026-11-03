@@ -209,7 +209,7 @@ const helpers = require('./ui-test-helpers.cjs');
     const plain = path.join(root, 'Uden Git'); await fs.mkdir(path.join(plain, 'public'), { recursive: true });
     await fs.writeFile(path.join(plain, 'public/index.html'), page1.replace('<p>Tre lokaler.</p>', '<p>Tre lokaler.</p>'));
     await app.evaluate(({ dialog }, folder) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [folder] }); }, plain);
-    await page.click('#open'); await page.waitForFunction(folder => document.querySelector('#project-path').textContent === folder, plain);
+    await require('./ui-test-helpers.cjs').clickOpen(page); await page.waitForFunction(folder => document.querySelector('#project-path').textContent === folder, plain);
     await helpers.taskOptions(page); await page.selectOption('#connection-select', connection); await page.locator('#model-shortlist button').first().click();
     await helpers.selectMode(page, 'free');
     target = plain;

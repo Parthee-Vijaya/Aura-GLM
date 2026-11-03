@@ -18,12 +18,20 @@ const http = require('node:http');
   const errors = [];
   async function launch(extra = {}) {
     app = await electron.launch({ executablePath: require('electron'), args: [path.join(__dirname, '..'), '--user-data-dir=' + path.join(root, 'appdata')], env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined, ...extra } });
-    const page = await app.firstWindow(); await require('./ui-test-helpers.cjs').skipIntroduction(page); page.on('pageerror', error => errors.push(error.message));
-    await require('./ui-test-helpers.cjs').toOnboarding(page); await page.waitForSelector('#onboarding'); await page.waitForFunction(() => !document.querySelector('#new').disabled);
-    assert.equal(await page.isVisible('#setup'), false);
-    assert.equal(await page.locator('#design-options').evaluate(el => el.open), false);
-    assert.equal(await page.locator('#project-options').evaluate(el => el.open), false);
-    await require('./ui-test-helpers.cjs').openSetup(page);
+    const page = await app.firstWindow(); page.on('pageerror', error => errors.push(error.message));
+    await page.locator('#create').waitFor({ state: 'attached' });
+    await page.waitForFunction(() => !document.querySelector('#create').disabled && !document.querySelector('#new').disabled);
+    // Fuldvinduesfladen: sidepanelindgangen til opsætningen hører til
+    // arbejdsfladen. Ved første start går den guidede indgang gennem
+    // introduktionens byggesti; ved genstart genåbner det seneste projekt,
+    // og "Gennemgå opsætningen" tages fra sidepanelet.
+    if (await page.locator('#welcome-dialog').evaluate(el => el.open)) {
+      await page.click('#path-app'); await page.click('#welcome-build');
+      await page.waitForSelector('#setup:not([hidden])');
+    } else {
+      await require('./ui-test-helpers.cjs').openSetup(page);
+    }
+    await require('./ui-test-helpers.cjs').continuePastProfileStep(page);
     await page.click('#setup-advanced');
     await page.waitForFunction(() => !document.querySelector('#setup-git-refresh').disabled);
     await page.click('#setup-back');
@@ -35,16 +43,19 @@ const http = require('node:http');
     assert.equal(await page.isDisabled('#setup-continue'), true);
     assert.equal(requests, 0);
     await page.screenshot({ path: path.join(root, 'opstart.png'), fullPage: true });
-    // Repeat-opsætningen genåbner AI-forbindelser efter "Vælg senere"; dialogen
-    // lukkes, så prøven står ved projektopstarten (godkendt forløb).
+    // Guidet "Vælg senere" afslutter ved idéfladen; repeat-indgangen ligger i
+    // arbejdsfladens panel, så idéen oprettes først — derefter prøves
+    // repeat-opsætningen, og kladden i skrivefeltet skal overleve rundturen.
     await page.click('#setup-local');
-    await page.waitForSelector('#connections-dialog[open]'); await page.click('[data-close="connections-dialog"]');
-    await page.waitForSelector('#create-form');
+    await page.waitForSelector('#setup', { state: 'hidden' });
+    await page.waitForSelector('#onboarding:not([hidden])');
     await page.fill('#name', 'Min kladde'); await page.fill('#purpose', 'Bevar denne idé.');
+    await page.click('#create'); await page.waitForSelector('#workspace:not([hidden])');
+    await page.fill('#prompt', 'Min kladde skal bevares.');
     await require('./ui-test-helpers.cjs').openSetup(page); await page.click('#setup-local');
     await page.waitForSelector('#connections-dialog[open]'); await page.click('[data-close="connections-dialog"]');
     await page.waitForFunction(() => !document.querySelector('#connections-dialog').open);
-    assert.equal(await page.inputValue('#name'), 'Min kladde');
+    assert.equal(await page.inputValue('#prompt'), 'Min kladde skal bevares.', 'repeat-opsætningen bevarer arbejdsfladens kladde');
     await require('./ui-test-helpers.cjs').openSetup(page); await page.click('#setup-add-provider');
     assert.equal(await page.isVisible('#setup-choice'),false);
     assert.equal(await page.locator('#connection-advanced').evaluate(el=>el.open),false);
@@ -106,7 +117,7 @@ const http = require('node:http');
     assert.equal(requests, count);
     await page.click('#setup-local');
     await page.waitForSelector('#connections-dialog[open]'); await page.click('[data-close="connections-dialog"]');
-    await page.waitForSelector('#create-form');
+    await page.waitForSelector('#workspace:not([hidden])');
     await app.evaluate(({ dialog }, project) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [project] }); }, project);
     await page.click('#open'); await page.waitForSelector('#workspace:not([hidden])');
     assert.equal(await page.inputValue('#connection-select'), ''); assert.equal(requests, count);

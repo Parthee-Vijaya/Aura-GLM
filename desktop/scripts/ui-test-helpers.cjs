@@ -22,7 +22,20 @@ async function menuClick(page, selector) {
     if (!await page.locator('#features-advanced').evaluate(el => el.open)) await page.click('#features-advanced > summary');
     await page.click(selector); return;
   }
-  if (!await page.locator(selector).isVisible()) await page.click(toggles[selector]);
+  // Fuldvinduesfladen skjuler sidepanelet (og dermed dets popover), mens
+  // onboardingfladerne står fremme. Dialog-åbnerne i panelet bruger her
+  // appens egen interne vej — leaveSetup klikker selv #connections-button på
+  // netop denne måde — og åbner dialogen, som ligger i top-laget og er fuldt
+  // synlig; alt inde i dialogen og opsætningen klikkes fortsat som rigtig
+  // brugerflade.
+  const dialogOpeners = new Set(['#connections-button', '#features-button', '#support-button']);
+  if (!await page.locator(selector).isVisible()) {
+    if (dialogOpeners.has(selector)) { await page.evaluate(name => document.querySelector(name)?.click(), selector); return; }
+    const toggle = toggles[selector];
+    if (!toggle) throw new Error(`Panelknappen ${selector} er hverken synlig eller har en åbner.`);
+    if (!await page.locator(toggle).isVisible()) await page.evaluate(name => document.querySelector(name)?.click(), toggle);
+    else await page.click(toggle);
+  }
   await page.click(selector);
   if (selector === '#attach-preview' && !await page.locator('#server-manual').evaluate(el => el.open)) await page.click('#server-manual > summary');
 }
@@ -61,9 +74,17 @@ async function chooseLocation(app, page, folder) {
 // automatisk en Git-version og må derfor ikke bruges i prøver uden Git-skrivninger.
 async function openExistingProject(app, page, folder) {
   await app.evaluate(({ dialog }, folder) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [folder] }); }, folder);
-  await page.click('#open');
+  await clickOpen(page);
   await page.waitForSelector('#workspace:not([hidden])');
   await page.waitForFunction(folder => document.querySelector('#project-path').textContent === folder, await require('node:fs/promises').realpath(folder));
+}
+// Fuldvinduesfladen: #open ligger i sidepanelet, som er skjult, mens
+// onboardingfladerne står fremme. Er knappen ikke synlig (idéfladen uden et
+// åbent projekt), bruges appens egen interne klikvej — projektåbningen selv
+// (vælgerdialog, indlæsning, forhåndsvisning) er fortsat rigtig brugerflade.
+async function clickOpen(page) {
+  if (await page.locator('#open').isVisible()) await page.click('#open');
+  else await page.evaluate(() => document.querySelector('#open')?.click());
 }
 // Releaseprøverne må ikke gemme versioner, heller ikke via appens baggrundsarbejde.
 // Klassen bruges af de allerede oprettede Workbench-instanser; blokeringen ligger
@@ -116,13 +137,17 @@ async function openSetup(page) {
   await continuePastProfileStep(page);
 }
 // Profil-trinnet vises ved første guidede introduktion og ved tom profil
-// (godkendt profil-gating). Fortsæt gemmer felterne og fører til valget af
-// adgang, så prøver, der ikke tester selve trinnet, kommer sikkert forbi det.
+// (godkendt profil-gating), og Detaljeniveauet (D6) følger umiddelbart efter:
+// Fortsæt gemmer profilfelterne og fører til detaljetrinnet, hvis Fortsæt
+// gemmer detaljeniveauet og fører til valget af adgang. Prøver, der ikke
+// tester selve trinnene, kommer sikkert forbi begge.
 async function continuePastProfileStep(page) {
   if (await page.locator('#setup-profile').isVisible()) {
     await page.click('#profile-continue');
-    await page.waitForSelector('#setup-choice:not([hidden])');
+    await page.waitForSelector('#setup-detail:not([hidden])');
+    await page.click('#detail-continue');
   }
+  await page.waitForSelector('#setup-choice:not([hidden])');
 }
 // En forbindelse tilføjes ad samme vej som en bruger: Gennemgå opsætningen ›
 // Jeg har en adgangsnøgle › udbyderens kort. Svarer serveren med modeller,
@@ -163,4 +188,4 @@ async function firstVersion(page, projectDir, title) {
   await fs.writeFile(index, (await fs.readFile(index, 'utf8')).replace('HER BEGYNDER DIN IDÉ', 'FØRSTE VERSION'));
   await page.frameLocator('#preview').locator('h1').filter({ hasText: title }).waitFor({ timeout: 15000 });
 }
-module.exports = { enterCredential, firstVersion, openSetup, addConnection, enableSharing, skipIntroduction, toOnboarding, menuClick, taskOptions, closeTaskOptions, selectMode, previewOptions, projectOptions, isolateDocuments, chooseLocation, openExistingProject, forbidGitWrites, assertNoGitWrites, continuePastProfileStep };
+module.exports = { enterCredential, firstVersion, openSetup, addConnection, enableSharing, skipIntroduction, toOnboarding, menuClick, taskOptions, closeTaskOptions, selectMode, previewOptions, projectOptions, isolateDocuments, chooseLocation, openExistingProject, clickOpen, forbidGitWrites, assertNoGitWrites, continuePastProfileStep };

@@ -44,7 +44,7 @@ const { run } = require('../core/git.cjs');
   // fortsætte ved projektopstarten.
   await page.waitForSelector('#connections-dialog[open]');await page.click('[data-close="connections-dialog"]');
   await app.evaluate(({dialog},project)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[project]});},project);
-  await page.click('#open');await page.waitForSelector('#workspace:not([hidden])');await require('./ui-test-helpers.cjs').menuClick(page, '#git-button');await page.click('#git-init');
+  await require('./ui-test-helpers.cjs').clickOpen(page);await page.waitForSelector('#workspace:not([hidden])');await require('./ui-test-helpers.cjs').menuClick(page, '#git-button');await page.click('#git-init');
   await page.waitForFunction(()=>document.querySelector('#git-init').hidden&&!document.querySelector('#git-init').disabled);
   await run(project,['config','user.name','Testbruger']);await run(project,['config','user.email','test@example.invalid']);
   await page.click('#tab-preview');await require('./ui-test-helpers.cjs').menuClick(page, '#git-button');await page.fill('#git-note','Gem syntetisk testprojekt');await page.click('#git-save-all');

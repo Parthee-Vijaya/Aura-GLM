@@ -61,7 +61,7 @@ const helpers = require('./ui-test-helpers.cjs');
     await helpers.skipIntroduction(page);
     await app.evaluate(({ BrowserWindow }) => { const w = BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')); w.setSize(1480, 900); w.webContents.setBackgroundThrottling(false); w.setIgnoreMouseEvents(true); w.showInactive(); });
     await app.evaluate(({ dialog }, folder) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [folder] }); }, project);
-    await page.click('#open'); await page.waitForSelector('#workspace:not([hidden])');
+    await require('./ui-test-helpers.cjs').clickOpen(page); await page.waitForSelector('#workspace:not([hidden])');
     const selected = () => page.locator('.work-tab[aria-selected="true"]').getAttribute('data-tab');
     assert.equal(await selected(), 'preview'); passed('Forhåndsvisning er udgangspunktet');
 

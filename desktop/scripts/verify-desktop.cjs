@@ -40,22 +40,41 @@ function tinyPNG() {
   async function launch({ expectProject } = {}) {
     app = await electron.launch({executablePath, args:[path.join(root, 'desktop'), '--user-data-dir='+path.join(testRoot,'electron-data')], env:{...process.env, ELECTRON_RUN_AS_NODE: undefined}});
     await require('./ui-test-helpers.cjs').isolateDocuments(app, path.join(testRoot, 'Dokumenter'));
-    const page = await app.firstWindow(); await require('./ui-test-helpers.cjs').skipIntroduction(page);
+    const page = await app.firstWindow();
+    // Velkomstdialogen lukkes ikke blindt her: ved første start er den den
+    // guidede indgang til opsætningen (fuldvinduesfladen har intet panel).
+    await page.locator('#create').waitFor({ state: 'attached' });
+    await page.waitForFunction(() => !document.querySelector('#create').disabled && !document.querySelector('#new').disabled);
     // Det projekt, der sidst var åbent, åbnes igen ved start. Et projekt lukket med Nyt projekt gør ikke.
     if (expectProject) { await page.waitForSelector('#workspace:not([hidden])'); assert.equal(await page.locator('#project-name').textContent(), expectProject); await page.frameLocator('#preview').locator('h1').waitFor(); }
-    else { await page.waitForFunction(() => !document.querySelector('#new').disabled); await page.waitForTimeout(500); assert.equal(await page.locator('#workspace').isVisible(), false); }
-    await require('./ui-test-helpers.cjs').toOnboarding(page);
-    await page.waitForSelector('#onboarding'); await page.waitForFunction(() => !document.querySelector('#new').disabled);
-    // Opsætningen gennemgås ad de nye veje: "Tilføj forbindelse" åbner det lette
-    // flow inde i dialogen (ikke opsætningsskærmen), og "Gennemgå opsætningen"
-    // starter på "Din profil", når profilen er tom (godkendt profil-gating).
-    // "Vælg senere" fuldfører repeat-opsætningen, som genåbner AI-forbindelser;
-    // dialogen lukkes, og prøven står ved projektoprettelsen.
-    await require('./ui-test-helpers.cjs').menuClick(page, '#connections-button');
-    await page.waitForFunction(() => { const dialog = document.querySelector('#connections-dialog'); return dialog.open && !dialog.getAnimations().some(animation => animation.playState === 'running'); });
-    await page.click('#connection-add'); await page.waitForSelector('#connection-add-flow:not([hidden])');
-    await page.click('#connection-add-cancel'); await page.waitForSelector('#connections-list:not([hidden])');
-    await page.click('#connections-setup'); await page.waitForSelector('#setup:not([hidden])');
+    // Fuldvinduesfladen: onboardingfladerne viser ingen app-ramme, så
+    // opsætningens sidepanelindgang hører til arbejdsfladen. Tre ærlige
+    // indgange: første start går gennem introduktionens byggesti; en genstart
+    // med et sidste projekt tager repeat-indgangen fra panelet; en start uden
+    // begge dele opretter den første idé — den eneste vej videre på den
+    // rammeløse idéflade.
+    let guided = false;
+    if (await page.locator('#welcome-dialog').evaluate(el => el.open)) {
+      guided = true;
+      await page.click('#path-app'); await page.click('#welcome-build');
+      await page.waitForSelector('#setup:not([hidden])');
+    } else if (await page.locator('#workspace').isVisible()) {
+      // Opsætningen gennemgås ad de nye veje: "Tilføj forbindelse" åbner det lette
+      // flow inde i dialogen (ikke opsætningsskærmen), og "Gennemgå opsætningen"
+      // starter repeat-runderne fra panelet.
+      await require('./ui-test-helpers.cjs').menuClick(page, '#connections-button');
+      await page.waitForFunction(() => { const dialog = document.querySelector('#connections-dialog'); return dialog.open && !dialog.getAnimations().some(animation => animation.playState === 'running'); });
+      await page.click('#connection-add'); await page.waitForSelector('#connection-add-flow:not([hidden])');
+      await page.click('#connection-add-cancel'); await page.waitForSelector('#connections-list:not([hidden])');
+      await page.click('#connections-setup'); await page.waitForSelector('#setup:not([hidden])');
+    } else {
+      assert.equal(await page.locator('#workspace').isVisible(), false, 'et projekt lukket med Nyt projekt genåbnes ikke');
+      await page.fill('#name','Fælleshaven'); await page.fill('#purpose','Find og del aktiviteter med dine naboer.');
+      await page.click('#create'); await page.waitForSelector('#workspace:not([hidden])');
+      await require('./ui-test-helpers.cjs').menuClick(page, '#connections-button');
+      await page.waitForFunction(() => { const dialog = document.querySelector('#connections-dialog'); return dialog.open && !dialog.getAnimations().some(animation => animation.playState === 'running'); });
+      await page.click('#connections-setup'); await page.waitForSelector('#setup:not([hidden])');
+    }
     let uploaded = false;
     if (await page.locator('#setup-profile').isVisible()) {
       // Første guidede gang med en tom profil vises profil-trinnet, og felterne
@@ -81,21 +100,45 @@ function tinyPNG() {
       // content-type — som resten af appens nosniff-hærdning.
       assert.deepEqual(await page.evaluate(async () => { const answer = await fetch('avatar.png'); return [answer.status, answer.headers.get('content-type'), answer.headers.get('cache-control'), answer.headers.get('x-content-type-options')]; }), [200, 'image/png', 'no-store', 'nosniff'], 'avatar-ruten: PNG, ingen cache, nosniff');
       uploaded = true;
+      // D6 · Detaljeniveau: Fortsæt fra profilen fører gennem detaljetrinnet,
+      // før valget af adgang — prøven vælger Nøgletrin (standard) og fortsætter.
       await page.click('#profile-continue');
+      await page.waitForSelector('#setup-detail:not([hidden])');
+      await page.click('#detail-continue');
     }
     await page.waitForSelector('#setup-choice:not([hidden])');
     await page.click('#setup-local');
-    await page.waitForSelector('#connections-dialog[open]');
-    await page.click('[data-close="connections-dialog"]');
-    await page.waitForFunction(() => !document.querySelector('#connections-dialog').open);
-    await page.waitForSelector('#create-form');
+    // Guidet "Vælg senere" afslutter ved idéfladen, og den første idé oprettes —
+    // derefter er app-rammen tilbage. Repeat-runder genåbner AI-forbindelser;
+    // dialogen lukkes, og prøven står i arbejdsfladen.
+    if (guided) {
+      await page.waitForSelector('#setup', { state: 'hidden' });
+      await page.waitForSelector('#onboarding:not([hidden])');
+      await page.fill('#name','Fælleshaven'); await page.fill('#purpose','Find og del aktiviteter med dine naboer.');
+      await page.click('#create'); await page.waitForSelector('#workspace:not([hidden])');
+    } else {
+      await page.waitForSelector('#connections-dialog[open]');
+      await page.click('[data-close="connections-dialog"]');
+      await page.waitForFunction(() => !document.querySelector('#connections-dialog').open);
+      await page.waitForSelector('#workspace:not([hidden])');
+    }
     // Opsætningen er lukket, og sidepanelet er tilbage: chippen viser nu
-    // avatar-billedet fra profil-trinnet (setup-guided skjuler ellers panelet).
+    // avatar-billedet fra profil-trinnet (fuldvinduesfladen skjulte panelet,
+    // mens onboarding stod fremme).
     if (uploaded) await page.waitForSelector('#profile-chip:not([hidden]) #profile-chip-mark img');
     const identity = await app.evaluate(({app, Menu}) => ({ name: app.getName(), userData: app.getPath('userData'), labels: Menu.getApplicationMenu().items.map(item => item.label) }));
     assert.equal(identity.name, 'Aura');
     assert.equal(await fs.realpath(identity.userData), await fs.realpath(path.join(testRoot, 'electron-data')));
     assert.deepEqual(identity.labels, [require('../core/distribution.cjs').displayName, 'Rediger', 'Vis', 'Vindue']);
+    return page;
+  }
+  // Ren genstart uden opsætningsgennemløb: bruges dér, hvor prøven skal lande
+  // på idéfladen med den gemte kladde intakt (panelets indgange findes først
+  // igen, når et projekt findes).
+  async function relaunch() {
+    app = await electron.launch({executablePath, args:[path.join(root, 'desktop'), '--user-data-dir='+path.join(testRoot,'electron-data')], env:{...process.env, ELECTRON_RUN_AS_NODE: undefined}});
+    await require('./ui-test-helpers.cjs').isolateDocuments(app, path.join(testRoot, 'Dokumenter'));
+    const page = await app.firstWindow(); await require('./ui-test-helpers.cjs').skipIntroduction(page);
     return page;
   }
   async function choose(paths, canceled=false) {
@@ -119,6 +162,9 @@ function tinyPNG() {
     await page.waitForFunction(() => document.querySelector('#settings-name')?.value === 'Bo Larsen');
     assert.equal(await page.locator('#settings-dialog').evaluate(dialog => dialog.open), true, 'Din profil genåbnes med det nye navn');
     await page.click('[data-close="settings-dialog"]');
+    // Idéfladen igen — panelet skjules dér nu, så trinnets felter udfyldes i
+    // ét besøg, før kladden gemmes og prøven genstarter.
+    await page.click('#new'); await page.waitForSelector('#onboarding:not([hidden])');
     await page.fill('#name','Fælleshaven'); await page.fill('#purpose','Find og del aktiviteter med dine naboer.');
     await require('./ui-test-helpers.cjs').projectOptions(page); await page.click('#design-options > summary'); await page.fill('#links','https://example.com/design');
     await choose([reference]); await page.click('#reference'); await page.waitForSelector('#assets li');
@@ -127,10 +173,26 @@ function tinyPNG() {
     await page.fill('#design-name', 'Genbrugeligt design'); await page.click('#save-design');
     await page.waitForFunction(() => document.querySelector('#design-select').options.length === 2);
     await fs.unlink(reference); await fs.unlink(logo);
-    await app.close(); page = await launch();
+    await app.close(); page = await relaunch();
     // Kontrol: profilen genindlæses efter genstart. Temaet er i brug fra første
-    // visning, før Indstillinger åbnes, og felterne viser de gemte værdier.
+    // visning — nu uden nogen opsætningsrunde imellem. Genstarten lander på
+    // idéfladen med den gemte kladde intakt: designpakken genbruges her, og
+    // idéen oprettes, FØR panelets indgange skal bruges igen.
     assert.equal(await page.evaluate(() => document.body.dataset.workspaceTheme), PROFILE.theme, 'profilens tema sættes ved genstart');
+    await page.waitForFunction(() => document.querySelector('#design-select').options.length === 2);
+    await require('./ui-test-helpers.cjs').projectOptions(page); await page.click('#design-options > summary'); await page.selectOption('#design-select', { label: 'Genbrugeligt design · 2 filer' });
+    await page.waitForFunction(() => document.querySelectorAll('#assets li').length === 2);
+    assert.equal(await page.inputValue('#links'), 'https://example.com/design');
+    await page.fill('#name','Fælleshaven'); await page.fill('#purpose','Find og del aktiviteter med dine naboer.');
+    // Standardplaceringen står fast, når brugeren annullerer valget af en anden mappe.
+    await choose([],true); await page.click('#choose-location');
+    await page.waitForFunction(()=>!document.querySelector('#create').disabled);
+    assert.match(await page.locator('#project-location').textContent(), /Dokumenter › Aura/);
+    assert.equal(await page.locator('#onboarding').isVisible(),true);
+    await require('./ui-test-helpers.cjs').chooseLocation(app, page, testRoot); await page.click('#create');
+    await page.waitForSelector('#workspace:not([hidden])');
+    // Først nu er app-rammen tilbage, og Indstillinger kan åbnes: felterne
+    // viser de gemte værdier.
     await page.click('#settings-toggle'); await page.click('#settings-profile-button');
     await page.waitForFunction(() => document.querySelector('#settings-name')?.value === 'Bo Larsen');
     assert.deepEqual(await page.locator('#settings-icons button[aria-checked="true"]').evaluateAll(buttons => buttons.map(button => button.dataset.icon)), ['upload'], 'profilbilledet genfindes efter genstart');
@@ -151,18 +213,6 @@ function tinyPNG() {
     await page.waitForFunction(() => window.harness.profileGet().then(result => result.value.profile.appearance.fontSize === 13));
     assert.ok(Math.abs(await zoomFactor() - 1) < 0.01, 'tilbage på 13 er zoomen 100%');
     await page.click('[data-close="settings-dialog"]');
-    await page.waitForFunction(() => document.querySelector('#design-select').options.length === 2);
-    await require('./ui-test-helpers.cjs').projectOptions(page); await page.click('#design-options > summary'); await page.selectOption('#design-select', { label: 'Genbrugeligt design · 2 filer' });
-    await page.waitForFunction(() => document.querySelectorAll('#assets li').length === 2);
-    assert.equal(await page.inputValue('#links'), 'https://example.com/design');
-    await page.fill('#name','Fælleshaven'); await page.fill('#purpose','Find og del aktiviteter med dine naboer.');
-    // Standardplaceringen står fast, når brugeren annullerer valget af en anden mappe.
-    await choose([],true); await page.click('#choose-location');
-    await page.waitForFunction(()=>!document.querySelector('#create').disabled);
-    assert.match(await page.locator('#project-location').textContent(), /Dokumenter › Aura/);
-    assert.equal(await page.locator('#onboarding').isVisible(),true);
-    await require('./ui-test-helpers.cjs').chooseLocation(app, page, testRoot); await page.click('#create');
-    await page.waitForSelector('#workspace:not([hidden])');
     // Et nyt projekts første idé står som en redigerbar kladde i Byg (DESIGN.md); teksten ligger i skrivefeltet.
     assert.equal(await page.inputValue('#work-mode'), 'free');
     assert.match(await page.inputValue('#prompt'), /Find og del aktiviteter/);
@@ -229,6 +279,7 @@ function tinyPNG() {
     await page.frameLocator('#preview').locator('h1').filter({hasText:'En levende fælleshave'}).waitFor();
     await app.close(); page=await launch({ expectProject: 'Fælleshaven' });
     // Samme navn samme sted giver en ny, nummereret mappe. Det eksisterende projekt røres ikke.
+    await page.click('#new'); await page.waitForSelector('#onboarding:not([hidden])');
     await page.fill('#name','Fælleshaven');await page.fill('#purpose','Må ikke overskrive');await require('./ui-test-helpers.cjs').chooseLocation(app, page, testRoot);await page.click('#create');
     await page.waitForSelector('#workspace:not([hidden])');assert.match(await fs.readFile(publicIndex,'utf8'),/En levende fælleshave/);
     assert.match(await fs.readFile(path.join(testRoot,'projekt-faelleshaven-2','README.md'),'utf8'),/Må ikke overskrive/);

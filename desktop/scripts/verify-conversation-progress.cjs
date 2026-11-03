@@ -52,7 +52,7 @@ const { GitVersions } = require('../core/git.cjs');
     await app.evaluate(({ BrowserWindow }) => { const w = BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')); w.setSize(1480, 900); w.webContents.setBackgroundThrottling(false); w.setIgnoreMouseEvents(true); w.showInactive(); });
     await helpers.addConnection(page, { name: 'Lokal testmodel', baseURL: `http://127.0.0.1:${server.address().port}/v1` });
     await app.evaluate(({ dialog }, folder) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [folder] }); }, project);
-    await page.click('#open'); await page.waitForSelector('#workspace:not([hidden])');
+    await require('./ui-test-helpers.cjs').clickOpen(page); await page.waitForSelector('#workspace:not([hidden])');
     await page.waitForFunction(() => document.querySelector('#model-select').options.length === 2);
     await helpers.taskOptions(page); await page.locator('#model-shortlist button').first().click();
     assert.equal(await page.inputValue('#work-mode'), 'chat');

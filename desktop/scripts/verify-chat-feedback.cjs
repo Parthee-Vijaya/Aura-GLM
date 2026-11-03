@@ -40,8 +40,8 @@ const helpers = require('./ui-test-helpers.cjs');
     // Læsning af en utilgængelig mappe afvises før første besked og uden automatisk skrivning.
     await fs.chmod(project, 0o000);
     await app.evaluate(({ dialog }, folder) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [folder] }); }, project);
-    await page.click('#open'); await page.locator('#message.error').filter({ hasText: /adgang/ }).waitFor();
-    await fs.chmod(project, 0o700); await page.click('#open'); await page.waitForSelector('#workspace:not([hidden])');
+    await require('./ui-test-helpers.cjs').clickOpen(page); await page.locator('#message.error').filter({ hasText: /adgang/ }).waitFor();
+    await fs.chmod(project, 0o700); await require('./ui-test-helpers.cjs').clickOpen(page); await page.waitForSelector('#workspace:not([hidden])');
     assert.deepEqual(await fs.readdir(project), [], 'åbning af mappe må ikke oprette projektfiler');
     await page.waitForFunction(() => document.querySelector('#model-select').options.length === 2);
     await helpers.taskOptions(page); await page.locator('#model-shortlist button').first().click();

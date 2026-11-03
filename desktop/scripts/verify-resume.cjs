@@ -39,7 +39,7 @@ const http = require('node:http');
   }
   async function open(folder) {
     await app.evaluate(({ dialog }, folder) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [folder] }); }, folder);
-    await page.click('#open'); await page.locator('#project-name').filter({ hasText: path.basename(folder) }).waitFor();
+    await require('./ui-test-helpers.cjs').clickOpen(page); await page.locator('#project-name').filter({ hasText: path.basename(folder) }).waitFor();
   }
   async function draft(text) {
     await page.fill('#prompt', text); await page.locator('#draft-status').filter({ hasText: 'Kladde gemt' }).waitFor();

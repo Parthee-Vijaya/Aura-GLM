@@ -3,7 +3,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; frame-src aura-preview: http://127.0.0.1:* http://localhost:* https://127.0.0.1:* https://localhost:*; object-src 'none'; base-uri 'none'; form-action 'none'">
 <title>Aura Prime</title><link rel="icon" type="image/png" href="aura-icon.png"><link rel="apple-touch-icon" href="aura-icon.png"><link rel="stylesheet" href="aura-tokens.css"><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="onboarding-b.css"><link rel="stylesheet" href="onboarding-compact.css"><link rel="stylesheet" href="settings.css"><script src="onboarding-b.js" defer></script><script src="model-advice.js" defer></script><script src="connection-overview.js" defer></script><script src="chat-display.js"></script><script src="conversation-mode.js" defer></script>
 <script src="context-display.js" defer></script><script src="provider-brand.js" defer></script><script src="markdown.js" defer></script><link rel="stylesheet" href="chat-materials.css"><script src="chat-materials.js" defer></script><script src="history-pages.js" defer></script><script src="app-version.js" defer></script><link rel="stylesheet" href="privacy-gate.css"><script src="privacy-gate.js" defer></script><script src="connection-removal.js" defer></script><script src="run-state.js" defer></script><script src="diff-review.js" defer></script><script src="shortcuts.js" defer></script><script src="request-log-view.js" defer></script><script src="profile-icons.js" defer></script><script src="profile-save.js" defer></script><script src="profile-chip.js" defer></script><script src="composer-help.js" defer></script><script src="settings.js" defer></script><script src="app.js" defer></script><script src="workspace.js" defer></script><script src="live-work.js" defer></script><script src="plan-view.js" defer></script><script src="planning.js" defer></script><script src="approval-view.js" defer></script><script src="approvals.js" defer></script><script src="conversation-permission.js" defer></script><script src="idea-refinement.js" defer></script><script src="preview-edit.js" defer></script><script src="history.js" defer></script><script src="chats.js" defer></script><script src="history-search.js" defer></script><script src="palette.js" defer></script><script src="share-view.js" defer></script>
-<script src="hosting.js" defer></script><script src="deployment-setup.js" defer></script><script src="deployment.js" defer></script><script src="promte-preview.js" defer></script><script src="komplai-preview.js" defer></script><script src="viewport.js" defer></script><script src="server.js" defer></script><script src="project-settings.js" defer></script><script src="updates.js" defer></script><link rel="stylesheet" href="workspace-calm.css"><script src="workspace-calm.js" defer></script><link rel="stylesheet" href="idea-refinement.css"><link rel="stylesheet" href="conversation-permission.css"><link rel="stylesheet" href="preview-working.css"><script src="preview-working.js" defer></script><link rel="stylesheet" href="feedback-layout.css"><script src="feedback-layout.js" defer></script><link rel="stylesheet" href="components.css"></head>
+<script src="hosting.js" defer></script><script src="deployment-setup.js" defer></script><script src="deployment.js" defer></script><script src="promte-preview.js" defer></script><script src="komplai-preview.js" defer></script><script src="viewport.js" defer></script><script src="server.js" defer></script><script src="project-settings.js" defer></script><script src="updates.js" defer></script><link rel="stylesheet" href="workspace-calm.css"><script src="workspace-calm.js" defer></script><link rel="stylesheet" href="idea-refinement.css"><link rel="stylesheet" href="conversation-permission.css"><link rel="stylesheet" href="preview-working.css"><script src="preview-working.js" defer></script><link rel="stylesheet" href="feedback-layout.css"><script src="feedback-layout.js" defer></script><link rel="stylesheet" href="onboarding-simple.css"><link rel="stylesheet" href="components.css"></head>
 <body>
 <aside class="sidebar" id="sidebar" aria-label="Projektnavigation">
   <div class="brand"><img class="aura-logo brand-icon" src="aura-icon.png" width="36" height="36" alt="Aura Prime"><span class="brand-name"><span aria-hidden="true">Aura Prime</span><small class="app-version" data-app-version></small></span><button id="sidebar-toggle" type="button" class="sidebar-toggle" aria-expanded="true" aria-label="Skjul sidepanelet" title="Skjul sidepanelet"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="M9.5 4.5v15"/></svg></button></div>
@@ -19,13 +19,11 @@
 <div class="app-content">
 <div id="updates-notice" class="updates-notice" hidden><span id="updates-notice-text"></span><button id="updates-notice-open" class="text-button">Se opdatering</button></div>
 <header><span id="view-title">Projektopstart</span><span class="local">Projektfiler på din computer</span></header>
-<main id="setup" class="onboarding-b" aria-labelledby="setup-title" hidden>
-  <div class="setup-topbar"><button id="setup-back" class="text-button">← Tilbage</button><span class="aura-brand"><img class="aura-logo" src="aura-icon.png" width="36" height="36" alt=""><span class="brand-copy">Aura Prime<small class="app-version" data-app-version></small></span></span></div>
-  <div class="setup-heading"><p id="setup-eyebrow" class="eyebrow">DIN AI</p><h1 id="setup-title" tabindex="-1">Hvordan vil du forbinde din AI?</h1><p id="setup-subtitle">Vælg den adgang, du allerede har.</p></div>
-  <div class="setup-quick-actions"><button id="setup-local" class="text-button">Vælg senere</button><button id="setup-advanced" class="text-button">Avanceret opsætning</button><button id="setup-remove-all" class="text-button" hidden>Fjern alle gemte nøgler …</button></div>
-  <ol class="onboarding-b-progress" aria-label="Din opsætning"><li data-phase="profile"><span>1</span>Din profil</li><li data-phase="connection"><span>2</span>Forbindelse</li><li data-phase="idea"><span>3</span>Din idé</li></ol>
+<main id="setup" class="onboarding-simple" aria-labelledby="setup-title" hidden>
+  <div class="setup-backline"><button id="setup-back" class="text-button">← Tilbage</button><p id="setup-step-state" class="setup-step-state">Trin 3 af 4</p></div>
+  <div class="setup-simple">
+  <div class="setup-heading"><h1 id="setup-title" tabindex="-1">Hvordan vil du forbinde din AI?</h1><p id="setup-subtitle">Vælg den adgang, du allerede har.</p></div>
   <p id="setup-reason" role="status" hidden></p>
-  <div class="onboarding-b-layout"><div class="onboarding-b-content">
   <section id="setup-profile" data-setup-step="profile" hidden aria-label="Din profil">
     <label for="profile-name">Hvad skal Aura kalde dig?</label>
     <input id="profile-name" maxlength="60" autocomplete="nickname" placeholder="Fx Anna">
@@ -34,14 +32,30 @@
     <p class="hint">Uden valgt ikon bruger appen dine initialer, fx AK for Anna Klit. Et eget billede gemmes kun i appen på din computer og sendes aldrig til AI’en.</p>
     <fieldset id="profile-theme" class="profile-theme">
       <legend>Tema</legend>
-      <label><input type="radio" name="profile-theme" value="system" checked> Følg system</label>
-      <label><input type="radio" name="profile-theme" value="light"> Lyst</label>
-      <label><input type="radio" name="profile-theme" value="dark"> Mørkt</label>
+      <div class="theme-cards">
+        <label class="theme-card"><input type="radio" name="profile-theme" value="system" checked> <span>Følg system</span></label>
+        <label class="theme-card"><input type="radio" name="profile-theme" value="light"> <span>Lyst</span></label>
+        <label class="theme-card"><input type="radio" name="profile-theme" value="dark"> <span>Mørkt</span></label>
+      </div>
     </fieldset>
     <p class="hint">Temaet følger dit system, medmindre du vælger selv.</p>
-    <label for="profile-help">Hjælp i appen</label>
-    <select id="profile-help"><option value="fuld">Fuld hjælp · forklaringer og forslag undervejs</option><option value="delvis">Hjælp ved behov · "?"-knappen viser tips ved skrivefeltet</option><option value="ingen">Ingen hjælp · hverken tips eller "?"-knap</option></select>
+    <p class="field-label" id="profile-help-label">Hjælp i appen</p>
+    <div class="help-cards" role="radiogroup" aria-labelledby="profile-help-label">
+      <label class="help-card"><input type="radio" name="profile-help-choice" value="fuld" checked><strong>Fuld hjælp</strong><small>Forklaringer og forslag undervejs.</small></label>
+      <label class="help-card"><input type="radio" name="profile-help-choice" value="delvis"><strong>Hjælp ved behov</strong><small>»?«-knappen viser tips ved skrivefeltet.</small></label>
+      <label class="help-card"><input type="radio" name="profile-help-choice" value="ingen"><strong>Ingen hjælp</strong><small>Hverken tips eller »?«-knap.</small></label>
+    </div>
+    <select id="profile-help" aria-hidden="true" tabindex="-1"><option value="fuld">Fuld hjælp · forklaringer og forslag undervejs</option><option value="delvis">Hjælp ved behov · »?«-knappen viser tips ved skrivefeltet</option><option value="ingen">Ingen hjælp · hverken tips eller »?«-knap</option></select>
     <div class="setup-actions"><button id="profile-continue" class="primary" type="button">Fortsæt</button></div>
+  </section>
+  <section id="setup-detail" data-setup-step="detail" hidden aria-label="Detaljeniveau">
+    <div class="detail-cards" role="radiogroup" aria-labelledby="setup-title">
+      <label class="detail-card"><input type="radio" name="detail-view" value="compact"><strong>Kun resultater</strong><small>Du ser svaret og det færdige resultat — ikke arbejdet undervejs.</small></label>
+      <label class="detail-card"><input type="radio" name="detail-view" value="standard" checked><strong>Nøgletrin</strong><small>Du ser svaret og de vigtigste trin undervejs.</small></label>
+      <label class="detail-card"><input type="radio" name="detail-view" value="detailed"><strong>Alle detaljer</strong><small>Du ser alle trin undervejs: filer, kommandoer og status.</small></label>
+    </div>
+    <div class="setup-actions"><button id="detail-continue" class="primary" type="button">Fortsæt</button></div>
+    <button id="detail-skip" class="text-button detail-skip" type="button">Vælg senere</button>
   </section>
   <section id="setup-choice" data-setup-step="choice" aria-label="Vælg adgang">
     <button id="setup-add-provider"><span class="setup-symbol" aria-hidden="true">↗</span><strong>Jeg har en adgangsnøgle</strong><span>Fra min arbejdsplads eller en AI-udbyder.</span></button>
@@ -65,12 +79,12 @@
     <button id="setup-manage">Administrer AI-forbindelser</button><button id="setup-hosting">Forbind GitHub</button>
     <details class="setup-row disclosure"><summary>Lokale værktøjer</summary><p id="setup-git" role="status">Git er ikke kontrolleret.</p><button id="setup-git-refresh">Kontrollér Git</button><button id="setup-git-open" hidden>Åbn versionsindstillinger</button></details>
   </section>
-  </div><aside id="setup-visual" class="onboarding-b-visual" aria-label="Din opsætning"></aside></div>
-
+  <div class="setup-quick-actions"><button id="setup-local" class="text-button">Vælg senere</button><button id="setup-advanced" class="text-button">Avanceret opsætning</button><button id="setup-remove-all" class="text-button" hidden>Fjern alle gemte nøgler …</button></div>
+  </div>
 </main>
-<main id="onboarding" class="onboarding-b">
+<main id="onboarding" class="onboarding-simple">
   <div class="intro"><h1>Hvad vil du bygge?</h1><p>Fortæl om din idé, så opretter vi projektet på din computer.<button type="button" class="info" aria-label="Mere om projektet" data-info="AI’en foreslår teknologi ud fra din idé. Det kan være en hjemmeside, en app eller en løsning med backend. Nødvendige installationer gennemgås, før de køres.">i</button></p></div>
-  <div class="onboarding-b-layout"><div class="onboarding-b-content">
+  <div class="onboarding-simple-content">
   <form id="create-form">
     <section class="panel">
       <label for="name">Projektnavn · du kan ændre forslaget</label><input id="name" required maxlength="80" placeholder="Projektets navn">
@@ -103,9 +117,9 @@
     </details>
     <p id="startup-warning" class="hint" data-help="essential"></p>
         </details>
-    <div class="create-footer"><p><span id="project-location">Projektet gemmes i Dokumenter › Aura.</span><br><button type="button" id="choose-location" class="text-button">Vælg en anden placering</button></p><button id="create" class="primary" type="submit">Opret og fortsæt →</button></div>
+    <div class="create-footer"><button id="create" class="primary" type="submit">Opret og fortsæt →</button><p><span id="project-location">Projektet gemmes i Dokumenter › Aura.</span><br><button type="button" id="choose-location" class="text-button">Vælg en anden placering</button></p></div>
   </form>
-  </div><aside id="idea-visual" class="onboarding-b-visual" aria-label="Din opsætning"></aside></div>
+  </div>
 </main>
 <main id="workspace" hidden>
   <div class="workspace-bar"><h1 id="project-name"></h1><div class="actions"><button id="surface-toggle" class="text-button" type="button" aria-pressed="true" title="Vis eller skjul arbejdsfladen (⌘1–5)">◧ Arbejdsflade</button><button id="version-status" class="text-button" type="button">Versioner</button><button id="project-menu-toggle" popovertarget="project-menu" aria-label="Projektmenu" title="Projektmenu">•••</button><button id="deployment-status" class="text-button" type="button" hidden aria-live="polite"></button><button id="deploy-button">Udgiv</button></div></div>

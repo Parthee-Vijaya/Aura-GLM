@@ -130,14 +130,14 @@ async function installFixture(app, mode, project) {
         await page.waitForSelector('#connections-dialog[open]');await page.click('[data-close="connections-dialog"]');
       }
       const beforeOpenCalls = await app.evaluate(() => globalThis.komplaiFixtureCalls.length);
-      await page.click('#open'); await page.waitForSelector('#workspace:not([hidden])');
+      await require('./ui-test-helpers.cjs').clickOpen(page); await page.waitForSelector('#workspace:not([hidden])');
       if (mode === 'begge') {
         await page.waitForSelector('#connection-warning:not([hidden])');
         assert.match(await page.locator('#connection-warning-text').innerText(), /kun til udgivelse/);
         assert.equal(await page.inputValue('#connection-select'), '', 'En gammel komplai-selection må ikke falde tilbage til en anden udbyder.');
         assert.equal(await app.evaluate(() => globalThis.komplaiFixtureCalls.length), beforeOpenCalls);
         await page.fill('#prompt', 'Bevar denne kladde ved skift fra den tidligere AI.');
-        await page.click('#new'); await page.waitForSelector('#onboarding:not([hidden])'); await page.click('#open'); await page.waitForSelector('#workspace:not([hidden])');
+        await page.click('#new'); await page.waitForSelector('#onboarding:not([hidden])'); await require('./ui-test-helpers.cjs').clickOpen(page); await page.waitForSelector('#workspace:not([hidden])');
         assert.equal(await page.inputValue('#prompt'), 'Bevar denne kladde ved skift fra den tidligere AI.');
         assert.equal(await page.inputValue('#connection-select'), '');
         assert.equal(await fs.readFile(path.join(project, 'public/index.html'), 'utf8'), material);
@@ -183,7 +183,7 @@ async function installFixture(app, mode, project) {
         assert.equal(await app.evaluate(() => globalThis.komplaiFixtureCalls.length), callCount, 'Indsat token fjernes kun lokalt.');
         assert.deepEqual((await page.evaluate(() => window.harness.komplaiPublishState())).value, before);
         await page.click('[data-close="connections-dialog"]');
-        await page.click('#new'); await page.waitForSelector('#onboarding:not([hidden])'); await page.click('#open'); await page.waitForSelector('#workspace:not([hidden])');
+        await page.click('#new'); await page.waitForSelector('#onboarding:not([hidden])'); await require('./ui-test-helpers.cjs').clickOpen(page); await page.waitForSelector('#workspace:not([hidden])');
         await page.waitForSelector('#connection-warning:not([hidden])');
         assert.match(await page.locator('#connection-warning-text').innerText(), /gemte AI-forbindelse er ikke tilgængelig/);
         assert.equal(await page.inputValue('#connection-select'), '', 'En fjernet tidligere forbindelse må heller ikke udløse automatisk udbyderskift.');

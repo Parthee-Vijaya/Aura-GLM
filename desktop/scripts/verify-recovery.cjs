@@ -64,7 +64,7 @@ const { skipIntroduction, menuClick, taskOptions, selectMode } = require('./ui-t
   const launch=async()=>{
     ({app}=await require('./electron-test-launch.cjs').launchTestApp({electron,profile:path.join(root,'appdata')}));
     page=await app.firstWindow();await skipIntroduction(page);
-    await app.evaluate(({dialog},project)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[project]});},project);await page.click('#open');await page.waitForSelector('#workspace:not([hidden])');
+    await app.evaluate(({dialog},project)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[project]});},project);await require('./ui-test-helpers.cjs').clickOpen(page);await page.waitForSelector('#workspace:not([hidden])');
   };
   const send=async text=>{
     sentPrompts.push(text);

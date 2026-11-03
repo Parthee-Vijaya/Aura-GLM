@@ -69,7 +69,7 @@ const helpers = require('./ui-test-helpers.cjs');
     }, `http://127.0.0.1:${server.address().port}`);
     const page = await app.firstWindow(); page.on('pageerror', e => errors.push(e.message)); await page.emulateMedia({ reducedMotion: 'reduce' }); await helpers.skipIntroduction(page);
     await app.evaluate(({ dialog }, folder) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [folder] }); }, project);
-    await page.click('#open'); await page.waitForSelector('#workspace:not([hidden])');
+    await require('./ui-test-helpers.cjs').clickOpen(page); await page.waitForSelector('#workspace:not([hidden])');
     for (const kind of ['openai', 'azure']) {
       active = kind; calls = 0; phase = 'build';
       await helpers.openSetup(page); await page.click('#setup-add-provider'); await page.click(`#provider-cards [data-kind="${kind}"]`);

@@ -31,6 +31,11 @@ const { run } = require('../core/git.cjs');
   await page.reload();await page.waitForFunction(()=>!document.querySelector('#create').disabled);
   assert.equal(await page.locator('#welcome-dialog').evaluate(e=>e.open),false);assert.equal(await page.inputValue('#name'),'Mit bibliotek');
   assert.equal(await page.inputValue('#purpose'),'Vi vil bygge en oversigt til biblioteket');
+  // Fuldvinduesfladen: idéfladen har intet panel, så introduktionens
+  // genindgang (#intro-button) hører til arbejdsfladen — kladden oprettes som
+  // et prøveprojekt først; 'Mit bibliotek'-kladden genskrives bagefter.
+  await page.fill('#name','Introduktionsprøve');await page.fill('#purpose','Holder introduktionens prøver adskilt.');
+  await page.click('#create');await page.waitForSelector('#workspace:not([hidden])');
   await page.click('#intro-button');await page.click('#path-app');await page.click('#welcome-build');await page.waitForSelector('#setup:not([hidden])');
   // Første guidede start viser profil-trinnet (godkendt gating); Fortsæt gemmer
   // felterne og fører til valget, som prøven her gennemgår.
@@ -75,9 +80,12 @@ const { run } = require('../core/git.cjs');
   await page.click('#setup-back');await page.click('#setup-find-local');await page.click('#local-discovery-use');
   await page.waitForFunction(()=>!document.querySelector('#local-discovery-use').disabled);
   assert.equal((await page.evaluate(()=>window.harness.connectionState())).value.connections.length,1);
-  await page.click('#setup-back');await page.click('#setup-back');await page.click('#setup-back');assert.equal(await page.locator('#welcome-dialog').evaluate(el=>el.open),true);await page.click('#welcome-build');await page.click('#setup-local');
-  // Første start spørger ikke om funktioner: opsætningen ender ved idéen, og grundpakken gælder.
-  await page.waitForSelector('#create-form');
+  // Tilbage-kæden har ét led mere med detaljetrinnet (D6): lokal → valg →
+  // detaljer → profil → introduktionen.
+  await page.click('#setup-back');await page.click('#setup-back');await page.click('#setup-back');await page.click('#setup-back');assert.equal(await page.locator('#welcome-dialog').evaluate(el=>el.open),true);await page.click('#welcome-build');await page.click('#setup-local');
+  // Første start spørger ikke om funktioner: opsætningen ender i arbejdsfladen
+  // (prøveprojektet er åbent), og grundpakken gælder.
+  await page.waitForSelector('#workspace:not([hidden])');
   assert.equal(await page.isVisible('#setup'),false,'intet funktionstrin i opsætningen');
   assert.equal(await page.locator('[data-phase="features"]').count(),0,'fremgangslinjen har kun profil, forbindelse og idé');
   const state=(await page.evaluate(()=>window.harness.featuresGet())).value;
@@ -88,6 +96,10 @@ const { run } = require('../core/git.cjs');
   await page.locator('#features-list input[data-feature="versioner"]').check();
   await page.locator('#features-feedback').filter({hasText:'Gemt for alle projekter'}).waitFor();
   await page.click('[data-close="features-dialog"]');
+  // Idéfladen igen: 'Mit bibliotek'-kladden genskrives, før den oprettes i
+  // prøverodmappen.
+  await page.click('#new');await page.waitForSelector('#onboarding:not([hidden])');
+  await page.fill('#name','Mit bibliotek');await page.fill('#purpose','Vi vil bygge en oversigt til biblioteket');
   assert.equal(await page.inputValue('#name'),'Mit bibliotek');
   await app.evaluate(({dialog})=>{dialog.showOpenDialog=async()=>({canceled:true,filePaths:[]});});
   await page.click('#choose-location');await page.waitForFunction(()=>!document.querySelector('#create').disabled);assert.equal(await page.inputValue('#name'),'Mit bibliotek');

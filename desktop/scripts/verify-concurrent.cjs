@@ -81,7 +81,7 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
   try {
     await launch();
     await app.evaluate(({ dialog }, folder) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [folder] }); }, project);
-    await page.click('#open'); await page.locator('#project-name').filter({ hasText: 'Foreningen' }).waitFor();
+    await require('./ui-test-helpers.cjs').clickOpen(page); await page.locator('#project-name').filter({ hasText: 'Foreningen' }).waitFor();
     const connection = await helpers.addConnection(page, { name: 'Kontrolleret lokal forbindelse', baseURL: `http://127.0.0.1:${server.address().port}/v1` });
     await helpers.taskOptions(page); await page.selectOption('#connection-select', connection.id); await page.locator('#model-shortlist button').first().click();
     await send('Ret overskriften. opgave-a'); await row('Ret overskriften').waitFor();

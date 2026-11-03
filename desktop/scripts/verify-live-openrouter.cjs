@@ -27,7 +27,7 @@ const readline = require('node:readline');
   // Repeat-opsætningen genåbner AI-forbindelser; dialogen lukkes, så prøven kan
   // fortsætte ved projektopstarten.
   await page.waitForSelector('#connections-dialog[open]');await page.click('[data-close="connections-dialog"]');
-  await app.evaluate(({dialog},project)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[project]});},project);await page.click('#open');await page.waitForSelector('#workspace:not([hidden])');
+  await app.evaluate(({dialog},project)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[project]});},project);await require('./ui-test-helpers.cjs').clickOpen(page);await page.waitForSelector('#workspace:not([hidden])');
   const result=await page.evaluate(value=>window.harness.saveConnection(value),{kind:provider,name:'Afgrænset modelprøve',baseURL:provider==='openrouter'?'':process.env.HARNESS_LIVE_URL||'http://127.0.0.1:11434',apiKey:key});if(!result.ok)throw new Error(result.error);
   const connection=result.value.connections[0];if(key)assert.equal(JSON.stringify(result).includes(key),false);
   const modelID=process.env.HARNESS_LIVE_MODEL||'cohere/north-mini-code:free';if(provider==='openrouter')assert.ok(modelID.endsWith(':free'));else assert.ok(process.env.HARNESS_LIVE_MODEL,'Vælg den konkrete lokale model eksplicit');

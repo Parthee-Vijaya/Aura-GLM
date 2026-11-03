@@ -100,7 +100,7 @@ addEventListener('message', event => {
       throw Error('Loginforsøget blev ikke startet: ' + account);
     };
     const capture = async name => { const png = await app.evaluate(async ({ BrowserWindow }) => (await BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')).webContents.capturePage()).toPNG().toString('base64')); await fs.writeFile(path.join(root, name), Buffer.from(png, 'base64')); };
-    await helpers.skipIntroduction(window); await window.click('#open'); await window.waitForSelector('#workspace:not([hidden])');
+    await helpers.skipIntroduction(window); await require('./ui-test-helpers.cjs').clickOpen(window); await window.waitForSelector('#workspace:not([hidden])');
     await helpers.menuClick(window, '#attach-preview'); await window.fill('#preview-url', `http://127.0.0.1:${server.address().port}/`); await window.click('#preview-form button[type="submit"]');
     // 1. Promte-integrationen er slået fra som standard: Aura svarer ikke appen og kontakter ikke Promte.
     for (let i = 0; i < 50 && !(await calls()).some(c => c[0] === 'connect'); i++) await new Promise(resolve => setTimeout(resolve, 100));

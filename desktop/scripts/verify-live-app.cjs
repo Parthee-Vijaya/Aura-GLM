@@ -163,7 +163,15 @@ async function main() {
     await page.evaluate(() => window.harness.onEvent(event => window.liveDemoEvent(event)));
     if (controlled) {
       await helpers.skipIntroduction(page);
+      // Fuldvinduesfladen: idéfladen viser intet panel, så panelets indgang til
+      // opsætningen først findes, når et projekt findes. En prøveidé oprettes i
+      // en egen mappe — hovedprøven ender stadig med ét projekt i Dokumenter.
+      const scratch = path.join(root, 'panelproeve'); await fs.mkdir(scratch, { recursive: true });
+      await page.fill('#purpose', 'Åbner panelets indgange til forbindelsen.'); await helpers.chooseLocation(app, page, scratch); await page.click('#create');
+      await page.waitForSelector('#workspace:not([hidden])', { timeout: 60000 });
       await helpers.addConnection(page, { name: 'Kontrolleret lokal prøve', baseURL: `http://127.0.0.1:${server.address().port}/v1`, apiKey: 'syntetisk-noegle' });
+      // Tilbage til idéfladen — hovedidéen oprettes i Dokumenter.
+      await page.click('#new');
     } else {
       await page.click('#path-app'); await page.click('#welcome-build'); await page.waitForSelector('#setup:not([hidden])');
       // Første guidede start viser profil-trinnet; Fortsæt fører til valget af adgang.

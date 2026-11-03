@@ -133,9 +133,14 @@ let connectionReceipt=null, connectionTicket=0;
 let setupActive = false, setupGeneration = 0, verifiedConnection = '', recovery = '';
 // F20 changes presentation only; connection checks and all actions remain owned by the existing controllers.
 let onboardingPreviewKind = '';
+// The four onboarding steps in order: Din profil, Detaljeniveau, Forbindelse
+// (the choice and its sub-steps) and Din idé. The idea step lives on its own
+// surface (#onboarding), so the discrete counter under the back button reads
+// this map for every setup step.
+const SETUP_STEPS = Object.freeze({ profile: 1, detail: 2, choice: 3, provider: 3, local: 3, saved: 3, tools: 3 });
 // The onboarding profile step holds pure UI state: the fields are saved through
 // profileSave and never reach prompts, the model log or diagnostics.
-let profileStepShown = false, profileStepDone = false, profileIconChoice = '';
+let profileStepShown = false, profileIconChoice = '';
 // Whether the stored avatar file exists — the main process owns the truth and
 // answers it with every profile read, upload and removal.
 let profileAvatarAvailable = false;
@@ -146,25 +151,23 @@ function syncOnboardingVisuals() {
   const setupConnection = details ? state?.connections?.find(c => c.id === $('#connection-id').value) : setupStep === 'saved' ? selected : null;
   const setupCheck = setupConnection && connectionChecks.get(setupConnection.id);
   const kind = details ? $('#provider-kind').value : setupStep === 'local' ? 'ollama' : setupConnection?.kind || onboardingPreviewKind || '';
-  const phase = setupStep === 'profile' ? 'profile' : setupStep === 'saved' || setupStep === 'local' || details ? 'connection' : setupStep === 'provider' ? 'provider' : 'choice';
+  const phase = setupStep === 'profile' || setupStep === 'detail' ? 'profile' : setupStep === 'saved' || setupStep === 'local' || details ? 'connection' : setupStep === 'provider' ? 'provider' : 'choice';
   const checked = Boolean(setupConnection && setupConnection.kind === kind && verifiedConnection === setupConnection.id && setupCheck?.status === 'ok' && setupCheck.count);
-  window.OnboardingB.render($('#setup-visual'), { kind, phase, preview: setupStep === 'provider' && !details, connectionName: setupConnection?.name || '', saved: Boolean(setupConnection), checked, error: setupCheck?.status === 'error', pending: setupCheck?.status === 'checking' });
-  for (const step of document.querySelectorAll('#setup .onboarding-b-progress li')) {
-    // Provider and connection are one logical choice: both setup phases mark item 2,
-    // which only completes once the connection has been verified.
-    const complete = step.dataset.phase === 'profile' ? profileStepDone : step.dataset.phase === 'connection' && checked;
-    step.dataset.complete = String(complete);
-    step.querySelector('span').textContent = complete ? '✓' : String(['profile', 'connection', 'idea'].indexOf(step.dataset.phase) + 1);
-    const active = step.dataset.phase === (phase === 'profile' ? 'profile' : 'connection');
-    if (active) step.setAttribute('aria-current', 'step'); else step.removeAttribute('aria-current');
-  }
+  // The simple restyle removed the setup's and the idea screen's visual
+  // asides; the module stays for the model dialog's #model-visual. Every
+  // render is guarded by its element, so a missing surface skips cleanly.
+  const setupVisual = $('#setup-visual');
+  if (setupVisual) window.OnboardingB.render(setupVisual, { kind, phase, preview: setupStep === 'provider' && !details, connectionName: setupConnection?.name || '', saved: Boolean(setupConnection), checked, error: setupCheck?.status === 'error', pending: setupCheck?.status === 'checking' });
   const connection = state?.connections?.find(c => c.id === $('#connection-select').value);
   const check = connection && connectionChecks.get(connection.id);
   const model = $('#model-select');
   window.OnboardingB.render($('#model-visual'), { kind: connection?.kind || '', phase: 'model', connectionName: connection?.name || '', modelName: model.value ? model.selectedOptions[0]?.textContent || model.value : '', saved: Boolean(connection), checked: Boolean(check?.status === 'ok' && check.count), error: check?.status === 'error', pending: check?.status === 'checking', modelChosen: Boolean(model.value) });
-  const startup = state?.connections?.find(c => c.id === $('#startup-connection').value);
-  const startupCheck = startup && connectionChecks.get(startup.id);
-  window.OnboardingB.render($('#idea-visual'), { kind: startup?.kind || '', phase: 'idea', connectionName: startup?.name || '', saved: Boolean(startup), checked: Boolean(startupCheck?.status === 'ok' && startupCheck.count), error: startupCheck?.status === 'error' });
+  const ideaVisual = $('#idea-visual');
+  if (ideaVisual) {
+    const startup = state?.connections?.find(c => c.id === $('#startup-connection').value);
+    const startupCheck = startup && connectionChecks.get(startup.id);
+    window.OnboardingB.render(ideaVisual, { kind: startup?.kind || '', phase: 'idea', connectionName: startup?.name || '', saved: Boolean(startup), checked: Boolean(startupCheck?.status === 'ok' && startupCheck.count), error: startupCheck?.status === 'error' });
+  }
 }
 
 // Profilen er eneste kilde for appens standarder: arbejdsmåden i helt nye
@@ -203,15 +206,19 @@ function moveConnectionForm(guided, addFlow = false) {
 function setupPage(step) {
   ++setupGeneration;
   setupStep = step;
-  const headings = { profile: ['Din profil', 'Udfyld din profil — du kan altid ændre den under Indstillinger.'], choice: ['Hvordan vil du forbinde din AI?', 'Vælg den adgang, du allerede har.'], provider: ['Hvem er din udbyder?', 'Har du ikke en nøgle, viser vi dig, hvordan du får en.'], local: ['AI på din computer', 'Vi leder efter modeller, du allerede har i Ollama.'], saved: ['Din AI-forbindelse', 'Kontrollér forbindelsen, før du fortsætter.'], tools: ['Avanceret opsætning', 'Forbindelser og lokale værktøjer.'] };
+  const headings = { profile: ['Din profil', 'Udfyld din profil — du kan altid ændre den under Indstillinger.'], detail: ['Hvor meget vil du se af AI’ens arbejde?', 'Det ændrer kun, hvordan arbejdet vises — ikke hvad Aura kan.'], choice: ['Hvordan vil du forbinde din AI?', 'Vælg den adgang, du allerede har.'], provider: ['Hvem er din udbyder?', 'Har du ikke en nøgle, viser vi dig, hvordan du får en.'], local: ['AI på din computer', 'Vi leder efter modeller, du allerede har i Ollama.'], saved: ['Din AI-forbindelse', 'Kontrollér forbindelsen, før du fortsætter.'], tools: ['Avanceret opsætning', 'Forbindelser og lokale værktøjer.'] };
   $('#setup-title').textContent = headings[step][0]; $('#setup-subtitle').textContent = headings[step][1];
-  $('#setup-eyebrow').textContent = step === 'profile' ? 'DIN PROFIL' : 'DIN AI';
   for (const el of document.querySelectorAll('[data-setup-step]')) el.hidden = el.dataset.setupStep !== step;
   moveConnectionForm(step === 'provider');
   $('#setup-advanced').hidden = step !== 'choice';
-  // The profile step has its own continue button; the quick actions belong to the connection choice.
-  $('.setup-quick-actions').hidden = step === 'profile';
+  // The profile and detail steps own their complete action rows (Fortsæt and,
+  // on the detail step, its own "Vælg senere"); the quick actions under the
+  // sections belong to the connection choice and its sub-steps.
+  $('.setup-quick-actions').hidden = step === 'profile' || step === 'detail';
   $('#setup').dataset.step = step;
+  // The discrete counter under the back button (Parthee's approved "Trin N
+  // af 4"); the idea step is number 4 on its own surface (#onboarding).
+  $('#setup-step-state').textContent = `Trin ${SETUP_STEPS[step] ?? 3} af 4`;
   $('#setup-title').focus(); window.scrollTo(0, 0); setupControls();
 }
 // The profile step in onboarding: name, icon, theme and help level. Every field is
@@ -288,6 +295,7 @@ async function prepareProfileStep(profile) {
   selectProfileIcon(profile?.icon || '');
   for (const input of document.querySelectorAll('#profile-theme input')) input.checked = input.value === (profile?.appearance?.theme || 'system');
   $('#profile-help').value = profile?.helpLevel || 'fuld';
+  syncProfileHelpCards();
 }
 async function saveProfileStep() {
   const patch = profilePatch();
@@ -368,7 +376,38 @@ async function startupProfile() {
   await applyProfilePresentation();
   try { if (state?.features) state.features = await call('featuresGet'); } catch { /* the features keep the connectionState answer */ }
 }
-$('#profile-continue').onclick = () => action(async () => { await saveProfileStep(); profileStepDone = true; setupPage('choice'); });
+// The three help cards are the visible choice surface for #profile-help; the
+// hidden select keeps the save path byte-for-byte (profilePatch and
+// prepareProfileStep read and write its value). One sync after every write
+// keeps the pair from drifting; a card change writes the select back.
+function syncProfileHelpCards() {
+  const value = $('#profile-help').value;
+  for (const input of document.querySelectorAll('#setup-profile .help-cards input')) input.checked = input.value === value;
+}
+for (const input of document.querySelectorAll('#setup-profile .help-cards input')) input.onchange = () => { $('#profile-help').value = input.value; };
+$('#profile-continue').onclick = () => action(async () => { await saveProfileStep(); setupPage('detail'); });
+// D6 · Detaljeniveau: three radio cards between the profile and the access
+// choice. Fortsæt saves only the transcript level through the shared profile
+// queue; "Vælg senere" skips the step without a save, so an existing saved
+// level always survives (R7 — only a brand-new profile has none, and
+// blank() answers 'standard').
+function detailViewValue() { return [...document.querySelectorAll('#setup-detail input')].find(input => input.checked)?.value || 'standard'; }
+function prepareDetailStep(profile) {
+  const value = ['compact', 'detailed'].includes(profile?.transcriptView) ? profile.transcriptView : 'standard';
+  for (const input of document.querySelectorAll('#setup-detail input')) input.checked = input.value === value;
+}
+$('#detail-continue').onclick = () => action(async () => {
+  try {
+    const saved = await call('profileSave', { transcriptView: detailViewValue() });
+    // The cache, the announcement and the presentation follow the canonical
+    // profile, like every other profile save in the setup.
+    adoptProfile(saved.profile);
+    announceProfileSaved(saved.profile);
+    await applyProfilePresentation();
+  } catch { /* saving the profile never blocks the setup */ }
+  setupPage('choice');
+});
+$('#detail-skip').onclick = () => action(() => setupPage('choice'));
 // The avatar upload and removal run in the main process: the picker opens there,
 // the picture is stored there, and this step only re-renders the row from the
 // answer. A rejected upload shows its Danish error through action(); a canceled
@@ -480,10 +519,10 @@ async function showSetup(reason = '', fromIntroduction = false) {
   if (fromIntroduction) { try { const read = await call('profileGet'); profile = read.profile; profileAvatarAvailable = read.hasAvatar === true; window.ProfileIcons?.setAvatarRevision?.(read.avatarRevision || 0); readProfile = true; adoptProfile(profile); } catch { /* without a readable profile the setup starts at the connection choice */ } }
   setupActive = true; $('#setup').hidden = false; $('#workspace').hidden = true; $('#onboarding').hidden = true;
   $('#view-title').textContent = 'Opsætning'; $('#setup-reason').textContent = reason; $('#setup-reason').hidden = !reason;
-  renderSetup(); profileStepShown = readProfile && !profile?.name && !profile?.icon; profileStepDone = false;
+  renderSetup(); profileStepShown = readProfile && !profile?.name && !profile?.icon;
   // The step is on screen before the name suggestion lands; the field fills in when it does.
   setupPage(profileStepShown ? 'profile' : 'choice'); action(discoverLocal);
-  if (profileStepShown) await prepareProfileStep(profile);
+  if (profileStepShown) { await prepareProfileStep(profile); prepareDetailStep(profile); }
 }
 function connectionFailed(reason) {
   invalidateConnection($('#connection-select').value, reason);
@@ -520,7 +559,7 @@ async function leaveSetup(useAI) {
       await applyProfilePresentation();
     }
   } catch { /* saving the profile never blocks completing the setup */ }
-  profileStepShown = false; profileStepDone = false;
+  profileStepShown = false;
   ++setupGeneration; ++localDiscoveryGeneration; clearConnectionReceipt(); moveConnectionForm(false);
   guidedSetup = false; completeIntroduction('guided');
   document.body.classList.remove('setup-guided'); setupActive = false; $('#setup').hidden = true; $('#workspace').hidden = !current; $('#onboarding').hidden = Boolean(current);
@@ -1923,7 +1962,7 @@ $('#welcome-skip').onclick = leaveIntroduction;
 $('#welcome-dialog').addEventListener('close', () => { if (!$('#welcome-dialog').open) document.body.classList.remove('introduction-open'); });
 $('#welcome-dialog').addEventListener('cancel', event => { event.preventDefault(); leaveIntroduction(); });
 $('#intro-button').onclick = () => showIntroduction();
-$('#setup-back').onclick = () => { const leave = () => repeatSetup ? action(() => leaveSetup(false)) : guidedSetup ? showIntroduction('start') : action(() => leaveSetup(false)); if (setupStep === 'provider' && $('#setup-provider').dataset.view === 'details') providerPicker(); else if (setupStep === 'profile') leave(); else if (setupStep !== 'choice') { clearConnectionReceipt(); setupPage('choice'); } else if (profileStepShown) setupPage('profile'); else leave(); };
+$('#setup-back').onclick = () => { const leave = () => repeatSetup ? action(() => leaveSetup(false)) : guidedSetup ? showIntroduction('start') : action(() => leaveSetup(false)); if (setupStep === 'provider' && $('#setup-provider').dataset.view === 'details') providerPicker(); else if (setupStep === 'detail') setupPage('profile'); else if (setupStep === 'profile') leave(); else if (setupStep !== 'choice') { clearConnectionReceipt(); setupPage('choice'); } else if (profileStepShown) setupPage('detail'); else leave(); };
 async function beginGuidedProject() {
   if (current) { await $('#new').onclick(); if (current) return; }
   closeIntroduction(); showSetup('', true);
