@@ -115,7 +115,7 @@
     {
       "id": "gradientdesign",
       "title": "GradientDeck-design",
-      "summary": "GradientDecks fulde designmetode med verdener, billeder og rollen. Aktiveres pr. besked med /design; slås kun til her, hvis den skal gælde alle beskeder.",
+      "summary": "GradientDecks designmetode med verdener at bygge i, åbne billeder og et script, der trækker den visuelle retning. Aktiveres pr. besked med /design; slås kun til her, hvis den skal gælde alle beskeder.",
       "default": false,
       "skills": [
         "harness-design"
@@ -429,7 +429,7 @@
       "faq": {
         "hvad": "Vælger og gennemfører én visuel retning til nyt arbejde med GradientDecks metode: en række konkrete verdener at bygge i, konsekvent typografi, farve og komposition, og en kritisk gennemgang af det renderede resultat. Aktiveres pr. besked med /design oven på den altid-aktive designhjælp og ændrer ikke grundmetoden, planer eller godkendelser.",
         "hvornaar": "Når et nyt produkt eller en ny side skal have en egen visuel retning, før koden skrives, eller når en færdig brugerflade skal kritisk gennemgås, poleres eller gøres mindre generisk.",
-        "resultat": "En gennemført retning med planfil i .gradientdeck/pages/, et første udkast bygget konsekvent i retningen og en kort gennemgang af fundne og rettede problemer. Rollen kræver kommandogodkendelse; uden den vælges verdenerne i teksten.",
+        "resultat": "En gennemført retning med planfil i .gradientdeck/pages/, et første udkast bygget konsekvent i retningen og en kort gennemgang af fundne og rettede problemer. Retningen trækkes af et script, der kræver kommandogodkendelse; uden godkendelse vælges retningen i teksten i stedet.",
         "ikke": "Den erstatter ikke Auras grundmetode og designhjælp, godkender ingen planer og giver ingen fil-, kommando- eller netværkstilladelser. Den henter aldrig billeder eller stile fra nettet uden egen godkendelse."
       },
       "sources": [

@@ -219,4 +219,4 @@ function validateFeatures(features, names) {
   if (placed.length !== names.size || placed.some(name => !names.has(name)) || new Set(placed).size !== placed.length) throw new Error('Hver skill skal høre til præcis én funktion.');
 }
 
-module.exports = { loadLibrary, parseFrontmatter, validateSkillText, validateSkillFiles, validateSkillLinks, safeRelative };
+module.exports = { loadLibrary, parseFrontmatter, validateSkillText, validateSkillFiles, validateSkillLinks, safeRelative, DATA_FILE, DATA_FILE_BUDGET };

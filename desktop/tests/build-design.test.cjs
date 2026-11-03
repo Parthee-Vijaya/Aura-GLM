@@ -275,3 +275,22 @@ test('S3: prepare læser DESIGN.md, binder den i Før du sender og afviser en æ
   await fs.writeFile(path.join(project, 'DESIGN.md'), '# Godkendt design\nRød sektion nu.\n');
   await assert.rejects(bench.send({ text: 'Byg', fingerprint: withDocument.fingerprint, contextBinding: withDocument.contextBinding }), /DESIGN\.md har ændret sig/, 'en ændret DESIGN.md kræver ny gennemgang');
 });
+
+// S3-fix (Minor 4): fravær ved prepare er også bundet. En DESIGN.md, der
+// oprettes EFTER gennemgangen, kræver ny gennemgang — den gamle afvisning
+// sammenlignede kun, når filen fandtes ved prepare.
+test('S3-fix: en DESIGN.md, der oprettes efter prepare, kræver ny gennemgang', async t => {
+  const { Workbench } = require('../core/workbench.cjs');
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'aura-designmd-oprettet-'));
+  let bench = null;
+  t.after(async () => { await bench?.close().catch(() => {}); await fs.rm(directory, { recursive: true, force: true }); });
+  const project = path.join(directory, 'project');
+  await fs.mkdir(project);
+  bench = new Workbench({ directory: path.join(directory, 'data'), profiles: path.resolve(__dirname, '../../profiles'), safeStorage: {}, emit() {}, engineFactory: () => ({ active: true, session: { id: 's' }, resumed: false, start: async () => {}, send: async () => {}, messages: async () => [{}], summarize: async () => {}, abort: async () => {}, close: async () => {} }) });
+  await bench.activate({ root: project, name: 'Uden design endnu' });
+  bench.selection = async () => ({ connection: { id: 'fixture', kind: 'compatible', name: 'Syntetisk', baseURL: 'http://127.0.0.1:1/v1' }, model: { id: 'fixture' } });
+  const bare = await bench.prepare({ mode: 'free', connectionID: 'fixture', modelID: 'fixture' });
+  assert.equal(bare.projectDesignDocument, undefined, 'ingen fil ved prepare — nøglen er fraværende');
+  await fs.writeFile(path.join(project, 'DESIGN.md'), '# Nyt design\nRød sektion fra i dag.\n');
+  await assert.rejects(bench.send({ text: 'Byg', fingerprint: bare.fingerprint, contextBinding: bare.contextBinding }), /DESIGN\.md har ændret sig/, 'en oprettet DESIGN.md efter prepare ugyldiggør gennemgangen');
+});

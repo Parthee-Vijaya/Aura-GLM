@@ -259,3 +259,29 @@ test('S3: kun de porterede datatyper accepteres — gyldig JSON, budget og ingen
   await rejects({ skill: skillWithAll, files: { ...data, 'skills/harness-a/worlds/worlds.json': huge } }, /for stor/);
   await rejects({ skill: skillWithAll, files: { ...data, 'skills/harness-a/scripts/roll.mjs': 'x'.repeat(128 * 1024 + 1) } }, /for stor/);
 });
+
+// S3-fix (Minor 3): fallbacken er samlet — SKILL.md henviser til retning-
+// vejledningens without-Node-regel i stedet for at modsige den, og manuel
+// kontrol (inklusive check) er erstatningen for scriptet.
+test('S3-fix: fallbacken er samlet — manuel kontrol erstatter scriptets check', async () => {
+  const library = await loadLibrary(profiles);
+  const main = library.skills.find(item => item.name === 'harness-design').files.find(file => file.path === 'SKILL.md').content;
+  assert.match(main, /without-Node rule in `references\/direction\.md`/, 'SKILL.md følger retningevejledningens without-Node-regel');
+  assert.match(main, /do the roll's `check` yourself/, 'manuell kontrol erstatter scriptets check-kommando');
+  assert.match(main, /If Node is not available/, 'manglende Node er en egen, ærlig vej');
+  const direction = library.skills.find(item => item.name === 'harness-design').files.find(file => file.path === 'references/direction.md').content;
+  assert.match(direction, /Without Node, build your third-ranked candidate/, 'retningevejledningens without-Node-regel består uændret');
+});
+
+// S3-fix (UX 10): Funktioner-rækkens danske tekst forklarer sig selv — ingen
+// uforklaret fagjargon ("rollen"), og popup-rækkerne bruger den korte form.
+test('S3-fix: funktionsteksten er almindeligt dansk uden uforklaret jargon', async () => {
+  const library = await loadLibrary(profiles);
+  const feature = library.features.find(item => item.id === 'gradientdesign');
+  const skill = library.skills.find(item => item.name === 'harness-design');
+  for (const text of [feature.summary, feature.skills ? '' : '', skill.faq.resultat, skill.summary]) {
+    assert.doesNotMatch(text || '', /\brollen\b/, 'ordet "rollen" er erstattet af almindeligt dansk');
+  }
+  assert.match(feature.summary, /script, der trækker den visuelle retning/, 'teksten forklarer, hvad scriptet gør');
+  assert.match(skill.faq.resultat, /kræver kommandogodkendelse/, 'kommandogodkendelsen står der stadig');
+});

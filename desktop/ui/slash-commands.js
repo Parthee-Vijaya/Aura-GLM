@@ -157,7 +157,10 @@
     if (anchor?.open) anchor.open({
       layer, invoker: prompt, gap: 8,
       width: () => { const rect = card?.getBoundingClientRect?.(); return Math.min(420, Math.max(220, rect?.width || 320)); },
-      topLimit: () => { const bar = root.document?.querySelector?.('.workspace-bar'); const rect = bar?.getBoundingClientRect?.(); return rect?.bottom ? rect.bottom + 4 : 0; }
+      topLimit: () => { const bar = root.document?.querySelector?.('.workspace-bar'); const rect = bar?.getBoundingClientRect?.(); return rect?.bottom ? rect.bottom + 4 : 0; },
+      // S3-fix (UX 8a): ved folden ned respekterer laget COMPOSERKORTETS bund —
+      // ikke feltets — så kortets handlingsrække aldrig dækkes ved lave vinduer.
+      belowOf: () => card
     });
     else layer.showPopover?.();
   }
@@ -176,7 +179,10 @@
   // Row descriptions: skills carry title and summary, and a disabled skill says
   // that the activation is for this message only — the project's own feature
   // choice is never touched. S3: a skill with an invocation alias (harness-
-  // design → /design) is shown and inserted under its alias token.
+  // design → /design) is shown and inserted under its alias token, and its row
+  // is PINNED after commands, before the plain skill rows — /design is the
+  // popup's main entrance, so it must be visible at bare `/`, not sorted to
+  // row 9 under the enabled skills (fix-round finding UX 6, measured live).
   function buildRows(query) {
     const needle = String(query || '').toLowerCase();
     const matches = (...parts) => parts.some(part => typeof part === 'string' && part.toLowerCase().startsWith(needle));
@@ -185,11 +191,13 @@
       .map(command => ({ kind: 'command', id: command.name, description: command.description, enabled: true, activate: command.activate }));
     const skills = state.skills.filter(entry => entry?.id && entry.id !== RULES_ID && matches(skillToken(entry.id), entry.id, ...(entry.id || '').split('-'), entry.title));
     skills.sort((a, b) => (b.enabled === true) - (a.enabled === true) || String(a.title || '').localeCompare(String(b.title || ''), 'da'));
-    const skillRows = skills.map(entry => ({
+    const rowOf = entry => ({
       kind: 'skill', id: skillToken(entry.id), enabled: entry.enabled === true,
-      description: `${entry.title || entry.id} · ${entry.summary || ''}${entry.enabled === true ? '' : ' · slået fra i projektet · aktiveres kun for denne besked'}`
-    }));
-    return [...commandRows, ...skillRows].slice(0, MAX_ROWS);
+      description: `${entry.title || entry.id} · ${entry.summary || ''}${entry.enabled === true ? '' : ' · slået fra · kun for denne besked'}`
+    });
+    const aliasRows = [], plainRows = [];
+    for (const entry of skills) (skillToken(entry.id) === entry.id ? plainRows : aliasRows).push(rowOf(entry));
+    return [...commandRows, ...aliasRows, ...plainRows].slice(0, MAX_ROWS);
   }
 
   function render(rows) {

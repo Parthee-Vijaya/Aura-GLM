@@ -86,7 +86,7 @@ Kilder: [Aura Design — metode og referencer af Parthee Vijayamohan](https://gi
 
 **Hvornår bruges den?** Når et nyt produkt eller en ny side skal have en egen visuel retning, før koden skrives, eller når en færdig brugerflade skal kritisk gennemgås, poleres eller gøres mindre generisk.
 
-**Hvad får du?** En gennemført retning med planfil i .gradientdeck/pages/, et første udkast bygget konsekvent i retningen og en kort gennemgang af fundne og rettede problemer. Rollen kræver kommandogodkendelse; uden den vælges verdenerne i teksten.
+**Hvad får du?** En gennemført retning med planfil i .gradientdeck/pages/, et første udkast bygget konsekvent i retningen og en kort gennemgang af fundne og rettede problemer. Retningen trækkes af et script, der kræver kommandogodkendelse; uden godkendelse vælges retningen i teksten i stedet.
 
 **Hvad gør den ikke?** Den erstatter ikke Auras grundmetode og designhjælp, godkender ingen planer og giver ingen fil-, kommando- eller netværkstilladelser. Den henter aldrig billeder eller stile fra nettet uden egen godkendelse.
 

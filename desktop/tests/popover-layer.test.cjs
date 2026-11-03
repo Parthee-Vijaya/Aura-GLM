@@ -240,3 +240,46 @@ test('et lag uden rektangelunderstøttelse åbner ærligt med afvisning', () => 
   f.layer.close();
   assert.equal(f.document.activeElement, null);
 });
+
+// S3-fix (UX 8a): når laget folder NED, ankre det ved options.belowOf's bund —
+// composerkortets kant — i stedet for feltets bund, så popuppen aldrig ligger
+// hen over kortets handlingsrække. Fundet live ved 700 px vindueshøjde:
+// popuppen lagde sig fra y=330 ind i kortet (279–370).
+test('S3-fix · belowOf: nedenunder-folden respekterer composerkortets bund', () => {
+  const f = harness({ viewport: { width: 1440, height: 800 } });
+  const prompt = f.make('textarea', 'prompt'); setRect(prompt, 240, 286, 387, 36);
+  const card = f.make('div', 'composer'); setRect(card, 232, 279, 403, 91);
+  const layer = f.make('div', 'slash-menu'); layer.offsetWidth = 387; layer.offsetHeight = 320;
+  // Uden belowOf: feltets bund + gap (den gamle, overlappende adfærd er dokumenteret).
+  f.layer.open({ layer, invoker: prompt, gap: 8, width: () => 387, topLimit: () => 58 });
+  assert.equal(layer.style.top, `${286 + 36 + 8}px`, 'uden belowOf anker nedenunder-folden ved feltets bund');
+  f.layer.close();
+  // Med belowOf: kortets bund + gap — composerens handlingsrække forbliver fri.
+  const layer2 = f.make('div', 'slash-menu2'); layer2.offsetWidth = 387; layer2.offsetHeight = 320;
+  f.layer.open({ layer: layer2, invoker: prompt, gap: 8, width: () => 387, topLimit: () => 58, belowOf: () => card });
+  assert.equal(layer2.style.top, `${279 + 91 + 8}px`, 'nedenunder-folden ryger under composerkortet');
+  assert.ok(Number(layer2.style.top.replace('px', '')) >= card.getBoundingClientRect().bottom, 'kortets bund er aldrig dækket');
+  // Er der plads OVER feltet, bruges rummet der som før — belowOf rører kun folden nedad.
+  setRect(prompt, 240, 500, 387, 36);
+  f.layer.position();
+  assert.equal(layer2.style.top, `${500 - 320 - 8}px`, 'oven-ankeringen er uændret');
+});
+
+test('S3-fix · belowOf: passer laget ikke nedenunder, begrænses højden i stedet for at dække composeren', () => {
+  // Den målte 700 px-sag: 315 px lag, 222 px over feltet, 314 px under kortet —
+  // klampen giver laget præcis pladsen under kortet i stedet for fallbacken
+  // hen over arbejdsfladen og composeren.
+  const f = harness({ viewport: { width: 1440, height: 700 } });
+  const prompt = f.make('textarea', 'prompt'); setRect(prompt, 240, 286, 387, 36);
+  const card = f.make('div', 'composer'); setRect(card, 232, 279, 403, 91);
+  const layer = f.make('div', 'slash-menu'); layer.offsetWidth = 387; layer.offsetHeight = 315;
+  f.layer.open({ layer, invoker: prompt, gap: 8, width: () => 387, topLimit: () => 56, belowOf: () => card });
+  assert.equal(layer.style.top, `${279 + 91 + 8}px`, 'laget folder ned under kortet');
+  assert.equal(layer.style.maxHeight, `${700 - 8 - (279 + 91 + 8)}px`, 'højden er klammet til pladsen under kortet');
+  assert.ok(Number(layer.style.top.replace('px', '')) + 315 > 700 - 8, 'uden klamp ville laget have raget ud over vinduets margin');
+  // Større vindue: klampen ryger igen, og laget får sin fulde højde.
+  f.window.innerHeight = 800;
+  f.layer.position();
+  assert.equal(layer.style.maxHeight, '', 'klampen nulstilles, når der er plads');
+  assert.equal(layer.style.top, `${279 + 91 + 8}px`, 'nedenunder-ankeringen består');
+});

@@ -438,7 +438,9 @@ class ChatSession {
     const checkStopped = () => { if (generation !== this.generation) throw new Error('Opgaven blev stoppet før afsendelse.'); };
     if (Object.hasOwn(prepared.context, 'projectInstructions') && JSON.stringify(await projectInstructions(this.root)) !== JSON.stringify(prepared.context.projectInstructions)) throw new Error('Projektets AGENTS.md har ændret sig. Gennemgå oplysningerne igen før afsendelse.');
     // S3: et ændret projektdesign ugyldiggør gennemgangen — indholdet er bundet med sha256, ikke genlæst i stilhed.
-    if (prepared.projectDesignDocument != null && JSON.stringify(await readProjectDesignDocument(this.root)) !== JSON.stringify(prepared.projectDesignDocument)) throw new Error('Projektets DESIGN.md har ændret sig. Gennemgå oplysningerne igen.');
+    // S3-fix (Minor 4): også FRAVÆR er bundet — en DESIGN.md, der oprettes efter
+    // gennemgangen, kræver ny gennemgang, præcis som en ændret eller slettet fil.
+    if (JSON.stringify(await readProjectDesignDocument(this.root)) !== JSON.stringify(prepared.projectDesignDocument ?? null)) throw new Error('Projektets DESIGN.md har ændret sig. Gennemgå oplysningerne igen.');
     if (prepared.guard) {
       if (prepared.messageText !== null && prepared.messageText !== input.text) throw new Error('Beskeden er ændret. Gennemgå konteksten igen.');
       if (input.contextBinding !== prepared.disclosure.contextBinding) throw new Error('Gennemgå den aktuelle kontekst før afsendelse.');
@@ -518,7 +520,11 @@ class ChatSession {
       } else {
       if (this.engineIdentity !== (prepared.engineFingerprint || prepared.disclosure.fingerprint) || sessionIdentityChanged || !this.engine?.active || prepared.commandIsolation) {
         await this.close(false); await bench.closeOthers(this); checkStopped();
-        this.commandSandbox = (prepared.commandIsolation || prepared.commandStandby) ? await require('./command-sandbox.cjs').prepare({ standby: !prepared.commandIsolation, workspaceRoot: this.root, scratchRoot: this.scratchRoot, directory: path.join(bench.store.root, 'sandboxes', bench.store.projectKey(projectRoot), this.id, this.task.id + '-policy') }) : null;
+        // S3-fix (Codex Important 2): motorens konfigmappe er én sti — sandboxens
+        // læseadgang til skillmappen og engineFactory bruger den samme, så
+        // rollen altid kan læse sine filer fra det sted, motoren skrev dem.
+        const engineDirectory = path.join(bench.store.root, 'runtime-v2', bench.store.projectKey(this.root));
+        this.commandSandbox = (prepared.commandIsolation || prepared.commandStandby) ? await require('./command-sandbox.cjs').prepare({ standby: !prepared.commandIsolation, workspaceRoot: this.root, scratchRoot: this.scratchRoot, skillsRoot: path.join(engineDirectory, 'config', 'skills'), directory: path.join(bench.store.root, 'sandboxes', bench.store.projectKey(projectRoot), this.id, this.task.id + '-policy') }) : null;
         checkStopped();
         const key = bench.store.decrypt(prepared.connection);
         const gateway = await startGateway(prepared.connection, prepared.model, key, prepared.route, (message, failure) => {
@@ -542,7 +548,7 @@ class ChatSession {
         const resume = sameSession ? savedSession.session : null;
         // V2 has an automatic, in-place legacy database migration. Keep the V1
         // engine directory intact; host-owned context is handed to a fresh V2 DB.
-        this.engine = bench.engineFactory({ root: this.root, directory: path.join(bench.store.root, 'runtime-v2', bench.store.projectKey(this.root)), provider, model: prepared.model, references: prepared.references, mode: prepared.mode, skills: prepared.context.skills, resume, sandbox: this.commandSandbox, measurement: this.runMeasurement, onEvent: event => { if (this.engine === instance) this.event(event); } });
+        this.engine = bench.engineFactory({ root: this.root, directory: engineDirectory, provider, model: prepared.model, references: prepared.references, mode: prepared.mode, skills: prepared.context.skills, resume, sandbox: this.commandSandbox, measurement: this.runMeasurement, onEvent: event => { if (this.engine === instance) this.event(event); } });
         const instance = this.engine;
         await this.engine.start(); checkStopped(); this.engineIdentity = (prepared.engineFingerprint || prepared.disclosure.fingerprint);
         this.engineConversation = prepared.handoff ?? (this.engine.resumed ? this.data.opencode?.conversation || '' : prepared.disclosure.conversation || '');

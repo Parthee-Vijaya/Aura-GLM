@@ -46,7 +46,7 @@
     const wanted = typeof options.width === 'function' ? number(options.width(), 0) : number(options.width, 0);
     const width = Math.max(0, Math.min(wanted || number(layer.offsetWidth, 0), view.width - margin * 2));
     if (width) { layer.style.width = `${Math.round(width)}px`; layer.style.maxWidth = `${Math.round(width)}px`; }
-    const height = number(layer.offsetHeight, 0) || number(options.minHeight, 0);
+    let height = number(layer.offsetHeight, 0) || number(options.minHeight, 0);
     // Horizontal: the layer follows the invoker — start, end or center — and
     // clamps into the viewport. With align:'end' the layer's right edge rides
     // the invoker's right edge, so a menu on the composer never crosses the
@@ -61,14 +61,31 @@
     // deroppe, folder laget i stedet ned under ankeret.
     const limitRaw = typeof options.topLimit === 'function' ? number(options.topLimit(), 0) : number(options.topLimit, 0);
     const topLimit = limitRaw > 0 ? limitRaw : margin;
+    // S3-fix (UX 8a): ved folden NED ankre ved options.belowOf's bund, hvis
+    // den findes — composerkortets kant — i stedet for feltets bund, så laget
+    // aldrig lægger sig hen over kortets handlingsrække (målt ved 700 px
+    // vindueshøjde: laget fra y=330 ind i kortet 279–370). Passer laget ikke
+    // umiddelbart nedenunder, begrænses dets højde til den tilgængelige
+    // plads i stedet for atter at dække composeren — ved meget små vinduer
+    // (< 160 px plads) gælder fortsat margin-fallbacken.
+    const belowAnchorRaw = typeof options.belowOf === 'function' ? options.belowOf() : options.belowOf;
+    const belowTarget = belowAnchorRaw && typeof belowAnchorRaw.getBoundingClientRect === 'function' ? belowAnchorRaw.getBoundingClientRect() : anchor;
     // Vertical: 'above' (default) or 'below' preference, flipping to the
     // other side when there is no room; a layer that fits nowhere keeps the
     // viewport margin and lets its own overflow handle the rest.
-    const above = anchor.top - height - gap, below = anchor.bottom + gap;
+    const above = anchor.top - height - gap, below = belowTarget.bottom + gap;
     let top;
     if (options.place === 'below') top = below + height <= view.height - margin ? below : above;
     else if (options.place === 'above') top = above >= topLimit ? above : below;
-    else top = above >= topLimit ? above : (below + height <= view.height - margin ? below : Math.min(Math.max(topLimit, above), below));
+    // S3-fix (UX 8a): når nedenunder ikke umiddelbart passer, vælges den
+    // stadig, hvis der er mindst 160 px — højdeklampen nedenunder gør den til
+    // at passe. Kun ved mindre plads gælder margin-fallbacken.
+    else top = above >= topLimit ? above : (below + height <= view.height - margin || view.height - margin - below >= 160 ? below : Math.min(Math.max(topLimit, above), below));
+    layer.style.maxHeight = '';
+    if (top === below && below + height > view.height - margin) {
+      height = view.height - margin - below;
+      layer.style.maxHeight = `${Math.round(height)}px`;
+    }
     top = Math.min(Math.max(topLimit, top), Math.max(topLimit, view.height - height - margin));
     layer.style.left = `${Math.round(left)}px`;
     layer.style.top = `${Math.round(top)}px`;

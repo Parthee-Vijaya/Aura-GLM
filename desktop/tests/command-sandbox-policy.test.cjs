@@ -142,3 +142,21 @@ test('command payload rejects excess length, extra fields, invalid encoding and 
     Buffer.from('{SENSITIVE').toString('base64url')
   ]) assert.throws(() => policy.parseCommand(value), error => error.code === 'AURA_SANDBOX_COMMAND_INVALID' && !error.message.includes('SENSITIVE'));
 });
+
+// S3-fix (Codex Important 2): the engine's skill folder must be bounded READ
+// access under command isolation — the roll script and its data live there,
+// outside the workspace and scratch. Read-only, never writable, and absent
+// from the policy entirely when no skills root is given.
+test('skillmappen er afgrænset skrivebeskyttet læseadgang i kommandoisolationen', () => {
+  const skillsRoot = '/tmp/aura-policy/store/runtime-v2/projekt-noegle/config/skills';
+  const value = policy.createPolicy({ ...roots, skillsRoot, platform: process.platform });
+  assert.ok(value.config.filesystem.allowRead.some(entry => entry.path === skillsRoot && entry.literal === true), 'skillmapperne kan læses af isolerede kommandoer');
+  assert.ok(!value.config.filesystem.allowWrite.some(entry => entry.path === skillsRoot), 'skrivning til skillmapper forbliver nægtet');
+  assert.equal(policy.validatePolicy(value, { platform: process.platform }), value, 'politikken genvaliderer med skillsRoot');
+  const plain = policy.createPolicy({ ...roots, platform: process.platform });
+  assert.ok(!('skillsRoot' in plain), 'uden skillsRoot er politikken byte-identisk med tidligere');
+  // Et ændret skillsRoot i politikfilen må aldrig genvalidere — roundtrippet er bundet til feltet.
+  assert.throws(() => policy.validatePolicy({ ...value, skillsRoot: '/tmp/anden-sti' }, { platform: process.platform }), { code: 'AURA_SANDBOX_POLICY_INVALID' });
+  for (const bad of ['skills', '/fysisk-mappe/../config/skills', '/']) assert.throws(() => policy.createPolicy({ ...roots, skillsRoot: bad, platform: process.platform }), { code: 'AURA_SANDBOX_POLICY_INVALID' }, `ugyldigt skillsRoot afvises: ${bad}`);
+  assert.throws(() => policy.createPolicy({ ...roots, skillsRoot: roots.workspaceRoot, platform: process.platform }), { code: 'AURA_SANDBOX_POLICY_INVALID' }, 'arbejdsroden er allerede dækket og må ikke gentages');
+});

@@ -181,3 +181,44 @@ test('invalid revision identities cannot authorize external work', async () => {
   }
   assert.equal(sent, 0);
 });
+
+// S3-fix (Codex Important 1): privacy snapshots must persist the ported skill
+// files — the four new data types plus LICENSE — with the same validation and
+// budgets as the skill loader. Before the fix, any /design send under hybrid,
+// controlled cloud or protected local failed with PRIVACY_STALE before the
+// inspector was even reached.
+test('privacy snapshots persist the ported skill data files with loader-equal validation and budgets', async t => {
+  const fs = require('node:fs/promises');
+  const os = require('node:os');
+  const path = require('node:path');
+  const { snapshotInputs } = require('../core/privacy/hybrid-snapshots.cjs');
+  const { createHash } = require('node:crypto');
+  const sha = value => createHash('sha256').update(value).digest('hex');
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'aura-snapshot-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const realRoot = await fs.realpath(root);
+  const library = await require('../core/library.cjs').loadLibrary(require('node:path').resolve(__dirname, '../../profiles'));
+  const skill = library.skills.find(item => item.name === 'harness-design');
+  assert.ok(skill, 'den portede skill er i kataloget');
+  const snapshot = await snapshotInputs(realRoot, { rules: 'Syntetiske grundregler.', skills: [{ name: 'harness-design', files: skill.files }] }, []);
+  const entry = snapshot.skills[0];
+  for (const file of ['worlds/worlds.json', 'photos/photos.json', 'scripts/roll.mjs', 'LICENSE']) {
+    const stored = entry.files.find(item => item.path === file);
+    assert.ok(stored, `${file} er med i snapshot af /design-aktiverede skills`);
+    assert.equal(stored.sha256, sha(skill.files.find(item => item.path === file).content), `${file} bindes med sha256`);
+  }
+  assert.match(entry.files.find(item => item.path === 'SKILL.md').content, /GradientDeck/, 'indholdet bevares uændret');
+  // Snapshottets egen validering følger skillloaderens: kun de porterede datatyper, budgetter og gyldig JSON.
+  const synthetic = files => ({ rules: 'r', skills: [{ name: 'harness-design', files }] });
+  const stale = error => error.code === 'PRIVACY_STALE';
+  const main = '---\nname: harness-design\ndescription: Nok tekst til validering af felterne her.\n---\nworlds/worlds.json, photos/photos.json, scripts/roll.mjs og LICENSE\n';
+  await assert.rejects(snapshotInputs(realRoot, synthetic([
+    { path: 'SKILL.md', content: main }, { path: 'worlds/worlds.json', content: 'x'.repeat(1024 * 1024 + 1) }
+  ]), []), stale, 'verdensbiblioteket har sit budget også i snapshot');
+  await assert.rejects(snapshotInputs(realRoot, synthetic([
+    { path: 'SKILL.md', content: main }, { path: 'photos/photos.json', content: '{ugyldig' }
+  ]), []), stale, 'ugyldig JSON afvises også i snapshot');
+  await assert.rejects(snapshotInputs(realRoot, synthetic([
+    { path: 'SKILL.md', content: main }, { path: 'scripts/evil.sh', content: 'rm -rf' }
+  ]), []), stale, 'vilkårlige scripts accepteres aldrig i snapshot');
+});

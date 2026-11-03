@@ -29,7 +29,13 @@ function resolve(text, skillsList) {
   const seen = new Set();
   for (const token of tokens) {
     const name = token.name;
-    const entry = known.get(shared.tokenSkill(name) || name);
+    // S3-fix (Minor 5): reserverede navne holder foran kataloget. /design er
+    // HÆVET gennem alias-vejen (tokenSkill), men et fremtidigt skill med id'et
+    // stil eller style må aldrig kunne aktivere sig selv via tokenet —
+    // S2-invarianten "reserverede navne aktiverer intet" består for S4.
+    const aliased = shared.tokenSkill(name);
+    if (!aliased && shared.RESERVED.includes(name)) { if (!reserved.includes(name)) reserved.push(name); continue; }
+    const entry = known.get(aliased || name);
     if (!entry) {
       if (shared.RESERVED.includes(name)) { if (!reserved.includes(name)) reserved.push(name); }
       else if (!unknown.includes(name)) unknown.push(name);

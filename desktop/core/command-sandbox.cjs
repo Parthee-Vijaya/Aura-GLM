@@ -44,16 +44,21 @@ async function support({ platform = process.platform } = {}) {
     return structuredClone(checked);
   } catch { return { available: false, platform, reason: 'Kommandobeskyttelsen kan ikke starte på denne computer. Automatisk kommandokørsel er slået fra.' }; }
 }
-async function prepare({ workspaceRoot, scratchRoot, directory, standby = false }) {
+async function prepare({ workspaceRoot, scratchRoot, directory, skillsRoot, standby = false }) {
   const status = await support();
   if (!status.available) throw new Error(status.reason);
   const root = await fs.realpath(workspaceRoot), scratch = await fs.realpath(scratchRoot), node = await nodePath();
   await fs.mkdir(directory, { recursive: true, mode: 0o700 });
   const trusted = await fs.realpath(directory);
   if (contains(root, trusted) || contains(scratch, trusted)) throw new Error('Kommandobeskyttelsens indstillinger skal ligge uden for arbejdsområdet.');
+  // S3-fix (Codex Important 2): motorens skillmappe får afgrænset LÆSEadgang,
+  // så godkendte kommandoer (fx rollen) kan køre script og data derfra.
+  // Stien skal ligge uden for projektet og scratch — skrivning forbliver spærret.
+  const skills = typeof skillsRoot === 'string' && skillsRoot ? path.normalize(skillsRoot) : undefined;
+  if (skills !== undefined && (!path.isAbsolute(skills) || skills === '/' || contains(root, skills) || contains(scratch, skills))) throw new Error('Kommandobeskyttelsens skillmappe skal være en absolut sti uden for arbejdsområdet.');
   const home = path.join(scratch, 'home'), temp = path.join(scratch, 'tmp');
   await fs.mkdir(home, { recursive: true, mode: 0o700 }); await fs.mkdir(temp, { recursive: true, mode: 0o700 });
-  const policy = createPolicy({ workspaceRoot: root, scratchRoot: scratch, node });
+  const policy = createPolicy({ workspaceRoot: root, scratchRoot: scratch, node, ...(skills === undefined ? {} : { skillsRoot: skills }) });
   const identity = crypto.createHash('sha256').update(JSON.stringify(policy)).digest('hex');
   const policyPath = path.join(trusted, 'policy.json'), pluginDirectory = path.join(trusted, 'command-plugin'), pluginPath = path.join(pluginDirectory, 'index.mjs'), readyPath = path.join(trusted, 'ready.json'), readyToken = crypto.randomBytes(32).toString('hex');
   await fs.rm(readyPath, { force: true });

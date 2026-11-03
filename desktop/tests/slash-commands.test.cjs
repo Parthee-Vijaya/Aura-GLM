@@ -290,7 +290,7 @@ test('fravalgte skills kan vælges til for én besked og står markeret som såd
   await settle();
   const rows = api.rows();
   assert.deepEqual(plain(rows.map(row => row.enabled)), [true, false], 'tilslåede skills står bagest');
-  assert.match(rows.find(row => !row.enabled).description, /slået fra i projektet/, 'rækken siger, at aktiveringen kun gælder denne besked');
+  assert.match(rows.find(row => !row.enabled).description, /slået fra · kun for denne besked/, 'rækken siger, at aktiveringen kun gælder denne besked');
   dom.prompt.emit('keydown', { key: 'ArrowDown', preventDefault() {}, stopPropagation() {} });
   dom.prompt.emit('keydown', { key: 'Enter', preventDefault() {}, stopPropagation() {} });
   assert.equal(dom.prompt.value, '/harness-kodestil ');
@@ -323,7 +323,7 @@ test('samtaleskift: hver åbning genhenter skills — to projekter viser hver si
   const rows = api.rows();
   assert.deepEqual(plain(rows.map(row => row.id)), ['harness-b'], 'andet projekt viser sin egen liste');
   assert.equal(rows[0].enabled, false, 'enabled-markeringen følger det åbne projekt');
-  assert.match(rows[0].description, /slået fra i projektet/, 'markeringen lyver ikke om det nye projekt');
+  assert.match(rows[0].description, /slået fra · kun for denne besked/, 'markeringen lyver ikke om det nye projekt');
 });
 
 test('en fejet første hentning ("Åbn et projekt først.") cachelagres aldrig — popuppen kommer til live', async () => {
@@ -393,6 +393,14 @@ test('index.html og styles.css: popuppen er et ankeret popover-lag i Auras token
   assert.ok(/max-width:\s*420px/.test(block), 'bredden er højst 420 px');
   assert.ok(/max-height:\s*320px/.test(block), 'højden er cirka 320 px');
   assert.ok(!/#[0-9a-fA-F]{3,8}\b/.test(block), 'ingen rå hexfarver — kun Auras tokens');
+  // S3-fix (UX 7): ingen vandret scroll — sporet er låst til lagets bredde, og
+  // både navn og beskrivelse afkortes med ellipsis (målt før: menuen scrollede
+  // 1199 px ved 371 px klientbredde, og rækkerne var ~930 px brede).
+  assert.match(block, /overflow-x:\s*hidden/, 'popuppen har ingen vandret scrollbar');
+  assert.match(block, /grid-template-columns:\s*minmax\(0,\s*1fr\)/, 'sporet kan ikke vokse med indholdet');
+  const nameBlock = stylesSource.slice(stylesSource.indexOf('#slash-menu button strong'), stylesSource.indexOf('#slash-menu button small'));
+  assert.match(nameBlock, /text-overflow:\s*ellipsis/, 'lange navne afkortes med ellipsis');
+  assert.match(nameBlock, /overflow:\s*hidden/, 'navnet klipper ikke midt i et ord uden ellipsis');
   // P1: samme popover-grammatik som resten af appen — DSH-menu-materiale,
   // neutral hover/aktiv-række (ingen accent-fyldte rækker).
   assert.ok(!stylesSource.includes('#slash-menu button:hover, #slash-menu button[aria-selected="true"] { background: var(--aura-accent-faint); }'), 'P1: ingen blå aktiv-række i slash-popuppen');
@@ -597,6 +605,13 @@ test('S3: resolve aktiverer harness-design fra /design; uden skillen er navnet i
   assert.deepEqual(denied.skills, [], 'uden skillen i kataloget aktiverer /design intet');
   assert.deepEqual(denied.reserved, ['design', 'stil'], 'og rapporteres igen som reserveret');
   assert.deepEqual(core.resolve('/faelles-grundregler', list).skills, [], 'grundreglerne er stadig ikke en kommando');
+  // S3-fix (Minor 5): reserverede navne holder foran kataloget — også hvis et
+  // fremtidigt skill-ID skulle hedde stil/style, forbliver /stil og /style
+  // inert (S2-invarianten, som S4 bygger /stil oven på).
+  const hostile = [{ id: 'stil', title: 'Fremtidig stil' }, { id: 'style', title: 'Alias' }];
+  const guard = core.resolve('/stil /style', hostile);
+  assert.deepEqual(guard.skills, [], 'et fremtidigt skill med reserveret navn aktiverer ikke via tokenet');
+  assert.deepEqual(guard.reserved, ['stil', 'style'], 'navnene rapporteres som reserverede');
 });
 
 test('S3: popuppen tilbyder /design-rækken og indsætter /design-tokenet', async () => {
@@ -612,14 +627,32 @@ test('S3: popuppen tilbyder /design-rækken og indsætter /design-tokenet', asyn
   assert.ok(row, 'skillens række bærer alias-tokenet');
   assert.equal(row.kind, 'skill');
   assert.match(row.description, /GradientDeck-design/, 'titlen står i beskrivelsen');
-  assert.match(row.description, /slået fra i projektet/, 'den fravalgte funktion aktiveres kun for denne besked');
+  assert.match(row.description, /slået fra · kun for denne besked/, 'den fravalgte funktion aktiveres kun for denne besked');
   dom.prompt.value = '/desi'; dom.prompt.selectionStart = 5; dom.prompt.emit('input');
   await settle();
-  assert.deepEqual(plain(api.rows().map(item => item.id)), ['harness-aura-design', 'design'], 'filtrering rammer aliaset — og aura-designsegmentet som i S2');
-  dom.prompt.emit('keydown', { key: 'ArrowDown', preventDefault() {}, stopPropagation() {} });
+  assert.deepEqual(plain(api.rows().map(item => item.id)), ['design', 'harness-aura-design'], 'filtrering rammer aliaset — fastlåst først, aura-designsegmentet derefter som i S2');
   dom.prompt.emit('keydown', { key: 'Enter', preventDefault() {}, stopPropagation() {} });
   assert.equal(dom.prompt.value, '/design ', 'indsættelsen sætter alias-tokenet med mellemrum');
   assert.deepEqual(plain(api.inserted()), ['design'], 'rendererens regnskab bærer tokenet');
+});
+
+// S3-fix (UX 6): /design er popuppens hovedindgang — aliasrækken er FASTLÅST
+// øverst (efter kommandoer, før de almindelige skills), så den altid er
+// synlig ved bare `/`, uanset hvor mange slåede-til skills der sorterer først.
+test('S3-fix: /design-rækken er altid synlig ved bare `/`, også over otte slåede-til skills', async () => {
+  const dom = makeDom();
+  const api = freshModule(dom);
+  const many = [{ id: 'harness-design', title: 'GradientDeck-design', summary: 'Retninger', enabled: false }];
+  for (let index = 0; index < 12; index++) many.push({ id: `harness-slaaet-til-${index}`, title: `Slået til ${index}`, summary: 's', enabled: true });
+  runModule(dom, api, { skills: async () => many });
+  dom.prompt.value = '/'; dom.prompt.selectionStart = 1; dom.prompt.emit('input');
+  await settle();
+  const rows = api.rows();
+  assert.equal(rows.length, 8, 'højst 8 rækker stadig');
+  assert.equal(rows[0].id, 'design', 'aliasrækken står først — før de slåede-til skills');
+  assert.equal(rows[0].kind, 'skill', 'den er en skillrække, ikke en kommando');
+  // Sorteringen af de øvrige følger titlerne med dansk alfabetisering ("10" og "11" mellem "1" og "2").
+  assert.deepEqual(plain(rows.slice(1).map(row => row.id)), ['harness-slaaet-til-0', 'harness-slaaet-til-1', 'harness-slaaet-til-10', 'harness-slaaet-til-11', 'harness-slaaet-til-2', 'harness-slaaet-til-3', 'harness-slaaet-til-4'], 'resten af rækkerne følger den sædvanlige orden');
 });
 
 test('S3: /design aktiverer harness-design for afsendelsen gennem prepare', async t => {
