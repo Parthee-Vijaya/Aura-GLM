@@ -215,10 +215,10 @@ test('P1-kontrast: alfa-hover, boble, diff-badge og de mørke flader består AA'
 });
 
 // ── 10. Versionen ──
-test('versionen er 0.5.7 overalt (pakke, lås, rod og pakkeposten)', () => {
-  assert.equal(pkg.version, '0.5.7');
-  assert.equal(lock.version, '0.5.7');
-  assert.equal(lock.packages[''].version, '0.5.7');
+test('versionen er 0.5.8 overalt (pakke, lås, rod og pakkeposten)', () => {
+  assert.equal(pkg.version, '0.5.8');
+  assert.equal(lock.version, '0.5.8');
+  assert.equal(lock.packages[''].version, '0.5.8');
 });
 
 // ═══ Fix-runde (review af 3feb05b): F2/F3/F4 ═══

@@ -235,7 +235,12 @@ class PrivacyService {
     try {
       this.privateDirectorySync();
       const handle = await fs.open(file, fsSync.constants.O_RDONLY | fsSync.constants.O_NOFOLLOW);
-      let value; try { const stat = await handle.stat(); if (!stat.isFile() || stat.size > 65536) throw new Error(); value = JSON.parse(await handle.readFile('utf8')); } finally { await handle.close(); }
+      // S5 (S4-re-gennemgangens note): registeret læses med samme loft som
+      // dets øvrige læsere (external-egress readConfig, gradientdeck
+      // #readRegistry, snapshotBinding): 2 MB. Det PRÆ-EKSISTERENDE 64 KiB-loft
+      // fik et legitimt register til at kaste PRIVACY_CONTROL_FAILED i
+      // allowDestination og configure; over 2 MB er fejlen stadig ærlig.
+      let value; try { const stat = await handle.stat(); if (!stat.isFile() || stat.size > 2_000_000) throw new Error(); value = JSON.parse(await handle.readFile('utf8')); } finally { await handle.close(); }
       if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error();
       return value;
     } catch (error) { if (error.code === 'ENOENT') return {}; throw controlFailed(); }
@@ -364,6 +369,28 @@ class PrivacyService {
       // Kun additiv: eksisterende id'er bevares ordret — en midlertidigt
       // uregistreret post må aldrig stryge en tidligere tilladelse.
       privacy.allowedDestinationIds = [...new Set([...allowed, destinationId])];
+    });
+    // En ændret politik starter en frisk motor næste gang — som ved configure().
+    for (const chat of this.bench.chats.values()) if (!chat.running && !chat.sending && !chat.starting && !chat.finishing) chat.prepared = null;
+    return true;
+  }
+  // S5 (GradientDeck, kendelse 3-betingelsen fra S4-gennemgangen): spejlet af
+  // allowDestination — fjerner KUN det navngivne id fra projektets tilladelser.
+  // Fjernelsen er idempotent (et fraværende id er en ingen-handling, ikke en
+  // fejl — den kan aldrig tildele noget), og den gælder kun projektet.
+  // Organisationens loft skærer stadig: projektets egen liste bliver kortere,
+  // og det, organisationen selv tillader, genindføres ikke her.
+  async revokeDestination(input = {}, trustedChatID) {
+    const scope = this.scope(input, trustedChatID);
+    if (scope.kind !== 'project') throw new Error('Tilbagekaldelsen gælder projektet.');
+    const destinationId = input.destinationId;
+    if (typeof destinationId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,199}$/.test(destinationId)) throw new Error('Vælg en gyldig modtager.');
+    if (this.bench.running) throw new Error('Stop den aktive opgave, før du ændrer dataregler.');
+    const key = this.bench.store.projectKey(scope.root);
+    await this.bench.store.update(state => {
+      const privacy = state.projects[key]?.privacy;
+      if (!privacy || !Array.isArray(privacy.allowedDestinationIds) || !privacy.allowedDestinationIds.includes(destinationId)) return;
+      privacy.allowedDestinationIds = privacy.allowedDestinationIds.filter(id => id !== destinationId);
     });
     // En ændret politik starter en frisk motor næste gang — som ved configure().
     for (const chat of this.bench.chats.values()) if (!chat.running && !chat.sending && !chat.starting && !chat.finishing) chat.prepared = null;

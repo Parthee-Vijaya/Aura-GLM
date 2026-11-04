@@ -37,7 +37,7 @@ const { TextDecoder } = require('node:util');
 const { ExternalEgress } = require('./privacy/external-egress.cjs');
 const { PrivacyGateError, composePolicy, stable } = require('./privacy/policy.cjs');
 const { inspectRequest } = require('./privacy/inspector.cjs');
-const { DESIGN_MAX_BYTES, designDocumentText } = require('./build-design.cjs');
+const { DESIGN_MAX_BYTES, designDocumentText, styleDocument } = require('./build-design.cjs');
 // Én delt grammatikkilde med afsendelsesvagterne (app.js kræver dette modul
 // gennem core/slash-commands.cjs-mønsteret): styleMessage afgør, om en besked
 // er en selvstændig /stil-kommando; styleCommand her tilføjer slug-formatet.
@@ -505,12 +505,18 @@ class GradientDeck {
   // policy, bundet som data præcis som en fremtidig afsendelse ville se den.
   // Egress kontrollerer kun requesten — svaret kontrolleres her, før status
   // «hentet». Kun en AKTIV gate har en politik at kontrollere mod.
-  async #sendable(root, slug, text) {
+  // S5: indpakningen er den ANVENDTE form — kildelinje + stil, mærket som
+  // ekstern reference — så tørkørslen ser netop det, DESIGN.md-skrivningen
+  // (og dermed en fremtidig afsendelse) indeholder.
+  async #sendable(root, slug, text, meta = null) {
     const egress = this.egress();
     if (!(await egress.active(root))) return true;
     const policy = composePolicy(await egress.policies(egress.scope(root)));
+    const document = meta
+      ? styleDocument({ name: meta.name, slug, text, fetchedAt: new Date(meta.fetchedAt).toISOString().slice(0, 10), hash: hashBytes(Buffer.from(text, 'utf8')) })
+      : { source: `GradientDeck ${STYLE_PATH(slug)}`, content: text, hash: hashBytes(Buffer.from(text, 'utf8')) };
     try {
-      inspectRequest(designDocumentText({ source: `GradientDeck ${STYLE_PATH(slug)}`, content: text, hash: hashBytes(Buffer.from(text, 'utf8')) }), policy);
+      inspectRequest(designDocumentText(document), policy);
       return true;
     } catch (error) {
       if (error instanceof PrivacyGateError) return false;
@@ -533,15 +539,15 @@ class GradientDeck {
       const cached = await this.#readStyle(slug);
       // Kun lokal: eksisterende cache må vises — der hentes aldrig netværk.
       if (cached && (this.now() - cached.fetchedAt <= STYLE_TTL || local)) {
-        return this.#styleResult(slug, entry.name, await this.#sendable(root, slug, cached.text));
+        return this.#styleResult(slug, entry, await this.#sendable(root, slug, cached.text, { name: entry.name, fetchedAt: cached.fetchedAt }), cached.fetchedAt);
       }
       if (local) return { status: 'error', message: 'GradientDeck kan ikke hentes i Kun lokal. Ingen ekstern kommunikation er tilladt. Skift arbejdsform i Datakontrol for at hente.' };
       const bytes = await this.#fetchBytes({ root, kind: 'style', name: entry.name, url, accept: 'text/markdown, text/plain', maxBytes: DESIGN_MAX_BYTES });
       const text = validateStyleText(decodeStrictUtf8(bytes, 'Filen'));
       // Tørkørslen sker FØR cachen skrives: kun fuldt kontrolleret indhold gemmes.
-      const sendable = await this.#sendable(root, slug, text);
+      const sendable = await this.#sendable(root, slug, text, { name: entry.name, fetchedAt: this.now() });
       await this.#writeStyle(slug, text);
-      return this.#styleResult(slug, entry.name, sendable);
+      return this.#styleResult(slug, entry, sendable, this.now());
     } catch (error) {
       return { status: 'error', message: error instanceof Error ? error.message : 'GradientDeck kunne ikke gennemføre hentningen. Prøv igen.' };
     }
@@ -551,10 +557,81 @@ class GradientDeck {
   // inspector.cjs med projektets gældende policy (Codex-fundet: egress
   // kontrollerer kun requesten). Base64-heuristikken bevares; en blokeret stil
   // er hentet, men markeres sendable:false med den ærlige tekst.
-  #styleResult(slug, name, sendable) {
+  // S5: resultatet bærer stilkortets data med — navn, kategori, tema, præcis
+  // kilde-URL og hentet-tidspunkt — så kortet i brugerfladen aldrig bygger
+  // sine egne data op.
+  #styleResult(slug, entry, sendable, fetchedAt) {
+    const card = {
+      slug, name: entry.name, category: entry.category || '', theme: entry.theme || 'unknown',
+      sourceUrl: ORIGIN + STYLE_PATH(slug), fetchedAt,
+    };
     return sendable
-      ? { status: 'ok', slug, name, sendable: true, message: `Stilen «${name}» er hentet. Den bruges ikke i projektet endnu.` }
-      : { status: 'ok', slug, name, sendable: false, message: 'Hentet, men datakontrollen vil afvise den ved afsendelse (indholdet ligner kodet data).' };
+      ? { status: 'ok', ...card, sendable: true, message: `Stilen «${entry.name}» er hentet. Anvend den i projektet fra stilkortet.` }
+      : { status: 'ok', ...card, sendable: false, message: 'Hentet, men datakontrollen vil afvise den ved afsendelse (indholdet ligner kodet data).' };
+  }
+
+  // ── S5 · Anvendelsen: stilens tilstand i værten (læses KUN fra cachen) ──
+  // Stilkortet og anvendelsen bygger på denne læsning: cachelagret stil med
+  // kilde, hentet-tidspunkt og sha256, genvalideret ved læsning, plus en
+  // FRISK tørkørsel mod den gældende politik — dataregler kan have ændret sig
+  // siden hentningen, og anvendelsen må ikke maskere det.
+  async styleState({ root, slug } = {}) {
+    if (!root || typeof root !== 'string') return { status: 'error', message: 'Åbn et projekt først.' };
+    if (!validSlug(slug)) return { status: 'error', message: 'Stilnavnet har ugyldigt format.' };
+    try {
+      const cached = await this.#readStyle(slug);
+      if (!cached) return { status: 'error', message: 'Stilen er ikke hentet endnu. Send /stil <navn>, og prøv igen.' };
+      const catalog = await this.#readCatalog();
+      const entry = catalog?.entries.find(item => item.slug === slug) || null;
+      const name = entry?.name || slug;
+      return {
+        status: 'ok', slug, name,
+        category: entry?.category || '', theme: entry?.theme || 'unknown',
+        sourceUrl: ORIGIN + STYLE_PATH(slug), fetchedAt: cached.fetchedAt, sha256: cached.sha256, text: cached.text,
+        sendable: await this.#sendable(root, slug, cached.text, { name, fetchedAt: cached.fetchedAt }),
+      };
+    } catch (error) {
+      return { status: 'error', message: error instanceof Error ? error.message : 'Stilen kunne ikke læses fra cachen. Hent den igen.' };
+    }
+  }
+
+  // ── S5 · Datakontrol-linjen (kendelse 3-betingelsen fra S4) ──
+  // Linjen findes kun, når der er noget at tilbagekalde: et husket
+  // «Husk for projektet»-samtykke ELLER destinationens id i projektets
+  // tilladelser (additivt fra «én gang»). Læsningen er rå tilstand — ingen
+  // sammensat politik — så linjen aldrig påstår mere, end der er gemt.
+  async consentState({ root } = {}) {
+    if (!root || typeof root !== 'string') return null;
+    const state = await this.store.read();
+    const project = state.projects?.[this.store.projectKey(root)];
+    const remembered = project?.gradientdeck && typeof project.gradientdeck === 'object' && !Array.isArray(project.gradientdeck) ? project.gradientdeck : null;
+    const allowed = Array.isArray(project?.privacy?.allowedDestinationIds) ? project.privacy.allowedDestinationIds.includes(DESTINATION_ID) : false;
+    if (!remembered && !allowed) return null;
+    return {
+      destinationId: DESTINATION_ID,
+      remembered: Boolean(remembered),
+      allowed,
+      grantedAt: typeof remembered?.grantedAt === 'string' ? remembered.grantedAt : null,
+    };
+  }
+
+  // Tilbagekaldelse: rydder det huskede samtykke OG fjerner destinationens id
+  // fra projektets tilladelser (privacy-service.revokeDestination — samme
+  // vogte som allowDestination: aldrig under en kørsel). Fremtidige hentninger
+  // spørger om samtykke igen straks. En ALLEREDE igangværende GET afbrydes
+  // ikke: den er genomgået og godkendt på sit eget grundlag — tilbagekaldelsen
+  // stopper det NÆSTE spørgsmål, ikke den igangværende hentning.
+  async revoke({ root } = {}) {
+    if (!root || typeof root !== 'string') return { status: 'error', message: 'Åbn et projekt først.' };
+    try {
+      if (!this.quiet()) throw new Error('GradientDeck venter: En opgave er i gang. Prøv igen, når den er færdig.');
+      const service = this.getPrivacy();
+      await service.revokeDestination({ scope: 'project', destinationId: DESTINATION_ID });
+      await this.#clearRemembered(root);
+      return { status: 'ok', message: 'GradientDeck-hentningen er tilbagekaldt. Fremtidige hentninger spørger om samtykke igen.' };
+    } catch (error) {
+      return { status: 'error', message: error instanceof Error ? error.message : 'Tilbagekaldelsen kunne ikke gennemføres.' };
+    }
   }
 }
 

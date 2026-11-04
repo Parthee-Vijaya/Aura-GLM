@@ -82,7 +82,7 @@ test('dialog-tildeling: alle dialoger i index.html har en data-size — settings
     'features-dialog': 'wide', 'preview-dialog': 'confirm', 'updates-dialog': 'confirm', 'support-dialog': 'confirm',
     'about-dialog': 'confirm', 'restore-dialog': 'wide', 'hosting-dialog': 'wide', 'deployment-dialog': 'confirm',
     'tools-dialog': 'wide', 'welcome-dialog': 'wide', 'project-settings-dialog': 'wide', 'chat-materials-dialog': 'wide',
-    'gradientdeck-consent': 'confirm'
+    'gradientdeck-consent': 'confirm', 'gradientdeck-style': 'confirm'
   };
   const exceptions = ['settings-dialog', 'palette'];
   const dialogs = [...indexHtml.matchAll(/<dialog\s+([^>]*)>/g)].map(match => ({

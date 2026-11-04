@@ -19,7 +19,7 @@ const { PrivacyService } = require('../core/privacy-service.cjs');
 const { ExternalEgress } = require('../core/privacy/external-egress.cjs');
 const { DESIGN_MAX_BYTES } = require('../core/build-design.cjs');
 const {
-  ORIGIN, DESTINATION_ID, DESTINATION_ACTION, SLUG, validSlug, GradientDeck, styleCommand,
+  ORIGIN, DESTINATION_ID, DESTINATION_ACTION, SLUG, validSlug, GradientDeck, styleCommand, STYLE_TTL,
 } = require('../core/gradientdeck.cjs');
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -299,7 +299,14 @@ test('formkontrol: en gyldig stil gemmes og kvitterer ærligt', async t => {
   assert.equal(result.status, 'ok');
   assert.equal(result.name, 'Cloudflare');
   assert.equal(result.sendable, true, 'base64-fri stil kan kontrolleres');
-  assert.match(result.message, /Stilen «Cloudflare» er hentet\. Den bruges ikke i projektet endnu\./);
+  // S5 opdaterer pin: kvitteringen peger nu på anvendelsen — i S4 hed den
+  // «Den bruges ikke i projektet endnu», hvilket S5 netop ændrer: stilkortet
+  // fører til DESIGN.md-skrivningen i projektet.
+  assert.match(result.message, /Stilen «Cloudflare» er hentet\. Anvend den i projektet fra stilkortet\./);
+  assert.equal(result.category, 'Web', 'S5: kortets kategori følger med');
+  assert.equal(result.theme, 'dark', 'S5: kortets tema følger med');
+  assert.equal(result.sourceUrl, `${ORIGIN}/styles/cloudflare/design.md`, 'S5: kortets kilde-URL følger med');
+  assert.ok(Number.isFinite(result.fetchedAt), 'S5: hentet-tidspunktet følger med');
   const cached = await fs.readFile(path.join(cacheDirectory(f.store), 'styles', 'cloudflare.md'), 'utf8');
   assert.equal(cached, styleText('Cloudflare'), 'den validerede tekst ligger i cachen ordret');
 });
@@ -780,4 +787,80 @@ test('S4-UI: statuslinjen er ÉN nowrap-række; målingerne viger først ved pla
   assert.match(app, /draft-crowded/, 'app.js måler pladsen og sætter crowding-tilstanden');
   const draftRule = /\.composer-status #draft-status\s*\{[^}]*\}/.exec(strip(read('styles.css')))[0];
   assert.match(draftRule, /white-space:\s*nowrap/, 'kladdestatussegmentet bryder aldrig linjen');
+});
+
+// ── 12 · S5: konsenttilstand og tilbagekaldelse (Datakontrol-linjen) ─────────
+// Kendelse 3-betingelsen fra S4-gennemgangen: tilbagekaldelses-linjen i
+// Datakontrol SKAL vise/fjerne 'aura-gradientdeck'-id'et. Tilbagekaldelsen
+// stopper FREMTIDIGE hentninger straks; en allerede igangværende GET afbrydes
+// ikke (den er genomgået og påtænges intet nyt) — dokumenteret i s5-report.
+
+const PRIVACY_ON = () => ({ enabled: true, version: 's5-v1', workMode: 'cloud-controlled', defaultClass: 'internal', requireApproval: true, allowedDestinationIds: [] });
+
+test('S5: consentState viser kun noget, når der er noget at tilbagekalde — husket samtykke OG id', async t => {
+  const f = await fixture(t, { privacy: PRIVACY_ON() });
+  assert.equal(await f.deck.consentState({ root: f.root }), null, 'før nogen hentning findes linjen ikke');
+  f.choice = 'once';
+  await f.deck.fetchStyle({ root: f.root, slug: 'cloudflare' });
+  const once = await f.deck.consentState({ root: f.root });
+  assert.equal(once.destinationId, DESTINATION_ID, 'linjen viser destination-id’et additivt (kendelse 3)');
+  assert.equal(once.remembered, false, '«én gang» huskes ikke');
+  assert.equal(once.allowed, true, 'id’et er tilføjet additivt af allowDestination');
+  // «Husk for projektet» — uret flyttes forbi TTL, så stilen hentes igen.
+  f.choice = 'project';
+  f.now = f.now + STYLE_TTL + DAY;
+  await f.deck.fetchStyle({ root: f.root, slug: 'cloudflare' });
+  const remembered = await f.deck.consentState({ root: f.root });
+  assert.equal(remembered.remembered, true, 'det huskede samtykke står i linjen');
+  assert.equal(remembered.allowed, true);
+  assert.match(remembered.grantedAt, /^\d{4}-\d{2}-\d{2}T/, 'tidspunktet medfølger');
+});
+
+test('S5: tilbagekaldelse rydder husket samtykke OG id — fremtidige hentninger spørger igen straks', async t => {
+  const f = await fixture(t, { privacy: PRIVACY_ON() });
+  f.choice = 'project';
+  await f.deck.fetchStyle({ root: f.root, slug: 'cloudflare' });
+  const before = await f.deck.consentState({ root: f.root });
+  assert.equal(before.remembered, true, 'samtykket er husket');
+  assert.equal(before.allowed, true, 'id’et er tilføjet');
+  const revoked = await f.deck.revoke({ root: f.root });
+  assert.equal(revoked.status, 'ok');
+  assert.equal(await f.deck.consentState({ root: f.root }), null, 'linjen er væk — der er intet at tilbagekalde');
+  const state = await f.store.read();
+  const project = state.projects[f.store.projectKey(f.root)];
+  assert.equal(project.gradientdeck, undefined, 'samtykke-recorden er ryddet');
+  assert.equal((project.privacy?.allowedDestinationIds || []).includes(DESTINATION_ID), false, 'id’et er fjernet fra projektets tilladelser (kendelse 3)');
+  // Fremtidige hentninger spørger igen straks: intet hentes uden samtykke.
+  f.now = f.now + STYLE_TTL + DAY;
+  f.choice = 'cancel';
+  const asked = f.consents.length;
+  const calls = f.network.calls.length;
+  const after = await f.deck.fetchStyle({ root: f.root, slug: 'cloudflare' });
+  assert.equal(after.status, 'error', 'en annulleret hentning sender intet');
+  assert.ok(f.consents.length > asked, 'samtykke blev spurgt igen — tilbagekaldelsen virker straks');
+  assert.equal(f.network.calls.length, calls, 'intet nyt på netværket uden samtykke');
+});
+
+test('S5: tilbagekaldelse uden projekt afvises — og under en kørende opgave venter den ærligt', async t => {
+  const f = await fixture(t);
+  assert.equal((await f.deck.revoke({ root: null })).status, 'error', 'uden projekt intet at tilbagekalde');
+  f.quiet = false;
+  const busy = await f.deck.revoke({ root: f.root });
+  assert.equal(busy.status, 'error');
+  assert.match(busy.message, /Opgave er i gang|opgave er i gang/i, 'den ærlige fejl forklarer, hvorfor den venter');
+  f.quiet = true;
+  const ok = await f.deck.revoke({ root: f.root });
+  assert.equal(ok.status, 'ok', 'uden husket samtykke er tilbagekaldelsen en idempotent ingen-handling');
+});
+
+test('S5: hentningen bærer kortets data med — kategori, tema og kilde-URL til stilkortet', async t => {
+  const f = await fixture(t);
+  f.choice = 'once';
+  const result = await f.deck.fetchStyle({ root: f.root, slug: 'cloudflare' });
+  assert.equal(result.status, 'ok');
+  assert.equal(result.name, 'Cloudflare');
+  assert.equal(result.category, 'Web', 'kortet viser kategorien');
+  assert.equal(result.theme, 'dark', 'kortet viser temaet i tilgængelig form');
+  assert.equal(result.sourceUrl, `${ORIGIN}/styles/cloudflare/design.md`, 'kortet viser den præcise kilde');
+  assert.ok(Number.isFinite(result.fetchedAt), 'kortet kan vise «hentet»-dato');
 });

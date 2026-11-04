@@ -1244,7 +1244,7 @@ async function loadRoutes(saved = '') {
   renderStatusLine();
 }
 function selection() { return { text: $('#prompt').value, chatMaterials:window.chatMaterials?.selection() || null, effort: view?.effort || null, includeHistory: $('#include-history').checked, mode: $('#work-mode').value, planID: activePlan?.id, connectionID: $('#connection-select').value, modelID: $('#model-select').value, routeID: $('#route-select').value, references: [...document.querySelectorAll('#reference-choices input:checked')].map(el => el.value), fileRefs: window.workspace?.references() || [], previewTarget: window.workspace?.target()?.id || null, view: window.previewViewSize?.() || null, chat: view.id, invokedSkills: window.SlashCommands?.inserted() || [] }; }
-const detailLabels = { rules: 'Fælles grundregler, der sendes', projectInstructions: 'Projektets egne regler, der sendes', projectDesignDocument: 'Projektets DESIGN.md, der sendes', workspace: 'Arbejdsmappe', mode: 'Arbejdsmåde', brief: 'Projektbrief, der sendes', previewReferenceText: 'Valgt element, der sendes', conversation: 'Tidligere samtale, der sendes', projectGuidance: 'Appens vejledning om projektvalg og design', planContext: 'Plan og afklaring, der sendes', projectChoices: 'Projektets opstartsvalg', projectDesign: 'Projektets designvalg', fileReferences: 'Filhenvisninger i beskeden', connection: 'Forbindelse', model: 'Model', endpoint: 'Serveradresse', recipients: 'Modtagere', region: 'Behandlingssted', retention: 'Opbevaring', training: 'Brug til træning', price: 'Pris og gratisbegrænsninger', capabilities: 'Modelmuligheder', material: 'Hvad sendes?', references: 'Udvalgte private referencer', skills: 'Skills, AI’en kan hente', commandInvocations: 'Kommandoer aktiveret i beskeden', localStorage: 'Lokal historik og yderligere netværk', security: 'Forbindelsens sikkerhed', source: 'Kilde', checkedAt: 'Dokumentation kontrolleret', evidence: 'Grundlag' };
+const detailLabels = { rules: 'Fælles grundregler, der sendes', projectInstructions: 'Projektets egne regler, der sendes', projectDesignDocument: 'Projektets DESIGN.md, der sendes', gradientdeckStyle: 'Ekstern designreference, der sendes', workspace: 'Arbejdsmappe', mode: 'Arbejdsmåde', brief: 'Projektbrief, der sendes', previewReferenceText: 'Valgt element, der sendes', conversation: 'Tidligere samtale, der sendes', projectGuidance: 'Appens vejledning om projektvalg og design', planContext: 'Plan og afklaring, der sendes', projectChoices: 'Projektets opstartsvalg', projectDesign: 'Projektets designvalg', fileReferences: 'Filhenvisninger i beskeden', connection: 'Forbindelse', model: 'Model', endpoint: 'Serveradresse', recipients: 'Modtagere', region: 'Behandlingssted', retention: 'Opbevaring', training: 'Brug til træning', price: 'Pris og gratisbegrænsninger', capabilities: 'Modelmuligheder', material: 'Hvad sendes?', references: 'Udvalgte private referencer', skills: 'Skills, AI’en kan hente', commandInvocations: 'Kommandoer aktiveret i beskeden', localStorage: 'Lokal historik og yderligere netværk', security: 'Forbindelsens sikkerhed', source: 'Kilde', checkedAt: 'Dokumentation kontrolleret', evidence: 'Grundlag' };
 // Kort resumé i almindeligt dansk. Alle oplysninger ligger under "Se alle oplysninger".
 function showData(data, canSend) {
   $('#data-summary').replaceChildren();
@@ -1259,7 +1259,9 @@ function showData(data, canSend) {
   $('#data-history-text').hidden = false;
   // Filhenvisninger står i første lag, fordi de er nyt materiale, brugeren selv har valgt at dele.
   // Et valgt element står også i første lag: AI'en får elementets tekst, placering og et uddrag af sidens HTML.
-  const shared = [data.fileReferences?.length ? `Filhenvisninger: ${data.fileReferences.join(', ')}. AI’en får stien og læser selv filen i projektet.` : '', data.previewReference ? `Valgt i forhåndsvisningen: ${data.previewReference}. AI’en får elementets tekst, placering og et uddrag af sidens HTML; se det under alle oplysninger.` : ''].filter(Boolean);
+  // S5: en anvendt GradientDeck-stil står i første lag — tredjepartstekst fra
+  // ui.gradientdeck.com medsendes som en del af projektets DESIGN.md.
+  const shared = [data.fileReferences?.length ? `Filhenvisninger: ${data.fileReferences.join(', ')}. AI’en får stien og læser selv filen i projektet.` : '', data.previewReference ? `Valgt i forhåndsvisningen: ${data.previewReference}. AI’en får elementets tekst, placering og et uddrag af sidens HTML; se det under alle oplysninger.` : '', data.gradientdeckStyle ? `Ekstern designreference: ${data.gradientdeckStyle}. Stilen er tredjepartstekst, der medsendes som projektets DESIGN.md.` : ''].filter(Boolean);
   $('#data-refs-text').textContent = shared.join(' ');
   $('#data-refs-text').hidden = !shared.length;
   for (const [label, value] of Object.entries({ 'AI': data.modelName ? `${data.modelName} · ${data.provider || data.connection}` : `${data.model} · ${data.connection}`, 'Hvor': data.regionShort || data.region, 'Træning': data.trainingShort || data.training, 'Pris': data.priceShort || data.price })) {
@@ -1270,7 +1272,7 @@ function showData(data, canSend) {
   for (const [key, label] of Object.entries(detailLabels)) {
     const value = data[key];
     if (key === 'projectInstructions' && !value) continue;
-    if (['fileReferences', 'brief', 'previewReferenceText', 'commandInvocations'].includes(key) && !value?.length) continue;
+    if (['fileReferences', 'brief', 'previewReferenceText', 'commandInvocations', 'gradientdeckStyle'].includes(key) && !value?.length) continue;
     const text = key === 'mode' ? ({ chat: 'Samtale', plan: 'Planlæg', build: 'Byg den valgte plan', free: 'Byg' }[value]) : key === 'conversation' && !value ? 'Medsendes ikke. Den aktive samtale og en valgt plan indgår stadig.' : Array.isArray(value) ? value.join(', ') || 'Ingen' : value && typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value || 'Ingen');
     const dd = node('dd');
     if (text.length > 160) { const fold = node('details', undefined, 'disclosure'); fold.append(node('summary', `Vis (${text.split(/\s+/).length} ord)`), node('pre', text)); dd.append(fold); }
@@ -1639,7 +1641,12 @@ $('#data-button').onclick = () => action(async () => {
   const data = await call('prepare', selection());
   // S4: en selvstændig /stil-kommando har ingen modelgennemgang — værten har
   // allerede hentet stilen (samtykke skete der); kvitteringen står i rækken.
-  if (data.styleCommand) { setDraftStatus(data.styleCommand.message, data.styleCommand.status === 'ok'); return; }
+  // S5: en HENTET stil åbner stilkortet med dens faktiske anvendelse.
+  if (data.styleCommand) {
+    if (data.styleCommand.status === 'ok') showStyleCard(data.styleCommand);
+    else setDraftStatus(data.styleCommand.message, false);
+    return;
+  }
   showData(data, false);
 });
 // Låsen tilhører samtalen og sættes før første await, også ved tastaturafsendelse.
@@ -1667,11 +1674,13 @@ $('#chat-form').onsubmit = event => {
       if (view !== sourceView || current?.root !== owner?.root) return;
       // S4: en selvstændig `/stil <slug>` er håndteret i værten FØR selve
       // prepare — samtykke, snæver GET, indholdskontrol og kvittering. Ingen
-      // modelkald og ingen DESIGN.md (det er S5). Succes rydder kommandoen ud
-      // af feltet; en fejl lader teksten stå, så den kan prøves igen.
+      // modelkald. Succes rydder kommandoen ud af feltet; en fejl lader teksten
+      // stå, så den kan prøves igen.
+      // S5: en hentet stil åbner stilkortet — anvendelsen skriver DESIGN.md i
+      // projektet gennem værten, med Bevar/Erstat, hvis der findes et i forvejen.
       if (data.styleCommand) {
-        if (data.styleCommand.status === 'ok') { $('#prompt').value = ''; saveChatDraft(); }
-        setDraftStatus(data.styleCommand.message, data.styleCommand.status === 'ok');
+        if (data.styleCommand.status === 'ok') { $('#prompt').value = ''; saveChatDraft(); showStyleCard(data.styleCommand); }
+        else setDraftStatus(data.styleCommand.message, false);
         return;
       }
       if (data.accepted || reviewKey(data) === acceptedFingerprint) await sendNow(data, text);
@@ -1717,7 +1726,7 @@ window.harness?.onEvent?.(event => {
   gradientdeckConsentID = event.id;
   $('#gradientdeck-consent-title').textContent = event.kind === 'style' ? `Hent stilen «${event.name}»?` : 'Hent stilkatalog fra GradientDeck?';
   $('#gradientdeck-consent-lead').textContent = event.kind === 'style'
-    ? 'Stilen hentes fra GradientDeck og gemmes kun i appens private cache. Den bruges ikke i projektet endnu.'
+    ? 'Stilen hentes til appens private cache. Du vælger bagefter på stilkortet, om den skal anvendes i projektet.'
     : 'Kataloget med stilbiblioteket hentes fra GradientDeck og gemmes kun i appens private cache. Ingen projektfiler eller beskeder sendes.';
   $('#gradientdeck-consent-url').textContent = event.url;
   $('#gradientdeck-consent').showModal();
@@ -1736,6 +1745,101 @@ const gradientdeckChoice = choice => action(async () => {
 });
 $('#gradientdeck-consent-once').onclick = () => gradientdeckChoice('once');
 $('#gradientdeck-consent-project').onclick = () => gradientdeckChoice('project');
+
+// S5 · Stilkortet: en hentet stil bliver til en faktisk anvendelse. Kortets
+// data kommer fra værtens hentningsresultat (navn, kategori, tema, præcis
+// kilde); ANVENDELSEN går gennem gradientdeck:apply — værten skriver
+// DESIGN.md i projektet, rendereren sender kun slug, valg og det
+// forventnings-mærke, diff-gennemgangen gav. Findes der et DESIGN.md i
+// forvejen, viser værten forskellen og valgene Bevar/Erstat; Bevar lukker
+// uden nogen skrivning (intet er rørt). En sendable:false-stil har ingen
+// «klar»-status: kortet siger ærligt, at datakontrollen afviser den ved
+// afsendelse, og Anvend-knappen er slået fra — værten blokerer den samme vej.
+const styleTheme = value => ({ dark: 'Mørk', light: 'Lys', mixed: 'Blandet' }[value] || 'Ukendt tema');
+const styleCard = { data: null, busy: false };
+const styleDate = value => Number.isFinite(value) ? new Date(value).toLocaleDateString('da-DK', { day: 'numeric', month: 'long', year: 'numeric' }) : 'ukendt dato';
+function showStyleCard(data) {
+  styleCard.data = { ...data };
+  styleCard.busy = false;
+  renderStyleCard();
+  $('#gradientdeck-style').showModal();
+}
+function renderStyleCard() {
+  const data = styleCard.data, dialog = $('#gradientdeck-style');
+  if (!data || !dialog) return;
+  const meta = $('#gradientdeck-style-meta');
+  meta.replaceChildren();
+  for (const [label, value] of [
+    ['Kategori', data.category || '—'], ['Tema', styleTheme(data.theme)],
+    ['Kilde', data.sourceUrl || ''], ['Hentet', data.fetchedAt ? styleDate(data.fetchedAt) : ''],
+  ]) if (value) { meta.append(node('dt', label), node('dd', value)); }
+  const warning = $('#gradientdeck-style-warning'), diffwrap = $('#gradientdeck-style-diffwrap');
+  const keep = $('#gradientdeck-style-keep'), apply = $('#gradientdeck-style-apply');
+  warning.hidden = true; diffwrap.hidden = true; apply.hidden = false; apply.disabled = false;
+  keep.textContent = 'Luk'; keep.dataset.close = 'gradientdeck-style';
+  if (data.status === 'conflict') {
+    $('#gradientdeck-style-title').textContent = 'Erstat DESIGN.md?';
+    $('#gradientdeck-style-lead').textContent = `Projektet har allerede et DESIGN.md. Her er forskellen til «${data.name}»-stilen.`;
+    const diff = $('#gradientdeck-style-diff');
+    diff.replaceChildren();
+    for (const hunk of data.diff?.hunks || []) {
+      if (hunk.skippedBefore) diff.append(node('p', `${hunk.skippedBefore} uændrede linjer`, 'style-card-skip'));
+      for (const line of hunk.lines) diff.append(node('span', `${line.type === '+' ? '+' : line.type === '-' ? '−' : ' '} ${line.text || ''}`, `style-card-line is-${line.type === '+' ? 'add' : line.type === '-' ? 'del' : 'ctx'}`));
+    }
+    $('#gradientdeck-style-diffstats').textContent = `${data.diff?.added ?? 0} tilføjede og ${data.diff?.removed ?? 0} fjernede linjer${data.diff?.truncated ? ' · visningen er afkortet' : ''}`;
+    diffwrap.hidden = false;
+    keep.textContent = 'Bevar eksisterende'; keep.dataset.close = '';
+    keep.onclick = () => { dialog.close(); setDraftStatus('Eksisterende DESIGN.md er bevaret. Intet er ændret.'); };
+    apply.textContent = 'Erstat';
+    apply.onclick = () => applyStyleCard('replace', data.expected);
+  } else if (data.status === 'applied') {
+    $('#gradientdeck-style-title').textContent = `«${data.name}»-stilen er anvendt`;
+    $('#gradientdeck-style-lead').textContent = data.message || 'DESIGN.md er opdateret.';
+    apply.textContent = 'Vis ændring';
+    apply.onclick = () => { dialog.close(); $('#tab-changes').click(); };
+    keep.onclick = () => dialog.close();
+  } else if (data.status === 'kept') {
+    $('#gradientdeck-style-title').textContent = 'DESIGN.md er bevaret';
+    $('#gradientdeck-style-lead').textContent = data.message || 'Eksisterende DESIGN.md er bevaret. Intet er ændret.';
+    apply.hidden = true;
+    keep.onclick = () => dialog.close();
+  } else if (data.status === 'blocked') {
+    $('#gradientdeck-style-title').textContent = `Stilen «${data.name}» kan ikke anvendes`;
+    $('#gradientdeck-style-lead').textContent = 'Stilen er hentet til appens private cache.';
+    warning.hidden = false; warning.textContent = data.message;
+    apply.hidden = true;
+    keep.textContent = 'Luk';
+    keep.onclick = () => dialog.close();
+  } else if (data.status === 'error') {
+    $('#gradientdeck-style-title').textContent = 'Stilen kunne ikke anvendes';
+    $('#gradientdeck-style-lead').textContent = data.message || 'Prøv igen.';
+    apply.hidden = true;
+    keep.onclick = () => dialog.close();
+  } else {
+    $('#gradientdeck-style-title').textContent = `Stilen «${data.name}» er hentet`;
+    $('#gradientdeck-style-lead').textContent = 'Stilen ligger i appens private cache. Anvend den for at gøre den til projektets DESIGN.md — designhjælpen bruger den fra din næste besked.';
+    if (data.sendable === false) { warning.hidden = false; warning.textContent = data.message; apply.disabled = true; apply.title = data.message; }
+    apply.textContent = 'Anvend i projektet';
+    apply.onclick = () => applyStyleCard('apply', null);
+    keep.onclick = () => dialog.close();
+  }
+  apply.disabled = apply.disabled || styleCard.busy;
+  apply.textContent = styleCard.busy ? `${apply.textContent} …` : apply.textContent;
+}
+async function applyStyleCard(choice, expected) {
+  const data = styleCard.data;
+  if (!data || styleCard.busy) return;
+  styleCard.busy = true; renderStyleCard();
+  try {
+    const result = await call('gradientdeckApply', { slug: data.slug, choice, ...(expected ? { expected } : {}) }, selectedOwner());
+    styleCard.data = { ...data, ...result };
+    if (styleCard.data.status === 'applied') setDraftStatus(styleCard.data.message, false);
+  } catch (error) {
+    styleCard.data = { ...data, status: 'error', message: error.message };
+  } finally {
+    styleCard.busy = false; renderStyleCard();
+  }
+}
 $('#send').setAttribute('aria-keyshortcuts', 'Enter Meta+Enter Control+Enter');
 $('#send').title = 'Enter sender. Shift+Enter giver en ny linje.';
 $('#data-dialog').addEventListener('close', () => { pendingSend = null; });

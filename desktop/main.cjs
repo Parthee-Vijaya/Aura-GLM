@@ -197,7 +197,16 @@ function handle(channel, action) {
     }
   });
 }
-handle('privacy:get', value => workbench.privacy.get(value, requests.getStore()?.chat));
+handle('privacy:get', async value => {
+  const result = await workbench.privacy.get(value, requests.getStore()?.chat);
+  // S5 · GradientDeck (kendelse 3-betingelsen fra S4-gennemgangen): Datakontrol
+  // får linjens tilstand fra tjenesten selv — husket samtykke ELLER
+  // destinationens id i projektets tilladelser; findes ingen af delene, findes
+  // linjen heller ikke (intet at tilbagekalde).
+  const gradientdeck = await gradientDeck().consentState({ root: currentProject()?.root || null });
+  if (gradientdeck) result.gradientdeck = gradientdeck;
+  return result;
+});
 handle('privacy:configure', value => workbench.privacy.configure(value, requests.getStore()?.chat));
 // Reviews belong to their original workbench even while another project is open.
 handle('privacy:review', value => { const owner = [registry.empty, ...registry.values()].find(bench => bench.privacy.pending.has(value?.id)); if (!owner) throw new Error('Delingsgennemgangen er udløbet.'); return owner.privacy.review(value); });
@@ -781,6 +790,35 @@ handle('gradientdeck:consent', value => {
   finish(['once', 'project', 'cancel'].includes(value?.choice) ? value.choice : 'cancel');
   return true;
 });
+// S5 · Anvendelsen: VÆRTEN skriver DESIGN.md i brugerens projekt. Rendereren
+// sender kun stilens slug og sit valg (apply/replace/keep + forventnings-
+// mærket fra diff-gennemgangen) — aldrig stier, indhold eller transport.
+// Ændringen registreres i den sendende samtale (recordEdit), så Fortryd virker
+// gennem det eksisterende spor, og kvitteringen står i Aktivitet.
+handle('gradientdeck:apply', value => exclusive(async () => {
+  const project = currentProject();
+  if (!project) throw new Error('Åbn et projekt først.');
+  const chat = currentChat();
+  if (!chat) throw new Error('Start en samtale, før du anvender stilen.');
+  const engine = new (require('./core/design-styles.cjs').DesignStyleApply)({
+    deck: gradientDeck(),
+    features: async root => (await workbench.features.get(root)).effective,
+    git: workbench.git,
+    chat,
+    busyRoot: root => workbench.busyRoot(root),
+  });
+  const result = await engine.apply({ root: project.root, slug: value?.slug, choice: value?.choice, expected: typeof value?.expected === 'string' ? value.expected : null });
+  if (result.status === 'applied') {
+    workbench.log({ kind: 'gradientdeck', title: `«${result.name}»-stil anvendt`, detail: 'DESIGN.md opdateret · Fortryd under Ændringer', status: 'completed' }, requestChatID());
+  }
+  return result;
+}));
+// S5 · Tilbagekaldelsen (Datakontrol-linjen): rydder det huskede samtykke OG
+// fjerner 'aura-gradientdeck'-id'et fra projektets tilladelser — spejlet af
+// samtykke-flowet i S4. Fremtidige hentninger spørger igen straks; en
+// allerede igangværende GET afbrydes ikke (den er gennemgået på sit eget
+// grundlag — dokumenteret i s5-report).
+handle('gradientdeck:revoke', value => gradientDeck().revoke({ root: currentProject()?.root || null }));
 handle('agent:prepare', value => exclusive(async () => {
   // S4: en selvstændig `/stil <slug>` (alias /style) håndteres FØR selve
   // prepare — værten genvaliderer fra selve beskedteksten: snæver GET med

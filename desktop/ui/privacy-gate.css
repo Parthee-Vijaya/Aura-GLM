@@ -42,3 +42,10 @@
 @media(max-width:680px){.privacy-dialog{padding:18px;width:calc(100vw - 20px);max-height:calc(100dvh - 20px);border-radius:12px}.privacy-heading h2{font-size:21px}.privacy-mode-grid{grid-template-columns:1fr;gap:9px}.privacy-mode-card{padding:13px 15px;gap:5px}.privacy-mode-card strong{font-size:14px}.privacy-settings-grid,.privacy-review-meta,.privacy-source-row{grid-template-columns:1fr;gap:8px}.privacy-actions{position:sticky;bottom:-18px;background:var(--surface);padding:14px 0 4px}.privacy-actions button{flex:1 1 auto}.privacy-payload{max-height:34dvh}}
 @media(prefers-reduced-motion:reduce){.privacy-dialog *{transition:none!important;animation:none!important}}
 @media(forced-colors:active){.privacy-mode-card[aria-pressed=true]{outline:2px solid Highlight}.privacy-dialog{border:1px solid CanvasText}}
+
+/* S5 · GradientDeck-tilbagekaldelsen (kendelse 3-betingelsen fra S4):
+   linjen i Datakontrol viser dens tilstand OG destination-id'et additivt;
+   Tilbagekald fjerner både samtykket og id'et gennem værten. */
+.privacy-gradientdeck-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 8px 0 0; }
+.privacy-gradientdeck-row span { color: var(--ink); }
+.privacy-gradientdeck-row small { color: var(--aura-ink-caption); overflow-wrap: anywhere; }

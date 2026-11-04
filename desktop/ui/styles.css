@@ -1357,7 +1357,11 @@ details.plan-detail > .plan-detail-body { padding: 0 14px 12px 14px; font-size: 
 #slash-menu { position: fixed; inset: auto; width: 420px; max-width: 420px; max-height: 320px; overflow-y: auto; overflow-x: hidden; padding: 6px; margin: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; }
 #slash-menu.menu-material:popover-open { display: grid; gap: 2px; }
 #slash-menu button { display: flex; gap: 8px; align-items: center; text-align: left; min-height: 36px; min-width: 0; overflow: hidden; padding: 6px 10px; border: none; background: transparent; border-radius: 8px; font-size: 13px; font-weight: 400; cursor: pointer; color: var(--ink); }
-#slash-menu button strong { font-family: var(--aura-font-family-code); font-size: 12px; font-weight: 550; color: var(--ink); flex: 0 1 auto; min-width: 4ch; max-width: 65%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* S5-UI-fix (b) fra S3-liveanalysen: navnekolonnen får min-content-plads op
+   til ~55 % — et langt kommandonavn (harness-præfiks osv.) afkortes så lidt
+   som muligt, og kun over loftet kommer ellipsis; beskrivelsen viger først
+   (den har min-width: 0). Rækken er stadig ÉN linje: nowrap består (DSH). */
+#slash-menu button strong { font-family: var(--aura-font-family-code); font-size: 12px; font-weight: 550; color: var(--ink); flex: 0 1 auto; min-width: min-content; max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #slash-menu button small { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--muted); }
 /* Hover og den aktive række bærer samme NEUTRALE flade (P1), og beskrivelsen
    skifter til --aura-ink-secondary, så den lille tekst holder kontrasten på
@@ -1417,6 +1421,23 @@ details.plan-detail > .plan-detail-body { padding: 0 14px 12px 14px; font-size: 
 .diff-stat-badge .removed { color: color-mix(in srgb, var(--aura-diff-del) 70%, var(--aura-ink)); }
 
 .chat.panel { position: relative; }
+
+/* ── S5 · Stilkortet (gradientdeck-style-dialogen) ──
+   Samme dialog-grammatik som samtykke-dialogen (data-size="confirm"). Meta-
+   rækkerne er en lille definitionslister; diff-visningen er ét rullefelt med
+   præcis linjebredde, så +/−-linjerne står stille under læsning. Farverne er
+   Auras tokens — ingen rå hexværdier — og betydningen bæres af +/−-tegnet
+   og tekstfarve, aldrig af farven alene (WCAG 1.4.1). */
+#gradientdeck-style .style-card-meta { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 0 0 8px; }
+#gradientdeck-style .style-card-meta dt { color: var(--muted); }
+#gradientdeck-style .style-card-meta dd { margin: 0; overflow-wrap: anywhere; }
+#gradientdeck-style .style-card-diff { max-height: 220px; overflow: auto; border: 0.5px solid var(--aura-border); border-radius: 8px; padding: 6px 8px; font-family: var(--aura-font-family-code); font-size: 12px; line-height: 1.5; }
+#gradientdeck-style .style-card-diff .style-card-line { display: block; white-space: pre-wrap; overflow-wrap: anywhere; }
+#gradientdeck-style .style-card-diff .style-card-line.is-add { color: var(--aura-success-ink, var(--ink)); }
+#gradientdeck-style .style-card-diff .style-card-line.is-del { color: var(--aura-error-ink, var(--muted)); }
+#gradientdeck-style .style-card-diff .style-card-line.is-ctx { color: var(--muted); }
+#gradientdeck-style .style-card-skip { margin: 4px 0; color: var(--aura-ink-caption); }
+#gradientdeck-style .hint { overflow-wrap: anywhere; }
 
 /* ============================================================================
    DARKMODE · samlet afslutningsblok (skal ligge SIDST i filen, så disse
@@ -1485,4 +1506,3 @@ details.plan-detail > .plan-detail-body { padding: 0 14px 12px 14px; font-size: 
      mørke sidepanelet — warning-ink måler 7,49:1 (P1-rapporten). */
   .chat-meta.is-waiting { color: var(--aura-warning-ink); }
 }
-

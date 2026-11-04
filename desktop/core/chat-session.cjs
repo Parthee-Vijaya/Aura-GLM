@@ -322,6 +322,12 @@ class ChatSession {
     disclosure.projectGuidance = guidanceFor(bench.surface, settings.runtime);
     disclosure.projectInstructions = context.projectInstructions;
     if (projectDesignDocument) disclosure.projectDesignDocument = projectDesignDocument;
+    // S5: en anvendt GradientDeck-stil oplyses i gennemgangen («Ekstern
+    // designreference: <navn> · ui.gradientdeck.com») — nøglen findes KUN,
+    // når DESIGN.md bærer kildelinjen, så projekter uden en ekstern reference
+    // beholder et byte-identisk fingeraftryk. Selve stilens INDHOLD tæller
+    // allerede med gennem projectDesignDocument (S3).
+    if (projectDesignDocument?.external) disclosure.gradientdeckStyle = `${projectDesignDocument.external.name} · ui.gradientdeck.com`;
     const sessionMaterial = disclosure.material;
     disclosure.rules = context.rules;
     if (['plan', 'build'].includes(mode)) disclosure.material += ' Plan og tidligere afklaring medsendes. De kan indeholde oplysninger fra tidligere valgte referencer, også efter at referencerne fravælges. Gennemgå indholdet nedenfor.';
@@ -789,9 +795,11 @@ class ChatSession {
     return this.changes;
   }
   // En ændring, brugeren selv har lavet i Aura, står under Ændringer og Aktivitet som brugerens.
-  recordEdit({ kind, label, files, title, target, detail, undoes, log = true }) {
+  // `what` navngiver ændringen i Fortryd-kvitteringen (fx 'stil-anvendelsen');
+  // uden den vælges den sædvanlige tekst efter ændringens art.
+  recordEdit({ kind, label, files, title, target, detail, undoes, log = true, what = null }) {
     const at = Date.now();
-    const task = { id: crypto.randomUUID(), root: this.root, kind, label, mode: kind, status: 'idle', startedAt: at, endedAt: at, files, skipped: 0, unavailable: false, commands: 0, aiFiles: new Set(), aiHashes: new Map(), checkpoint: null, ...(undoes ? { undoes } : {}) };
+    const task = { id: crypto.randomUUID(), root: this.root, kind, label, mode: kind, status: 'idle', startedAt: at, endedAt: at, files, skipped: 0, unavailable: false, commands: 0, aiFiles: new Set(), aiHashes: new Map(), checkpoint: null, ...(what ? { what } : {}), ...(undoes ? { undoes } : {}) };
     this.changes.tasks.push(task); while (this.changes.tasks.length > 20) this.changes.tasks.shift();
     if (log) this.log({ id: `edit-${task.id}`, kind: 'edit', task: task.id, title, target, detail, status: 'completed', at });
     this.emit({ type: 'changes.updated', root: this.project.root, task: task.id });
@@ -834,7 +842,7 @@ class ChatSession {
       else { await fs.mkdir(path.dirname(target), { recursive: true }); await fs.writeFile(target, entry.before); }
     }
     task.undone = true;
-    const what = task.kind === 'direct' ? 'tekstrettelsen' : task.kind === 'undo' ? 'fortrydelsen' : 'opgaven';
+    const what = task.what || (task.kind === 'direct' ? 'tekstrettelsen' : task.kind === 'undo' ? 'fortrydelsen' : 'opgaven');
     const undo = this.recordEdit({ kind: 'undo', label: `Fortrudt: ${shortText(task.label, 60)}`, files: plan.map(({ entry, relative }) => ({ file: relative, before: entry.after, after: entry.before })), title: `Du fortrød ${what}`, target: plan.map(item => item.relative).join(', ').slice(0, 300), detail: shortText(task.label, 120), undoes: task.id });
     return { task: undo.id, files: plan.map(item => item.relative) };
   }

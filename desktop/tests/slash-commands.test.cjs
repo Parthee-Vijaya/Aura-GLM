@@ -133,7 +133,10 @@ test('`/` åbner popuppen med skills fra skills:list — højst 8 rækker, uden 
   // S4: den fastgjorte /stil-række står først; skills fylder resten.
   assert.match(options[0].textContent, /\/stil/);
   assert.match(options[1].textContent, /\/harness-skill-0/);
-  assert.match(options[1].textContent, /Skill 0/, 'navn og kort beskrivelse pr. række');
+  // S5-UI-fix (a) opdaterer pin: rækken viser tokenet (navnet) + det,
+  // skillen GØR (resuméet) — titlen foran resuméet var en selvgentagelse
+  // og er fjernet fra beskrivelsen i hele popuppen.
+  assert.match(options[1].textContent, /Kort beskrivelse/, 'rækken viser det, skillen gør');
   assert.equal(dom.prompt.getAttribute('aria-expanded'), 'true');
   assert.equal(dom.prompt.getAttribute('aria-controls'), 'slash-menu');
   assert.equal(dom.prompt.getAttribute('aria-activedescendant'), options[0].id, 'den aktive række bæres af aria-activedescendant');
@@ -634,7 +637,11 @@ test('S3: popuppen tilbyder /design-rækken og indsætter /design-tokenet', asyn
   const row = api.rows().find(item => item.id === 'design');
   assert.ok(row, 'skillens række bærer alias-tokenet');
   assert.equal(row.kind, 'skill');
-  assert.match(row.description, /GradientDeck-design/, 'titlen står i beskrivelsen');
+  // S5-UI-fix (a): beskrivelsen starter med det, skillen gør — titlen står
+  // ikke længere to gange («GradientDeck-design · GradientDecks …»-fejlen fra
+  // S3-liveanalysen). Navnet i rækken er tokenet; beskrivelsen er handlingen.
+  assert.ok(row.description.startsWith('Retninger og kvalitet'), 'beskrivelsen starter med det, skillen gør');
+  assert.ok(!row.description.startsWith('GradientDeck-design'), 'intet selvgentagende navn i starten');
   assert.match(row.description, /slået fra · kun for denne besked/, 'den fravalgte funktion aktiveres kun for denne besked');
   dom.prompt.value = '/desi'; dom.prompt.selectionStart = 5; dom.prompt.emit('input');
   await settle();
@@ -773,7 +780,12 @@ test('S4: den fastgjorte /stil-række står med /design før kataloget — RESER
   assert.equal(rows.length, 8, 'højst 8 rækker');
   assert.deepEqual(plain(rows.slice(0, 2).map(row => row.id)), ['design', 'stil'], '/design og /stil er fastgjorte — før skills-kataloget');
   assert.equal(rows[1].kind, 'builtin', '/stil er en betroet indbygget kommando, ikke en skill');
-  assert.match(rows[1].description, /GradientDeck/, 'rækken forklarer, hvad /stil gør');
+  // S5-UI-fix (a): rækken starter med handlingen («vælg en designstil») —
+  // ikke med navnet på tjenesten; kilden nævnes én gang, som en del af hvad
+  // rækken gør. I S5 gælder anvendelsen også projektet.
+  assert.match(rows[1].description, /^Vælg en designstil/, 'beskrivelsen starter med, hvad /stil gør');
+  assert.match(rows[1].description, /GradientDeck/, 'kilden står i rækken');
+  assert.match(rows[1].description, /anvendes i projektet/, 'rækken siger, at stilen kan anvendes');
   dom.prompt.value = '/sti'; dom.prompt.selectionStart = 4; dom.prompt.emit('input');
   await settle();
   assert.deepEqual(plain(api.rows().map(row => row.id)), ['stil'], 'filtrering rammer den fastgjorte række');
@@ -991,4 +1003,26 @@ test('S4-fix (Fund 4): app.js afsender en selvstændig /stil-kommando uden valgt
   assert.match(slice, /!styleOnly && !\$\('#connection-select'\)\.value/, 'forbindelsesvagten springer for kommandoen');
   assert.match(slice, /!styleOnly && \(!\$\('#connection-select'\)\.value \|\| !\$\('#model-select'\)\.value/, 'modelvagten springer for kommandoen');
   assert.match(slice, /window\.SlashCommands\?\.styleMessage/, 'grammatikken kommer fra det delte modul — aldrig en lokal kopi');
+});
+
+// ─── 9 · S5-UI-fixe fra S3-liveanalysen (Claude) ─────────────────────────────
+
+test('S5-UI: navnekolonnen får min-content-plads op til ~55% — navne afkortes mindst muligt', () => {
+  const styles = fsSync.readFileSync(path.join(ui, 'styles.css'), 'utf8');
+  const nameBlock = styles.slice(styles.indexOf('#slash-menu button strong'), styles.indexOf('#slash-menu button small'));
+  assert.match(nameBlock, /min-width:\s*min-content/, 'navnekolonnen får min-content-plads');
+  assert.match(nameBlock, /max-width:\s*55%/, 'loftet er ~55%, så beskrivelsen beholder plads');
+  assert.match(nameBlock, /white-space:\s*nowrap/, 'DSH består: rækken er stadig én linje');
+  assert.match(nameBlock, /text-overflow:\s*ellipsis/, 'afkortning sker med ellipsis — aldrig et klip');
+});
+
+test('S5-UI: Funktioner-teksten er almindeligt dansk — ingen uforklarede «verdener»-metaforer', () => {
+  const catalog = JSON.parse(fsSync.readFileSync(path.join(__dirname, '..', '..', 'profiles', 'catalog.json'), 'utf8'));
+  const feature = catalog.features.find(item => item.id === 'gradientdesign');
+  assert.ok(feature, 'gradientdesign-funktionen findes i kataloget');
+  assert.doesNotMatch(feature.summary, /verden(er|erne)?\b/i, '«verdener» er væk — metaforen forklares eller bruges ikke');
+  assert.doesNotMatch(feature.summary, /et script, der trækker/i, 'script-metaforen er forklaret væk');
+  assert.match(feature.summary, /design(retning|valg|metode)/i, 'teksten siger, hvad funktionen gør');
+  assert.match(feature.summary, /\/design/, 'aktiveringen med /design står der stadig');
+  assert.match(feature.summary, /besked/i, 'og at valget gælder pr. besked');
 });

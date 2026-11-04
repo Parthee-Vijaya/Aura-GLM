@@ -103,6 +103,36 @@
     if (!list.children.length) list.append(make('li', t('Vælg forbindelse og model i Auras eksisterende modelvælger. Ingen destination er frigivet her.', 'Choose a connection and model in Aura’s existing model picker. No destination is authorized here.')));
     return list;
   }
+  // S5 · GradientDeck-tilbagekaldelsen (kendelse 3-betingelsen fra S4-gennemgangen):
+  // linjen findes kun, når der er noget at tilbagekalde — et husket «Husk for
+  // projektet»-samtykke ELLER destinationens id i projektets tilladelser — og
+  // den viser id'et additivt. Tilbagekaldelsen går gennem værten
+  // (gradientdeck:revoke): rydder samtykket OG fjerner id'et, så fremtidige
+  // hentninger spørger igen straks. En allerede igangværende hentning afbrydes
+  // ikke — den er gennemgået på sit eget grundlag.
+  function gradientdeckRow() {
+    const state = snapshot.gradientdeck;
+    const row = make('div', undefined, 'privacy-gradientdeck-row');
+    row.append(make('strong', t('GradientDeck-hentning', 'GradientDeck fetching')));
+    row.append(make('span', state.remembered === true ? t('Tilladt for dette projekt', 'Allowed for this project') : t('Engangstilladelse givet', 'One-time permission given')));
+    row.append(make('small', t(`Modtager-id ${state.destinationId}`, `Destination id ${state.destinationId}`)));
+    const revoke = button(t('Tilbagekald', 'Revoke'), () => { void revokeGradientdeck(); }, 'text-button');
+    revoke.disabled = busy || choicesLoading || api.read().running;
+    row.append(revoke);
+    return row;
+  }
+  async function revokeGradientdeck() {
+    if (busy || choicesLoading || api.read().running) return;
+    const sourceContext = context, sourceScope = scope, version = generation;
+    busy = true; renderSettings({ preserve: true });
+    let failed = false;
+    try { await api.invoke('gradientdeckRevoke', { scope: sourceScope }); }
+    catch { failed = true; }
+    busy = false;
+    if (version !== generation || sourceContext !== context || sourceScope !== scope) return;
+    await refresh();
+    if (failed && get('privacy-settings-feedback')) setNotice(get('privacy-settings-feedback'), t('Tilbagekaldelsen kunne ikke gennemføres. Datareglerne er ikke ændret.', 'The revocation could not be completed. The data rules are unchanged.'), true);
+  }
   function renderSettings({ preserve = false } = {}) {
     if (!settingsDialog) return;
     const previous = preserve && get('privacy-enable') ? readSettings() : null;
@@ -168,7 +198,11 @@
     rules.append(make('p', locked ? t('Organisationens regler er låst. Projekt og samtale kan ikke udvide adgangen.', 'Organization rules are locked. Projects and conversations cannot expand access.') : t('Organisationens regler sætter loftet. Hostlaget afgør de faktiske tilladelser ved hvert modelkald.', 'Organization rules set the ceiling. The host determines actual permissions for every model call.')));
     const sources = snapshot?.rules?.protectedSources || snapshot?.effective?.protectedSources || [];
     if (Array.isArray(sources) && sources.length) rules.append(make('p', t(`${sources.length} beskyttede kilderegler. Kildeindhold og følsomme filnavne vises ikke i aktivitetsloggen.`, `${sources.length} protected-source rules. Source contents and sensitive filenames are not shown in the activity log.`)));
-    rules.append(destinationRows()); settingsDialog.append(rules);
+    rules.append(destinationRows());
+    // S5: tilbagekaldelses-linjen står under destinationerne — kun når værten
+    // rapporterer noget at tilbagekalde (husket samtykke eller id i tilladelserne).
+    if (snapshot?.gradientdeck) rules.append(gradientdeckRow());
+    settingsDialog.append(rules);
     const feedback = make('p', '', 'privacy-feedback'); feedback.id = 'privacy-settings-feedback'; feedback.setAttribute('role', 'status'); settingsDialog.append(feedback);
     const actions = make('div', undefined, 'privacy-actions'); const save = button(t('Gem dataregler', 'Save data rules'), () => { void saveSettings(); }, 'primary'); save.id = 'privacy-save'; save.disabled = busy || choicesLoading || !snapshot || api.read().running;
     actions.append(button(t('Luk', 'Close'), () => closeDialog(settingsDialog), 'text-button'), save); settingsDialog.append(actions);

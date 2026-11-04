@@ -275,6 +275,9 @@ test('S3-fix: fallbacken er samlet — manuel kontrol erstatter scriptets check'
 
 // S3-fix (UX 10): Funktioner-rækkens danske tekst forklarer sig selv — ingen
 // uforklaret fagjargon ("rollen"), og popup-rækkerne bruger den korte form.
+// S5-UI-fix (a) opdaterer pin: «verdener»- og «script, der trækker den visuelle
+// retning»-metaforerne fra S3-liveanalysen er erstattet af almindeligt dansk,
+// der forklarer, hvad funktionen gør — udtrækningen af en visuel retning.
 test('S3-fix: funktionsteksten er almindeligt dansk uden uforklaret jargon', async () => {
   const library = await loadLibrary(profiles);
   const feature = library.features.find(item => item.id === 'gradientdesign');
@@ -282,6 +285,7 @@ test('S3-fix: funktionsteksten er almindeligt dansk uden uforklaret jargon', asy
   for (const text of [feature.summary, feature.skills ? '' : '', skill.faq.resultat, skill.summary]) {
     assert.doesNotMatch(text || '', /\brollen\b/, 'ordet "rollen" er erstattet af almindeligt dansk');
   }
-  assert.match(feature.summary, /script, der trækker den visuelle retning/, 'teksten forklarer, hvad scriptet gør');
+  assert.doesNotMatch(feature.summary, /verden(er|erne)?\b/i, 'S5: «verdener»-metaforen er forklaret væk');
+  assert.match(feature.summary, /tilfældigt valgt, sammenhængende visuel retning/, 'S5: teksten forklarer udtrækningen af den visuelle retning i almindeligt dansk');
   assert.match(skill.faq.resultat, /kræver kommandogodkendelse/, 'kommandogodkendelsen står der stadig');
 });

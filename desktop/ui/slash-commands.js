@@ -216,7 +216,12 @@
   // S4: /stil (alias /style) får sin egen fastgjorte række som betroet
   // indbygget kommando — mellem aliasrækken og skills, så RESERVED-før-katalog
   // består: kommandoer, /design, /stil og derefter kataloget.
-  const STYLES_COMMAND = Object.freeze({ kind: 'builtin', id: 'stil', names: ['stil', 'style'], description: 'GradientDecks stilbibliotek · vælg en stil, der hentes sikkert' });
+  // S5-UI-fix (a) fra S3-liveanalysen: rækkens beskrivelse starter med det,
+  // rækken gør — ikke med skillens navn. Navnet i rækken ER tokenet (/design),
+  // så titlen foran resuméet blev en selvgentagelse («GradientDeck-design ·
+  // GradientDecks designbedømmelse …»). Resuméet fortæller handlingen; er det
+  // fraværende, falder rækken tilbage til titlen.
+  const STYLES_COMMAND = Object.freeze({ kind: 'builtin', id: 'stil', names: ['stil', 'style'], description: 'Vælg en designstil fra GradientDeck · hentes sikkert, anvendes i projektet' });
   function buildRows(query) {
     const needle = String(query || '').toLowerCase();
     const matches = (...parts) => parts.some(part => typeof part === 'string' && part.toLowerCase().startsWith(needle));
@@ -227,7 +232,9 @@
     skills.sort((a, b) => (b.enabled === true) - (a.enabled === true) || String(a.title || '').localeCompare(String(b.title || ''), 'da'));
     const rowOf = entry => ({
       kind: 'skill', id: skillToken(entry.id), enabled: entry.enabled === true,
-      description: `${entry.title || entry.id} · ${entry.summary || ''}${entry.enabled === true ? '' : ' · slået fra · kun for denne besked'}`
+      // S5-UI-fix (a): beskrivelsen starter med det, skillen gør — titlen
+      // står ikke længere to gange i rækken (token + titel + resumé).
+      description: `${entry.summary || entry.title || ''}${entry.enabled === true ? '' : ' · slået fra · kun for denne besked'}`
     });
     const aliasRows = [], plainRows = [];
     for (const entry of skills) (skillToken(entry.id) === entry.id ? plainRows : aliasRows).push(rowOf(entry));

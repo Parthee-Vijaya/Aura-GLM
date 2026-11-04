@@ -115,7 +115,7 @@
     {
       "id": "gradientdesign",
       "title": "GradientDeck-design",
-      "summary": "GradientDecks designmetode med verdener at bygge i, åbne billeder og et script, der trækker den visuelle retning. Aktiveres pr. besked med /design; slås kun til her, hvis den skal gælde alle beskeder.",
+      "summary": "Ekstra designvalg pr. besked med /design: en tilfældigt valgt, sammenhængende visuel retning (farver, typografi og udtryk), åbent licenserede billeder at lade sig inspirere af og en kritisk gennemgang af brugerfladen. Slås kun til her, hvis den skal gælde alle beskeder.",
       "default": false,
       "skills": [
         "harness-design"
