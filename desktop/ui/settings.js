@@ -664,6 +664,34 @@
       try { pluginState = await invoke('pluginsSave', change); root.dispatchEvent?.(new root.CustomEvent('aura:plugins', { detail: { values: pluginState.values } })); renderPluginsFields(); }
       catch (error) { announce([error.message || 'Pluginvalget kunne ikke gemmes.'], true); renderPluginsFields(); }
     }
+    const PLUGIN_FIELD_LABELS = { timeoutSeconds: ['Tidsgrænse', 'sek.'], outputLimitKB: ['Outputloft', 'KB'] };
+    function pluginNumberFields(definition, value) {
+      const wrap = document.createElement('div'); wrap.className = 'plugin-fields';
+      const current = value && typeof value === 'object' ? value : {};
+      for (const setting of definition.settings) {
+        if (setting.type !== 'number') continue;
+        const [label, unit] = PLUGIN_FIELD_LABELS[setting.key] || [setting.key, ''];
+        const id = `plugin-${definition.id}-${setting.key}`;
+        const field = document.createElement('label'); field.className = 'plugin-field'; field.htmlFor = id;
+        const name = document.createElement('span'); name.textContent = label;
+        const input = document.createElement('input'); input.id = id; input.type = 'number'; input.inputMode = 'numeric';
+        input.min = String(setting.min); input.max = String(setting.max); input.step = '1';
+        input.placeholder = String(setting.min); input.value = Number.isFinite(current[setting.key]) ? String(current[setting.key]) : '';
+        const suffix = document.createElement('span'); suffix.className = 'plugin-unit'; suffix.textContent = unit;
+        input.addEventListener('change', () => {
+          const next = { ...current };
+          if (input.value === '') delete next[setting.key];
+          else {
+            const number = Math.round(Number(input.value));
+            if (!Number.isFinite(number) || number < setting.min || number > setting.max) { input.setCustomValidity?.(`Vælg mellem ${setting.min} og ${setting.max}.`); input.reportValidity?.(); return; }
+            input.setCustomValidity?.(''); next[setting.key] = number;
+          }
+          void savePlugin({ id: definition.id, value: next });
+        });
+        field.append(name, input, suffix); wrap.append(field);
+      }
+      return wrap;
+    }
     function pluginRow(definition) {
       const row = document.createElement('div'); row.className = 'plugin-row'; row.dataset.plugin = definition.id;
       if (!definition.available) row.dataset.unavailable = 'true';
@@ -695,6 +723,8 @@
         control.disabled = !definition.available;
         if (!definition.available) control.title = definition.reason || 'Ikke tilgængelig endnu';
         control.addEventListener('click', () => { void savePlugin({ id: definition.id, value: value !== true }); });
+      } else if (Array.isArray(definition.settings) && definition.settings.length) {
+        control = pluginNumberFields(definition, value);
       } else {
         control = document.createElement('span'); control.className = 'plugin-state'; control.textContent = definition.available ? 'Standard' : 'Ikke tilgængelig';
       }

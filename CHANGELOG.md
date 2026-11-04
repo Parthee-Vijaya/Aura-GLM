@@ -11,6 +11,7 @@
 - **Lokale servere findes automatisk.** LM Studio og vLLM på standardporte foreslås under AI-forbindelser. Logo-fliser til de nye udbydere, og vinduet maksimeres ikke længere efter velkomsten.
 - **Vilkår med dato pr. emne** (træning, region, opbevaring). Kontroller ældre end 180 dage markeres.
 - **Websøgning forbliver slået fra** med en præcis begrundelse, og søgeværktøjet fjernes nu helt fra motorens værktøjsliste.
+- **Terminalgrænser og lokal MCP forbliver slået fra** med præcise begrundelser. En prøve viste, at kommandorunneren hverken har et samlet outputloft eller sikrer, at løsrevne underprocesser stoppes. Felterne til tidsgrænse og outputloft vises først, når grænserne kan håndhæves.
 
 ## 0.6.0-beta.5 · 4. november 2026
 
