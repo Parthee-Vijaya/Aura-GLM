@@ -45,6 +45,13 @@
   --chat-col: 800px;
   --chat-gutter: 22px;
 
+  /* ── Arbejdsbjælken ── */
+  /* Topbjælkens højde (DSH §6.1: mindst 52 px) er én token, så alle flader
+     der forholder sig til bjælken — sidepanelets overlay-skuffe og dets
+     skillelinje — følger med, hvis bjælken ændrer sig (audit §3: den
+     hårdkodede 51 px skal følge bjælkehøjden). */
+  --aura-workspace-bar: 52px;
+
   /* ── Lyst tema (standard) ── */
   /* Accent: DSH-blå til valgt tilstand, links, aktivitet og markering. */
   --aura-accent: rgb(65, 118, 230);

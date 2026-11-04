@@ -1,8 +1,10 @@
 /* User-approved feedback refinements, limited to the workspace. Onboarding B is unchanged. */
 #sidebar-divider { display:none; }
 @media (min-width:901px) {
-  body.workspace-calm:not(.sidebar-collapsed) { --sidebar:var(--feedback-sidebar-width,208px); }
-  body.workspace-calm:not(.sidebar-collapsed) #sidebar-divider { display:block; position:fixed; top:51px; bottom:0; left:calc(var(--sidebar) - 3px); width:6px; z-index:32; cursor:col-resize; touch-action:none; }
+  body.workspace-calm:not(.sidebar-collapsed) { --sidebar:var(--feedback-sidebar-width,280px); }
+  /* Skillelinjen begynder under topbjælken — --aura-workspace-bar er den
+     ene kilde (D1: den hårdkodede 51 px fulgte ikke bjælkens 52 px). */
+  body.workspace-calm:not(.sidebar-collapsed) #sidebar-divider { display:block; position:fixed; top:var(--aura-workspace-bar); bottom:0; left:calc(var(--sidebar) - 3px); width:6px; z-index:32; cursor:col-resize; touch-action:none; }
   body.workspace-calm #sidebar-divider:is(:hover,:focus-visible) { background:var(--calm-focus); outline:0; }
   body.resizing-sidebar { cursor:col-resize; user-select:none; }
   body.resizing-sidebar iframe { pointer-events:none; }

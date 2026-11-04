@@ -6,7 +6,7 @@
   /* Bevar gamle variabelnavne som aliaser, så alle eksisterende regler virker videre. */
   --ink: var(--aura-ink); --muted: var(--aura-ink-muted); --accent: var(--aura-accent); --accent-hover: var(--aura-accent-hover);
   --tint: var(--aura-accent-faint); --surface: var(--aura-bg-raised); --canvas: var(--aura-bg); --line: var(--aura-border);
-  --radius: var(--aura-radius-md); --radius-xs: var(--aura-radius-sm); --sidebar: 216px; --motion-fast: var(--aura-transition-duration-fast); --motion-step: var(--aura-transition-duration);
+  --radius: var(--aura-radius-md); --radius-xs: var(--aura-radius-sm); --sidebar: 280px; --motion-fast: var(--aura-transition-duration-fast); --motion-step: var(--aura-transition-duration);
   --ease-out: var(--aura-ease-in-out);
   /* Diff- og statusfarver som aliaser. */
   --success: var(--aura-success); --error: var(--aura-error); --warning: var(--aura-warning);
@@ -40,10 +40,15 @@ input[type=checkbox] { accent-color: var(--accent); width: 16px; height: 16px; f
 summary { cursor: pointer; font-size: 12px; font-weight: 550; color: var(--muted); line-height: 1.6; }
 details[open] > summary { margin-bottom: 12px; }
 .check-label { display: flex; gap: 9px; align-items: flex-start; font-weight: 400; line-height: 1.6; }
-.sidebar { width: var(--sidebar); position: fixed; inset: 0 auto 0 0; background: linear-gradient(165deg, color-mix(in srgb, var(--canvas) 92%, var(--surface)), var(--surface) 60%); border-right: 1px solid var(--line); padding: 28px 14px 16px; display: flex; flex-direction: column; }
-.brand { display: flex; align-items: center; gap: 10px; padding: 0 8px 30px; font-size: 16px; font-weight: 650; letter-spacing: -.02em; }
-.brand-copy, .brand-name { min-width: 0; }
-.app-version { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; font-weight: 500; line-height: 1.25; letter-spacing: 0; white-space: nowrap; }
+.sidebar { width: var(--sidebar); position: fixed; inset: 0 auto 0 0; background: var(--aura-bg-sidebar); border-right: 0.5px solid var(--aura-border); padding: 0 10px 14px; display: flex; flex-direction: column; }
+/* Kolonnebørn med nowrap-tekst må aldrig presse panelet: flex/grid-items
+   har min-width:auto som standard (D1: lange danske navne, zoom 10-16). */
+.sidebar > * { min-width: 0; }
+/* DSH §3: brandrækken er 60 px — logo, navn og versionpillen (versionen
+   står KUN her; den gamle Testversion-badge i bunden er væk). */
+.brand { display: flex; align-items: center; min-height: 60px; gap: 8px; padding: 0 10px; margin: 0 -10px; border-bottom: 0.5px solid var(--aura-border); font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.brand-copy, .brand-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app-version { display: inline-flex; align-items: center; flex: none; height: 17px; padding: 0 6px; border-radius: 999px; background: var(--aura-bg-tint); color: var(--aura-ink-secondary); font-size: 11px; font-weight: 500; line-height: 17px; letter-spacing: 0; white-space: nowrap; }
 .aura-logo { display: block; width: 36px; height: 36px; flex: 0 0 auto; object-fit: contain; }
 .aura-brand { display: inline-flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 650; letter-spacing: -.02em; }
 nav { display: grid; gap: 5px; }
@@ -52,18 +57,42 @@ nav button span:not(.nav-text) { width: 18px; height: 18px; display: inline-flex
 nav svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 nav button[aria-current=page] { color: var(--accent); background: var(--tint); }
 nav button[aria-current=page] span { color: var(--accent); }
-.nav-label { color: var(--aura-ink-secondary); font-size: 12px; font-weight: 650; letter-spacing: .08em; margin: 28px 10px 10px; }
+/* DSH §3 · Sidepanelets egne rækker — den flade der bærer appens DSH-
+   identitet. Menupunkter (nav-knapperne, Indstillinger, Værktøjer og
+   Introduktion) er 36 px-rækker i radius 12 med ikon + 6 px og
+   venstrestillet 13/20-tekst; "Søg i samtaler" står i nav-rækken med
+   samme grammatik (S3-fund: centreret uden ikon "ligner en ældre epoke").
+   Teksten bærer --aura-ink-secondary: DSH's egen tertiær måler under 4,5:1
+   på sidepanelet (R4), så det er den målte sekundærfarve der bærer rollen. */
+.sidebar :is(nav button,#settings-toggle,#tools-button,#intro-button) { display: flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 8px; border-color: transparent; background: transparent; border-radius: var(--aura-radius-md); color: var(--aura-ink-secondary); text-align: left; font-size: 13px; line-height: 20px; font-weight: 500; }
+.sidebar :is(nav button,#settings-toggle,#tools-button,#intro-button):hover:not(:disabled) { background: var(--aura-bg-hover); color: var(--aura-ink); border-color: transparent; }
+.sidebar :is(nav button,#settings-toggle,#tools-button,#intro-button) span:not(.nav-text) { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; color: inherit; flex-shrink: 0; }
+.sidebar :is(nav button,#settings-toggle,#tools-button,#intro-button) svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+/* DSH §3 · "Ny samtale": 38 px primærknap i radius 12 med plus-glyfen.
+   Parthee 4.11: handlingerne er adskiltte — knappen starter en ny samtale
+   i det åbne projekt (app.js binder newChat); projektoprettelsen bor i
+   menupunktet "Nyt projekt" (#new). Primærparret er DSH's sort/hvid
+   (målt 17,4/16,0:1). */
+#new-chat { display: flex; align-items: center; gap: 6px; width: 100%; min-height: 38px; padding: 0 10px; margin-top: 10px; border-color: transparent; border-radius: var(--aura-radius-md); background: var(--aura-button-primary); color: var(--aura-button-primary-text); font-size: 14px; line-height: 20px; font-weight: 500; }
+#new-chat:hover:not(:disabled) { background: var(--aura-button-primary-hover); color: var(--aura-button-primary-text); border-color: transparent; }
+#new-chat span:not(.nav-text) { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; flex-shrink: 0; }
+#new-chat svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* DSH §3 · Sektionshovedet: 36 px-række i 13/500 med ALMINDELIG skrift —
+   versaler og .08em-spatiering hører ikke til DSH-tonen (audit §3). */
+.nav-label { display: flex; align-items: center; min-height: 36px; margin: 8px 0 0; padding: 0 8px; color: var(--aura-ink-secondary); font-size: 13px; line-height: 20px; font-weight: 500; letter-spacing: 0; }
 .project-item { padding: 10px; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; border-radius: 8px; }
 .project-item.active { color: var(--ink); background: var(--tint); }
 #settings-toggle { margin-top: auto; text-align: left; }
 #intro-button, #tools-button { margin-top: 2px; text-align: left; }
 .sidebar-bottom { padding: 18px 8px 0; font-size: 11px; }
 .sidebar-bottom p { font-size: 11px; color: var(--muted); margin: 8px 0; }
-/* Profil-chip i sidepanelets bund: ikonet eller initialerne og navnet — den
-   mindste ærlige visning af profilen. Klik åbner Indstillinger › Din profil. */
-.profile-chip { display: flex; align-items: center; gap: 6px; width: 100%; margin: 0 0 10px; padding: 5px 8px; border: 1px solid var(--line); border-radius: var(--aura-radius-sm); background: var(--surface); color: var(--ink); font-size: 12px; font-weight: 500; text-align: left; cursor: pointer; transition: border-color var(--motion-fast), color var(--motion-fast); }
+/* Profil-rækken i sidepanelets bund (DSH §3: 44 px kontorække): ikonet
+   eller initialerne og navnet. Klik åbner Indstillinger › Din profil —
+   den eksisterende profilflade (datakontrol-skjoldet bor i composer- og
+   datakontrol-fladerne og røres ikke her). */
+.profile-chip { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; margin: 0; padding: 0 8px; border: 0; border-radius: var(--aura-radius-md); background: transparent; color: var(--aura-ink); font-size: 13px; line-height: 20px; font-weight: 500; text-align: left; cursor: pointer; transition: background-color var(--motion-fast), color var(--motion-fast); }
 .profile-chip[hidden] { display: none; }
-.profile-chip:hover { border-color: var(--accent); color: var(--accent); }
+.profile-chip:hover { background: var(--aura-bg-hover); color: var(--aura-ink); }
 .profile-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .profile-chip-mark { display: inline-grid; place-items: center; width: 20px; height: 20px; flex: none; border-radius: 50%; background: var(--tint); color: var(--ink); font-size: 11px; font-weight: 600; letter-spacing: 0.02em; overflow: hidden; }
 .profile-chip-mark svg { width: 14px; height: 14px; }
@@ -583,15 +612,16 @@ h2 .info, h3 .info { vertical-align: middle; }
 /* Sidepanelet kan foldes sammen til en smal række ikoner. Navnene står stadig som tilgængelige navne og titler. */
 .brand { position: relative; }
 .brand-name { flex: 1; }
-.sidebar-toggle { display: inline-grid; place-items: center; width: 30px; height: 30px; padding: 0; border-color: transparent; background: transparent; color: var(--muted); }
+.sidebar-toggle { display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border-color: transparent; background: transparent; color: var(--muted); }
 .sidebar-toggle svg, .settings-icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .settings-icon { display: none; }
 .visually-hidden, body.sidebar-collapsed .nav-text { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 body.sidebar-collapsed { --sidebar: 60px; }
 body.sidebar-collapsed .sidebar { padding: 18px 8px 14px; align-items: center; }
 body.sidebar-collapsed .brand { flex-direction: column; gap: 14px; padding: 0 0 22px; }
-body.sidebar-collapsed :is(.brand-name, .nav-label, #project-list, #tools-button, #intro-button, .sidebar-bottom) { display: none; }
+body.sidebar-collapsed :is(.brand-name, .app-version, .nav-label, #project-list, #tools-button, #intro-button, .sidebar-bottom) { display: none; }
 body.sidebar-collapsed nav button { justify-content: center; padding: 10px; }
+body.sidebar-collapsed #new-chat { width: 40px; min-height: 40px; padding: 0; margin-top: 10px; justify-content: center; }
 body.sidebar-collapsed #settings-toggle { display: inline-grid; place-items: center; width: 40px; height: 40px; padding: 0; color: var(--muted); }
 body.sidebar-collapsed .settings-icon { display: inline-flex; }
 /* I et smalt vindue lægger det udfoldede sidepanel sig oven på indholdet og lukker med Escape eller et klik udenfor. */
@@ -910,21 +940,29 @@ body.picking #preview-stage { box-shadow: 0 0 0 2px var(--accent); }
 .restore-data { margin: 8px 0; padding-left: 20px; font-size: 12px; line-height: 1.7; color: var(--muted); }
 #restore-dialog .compare img { max-height: 220px; }
 
-/* Sidepanelet: projekter med deres samtaler. Det åbne projekt og den åbne samtale er markeret med farve og tekst. */
+/* Sidepanelet: projekter med deres samtaler (DSH §3). Det åbne projekt og
+   den åbne samtale er markeret med det NEUTRALE hover-fyld — ikke en
+   hårdkodet accentfarve (audit §3). Danske navne afkortes med ellipsis på
+   én linje; det fulde navn står i title. */
 .project-list { list-style: none; margin: 0; padding: 0; display: grid; align-content: start; gap: 2px; flex: 1 1 auto; min-height: 60px; overflow: auto; }
+/* Grid-item'ets standard min-width:auto lader en nowrap-række vokse ud over
+   panelet; 0 lader ellipsen gøre arbejdet (D1: danske navne på én linje). */
+.project-entry { min-width: 0; }
 .project-row { display: flex; align-items: center; gap: 2px; }
-.project-name { flex: 1 1 auto; min-width: 0; text-align: left; border: 0; background: transparent; padding: 7px 8px; font-size: 12px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; display: flex; gap: 6px; align-items: center; }
-.project-name::before { content: "▸"; color: var(--muted); font-size: 11px; flex: 0 0 auto; }
+.project-name { flex: 1 1 auto; min-width: 0; position: relative; text-align: left; border: 0; background: transparent; min-height: 34px; padding: 7px 8px 7px 24px; font-size: 14px; line-height: 20px; font-weight: 450; color: var(--aura-ink-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-radius: var(--aura-radius-md); }
+/* Chevronen er absolut i en fast 16 px-boks: den deler ikke linjeboxen
+   med teksten, så rækken holder præcis 34 px (7 + 20 + 7) uanset glyf. */
+.project-name::before { content: "▸"; position: absolute; left: 8px; top: 50%; width: 16px; transform: translateY(-50%); color: var(--aura-ink-caption); font-size: 12px; line-height: 1; }
 .project-name[aria-expanded="true"]::before { content: "▾"; }
-.project-entry:not(.is-current) .project-name { font-weight: 500; color: var(--muted); }
-.project-name:hover:not(:disabled), .project-add:hover:not(:disabled) { background: var(--tint); }
+.project-entry.is-current .project-name { color: var(--aura-ink); font-weight: 500; background: var(--aura-bg-hover); }
+.project-name:hover:not(:disabled), .project-add:hover:not(:disabled) { background: var(--aura-bg-hover); }
 .project-add { flex: 0 0 auto; border: 0; background: transparent; padding: 2px 8px; font-size: 15px; line-height: 1.4; color: var(--muted); }
 .project-entry:not(:hover):not(:focus-within):not(.is-current) .project-add { opacity: 0; }
 .chat-list { list-style: none; margin: 0 0 6px; padding: 0 0 0 14px; display: grid; gap: 1px; }
 .chat-list > li { position: relative; display: flex; align-items: center; min-width: 0; }
-.chat-row { flex: 1 1 auto; min-width: 0; display: grid; grid-template-columns: 8px minmax(0, 1fr) auto; align-items: center; gap: 7px; border: 0; background: transparent; padding: 6px 8px; font-size: 12px; font-weight: 450; text-align: left; color: var(--ink); }
-.chat-row:hover:not(:disabled) { background: var(--tint); }
-.chat-row[aria-current="true"] { background: #e3ecfa; color: #163b75; font-weight: 600; }
+.chat-row { flex: 1 1 auto; min-width: 0; display: grid; grid-template-columns: 8px minmax(0, 1fr) auto; align-items: center; gap: 7px; min-height: 32px; border: 0; background: transparent; padding: 6px 8px; font-size: 14px; line-height: 20px; font-weight: 450; text-align: left; color: var(--aura-ink); border-radius: var(--aura-radius-md); }
+.chat-row:hover:not(:disabled) { background: var(--aura-bg-hover); }
+.chat-row[aria-current="true"] { background: var(--aura-bg-hover); color: var(--aura-ink); font-weight: 500; }
 .chat-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .chat-meta { font-size: 11px; color: var(--aura-ink-secondary); white-space: nowrap; }
 .chat-meta.is-waiting { color: #8a5300; font-weight: 600; }
@@ -936,7 +974,7 @@ body.picking #preview-stage { box-shadow: 0 0 0 2px var(--accent); }
 .chat-status.is-interrupted { background: #c3ccd8; }
 @keyframes chat-pulse { 50% { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .chat-status.is-running { animation: none; } }
-.chat-more { position: absolute; right: 2px; top: 50%; transform: translateY(-50%); border: 0; background: #e9f0fb; padding: 2px 6px; font-size: 11px; color: var(--muted); }
+.chat-more { position: absolute; right: 2px; top: 50%; transform: translateY(-50%); border: 0.5px solid var(--aura-border); border-radius: var(--aura-radius-xs); background: var(--aura-bg-raised); padding: 2px 6px; font-size: 11px; color: var(--muted); }
 .chat-list > li:not(:hover):not(:focus-within) .chat-more:not([aria-expanded="true"]) { opacity: 0; }
 .chat-all, .project-all { padding: 4px 8px; font-size: 11px; }
 .chat-rename { flex: 1 1 auto; margin: 0; }
@@ -971,10 +1009,9 @@ kbd { font: 600 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
 .idea-example strong { font-weight: 600; font-size: 13px; }
 .idea-example span { font-size: 12px; color: var(--muted); line-height: 1.5; }
 
-/* En samtale med status har statussen på en linje under navnet, så navnet får hele rækkens bredde. */
-.chat-row.has-status { row-gap: 0; }
-.chat-row.has-status .chat-meta { grid-column: 2; grid-row: 2; }
-.chat-row.has-status .chat-status { grid-row: 1 / span 2; }
+/* DSH §3: samtalerækken er ALTID én linje i 32 px — statussen ("arbejder",
+   "venter på dig") står i metakolonnen til højre som tiden, ikke på en egen
+   linje under navnet (audit §3: 32 px i 14/20). */
 .composer-wait { margin: 0 0 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .copy-notice { padding: 12px; margin: 12px 0; background: var(--accent-soft, #e8f1ff); border-radius: 10px; }
@@ -1501,7 +1538,8 @@ details.plan-detail > .plan-detail-body { padding: 0 14px 12px 14px; font-size: 
   /* Onboarding-B: hero-plade og orbit-kort (mørke varianter ligger i onboarding-b.css, som indlæses senere) */
   .segmented { background: var(--aura-bg-tint); }
   .segmented button[aria-pressed="true"] { box-shadow: 0 1px 2px #00000066; }
-  .chat-more { background: var(--aura-bg-tint); }
+  /* D1: .chat-more bærer --aura-bg-raised i basisreglen — tokenet følger
+     temaet selv, så den gamle mørke overfyldning er overflødig. */
   /* 11 px-tidsstempler (typografi-gulvet): ventestatussen holder 4,5:1 på det
      mørke sidepanelet — warning-ink måler 7,49:1 (P1-rapporten). */
   .chat-meta.is-waiting { color: var(--aura-warning-ink); }

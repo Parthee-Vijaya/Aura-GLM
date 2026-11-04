@@ -283,7 +283,7 @@ details.disclosure.step.step-group[open] > summary .step-glyph::after { opacity:
    Mindst 52 px, titel 15/22 vægt 500, projektnavnet som tertiær brødkrumme,
    arbejdsmåde-chippen (B3) 22 px, 0,5 px bundlinje. #run-status er skjult som
    role=status; status står i live-indikatoren. */
-.workspace-calm .workspace-bar { min-height: 52px; padding: 10px 20px 0; border-bottom: 0.5px solid var(--aura-border); gap: 12px; }
+.workspace-calm .workspace-bar { min-height: var(--aura-workspace-bar); padding: 10px 20px 0; border-bottom: 0.5px solid var(--aura-border); gap: 12px; }
 .workspace-calm .workspace-bar h1 { display: flex; align-items: baseline; gap: 6px; min-width: 0; flex: 1; margin: 0; font-size: 15px; line-height: 22px; font-weight: var(--aura-font-weight-medium); }
 .workspace-calm .workspace-bar h1 .workspace-chat-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--aura-ink); }
 .workspace-calm .workspace-bar h1 .workspace-crumb { flex: none; max-width: 42%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--aura-ink-muted); font-weight: 400; }

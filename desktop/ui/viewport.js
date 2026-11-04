@@ -22,7 +22,16 @@
   } catch { /* Layout kan bruges, selv om lokal lagring ikke er tilgængelig. */ }
   // A chosen width persists; until one exists the chat width is left out, so
   // the next start keeps the responsive default instead of a frozen default.
-  function save() { try { localStorage.setItem(storageKey, JSON.stringify(userWidth ? settings : { ...settings, chat: undefined })); } catch { /* Kun brugerfladevalg. */ } }
+  function save() {
+    try {
+      // D1/R5: layout-objektet er fælles — læs-ændre-skriv, så nøgler andre
+      // moduler har gemt (sidepanelets bredde i 'sidebar') aldrig tabes.
+      let stored = {}; try { stored = JSON.parse(localStorage.getItem(storageKey)) || {}; } catch { /* Første gemning. */ }
+      const next = userWidth ? settings : { ...settings, chat: undefined };
+      for (const key of Object.keys(next)) if (next[key] !== undefined) stored[key] = next[key];
+      localStorage.setItem(storageKey, JSON.stringify({ ...stored }));
+    } catch { /* Kun brugerfladevalg. */ }
+  }
   function split(value = settings.chat) {
     if (!grid.clientWidth) return;
     // Arbejdsfladen beholder mindst 300 px, så fanerne og forhåndsvisningens værktøjer kan stå.

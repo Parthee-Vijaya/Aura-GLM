@@ -1,7 +1,7 @@
 {
   "name": "aura-desktop",
   "productName": "Aura Prime",
-  "version": "0.5.8",
+  "version": "0.5.9",
   "private": true,
   "license": "EUPL-1.2",
   "feedback": {

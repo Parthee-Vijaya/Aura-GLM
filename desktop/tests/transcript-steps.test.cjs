@@ -341,7 +341,8 @@ test('topbar: titlen og brødkrummen synkroniseres med samtalen og projektet', (
   assert.match(appSource, /function syncTopbar\(\)/, 'topbjælkens titel har én synkronisering');
   assert.match(appSource, /window\.topbarSync = syncTopbar/, 'sidepanelets opdatering (omdøb) skubber titlen op');
   assert.match(read('chats.js'), /window\.topbarSync\?\.\(\)/, 'chats.js kalder synkroniseringen efter en opdatering');
-  assert.match(componentsCss, /\.workspace-calm \.workspace-bar \{[^}]*min-height: 52px/, 'topbjælken er mindst 52 px (§6.1)');
+  assert.match(componentsCss, /\.workspace-calm \.workspace-bar \{[^}]*min-height: var\(--aura-workspace-bar\)/, 'topbjælken er mindst 52 px (§6.1) — D1: højden bor i --aura-workspace-bar, så overlay-skuffen og skillelinjen følger med');
+  assert.match(read('aura-tokens.css'), /--aura-workspace-bar:\s*52px/, 'tokenet er 52 px');
   const h1 = /\.workspace-calm \.workspace-bar h1 \{([^}]*)\}/.exec(componentsCss);
   assert.ok(h1, 'titelreglen findes');
   assert.match(h1[1], /font-size: 15px/, 'samtaletitlen står i 15 px');

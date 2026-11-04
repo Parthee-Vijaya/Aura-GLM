@@ -3,18 +3,34 @@
   const el = id => document.getElementById(id);
   const divider = el('sidebar-divider'), sidebar = el('sidebar'), workspace = el('workspace');
   const composer = el('prompt'), content = el('chat-content'), banner = el('agent-activity');
-  const storageKey = 'aura-sidebar-width-v1';
-  let preferredWidth = 208, pointer = null, frame = null, presentation = { running: false, waitingTarget: null };
-  try { const value = Number(localStorage.getItem(storageKey)); if (Number.isFinite(value) && value >= 180 && value <= 320) preferredWidth = value; } catch { /* Optional local layout preference. */ }
-  const maxWidth = () => Math.max(180, Math.min(320, innerWidth - 680));
+  // R5 (D1): sidepanelets bredde bor som NOGLE ny i det fælles layout-objekt
+  // (harness-workspace-layout-v1) — den gamle nøgle er kun læst-fallback.
+  // Skrivningen fletter i objektet, så chat-bredden og andre nøgler overlever;
+  // viewport.js' gemning fletter på samme måde, så denne nøgle aldrig tabes.
+  const layoutKey = 'harness-workspace-layout-v1', legacyKey = 'aura-sidebar-width-v1';
+  let preferredWidth = 280, pointer = null, frame = null, presentation = { running: false, waitingTarget: null };
+  try {
+    const saved = JSON.parse(localStorage.getItem(layoutKey));
+    const legacy = Number(localStorage.getItem(legacyKey));
+    const value = Number.isFinite(saved?.sidebar) && saved.sidebar >= 264 && saved.sidebar <= 420 ? saved.sidebar
+      : Number.isFinite(legacy) && legacy >= 180 && legacy <= 320 ? Math.max(264, Math.min(420, legacy)) : null;
+    if (value) preferredWidth = value;
+  } catch { /* Optional local layout preference. */ }
+  const maxWidth = () => Math.max(264, Math.min(420, innerWidth - 680));
   const available = () => !workspace.hidden && innerWidth > 900 && !document.body.classList.contains('sidebar-collapsed');
   function sizeSidebar() {
-    const width = Math.round(Math.max(180, Math.min(maxWidth(), preferredWidth)));
+    const width = Math.round(Math.max(264, Math.min(maxWidth(), preferredWidth)));
     document.body.style.setProperty('--feedback-sidebar-width', `${width}px`);
-    divider.setAttribute('aria-valuemin', '180'); divider.setAttribute('aria-valuemax', String(maxWidth()));
+    divider.setAttribute('aria-valuemin', '264'); divider.setAttribute('aria-valuemax', String(maxWidth()));
     divider.setAttribute('aria-valuenow', String(width)); divider.setAttribute('aria-valuetext', `${width} pixels til projekter og samtaler`);
   }
-  function saveWidth() { try { localStorage.setItem(storageKey, String(preferredWidth)); } catch { /* No data or permissions are stored here. */ } }
+  function saveWidth() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(layoutKey)) || {};
+      saved.sidebar = preferredWidth;
+      localStorage.setItem(layoutKey, JSON.stringify(saved));
+    } catch { /* No data or permissions are stored here. */ }
+  }
   divider.addEventListener('pointerdown', event => {
     if (event.button !== 0 || !available()) return;
     pointer = event.pointerId; divider.setPointerCapture(pointer); divider.focus(); document.body.classList.add('resizing-sidebar'); event.preventDefault();
@@ -35,10 +51,10 @@
     if (!available() || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
     const width = Number(divider.getAttribute('aria-valuenow'));
-    preferredWidth = Math.max(180, Math.min(maxWidth(), event.key === 'Home' ? 180 : event.key === 'End' ? maxWidth() : width + (event.key === 'ArrowLeft' ? -1 : 1) * (event.shiftKey ? 40 : 10)));
+    preferredWidth = Math.max(264, Math.min(maxWidth(), event.key === 'Home' ? 264 : event.key === 'End' ? maxWidth() : width + (event.key === 'ArrowLeft' ? -1 : 1) * (event.shiftKey ? 40 : 10)));
     sizeSidebar(); saveWidth();
   });
-  divider.addEventListener('dblclick', () => { preferredWidth = 208; sizeSidebar(); saveWidth(); });
+  divider.addEventListener('dblclick', () => { preferredWidth = 280; sizeSidebar(); saveWidth(); });
   function fitComposer() {
     if (workspace.hidden || !composer.clientWidth) return;
     composer.style.height = 'auto';

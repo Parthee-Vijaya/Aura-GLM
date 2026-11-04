@@ -212,7 +212,7 @@ function setupControls() {
   const id = $('#setup-connection').value, busy = projectLoading;
   $('#setup-test').disabled = !id || busy;
   $('#setup-continue').disabled = !id || verifiedConnection !== id || busy;
-  $('#new').disabled = busy; $('#open').disabled = busy;
+  $('#new').disabled = busy; $('#new-chat').disabled = busy; $('#open').disabled = busy;
   $('#skills-button').disabled = busy || setupActive || !current; $('#features-button').disabled = busy;
   $('#setup-local').disabled = busy;
   $('#setup-git-open').disabled = busy;
@@ -1405,7 +1405,7 @@ function applyRunning() {
   $('#merge-copy').disabled = projectLoading || running || Boolean(mainRunning);
   $('#copy-wait').hidden = !current?.isolated || running || !mainRunning;
   const value = projectLoading;
-  for (const selector of ['#new', '#open', '#connections-button', '#skills-button', '#features-button', '#publish-button', '#setup-hosting', '#deploy-button', '#intro-button']) $(selector).disabled = value;
+  for (const selector of ['#new', '#new-chat', '#open', '#connections-button', '#skills-button', '#features-button', '#publish-button', '#setup-hosting', '#deploy-button', '#intro-button']) $(selector).disabled = value;
   for (const selector of ['#composer-mode', '#topbar-mode', '#accept-plan-offer', '#work-mode', '#build-plan', '#revise-plan', '#start-idea']) $(selector).disabled = running;
   for (const selector of ['#model-chip', '#model-load', '#model-search', '#connection-select', '#model-select', '#route-select']) $(selector).disabled = projectLoading;
   for (const button of document.querySelectorAll('#model-shortlist button')) button.disabled = projectLoading;
@@ -1560,6 +1560,12 @@ $('#new').onclick = () => action(async () => {
   state.features = features; await loadStartup(); if (request !== navigationRequest || current) return;
   applyFeatures(); nameTouched = false; saveIdeaDraft(); showIdeaExamples(); $('#purpose').focus();
 });
+// Parthee 4.11 (D1-previewgodkendelsen): "Ny samtale" og "Nyt projekt" er to
+// adskilte handlinger. Den store knap starter en ny samtale i det åbne
+// projekt — samme vej som + ved et projekt i listen (newChat →
+// newConversation-IPC). Uden et åbet projekt er der intet at samtale i, og
+// knappen fører da samme sted hen som "Nyt projekt" (DSH §3).
+$('#new-chat').onclick = () => { if (!current) return $('#new').onclick(); action(newChat); };
 // The return link uses the very flow the sidebar's open button ends in —
 // displayProject re-mounts the retained view, restores the frame and brings
 // the workspace back without creating anything. The idea draft stays a

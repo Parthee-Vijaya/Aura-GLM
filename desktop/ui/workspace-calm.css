@@ -6,7 +6,7 @@ body.workspace-calm {
   --calm-side: var(--aura-bg-sidebar); --calm-raised: var(--aura-bg-raised); --calm-hover: var(--aura-bg-hover); --calm-stage: var(--aura-bg-sidebar);
   --calm-faint: var(--aura-ink-faint); --calm-focus: var(--aura-accent); --calm-button: var(--aura-button-primary); --calm-button-text: var(--aura-button-primary-text);
   --calm-warning: var(--aura-warning); --calm-warning-bg: var(--aura-warning-subtle); --calm-error: var(--aura-error); --calm-error-bg: var(--aura-error-subtle);
-  --calm-veil: rgba(0,0,0,.55); --soft: var(--aura-bg-raised); --sidebar:208px;
+  --calm-veil: rgba(0,0,0,.55); --soft: var(--aura-bg-raised); --sidebar:280px;
   color: var(--ink); background: var(--canvas); color-scheme: dark;
 }
 body.workspace-calm[data-workspace-theme="light"] {
@@ -26,19 +26,27 @@ body.workspace-calm[data-workspace-theme="light"] {
 .workspace-calm :is(.primary,#send,#build-plan,#deploy-button):hover:not(:disabled) { background:var(--calm-button); color:var(--calm-button-text); filter:brightness(.92); }
 .workspace-calm .text-button { color:var(--muted); border-color:transparent; background:transparent; }
 .workspace-calm .sidebar { background:var(--calm-side); border-color:var(--line); padding:0 10px 14px; gap:8px; }
-.workspace-calm .brand { min-height:51px; padding:0 6px; margin:0 -10px 6px; border-bottom:1px solid var(--line); gap:9px; }
+/* DSH §3: brandrækken er 60 px med logo, navn og versionpillen. */
+.workspace-calm .brand { min-height:60px; padding:0 10px; margin:0 -10px; border-bottom:0.5px solid var(--aura-border); gap:8px; }
 .workspace-calm .brand-icon { width:24px; height:24px; }
-.workspace-calm .brand-name { font-size:17px; }
+.workspace-calm .brand-name { font-size:15px; }
 .workspace-calm .brand .sidebar-toggle { margin-left:auto; }
-.workspace-calm .sidebar :is(nav button,.project-name,.chat-row,#settings-toggle) { color:var(--muted); background:transparent; }
-.workspace-calm .sidebar :is(.chat-row[aria-current="true"],nav button[aria-current="page"]) { background:var(--calm-hover); color:var(--ink); }
+/* Sidepanelets rækker bærer --aura-ink-secondary: DSH's egen tertiærfarve
+   måler under 4,5:1 på sidepanelet i lyst tema (R4), så det er den målte
+   sekundærfarve der bærer rollen (ui-typography-kontrakten). ID'erne står
+   i en separat regel: en :is() med et ID ville give transparent-reglen
+   ID-specificitet og dermed slå valg-fyldet nedenfor. */
+.workspace-calm .sidebar :is(nav button,.project-name,.chat-row) { color:var(--aura-ink-secondary); background:transparent; }
+.workspace-calm .sidebar :is(#settings-toggle,#history-search-open,#tools-button,#intro-button) { color:var(--aura-ink-secondary); background:transparent; }
+/* Den valgte række bruger hover-fyldet (DSH §3) — aldrig hårdkodet accent. */
+.workspace-calm .sidebar :is(.chat-row[aria-current="true"],.project-entry.is-current .project-name,nav button[aria-current="page"]) { background:var(--calm-hover); color:var(--ink); }
 .workspace-calm .sidebar-bottom { border-color:var(--line); font-size:12px; color:var(--aura-ink-secondary); }
 .workspace-calm :is(.nav-label,.chat-meta,.badge) { color:var(--aura-ink-secondary); }
 .workspace-calm .badge { background:transparent; border-color:var(--line); }
 .workspace-calm.sidebar-collapsed { --sidebar:60px; }
 .workspace-calm.sidebar-collapsed .brand { flex-direction:column; padding:12px 0; gap:8px; }
 .workspace-calm.sidebar-collapsed .brand .sidebar-toggle { margin:0; }
-.workspace-calm .workspace-bar { min-height:51px; padding:8px 18px; background:var(--calm-side); gap:10px; }
+.workspace-calm .workspace-bar { min-height:var(--aura-workspace-bar); padding:8px 18px; background:var(--calm-side); gap:10px; }
 .workspace-calm .workspace-bar h1 { font-size:13px; font-weight:500; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .workspace-calm .workspace-bar .actions { gap:5px; }
 .workspace-calm .workspace-bar button { font-size:var(--aura-text-12); padding:5px 9px; }
@@ -150,7 +158,9 @@ body.workspace-calm[data-workspace-theme="light"] {
 .workspace-calm :is(.hint,.approval-scope-text,.material-hint) { color:var(--muted); }
 .calm-navigation,.calm-mobile-tabs { display:none; }
 @media(max-width:1100px) {
-  body.workspace-calm:not(.sidebar-collapsed) { --sidebar:175px; }
+  /* D1: det gamle 175 px-trin er væk — sidepanelet er 280 px (trækbart
+     264-420), og feedback-layout.js selv insnævrer bredden på små vinduer,
+     så arbejdsfladen altid beholder plads. */
   /* Det smalle trin gælder både kolonnens padding og composeren: gutteren
      er én kilde, så rammens kant-mod-kant-kontrakt består også her. */
   body.workspace-calm { --chat-gutter:18px; }
@@ -161,8 +171,10 @@ body.workspace-calm[data-workspace-theme="light"] {
   body.workspace-calm,body.workspace-calm.sidebar-collapsed { --sidebar:0px; }
   .workspace-calm .sidebar { display:none; }
   .workspace-calm .calm-navigation { display:inline-grid; place-items:center; width:30px; height:30px; padding:0; }
-  .workspace-calm.calm-sidebar-open .sidebar { display:flex; position:fixed; inset:51px auto 0 0; width:230px; z-index:30; box-shadow:10px 0 35px #0004; align-items:stretch; }
-  .workspace-calm.calm-sidebar-open .sidebar :is(.brand-name,.nav-label,#project-list,#tools-button,#intro-button,.sidebar-bottom) { display:revert; }
+  /* Overlay-skuffen følger topbjælken gennem --aura-workspace-bar (52 px) —
+     ikke længere en hårdkodet 51 px (audit §3). */
+  .workspace-calm.calm-sidebar-open .sidebar { display:flex; position:fixed; inset:var(--aura-workspace-bar) auto 0 0; width:230px; z-index:30; box-shadow:10px 0 35px #0004; align-items:stretch; }
+  .workspace-calm.calm-sidebar-open .sidebar :is(.brand-name,.app-version,.nav-label,#project-list,#tools-button,#intro-button,.sidebar-bottom) { display:revert; }
   .workspace-calm.calm-sidebar-open .sidebar .nav-text { position:static!important; width:auto; height:auto; margin:0; clip:auto; overflow:visible; }
   .workspace-calm.calm-sidebar-open .brand { flex-direction:row; padding:8px; }
   .workspace-calm.calm-sidebar-open #settings-toggle { display:flex; width:auto; justify-content:flex-start; gap:8px; }
@@ -198,8 +210,8 @@ body.workspace-calm[data-workspace-theme="light"] {
 }
 
 .workspace-calm .work-tab,.workspace-calm .sidebar nav button { border-color:transparent; }
-.workspace-calm .sidebar .nav-label { margin:16px 8px 4px; }
-.workspace-calm .sidebar nav button { padding:8px; font-size:12px; }
+/* D1: sektionshovedet og nav-rækkerne arver styles.css' DSH-grammatik
+   (36 px-rækker, 13/20) — calm-scopet ændrer kun farverne ovenfor. */
 .workspace-calm .composer #prompt { background:transparent; }
 
 /* Modelchippens udbyderikon står direkte på kortet — ingen hvid firkant,
