@@ -46,7 +46,10 @@ test('parseTokens: kodeblokke, dubletter og versaler', () => {
   assert.deepEqual(shared.parseTokens('```\n/design\n```'), [], 'inde i en kodeblok');
   assert.deepEqual(shared.parseTokens('~~~\n/design\n~~~'), [], 'tilde-gitre gælder også');
   assert.deepEqual(shared.parseTokens('```js\nx\n```\n/design'), [{ name: 'design', start: 12, end: 19 }], 'efter blokkens slutning');
-  assert.deepEqual(shared.parseTokens('/a /a'), [{ name: 'a', start: 0, end: 2 }], 'samme navn tælles én gang');
+  // Efter-byg F5 (Codex d1): titel-strippen skal kunne fjerne ALLE
+  // forekomster — parseTokens returnerer hver enkelt, og forbrugerne
+  // deduplikerer selv (resolve på navn/id; inserted() bygger et Set).
+  assert.deepEqual(shared.parseTokens('/a /a'), [{ name: 'a', start: 0, end: 2 }, { name: 'a', start: 3, end: 5 }], 'alle forekomster returneres — deduplingen er forbrugerens');
   assert.deepEqual(shared.parseTokens('/DESIGN'), [{ name: 'design', start: 0, end: 7 }], 'versaler matches som små bogstaver');
 });
 
@@ -561,8 +564,14 @@ function freshModule(dom) {
 function makeDom() {
   const document = { activeElement: null, createElement: tag => { const el = new El(tag); el._document = document; return el; } };
   const registry = new Map();
+  const dialogs = [];
   const make = (tag, id) => { const el = new El(tag); el._document = document; el.id = id || ''; if (id) registry.set(id, el); return el; };
   document.getElementById = id => registry.get(id) || null;
+  // Efter-byg F4: popuppen skal kunne skelne en modal forskydning (samtykke-
+  // dialogen tager fokus) fra brugerens egen lukning — modulet spørger DOM'en
+  // efter en åben dialog. Stubben svarer på netop dén forespørgsel.
+  document.querySelector = selector => selector === 'dialog[open]' ? (dialogs.find(dialog => dialog.open) || null) : null;
+  document.registerDialog = dialog => dialogs.push(dialog);
   const prompt = make('textarea', 'prompt');
   const layer = make('div', 'slash-menu');
   layer.setAttribute('role', 'listbox');
@@ -575,7 +584,7 @@ function makeDom() {
 
 function runModule(dom, api, options) {
   const popoverLayer = { open: ({ layer }) => { layer.showPopover(); return true; }, close: ({ layer } = {}) => { (layer || dom.layer).hidePopover(); }, position() {} };
-  api.init({ prompt: dom.prompt, layer: dom.layer, skills: options.skills, styles: options.styles, popoverLayer });
+  api.init({ prompt: dom.prompt, layer: dom.layer, skills: options.skills, styles: options.styles, popoverLayer, ...(options.owner !== undefined ? { owner: options.owner } : {}) });
 }
 
 const settle = () => new Promise(resolve => setImmediate(resolve));
@@ -914,6 +923,8 @@ test('S4: samtykkedialogen lukker popuppen — kataloget genåbner alligevel (ma
   // popuppen, og Chromium nulstiller selectionStart til 0, selv når teksten er
   // urørt. Er TEKSTEN uændret, genbruges argumentet, så kataloget genåbnes —
   // ellers ville første-samtykke-åbningen aldrig vise stilene.
+  // Efter-byg F4: forskydningen genkendes på, at dialogen står ÅBEN i DOM'en,
+  // når fokus forlader feltet — nøjagtigt som showModal() gør det i appen.
   const dom = makeDom();
   const api = freshModule(dom);
   let resolveCatalog;
@@ -922,8 +933,12 @@ test('S4: samtykkedialogen lukker popuppen — kataloget genåbner alligevel (ma
   dom.prompt.value = '/stil '; dom.prompt.selectionStart = 6; dom.prompt.emit('input');
   await settle();
   assert.equal(api.statusText(), 'Henter katalog…');
-  // Dialogen åbner: prompten mister fokus → popuppen lukker; markøren nulstilles.
-  dom.prompt.emit('focusout', { relatedTarget: null });
+  // Dialogen åbner: popuppen forskydes (focusout + åben dialog), og Chromium
+  // nulstiller selectionStart til 0, selv når teksten er urørt.
+  const consent = dom.document.createElement('dialog');
+  consent.open = true;
+  dom.document.registerDialog(consent);
+  dom.prompt.emit('focusout', { relatedTarget: consent });
   dom.prompt.selectionStart = 0;
   assert.equal(api.open(), false);
   resolveCatalog({ status: 'ok', cached: false, stale: false, entries: STYLES_CATALOG.entries });
@@ -1026,3 +1041,99 @@ test('S5-UI: Funktioner-teksten er almindeligt dansk — ingen uforklarede «ver
   assert.match(feature.summary, /\/design/, 'aktiveringen med /design står der stadig');
   assert.match(feature.summary, /besked/i, 'og at valget gælder pr. besked');
 });
+
+// ─── 10 · Efter-byg F4: sene popup-svar overlever ikke lukningen ─────────────
+// Codex Fund 4 (Vigtig): evaluate/evaluateStyles kontrollerer tekst og markør
+// efter await, men ingen ejer eller generation — et sent svar genåbner både
+// skilllisten og stilkataloget efter Escape og kan vise en forrige projekts
+// tilstand. Krav: forespørgsler bindes til ejer (root/chat) OG generation;
+// KUN samtykke-forskydningen (modal dialog overtog fokus) må genåbne samme
+// flow.
+
+test('efter-byg F4 (rød): skills-listen genåbner ikke efter lukning, når svaret kommer sent', async () => {
+  const dom = makeDom();
+  const api = freshModule(dom);
+  let release; const gate = new Promise(resolve => { release = resolve; });
+  runModule(dom, api, { skills: () => gate });
+  dom.prompt.value = '/'; dom.prompt.selectionStart = 1; dom.prompt.emit('input');
+  await settle();
+  assert.equal(api.open(), false, 'skills-popuppen åbner først, når listen er der');
+  // Brugeren forlader feltet (klik i samtalen) — en bruger-ejet lukning.
+  dom.prompt.emit('focusout', { relatedTarget: null });
+  assert.equal(api.open(), false);
+  release([{ id: 'harness-kodestil', title: 'Kodestil', summary: 's', enabled: true }]);
+  await settle(); await settle();
+  assert.equal(api.open(), false, 'det sene svar genåbner IKKE en popup, brugeren lukkede');
+});
+
+test('efter-byg F4 (rød): stilkataloget genåbner ikke efter Escape, når svaret kommer sent', async () => {
+  const dom = makeDom();
+  const api = freshModule(dom);
+  let release; const gate = new Promise(resolve => { release = resolve; });
+  runModule(dom, api, { skills: async () => [], styles: () => gate });
+  dom.prompt.value = '/stil '; dom.prompt.selectionStart = 6; dom.prompt.emit('input');
+  await settle();
+  assert.equal(api.open(), true, 'katalogniveauet står åbent med «Henter katalog …»');
+  dom.prompt.emit('keydown', { key: 'Escape', preventDefault() {}, stopPropagation() {} });
+  assert.equal(api.open(), false, 'Escape lukker katalogniveauet');
+  release(STYLES_CATALOG);
+  await settle(); await settle();
+  assert.equal(api.open(), false, 'det sene katalog genåbner IKKE en lukket popup');
+});
+
+test('efter-byg F4 (pin): samtykke-forskydningen genåbner kataloget i SAMME generation', async () => {
+  const dom = makeDom();
+  const api = freshModule(dom);
+  const consent = dom.document.createElement('dialog');
+  consent.open = true;
+  dom.document.registerDialog(consent);
+  let release; const gate = new Promise(resolve => { release = resolve; });
+  runModule(dom, api, { skills: async () => [], styles: () => gate });
+  dom.prompt.value = '/stil '; dom.prompt.selectionStart = 6; dom.prompt.emit('input');
+  await settle();
+  assert.equal(api.open(), true, 'katalogniveauet venter på svaret');
+  // Værten viser samtykkedialogen: popuppen forskydes (focusout + åben dialog),
+  // men hentningen fortsætter — samme gyldige flow må genåbne ærligt.
+  dom.prompt.emit('focusout', { relatedTarget: consent });
+  assert.equal(api.open(), false, 'dialogen forskyder popuppen');
+  release(STYLES_CATALOG);
+  await settle(); await settle();
+  assert.equal(api.open(), true, 'samtykke-strømmen genåbner kataloget');
+  assert.equal(api.level(), 'styles');
+  // Brugerens egen lukning AFSLUTTER derimod strømmen for altid.
+  dom.prompt.emit('keydown', { key: 'Escape', preventDefault() {}, stopPropagation() {} });
+  assert.equal(api.open(), false, 'Escape lukker igen — og intet svar genåbner nu');
+});
+
+test('efter-byg F4 (rød): en projectskiftet hentning viser aldrig det forrige projekts liste', async () => {
+  const dom = makeDom();
+  const api = freshModule(dom);
+  let release; const gate = new Promise(resolve => { release = resolve; });
+  let owner = 'projekt-a\u0000chat-1';
+  runModule(dom, api, { skills: () => gate, owner: () => owner });
+  dom.prompt.value = '/'; dom.prompt.selectionStart = 1; dom.prompt.emit('input');
+  await settle();
+  // Brugeren skiftede projekt under hentningen — svaret tilhører det forrige.
+  owner = 'projekt-b\u0000chat-1';
+  release([{ id: 'harness-a-projekt', title: 'A', summary: 's', enabled: true }]);
+  await settle(); await settle();
+  assert.equal(api.open(), false, 'projekt A\'s liste renderer ikke i projekt B');
+});
+
+test('efter-byg F4 (rød): browserens egen lukning (toggle) gør sent svar magtesløst', async () => {
+  // Katalogniveauet står åbent med «Henter katalog …», mens hentningen venter —
+  // browserens light dismiss lukker laget, og det sene svar må ikke genåbne.
+  const dom = makeDom();
+  const api = freshModule(dom);
+  let release; const gate = new Promise(resolve => { release = resolve; });
+  runModule(dom, api, { skills: async () => [], styles: () => gate });
+  dom.prompt.value = '/stil '; dom.prompt.selectionStart = 6; dom.prompt.emit('input');
+  await settle();
+  assert.equal(api.open(), true, 'katalogniveauet venter åbent');
+  dom.layer.emit('toggle', { newState: 'closed' });   // light dismiss / close watcher
+  assert.equal(api.open(), false, 'laget er lukket');
+  release(STYLES_CATALOG);
+  await settle(); await settle();
+  assert.equal(api.open(), false, 'heller ikke browserens egen lukning lader et sent svar genåbne');
+});
+

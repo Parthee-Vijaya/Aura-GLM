@@ -19,10 +19,11 @@ const { PrivacyService } = require('../core/privacy-service.cjs');
 const { ExternalEgress } = require('../core/privacy/external-egress.cjs');
 const { DESIGN_MAX_BYTES } = require('../core/build-design.cjs');
 const {
-  ORIGIN, DESTINATION_ID, DESTINATION_ACTION, SLUG, validSlug, GradientDeck, styleCommand, STYLE_TTL,
+  ORIGIN, DESTINATION_ID, DESTINATION_ACTION, SLUG, validSlug, GradientDeck, styleCommand, STYLE_TTL, STYLE_PATH, STYLE_CACHE_MAX,
 } = require('../core/gradientdeck.cjs');
 
 const DAY = 24 * 60 * 60 * 1000;
+const sha256 = text => require('node:crypto').createHash('sha256').update(text, 'utf8').digest('hex');
 
 // ── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -864,3 +865,75 @@ test('S5: hentningen bærer kortets data med — kategori, tema og kilde-URL til
   assert.equal(result.sourceUrl, `${ORIGIN}/styles/cloudflare/design.md`, 'kortet viser den præcise kilde');
   assert.ok(Number.isFinite(result.fetchedAt), 'kortet kan vise «hentet»-dato');
 });
+
+// ── Efter-byg-runden ─────────────────────────────────────────────────────────
+
+// Codex Fund 2 (Vigtig): med AKTIV Datakontrol sender #sendable rå
+// designDocumentText(...) til inspectRequest, der kræver JSON — resultatet er
+// altid invalid_json, og S5 nægter ALLE stile. Krav: samme JSON-envelope som
+// modelkontrollen (privacy-runtime-provider: {messages:[{role:'user',content}]}),
+// og en POSITIV test: en ren stil består tørkørslen med aktiv kontrol.
+test('efter-byg F2 (rød): aktiv Datakontrol + REN stil → sendable:true — envelope som modelkontrollen', async t => {
+  const f = await fixture(t, { privacy: { enabled: true, version: 'synthetic-v1', defaultClass: 'public', maxClass: 'internal', allowedDestinationIds: [], requireApproval: true } });
+  f.choice = 'project';
+  await f.deck.catalog({ root: f.root });
+  const fetched = await f.deck.fetchStyle({ root: f.root, slug: 'cloudflare' });
+  assert.equal(fetched.status, 'ok', 'hentningen lykkes');
+  assert.equal(fetched.sendable, true, 'en ren stil består tørkørslen, når Datakontrollen er aktiv');
+  // S5 læser stilen igen fra cachen til ANVENDELSEN — samme positive krav der.
+  const state = await f.deck.styleState({ root: f.root, slug: 'cloudflare' });
+  assert.equal(state.status, 'ok');
+  assert.equal(state.sendable, true, 'anvendelsestidspunktet må heller ikke afvise en ren stil');
+});
+
+test('efter-byg F2 (negativ består): base64-tung stil afvises stadig med aktiv kontrol', async t => {
+  // ÉN sammenhængende ≥80-tegns base64-run — heuristikken rammes reelt (den
+  // gamle '='-hver-28.-tegn-fixture fejlede kun gennem invalid_json-bugen).
+  const encoded = styleText('Kodet') + `\n## Hemmelighed\n- ${'QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVphYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eg'.repeat(2)}\n`;
+  const f = await fixture(t, { privacy: { enabled: true, version: 'synthetic-v1', defaultClass: 'public', maxClass: 'internal', allowedDestinationIds: [], requireApproval: true }, respond: styleRouteTyped(encoded) });
+  f.choice = 'project';
+  await f.deck.catalog({ root: f.root });
+  const result = await f.deck.fetchStyle({ root: f.root, slug: 'cloudflare' });
+  assert.equal(result.status, 'ok', 'hentningen gemmer ærligt');
+  assert.equal(result.sendable, false, 'det kodede indhold afvises stadig — envelope-rettelsen åbner ikke for kodet data');
+});
+
+// Codex Fund 8 (Mindre, ressourcer): #cachedStyles genlæser ALLE gemte stile
+// ved katalogåbning, TTL sletter intet, og cachen mangler samlet loft.
+// Krav: en billig, ærlig oprydning — ét samlet loft, de ældste ryddes først.
+test('efter-byg F8 (rød): cache-loftet fejer de ældste stile væk ved katalogåbning', async t => {
+  const f = await fixture(t);
+  f.choice = 'project';
+  await f.deck.catalog({ root: f.root });
+  const stylesDirectory = path.join(cacheDirectory(f.store), 'styles');
+  await fs.mkdir(stylesDirectory, { recursive: true });
+  const total = 30, cap = STYLE_CACHE_MAX;
+  assert.ok(total > cap, 'fixturen overskrider loftet');
+  for (let index = 0; index < total; index++) {
+    const slug = `cached-${String(index).padStart(2, '0')}`;
+    const body = styleText(`Stil ${index}`);
+    await fs.writeFile(path.join(stylesDirectory, `${slug}.md`), body);
+    await fs.writeFile(path.join(stylesDirectory, `${slug}.meta.json`), JSON.stringify({ source: ORIGIN + STYLE_PATH(slug), fetchedAt: Date.parse('2026-10-01T10:00:00Z') + index * 60_000, sha256: sha256(body) }));
+  }
+  const result = await f.deck.catalog({ root: f.root });   // frisk nok fra cache — oprydningen sker ved åbningen
+  assert.equal(result.status, 'ok');
+  const remaining = await fs.readdir(stylesDirectory);
+  const slugs = new Set(remaining.filter(name => name.endsWith('.md')).map(name => name.slice(0, -3)));
+  assert.equal(slugs.size, cap, `cachen holder præcis loftet (${cap})`);
+  for (let index = 0; index < total - cap; index++) assert.ok(!slugs.has(`cached-${String(index).padStart(2, '0')}`), `den ældste stil cached-${index} er ryddet`);
+  for (let index = total - cap; index < total; index++) assert.ok(slugs.has(`cached-${String(index).padStart(2, '0')}`), `den nyere stil cached-${index} består`);
+  assert.ok(result.cachedStyles.every(slug => slugs.has(slug)), 'katalogsvarets hentet-markering dækker kun de bevarede');
+});
+
+test('efter-byg F8 (grøn): under loftet rører oprydningen intet', async t => {
+  const f = await fixture(t);
+  f.choice = 'project';
+  await f.deck.catalog({ root: f.root });
+  await f.deck.fetchStyle({ root: f.root, slug: 'cloudflare' });
+  const before = await fs.readdir(path.join(cacheDirectory(f.store), 'styles'));
+  const result = await f.deck.catalog({ root: f.root });
+  assert.equal(result.status, 'ok');
+  const after = await fs.readdir(path.join(cacheDirectory(f.store), 'styles'));
+  assert.deepEqual(after, before, 'en cache under loftet er urørt — oprydningen koster intet');
+});
+

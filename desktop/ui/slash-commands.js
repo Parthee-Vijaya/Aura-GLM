@@ -59,7 +59,9 @@
   // All complete command tokens in a text: `/name` standing as its own word
   // (beginning of the text or after whitespace), never inside a fenced code
   // block, never part of a URL or path (a word containing :, . or / is not a
-  // token). Duplicated names are returned once, first occurrence first.
+  // token). EVERY occurrence is returned — consumers deduplicate themselves
+  // (the host's resolve by name/id, inserted() builds a Set, and the title
+  // derivation strips each occurrence in place).
   // Decision (S2 review, Minor-3): a token must end at whitespace or the end
   // of the text — trailing punctuation does NOT activate (`/harness-kodestil,
   // tak!` is inert). The rule is deliberately conservative and identical for
@@ -70,13 +72,10 @@
   function parseTokens(text) {
     if (typeof text !== 'string' || !text.includes('/')) return [];
     const tokens = [];
-    const seen = new Set();
     for (const match of text.matchAll(/(^|[\s])(\/[a-z0-9-]+)(?![^\s])/gi)) {
       const start = match.index + match[1].length;
       if (insideFence(text, start)) continue;
       const name = match[2].slice(1).toLowerCase();
-      if (seen.has(name)) continue;
-      seen.add(name);
       tokens.push({ name, start, end: start + match[2].length });
     }
     return tokens;
@@ -143,7 +142,13 @@
 
   // ── Popup state ──
   const state = { ready: false, open: false, composing: false, level: null, rows: [], buttons: [], active: -1, inserted: new Set(), skills: [], statusText: '', overflowText: '', noteText: '' };
-  const options = { prompt: null, layer: null, skills: null, styles: null, popoverLayer: null };
+  const options = { prompt: null, layer: null, skills: null, styles: null, popoverLayer: null, owner: null };
+  // Efter-byg F4: popuppens session-generation. Enhver bruger-ejet lukning
+  // (Escape, light dismiss, indsættelse) afslutter sessionen; kørende
+  // evalueringer bærer deres generation og træder til side, når den er
+  // forbigået — et sent svar kan dermed aldrig genåbne eller fortrænge
+  // noget. Forskydningen (modal dialog) er den eneste undtagelse.
+  let popupSession = 0;
 
   function currentLayer() { return options.popoverLayer || root.PopoverLayer || null; }
 
@@ -193,18 +198,25 @@
     else layer.showPopover?.();
   }
 
-  function close() {
-    if (!state.open) { state.level = null; stylesRequest = null; return; }
+  function close({ invalidate = true } = {}) {
+    // Efter-byg F4 (Codex, Vigtig): en lukning er enten brugerens eget valg
+    // (Escape, klik udenfor, indsættelse, tomme rækker) eller en FORSKYDNING:
+    // en modal dialog overtog fokus, mens en hentning står og venter
+    // (GradientDeck-samtykket lukker popuppen midt i kataloghentningen). Ved
+    // invalidate afsluttes sessionen — en senere hentning kan ALDRIG genåbne
+    // popuppen; ved forskydning består den samme generation, så netop
+    // samtykke-strømmen kan genåbne kataloget ærligt, når svaret kommer.
+    if (invalidate) { popupSession++; skillsRequest = null; stylesRequest = null; }
+    if (!state.open) { state.level = null; return; }
     state.open = false; state.level = null; state.rows = []; state.buttons = []; state.active = -1; state.skills = []; state.statusText = ''; state.overflowText = ''; state.noteText = '';
-    // Discard the fetched list with the session: the next open re-reads
-    // skills:list, so a project or chat switch can never show the previous
-    // project's enabled-markings (review finding 1). The S4 catalog goes the
-    // same way: kataloget genhentes ved hver åbning som skills:list.
-    skillsRequest = null;
-    stylesRequest = null;
     options.layer?.hidePopover?.();
     promptAria(false);
   }
+
+  // Forskydningstesten: står en modal <dialog> åben (samtykket), er lukningen
+  // en forskydning — ikke brugerens valg. Popuppen selv er et popover-lag og
+  // rammes aldrig af forespørgslen.
+  const modalDisplaced = () => Boolean(root.document?.querySelector?.('dialog[open]'));
 
   // Row descriptions: skills carry title and summary, and a disabled skill says
   // that the activation is for this message only — the project's own feature
@@ -411,29 +423,33 @@
   // can never leave the popup permanently dead — the next evaluation tries
   // again. (A skillsKey per owner would also work, but needs app.js; fetching
   // per open is equally correct and stays inside this module.)
-  let skillsRequest = null;
+  let skillsRequest = null, skillsOwner = null;
   function ensureSkills() {
-    if (!skillsRequest) {
-      const request = (async () => { try { return await options.skills(); } catch { return []; } })();
-      skillsRequest = request;
-      request.then(list => { if (skillsRequest === request && (!Array.isArray(list) || !list.length)) skillsRequest = null; });
-    }
+    // Efter-byg F4: hentningen er bundet til ejeren (root + chat) — skifter
+    // projektet eller samtalen, startes en FRISK hentning i stedet for at
+    // genbruge svaret fra det forrige.
+    const owner = options.owner ? options.owner() : null;
+    if (skillsRequest && (!options.owner || skillsOwner === owner)) return skillsRequest;
+    const request = (async () => { try { return await options.skills(); } catch { return []; } })();
+    skillsRequest = request; skillsOwner = owner;
+    request.then(list => { if (skillsRequest === request && (!Array.isArray(list) || !list.length)) skillsRequest = null; });
     return skillsRequest;
   }
-
   // One evaluation per input/select event: the token at the caret decides
   // whether the popup stands open, and the skills fetch is re-checked against
   // the live text once it resolves (a stale pass steps aside for a newer one).
   // S4: argumentet efter `/stil ` åbner katalogniveauet i stedet — kataloget
   // hentes ÉN gang pr. åben session (som skills:list) og kasseres ved lukning,
   // så et projekt- eller samtaleskift aldrig viser det forrige projekts data.
-  let stylesRequest = null;
+  let stylesRequest = null, stylesOwner = null;
   function ensureStyles() {
-    if (!stylesRequest) {
-      const request = (async () => { try { return await options.styles?.(); } catch { return null; } })();
-      stylesRequest = request;
-      request.then(catalog => { if (stylesRequest === request && (!catalog || typeof catalog !== 'object')) stylesRequest = null; });
-    }
+    // Efter-byg F4: kataloget er ligesom skills bundet til ejeren — en ny
+    // projekt- eller samtaleskiftet åbning henter aldrig det forriges svar.
+    const owner = options.owner ? options.owner() : null;
+    if (stylesRequest && (!options.owner || stylesOwner === owner)) return stylesRequest;
+    const request = (async () => { try { return await options.styles?.(); } catch { return null; } })();
+    stylesRequest = request; stylesOwner = owner;
+    request.then(catalog => { if (stylesRequest === request && (!catalog || typeof catalog !== 'object')) stylesRequest = null; });
     return stylesRequest;
   }
 
@@ -444,9 +460,13 @@
 
   async function evaluateStyles(argument) {
     const prompt = options.prompt;
+    const at = popupSession, ownerAt = options.owner ? options.owner() : null;
     const textAtStart = String(prompt.value ?? '');
     renderStyles([], 'Henter katalog…', '', '');
     const catalog = await ensureStyles();
+    // Efter-byg F4: sessionen og ejeren genkontrolleres efter await — en
+    // lukket popup eller et skiftet projekt/chat gør svaret magtesløst.
+    if (popupSession !== at || (options.owner && options.owner() !== ownerAt)) return;
     // En modal dialog (samtykket) lukker popuppen og efterlader en ustabil
     // markør: Chromium nulstiller selectionStart, selv når teksten er urørt.
     // Er TEKSTEN uændret, genbruges argumentet, så kataloget genåbnes ærligt;
@@ -478,8 +498,14 @@
     if (argument) { await evaluateStyles(argument); return; }
     const token = tokenAt(text, caret);
     if (!token) { close(); return; }
-    state.skills = await ensureSkills();
+    const at = popupSession, ownerAt = options.owner ? options.owner() : null;
+    const fetched = await ensureSkills();
+    // Efter-byg F4: sessionen og ejeren genkontrolleres efter await — et sent
+    // skills-svar kan hverken genåbne en lukket popup eller vise et forrige
+    // projekts liste i en nyere popup. Tilstanden røres først efter tjekket.
+    if (popupSession !== at || (options.owner && options.owner() !== ownerAt)) return;
     if (state.composing) { close(); return; }
+    state.skills = fetched;
     const now = tokenAt(String(prompt.value ?? ''), typeof prompt.selectionStart === 'number' ? prompt.selectionStart : String(prompt.value ?? '').length);
     if (!now || now.start !== token.start || now.query !== token.query) return;
     const rows = buildRows(now.query);
@@ -522,27 +548,26 @@
     options.skills = typeof input.skills === 'function' ? input.skills : null;
     options.styles = typeof input.styles === 'function' ? input.styles : null;
     options.popoverLayer = input.popoverLayer || null;
+    // Efter-byg F4: hentningerne bindes til ejeren (root + chat) gennem en
+    // stabil nøgle fra app.js — et svar fra et forrige projekt eller en
+    // forrige samtale renderer aldrig ind i en nyere popup.
+    options.owner = typeof input.owner === 'function' ? input.owner : null;
     state.ready = true;
     prompt.addEventListener('keydown', onKeydown, true);
     prompt.addEventListener('input', () => { evaluate(); });
     // Caret moves by mouse or arrows re-check the token (a collapsed selection
     // only — dragging a selection across text must not open anything).
     prompt.addEventListener('select', () => { if (prompt.selectionStart === prompt.selectionEnd) evaluate(); });
-    prompt.addEventListener('focusout', event => { if (!layer.contains?.(event?.relatedTarget)) close(); });
+    prompt.addEventListener('focusout', event => { if (!layer.contains?.(event?.relatedTarget)) close({ invalidate: !modalDisplaced() }); });
     prompt.addEventListener('compositionstart', () => { state.composing = true; close(); });
     prompt.addEventListener('compositionend', () => { state.composing = false; evaluate(); });
     // The browser's light dismiss and close watcher land here: the state and
-    // the textarea's aria must follow the native close as well.
+    // the textarea's aria must follow the native close as well. Er en modal
+    // dialog åben (samtykket), er lukningen en forskydning — sessionen
+    // består, og strømmen kan genåbne ærligt; ellers gælder den som enhver
+    // anden bruger-ejet lukning (efter-byg F4).
     layer.addEventListener('toggle', event => {
-      if (event?.newState === 'closed' && state.open) {
-        state.open = false; state.level = null; state.rows = []; state.buttons = []; state.active = -1; state.skills = []; state.statusText = ''; state.overflowText = ''; state.noteText = '';
-        // The browser's own dismissal (light dismiss, Escape close watcher)
-        // is a close path too: the fetched list goes with the session — også
-        // S4-kataloget, så en projekt- eller samtaleskift starter forfra.
-        skillsRequest = null;
-        stylesRequest = null;
-        promptAria(false);
-      }
+      if (event?.newState === 'closed') close({ invalidate: !modalDisplaced() });
     });
     return true;
   }

@@ -1724,7 +1724,11 @@ window.SlashCommands?.init({
   prompt: $('#prompt'),
   layer: document.getElementById('slash-menu'),
   skills: async () => call('skills', undefined, selectedOwner()),
-  styles: async () => call('gradientdeckCatalog', undefined, selectedOwner())
+  styles: async () => call('gradientdeckCatalog', undefined, selectedOwner()),
+  // Efter-byg F4 (Codex, Vigtig): hentningerne bindes til projekt og samtale
+  // gennem en stabil nøgle — et sent svar fra et forrigt projekt/chat kan
+  // aldrig genåbne popuppen eller trænge en nyere popup til side.
+  owner: () => { const owner = selectedOwner(); return owner ? `${owner.root}\u0000${owner.chat}` : null; }
 });
 // S4 · GradientDeck-samtykke: værten ejer beslutningen og kilden; rendereren
 // viser dialogen og fører KUN valget tilbage (once/project/cancel) — aldrig

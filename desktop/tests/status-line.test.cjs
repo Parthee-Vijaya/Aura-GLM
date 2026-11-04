@@ -193,3 +193,32 @@ test('§6.5: de samme fire felter på ALLE detaljeniveauer — særreglen er pen
     assert.equal(shaped.price, '$0,00', `niveauet ${level} viser de samme fire felter`);
   }
 });
+
+// ── Efter-byg F10: tok/s-formatet og linjens eget klip ──────────────────────
+// Live-proben på HEAD (a904fe4) viste to ting: (1) hastigheden blev vist som
+// «662.636 tok/s» — da-DK tusindtalspunktummet læses som decimal, og t8-
+// billedets «.232» var netop «1.232» (værdien 1.232) mislæst; (2) rækken
+// klippede FELTETS start (scrollWidth 248 > clientWidth 230 ved 1280 px).
+// Krav: ≥1.000 forkortes med linjens egen k/M-grammatik (som kontekstfeltet),
+// tooltippet holder det præcise tal UDEN gruppering, og felterne afluser med
+// ellipsis i stedet for et stille klip.
+test('efter-byg F10 (rød): tok/s over 1.000 forkortes med k-grammatikken — aldrig et mislæseligt tusindtalspunktum', () => {
+  assert.equal(format({ selected, connection, contextValue: emptyWindow, usage: null, speed: speed(1232) }).speed, '1,2k tok/s', '1.232 blev mislæst som «.232» — nu forkortes det som kontekstfeltet');
+  assert.equal(format({ selected, connection, contextValue: emptyWindow, usage: null, speed: speed(662636) }).speed, '662,6k tok/s', 'live-probens værdi fra HEAD');
+  assert.equal(format({ selected, connection, contextValue: emptyWindow, usage: null, speed: speed(229) }).speed, '229 tok/s', 'under 1.000 er uændret (D5b-pinnen)');
+  assert.equal(format({ selected, connection, contextValue: emptyWindow, usage: null, speed: null }).speed, '0 tok/s', 'manglende måling viser stadig 0');
+});
+
+test('efter-byg F10 (rød): tooltippet holder det præcise tal uden gruppering', () => {
+  const shaped = format({ selected, connection, contextValue: emptyWindow, usage: null, speed: { ...speed(1232), ttftMs: 250 } });
+  assert.ok(shaped.tooltip.some(text => text.includes('1232 tok/s')), 'det præcise tal står uden tusindtalspunktum');
+  assert.ok(!shaped.tooltip.some(text => /1\.232 tok\/s/.test(text)), 'intet «1.232»-mislæs i tooltippet');
+});
+
+test('efter-byg F10 (rød): statuslinjens felter afluser med ellipsis — aldrig et stille klip af tallet', () => {
+  const rule = /\.status-field\s*\{[^}]*\}/.exec(styles);
+  assert.ok(rule, 'felt-reglen findes');
+  assert.match(rule[0], /min-width:\s*0/, 'felterne kan vige (min-width 0)');
+  assert.match(rule[0], /overflow:\s*hidden/, 'overflødigt indhold skjules');
+  assert.match(rule[0], /text-overflow:\s*ellipsis/, 'afkortningen er synlig (…), ikke et stille klip');
+});

@@ -18,7 +18,9 @@ body.workspace-calm[data-workspace-theme="light"] {
    så .menu-material i components.css vinder kildeordens-kaskaden og DSH-menuerne
    bærer --aura-shadow-menu i stedet for denne tunge skygge (audit §4). */
 .workspace-calm :where(dialog,[popover]) { box-shadow:0 14px 38px #0004; }
-.workspace-calm dialog::backdrop { background:#080b105c; }
+/* Efter-byg F7 (Codex d3): arbejdsfladens slør læser det SAMME token som
+   basisreglen — ét sted at rette dialog-sløret (aura-tokens.css). */
+.workspace-calm dialog::backdrop { background:var(--aura-scrim); }
 .workspace-calm :is(input,textarea)::placeholder { color:var(--calm-faint); }
 .workspace-calm :is(button,summary,a,input,textarea,select,[tabindex]):focus-visible { outline-color:var(--calm-focus); }
 .workspace-calm button:hover:not(:disabled), .workspace-calm button:active:not(:disabled) { background:var(--calm-hover); border-color:var(--line); color:var(--ink); }

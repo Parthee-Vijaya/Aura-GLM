@@ -83,7 +83,7 @@ test('switchens spor, knop og fokus står på --aura-tokens i basisreglen', () =
   const checkedThumb = /input\[type=checkbox\]\[role=switch\]:checked::before\s*\{[^}]*\}/.exec(styles);
   const focus = /input\[type=checkbox\]\[role=switch\]:focus-visible\s*\{[^}]*\}/.exec(styles);
   assert.ok(track && thumb && checked && checkedThumb, 'switchens fire regler findes');
-  assert.match(track[0], /background:\s*var\(--aura-bg-tint\)/, 'af-sporet er --aura-bg-tint (ikke #c5d0de)');
+  assert.match(track[0], /background:\s*var\(--aura-switch-track\)/, 'af-sporet bærer sit eget spor-token (efter-byg F12 — ikke --aura-bg-tint/#c5d0de)');
   assert.match(thumb[0], /background:\s*var\(--aura-ink-muted\)/, 'knappen er --aura-ink-muted (ikke hvid/#14263b40-skygge)');
   assert.ok(!/14263b40/.test(thumb[0]), 'den hårdkodede knap-skygge er væk');
   assert.match(checkedThumb[0], /background:\s*var\(--aura-bg\)/, 'til-knappen er --aura-bg på accent-sporet');
@@ -93,9 +93,9 @@ test('switchens spor, knop og fokus står på --aura-tokens i basisreglen', () =
 
 test('switchens kontrast er målt i begge temaer (knop ≥3:1 mod spor og accent-spor)', () => {
   for (const [block, theme] of themeBlocks()) {
-    const muted = tokenRGB(block, 'aura-ink-muted'), tint = tokenRGB(block, 'aura-bg-tint');
+    const muted = tokenRGB(block, 'aura-ink-muted'), track = tokenRGB(block, 'aura-switch-track') || tokenRGB(block, 'aura-bg-tint');
     const accent = tokenRGB(block, 'aura-accent'), bg = tokenRGB(block, 'aura-bg');
-    const off = contrast(muted, tint), on = contrast(bg, accent);
+    const off = contrast(muted, track), on = contrast(bg, accent);
     assert.ok(off >= 3, `${theme}: knop på af-spor er ${off.toFixed(2)}:1 — kravet er ≥3:1`);
     assert.ok(on >= 3, `${theme}: knop på accent-spor er ${on.toFixed(2)}:1 — kravet er ≥3:1`);
   }
@@ -191,7 +191,14 @@ test('kendelsen: native title-attributter forbliter appens lette lag (dokumenter
 // ── 5. Samtaletitler: ren lokal afledning uden kommando-tokens ──
 test('titelafledning: kommando-tokens strippes med den delte token-grammatik', () => {
   assert.equal(titleFrom([{ role: 'user', text: '/design Lav en rolig forside til projektet' }]), 'Lav en rolig forside til projektet', 'S3-fund (f): /design står ikke i titlen');
-  assert.equal(titleFrom([{ role: 'user', text: '/design /gradient Byg en forside i GradientDeck-stil. Blå.' }]), 'Byg en forside i GradientDeck-stil', 'flere tokens strippes');
+  // Efter-byg F5 (Codex d1 + T8-review Minor): kun KENDTE kommando-tokens
+  // strippes — et bart /ord som «/gradient» er brugerens indhold, ikke en
+  // kommando. (Denne pin fryste den gamle overbredde stripning; nu ændres den
+  // med vilje til at bevare det ubekendte token.)
+  assert.equal(titleFrom([{ role: 'user', text: '/design /gradient Byg en forside i GradientDeck-stil. Blå.' }]), '/gradient Byg en forside i GradientDeck-stil', 'kendte tokens strippes — det ubekendte /gradient er indhold og består');
+  assert.equal(titleFrom([{ role: 'user', text: '/design /design Byg et kort. Blåt.' }]), 'Byg et kort', 'ALLE forekomster af det kendte token strippes (efter-byg F5)');
+  assert.equal(titleFrom([{ role: 'user', text: 'Ryd op i /src-mappen. Blåt.' }]), 'Ryd op i /src-mappen', 'et bart /ord er brugerens indhold — det strippes ikke (Codex-reproen)');
+  assert.equal(titleFrom([{ role: 'user', text: 'Hvad betyder /stil? Godt spørgsmål.' }]), 'Hvad betyder /stil', 'efterfølgende tegn gør /stil? til inert tekst — intet strippes overhovedet');
   assert.equal(titleFrom([{ role: 'user', text: 'Byg en side /design med ro' }]), 'Byg en side med ro', 'tokens midt i teksten strippes også');
   assert.equal(titleFrom([{ role: 'user', text: '/design\n\nLav en rolig forside til projektet' }]), 'Lav en rolig forside til projektet', 'kommandolinjen er ikke en meningsfuld linje — næste afsnit er');
 });
@@ -292,3 +299,91 @@ test('versionen er 0.5.10 overalt (pakke, lås, rod og pakkeposten)', () => {
   assert.equal(lock.version, '0.5.10');
   assert.equal(lock.packages[''].version, '0.5.10');
 });
+
+// ── 11. Efter-byg F6: #chat-menu og #composer-help-popover på menu-materialet ──
+// Codex d2 + Claude: begge popups bar den gamle tunge skygge og uigennemsigtig
+// flade ved siden af appens lette, gennemskinnelige menuer. Krav: samme
+// materiale som .menu-material — --aura-shadow-menu, --aura-menu-bg, radius
+// lg og 0,5 px kant, med samme @supports/forced-colors-faldgrunde.
+test('efter-byg F6: #chat-menu og #composer-help-popover bærer menu-materialet — den gamle skygge er væk', () => {
+  // Materiale-reglen er ID-båren: den slår calm-reglernes :where(dialog,[popover])
+  // (som ellers binder 0,1,0 og vinder på kildeorden) og den generiske [popover]-regel.
+  const material = /#chat-menu,\s*#composer-help-popover\s*\{[^}]*\}/.exec(styles);
+  assert.ok(material, 'den delte materiale-regel (#chat-menu, #composer-help-popover) findes');
+  for (const property of [/box-shadow:\s*var\(--aura-shadow-menu\)/, /background:\s*var\(--aura-menu-bg\)/, /backdrop-filter:\s*blur\(40px\) saturate\(150%\)/, /border-radius:\s*var\(--aura-radius-lg\)/, /border:\s*0\.5px solid var\(--aura-border\)/]) assert.match(material[0], property, 'materialet bærer menu-grammatikken');
+  const geometry = /\.chat-menu\s*\{[^}]*\}/.exec(styles);
+  assert.ok(geometry, 'geometri-reglen (.chat-menu) findes');
+  assert.match(geometry[0], /position:\s*fixed/, 'ankeringen består (position)');
+  assert.doesNotMatch(geometry[0], /box-shadow|background:/, 'geometri-reglen bærer intet materiale');
+  assert.ok(!/0 8px 24px #18223524/.test(styles), 'den gamle hårdkodede skygge er væk fra styles.css');
+  assert.ok(!/\.chat-menu\s*\{[^}]*#0004/.test(styles + calm), 'chat-menuens regel bærer ingen tung #0004-skygge');
+  // Faldgrunde-paritet med components.css' materiale (uden backdrop-filter og
+  // forced-colors får fladen en uigennemsigtig erstatning).
+  const supports = /@supports not \(\(backdrop-filter: blur\(1px\)\) or \(-webkit-backdrop-filter: blur\(1px\)\)\)\s*\{[^@]*\}/.exec(styles);
+  assert.ok(supports && /#chat-menu/.test(supports[0]) && /--aura-bg-raised/.test(supports[0]), 'uden backdrop-filter er fladen uigennemsigtig raised');
+  const forcedBlocks = [...styles.matchAll(/@media \(forced-colors: active\)\s*\{[\s\S]*?\n\}/g)].map(match => match[0]);
+  assert.ok(forcedBlocks.some(block => /#chat-menu/.test(block) && /Canvas/.test(block)), 'forced-colors-faldgrunden dækker menuen');
+});
+
+// ── 12. Efter-byg F7: ÉT scrim-token for dialog-sløret ───────────────────────
+// Codex d3: styles.css:315 (#14263b40) og workspace-calm.css:21 (rgba(0,0,0,.36))
+// er to forskellige slør; privacy-gate har sit eget stærkere (#080c1699), som
+// er en bevidst sikkerhedsflade. Krav: begge dialog::backdrop-regler bærer ÉT
+// delt token i aura-tokens.css.
+test('efter-byg F7: dialog-sløret er ÉN token i begge regler — basis og calm', () => {
+  assert.match(tokens, /--aura-scrim:\s*/, 'scrim-tokenet findes i aura-tokens.css');
+  const base = /dialog::backdrop\s*\{[^}]*\}/.exec(styles);
+  assert.ok(base, 'basisreglen findes');
+  assert.match(base[0], /background:\s*var\(--aura-scrim\)/, 'basisreglen bruger tokenet');
+  const calmRule = /\.workspace-calm dialog::backdrop\s*\{[^}]*\}/.exec(calm);
+  assert.ok(calmRule, 'calm-reglen findes');
+  assert.match(calmRule[0], /background:\s*var\(--aura-scrim\)/, 'calm-reglen bruger det SAMME token — ét sted at rette sløret');
+  assert.ok(!/14263b40/.test(styles), 'den gamle blågrå slør #14263b40 er væk fra styles.css');
+  assert.ok(!/dialog::backdrop\s*\{[^}]*#0[0-9a-f]{5}/.test(calm), 'calm-reglen bærer ingen rå slørfarve');
+});
+
+// ── 13. Efter-byg F11: «•••» dækker ikke statusteksten på samtalerækken ──────
+// Claude (bekræftet live på HEAD: .chat-more overlappede .chat-meta med 22 px —
+// «arbe•••»). DSH-mønsteret: når menu-knappen står frem (hover/fokus), viger
+// statusteksten — aldrig to lag oven på hinanden.
+test('efter-byg F11: .chat-meta viger, når «•••»-knappen står frem (hover/fokus)', () => {
+  const rule = /\.chat-list > li:is\(:hover, :focus-within\) \.chat-meta\s*\{[^}]*\}/.exec(styles);
+  assert.ok(rule, 'vige-reglen findes');
+  assert.match(rule[0], /visibility:\s*hidden/, 'statusteksten viger ved hover og tastaturfokus');
+  // Vige-reglen dækker samme betingelser som knappens synlighedsregel.
+  const more = /\.chat-list > li:not\(:hover\):not\(:focus-within\) \.chat-more:not\(\[aria-expanded="true"\]\)\s*\{[^}]*\}/.exec(styles);
+  assert.ok(more && /opacity:\s*0/.test(more[0]), 'knappens synlighedsregel består uændret');
+});
+
+// ── 14. Efter-byg F12: slukket switch-spor er synligt i mørkt tema ───────────
+// Claude (bekræftet live på HEAD: spor rgb(38,38,40) på kort rgb(44,44,46) —
+// «en løs prik»). Krav: af-sporet får sit eget token, tydeligt over kortet i
+// mørkt tema, og knop-kontrasten (≥3:1) måles mod DET token.
+test('efter-byg F12: switchens af-spor bærer sit eget token — synligt over kortet i mørkt tema', () => {
+  const track = /input\[type=checkbox\]\[role=switch\]\s*\{[^}]*\}/.exec(styles);
+  assert.ok(track, 'switch-reglen findes');
+  assert.match(track[0], /background:\s*var\(--aura-switch-track\)/, 'af-sporet bærer sit eget spor-token (ikke --aura-bg-tint)');
+  for (const [block, theme] of themeBlocks()) {
+    const trackRGB = tokenRGB(block, 'aura-switch-track'), knob = tokenRGB(block, 'aura-ink-muted'), card = tokenRGB(block, 'aura-bg-raised');
+    assert.ok(trackRGB, `${theme}: --aura-switch-track er defineret`);
+    const knobOnTrack = contrast(knob, trackRGB);
+    assert.ok(knobOnTrack >= 3, `${theme}: knop på af-spor er ${knobOnTrack.toFixed(2)}:1 — kravet er ≥3:1`);
+    const trackOnCard = contrast(trackRGB, card);
+    assert.ok(trackOnCard >= 1.15, `${theme}: sporet adskiller sig fra kortet (${trackOnCard.toFixed(2)}:1) — aldrig «en løs prik»`);
+  }
+});
+
+// ── 15. Efter-byg F9: den lukkede slash-popup tegner sig ikke selv ──────────
+// Claude (bekræftet live på HEAD, begge temaer): #slash-menu's basisregel satte
+// `display: grid` — en forfatterregel, der slår browserens `display: none`
+// for LUKKEDE popovers til side, så popuppen stod som en tom, indrammet
+// strimmel (420×13 px) under topbjælken over chatkolonnen. Merge-blokering.
+test('efter-byg F9: #slash-menu er display:none, når popuppen er lukket — ingen tom strimmel under topbjælken', () => {
+  const base = /#slash-menu\s*\{[^}]*\}/.exec(styles);
+  assert.ok(base, 'basisreglen findes');
+  assert.doesNotMatch(base[0], /display:\s*grid/, 'basisreglen sætter ALDRIG display — browserens egen lukkede popover-display gælder');
+  const open = /#slash-menu\.menu-material:popover-open\s*\{[^}]*\}/.exec(styles);
+  assert.ok(open, ':popover-open-reglen findes');
+  assert.match(open[0], /display:\s*grid/, 'griddet står KUN på :popover-open — geometrien (grid-template-columns) forbliver i basisreglen');
+});
+

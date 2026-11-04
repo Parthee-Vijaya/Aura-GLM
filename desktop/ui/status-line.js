@@ -26,7 +26,10 @@
   }
   function speedField(speed) {
     const value = speed && speed.known === true && Number.isSafeInteger(speed.value) && speed.value >= 0 ? speed.value : 0;
-    return `${number(value)} tok/s`;
+    // Efter-byg F10: over 1.000 forkortes hastigheden med linjens egen k/M-
+    // grammatik — «1.232 tok/s» blev læst som decimal («.232» i t8-billedet),
+    // for da-DK's tusindtalspunktum netop ligner et komma i en hastighed.
+    return `${shortTokens(value)} tok/s`;
   }
   function tokensField(usage) {
     const total = usage && Number.isSafeInteger(usage.calls) && usage.calls > 0
@@ -63,7 +66,9 @@
     } else lines.push('Vælg en AI, før kontekst og hastighed kan måles.');
     if (chosen) lines.push(`Målt på ${modelName || selected.modelID}${connection?.name ? ` hos ${connection.name}` : ''}.`);
     if (speed && speed.known === true && Number.isSafeInteger(speed.value)) {
-      lines.push(`Observeret svarhastighed (inkl. ræsonnement, ekskl. værktøjstid): ${number(speed.value)} tok/s i den seneste tur — målt over ${number(speed.stepCount || 0)} trin.`);
+      // Efter-byg F10: tooltippet holder det PRÆCISE tal uden tusindtals-
+      // gruppering — «1232 tok/s» kan ikke mislæses som 1,232.
+      lines.push(`Observeret svarhastighed (inkl. ræsonnement, ekskl. værktøjstid): ${speed.value} tok/s i den seneste tur — målt over ${number(speed.stepCount || 0)} trin.`);
       if (Number.isSafeInteger(speed.ttftMs) && speed.ttftMs >= 0) lines.push(`TTFT: ${number(speed.ttftMs)} ms.`);
     } else lines.push('Afventer første gyldige hastighedsmåling. 0 er visningsværdi.');
     const calls = Number.isSafeInteger(usage?.calls) && usage.calls >= 0 ? usage.calls : 0;

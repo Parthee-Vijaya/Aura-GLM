@@ -512,8 +512,11 @@ test('et DESIGN.md, der er et symlink, afvises ærligt — ingen skrivning genne
 
 test('sendable:false: anvendelsen blokeres ærligt — ingen maskering, ingen skrivning', async t => {
   const f = await deckFixture(t, { privacy: { enabled: true, version: 'test', workMode: 'cloud-controlled', defaultClass: 'internal', requireApproval: true, allowedDestinationIds: [] } });
-  // En base64-tung stil: datakontrollen afviser den ved afsendelse.
-  const body = `# Kodet stil\n## Farver\n- ${'QXNkZWZhczEyMzQ1Njc4OTA='.repeat(12)}\n## Typografi\n- Inter\n## Spacing\n- 8px\n## Komponenter\n- Kort\n`;
+  // En base64-tung stil: datakontrollen afviser den ved afsendelse. (Efter-byg
+  // F2: fixturen er ÉN sammenhængende ≥80-tegns base64-run — den gamle med '='
+  // hvert 28. tegn nåede aldrig den heuristik og fejlede kun gennem selve
+  // invalid_json-fejlen, rettelsen lukker.)
+  const body = `# Kodet stil\n## Farver\n- ${'QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVphYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eg'.repeat(2)}\n## Typografi\n- Inter\n## Spacing\n- 8px\n## Komponenter\n- Kort\n`;
   await seedCache(f.store, { body });
   const state = await f.deck.styleState({ root: f.root, slug: 'cloudflare' });
   assert.equal(state.sendable, false, 'tørkørslen afviser indholdet');
@@ -694,3 +697,112 @@ test('privacy-gate.js: Datakontrol viser GradientDeck-linjen med id og Tilbageka
   const main = fsSync.readFileSync(path.join(__dirname, '..', 'main.cjs'), 'utf8');
   assert.ok(main.includes('gradientdeckRevoke') || main.includes('consentState'), 'værten leverer consentState til Datakontrol');
 });
+
+// ── 13 · Efter-byg-runden: Codex' fire Vigtige (TOCTOU, størrelse) ───────────
+// Fund 1 (Vigtig): hashkontrollen står FØR alle awaits (baseline, versions-
+// gemning, backup-kopi) — ændres DESIGN.md i det vindue, overskriver
+// erstatningen den NYERE tekst, og kun den GAMLE findes i backup og Fortryd.
+// Krav: indhold OG filidentitet genkontrolleres umiddelbart før erstatningen,
+// og enhver afvigelse afbryder ærligt — intet skrives.
+// Hukommelses-fri repro: muteringen sættes i de ventede led (features/ensure-
+// baseline), præcis der afventningen står i produktion.
+
+test('efter-byg F1 (rød): DESIGN.md ændret under ventetiden → ærlig afbrydelse, den nyere tekst består', async t => {
+  const f = await deckFixture(t);
+  await seedCache(f.store);
+  const existing = '# Eget design\n## Farver\n- Grøn\n## Typografi\n- Serif\n## Spacing\n- 4 px\n## Komponenter\n- Bred knap\n';
+  await fs.writeFile(path.join(f.root, 'DESIGN.md'), existing);
+  const newer = existing + '\nBrugerens egen tilføjelse under ventetiden.\n';
+  // Erstatningen er gennemgået (forventede hashes fra konflikten); herefter
+  // ændrer brugeren/AI'en filen, mens anvendelsen afventer versionsvalget.
+  const engine = applyFixture(f.deck, fakeChat(), { versioner: false, git: null });
+  const conflict = await engine.apply({ root: f.root, slug: 'cloudflare' });
+  assert.equal(conflict.status, 'conflict', 'erstatningsgrundlaget er oprettet');
+  const engine2 = new DesignStyleApply({
+    deck: f.deck, chat: fakeChat(), busyRoot: () => false, git: null,
+    // features() afventes efter hashkontrollen — her sker ændringen.
+    features: async () => { await fs.writeFile(path.join(f.root, 'DESIGN.md'), newer); return { versioner: false }; },
+  });
+  const result = await engine2.apply({ root: f.root, slug: 'cloudflare', choice: 'replace', expected: conflict.expected, expectedStyle: conflict.expectedStyle });
+  assert.equal(result.status, 'conflict', 'afbrydelsen er en NY konflikt med den nyere diff — aldrig en stille overskrivning');
+  assert.equal(await fs.readFile(path.join(f.root, 'DESIGN.md'), 'utf8'), newer, 'den NYERE tekst består urørt');
+  assert.notEqual(result.expected, conflict.expected, 'den nye konflikt bærer den nyere fils hash til næste gennemgang');
+  assert.equal(await fs.stat(path.join(f.root, 'DESIGN (forrige).md')).then(() => true, () => false), false, 'ingen (forrige)-kopi fra det afbrudte kald');
+});
+
+test('efter-byg F1 (rød): et DESIGN.md, der OPSTÅR under ventetiden, bliver aldrig tilsidesat', async t => {
+  const f = await deckFixture(t);
+  await seedCache(f.store);
+  const appeared = '# Nyt design fra brugeren\n## Farver\n- Blå\n## Typografi\n- Inter\n## Spacing\n- 8 px\n## Komponenter\n- Kort\n';
+  const engine = applyFixture(f.deck, fakeChat({
+    // ensureBaseline afventes lige før skrivevejen — her opstår filen.
+    ensureBaseline: async () => { await fs.writeFile(path.join(f.root, 'DESIGN.md'), appeared); },
+  }));
+  const result = await engine.apply({ root: f.root, slug: 'cloudflare' });
+  assert.equal(result.status, 'conflict', 'en fil, der opstod under anvendelsen, kræver sin egen gennemgang');
+  assert.equal(await fs.readFile(path.join(f.root, 'DESIGN.md'), 'utf8'), appeared, 'brugerens fil består urørt');
+  assert.equal(result.expected, sha(appeared), 'konflikten bærer den nye fils hash');
+});
+
+test('efter-byg F1 (rød): et DESIGN.md, der FORSVINDER under ventetiden, afbryder ærligt uden skrivning', async t => {
+  const f = await deckFixture(t);
+  await seedCache(f.store);
+  const existing = '# Eget design\n## Farver\n- Grøn\n## Typografi\n- Serif\n## Spacing\n- 4 px\n## Komponenter\n- Bred knap\n';
+  await fs.writeFile(path.join(f.root, 'DESIGN.md'), existing);
+  const engine = applyFixture(f.deck, fakeChat(), { versioner: false, git: null });
+  const conflict = await engine.apply({ root: f.root, slug: 'cloudflare' });
+  assert.equal(conflict.status, 'conflict');
+  const engine2 = new DesignStyleApply({
+    deck: f.deck, chat: fakeChat(), busyRoot: () => false, git: null,
+    features: async () => { await fs.rm(path.join(f.root, 'DESIGN.md')); return { versioner: false }; },
+  });
+  const result = await engine2.apply({ root: f.root, slug: 'cloudflare', choice: 'replace', expected: conflict.expected, expectedStyle: conflict.expectedStyle });
+  assert.equal(result.status, 'error', 'forsvandt filen under ventetiden, er gennemgangen forældet — ærlig fejl');
+  assert.match(result.message, /DESIGN\.md/, 'fejlen nævner filen');
+  assert.equal(await fs.stat(path.join(f.root, 'DESIGN.md')).then(() => true, () => false), false, 'stilen er ikke skrevet som ny fil');
+  assert.equal(await fs.stat(path.join(f.root, 'DESIGN (forrige).md')).then(() => true, () => false), false, 'ingen (forrige)-kopi fra det afbrudte kald');
+});
+
+test('efter-byg F1 (grøn): uændret fil i vinduet → erstatningen gennemføres som før', async t => {
+  const f = await deckFixture(t);
+  await seedCache(f.store);
+  const existing = '# Eget design\n## Farver\n- Grøn\n## Typografi\n- Serif\n## Spacing\n- 4 px\n## Komponenter\n- Bred knap\n';
+  await fs.writeFile(path.join(f.root, 'DESIGN.md'), existing);
+  const engine = applyFixture(f.deck, fakeChat(), { versioner: false, git: null });
+  const conflict = await engine.apply({ root: f.root, slug: 'cloudflare' });
+  assert.equal(conflict.status, 'conflict');
+  const applied = await engine.apply({ root: f.root, slug: 'cloudflare', choice: 'replace', expected: conflict.expected, expectedStyle: conflict.expectedStyle });
+  assert.equal(applied.status, 'applied', 'den uændrede vej består — genkontrollen er kun en vagt');
+  assert.equal(applied.preserved, 'rename');
+  assert.equal(await fs.readFile(path.join(f.root, 'DESIGN.md'), 'utf8'), appliedText('Cloudflare', 'cloudflare', styleBody('Cloudflare')));
+});
+
+// Fund 3 (Vigtig): S4 accepterer stilteksten op til 32.768 bytes — men S5
+// tilføjer kildelinjen, og det FÆRDIGE dokument kan så være over loftet, som
+// build-design.cjs håndhæver ved næste afsendelse. Krav: det færdige dokuments
+// byteantal kontrolleres, FØR noget som helst skrives til projektet.
+test('efter-byg F3 (rød): stilen passer i cachen, men det færdige dokument over loftet → ærlig afvisning før skrivning', async t => {
+  const f = await deckFixture(t);
+  // Stilteksten er UNDER S4-loftet (32.768) — kildelinjonen skubber det
+  // færdige dokument OVER. (Reproduceret af Codex: 32.768 → 32.951 → afvist.)
+  const base = `# Megastil\n\n## Farver\n- #123456\n\n## Typografi\n- Inter\n\n## Spacing\n- 8 px\n\n## Komponenter\n- Kort\n`;
+  const body = base + 'x'.repeat(DESIGN_MAX_BYTES - Buffer.byteLength(base) - 10);
+  assert.ok(Buffer.byteLength(body) <= DESIGN_MAX_BYTES, 'stilen selv består S4-loftet');
+  const seeded = await seedCache(f.store, { body });
+  assert.ok(Buffer.byteLength(appliedText('Cloudflare', 'cloudflare', seeded.text)) > DESIGN_MAX_BYTES, 'det færdige dokument er over loftet');
+  const result = await applyFixture(f.deck, fakeChat()).apply({ root: f.root, slug: 'cloudflare' });
+  assert.equal(result.status, 'error', 'afvisningen er en ærlig fejl — aldrig en skrivning, der fejler ved næste afsendelse');
+  assert.match(result.message, /for stor|32\.768/i, 'fejlen siger hvorfor');
+  assert.equal(await fs.stat(path.join(f.root, 'DESIGN.md')).then(() => true, () => false), false, 'INTET er skrevet til projektet');
+});
+
+test('efter-byg F3 (grøn): det færdige dokument under loftet anvendes normalt', async t => {
+  const f = await deckFixture(t);
+  await seedCache(f.store);
+  const result = await applyFixture(f.deck, fakeChat()).apply({ root: f.root, slug: 'cloudflare' });
+  assert.equal(result.status, 'applied');
+  const written = await fs.readFile(path.join(f.root, 'DESIGN.md'), 'utf8');
+  assert.ok(Buffer.byteLength(written) <= DESIGN_MAX_BYTES, 'den skrevne fil består loftet ved næste afsendelse');
+  assert.equal(await readProjectDesignDocument(f.root).then(() => true, () => false), true, 'build-design.cjs kan læse den tilbage');
+});
+

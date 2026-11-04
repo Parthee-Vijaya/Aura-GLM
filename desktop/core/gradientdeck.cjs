@@ -62,6 +62,12 @@ const CATALOG_TTL = 7 * 24 * 60 * 60 * 1000;
 const STYLE_TTL = 30 * 24 * 60 * 60 * 1000;
 const CATALOG_MAX_BYTES = 4_000_000;
 const CATALOG_MAX_ENTRIES = 10_000;
+// Efter-byg F8 (Codex, ressourcer): ét samlet loft over stilcachen. Hver stil
+// fylder op til 32 kB, TTL sletter intet, og hentninger akkumulerede uden
+// grænse — katalogåbningen genlæste ALT. Loftet binder både cachen og
+// #cachedStyles' gennemlæsning (≤ 24 stile), og oprydningen er billig: i
+// normaltilfældet én readdir; først over loftet læses de små meta-filer.
+const STYLE_CACHE_MAX = 24;
 const TIMEOUT_MS = 15_000;
 
 const rejectContent = kind => Object.assign(new Error(`${kind} blev afvist: formatet eller størrelsen understøttes ikke.`), { code: 'GRADIENTDECK_REJECTED' });
@@ -438,6 +444,7 @@ class GradientDeck {
   async catalog({ root, refresh = false } = {}) {
     if (!root || typeof root !== 'string') return { status: 'error', message: 'Åbn et projekt først.' };
     try {
+      await this.#sweepStyles();
       const local = await this.#localOnly(root);
       const cached = await this.#readCatalog();
       const fresh = cached && this.now() - cached.fetchedAt <= CATALOG_TTL;
@@ -476,6 +483,41 @@ class GradientDeck {
     return cached;
   }
 
+  // Efter-byg F8: den begrænsede oprydning. Kaldes ved katalogåbning (brugerens
+  // egen åbning — aldrig i baggrunden): én readdir; FØRST når antallet er over
+  // loftet, læses de små meta-filer, og de ÆLDSTE ud over loftet ryddes (stil +
+  // meta). Et ulæseligt eller usammenhængende meta ryddes med — det kan intet
+  // bevise, og #readStyle afviser det alligevel. Ærligt: en fjernet stil
+  // hentes igen ved næste brug (med nyt samtykke uden for «Kun lokal»), og
+  // cachen under loftet røres ikke.
+  async #sweepStyles() {
+    const directory = path.join(this.cacheDirectory(), 'styles');
+    let names;
+    try { names = await fs.readdir(directory); } catch { return; }
+    const pairs = new Map();
+    for (const name of names) {
+      const slug = name.endsWith('.md') ? name.slice(0, -3) : name.endsWith('.meta.json') ? name.slice(0, -10) : null;
+      if (!validSlug(slug)) continue;
+      if (!pairs.has(slug)) pairs.set(slug, new Set());
+      pairs.get(slug).add(name);
+    }
+    if (pairs.size <= STYLE_CACHE_MAX) return;
+    const entries = [];
+    for (const [slug, set] of pairs) {
+      let fetchedAt = -Infinity;
+      try {
+        const metaBytes = await readCacheFile(path.join(directory, `${slug}.meta.json`), 4096);
+        const meta = metaBytes ? JSON.parse(metaBytes.toString('utf8')) : null;
+        if (meta && typeof meta === 'object' && Number.isFinite(meta.fetchedAt)) fetchedAt = meta.fetchedAt;
+      } catch { /* ulæseligt meta: ryddes som de ældste — det beviser intet */ }
+      entries.push({ slug, set, fetchedAt });
+    }
+    entries.sort((a, b) => a.fetchedAt - b.fetchedAt);
+    for (const entry of entries.slice(0, Math.max(0, entries.length - STYLE_CACHE_MAX))) {
+      for (const name of entry.set) await fs.unlink(path.join(directory, name)).catch(() => { /* allerede væk */ });
+    }
+  }
+
   #styleFile(slug) { return path.join(this.cacheDirectory(), 'styles', `${slug}.md`); }
 
   // En genlæst cache genvalideres helt: sha256, kilde, alder og striks UTF-8.
@@ -508,6 +550,10 @@ class GradientDeck {
   // S5: indpakningen er den ANVENDTE form — kildelinje + stil, mærket som
   // ekstern reference — så tørkørslen ser netop det, DESIGN.md-skrivningen
   // (og dermed en fremtidig afsendelse) indeholder.
+  // Efter-byg F2 (Codex, Vigtig): inspectRequest kræver JSON — den rå
+  // designDocumenttekst gav ALTID invalid_json, når kontrollen var aktiv, og
+  // S5 nægtede dermed ALLE stile. Teksten sendes nu i samme JSON-envelope som
+  // modelkontrollen (privacy-runtime-provider.cjs): messages→role/content.
   async #sendable(root, slug, text, meta = null) {
     const egress = this.egress();
     if (!(await egress.active(root))) return true;
@@ -516,7 +562,7 @@ class GradientDeck {
       ? styleDocument({ name: meta.name, slug, text, fetchedAt: new Date(meta.fetchedAt).toISOString().slice(0, 10), hash: hashBytes(Buffer.from(text, 'utf8')) })
       : { source: `GradientDeck ${STYLE_PATH(slug)}`, content: text, hash: hashBytes(Buffer.from(text, 'utf8')) };
     try {
-      inspectRequest(designDocumentText(document), policy);
+      inspectRequest(JSON.stringify({ messages: [{ role: 'user', content: designDocumentText(document) }] }), policy);
       return true;
     } catch (error) {
       if (error instanceof PrivacyGateError) return false;
@@ -638,6 +684,6 @@ class GradientDeck {
 module.exports = {
   ORIGIN, DESTINATION_ID, DESTINATION_ACTION, SLUG, SLUG_MAX, validSlug,
   CATALOG_PATH, STYLE_PATH, ROUTE_BINDING, CATALOG_URL,
-  CATALOG_TTL, STYLE_TTL, CATALOG_MAX_BYTES, CATALOG_MAX_ENTRIES, DESIGN_MAX_BYTES, TIMEOUT_MS,
+  CATALOG_TTL, STYLE_TTL, CATALOG_MAX_BYTES, CATALOG_MAX_ENTRIES, DESIGN_MAX_BYTES, TIMEOUT_MS, STYLE_CACHE_MAX,
   GradientDeck, styleCommand, validateCatalogText, validateStyleText, readBounded, cacheDirectory, writeAtomic, readCacheFile,
 };

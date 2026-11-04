@@ -30,7 +30,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { randomUUID } = require('node:crypto');
 const { lineDiff } = require('./diff.cjs');
-const { readProjectDesignDocument, styleDocument } = require('./build-design.cjs');
+const { readProjectDesignDocument, styleDocument, DESIGN_MAX_BYTES } = require('./build-design.cjs');
 
 const isoDate = at => new Date(at).toISOString().slice(0, 10);
 
@@ -126,6 +126,17 @@ class DesignStyleApply {
       return { status: 'blocked', name: style.name, slug: style.slug, message: 'Datakontrollen vil afvise den ved afsendelse (indholdet ligner kodet data). Stilen er ikke skrevet til projektet.' };
     }
     const document = styleDocument({ name: style.name, slug: style.slug, text: style.text, fetchedAt: isoDate(style.fetchedAt), hash: style.sha256 });
+    // Efter-byg F3: S4 accepterer selve stilen op til 32.768 bytes, men S5
+    // tilføjer kildelinjen — og det FÆRDIGE dokument kan så bryde det loft,
+    // build-design.cjs håndhæver ved næste afsendelse. Loftet kontrolleres
+    // derfor på den færdige fil, FØR nogen projektskrivning: ingen anvendelse
+    // kan efterlade et DESIGN.md, næste afsendelse afviser.
+    if (Buffer.byteLength(document.content) > DESIGN_MAX_BYTES) {
+      return {
+        status: 'error', name: style.name, slug: style.slug,
+        message: `Stilen er for stor til projektets DESIGN.md: med GradientDeck-kildelinjen bliver den færdige fil over loftet på ${DESIGN_MAX_BYTES.toLocaleString('da-DK')} bytes, som gælder ved afsendelse. Vælg en kortere stil.`,
+      };
+    }
     // Det eksisterende DESIGN.md læses med samme hårde læsning som en
     // afsendelse: almindelig fil i roden, intet symlink, loft, striks UTF-8.
     let existing = null;
@@ -161,6 +172,24 @@ class DesignStyleApply {
         await this.write(path.join(root, previousName), existing.content);
         preserved = 'rename';
       }
+    }
+    // Efter-byg F1: luk TOCTOU-vinduet. ALLE awaits ovenfor (baseline,
+    // versionsgemning, backup-kopi) er et vindue, hvor DESIGN.md kan have
+    // ændret sig — uden genkontrol overskriver erstatningen den NYERE tekst,
+    // og kun den GAMLE står i backup og Fortryd. Filen genlæses derfor med
+    // den samme hårde læsning (indhold OG identitet: almindelig fil, intet
+    // symlink, dev/ino-bundet) umiddelbart før erstatningen, og enhver
+    // afvigelse afbryder ærligt: kopi fra dette kald fjernes, intet skrives.
+    let current = null;
+    try { current = await readProjectDesignDocument(root); }
+    catch (error) {
+      if (previousName) await fs.unlink(path.join(root, previousName)).catch(() => { /* bedst-indsats: kopien fra dette kald */ });
+      return { status: 'error', message: error.message };
+    }
+    if (Boolean(current) !== Boolean(existing) || (current && existing && current.hash !== existing.hash)) {
+      if (previousName) await fs.unlink(path.join(root, previousName)).catch(() => { /* bedst-indsats: kopien fra dette kald */ });
+      if (current) return this.#conflict(style, current, document);
+      return { status: 'error', message: 'Projektets DESIGN.md forsvandt, mens stilen blev anvendt. Intet er ændret — gennemgå projektet, og prøv igen.' };
     }
     try {
       await this.write(path.join(root, 'DESIGN.md'), document.content);

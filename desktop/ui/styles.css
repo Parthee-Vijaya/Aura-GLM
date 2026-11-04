@@ -312,7 +312,9 @@ dialog { width: min(700px, 92vw); max-height: 88vh; padding: 28px; overflow: aut
 dialog[data-size="confirm"] { width: min(520px, 92vw); }
 dialog[data-size="wide"] { width: min(1000px, 92vw); }
 dialog[data-size="complex"] { width: min(1130px, 92vw); }
-dialog::backdrop { background: #14263b40; backdrop-filter: blur(4px); }
+/* Efter-byg F7 (Codex d3): sløret bærer ÉT delt token (--aura-scrim i
+   aura-tokens.css) — basis og calm rettes fra det samme sted. */
+dialog::backdrop { background: var(--aura-scrim); backdrop-filter: blur(4px); }
 dialog[open] { animation: dialog-arrive var(--motion-step) var(--ease-out); }
 .dialog-heading, .dialog-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .dialog-heading { margin-bottom: 18px; }
@@ -553,7 +555,12 @@ body.setup-guided .app-content { margin-left: 0; }
 .status-line { display: inline-flex; flex-wrap: nowrap; justify-content: center; align-items: baseline; gap: 0 6px; max-width: 100%; min-height: 24px; padding: 1px 8px; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: var(--aura-text-12); line-height: var(--aura-text-12-line); font-variant-numeric: tabular-nums; cursor: default; border-radius: var(--radius-xs); min-width: 0; overflow: hidden; }
 .status-line:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .status-line[hidden] { display: none; }
-.status-field { white-space: nowrap; }
+/* Efter-byg F10 (Claude, bekræftet live: feltstart klippedes stille, når
+   rækken presses — «.232 tok/s»): felterne kan vige med et SYNELIGT afkort,
+   aldrig et stille klip midt i et tal. Datakontrol-knappen viger aldrig
+   (S4-kendelsen), så felterne afluser med ellipsis i stedet for at række
+   uden for sit lag. */
+.status-field { white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .status-sep { flex: none; }
 .composer-status #draft-status { margin: 0; min-width: 0; max-width: 60%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; transition: opacity 600ms ease; }
 #draft-status.draft-faded { opacity: 0; }
@@ -574,11 +581,14 @@ body.setup-guided .app-content { margin-left: 0; }
 .feature-toggle strong { display: flex; align-items: center; font-size: 13px; font-weight: 600; }
 .feature-toggle small { display: block; color: var(--muted); font-size: 12px; line-height: 1.5; margin-top: 2px; }
 /* T8 (audit §4): switchen på --aura-tokens i BEGGE temaer — af-sporet er
-   --aura-bg-tint, knappen --aura-ink-muted, til-knappen --aura-bg på accent-
-   sporet (P1s målte par: 4,26/4,23:1 lyst, 5,24/6,86:1 mørkt — alt ≥3:1).
+   --aura-switch-track (efter-byg F12: --aura-bg-tint var identisk med kortet
+   i mørkt tema, 38/44, så switchen læses som en løs prik; sporet har nu sit
+   EGEN token, synligt over kortet i begge temaer), knappen --aura-ink-muted,
+   til-knappen --aura-bg på accent-sporet (P1s målte par holdt ≥3:1 — sporets
+   nye værdi er målt igen i controls-tooltips-titles.test.cjs).
    #c5d0de/#14263b40-æraen er væk; tastaturbetjening er Space på checkboxen,
    og :focus-visible bærer accent-ringen. */
-input[type=checkbox][role=switch] { appearance: none; width: 36px; height: 20px; margin: 2px 0 0; border-radius: 999px; background: var(--aura-bg-tint); position: relative; cursor: pointer; flex-shrink: 0; transition: background var(--motion-fast); }
+input[type=checkbox][role=switch] { appearance: none; width: 36px; height: 20px; margin: 2px 0 0; border-radius: 999px; background: var(--aura-switch-track); position: relative; cursor: pointer; flex-shrink: 0; transition: background var(--motion-fast); }
 input[type=checkbox][role=switch]::before { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--aura-ink-muted); transition: transform var(--motion-fast); }
 input[type=checkbox][role=switch]:checked { background: var(--accent); }
 input[type=checkbox][role=switch]:checked::before { transform: translateX(16px); background: var(--aura-bg); }
@@ -1000,14 +1010,40 @@ body.picking #preview-stage { box-shadow: 0 0 0 2px var(--accent); }
 @media (prefers-reduced-motion: reduce) { .chat-status.is-running { animation: none; } }
 .chat-more { position: absolute; right: 2px; top: 50%; transform: translateY(-50%); border: 0.5px solid var(--aura-border); border-radius: var(--aura-radius-xs); background: var(--aura-bg-raised); padding: 2px 6px; font-size: 11px; color: var(--muted); }
 .chat-list > li:not(:hover):not(:focus-within) .chat-more:not([aria-expanded="true"]) { opacity: 0; }
+/* Efter-byg F11 (Claude, bekræftet live på HEAD: «•••» dækkede statusteksten
+   med ~22 px — «arbe•••»): når menu-knappen står frem (hover eller tastatur-
+   fokus — knappens egne synlighedsbetingelser), viger statusteksten. DSH-
+   mønsteret: ét stykke ad gangen i rækkens højre side, aldrig to lag oven på
+   hinanden. Layoutet består (visibility gemmer uden reflow). */
+.chat-list > li:is(:hover, :focus-within) .chat-meta { visibility: hidden; }
 .chat-all, .project-all { padding: 4px 8px; font-size: 11px; }
 .chat-rename { flex: 1 1 auto; margin: 0; }
 .chat-rename input { padding: 5px 8px; font-size: 12px; }
-.chat-menu { position: fixed; inset: auto; margin: 0; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: 0 8px 24px #18223524; display: none; flex-direction: column; min-width: 150px; }
+/* Efter-byg F6 (Codex d2 + Claude): #chat-menu (samtalerækkens «•••») og
+   #composer-help-popover bærer nu det SAME menu-materiale som appens øvrige
+   ankrede menuer (.menu-material i components.css): --aura-shadow-menu,
+   alfaskyen --aura-menu-bg med blur, radius 16 og 0,5 px kant — ikke den
+   gamle tunge skygge og uigennemsigtige flade. Materiale-reglen er ID-båren:
+   den slår calm-reglernes :where(dialog,[popover]) (0,1,0 — ellers uafgjort
+   med en klasseregel og tabt på kildeorden) og den generiske [popover]-regel
+   i styles.css uanset rækkefølge. Faldgrunderne følger med (uden
+   backdrop-filter: uigennemsigtig raised; forced-colors: Canvas). */
+.chat-menu { position: fixed; inset: auto; margin: 0; padding: 6px 4px; display: none; flex-direction: column; min-width: 150px; }
 .chat-menu:popover-open { display: flex; }
-.chat-menu button { border: 0; background: transparent; text-align: left; padding: 7px 10px; font-size: 12px; font-weight: 500; }
-.chat-menu button:hover { background: var(--tint); }
-.chat-menu .danger { color: #a3282a; }
+#chat-menu, #composer-help-popover { border: 0.5px solid var(--aura-border); border-radius: var(--aura-radius-lg); background: var(--aura-menu-bg); -webkit-backdrop-filter: blur(40px) saturate(150%); backdrop-filter: blur(40px) saturate(150%); box-shadow: var(--aura-shadow-menu); color: var(--aura-ink); }
+.chat-menu button { border: 0; background: transparent; text-align: left; display: flex; align-items: center; gap: 10px; width: 100%; min-height: 34px; padding: 6px 8px; border-radius: var(--aura-radius-md); font-size: 13px; line-height: 20px; font-weight: 450; }
+.chat-menu button:hover:not(:disabled) { background: var(--aura-bg-hover); }
+.chat-menu button:focus-visible { outline: 2px solid var(--aura-accent); outline-offset: 1px; }
+.chat-menu .danger { color: var(--aura-error); }
+/* #composer-help-popover har sin geometri i settings.css (position, bredde,
+   padding) — materialet tilhører den delte menu-grammatik og står her, så
+   ét sted ejer alle ankrede lags materiale. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  #chat-menu, #composer-help-popover { background: var(--aura-bg-raised); }
+}
+@media (forced-colors: active) {
+  #chat-menu, #composer-help-popover { background: Canvas; border: 1px solid CanvasText; -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
 .composer-wait { color: #8a5300; }
 
 /* Kommandopaletten: et søgefelt øverst i vinduet med appens egne handlinger, samtaler og projekter. */
@@ -1415,7 +1451,13 @@ details.plan-detail > .plan-detail-body { padding: 0 14px 12px 14px; font-size: 
    målt live: rækker ~930 px i et 387 px lag), overflow-x er lukket, og både
    navn og beskrivelse afkortes med ellipsis i stedet for at klippe midt i
    et ord. */
-#slash-menu { position: fixed; inset: auto; width: 420px; max-width: 420px; max-height: 320px; overflow-y: auto; overflow-x: hidden; padding: 6px; margin: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; }
+/* Efter-byg F9 (Claude, bekræftet live på HEAD): basisreglen satte
+   `display: grid` — en forfatterregel, der slår browserens egen
+   `display: none` for lukkede popovers til side. Den LUKKede popup tegnede
+   sig derfor som en tom, indrammet strimmel (420×13 px) direkte under
+   topbjælken i begge temaer. display: grid står KUN på :popover-open-reglen;
+   basisreglen ejer geometrien og intet visnings-lag. */
+#slash-menu { position: fixed; inset: auto; width: 420px; max-width: 420px; max-height: 320px; overflow-y: auto; overflow-x: hidden; padding: 6px; margin: 0; grid-template-columns: minmax(0, 1fr); gap: 2px; }
 #slash-menu.menu-material:popover-open { display: grid; gap: 2px; }
 #slash-menu button { display: flex; gap: 8px; align-items: center; text-align: left; min-height: 36px; min-width: 0; overflow: hidden; padding: 6px 10px; border: none; background: transparent; border-radius: 8px; font-size: 13px; font-weight: 400; cursor: pointer; color: var(--ink); }
 /* S5-UI-fix (b) fra S3-liveanalysen: navnekolonnen får min-content-plads op

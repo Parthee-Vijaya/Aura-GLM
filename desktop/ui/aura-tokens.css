@@ -104,6 +104,17 @@
   /* Menu-materiale: alpha + blur (DSH) med uigennemsigtig fallback (R4). */
   --aura-menu-bg: rgba(252, 253, 254, 0.7);
 
+  /* Efter-byg F7 (Codex d3): ÉT fælles scrim-token for dialog-sløret. Værdien
+     er arbejdsfladens eksisterende (#080b105c) — basisreglen havde sin egen
+     #14263b40, så appen viste tre forskellige slør. Privacy-gate-dialogen
+     beholder bevidst sit stærkere #080c1699 (sikkerhedsflade). */
+  --aura-scrim: #080b105c;
+  /* Efter-byg F12 (Claude): switchens AF-spor — --aura-bg-tint var identisk
+     med kortfladen i mørkt tema (38/44 mod 44/46), så en slukket switch læses
+     som en løs prik. Sporet løftes over kortet; knop-kontrasten (≥3:1) er
+     målt i controls-tooltips-titles.test.cjs. */
+  --aura-switch-track: rgb(233, 234, 238);
+
   /* Læsbar status- og advarselstekst (R4): --aura-warning måler kun 3,15:1
      på hvid og 2,92:1 på warning-subtle i lyst tema — tekst bærer denne
      mørkere variant (målt 5,59:1 på hvid, 5,17:1 på warning-subtle). */
@@ -185,6 +196,10 @@
     /* Menu-materiale (DSH, mørk) — den sammensatte baggrund er målt 12,88:1. */
     --aura-menu-bg: rgba(48, 49, 54, 0.64);
 
+    /* Efter-byg F7/F12: scrim og switch-af-spor følger temaet (se :root). */
+    --aura-scrim: #080b105c;
+    --aura-switch-track: rgb(63, 64, 68);
+
     /* Den mørke advarselsfarve består kontrasten som tekst (7,24:1 på raised). */
     --aura-warning-ink: rgb(220, 160, 60);
 
@@ -237,6 +252,8 @@
   --aura-shadow-composer: 0 4px 16px rgba(0, 0, 0, 0.03), 0 0 24px rgba(0, 0, 0, 0.03);
   --aura-shadow-menu: 0 3px 8px rgba(0, 0, 0, 0.04), 0 0 20px rgba(0, 0, 0, 0.05);
   --aura-menu-bg: rgba(252, 253, 254, 0.7);
+  --aura-scrim: #080b105c;
+  --aura-switch-track: rgb(233, 234, 238);
   --aura-warning-ink: rgb(146, 92, 15);
   --aura-accent-ink: rgb(52, 94, 186);
   --aura-success: rgb(34, 154, 96);
