@@ -136,7 +136,7 @@ dialog.native-settings-shell .hint { max-width: 65ch; font-size: 12px; line-heig
 #settings-dialog .settings-group-heading:first-of-type { margin-top: 22px; }
 #settings-dialog .settings-field { display: grid; grid-template-columns: minmax(0, 1fr) minmax(120px, 45%); align-items: center; gap: 20px; padding: 16px 0; border-top: 1px solid var(--aura-border); }
 #settings-dialog .settings-field > label { margin: 0; font-size: 13px; font-weight: 450; color: var(--aura-ink); line-height: 1.5; }
-#settings-dialog .settings-field :is(input:not([type=checkbox]):not([type=radio]), select) { width: 100%; min-width: 0; margin: 0; padding: 10px 12px; min-height: 38px; border: 1px solid transparent; border-radius: 10px; background: var(--aura-bg-tint); color: var(--aura-ink); font-size: 12px; }
+#settings-dialog .settings-field :is(input:not([type=checkbox]):not([type=radio]), select) { width: 100%; min-width: 0; margin: 0; padding: 10px 12px; min-height: 38px; border: 1px solid var(--aura-border-strong); border-radius: 10px; background: var(--aura-bg-tint); color: var(--aura-ink); font-size: 12px; }
 #settings-dialog .settings-field + .hint { margin: -6px 0 16px; }
 #settings-dialog .profile-icon-row { flex-wrap: wrap; gap: 5px; }
 #settings-dialog .profile-icon-choice { width: 34px; height: 34px; border-radius: 9px; }

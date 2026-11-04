@@ -2,7 +2,7 @@
 name: "Aura Prime"
 description: "Lokal arbejdsapp med integreret Aura-brand, helt skjulbar navigation og centreret samtalestart."
 colors:
-  aura-accent: "light-dark(rgb(65, 118, 230), rgb(103, 158, 254))"
+  aura-accent: "light-dark(rgb(65, 118, 230), rgb(122, 170, 255))"
   aura-accent-hover: "light-dark(rgb(72, 104, 178), rgb(122, 170, 255))"
   aura-accent-subtle: "light-dark(rgb(228, 237, 253), rgb(33, 43, 66))"
   aura-accent-faint: "light-dark(rgb(237, 243, 254), rgb(27, 35, 54))"
@@ -10,18 +10,18 @@ colors:
   aura-button-primary: "light-dark(rgb(21, 21, 23), rgb(240, 240, 242))"
   aura-button-primary-hover: "light-dark(rgb(40, 40, 42), rgb(255, 255, 255))"
   aura-button-primary-text: "light-dark(rgb(255, 255, 255), rgb(21, 21, 23))"
-  aura-bg: "light-dark(rgb(255, 255, 255), rgb(19, 19, 20))"
-  aura-bg-sidebar: "light-dark(rgb(240, 241, 243), rgb(52, 53, 55))"
-  aura-bg-panel: "light-dark(rgb(247, 248, 250), rgb(27, 27, 28))"
-  aura-bg-raised: "light-dark(rgb(255, 255, 255), rgb(44, 44, 46))"
+  aura-bg: "light-dark(rgb(255, 255, 255), rgb(21, 21, 23))"
+  aura-bg-sidebar: "light-dark(rgb(249, 250, 251), rgb(27, 27, 28))"
+  aura-bg-panel: "light-dark(rgb(255, 255, 255), rgb(35, 35, 36))"
+  aura-bg-raised: "light-dark(rgb(255, 255, 255), rgb(35, 35, 36))"
   aura-bg-overlay: "light-dark(rgb(255, 255, 255), rgb(44, 44, 46))"
-  aura-bg-composer: "light-dark(rgb(243, 244, 246), rgb(43, 43, 45))"
-  aura-bg-bubble: "light-dark(rgb(243, 244, 246), rgb(44, 44, 46))"
-  aura-bg-tint: "light-dark(rgb(243, 244, 246), rgb(38, 38, 40))"
+  aura-bg-composer: "light-dark(rgb(255, 255, 255), rgb(44, 44, 46))"
+  aura-bg-bubble: "light-dark(rgb(237, 243, 254), rgb(44, 44, 46))"
+  aura-bg-tint: "light-dark(rgb(255, 255, 255), rgb(44, 44, 46))"
   aura-bg-hover: "light-dark(rgba(38, 49, 72, 0.06), rgba(255, 255, 255, 0.08))"
-  aura-bg-active: "light-dark(rgb(237, 238, 241), rgb(51, 51, 53))"
-  aura-ink: "light-dark(rgb(21, 21, 23), rgb(238, 238, 240))"
-  aura-ink-secondary: "light-dark(rgb(64, 64, 68), rgb(190, 192, 196))"
+  aura-bg-active: "light-dark(rgb(235, 238, 242), rgb(67, 69, 74))"
+  aura-ink: "light-dark(rgb(15, 17, 21), rgb(249, 250, 251))"
+  aura-ink-secondary: "light-dark(rgb(97, 102, 107), rgb(207, 211, 214))"
   aura-ink-muted: "light-dark(rgb(101, 105, 113), rgb(150, 152, 158))"
   aura-border: "light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.08))"
   aura-border-strong: "light-dark(rgba(0, 0, 0, 0.12), rgba(255, 255, 255, 0.12))"
@@ -230,19 +230,19 @@ Samtalevisningens blå linje, links, caret, fokus og udbydervalg bruger accentro
 
 | Rolle / CSS-token | Lyst | Mørkt |
 | --- | --- | --- |
-| `--aura-bg` | `rgb(255, 255, 255)` | `rgb(19, 19, 20)` |
-| `--aura-bg-sidebar` | `rgb(240, 241, 243)` | `rgb(52, 53, 55)` |
-| `--aura-bg-composer` | `rgb(243, 244, 246)` | `rgb(43, 43, 45)` |
-| `--aura-bg-raised` | `rgb(255, 255, 255)` | `rgb(44, 44, 46)` |
-| `--aura-bg-panel` | `rgb(247, 248, 250)` | `rgb(27, 27, 28)` |
-| `--aura-ink` | `rgb(21, 21, 23)` | `rgb(238, 238, 240)` |
-| `--aura-ink-secondary` | `rgb(64, 64, 68)` | `rgb(190, 192, 196)` |
+| `--aura-bg` | `rgb(255, 255, 255)` | `rgb(21, 21, 23)` |
+| `--aura-bg-sidebar` | `rgb(249, 250, 251)` | `rgb(27, 27, 28)` |
+| `--aura-bg-composer` | `rgb(255, 255, 255)` | `rgb(44, 44, 46)` |
+| `--aura-bg-raised` | `rgb(255, 255, 255)` | `rgb(35, 35, 36)` |
+| `--aura-bg-panel` | `rgb(255, 255, 255)` | `rgb(35, 35, 36)` |
+| `--aura-ink` | `rgb(15, 17, 21)` | `rgb(249, 250, 251)` |
+| `--aura-ink-secondary` | `rgb(97, 102, 107)` | `rgb(207, 211, 214)` |
 | `--aura-ink-muted` | `rgb(101, 105, 113)` | `rgb(150, 152, 158)` |
-| `--aura-accent` | `rgb(65, 118, 230)` | `rgb(103, 158, 254)` |
+| `--aura-accent` | `rgb(65, 118, 230)` | `rgb(122, 170, 255)` |
 | `--aura-accent-ink` | `rgb(52, 94, 186)` | `rgb(125, 154, 222)` |
 | `--aura-button-primary` | `rgb(21, 21, 23)` | `rgb(240, 240, 242)` |
 | `--aura-button-primary-text` | `rgb(255, 255, 255)` | `rgb(21, 21, 23)` |
-| `--aura-bg-active` | `rgb(237, 238, 241)` | `rgb(51, 51, 53)` |
+| `--aura-bg-active` | `rgb(235, 238, 242)` | `rgb(67, 69, 74)` |
 
 Tabellen er en læsevisning af frontmatter. Sidebarens mørke grå er med vilje lysere end hovedfladen. Composerens flade står mellem dem. Tynde alpha-kanter, neutral hover og faktisk tekstkontrast bærer hierarkiet. Previewets iframe beholder projektets eget tema.
 
@@ -386,3 +386,9 @@ Godkendelser viser Hvad, Hvorfor og Hvis du tillader med læsbare tekniske detal
 - Opfind ikke aktivitet, modelresultater, fremdrift, hastighed eller en grøn samlet suite.
 
 Slutstatus: Den uafhængige native genprøve har lukket NF-01 og NF-02 med qualified PASS på disse to fund. Faktisk 600×700 førstestart, udvidelse, uafsluttet velkomstgenstart og begge gemte panelvalg er verificeret. Samlet lokal check: 2.654 tests, 2.619 bestået, 34 skips og én kendt ZIP-baselinefejl. Ingen commit, push, DMG eller releaseaccept. Evidens: `/Users/parthee/aura-prime-redesign-20261104/native-finish-verdict.md` og `native-verification.json`.
+
+## Palette og projektlayout, 4. november 2026
+
+Brugerens opfølgning erstatter de grå tilnærmelser med de faktiske flade-, tekst- og accentfarver fra installeret DeepSeek Harness 0.2.1-rc.5. Lyst tema bruger hvidt lærred, hvide felter og sidebar #f9fafb. Mørkt tema bruger lærred #151517, sidebar #1b1b1c og felter #2c2c2e. Statiske farveværdier er læst fra den installerede apps theme-modul. Auras navn, grønne logo og semantiske advarsels-/statusfarver bevares.
+
+Nyt projekt har en tættere formular og en fast bundrække uden for det rullende indhold. Den oprindelige opret-knap bevarer HTML-formtilknytning, validering og disabled-guards. Returhandlingen ligger i headeren. Standardfelter, tilvalg og placering vises uden scroll ved 980×720 og normal tekststørrelse. Åbnede tilvalg, lange fejl/idéresultater og forstørret tekst kan fortsat rulle uden at skjule opret-handlingen.

@@ -131,7 +131,7 @@ body.workspace-calm #chat-choice { display:none; }
 body.workspace-calm .idea-chip { background:transparent; border-radius:6px; }
 
 /* Den samme composer-node står i velkomsten eller dokkes nederst efter beskeder. */
-body.workspace-calm .composer { margin:10px auto 4px; max-width:calc(var(--chat-col) - var(--chat-gutter) * 2); width:calc(100% - var(--chat-gutter) * 2); padding:13px; border:0; border-radius:24px; background:var(--aura-bg-composer); box-shadow:none; }
+body.workspace-calm .composer { margin:10px auto 4px; max-width:calc(var(--chat-col) - var(--chat-gutter) * 2); width:calc(100% - var(--chat-gutter) * 2); padding:13px; border:1px solid var(--aura-border-strong); border-radius:24px; background:var(--aura-bg-composer); box-shadow:none; }
 body.workspace-calm .composer:focus-within { box-shadow:none; }
 body.workspace-calm .composer:has(textarea:focus-visible) { outline:2px solid var(--aura-accent); outline-offset:3px; }
 body.workspace-calm .composer #prompt:focus-visible { outline:none; }

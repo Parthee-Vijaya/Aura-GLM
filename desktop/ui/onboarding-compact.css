@@ -31,6 +31,7 @@
 #setup.onboarding-simple.native-onboarding .setup-simple,
 #onboarding.onboarding-simple.native-onboarding .native-onboarding-pane { grid-column: 2; grid-row: 2; display: block; width: 100%; max-width: none; min-width: 0; margin: 0; padding: 10px 28px 32px 22px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--aura-border-strong) transparent; }
 :is(#setup, #onboarding).onboarding-simple.native-onboarding .setup-backline { display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 20px; padding: 0; }
+#onboarding.onboarding-simple.native-onboarding .native-onboarding-header .setup-backline { margin: 0; }
 #setup.onboarding-simple.native-onboarding .setup-step-state { margin: 0; font-size: 11px; color: var(--os-muted); }
 :is(#setup, #onboarding).onboarding-simple.native-onboarding :is(.setup-heading, .intro) { text-align: left; margin: 0 0 26px; }
 :is(#setup, #onboarding).onboarding-simple.native-onboarding :is(.setup-heading h1, .intro h1) { margin: 0 0 10px; max-width: 28ch; text-align: left; font: 500 23px/1.3 var(--aura-font-family); letter-spacing: -.02em; text-wrap: balance; }
@@ -39,7 +40,7 @@
 #setup.onboarding-simple.native-onboarding #setup-profile :is(label, .field-label) { margin: 20px 0 8px; font-size: 13px; font-weight: 500; }
 #setup.onboarding-simple.native-onboarding #setup-profile > label:first-child { margin-top: 0; }
 #setup.onboarding-simple.native-onboarding :is(input:not([type=checkbox]):not([type=radio]), textarea, select),
-#onboarding.onboarding-simple.native-onboarding :is(input, textarea, select) { color: var(--aura-ink); background: var(--aura-bg-tint); border: 1px solid transparent; border-radius: 10px; font-size: 13px; padding: 11px 12px; }
+#onboarding.onboarding-simple.native-onboarding :is(input, textarea, select) { color: var(--aura-ink); background: var(--aura-bg-tint); border: 1px solid var(--aura-border-strong); border-radius: 10px; font-size: 13px; padding: 11px 12px; }
 #setup.onboarding-simple.native-onboarding #profile-name { font-size: 14px; }
 #setup.onboarding-simple.native-onboarding :is(#setup-profile .hint, #connection-form .hint) { color: var(--os-muted); font-size: 12px; line-height: 1.6; }
 #setup.onboarding-simple.native-onboarding .theme-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
@@ -78,11 +79,21 @@
 #setup.onboarding-simple.native-onboarding :is(#setup-ai, #connection-feedback, #local-discovery-status):not(:empty) { padding: 12px; margin-top: 16px; border-radius: 10px; background: var(--aura-bg-tint); font-size: 12px; line-height: 1.65; }
 #onboarding.onboarding-simple.native-onboarding .onboarding-simple-content { width: 100%; max-width: none; padding: 0; margin: 0; }
 #onboarding.onboarding-simple.native-onboarding #create-form > .panel { padding: 0; margin: 0; border: 0; background: transparent; }
-#onboarding.onboarding-simple.native-onboarding #name { margin-bottom: 18px; }
-#onboarding.onboarding-simple.native-onboarding #purpose { min-height: 132px; line-height: 1.65; }
-#onboarding.onboarding-simple.native-onboarding #project-options { margin-top: 20px; padding: 0; border: 0; border-top: 1px solid var(--aura-border); border-bottom: 1px solid var(--aura-border); border-radius: 0; }
-#onboarding.onboarding-simple.native-onboarding #project-options > summary { padding: 16px 0; font-size: 13px; }
-#onboarding.onboarding-simple.native-onboarding .create-footer { align-items: flex-start; margin-top: 24px; }
+#onboarding.onboarding-simple.native-onboarding { grid-template-rows: 66px minmax(0, 1fr) auto; height: min(760px, calc(100dvh - 72px)); margin-block: max(36px, calc((100dvh - 760px) / 2)); }
+#onboarding.native-onboarding .native-onboarding-nav { grid-row: 2 / 4; }
+#onboarding.onboarding-simple.native-onboarding .intro { margin-bottom: 16px; }
+#onboarding.onboarding-simple.native-onboarding .intro h1 { margin-bottom: 6px; }
+#onboarding.onboarding-simple.native-onboarding .intro > p { line-height: 1.5; }
+#onboarding.onboarding-simple.native-onboarding .native-onboarding-pane { padding-bottom: 16px; }
+#onboarding.onboarding-simple.native-onboarding #create-form > .panel label { margin: 12px 0 6px; }
+#onboarding.onboarding-simple.native-onboarding #create-form > .panel > label:first-child { margin-top: 0; }
+#onboarding.onboarding-simple.native-onboarding #name { margin-bottom: 0; }
+#onboarding.onboarding-simple.native-onboarding #purpose { height: 96px; min-height: 96px; line-height: 1.5; }
+#onboarding.onboarding-simple.native-onboarding .idea-refine-actions { margin-top: 10px; gap: 8px; }
+#onboarding.onboarding-simple.native-onboarding #idea-draft-status { margin: 6px 0 0; }
+#onboarding.onboarding-simple.native-onboarding #project-options { margin: 12px 0 0; padding: 0; border: 0; border-top: 1px solid var(--aura-border); border-bottom: 1px solid var(--aura-border); border-radius: 0; }
+#onboarding.onboarding-simple.native-onboarding #project-options > summary { padding: 12px 0; font-size: 13px; }
+#onboarding.onboarding-simple.native-onboarding > .create-footer { grid-column: 2; grid-row: 3; flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: nowrap; gap: 12px; margin: 0; padding: 16px 28px 20px 22px; border-top: 1px solid var(--aura-border); background: var(--aura-bg-raised); }
 #onboarding.onboarding-simple.native-onboarding .create-footer p { color: var(--os-muted); font-size: 12px; text-align: left; }
 :is(#setup, #onboarding).native-onboarding :is(button, input, textarea, select, summary):focus-visible { outline: 2px solid var(--aura-accent); outline-offset: 3px; }
 :is(#setup, #onboarding).native-onboarding :is(input, textarea) { caret-color: var(--aura-accent); }
@@ -97,6 +108,7 @@
   #onboarding.onboarding-simple.native-onboarding .native-onboarding-pane { padding: 8px 18px 28px 12px; }
   #setup.onboarding-simple.native-onboarding .provider-cards { grid-template-columns: 1fr; }
   #setup.onboarding-simple.native-onboarding .setup-step-state { display: none; }
+  #onboarding.onboarding-simple.native-onboarding > .create-footer { padding-inline: 12px 18px; }
 }
 @media(max-width: 440px) {
   :is(#setup, #onboarding).onboarding-simple.native-onboarding { grid-template-columns: 1fr; grid-template-rows: 60px auto minmax(0, 1fr); }
@@ -104,6 +116,9 @@
   :is(#setup, #onboarding).native-onboarding .native-onboarding-nav li { min-height: 30px; font-size: 11px; padding: 5px 8px; }
   #setup.onboarding-simple.native-onboarding .setup-simple,
   #onboarding.onboarding-simple.native-onboarding .native-onboarding-pane { grid-column: 1; grid-row: 3; padding: 8px 18px 28px; }
+  #onboarding.onboarding-simple.native-onboarding { grid-template-rows: 60px auto minmax(0, 1fr) auto; }
+  #onboarding.native-onboarding .native-onboarding-nav { grid-row: 2; }
+  #onboarding.onboarding-simple.native-onboarding > .create-footer { grid-column: 1; grid-row: 4; padding: 12px 18px; flex-wrap: wrap; }
 }
 @media(forced-colors: active) {
   #setup.native-onboarding .theme-card:has(input:checked),

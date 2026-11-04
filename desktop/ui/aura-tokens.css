@@ -1,5 +1,5 @@
 /* Aura Prime: én tema- og tokenskilde for arbejdsflade, onboarding og dialoger.
-   DeepSeek Harness inspirerer neutralerne, den blå markering og typografien.
+   Flader, primær/sekundær tekst og accent følger den installerede DeepSeek Harness 0.2.1-rc.5.
    light-dark følger color-scheme ved brug, også efter et manuelt temaskift. */
 :root {
   color-scheme: light dark;
@@ -33,23 +33,23 @@
   --chat-col: 920px;
   --chat-gutter: 32px;
   --aura-workspace-bar: 44px;
-  --aura-accent: light-dark(rgb(65, 118, 230), rgb(103, 158, 254));
+  --aura-accent: light-dark(rgb(65, 118, 230), rgb(122, 170, 255));
   --aura-accent-hover: light-dark(rgb(72, 104, 178), rgb(122, 170, 255));
   --aura-accent-subtle: light-dark(rgb(228, 237, 253), rgb(33, 43, 66));
   --aura-accent-faint: light-dark(rgb(237, 243, 254), rgb(27, 35, 54));
   --aura-button-primary: light-dark(rgb(21, 21, 23), rgb(240, 240, 242));
   --aura-button-primary-hover: light-dark(rgb(40, 40, 42), rgb(255, 255, 255));
   --aura-button-primary-text: light-dark(rgb(255, 255, 255), rgb(21, 21, 23));
-  --aura-bg: light-dark(rgb(255, 255, 255), rgb(19, 19, 20));
-  --aura-bg-sidebar: light-dark(rgb(240, 241, 243), rgb(52, 53, 55));
-  --aura-bg-raised: light-dark(rgb(255, 255, 255), rgb(44, 44, 46));
+  --aura-bg: light-dark(rgb(255, 255, 255), rgb(21, 21, 23));
+  --aura-bg-sidebar: light-dark(rgb(249, 250, 251), rgb(27, 27, 28));
+  --aura-bg-raised: light-dark(rgb(255, 255, 255), rgb(35, 35, 36));
   --aura-bg-overlay: light-dark(rgb(255, 255, 255), rgb(44, 44, 46));
-  --aura-bg-tint: light-dark(rgb(243, 244, 246), rgb(38, 38, 40));
+  --aura-bg-tint: light-dark(rgb(255, 255, 255), rgb(44, 44, 46));
   --aura-bg-hover: light-dark(rgba(38, 49, 72, 0.06), rgba(255, 255, 255, 0.08));
-  --aura-bg-active: light-dark(rgb(237, 238, 241), rgb(51, 51, 53));
-  --aura-bg-bubble: light-dark(rgb(243, 244, 246), rgb(44, 44, 46));
-  --aura-ink: light-dark(rgb(21, 21, 23), rgb(238, 238, 240));
-  --aura-ink-secondary: light-dark(rgb(64, 64, 68), rgb(190, 192, 196));
+  --aura-bg-active: light-dark(rgb(235, 238, 242), rgb(67, 69, 74));
+  --aura-bg-bubble: light-dark(rgb(237, 243, 254), rgb(44, 44, 46));
+  --aura-ink: light-dark(rgb(15, 17, 21), rgb(249, 250, 251));
+  --aura-ink-secondary: light-dark(rgb(97, 102, 107), rgb(207, 211, 214));
   --aura-ink-muted: light-dark(rgb(101, 105, 113), rgb(150, 152, 158));
   --aura-ink-caption: light-dark(rgb(101, 105, 113), rgb(150, 152, 158));
   --aura-ink-faint: light-dark(rgb(180, 182, 187), rgb(75, 77, 82));
@@ -78,8 +78,8 @@
   --aura-diff-del: light-dark(rgb(200, 52, 44), rgb(230, 90, 80));
   --aura-diff-del-bg: light-dark(rgba(200, 52, 44, 0.06), rgba(230, 90, 80, 0.08));
   --aura-glow: linear-gradient(135deg, var(--aura-accent), var(--aura-accent-hover));
-  --aura-bg-panel: light-dark(rgb(247, 248, 250), rgb(27, 27, 28));
-  --aura-bg-composer: light-dark(rgb(243, 244, 246), rgb(43, 43, 45));
+  --aura-bg-panel: light-dark(rgb(255, 255, 255), rgb(35, 35, 36));
+  --aura-bg-composer: light-dark(rgb(255, 255, 255), rgb(44, 44, 46));
   --aura-success-ink: light-dark(rgb(24, 113, 69), rgb(108, 205, 151));
   --aura-error-ink: light-dark(rgb(200, 52, 44), rgb(230, 90, 80));
 }

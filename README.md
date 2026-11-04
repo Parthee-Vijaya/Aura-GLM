@@ -2,9 +2,9 @@
 
 Aura Prime hjælper dig fra idé til plan, kode og forhåndsvisning i et lokalt arbejdsområde. Appen bygger videre på [Aura Harness fra AI Alliancen](https://github.com/ai-alliancen-org/ai-harness) med OpenCode som kodeagent og frit valg af AI-forbindelse.
 
-**Aktuel kildeversion: `0.6.0-beta.1`, 4. november 2026.** Denne gren indeholder det nye UI/UX. Screenshots viser den kørende Electron-app på macOS med en separat testprofil og det opdigtede projekt *Fjordby bibliotek*. Versionen er en udviklingsbeta; denne opdatering udgiver ingen ny installer.
+**Aktuel kildeversion: `0.6.0-beta.2`, 4. november 2026.** Denne gren indeholder det nye UI/UX. Screenshots viser den kørende Electron-app på macOS med en separat testprofil og det opdigtede projekt *Fjordby arrangementer*. Versionen er en udviklingsbeta; denne opdatering udgiver ingen ny installer.
 
-![Aura Prime med integreret logo, projektoversigt og centreret samtalestart](docs/images/aura-prime-0.6.0-beta.1/03-workspace.png)
+![Aura Prime med integreret logo, projektoversigt og centreret samtalestart](docs/images/aura-prime-0.6.0-beta.2/02-workspace-light.png)
 
 ## Det nye arbejdsområde
 
@@ -19,29 +19,23 @@ Det fulde redesign tager udgangspunkt i den installerede DeepSeek Harness-app og
 
 ### Fra første åbning til projekt
 
-<p align="center">
-  <img src="docs/images/aura-prime-0.6.0-beta.1/01-welcome.png" width="360" alt="Kompakt velkomst med Kom i gang og Fortsæt uden profil">
-</p>
+
 
 Vælg **Kom i gang** for det guidede forløb eller **Fortsæt uden profil** for at gå direkte til projektidéen. En AI-forbindelse kan tilføjes senere. Den lokale profil kræver ingen registrering.
 
-![Projektopsætning med navn, idé, lokal kladde og projektplacering](docs/images/aura-prime-0.6.0-beta.1/02-project-setup.png)
+![Projektopsætning med navn, idé, lokal kladde og projektplacering](docs/images/aura-prime-0.6.0-beta.2/01-new-project-light.png)
+
+**Nyt projekt kræver ingen scrolling i standardvisningen ved 980 × 720 og normal tekststørrelse.** Navn, idé, tilvalg, placering og Opret er synlige. Åbnede tilvalg og længere indhold kan rulle, mens opret-handlingen bliver stående.
 
 Idéen gemmes som lokal kladde. Oprettelse af et projekt kontakter ikke i sig selv en AI. Vælg din forbindelse, gennemgå den konkrete afsendelse, og fortsæt med den ønskede arbejdsmåde.
 
-### Skjul sidepanelet
+### Palette, indstillinger og sidepanel
 
-![Mørkt arbejdsområde med sidepanelet helt skjult og adgang til at åbne det igen](docs/images/aura-prime-0.6.0-beta.1/07-sidebar-hidden.png)
+Paletten følger de faktiske farver i installeret DeepSeek Harness 0.2.1-rc.5. Lyst tema har hvide felter og næsten hvid sidebar. Mørkt tema bruger referenceappens mørke lærred og felter. Auras eget navn og logo bevares.
 
-Samtalestart og skrivefelt centreres i den tilgængelige arbejdsflade. Knappen øverst til venstre åbner sidepanelet igen.
+![Nyt projekt med referenceappens mørke farver og fast opret-handling](docs/images/aura-prime-0.6.0-beta.2/03-new-project-dark.png)
 
-### Indstillinger og lokal profil
-
-| Lyst tema | Mørkt tema |
-| --- | --- |
-| ![Generelle indstillinger i lyst tema](docs/images/aura-prime-0.6.0-beta.1/04-settings-light.png) | ![Generelle indstillinger i mørkt tema](docs/images/aura-prime-0.6.0-beta.1/05-settings-dark.png) |
-
-![Valgfri lokal profil med tomt navn og centrerede ikonvalg](docs/images/aura-prime-0.6.0-beta.1/06-local-profile.png)
+Profilen er fortsat valgfri og lokal. Tema, skriftstørrelse og arbejdsdetaljer ændres i de samlede indstillinger. Sidepanelet kan skjules helt og åbnes igen fra arbejdsområdets top.
 
 Billederne er faktiske appoptagelser, ikke designmockups. De viser syntetiske data og ingen modelbesvarelser. Den lilla indikator øverst til venstre er macOS' delingsindikator fra optagelsen og indgår ikke i Aura.
 
@@ -79,7 +73,7 @@ Fra repositoryets rod kan den samlede lokale kontrol køres med:
 npm run check
 ```
 
-[Den visuelle kontrol](docs/design/visual-qa-20261104.md) beskriver de gennemgåede skærme, centreringsrettelsen og afprøvningens grænser. [Designkontrakten](desktop/DESIGN.md) og [den native reference](docs/design/native-reference-20261104.md) beskriver retningen.
+[Kontrollen af projektlayout og farver](docs/design/project-layout-20261104.md) beskriver de gennemgåede skærme, centreringsrettelsen og afprøvningens grænser. [Designkontrakten](desktop/DESIGN.md) og [den native reference](docs/design/native-reference-20261104.md) beskriver retningen.
 
 ## Aura Harness i terminalen og dit eget kodeværktøj
 

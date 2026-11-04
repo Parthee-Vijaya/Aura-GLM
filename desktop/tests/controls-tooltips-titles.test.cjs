@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: EUPL-1.2
-// T8 · Kontroller, tooltips og samtaletitler (0.6.0-beta.1) — de statiske pins for
+// T8 · Kontroller, tooltips og samtaletitler (0.6.0-beta.2) — de statiske pins for
 // skivens ændringer. Arbejdsliste: claude-uiux-audit.md punkt 9 + §4, S3-fund
 // (f) (samtaletitler) + #chat-materials-menu-skyggen, P1-rapportens bekymring
 // (a) (<480 px: begge arbejdsmåde-chips væk), D1-re-reviewens NOTE (calm-
@@ -288,11 +288,11 @@ test('ikonvælgeren får roving tabindex: pil taster igennem, ét tab-stop', () 
   assert.match(settingsJs, /wireRadioGroup/, 'indstillings-vælgeren er koblet (settings.js)');
 });
 
-// ── 10. Version 0.6.0-beta.1 ──
-test('versionen er 0.6.0-beta.1 overalt (pakke, lås, rod og pakkeposten)', () => {
-  assert.equal(pkg.version, '0.6.0-beta.1');
-  assert.equal(lock.version, '0.6.0-beta.1');
-  assert.equal(lock.packages[''].version, '0.6.0-beta.1');
+// ── 10. Version 0.6.0-beta.2 ──
+test('versionen er 0.6.0-beta.2 overalt (pakke, lås, rod og pakkeposten)', () => {
+  assert.equal(pkg.version, '0.6.0-beta.2');
+  assert.equal(lock.version, '0.6.0-beta.2');
+  assert.equal(lock.packages[''].version, '0.6.0-beta.2');
 });
 
 // ── 11. Efter-byg F6: #chat-menu og #composer-help-popover på menu-materialet ──

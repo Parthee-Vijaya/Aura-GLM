@@ -130,6 +130,14 @@
       else {
         const children = [...surface.children].filter(item => item !== header && item !== nav);
         pane.append(...children); surface.append(pane);
+        header.append(pane.querySelector('.setup-backline'));
+        // Keep project creation reachable while optional details scroll.
+        // The submit button retains its native form owner after moving.
+        const footer = pane.querySelector('.create-footer');
+        if (footer) {
+          footer.querySelector('#create').setAttribute('form', 'create-form');
+          surface.append(footer);
+        }
       }
       const update = () => {
         const step = id === 'onboarding' ? 'idea' : surface.dataset.step || 'choice';

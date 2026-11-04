@@ -55,7 +55,7 @@ test('hover and focus borders preserve both explicit theme variants', () => {
 
 test('composer and bubble surfaces remain distinct from the neutral dark canvas', () => {
   const {light, dark} = require('./helpers/theme-tokens.cjs').tokenThemes(tokens);
-  assert.deepEqual(dark['--aura-bg'], [19,19,20]);
+  assert.deepEqual(dark['--aura-bg'], [21,21,23]);
   assert.notDeepEqual(dark['--aura-bg-composer'], dark['--aura-bg']);
   assert.notDeepEqual(dark['--aura-bg-bubble'], dark['--aura-bg']);
   for (const theme of [light,dark]) {
@@ -215,10 +215,10 @@ test('P1-kontrast: alfa-hover, boble, diff-badge og de mørke flader består AA'
 });
 
 // ── 10. Versionen ──
-test('versionen er 0.6.0-beta.1 overalt (pakke, lås, rod og pakkeposten)', () => {
-  assert.equal(pkg.version, '0.6.0-beta.1');
-  assert.equal(lock.version, '0.6.0-beta.1');
-  assert.equal(lock.packages[''].version, '0.6.0-beta.1');
+test('versionen er 0.6.0-beta.2 overalt (pakke, lås, rod og pakkeposten)', () => {
+  assert.equal(pkg.version, '0.6.0-beta.2');
+  assert.equal(lock.version, '0.6.0-beta.2');
+  assert.equal(lock.packages[''].version, '0.6.0-beta.2');
 });
 
 // ═══ Fix-runde (review af 3feb05b): F2/F3/F4 ═══
