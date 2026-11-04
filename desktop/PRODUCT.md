@@ -16,9 +16,9 @@ Den eksisterende projektbeskrivelse henvender sig til udviklere, IT-medarbejdere
 
 ## Redesignbestilling
 
-Parthee har den 4. november 2026 bestilt et fuldt UI/UX-redesign med DeepSeek Harness som reference. Layout, navigation og visuel præsentation kan ændres frit. Aura Prime-navnet, appens reelle funktioner og hele onboardingforløbet videreføres. Retningen er en arbejdsapp med neutrale lyse og mørke flader, sort/hvid hovedhandling og blå markering af valg.
+Parthee har den 4. november 2026 bestilt et fuldt UI/UX-redesign med en installeret desktop-referenceapp som reference. Layout, navigation og visuel præsentation kan ændres frit. Aura Prime-navnet, appens reelle funktioner og hele onboardingforløbet videreføres. Retningen er en arbejdsapp med neutrale lyse og mørke flader, sort/hvid hovedhandling og blå markering af valg.
 
-Parthee afviste efterfølgende den første visuelle implementering, fordi den ikke lignede den installerede DeepSeek-app. Den installerede DeepSeek Harness 0.2.1-rc.5 og dens faktiske opstartsforløb er nu referencen. Den store integrerede logoplacering, helt skjulbare sidebar, centrerede samtalestart og samlede indstillinger skal kunne genkendes i Aura. Hjemmesidens præsentation alene er utilstrækkelig som visuel dokumentation.
+Parthee afviste efterfølgende den første visuelle implementering, fordi den ikke lignede den installerede referenceapp. Den installerede referenceapp og dens faktiske opstartsforløb er nu referencen. Den store integrerede logoplacering, helt skjulbare sidebar, centrerede samtalestart og samlede indstillinger skal kunne genkendes i Aura. Hjemmesidens præsentation alene er utilstrækkelig som visuel dokumentation.
 
 Aura har intet kontologin. En personlig profil er valgfri og lokal. Et fravalg må ikke gemme computerens brugernavn eller formularens ugemte identitet og må ikke medføre gentagne profilspørgsmål. Tema, tekststørrelse, hjælp og øvrig konfiguration gemmes fortsat gennem appens eksisterende lokale indstillingslager. Dette er ikke en bestilling på kontosynkronisering eller en ny konfigurationseksport.
 
@@ -34,4 +34,4 @@ Aura har intet kontologin. En personlig profil er valgfri og lokal. Et fravalg m
 
 ## Kilder
 
-Brugerens bestilling, repositoryets AGENTS.md, README.md og de eksisterende UI-controllere. Visuel reference: [DeepSeek Harness](https://www.deepseek.com/en/harness/) og [den officielle kildekode](https://github.com/deepseek-ai/deepseek-harness). Ingen nye effekt- eller sikkerhedspåstande følger af redesignet.
+Brugerens bestilling, repositoryets AGENTS.md, README.md og de eksisterende UI-controllere. Visuel reference: den installerede desktop-referenceapp. Ingen nye effekt- eller sikkerhedspåstande følger af redesignet.
