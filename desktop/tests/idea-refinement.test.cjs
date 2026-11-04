@@ -3,7 +3,7 @@ const {IdeaRefinement,buildRequest,parseResponse}=require('../core/idea-refineme
 const input={name:'Syntetisk projekt',idea:'En tilmeldingsside',connectionID:'local',modelID:'test'};
 async function fixture(t){
  const sent=[];let reply={description:'En lokal tilmeldingsside.',plan:'Afklar, byg og test.',questions:['Skal deltagerne dele data?']};let hold=false;
- const server=http.createServer(async(req,res)=>{let body='';for await(const chunk of req)body+=chunk;sent.push({url:req.url,body:JSON.parse(body)});if(hold)return;res.setHeader('content-type','application/json');res.end(JSON.stringify(req.url.endsWith('/responses')?{status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify(reply)}]}]}:{choices:[{finish_reason:'stop',message:{content:JSON.stringify(reply)}}]}));});await new Promise(r=>server.listen(0,'127.0.0.1',r));
+ const server=http.createServer(async(req,res)=>{let body='';for await(const chunk of req)body+=chunk;sent.push({url:req.url,headers:req.headers,body:JSON.parse(body)});if(hold)return;res.setHeader('content-type','application/json');res.end(JSON.stringify(req.url.endsWith('/messages')?{stop_reason:'end_turn',content:[{type:'text',text:JSON.stringify(reply)}]}:req.url.endsWith('/responses')?{status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify(reply)}]}]}:{choices:[{finish_reason:'stop',message:{content:JSON.stringify(reply)}}]}));});await new Promise(r=>server.listen(0,'127.0.0.1',r));
  t.after(()=>{server.closeAllConnections();server.close();});
  const connection={id:'local',name:'Lokal prøve',kind:'compatible',baseURL:`http://127.0.0.1:${server.address().port}/v1`};
  const library=await require('../core/library.cjs').loadLibrary(require('node:path').resolve(__dirname,'../../profiles'));
@@ -31,6 +31,21 @@ test('all supported provider protocols keep tools absent and explicit OpenRouter
  const request=buildRequest({connection:{kind,baseURL:'http://127.0.0.1:1/v1'},model,route:{id:'chosen'}},[{role:'user',content:'Syntetisk'}]);assert.equal(request.body.tools,undefined);assert.equal(request.body.stream,false);if(kind==='openrouter')assert.deepEqual(request.body.provider,{only:['chosen'],allow_fallbacks:false});
  if(kind==='mistral')assert.deepEqual(request.body.response_format,{type:'json_object'});else assert.equal(request.body.response_format,undefined,'do not assume JSON mode support on other providers');
  }assert.throws(()=>buildRequest({connection:{kind:'openrouter',baseURL:'x'},model},[]),/konkret/);
+});
+
+test('custom Anthropic idea assistance uses reviewed tool-free messages and headers over real HTTP',async t=>{
+ const f=await fixture(t);f.connection.protocol='anthropic';f.connection.providerID='synthetic-anthropic';
+ f.bench.store.decrypt=()=> 'synthetic-idea-key';
+ const reviewed=await f.service.prepare(input);assert.equal(f.sent.length,0);
+ const proposal=await f.service.send({token:reviewed.token});
+ assert.match(proposal.description,/tilmeldingsside/);assert.equal(f.sent.length,1);
+ const sent=f.sent[0];
+ assert.equal(sent.url,'/v1/messages');assert.equal(sent.headers['x-api-key'],'synthetic-idea-key');
+ assert.equal(sent.headers['anthropic-version'],'2023-06-01');assert.equal(sent.headers.authorization,undefined);
+ assert.equal(sent.body.system,reviewed.system);assert.deepEqual(sent.body.messages,reviewed.content);
+ assert.equal(sent.body.tools,undefined);assert.equal(sent.body.stream,false);assert.ok(sent.body.max_tokens>0);
+ const next=await f.service.prepare(input);f.connection.protocol='responses';
+ await assert.rejects(f.service.send({token:next.token}),/ændret/);assert.equal(f.sent.length,1);
 });
 
 test('Mistral JSON mode preserves multiline visual proposals and their reviewed request through follow-up',async t=>{

@@ -7,6 +7,7 @@ const path = require('node:path');
 const { randomUUID, randomBytes, createHmac, createHash } = require('node:crypto');
 const { PrivacyGate, PrivacyGateError, composePolicy, inheritClassification, inspectRequest, takeLocalChoice } = require('./privacy/index.cjs');
 const { stable, validateDestination } = require('./privacy/policy.cjs');
+const { modelCatalogURL } = require('./connections.cjs');
 
 // A profile has multiple workbenches, all of which share these files. A queue
 // per PrivacyService would lose audit records and race monotonic floor writes.
@@ -447,7 +448,7 @@ class PrivacyService {
       if (address !== undefined && address !== target) throw new PrivacyGateError('PRIVACY_DESTINATION_INVALID', 'Katalogadressen svarer ikke til den valgte forbindelse.');
       return true;
     };
-    const target = connection.baseURL + (kind === 'models' ? connection.kind === 'ollama' ? '/api/tags' : '/models' : '/models/' + modelID.split('/').map(encodeURIComponent).join('/') + '/endpoints');
+    const target = kind === 'models' ? modelCatalogURL(connection) : connection.baseURL + '/models/' + modelID.split('/').map(encodeURIComponent).join('/') + '/endpoints';
     await this.assertSelection(scope, { connectionID: connection.id, modelID }); current();
     const saved = (await this.bench.store.read()).connections.find(item => item.id === connection.id);
     if (!saved || stable(saved) !== stable(connection)) throw new PrivacyGateError('PRIVACY_STALE', 'AI-forbindelsen er ændret. Ingen ny katalogforespørgsel er tilladt.');

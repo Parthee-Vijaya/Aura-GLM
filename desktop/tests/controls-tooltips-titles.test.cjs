@@ -288,11 +288,11 @@ test('ikonvælgeren får roving tabindex: pil taster igennem, ét tab-stop', () 
   assert.match(settingsJs, /wireRadioGroup/, 'indstillings-vælgeren er koblet (settings.js)');
 });
 
-// ── 10. Version 0.6.0-beta.4 ──
-test('versionen er 0.6.0-beta.4 overalt (pakke, lås, rod og pakkeposten)', () => {
-  assert.equal(pkg.version, '0.6.0-beta.4');
-  assert.equal(lock.version, '0.6.0-beta.4');
-  assert.equal(lock.packages[''].version, '0.6.0-beta.4');
+// ── 10. Version 0.6.0-beta.5 ──
+test('versionen er 0.6.0-beta.5 overalt (pakke, lås, rod og pakkeposten)', () => {
+  assert.equal(pkg.version, '0.6.0-beta.5');
+  assert.equal(lock.version, '0.6.0-beta.5');
+  assert.equal(lock.packages[''].version, '0.6.0-beta.5');
 });
 
 // ── 11. Efter-byg F6: #chat-menu og #composer-help-popover på menu-materialet ──

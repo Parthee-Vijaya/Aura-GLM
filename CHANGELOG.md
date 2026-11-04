@@ -1,5 +1,12 @@
 # Ændringslog
 
+## 0.6.0-beta.5 · 4. november 2026
+
+- **Flere AI-udbydere under Indstillinger › AI-forbindelser.** Tilføj forbindelse har stadig kortene med logoer for Corti, Alexandra, Mistral, OpenAI, Claude, Azure, OpenRouter, Zen, Ollama og Egen server. Under kortene ligger en dropdown med de nye udbydere: Google Gemini, Groq, Together, Fireworks, Cerebras, xAI, Perplexity, Hugging Face, NVIDIA, Moonshot (Kimi), Cloudflare Workers AI, LM Studio og vLLM. Adressen er udfyldt på forhånd, og der er et link til udbyderens nøgleside. Ukontrollerede vilkår vises som "Ikke kontrolleret af Aura".
+- **Egen server** tager nu også et udbyder-ID og en protokol (OpenAI Chat Completions, OpenAI Responses eller Anthropic Messages). Nøglen indtastes fortsat kun i det sikre nøglevindue.
+- **Plugins under Indstillinger.** Hent websider kan sættes til *Spørg først* eller *Slået fra*, og kontekstvisning kan slås til. Subagenter, websøgning, terminalgrænser, sprogservere og MCP-servere vises under *Venter på sikker tilkobling* med en begrundelse. De kan ikke slås til, før de er dækket af godkendelser, sandbox og Privacy Gate. MCP-servere kan gemmes, men startes ikke.
+- **Samtalen ligner referencen mere.** Statuslinjen under skrivefeltet har ikoner for kontekst, hastighed, tokens og pris. Modelchippen har en vælgerpil, og arbejdsmåden står kun i topbjælken under en samtale. Pladsholderen nævner `/` for kommandoer.
+
 ## 0.6.0-beta.4 · 4. november 2026
 
 - Versionsmærket i appen viser nu hele versionen på samme form som releasen, fx **0.6.0 beta 4** (tidligere "beta 0.6.0").

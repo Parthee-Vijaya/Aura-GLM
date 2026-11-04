@@ -215,13 +215,14 @@ test('helteoverskrift og pladsholder følger arbejdsmåde og fase (§4/§5.1 —
     panel.dataset.phase = 'hero';
     c.updateWorkMode();
     assert.equal(heading.textContent, title, `overskriften for ${mode}`);
-    assert.ok(!/\/ for kommandoer|@ for filer/.test(placeholder.placeholder ?? ''), 'pladsholderen lover ingen »/« eller »@« (R5)');
+    // »/« åbner kommandomenuen (slash-commands.js, S2); »@« har stadig ingen parser (R5).
+    assert.ok(!/@ for filer|@/.test(placeholder.placeholder ?? ''), 'pladsholderen lover ingen »@« (R5)');
     assert.equal(dom.byId.get('composer-mode').dataset.mode, mode, 'chip-glyffen følger datamarkøren');
   }
   dom.byId.get('work-mode').value = 'chat';
   panel.dataset.phase = 'active';
   c.updateWorkMode();
-  assert.equal(placeholder.placeholder, 'Skriv en besked …', 'aktiv pladsholder i Samtale');
+  assert.equal(placeholder.placeholder, 'Skriv en besked, eller / for kommandoer …', 'aktiv pladsholder i Samtale');
   panel.dataset.phase = 'hero';
   c.updateWorkMode();
   assert.equal(placeholder.placeholder, 'Stil et spørgsmål, eller beskriv din idé …', 'helt-pladsholderen i Samtale');

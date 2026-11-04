@@ -1,5 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 const methods = {
+  pluginsGet: 'plugins:get', pluginsSave: 'plugins:save',
   onboardingWindow: 'window:onboarding',
   privacyGet:'privacy:get', privacyConfigure:'privacy:configure', privacyReview:'privacy:review', privacyDecide:'privacy:decide',
   openExternalLink: 'links:open',

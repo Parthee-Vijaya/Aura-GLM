@@ -32,8 +32,80 @@ const definitions = {
     training: 'Afhænger af modellen. Flere af Zens gratis modeller kan bruge dine data til at forbedre eller træne modeller.', region: 'USA. Zen oplyser, at alle modeller hostes i USA.', regionShort: 'USA',
     retention: 'Afhænger af modellen. Zen oplyser nul opbevaring for de fleste modeller og 30 dage for OpenAI og Anthropic.' },
   ollama: { name: 'Ollama', baseURL: 'http://127.0.0.1:11434', protocol: 'openai', keyRequired: false, source: 'https://docs.ollama.com/api/introduction', training: 'Afhænger af den valgte lokale modelserver og eventuel cloud-videresendelse.' },
-  compatible: { name: 'Egen server', baseURL: '', protocol: 'openai', keyRequired: false, source: '', training: 'Ukendt. Kontroller serverens konfiguration og eventuel videresendelse.' }
+  compatible: { name: 'Egen API', baseURL: '', protocol: 'openai', keyRequired: false, source: '', training: 'Ukendt. Kontroller serverens konfiguration og eventuel videresendelse.' }
 };
+const unverifiedTerms = 'Ikke kontrolleret af Aura. Læs udbyderens vilkår.';
+// Existing dated reviews retain their original evidence and review dates.
+const catalogMetadata = {
+  openai: ['popular', 'https://platform.openai.com/api-keys'],
+  azure: ['popular', 'https://portal.azure.com/'],
+  corti: ['eu', 'https://console.corti.app/'],
+  alexandra: ['eu', 'https://platform.alexandra.dk/'],
+  mistral: ['eu', 'https://console.mistral.ai/api-keys'],
+  anthropic: ['popular', 'https://platform.claude.com/settings/keys'],
+  openrouter: ['popular', 'https://openrouter.ai/settings/keys'],
+  zen: ['popular', 'https://opencode.ai/auth'],
+  ollama: ['local', 'https://docs.ollama.com/api/authentication'],
+  compatible: ['custom', '']
+};
+for (const [kind, [group, keyURL]] of Object.entries(catalogMetadata)) {
+  const def = definitions[kind];
+  Object.assign(def, { provider: def.provider || def.name, group, keyURL, termsVerified: Boolean(def.checkedAt), keyPlaceholder: 'Indtast API-nøgle i det sikre vindue' });
+  // Unverified providers keep their own sourced sentences; only missing fields get the neutral text.
+  // Local servers keep region empty so disclosure() can say "denne computer" for a loopback address.
+  if (!def.termsVerified) for (const field of ['training', 'trainingShort', 'region', 'regionShort', 'retention', 'retentionShort']) {
+    if (def[field] !== undefined || (['ollama', 'compatible'].includes(kind) && field.startsWith('region'))) continue;
+    def[field] = unverifiedTerms;
+  }
+}
+// Policy statements apply to the documented service, not to every account or model.
+function catalogEntry({ name, baseURL, keyURL, source, endpointSource, termsVerified = true, group = 'popular', protocol = 'openai', keyRequired = true, ...fields }) {
+  return { name, provider: name, baseURL, protocol, keyRequired, group, keyURL, keyPlaceholder: 'Indtast API-nøgle i det sikre vindue', source, endpointSource, checkedAt: '2026-11-04', termsVerified,
+    training: unverifiedTerms, trainingShort: unverifiedTerms, region: unverifiedTerms, regionShort: unverifiedTerms, retention: unverifiedTerms, retentionShort: unverifiedTerms, ...fields };
+}
+Object.assign(definitions, {
+  google: catalogEntry({ name: 'Google Gemini', baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai', keyURL: 'https://aistudio.google.com/apikey', source: 'https://ai.google.dev/gemini-api/terms', endpointSource: 'https://ai.google.dev/gemini-api/docs/openai',
+    training: 'Google bruger ikke prompts og svar til produktforbedring under Paid Services. Gratis tjenester kan bruge indhold til forbedring; EØS, Schweiz og Storbritannien følger Paid Services-vilkår. Aura kontrollerer ikke kontoens vilkår.', trainingShort: 'Afhænger af konto og gældende vilkår',
+    region: 'Google oplyser, at data midlertidigt kan gemmes eller caches i lande, hvor Google eller deres agenter har faciliteter. Adressen garanterer ikke EU-behandling.', regionShort: 'Ingen garanti om EU-behandling',
+    retention: 'Under Paid Services logger Google prompts og svar i en begrænset periode til sikkerhed, misbrugskontrol og lovkrav. Den konkrete varighed fremgår ikke af de gennemgåede vilkår.', retentionShort: 'Begrænset periode; varighed ikke fastlagt' }),
+  groq: catalogEntry({ name: 'Groq', baseURL: 'https://api.groq.com/openai/v1', keyURL: 'https://console.groq.com/keys', source: 'https://console.groq.com/docs/your-data', endpointSource: 'https://console.groq.com/docs/openai', sources: ['https://trust.groq.com/faq?s=9pcm46fyh5sypzqgtfto'],
+    training: 'Groq oplyser, at kundedata ikke bruges til at træne modeller til Groqs egne formål.', trainingShort: 'Ingen træning til Groqs egne formål',
+    region: 'Groq har datacentre i flere lande. Gemte kundedata ligger i USA; regional behandling kræver særskilt regionalt endpoint og aftale.', regionShort: 'Flere lande; gemte kundedata i USA',
+    retention: 'Inferensindhold gemmes ikke som standard. Ved driftsfejl eller mistanke om misbrug kan input og svar logges i op til 30 dage, længere hvis loven kræver det. Kontoen kan aktivere Zero Data Retention.', retentionShort: 'Normalt ingen lagring; logs i op til 30 dage' }),
+  together: catalogEntry({ name: 'Together AI', baseURL: 'https://api.together.ai/v1', keyURL: 'https://api.together.ai/settings/projects/~current/api-keys', source: 'https://docs.together.ai/docs/zero-data-retention', endpointSource: 'https://docs.together.ai/docs/inference/openai-compatibility', sources: ['https://www.together.ai/privacy'],
+    training: 'Together træner ikke på data uden udtrykkeligt tilvalg. Videresendte modeller følger den underliggende udbyders vilkår.', trainingShort: 'Træning kræver tilvalg; modelvilkår kan variere',
+    region: 'Den globale API-adresse garanterer ikke en bestemt behandlingsregion. Regionale eller dedikerede endpoints kræver særskilt valg og eventuel aftale.', regionShort: 'Behandlingsregion ikke fastlagt',
+    retention: 'Prompts og svar gemmes som standard og kan bruges til produktforbedringer. Organisationen kan slå promptlagring fra for Zero Data Retention; videresendte modeller bliver da deaktiveret. Aura kontrollerer ikke kontoens valg.', retentionShort: 'Gemmes som standard; ZDR kan tilvælges' }),
+  fireworks: catalogEntry({ name: 'Fireworks AI', baseURL: 'https://api.fireworks.ai/inference/v1', keyURL: 'https://fireworks.ai/api-keys', source: 'https://docs.fireworks.ai/guides/security_compliance/data_handling', endpointSource: 'https://docs.fireworks.ai/tools-sdks/openai-compatibility', sources: ['https://docs.fireworks.ai/accounts/data-residency', 'https://docs.fireworks.ai/getting-started/quickstart'], models: ['accounts/fireworks/models/glm-5p3-flash'],
+    training: 'Fireworks oplyser nul dataopbevaring for inferens med åbne modeller uden aktivt tilvalg til datadeling. Kontrollér den valgte models vilkår og kontoens indstillinger.', trainingShort: 'Afhænger af model og tilvalg til datadeling',
+    region: 'Det globale endpoint har ingen regional begrænsning. Regional behandling kræver et særskilt endpoint og aftale.', regionShort: 'Globalt endpoint uden regional begrænsning',
+    retention: 'Åbne modellers inferens har som standard nul dataopbevaring uden tilvalg. Kortvarige hukommelsescaches og metadata kan forekomme. Stateful funktioner, batch og træning kan have andre vilkår.', retentionShort: 'ZDR for åbne modellers inferens; undtagelser' }),
+  cerebras: catalogEntry({ name: 'Cerebras', baseURL: 'https://api.cerebras.ai/v1', keyURL: 'https://cloud.cerebras.ai/', source: 'https://www.cerebras.ai/privacy-policy', endpointSource: 'https://inference-docs.cerebras.ai/resources/openai', termsVerified: false }),
+  xai: catalogEntry({ name: 'xAI', baseURL: 'https://api.x.ai/v1', protocol: 'responses', keyURL: 'https://console.x.ai/team/default/api-keys', source: 'https://docs.x.ai/developers/faq/security', endpointSource: 'https://docs.x.ai/developers/quickstart',
+    training: 'xAI oplyser, at API-input og svar ikke bruges til træning uden din udtrykkelige tilladelse.', trainingShort: 'Ingen træning uden udtrykkelig tilladelse',
+    region: 'Det globale API-endpoint garanterer ikke en bestemt behandlingsregion.', regionShort: 'Behandlingsregion ikke fastlagt',
+    retention: 'API-input og svar gemmes som standard krypteret i 30 dage til kontrol af muligt misbrug. ZDR og særskilte aftaler kan ændre dette; Aura kontrollerer ikke kontoens indstilling.', retentionShort: '30 dage som standard; aftaler kan ændre det' }),
+  perplexity: catalogEntry({ name: 'Perplexity Agent API', baseURL: 'https://api.perplexity.ai/v1', protocol: 'responses', keyURL: 'https://console.perplexity.ai/project/keys', source: 'https://docs.perplexity.ai/docs/resources/privacy-security', endpointSource: 'https://docs.perplexity.ai/docs/agent-api/openai-compatibility',
+    training: 'Perplexity oplyser, at kundeindhold ikke bruges til træning af generative modeller som standard. Produktspecifikke vilkår og tredjepartsmodellers vilkår kan gælde.', trainingShort: 'Ingen træning som standard; modelvilkår kan variere',
+    region: 'Behandlingsregionen er ikke kontrolleret af Aura. Kontrollér aftalen og den valgte models udbyder.', regionShort: 'Behandlingsregion ikke kontrolleret',
+    retention: 'Nuldataopbevaring er ikke standard. Det kræver skriftlig aftale og kontoindstilling og understøttes ikke af alle modeller. Opbevaring afhænger af API, model og konto.', retentionShort: 'Afhænger af model, konto og aftale' }),
+  huggingface: catalogEntry({ name: 'Hugging Face Inference Providers', baseURL: 'https://router.huggingface.co/v1', keyURL: 'https://huggingface.co/settings/tokens', source: 'https://huggingface.co/docs/inference-providers/security', endpointSource: 'https://huggingface.co/docs/inference-providers/index',
+    training: 'Hugging Face oplyser, at brugerdata ikke gemmes til træning. Den valgte inferensudbyders egne datavilkår gælder også.', trainingShort: 'Udbyderens egne vilkår gælder også',
+    region: 'Afhænger af den valgte inferensudbyder. Aura har ikke kontrolleret en fast behandlingsregion.', regionShort: 'Afhænger af inferensudbyderen',
+    retention: 'Hugging Face oplyser, at requestindhold og svar ikke gemmes under routing. Debuglogs uden brugerdata eller tokens kan gemmes i op til 30 dage. Den valgte udbyders opbevaringsvilkår gælder også.', retentionShort: 'Router gemmer ikke indhold; udbydervilkår varierer' }),
+  nvidia: catalogEntry({ name: 'NVIDIA NIM', baseURL: 'https://integrate.api.nvidia.com/v1', keyURL: 'https://build.nvidia.com/settings/api-keys', source: 'https://developer.nvidia.com/legal/terms', endpointSource: 'https://docs.api.nvidia.com/nim/docs/api-quickstart', sources: ['https://docs.api.nvidia.com/nim/reference/llm-apis'], models: ['nvidia/llama-3.3-nemotron-super-49b-v1', 'meta/llama-3.1-8b-instruct'], termsVerified: false }),
+  moonshot: catalogEntry({ name: 'Moonshot / Kimi', baseURL: 'https://api.moonshot.ai/v1', keyURL: 'https://platform.kimi.ai/console/api-keys', source: 'https://platform.kimi.ai/docs/agreement/userprivacy', endpointSource: 'https://platform.kimi.ai/docs/get-your-api-key', sources: ['https://platform.kimi.ai/docs/guide/zero-data-retention'],
+    training: 'Kimis privatlivspolitik beskriver brug af brugerindhold til at forbedre og træne teknologien. Enterprise-kundedata bruges ifølge Kimi ikke til træning som standard. Aura kontrollerer ikke kontoens aftale.', trainingShort: 'Afhænger af aftalen; Enterprise undtaget som standard',
+    region: 'Kimis privatlivspolitik oplyser, at indsamlede oplysninger gemmes på servere i Singapore. Den fastlægger ikke hele behandlingsstedet for hvert API-kald.', regionShort: 'Lagring i Singapore ifølge Kimi',
+    retention: 'Afhænger af oplysninger, konto og aftale. Privatlivspolitikken beskriver opbevaring af input, mens kontoen er aktiv. Enterprise-kunder kan ansøge om nul opbevaring; der gælder undtagelser.', retentionShort: 'Afhænger af konto og aftale' }),
+  cloudflare: catalogEntry({ name: 'Cloudflare Workers AI', baseURL: '', keyURL: 'https://dash.cloudflare.com/profile/api-tokens', source: 'https://developers.cloudflare.com/workers-ai/platform/data-usage/', endpointSource: 'https://developers.cloudflare.com/workers-ai/configuration/open-ai-compatibility/',
+    training: 'Cloudflare oplyser, at kundeindhold behandlet af Workers AI ikke bruges til at træne AI-modeller.', trainingShort: 'Bruges ikke til træning ifølge Cloudflare',
+    region: 'Cloudflare beskriver Workers AI som drift på sit globale netværk. Denne API-adresse giver ingen garanti om EU-behandling.', regionShort: 'Globalt netværk; EU ikke garanteret',
+    retention: 'Ved almindelige inferenskald gemmes input og svar ifølge Cloudflare ikke længere end nødvendigt for at levere svaret. Stateful funktioner, egne logs og lovkrav kan medføre opbevaring. Driftsmetadata kan gemmes.', retentionShort: 'Ingen indholdsopbevaring efter almindelige kald; undtagelser' }),
+  lmstudio: catalogEntry({ name: 'LM Studio', baseURL: 'http://127.0.0.1:1234/v1', group: 'local', keyRequired: false, keyURL: 'https://lmstudio.ai/docs/developer/core/authentication', source: 'https://lmstudio.ai/app-privacy', endpointSource: 'https://lmstudio.ai/docs/developer/openai-compat', termsVerified: false }),
+  vllm: catalogEntry({ name: 'vLLM', baseURL: 'http://127.0.0.1:8000/v1', group: 'local', keyRequired: false, keyURL: 'https://docs.vllm.ai/en/latest/serving/openai_compatible_server.html', source: 'https://docs.vllm.ai/en/latest/serving/openai_compatible_server.html', endpointSource: 'https://docs.vllm.ai/en/latest/serving/openai_compatible_server.html', termsVerified: false })
+});
+for (const kind of ['azure', 'ollama', 'compatible', 'cloudflare', 'lmstudio', 'vllm']) definitions[kind].editableBaseURL = true;
 // Zens gratis modeller har forskellige vilkår. Kontrolleret på opencode.ai/docs/zen 29. september 2026.
 const zenTerms = [
   [/^(space-bunny|longcat)/, 'Gemmes ikke og bruges ikke til træning, ifølge Zen', 'Zen oplyser nul opbevaring, og at data ikke bruges.'],
@@ -90,7 +162,7 @@ function cortiEndpoint(key) {
   const environment = /^([a-z]{2}(?:-[a-z]+)?):/.exec(Buffer.from(String(key), 'base64').toString('utf8'))?.[1];
   if (!environment) return CORTI.eu;
   if (CORTI[environment]) return CORTI[environment];
-  throw new Error(environment === 'us' ? 'Nøglen hører til Cortis amerikanske miljø. Aura bruger kun Corti i EU og Frankrig.' : `Nøglen hører til Cortis miljø "${environment}", som Aura endnu ikke bruger. Brug en nøgle fra et projekt i EU, EU-S eller Frankrig.`);
+  throw new Error(environment === 'us' ? 'Nøglen hører til Cortis amerikanske miljø. Aura bruger kun Corti i EU og Frankrig.' : 'Nøglen hører til et Corti-miljø, som Aura endnu ikke bruger. Brug en nøgle fra et projekt i EU, EU-S eller Frankrig.');
 }
 function assertSupported(connection) {
   if (connection?.kind === 'komplai') throw new Error('komplai bruges nu kun til udgivelse via Udgiv. Vælg en anden AI-forbindelse.');
@@ -99,7 +171,7 @@ function assertSupported(connection) {
 function normalize(input) {
   assertSupported(input);
   const def = definitions[input.kind];
-  const baseURL = input.kind === 'azure' ? azureEndpoint(input.baseURL) : endpoint(['compatible', 'ollama'].includes(input.kind) ? input.baseURL : input.kind === 'corti' && input.apiKey ? cortiEndpoint(input.apiKey) : def.baseURL);
+  const baseURL = input.kind === 'azure' ? azureEndpoint(input.baseURL) : input.kind === 'cloudflare' ? cloudflareEndpoint(input.baseURL) : endpoint(['compatible', 'ollama', 'lmstudio', 'vllm'].includes(input.kind) ? input.baseURL || def.baseURL : input.kind === 'corti' && input.apiKey ? cortiEndpoint(input.apiKey) : def.baseURL);
   if (typeof input.name !== 'string' || !input.name.trim() || input.name.length > 100) throw new Error('Angiv et forbindelsesnavn på højst 100 tegn.');
   if (input.apiKey && (typeof input.apiKey !== 'string' || input.apiKey.length > 4096 || /[\r\n]/.test(input.apiKey))) throw new Error('API-nøglen er ugyldig.');
   const extra = {};
@@ -108,7 +180,20 @@ function normalize(input) {
     if (input.protocol && !['responses', 'openai'].includes(input.protocol)) throw new Error('Vælg Responses eller Chat Completions.');
     extra.deployment = input.deployment.trim(); extra.protocol = input.protocol || 'responses';
   }
+  if (input.kind === 'compatible') {
+    if (input.protocol !== undefined && !['openai', 'responses', 'anthropic'].includes(input.protocol)) throw new Error('Vælg OpenAI Chat Completions, Responses eller Anthropic.');
+    extra.protocol = input.protocol || 'openai';
+    if (input.providerID !== undefined && input.providerID !== '') {
+      if (typeof input.providerID !== 'string' || !/^[a-z][a-z0-9-]{1,39}$/.test(input.providerID)) throw new Error('Udbyder-id skal være 2-40 tegn med små bogstaver, tal og bindestreg og begynde med et bogstav.');
+      extra.providerID = input.providerID;
+    }
+  }
   return { id: input.id || randomUUID(), name: input.name.trim(), kind: input.kind, baseURL, ...extra };
+}
+function cloudflareEndpoint(value) {
+  const url = new URL(endpoint(value));
+  if (url.protocol !== 'https:' || url.hostname !== 'api.cloudflare.com' || url.port || !/^\/client\/v4\/accounts\/[a-f0-9]{32}\/ai\/v1$/.test(url.pathname)) throw new Error('Brug Workers AI-adressen med dit konto-id: https://api.cloudflare.com/client/v4/accounts/DIT_KONTO_ID/ai/v1.');
+  return url.href;
 }
 function azureEndpoint(value) {
   const url = new URL(endpoint(value));
@@ -116,9 +201,11 @@ function azureEndpoint(value) {
   return `${url.origin}/openai/v1`;
 }
 function usesResponses(connection) { return (connection.protocol || definitions[connection.kind]?.protocol) === 'responses'; }
-async function requestJSON(url, { key = '', kind, method = 'GET', body, signal, assertCurrent = () => true } = {}) {
+function usesAnthropic(connection, model) { return (connection.protocol || definitions[connection.kind]?.protocol) === 'anthropic' || connection.kind === 'zen' && /^claude-/.test(model.id); }
+async function requestJSON(url, { key = '', kind, protocol, method = 'GET', body, signal, assertCurrent = () => true } = {}) {
   const headers = { accept: 'application/json' };
-  if (key) Object.assign(headers, kind === 'anthropic' ? { 'x-api-key': key, 'anthropic-version': '2023-06-01' } : kind === 'azure' ? { 'api-key': key } : { Authorization: `Bearer ${key}` });
+  if (kind === 'anthropic' || protocol === 'anthropic') headers['anthropic-version'] = '2023-06-01';
+  if (key) Object.assign(headers, kind === 'anthropic' || protocol === 'anthropic' ? { 'x-api-key': key, 'anthropic-version': '2023-06-01' } : kind === 'azure' ? { 'api-key': key } : { Authorization: `Bearer ${key}` });
   if (body) headers['content-type'] = 'application/json';
   const current = () => { const result = assertCurrent(url); if (result && typeof result.then === 'function') { void result.catch?.(() => {}); throw new Error('Katalogets dataregler kunne ikke genvalideres.'); } if (result !== true) throw new Error('Katalogets dataregler er ændret.'); };
   let response;
@@ -130,14 +217,20 @@ async function requestJSON(url, { key = '', kind, method = 'GET', body, signal, 
   try { current(); } catch (error) { await response.body?.cancel(); throw error; }
   // En Corti-nøgle virker kun i sit eget miljø. Beskeden siger, hvilken adresse appen prøvede, så testeren ved, hvad der skal tjekkes.
   if (!response.ok && kind === 'corti' && (response.status === 401 || response.status === 403)) throw new Error(`Corti afviste nøglen på ${url.startsWith(CORTI.fr) ? 'adressen i Frankrig' : url.startsWith(CORTI['eu-s']) ? 'adressen i EU-S (Sovereign)' : 'adressen i EU'}. Brug en nøgle fra Corti Models i et projekt i EU, EU-S eller Frankrig; en nøgle virker kun i sit eget miljø.`);
-  if (!response.ok) throw new Error(response.status === 401 || response.status === 403 ? 'Serveren afviste adgangen. Kontrollér API-nøglen og tilladelserne.' : `Serveren svarede med HTTP ${response.status}. Ingen anden forbindelse blev valgt.`);
-  const chunks = []; let size = 0;
-  for await (const chunk of response.body) {
-    current();
-    size += chunk.length;
-    if (size > 8_000_000) throw new Error('Serverens svar er for stort.');
-    chunks.push(chunk);
-  }
+  if (!response.ok) throw Object.assign(new Error(response.status === 401 || response.status === 403 ? 'Serveren afviste adgangen. Kontrollér API-nøglen og tilladelserne.' : `Serveren svarede med HTTP ${response.status}. Ingen anden forbindelse blev valgt.`), { status: response.status });
+  const chunks = []; let size = 0, complete = false;
+  const iterator = response.body[Symbol.asyncIterator]();
+  try {
+    while (true) {
+      let part;
+      try { part = await iterator.next(); } catch { throw new Error('Serverens modeloplysninger kunne ikke læses.'); }
+      if (part.done) { complete = true; break; }
+      current();
+      size += part.value.length;
+      if (size > 8_000_000) throw new Error('Serverens svar er for stort.');
+      chunks.push(part.value);
+    }
+  } finally { if (!complete) { try { await iterator.return?.(); } catch {} } }
   const text = Buffer.concat(chunks).toString('utf8');
   current();
   try { return JSON.parse(text); } catch { throw new Error('Serveren returnerede ikke gyldige modeloplysninger.'); }
@@ -153,19 +246,33 @@ function catalogReasoning(model) {
 }
 async function listModels(connection, key, { assertCurrent } = {}) {
   assertSupported(connection);
-  if (definitions[connection.kind].keyRequired && !key) throw new Error('Denne forbindelse kræver en API-nøgle.');
+  const def = definitions[connection.kind];
+  if (def.keyRequired && !key) throw new Error('Denne forbindelse kræver en API-nøgle.');
   const ollama = connection.kind === 'ollama';
-  const response = await requestJSON(`${connection.baseURL}${ollama ? '/api/tags' : '/models'}`, { key, kind: connection.kind, assertCurrent });
-  const models = response[ollama ? 'models' : 'data'];
+  const catalogURL = modelCatalogURL(connection);
+  let response;
+  try { response = await requestJSON(catalogURL, { key, kind: connection.kind, protocol: connection.protocol || def.protocol, assertCurrent }); }
+  catch (error) {
+    // A documented recommendation is not an authenticated model catalogue.
+    // Never hide authentication, network, policy or server failures behind it.
+    if (!def.models?.length || ![404, 405].includes(error.status)) throw error;
+    return def.models.map(id => ({ id, name: id, price: null, capabilities: { tools: null }, catalogFallback: true }));
+  }
+  const models = Array.isArray(response) ? response : response[ollama ? 'models' : connection.kind === 'cloudflare' ? 'result' : 'data'];
   if (!Array.isArray(models)) throw new Error('Serveren returnerede ingen læsbar modelliste.');
   // Azures katalog beskriver modeller, ikke kundens deployment-navne. Vi sender kun til navnet, brugeren har angivet.
   if (connection.kind === 'azure') return [{ id: connection.deployment, name: connection.deployment, price: null, capabilities: { tools: null }, configuredDeployment: true }];
-  return models.slice(0, 5000).filter(model => model && model.capabilities?.completion_chat !== false && !(connection.kind === 'corti' && /embedding/.test(model.id)) && (connection.kind !== 'openai' || /^(gpt-|chatgpt-|codex-|o\d)/.test(model.id) && !/audio|realtime|transcribe|image|tts|search|deep-research/.test(model.id))).map(model => ({
-    id: ollama ? model.name : model.id, name: model.name || model.display_name || model.id,
+  return models.slice(0, 5000).filter(model => model && model.capabilities?.completion_chat !== false && !(connection.kind === 'corti' && /embedding/.test(model.id)) && (connection.kind !== 'cloudflare' || !model.task?.name || model.task.name === 'Text Generation') && (connection.kind !== 'openai' || /^(gpt-|chatgpt-|codex-|o\d)/.test(model.id) && !/audio|realtime|transcribe|image|tts|search|deep-research/.test(model.id))).map(model => ({
+    id: ollama || connection.kind === 'cloudflare' ? model.name : model.id, name: model.display_name || model.name || model.id,
     price: model.pricing || null, capabilities: { tools: model.capabilities?.function_calling ?? model.supported_parameters?.includes('tools') ?? null, ...catalogReasoning(model), ...(typeof model.capabilities?.vision==='boolean'?{vision:model.capabilities.vision}:typeof model.capabilities?.image_input?.supported==='boolean'?{vision:model.capabilities.image_input.supported}:Array.isArray(model.architecture?.input_modalities)?{vision:model.architecture.input_modalities.includes('image')}:{}) },
     limits: { context: tokenCount(model.context_length ?? model.max_context_length ?? model.context_window ?? model.max_input_tokens), output: tokenCount(model.top_provider?.max_completion_tokens ?? model.max_output_tokens ?? model.max_tokens) },
     local: ollama && !model.remote_host && !/:.*cloud/.test(model.name) ? 'Ikke verificeret' : null
   })).filter(model => typeof model.id === 'string');
+}
+function modelCatalogURL(connection) {
+  assertSupported(connection);
+  if (connection.kind === 'cloudflare') return cloudflareEndpoint(connection.baseURL).replace(/\/v1$/, '/models/search');
+  return `${connection.baseURL}${connection.kind === 'ollama' ? '/api/tags' : '/models'}`;
 }
 async function routes(connection, key, model, { assertCurrent } = {}) {
   assertSupported(connection);
@@ -184,7 +291,7 @@ function disclosure(connection, model, route = null) {
   const known = knownPrice(connection.kind, model.id);
   const zen = connection.kind === 'zen' ? zenTerms.find(([pattern]) => pattern.test(model.id)) : null;
   const data = {
-    connection: connection.name, model: model.id, endpoint: connection.baseURL, protocol: connection.protocol || def.protocol,
+    connection: connection.name, model: model.id, endpoint: connection.baseURL, protocol: connection.protocol || def.protocol, ...(connection.providerID ? { providerID: connection.providerID } : {}),
     recipients: connection.kind === 'openrouter' ? `OpenRouter → ${route?.name || 'Ukendt modeludbyder'}` : `${def.name} · ${url.hostname}`,
     region: site.region || def.region || (loopback ? 'Forbindelsen går til denne computer. Selve modellens behandlingssted er endnu ikke verificeret.' : 'Ukendt; serveradressen dokumenterer ikke behandlingsstedet.'),
     retention: def.retention || 'Ikke verificeret for denne forbindelse. Konto-, model- og servervilkår kan variere.',
@@ -194,7 +301,9 @@ function disclosure(connection, model, route = null) {
     capabilities: model.capabilities?.tools === true ? 'Kataloget angiver værktøjskald; faktisk kodearbejde er ikke verificeret for denne model.' : model.capabilities?.tools === false ? 'Kataloget angiver ikke værktøjsunderstøttelse. Modellen kan være uegnet som kodeagent.' : 'Værktøjsunderstøttelse er ukendt. Modelkataloget er ikke et kompatibilitetsbevis.',
     material: 'Beskeder, samtalehistorik, fælles regler, projektkontekst og de filer/værktøjsresultater agenten læser. Referencefiler kræver særskilt tilvalg. Modelskift starter en ny session.',
     security: url.protocol === 'http:' && !loopback ? 'HTTP uden TLS. Tailscale-kryptering er kun gældende, hvis forbindelsen faktisk går gennem Tailscale; det er ikke verificeret her.' : 'Forbindelsesadressen er kontrolleret. Det er ikke en sikkerhedsgodkendelse af tjenesten.',
-    source: site.source || def.source || 'Ingen leverandørkilde registreret; oplysninger skal kontrolleres hos serverens ejer.', checkedAt: def.checkedAt || '2026-09-22', evidence: 'Leverandørdokumentation og modelkatalog; ikke uafhængig revision.', route: route?.id || null
+    source: site.source || def.source || 'Ingen leverandørkilde registreret; oplysninger skal kontrolleres hos serverens ejer.', checkedAt: def.checkedAt || null, termsVerified: def.termsVerified,
+    ...(def.sources ? { sources: def.sources } : {}), ...(def.endpointSource ? { endpointSource: def.endpointSource } : {}),
+    evidence: def.termsVerified ? 'Leverandørdokumentation og modelkatalog; ikke uafhængig revision.' : unverifiedTerms, route: route?.id || null
   };
   return { ...data, fingerprint: createHash('sha256').update(JSON.stringify(data)).digest('hex') };
 }
@@ -262,7 +371,7 @@ function modelLimits(connection, model) {
 }
 function engineProvider(connection, model, gatewayURL, token) {
   assertSupported(connection);
-  const anthropic = connection.kind === 'anthropic' || (connection.kind === 'zen' && /^claude-/.test(model.id));
+  const anthropic = usesAnthropic(connection, model);
   // Mistral sender både tekst og strukturerede tænkeafsnit. Dets adapter bevarer disse gennem streaming og værktøjssvar.
   return { npm: anthropic ? '@ai-sdk/anthropic' : connection.kind === 'mistral' ? '@ai-sdk/mistral' : usesResponses(connection) ? '@ai-sdk/openai' : '@ai-sdk/openai-compatible', name: connection.name,
     // The gateway owns waiting/retry deadlines. OpenCode's default five-minute
@@ -270,4 +379,4 @@ function engineProvider(connection, model, gatewayURL, token) {
     options: { baseURL: gatewayURL, apiKey: token, timeout: 1_230_000, headerTimeout: 1_230_000, chunkTimeout: 1_230_000 },
     models: { [model.id]: { name: model.name, tool_call: true, limit: modelLimits(connection, model), ...(usesResponses(connection) ? { options: { store: false, include: ['reasoning.encrypted_content'] } } : {}) } } };
 }
-module.exports = { definitions, assertSupported, endpoint, normalize, requestJSON, listModels, routes, disclosure, engineProvider, modelLimits, effortLevels, reasons, priceFor, usesResponses, OUTPUT_CEILING, WORKING_WINDOW };
+module.exports = { definitions, assertSupported, endpoint, normalize, requestJSON, modelCatalogURL, listModels, routes, disclosure, engineProvider, modelLimits, effortLevels, reasons, priceFor, usesResponses, usesAnthropic, OUTPUT_CEILING, WORKING_WINDOW };

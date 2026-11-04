@@ -2,7 +2,7 @@
 
 Aura Prime hjælper dig fra idé til plan, kode og forhåndsvisning i et lokalt arbejdsområde. Appen bygger videre på [Aura Harness fra AI Alliancen](https://github.com/ai-alliancen-org/ai-harness) med OpenCode som kodeagent og frit valg af AI-forbindelse.
 
-**Aktuel kildeversion: `0.6.0-beta.4`, 4. november 2026.** Denne gren indeholder det nye UI/UX. Screenshots er fra `0.6.0-beta.2`; beta.3 og beta.4 retter blandt andet logoets midterprik i lyst tema, idékladden og fokus. De viser den kørende Electron-app på macOS med en separat testprofil og det opdigtede projekt *Fjordby arrangementer*. Versionen er en udviklingsbeta til macOS på Apple Silicon: [Hent **Aura Prime 0.6.0 beta 4**](https://github.com/Parthee-Vijaya/Aura-Prime/releases/tag/v0.6.0-beta.4) (ad hoc-signeret, ikke notariseret). [Noter og kontrolsummer](docs/releases/aura-prime-0.6.0-beta.4.md).
+**Aktuel kildeversion: `0.6.0-beta.5`, 4. november 2026.** Denne gren indeholder det nye UI/UX. Screenshots er fra `0.6.0-beta.2`; beta.3-beta.5 retter blandt andet logoets midterprik i lyst tema, idékladden og fokus. De viser den kørende Electron-app på macOS med en separat testprofil og det opdigtede projekt *Fjordby arrangementer*. Versionen er en udviklingsbeta til macOS på Apple Silicon: [Hent **Aura Prime 0.6.0 beta 5**](https://github.com/Parthee-Vijaya/Aura-Prime/releases/tag/v0.6.0-beta.5) (ad hoc-signeret, ikke notariseret). [Noter og kontrolsummer](docs/releases/aura-prime-0.6.0-beta.5.md).
 
 ![Aura Prime med integreret logo, projektoversigt og centreret samtalestart](docs/images/aura-prime-0.6.0-beta.2/02-workspace-light.png)
 
@@ -14,6 +14,7 @@ Det fulde redesign giver en roligere arbejdsapp med et nyt opstartsforløb. Aura
 - **En rolig start.** Et kompakt velkomstvindue åbner projektopsætningen. Arbejdsdetaljer, AI-forbindelser og idéhjælp er stadig tilgængelige gennem onboarding.
 - **Et integreret logo.** Aura-identiteten indgår i velkomst, sidebar og den centrerede samtalestart.
 - **En sidebar, der kan skjules helt.** Åbn den igen fra arbejdsområdets top. Projekter, samtaler, søgning og indstillinger er samlet til venstre.
+- **Flere AI-udbydere og plugins.** Under AI-forbindelser ligger de kendte udbydere som kort, og nye som Google Gemini, Groq, xAI og LM Studio i en dropdown. Under Plugins styrer du webhentning og kontekstvisning. Plugins, der endnu ikke kan dækkes sikkert, står med en begrundelse.
 - **Samlede indstillinger.** Lokal profil, generelle valg, AI-forbindelser, funktioner, opdateringer og hjælp har samme navigation. Vælg lyst, mørkt eller systemets tema, og justér tekststørrelsen.
 - **Adgang til arbejdsdetaljer.** Samtalen og arbejdssporet supplerer forhåndsvisning, plan, ændringer, kode og aktivitet. Det midlertidigt lukkede panel i en ny samtale overskriver ikke dit gemte layoutvalg.
 

@@ -985,6 +985,7 @@ function renderConnectionList() {
 }
 function renderConnections() {
   const previous = $('#connection-select').value;
+  if (!$('#connection-id').value) renderProviderKindOptions();
   $('#connection-select').replaceChildren(option('', 'Vælg forbindelse'), ...state.connections.map(c => option(c.id, c.name)));
   renderConnectionList();
   if (state.connections.some(c => c.id === previous)) $('#connection-select').value = previous;
@@ -1035,6 +1036,8 @@ function fillConnection(connection) {
   $('#connection-name').value = connection.name; $('#base-url').value = connection.baseURL;
   $('#azure-endpoint').value = connection.kind === 'azure' ? connection.baseURL : '';
   $('#azure-deployment').value = connection.deployment || ''; $('#azure-protocol').value = connection.protocol || 'responses';
+  $('#custom-protocol').value = connection.kind === 'compatible' && ['openai', 'responses', 'anthropic'].includes(connection.protocol) ? connection.protocol : 'openai';
+  $('#provider-id').value = connection.providerID || '';
 }
 function editConnection(connection) {
   moveConnectionForm(false); editingConnection = connection.id;
@@ -1048,6 +1051,50 @@ $('#connection-back').onclick = () => { clearConnectionReceipt(); connectionView
 // Det lette "Tilføj forbindelse"-flow: udbydergitter og formularen ligger inde i
 // AI-forbindelsesdialogen, så opsætningsskærmen ikke genåbnes. Rækkefølgen er
 // udfyld → gem → kontrollér, fordi kontrollen kræver en gemt forbindelses-id.
+// Udbyderkataloget (4.11): én dropdown bygget udelukkende af motorens
+// definitions. Grupperne følger definitionens group-felt; ældre definitioner
+// uden felt får en fast plads, så kataloget aldrig mister en udbyder.
+const CATALOG_GROUPS = [['eu', 'EU og Danmark'], ['popular', 'Populære udbydere'], ['local', 'På din computer eller server']];
+const LOCAL_KINDS = ['ollama', 'compatible', 'lmstudio', 'vllm'];
+function catalogGroup(kind, definition) {
+  if (CATALOG_GROUPS.some(([id]) => id === definition?.group)) return definition.group;
+  if (['corti', 'alexandra', 'mistral'].includes(kind)) return 'eu';
+  if (LOCAL_KINDS.includes(kind)) return 'local';
+  return 'popular';
+}
+function catalogEntries() {
+  const definitions = state?.definitions || {};
+  return Object.entries(definitions).filter(([kind]) => kind !== 'compatible').map(([kind, definition]) => ({ kind, definition, group: catalogGroup(kind, definition) }))
+    .sort((a, b) => a.definition.name.localeCompare(b.definition.name, 'da'));
+}
+function catalogSelect(select, placeholder, exclude = []) {
+  const previous = select.value;
+  const groups = CATALOG_GROUPS.map(([id, label]) => {
+    const items = catalogEntries().filter(entry => entry.group === id && !exclude.includes(entry.kind));
+    if (!items.length) return null;
+    const group = document.createElement('optgroup'); group.label = label;
+    group.append(...items.map(entry => option(entry.kind, entry.definition.name)));
+    return group;
+  }).filter(Boolean);
+  select.replaceChildren(...(placeholder ? [option('', placeholder)] : []), ...groups);
+  if (Array.from(select.options || []).some(item => item.value === previous)) select.value = previous;
+}
+// The form's own select follows the same catalog, plus "Egen API" last.
+function renderProviderKindOptions() {
+  if (!state?.definitions) return;
+  catalogSelect($('#provider-kind'));
+  if (state.definitions.compatible) $('#provider-kind').append(option('compatible', 'Egen API · kompatibel server'));
+}
+function catalogTerms(kind) {
+  const definition = state?.definitions?.[kind], note = $('#catalog-terms');
+  note.hidden = !definition;
+  if (!definition) return;
+  note.textContent = definition.termsVerified === false
+    ? 'Vilkår ikke kontrolleret af Aura. Læs udbyderens vilkår for træning, region og opbevaring, før du sender projektindhold.'
+    : [definition.trainingShort, definition.regionShort, definition.retentionShort].filter(Boolean).join(' · ');
+  note.dataset.verified = String(definition.termsVerified !== false);
+}
+$('#catalog-provider').onchange = () => { const kind = $('#catalog-provider').value; catalogTerms(kind); if (kind) chooseAddProvider(kind); };
 let addingConnectionStage = '';
 function openAddConnection() {
   // En ny flow-runde afslutter gemninger og kontroller fra en tidligere runde:
@@ -1057,6 +1104,10 @@ function openAddConnection() {
   $('#connection-form').reset(); $('#connection-id').value = ''; $('#connection-feedback').textContent = '';
   renderProviderCards($('#add-provider-cards'), chooseAddProvider, false);
   $('#connection-add-lead').textContent = 'Vælg den udbyder eller server, du har adgang til';
+  // Parthee 4.11: the card grid stays for the established providers; the
+  // catalog's newer providers sit in one dropdown below it.
+  catalogSelect($('#catalog-provider'), 'Vælg en anden udbyder', providerCards.map(card => card.kind)); $('#catalog-provider').value = ''; catalogTerms('');
+  $('#add-provider-catalog').hidden = !$('#catalog-provider').querySelector('optgroup');
   $('#add-provider-cards').hidden = false; $('#add-connection-home').hidden = true;
   addingConnectionStage = 'choose'; connectionView('add');
   ($('#add-provider-cards').querySelector('button') || $('#connection-add-cancel')).focus();
@@ -1065,11 +1116,11 @@ function chooseAddProvider(kind) {
   moveConnectionForm(false, true);
   // The stage is set before updateProvider, so the key-reuse row renders with the form.
   addingConnectionStage = 'form';
-  $('#provider-kind').value = kind; updateProvider();
-  $('#add-provider-cards').hidden = true; $('#add-connection-home').hidden = false;
-  $('#connection-add-lead').textContent = `Forbind ${providerCards.find(item => item.kind === kind)?.name || kind}`;
+  renderProviderKindOptions(); $('#provider-kind').value = kind; updateProvider();
+  $('#add-provider-cards').hidden = true; $('#add-provider-catalog').hidden = true; $('#add-connection-home').hidden = false;
+  $('#connection-add-lead').textContent = `Forbind ${providerCards.find(item => item.kind === kind)?.name || state?.definitions?.[kind]?.provider || state?.definitions?.[kind]?.name || kind}`;
   $('#connection-feedback').textContent = '';
-  (['ollama', 'compatible'].includes(kind) ? $('#base-url') : $('#credential-open')).focus();
+  (LOCAL_KINDS.includes(kind) || state?.definitions?.[kind]?.editableBaseURL === true && kind !== 'azure' ? $('#base-url') : kind === 'azure' ? $('#azure-endpoint') : $('#credential-open')).focus();
 }
 function resetAddConnection() {
   addingConnectionStage = '';
@@ -1200,7 +1251,9 @@ const keyGuides = {
 };
 // Trin i almindeligt dansk: én kort linje, en knap til udbyderens side og uddybning bag ⓘ.
 function renderKeyGuide(kind) {
-  const guide = keyGuides[kind];
+  // Catalog providers without a written guide get one honest step: the key page from the definition.
+  const definition = state?.definitions?.[kind];
+  const guide = keyGuides[kind] || (definition?.keyURL ? { steps: [[`Opret en API-nøgle hos ${definition.provider || definition.name}.`, 'start', `Åbn ${definition.provider || definition.name}`]] } : null);
   $('#key-steps').replaceChildren(...(guide?.steps || []).map(([text, page, label, more]) => {
     const item = node('li', text);
     if (more) item.append(info(text.replace(/\.$/, '').toLocaleLowerCase('da'), more));
@@ -1217,12 +1270,15 @@ function updateProvider() {
   const definition = state?.definitions[$('#provider-kind').value]; if (!definition) return;
   const help = { openai: 'Brug en OpenAI API-nøgle. Den afregnes separat fra dit ChatGPT-abonnement.', azure: 'Brug API-nøglen og deployment-navnet fra din Azure OpenAI- eller Foundry-ressource.', corti: 'Du skal bruge en nøgle fra Corti Models i et projekt i EU, EU-S eller Frankrig. Appen skifter aldrig automatisk til USA eller en anden model.', alexandra: 'Du skal bruge en API-nøgle fra Alexandra AI Platform. Appen bruger kun platformens egen adresse i Danmark. Adgangen til den enkelte model styres af din organisation.', mistral: 'Du skal bruge en API-nøgle fra Mistral.', anthropic: 'Du skal bruge en API-nøgle fra Anthropic. Et Claude Pro- eller Max-abonnement kan ikke bruges her.', openrouter: 'Brug din OpenRouter-nøgle. Du vælger selv model og den udbyder, der modtager dine data. Gratis modeller er markeret i listen.', zen: 'Brug en nøgle fra OpenCode Zen. Zens gratis modeller virker ikke i Aura Prime, fordi Zen kun giver gratis adgang fra OpenCodes egne programmer. Zens modeller kører i USA.', ollama: 'Forbind til en Ollama-server, som allerede kører. Kontrollér adressen nedenfor; appen installerer ikke modeller.', compatible: 'Brug adressen fra din organisation eller egen modelserver. Serveren kan køre lokalt eller på jeres netværk.' };
   $('#provider-info').dataset.info = help[$('#provider-kind').value]; renderKeyGuide($('#provider-kind').value);
-  $('.key-guide').hidden = ['ollama', 'compatible'].includes($('#provider-kind').value);
+  $('.key-guide').hidden = LOCAL_KINDS.includes($('#provider-kind').value) || (!keyGuides[$('#provider-kind').value] && !definition.keyURL);
   const isAzure = $('#provider-kind').value === 'azure';
   $('#azure-fields').hidden = !isAzure; $('#azure-endpoint').required = isAzure; $('#azure-deployment').required = isAzure;
   $('#base-url').required = !isAzure;
   for (const el of [$('#base-url'), $('#base-url').previousElementSibling, $('#base-url-help').nextElementSibling]) el.hidden = isAzure;
-  $('#base-url').value = definition.baseURL; $('#connection-advanced').open = ['ollama', 'compatible'].includes($('#provider-kind').value); $('#base-url').readOnly = !['ollama', 'compatible'].includes($('#provider-kind').value);
+  const editableAddress = LOCAL_KINDS.includes($('#provider-kind').value) || definition.editableBaseURL === true;
+  $('#base-url').value = definition.baseURL; $('#connection-advanced').open = editableAddress; $('#base-url').readOnly = !editableAddress;
+  $('#custom-api-fields').hidden = $('#provider-kind').value !== 'compatible';
+  $('#base-url').placeholder = $('#provider-kind').value === 'compatible' ? 'https://gateway.example/v1' : '';
   if (!$('#connection-id').value) { const used = new Set((state?.connections || []).map(c => c.name)); let name = definition.name, number = 2; while (used.has(name)) name = `${definition.name} ${number++}`; $('#connection-name').value = name; }
   renderKeyReuse();
 }
@@ -2813,10 +2869,10 @@ function updateWorkMode() {
   // Helteoverskriften følger arbejdsmåden (§4).
   $('#hero-heading').textContent = ({ chat: 'Hvad vil du tale om?', plan: 'Hvad skal vi planlægge?', build: 'Hvad skal vi bygge?', free: 'Hvad skal vi bygge?' })[mode];
   // Ærlig pladsholder pr. tilstand (§5.1): helt for den tomme samtale, aktiv
-  // under beskeder — og der loves intet om »/« eller »@« (R5: ingen
-  // slash- eller mention-parser findes i dag).
+  // under beskeder. »/« åbner kommandomenuen (slash-commands.js); der loves
+  // intet om »@«, fordi der ikke findes en mention-parser.
   const hero = $('#chat-panel')?.dataset.phase === 'hero';
-  $('#prompt').placeholder = window.workspace?.target() ? 'Hvad skal AI’en ændre her? Fx Gør teksten kortere.' : hero ? (mode === 'chat' ? 'Stil et spørgsmål, eller beskriv din idé …' : 'Beskriv hvad du vil bygge …') : ['chat', 'plan'].includes(mode) ? 'Skriv en besked …' : 'Beskriv det, du vil bygge eller ændre …';
+  $('#prompt').placeholder = window.workspace?.target() ? 'Hvad skal AI’en ændre her? Fx Gør teksten kortere.' : hero ? (mode === 'chat' ? 'Stil et spørgsmål, eller beskriv din idé …' : 'Beskriv hvad du vil bygge, eller skriv / for kommandoer …') : ['chat', 'plan'].includes(mode) ? 'Skriv en besked, eller / for kommandoer …' : 'Beskriv det, du vil bygge eller ændre, eller / for kommandoer …';
   $('#mode-help').textContent = mode === 'chat' ? 'Tal med AI’en om projektet. Filerne ændres ikke.' : mode === 'plan' ? 'Lav en plan sammen med AI’en, før den ændrer appen.' : mode === 'build' ? 'AI’en bygger efter den plan, du har valgt. Handlinger kræver fortsat godkendelse.' : 'AI’en ændrer appen efter din besked og projektets tilladelser.';
   window.ConversationPermission?.sync(); window.ComposerWorkMode?.sync();
 }
@@ -3288,6 +3344,7 @@ $('#settings-profile-button').onclick = () => openSettings('profile');
 $('#settings-appearance-button').onclick = () => openSettings('appearance');
 $('#connections-button').onclick = () => openSettings('connections');
 $('#features-button').onclick = () => openSettings('features');
+$('#plugins-button').onclick = () => openSettings('plugins');
 $('#support-button').onclick = () => openSettings('support');
 // updates.js runs after app.js and binds #updates-button itself; adopt its open
 // function as the section's opener, then route the button through openSettings.
@@ -3300,7 +3357,7 @@ document.addEventListener('DOMContentLoaded', () => {
 window.addEventListener('harness:komplai-connected', () => action(async () => { state = await call('connectionState'); renderConnections(); applyFeatures(); }));
 
 window.ChatMaterials.connect({read:()=>({root:current?.root,chat:view.id,running:running||projectLoading}),invoke:(method,value,owner)=>call(method,value,owner),invalidate:()=>{acceptedFingerprint=null;pendingSend=null;if($('#data-dialog').open)$('#data-dialog').close();}});
-function connectionInput(){return {id:$('#connection-id').value||undefined,kind:$('#provider-kind').value,name:$('#connection-name').value,baseURL:$('#provider-kind').value==='azure'?$('#azure-endpoint').value:$('#base-url').value,deployment:$('#azure-deployment').value,protocol:$('#azure-protocol').value,clearKey:$('#clear-key').checked};}
+function connectionInput(){return {id:$('#connection-id').value||undefined,kind:$('#provider-kind').value,name:$('#connection-name').value,baseURL:$('#provider-kind').value==='azure'?$('#azure-endpoint').value:$('#base-url').value,deployment:$('#azure-deployment').value,protocol:$('#provider-kind').value==='compatible'?$('#custom-protocol').value:$('#azure-protocol').value,...($('#provider-kind').value==='compatible'&&$('#provider-id').value.trim()?{providerID:$('#provider-id').value.trim()}:{}),clearKey:$('#clear-key').checked};}
 function clearConnectionReceipt(){connectionReceipt=null;connectionTicket++;$('#credential-status').textContent='Ingen ny nøgle valgt';void call('credentialCancel').catch(()=>{});}
 $('#credential-open').onclick=()=>action(async()=>{
   clearConnectionReceipt();const ticket=connectionTicket,configuration=connectionInput(),identity=JSON.stringify(configuration);$('#credential-open').disabled=true;

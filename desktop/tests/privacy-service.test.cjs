@@ -165,6 +165,34 @@ test('discovery permits bind the exact catalog URL and reject async final guards
   assert.equal(f.received.length, 0);
 });
 
+test('Cloudflare discovery admits only its exact account catalog and keeps policy leases fail-closed', async t => {
+  const f = await fixture(t);
+  const baseURL = 'https://api.cloudflare.com/client/v4/accounts/' + 'a'.repeat(32) + '/ai/v1';
+  Object.assign(f.connection, { kind: 'cloudflare', baseURL });
+  await f.store.update(state => { state.connections = [f.connection]; });
+  const permit = await f.service.discoveryPermit(f.scope, f.connection);
+  const catalogURL = baseURL.replace(/\/v1$/, '/models/search');
+  assert.equal(permit(catalogURL), true);
+  let calls = 0;
+  t.mock.method(global, 'fetch', async (url, options) => {
+    calls++;
+    assert.equal(url, catalogURL);
+    assert.equal(options.headers.Authorization, 'Bearer synthetic-cloudflare-key');
+    return new Response(JSON.stringify({ success: true, result: [{ name: '@cf/synthetic-chat', task: { name: 'Text Generation' } }] }));
+  });
+  for (const url of [baseURL + '/models', catalogURL.replace('a'.repeat(32), 'b'.repeat(32)), catalogURL.replace('api.cloudflare.com', 'other.example.invalid'), catalogURL.replace('https:', 'http:'), catalogURL + '/different', catalogURL + '?key=synthetic']) {
+    await assert.rejects(connections.requestJSON(url, { key: 'synthetic-cloudflare-key', assertCurrent: permit }), { code: 'PRIVACY_DESTINATION_INVALID' });
+  }
+  assert.equal(calls, 0);
+  const models = await connections.listModels(f.connection, 'synthetic-cloudflare-key', { assertCurrent: permit });
+  assert.deepEqual(models.map(model => model.id), ['@cf/synthetic-chat']);
+  assert.equal(calls, 1);
+  await f.store.update(state => { state.projects[f.store.projectKey(f.bench.project.root)].privacy.workMode = 'local'; });
+  await assert.rejects(connections.listModels(f.connection, 'synthetic-cloudflare-key', { assertCurrent: permit }), { code: 'PRIVACY_STALE' });
+  assert.equal(calls, 1, 'a changed policy prevents any further catalog request');
+  assert.equal(f.received.length, 0);
+});
+
 test('the first idea and retained idea history pass the same gate before a byte is sent', async t => {
   const f = await fixture(t), idea = new IdeaRefinement({ getWorkbench: () => f.bench });
   t.after(() => idea.stop());
