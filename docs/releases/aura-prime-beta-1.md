@@ -1,6 +1,6 @@
-# Aura Prime beta 1
+# Aura Prime 0.6.0 beta 3
 
-Teknisk version: `0.6.0-beta.3`, tag `v0.6.0-beta.3`. Den synlige releasetitel er **Aura Prime beta 1**. DMG og opdaterings-ZIP er bygget fra `4a7b4ea8ccc1914f55859f510e4c3ba20ab5fb63` med Electron 45.0.0 og den låste Node 22.23.3-runtime.
+Teknisk version: `0.6.0-beta.3`, tag `v0.6.0-beta.3`. Releasen blev først udgivet som "Aura Prime beta 1" og er omdøbt til **Aura Prime 0.6.0 beta 3**. Appens mærke i denne pakke viser stadig "beta 0.6.0"; [0.6.0 beta 4](aura-prime-0.6.0-beta.4.md) retter mærket. DMG og opdaterings-ZIP er bygget fra `4a7b4ea8ccc1914f55859f510e4c3ba20ab5fb63` med Electron 45.0.0 og den låste Node 22.23.3-runtime.
 
 Det er den første beta under navnet Aura Prime. Den er til macOS på Apple Silicon og er en prerelease til afprøvning. Brug et separat testprojekt med opdigtede data.
 
