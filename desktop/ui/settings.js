@@ -558,7 +558,7 @@
         void saveSection({ appearance: { theme: active, panelOpen: checkbox.checked } });
       });
       const panelText = document.createElement('span');
-      panelText.textContent = 'Sidepanelet er åbent, når appen starter';
+      panelText.textContent = 'Arbejdsfladen er åben, når appen starter';
       panel.append(checkbox, panelText);
       content.append(panel);
       content.append(note('Bestemmer, om arbejdsfladen vises ved siden af samtalen, når appen starter.'));

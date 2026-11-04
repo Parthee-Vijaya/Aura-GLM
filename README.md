@@ -2,7 +2,7 @@
 
 Aura Prime hjælper dig fra idé til plan, kode og forhåndsvisning i et lokalt arbejdsområde. Appen bygger videre på [Aura Harness fra AI Alliancen](https://github.com/ai-alliancen-org/ai-harness) med OpenCode som kodeagent og frit valg af AI-forbindelse.
 
-**Aktuel kildeversion: `0.6.0-beta.2`, 4. november 2026.** Denne gren indeholder det nye UI/UX. Screenshots viser den kørende Electron-app på macOS med en separat testprofil og det opdigtede projekt *Fjordby arrangementer*. Versionen er en udviklingsbeta; denne opdatering udgiver ingen ny installer.
+**Aktuel kildeversion: `0.6.0-beta.3`, 4. november 2026.** Denne gren indeholder det nye UI/UX. Screenshots er fra `0.6.0-beta.2`; beta.3 retter blandt andet logoets midterprik i lyst tema, idékladden og fokus. De viser den kørende Electron-app på macOS med en separat testprofil og det opdigtede projekt *Fjordby arrangementer*. Versionen er en udviklingsbeta; denne opdatering udgiver ingen ny installer.
 
 ![Aura Prime med integreret logo, projektoversigt og centreret samtalestart](docs/images/aura-prime-0.6.0-beta.2/02-workspace-light.png)
 
@@ -18,8 +18,6 @@ Det fulde redesign tager udgangspunkt i den installerede DeepSeek Harness-app og
 - **Adgang til arbejdsdetaljer.** Samtalen og arbejdssporet supplerer forhåndsvisning, plan, ændringer, kode og aktivitet. Det midlertidigt lukkede panel i en ny samtale overskriver ikke dit gemte layoutvalg.
 
 ### Fra første åbning til projekt
-
-
 
 Vælg **Kom i gang** for det guidede forløb eller **Fortsæt uden profil** for at gå direkte til projektidéen. En AI-forbindelse kan tilføjes senere. Den lokale profil kræver ingen registrering.
 

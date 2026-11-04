@@ -376,3 +376,15 @@ details.disclosure.step.step-group[open] > summary .step-glyph::after { opacity:
 /* A layout display on the slash list must not override the browser's closed
    popover state. Otherwise an empty elevated strip remains above the chat. */
 #slash-menu:not(:popover-open) { display: none; }
+
+/* Review 4.11: optical sizing for the chip glyphs (same 16 px box as before). */
+#composer-mode[data-mode="chat"]::before, .topbar-mode[data-mode="chat"]::before { font-size: 15px; }
+#composer-mode[data-mode="plan"]::before, .topbar-mode[data-mode="plan"]::before { font-size: 13px; }
+#composer-mode:is([data-mode="free"], [data-mode="build"])::before, .topbar-mode:is([data-mode="free"], [data-mode="build"])::before { font-size: 11px; }
+
+/* Review 4.11: the info control reads as a recognisable circled "i" rather
+   than a loose letter beside chips and labels. Same 16 px hit box. */
+.info { width: 16px; height: 16px; border: 1px solid currentColor; border-radius: 50%; font-size: 11px; font-weight: 700; color: var(--aura-ink-secondary); opacity: .85; }
+.info:hover:not(:disabled), .info[aria-expanded="true"] { opacity: 1; }
+/* Review 4.11: the setup reason is guidance, not a warning. One info tone in both themes. */
+:root #setup-reason { background: var(--aura-accent-faint); color: var(--aura-ink); border: 1px solid var(--aura-accent-subtle); }

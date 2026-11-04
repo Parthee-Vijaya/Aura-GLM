@@ -91,3 +91,8 @@
   :root { --aura-corner-shape: superellipse(1.5); }
   *, *::before, *::after { corner-shape: var(--aura-corner-shape); }
 }
+
+/* Review 4.11: the Aura mark keeps its centre dot in both themes. The
+   authored mark has a white centre for dark surfaces; light surfaces use the
+   same geometry with the primary ink centre. */
+:root:not([data-workspace-theme="dark"]) img[src$="onboarding-aura-mark.svg"] { content: url("onboarding-aura-mark-light.svg"); }

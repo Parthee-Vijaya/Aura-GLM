@@ -303,3 +303,9 @@ body.workspace-calm .calm-surface-heading,body.workspace-calm .calm-surface-dism
 #connection-add-flow .provider-card small:empty { display:none; }
 #connection-add-flow .dialog-actions { margin-top:6px; }
 #connection-add-flow #add-connection-home .dialog-actions { margin-top:18px; }
+
+/* Review 4.11: one 2 px accent edge on the composer instead of border + gap +
+   outline. Same contrast as before; it no longer reads as a double frame. */
+body.workspace-calm .composer:has(textarea:focus-visible) { outline:2px solid var(--aura-accent); outline-offset:-1px; }
+/* Send stays clickable without an AI (it opens setup); it only looks quiet. */
+body.workspace-calm #send[data-no-model="true"]:not(:disabled) { background:color-mix(in srgb, var(--accent) 45%, var(--aura-bg-composer)); }

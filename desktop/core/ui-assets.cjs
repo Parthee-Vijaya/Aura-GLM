@@ -4,7 +4,7 @@
 // både ligge her og indlæses i index.html; ui-assets.test.cjs afviser glemsler begge veje,
 // så en ny fil ikke længere giver en stille 404 fra protokollen.
 const PROVIDER_ASSETS = /^provider-(alexandra|anthropic|azure|compatible|corti|komplai|mistral|ollama|openai|openrouter|zen|promte|github-pages|cloudflare|vercel)\.svg$/;
-const ONBOARDING_ASSETS = ['onboarding-aura-mark.svg', 'onboarding-provider-claude.svg', 'onboarding-provider-mistral.svg'];
+const ONBOARDING_ASSETS = ['onboarding-aura-mark.svg', 'onboarding-aura-mark-light.svg', 'onboarding-provider-claude.svg', 'onboarding-provider-mistral.svg'];
 // Det ene serverede navn uden for ui/: brugerens egne profilbillede, som lever i
 // appens private harness-mappe. Tilladelsen gælder netop dette navn — protokollen
 // bliver aldrig en generel fillæser — og kun appens egen renderer kan bede om det.

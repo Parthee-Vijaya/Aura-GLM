@@ -99,6 +99,15 @@
 :is(#setup, #onboarding).native-onboarding :is(input, textarea) { caret-color: var(--aura-accent); }
 :is(#setup, #onboarding).native-onboarding ::selection { color: var(--aura-ink); background: var(--aura-accent-subtle); }
 :is(#setup, #onboarding).native-onboarding ::placeholder { color: var(--aura-ink-secondary); opacity: 1; }
+/* Review 4.11: the primary step action stays in view while long setup steps scroll. */
+#setup.onboarding-simple.native-onboarding .setup-actions { position: sticky; bottom: -32px; z-index: 1; margin-inline: -4px; padding: 14px 4px 32px; background: var(--aura-bg-raised); box-shadow: 0 -1px 0 var(--aura-border); }
+/* "Nyt projekt" from an open project, or after skipping the introduction, is not a setup step. */
+#onboarding.onboarding-simple.native-onboarding.idea-without-steps { grid-template-columns: 0 minmax(0, 1fr); width: min(680px, calc(100% - 48px)); }
+#onboarding.native-onboarding.idea-without-steps .native-onboarding-nav { display: none; }
+#onboarding.onboarding-simple.native-onboarding.idea-without-steps .native-onboarding-pane { padding-left: 28px; }
+#onboarding.onboarding-simple.native-onboarding.idea-without-steps > .create-footer { padding-left: 28px; }
+#onboarding.onboarding-simple.native-onboarding .native-onboarding-pane :is(input, textarea, select, summary) { scroll-margin-block: 34px 16px; }
+#setup.onboarding-simple.native-onboarding .setup-simple :is(input, textarea, select, summary, button) { scroll-margin-block: 34px 96px; }
 @media(max-width: 680px) {
   :is(#setup, #onboarding).onboarding-simple.native-onboarding { width: calc(100% - 24px); height: calc(100dvh - 40px); margin: 20px auto; grid-template-columns: 138px minmax(0, 1fr); }
   :is(#setup, #onboarding).native-onboarding .native-onboarding-header { padding-inline: 18px; }
@@ -124,3 +133,10 @@
   #setup.native-onboarding .theme-card:has(input:checked),
   #setup.native-onboarding .provider-card[aria-pressed=true] { outline: 2px solid Highlight; }
 }
+
+/* Review 4.11: left-aligned text actions start on the same edge as the text
+   above them, and the two quiet setup links share one style. */
+#setup.onboarding-simple.native-onboarding .setup-quick-actions .text-button:first-child,
+#setup.onboarding-simple.native-onboarding .detail-skip { margin-left: -4px; }
+#setup.onboarding-simple.native-onboarding #setup-advanced { text-decoration: none; }
+#setup.onboarding-simple.native-onboarding .setup-quick-actions .text-button:hover { text-decoration: underline; text-underline-offset: 3px; }

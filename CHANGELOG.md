@@ -1,5 +1,17 @@
 # Ændringslog
 
+## 0.6.0-beta.3 · 4. november 2026
+
+Rettelser efter en selvstændig UX/UI-gennemgang af beta.2.
+
+- Idékladden i Nyt projekt bevares, når man går tilbage til arbejdsfladen og åbner formularen igen.
+- Opsætningstrinnenes handlinger (fx Gem og fortsæt) bliver synlige i bunden, mens lange trin ruller.
+- Opsætningens trinliste vises kun i det guidede førstegangsforløb, ikke ved Nyt projekt fra et projekt eller efter Fortsæt uden profil.
+- Forfin idéen uden AI-forbindelse åbner forbindelsesopsætningen og bevarer kladden.
+- Fokus går til sidepanelknappen, når sidepanelet åbnes igen, og til skrivefeltet efter Tilbage til arbejdsfladen.
+- Indstillingen for arbejdsfladen ved opstart har fået en retvisende tekst.
+- Aura-logoet viser sin midterprik i lyst tema. Tilstandstegn, infoknapper, fokusramme, Send uden valgt AI og opsætningens links er justeret.
+
 ## 0.6.0-beta.2 · 4. november 2026
 
 - Nyt projekt viser standardfelter, placering og Opret uden scroll ved 980×720 og normal tekststørrelse.

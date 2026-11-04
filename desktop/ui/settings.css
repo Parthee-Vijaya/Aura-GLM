@@ -231,3 +231,8 @@ body.native-welcome-window #welcome-dialog::backdrop { background: var(--aura-bg
 #welcome-dialog #path-tools strong { font-size: 12px; font-weight: 450; color: var(--aura-ink-secondary); }
 #welcome-dialog > #welcome-skip { display: block; flex: none; margin-top: 10px; }
 #welcome-dialog #welcome-demo { width: 100%; min-height: 0; flex: 1; overflow-y: auto; }
+
+/* Review 4.11: "Tilbage" is navigation, not an alternative start. It uses the
+   quiet secondary ink so it no longer competes with "Åbn et projekt". */
+#welcome-dialog #welcome-back { color: var(--aura-ink-secondary); font-weight: 450; }
+#welcome-dialog #welcome-back:hover { color: var(--aura-ink); }

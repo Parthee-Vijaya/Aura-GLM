@@ -109,6 +109,7 @@
     applySidebar();
     if(overlaySidebar.matches&&drawerOpen)sidebarToggle.focus();
     else if(collapsed)navigation.focus();
+    else if(!overlaySidebar.matches)sidebarToggle.focus();
   }
   navigation.onclick=toggleSidebar;
   // The legacy handler still owns other screens. Capture here only in the visible workspace.

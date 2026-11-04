@@ -553,6 +553,7 @@ async function setupGit() {
   finally { $('#setup-git-refresh').disabled = false; }
 }
 async function showSetup(reason = '', fromIntroduction = false) {
+  if (fromIntroduction) $('#onboarding').classList.remove('idea-without-steps');
   guidedSetup = fromIntroduction; document.body.classList.toggle('setup-guided', fromIntroduction);
   // The profile step opens first when a guided setup starts with an empty profile:
   // a first guided introduction always has one, and a filled profile is never asked
@@ -602,7 +603,9 @@ async function leaveSetup(useAI) {
   } catch { /* saving the profile never blocks completing the setup */ }
   profileStepShown = false;
   ++setupGeneration; ++localDiscoveryGeneration; clearConnectionReceipt(); moveConnectionForm(false);
-  guidedSetup = false; completeIntroduction('guided');
+  // Review 4.11: a repeat setup (e.g. from idea refinement) never rewrites an earlier "skipped" choice.
+  { let earlier = null; try { earlier = localStorage.getItem(introductionKey); } catch {} if (guidedSetup || !earlier) completeIntroduction('guided'); }
+  guidedSetup = false;
   document.body.classList.remove('setup-guided'); setupActive = false; $('#setup').hidden = true; $('#workspace').hidden = !current; $('#onboarding').hidden = Boolean(current);
   $('#view-title').textContent = current ? 'Arbejdsområde' : 'Projektopstart'; setupControls();
   if (useAI && current) { const saved = $('#connection-select').value === id ? { modelID: $('#model-select').value, routeID: $('#route-select').value } : {}; $('#connection-select').value = id; await loadModels(saved); }
@@ -1564,13 +1567,15 @@ $('#new').onclick = () => action(async () => {
   // leaves a project open in the background, the link returns to it. A
   // first-run idea screen has nothing behind it and never shows the link.
   ideaReturn = current; $('#idea-back').hidden = !ideaReturn;
+  // Review 4.11: the onboarding step rail belongs to the first-run setup only.
+  if (ideaReturn) $('#onboarding').classList.add('idea-without-steps');
   current = null; window.harness.selectContext?.(null);
   window.dispatchEvent(new CustomEvent('aura:project', { detail: { root: null } })); revision = null; acceptedFingerprint = null;
   mountView(makeView(null)); $('#workspace').hidden = true; $('#onboarding').hidden = false; $('#skills-button').disabled = true;
   $('#new').setAttribute('aria-current', 'page'); $('#view-title').textContent = 'Projektopstart'; $('#create-form').reset(); setProjectColor(null); showAssets([]);
   const features = await call('featuresGet', undefined, null); if (request !== navigationRequest || current) return;
   state.features = features; await loadStartup(); if (request !== navigationRequest || current) return;
-  applyFeatures(); nameTouched = false; saveIdeaDraft(); showIdeaExamples(); $('#purpose').focus();
+  applyFeatures(); nameTouched = false; restoreIdeaDraft(); saveIdeaDraft(); showIdeaExamples(); $('#purpose').focus();
 });
 // Parthee 4.11 (D1-previewgodkendelsen): "Ny samtale" og "Nyt projekt" er to
 // adskilte handlinger. Den store knap starter en ny samtale i det åbne
@@ -1585,6 +1590,7 @@ $('#new-chat').onclick = () => { if (!current) return $('#new').onclick(); actio
 $('#idea-back').onclick = () => action(async () => {
   const project = ideaReturn; if (!project) return;
   await displayProject(project);
+  if (current === project) $('#prompt').focus();
 });
 $('#create-form').onsubmit = event => {
   event.preventDefault();
@@ -1980,6 +1986,8 @@ function updateModelSummary() {
   // sekundær farve, indsatsen i en læsbar dæmpet tone (§5.2.4; R4-målt
   // 4,69:1 lyst / 5,08:1 mørkt — caption er for svag til tekst).
   const name = model.value ? [pentModelNavn(model.value, model.selectedOptions[0]?.textContent), provider].filter(Boolean).join(' · ') : 'Vælg AI';
+  // Review 4.11: Send stays clickable (it routes to setup), but looks quiet until an AI is chosen.
+  { const send = $('#send'); if (send?.dataset) send.dataset.noModel = String(!model.value); }
   $('#model-summary').textContent = model.value ? pentModelNavn(model.value, model.selectedOptions[0]?.textContent) : 'Vælg din AI';
   const brand = view.running && view.activeModelSummary ? view.activeModelBrand : { kind: connection?.kind, modelID: model.value };
   window.ProviderBrand.decorate($('#model-chip'), { ...brand, label: view.running && view.activeModelSummary ? view.activeModelSummary : name, note: view.running && view.activeModelSummary ? '' : effortLabel });
@@ -2411,7 +2419,7 @@ function closeIntroduction() { document.body.classList.remove('introduction-open
 function leaveIntroduction() {
   if (setupActive) action(() => leaveSetup(false));
   recordProfileChoice('skipped');
-  completeIntroduction('skipped'); closeIntroduction();
+  completeIntroduction('skipped'); $('#onboarding').classList.add('idea-without-steps'); closeIntroduction();
   (current ? $('#prompt') : $('#purpose')).focus();
 }
 $('#welcome-skip').onclick = leaveIntroduction;
@@ -2677,7 +2685,7 @@ $('#provider-account').onclick = () => action(() => call('providerAccount', $('#
 function renderLocation(location) { $('#project-location').textContent = `Projektet gemmes i ${location.label}.`; $('#project-location').title = location.path; }
 $('#choose-location').onclick = () => action(async () => renderLocation(await call('chooseProjectLocation')));
 function saveIdeaDraft() {
-  try { localStorage.setItem(ideaDraftKey, JSON.stringify({name: $('#name').value, purpose: $('#purpose').value, nameTouched})); $('#idea-draft-status').textContent = 'Kladden er gemt på denne computer.'; } catch { $('#idea-draft-status').textContent = 'Kladden kan ikke gemmes automatisk på denne computer.'; }
+  try { localStorage.setItem(ideaDraftKey, JSON.stringify({name: $('#name').value, purpose: $('#purpose').value, nameTouched})); $('#idea-draft-status').textContent = ($('#name').value.trim() || $('#purpose').value.trim()) ? 'Kladden er gemt på denne computer.' : 'Gemmes som kladde. Ingen AI kontaktes endnu.'; } catch { $('#idea-draft-status').textContent = 'Kladden kan ikke gemmes automatisk på denne computer.'; }
 }
 function clearIdeaDraft() { try { localStorage.removeItem(ideaDraftKey); } catch {} }
 function restoreIdeaDraft() {
@@ -2733,7 +2741,7 @@ $('#idea-examples-toggle').onclick = () => {
   $('#idea-examples').hidden = !open; $('#idea-examples-toggle').setAttribute('aria-expanded', String(open));
   if (open) $('#idea-examples .idea-example').focus();
 };
-try { if (!localStorage.getItem(introductionKey)) showIntroduction(); else syncOnboardingWindow(false); } catch { showIntroduction(); }
+try { const intro = localStorage.getItem(introductionKey); if (!intro) showIntroduction(); else { if (intro === 'skipped') $('#onboarding').classList.add('idea-without-steps'); syncOnboardingWindow(false); } } catch { showIntroduction(); }
 
 // Det guidede forløb ændrer aldrig model, rute eller betaling uden et aktivt valg.
 let modelCatalog = [], activePlan = null;
@@ -2800,6 +2808,7 @@ function updateWorkMode() {
   // Chip-glyfferne (◌ ≡ ◇) følger datattributten via CSS — D0-ikonsættet er
   // afvist af Parthee, så de eksisterende glyffer genbruges.
   $('#composer-mode').dataset.mode = mode;
+  $('#composer-mode').setAttribute('aria-label', `Arbejdsmåde: ${label}. Vælg arbejdsmåde`);
   $('#topbar-mode').dataset.mode = mode;
   // Helteoverskriften følger arbejdsmåden (§4).
   $('#hero-heading').textContent = ({ chat: 'Hvad vil du tale om?', plan: 'Hvad skal vi planlægge?', build: 'Hvad skal vi bygge?', free: 'Hvad skal vi bygge?' })[mode];

@@ -53,3 +53,11 @@
 .result-complete .result-review-status button { font-size:12px; color:var(--accent); padding:3px 0; }
 .result-complete .result-undo { padding:4px 0; font-size:11px; margin-top:12px; }
 .result-complete .result-preview-note { margin-top:12px; font-size:11px; line-height:1.6; }
+
+/* Review 4.11: the three mode glyphs differ in optical size (◌ small, ◇ large).
+   Each glyph is tuned so the menu and chip read as one consistent set. */
+#composer-mode-menu .mode-menu-icon { display:inline-grid; place-items:center; width:20px; height:20px; line-height:1; }
+#composer-mode-menu [data-work-mode="chat"] .mode-menu-icon { font-size:22px; }
+#composer-mode-menu [data-work-mode="plan"] .mode-menu-icon { font-size:18px; }
+#composer-mode-menu [data-work-mode="free"] .mode-menu-icon { font-size:15px; }
+.workspace-calm #composer-mode::after { content:''; width:4.5px; height:4.5px; margin:0 2px 3px 7px; border-right:1.2px solid currentColor; border-bottom:1.2px solid currentColor; transform:rotate(45deg); opacity:.6; }

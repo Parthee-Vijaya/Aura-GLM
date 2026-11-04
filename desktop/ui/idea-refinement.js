@@ -36,7 +36,7 @@
     const selected=$('#startup-connection').value;
     connection.replaceChildren(option('','Vælg forbindelse'),...(state?.connections||[]).map(c=>option(c.id,c.name)));
     if(selected)connection.value=selected;
-    if(!connection.options.length||connection.options.length===1){status.textContent='Tilføj en AI-forbindelse under Indstillinger → AI-forbindelser. Din idé er gemt her.';return;}
+    if(!connection.options.length||connection.options.length===1){panel.hidden=true;status.textContent='';if(typeof showSetup==='function'){await showSetup('Tilslut en AI for at forfine din idé. Din kladde er bevaret.');return;}status.textContent='Tilføj en AI-forbindelse under Indstillinger → AI-forbindelser. Din idé er gemt her.';panel.hidden=false;return;}
     await loadModelsForIdea();connection.focus();
   });
   async function prepare(){
