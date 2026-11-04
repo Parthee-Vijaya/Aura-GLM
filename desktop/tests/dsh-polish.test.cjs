@@ -76,8 +76,9 @@ test('de fem popovers fra auditten bærer menu-materialet', () => {
   for (const id of ['slash-menu', 'model-picker', 'settings-menu']) {
     assert.ok(new RegExp(`id="${id}"[^>]*class="[^"]*menu-material`).test(indexHtml) || new RegExp(`class="[^"]*menu-material"[^>]*id="${id}"`).test(indexHtml), `#${id} har .menu-material i markup`);
   }
-  assert.match(indexHtml, /<div id="status-line-help" popover class="status-line-help menu-material"/, '.status-line-help har .menu-material');
-  assert.match(app, /node\('div', '', 'info-pop menu-material'\)/, '.info-pop skabes med .menu-material (app.js)');
+  // T8: fladerne bærer også .aura-tooltip (den samlede tooltip-grammatik).
+  assert.match(indexHtml, /<div id="status-line-help" popover class="status-line-help menu-material aura-tooltip"/, '.status-line-help har .menu-material og tooltip-grammatikken');
+  assert.match(app, /node\('div', '', 'info-pop menu-material aura-tooltip'\)/, '.info-pop skabes med .menu-material og tooltip-grammatikken (app.js)');
 });
 
 test('slash og modelvælger: egne skygger/radier er væk — materialet ejer dem', () => {
@@ -215,10 +216,10 @@ test('P1-kontrast: alfa-hover, boble, diff-badge og de mørke flader består AA'
 });
 
 // ── 10. Versionen ──
-test('versionen er 0.5.9 overalt (pakke, lås, rod og pakkeposten)', () => {
-  assert.equal(pkg.version, '0.5.9');
-  assert.equal(lock.version, '0.5.9');
-  assert.equal(lock.packages[''].version, '0.5.9');
+test('versionen er 0.5.10 overalt (pakke, lås, rod og pakkeposten)', () => {
+  assert.equal(pkg.version, '0.5.10');
+  assert.equal(lock.version, '0.5.10');
+  assert.equal(lock.packages[''].version, '0.5.10');
 });
 
 // ═══ Fix-runde (review af 3feb05b): F2/F3/F4 ═══
@@ -299,12 +300,15 @@ test('F2 · indstillingsmenuens etiket-span rammes IKKE af ikonklemmen (reproduc
   assert.ok(!/#settings-menu button > span\s*\{/.test(components), 'den uskremmede "> span"-regel er væk');
 });
 
-test('F3 · tooltippernes ANVENDTE padding er 10/12 — id-reglerne vinder over .menu-materialets 6/4', () => {
-  // Review F3: klasse-reglernes 10px/12px var døde (.menu-material 6px/4px
-  // vinder på kildeorden ved samme specificitet). Pinnen fryser den vindende
-  // erklæring — og at de døde klasse-deklarationer er væk.
-  assert.match(styles, /#status-line-help\s*\{[^}]*padding:\s*10px 12px/, '#status-line-help ejer sin padding (id (1,0,0) slår .menu-material (0,1,0))');
-  assert.match(styles, /#info-pop\s*\{[^}]*padding:\s*10px 12px/, '#info-pop ejer sin padding');
+test('F3 → T8 · tooltippernes padding 10/12 ejes af .aura-tooltip — én grammatik, ingen døde erklæringer', () => {
+  // Review F3 lagde paddingen på id-reglerne (den døde klasse-deklaration var
+  // slået af .menu-material på kildeorden). T8 samler fladerne på ÉN
+  // tooltip-grammatik: .aura-tooltip i components.css (efter .menu-material)
+  // ejer 10/12 — id-reglerne har ingen padding længere, og 6/4 slås på
+  // kildeorden, ikke specificitet.
+  assert.match(components, /\.aura-tooltip\s*\{[^}]*padding:\s*10px 12px/, '.aura-tooltip ejer paddingen (10/12)');
+  assert.ok(!/#status-line-help\s*\{[^}]*padding/.test(styles), '#status-line-help har ingen egen padding længere');
+  assert.ok(!/#info-pop\s*\{[^}]*padding/.test(styles), '#info-pop har ingen egen padding længere');
   assert.ok(!/\.status-line-help\s*\{[^}]*padding/.test(styles), 'den døde klassebaserede padding er fjernet fra .status-line-help');
   assert.ok(!/\.info-pop\s*\{[^}]*padding/.test(styles), 'den døde klassebaserede padding er fjernet fra .info-pop');
 });

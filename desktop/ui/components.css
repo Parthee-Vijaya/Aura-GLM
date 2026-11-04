@@ -98,6 +98,23 @@ details.disclosure.work-progress-card > summary::after { transform: none; }
 .menu-material [role="menuitemradio"]::after, .menu-material [role="radio"]::after { content: ""; width: 14px; height: 14px; margin-left: auto; flex: none; }
 .menu-material [aria-checked="true"]::after { content: "✓"; margin-left: auto; color: var(--aura-accent); font-size: 13px; text-align: right; }
 
+/* ── .aura-tooltip — ÉN tooltip-grammatik (T8, audit pkt. 9) ──
+   Alle tooltips bærer menu-materialet ovenfor (DSH §2: alfa + blur med
+   uigennemsigtig fallback) med tooltip-målet: tekst 12/16, radius 8, padding
+   10/12. Bevægelsen er asymmetrisk som DSH: ind på 40 ms, ud på 80 ms
+   (@starting-style giver ind-fasen dens udgangspunkt; allow-discrete holder
+   popover-laget live gennem udfasen). Forsinkelsen (400 ms), hover OG fokus
+   og aria-describedby bor i ui/tooltip.js — ÉN mekanisme, ingen flade med
+   sin egen timing. Kendelse (native title): native title-attributter
+   forbliver appens lette lag; mekanismen dækker fokus for sine flader, og
+   S1-review Minor-2s nuance (Chromium tegner ikke native title ved
+   tastaturfokus) er accepteret og dokumenteret dér. */
+.aura-tooltip { padding: 10px 12px; border-radius: var(--aura-radius-sm); font-size: var(--aura-text-12); line-height: var(--aura-text-12-line); color: var(--aura-ink); transition: opacity 80ms var(--aura-ease-in-out), display 80ms allow-discrete, overlay 80ms allow-discrete; }
+.aura-tooltip:popover-open { transition: opacity 40ms var(--aura-ease-in-out), display 40ms allow-discrete, overlay 40ms allow-discrete; }
+@starting-style { .aura-tooltip:popover-open { opacity: 0; } }
+/* Global reduced-motion-kill (styles.css) rammer transition på * — udfasen
+   dør der; popoveren lukker stadig øjeblikkeligt (display flips synkront). */
+
 /* ── Samtalerodens faser (§4): hero · active · settling ── */
 /* Settling: mens en gemt samtale genindlæses, er de flytbare dele skjult med
    visibility (pladsen reserveres), så det forkerte layout aldrig blinker frem. */
@@ -299,7 +316,12 @@ details.disclosure.step.step-group[open] > summary .step-glyph::after { opacity:
 /* Samme faste 16 px-glyfboks som composer-chippen (P1 §2.5). */
 .topbar-mode::before { display: inline-grid; place-items: center; width: 16px; height: 16px; font-size: 13px; line-height: 1; color: var(--aura-accent); }
 .workspace-calm #surface-toggle { flex: none; min-width: 30px; padding: 4px 8px; font-size: 15px; line-height: 1; }
-@media (max-width: 700px) { .topbar-mode { display: none; } .workspace-calm .workspace-bar h1 .workspace-crumb { max-width: 30%; } }
+/* T8 (P1-bekymring a): chippen har altid ét synligt hjem. Container-reglen
+   nedenfor skjuler composer-chippen i aktiv fase under 480 px — topbjælken
+   ejer valget dér. Den gamle 700 px-regel skjulte topbjælke-chippen på smalle
+   vinduer, og et vindue <700 px kunne derved miste BEGGE chips; chippen
+   viger derfor ikke længere — kun brødkrummen snævres. */
+@media (max-width: 700px) { .workspace-calm .workspace-bar h1 .workspace-crumb { max-width: 30%; } }
 
 /* ── Indstillingsmenuens ikonkolonne (P1, audit §2.5 → review F2) ──
    #settings-menu bærer .menu-material; ikonerne — både svg'erne og

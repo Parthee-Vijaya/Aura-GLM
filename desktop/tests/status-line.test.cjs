@@ -130,7 +130,7 @@ test('linjen er én fokuserbar knap med tooltip-forbindelse og UDEN aria-live', 
   assert.doesNotMatch(row, /aria-live/, 'linjen og rækken har ingen aria-live — den opdateres hver tur');
   assert.doesNotMatch(html, /id="usage-status"/, 'den gamle forbrugsstatus er erstattet af den ene linje');
   assert.doesNotMatch(html, /id="context-label"|id="context-meter"/, 'meter og etiket fra R3-visningen er fjernet');
-  assert.match(html, /<div id="status-line-help" popover class="status-line-help menu-material"/, 'tooltippet er et ankeret popover-lag på menu-materialet');
+  assert.match(html, /<div id="status-line-help" popover class="status-line-help menu-material aura-tooltip"/, 'tooltippet er et ankeret popover-lag på menu-materialet og den samlede tooltip-grammatik (T8)');
   assert.match(app, /\$\('#status-line-row'\)\.before\(form\)/, 'composeren dokker før statusrækken (flyttet anker, samme rækkefølge)');
   assert.match(privacyGate, /\[get\('context-status'\), 'privacy-gate-button', 'before'\]/, 'P1: skjoldet er det FØRSTE segment — knappen sættes foran linjen');
 });

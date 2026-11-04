@@ -562,21 +562,27 @@ body.setup-guided .app-content { margin-left: 0; }
 /* Skjoldet som segment: samme pill-grammatik som linjen (padding 1/8,
    radius 8) — ikonbæreren, ikke en egen venstrestillet række. */
 .composer-status > #privacy-gate-button { padding: 1px 8px; border-radius: var(--radius-xs); min-height: 24px; font-size: var(--aura-text-12); }
-/* Review F3: paddingen står på ID-reglen — .menu-material (components.css,
-   indlæses sidst) vinder ellers kildeorden ved samme specificitet, og 6/4
-   er for trangt til tekst. Id (1,0,0) slår klasse (0,1,0). */
-#status-line-help { max-width: 380px; padding: 10px 12px; }
-.status-line-help p { margin: 0 0 6px; font-size: var(--aura-text-12); line-height: 17px; color: var(--ink); }
+/* Review F3 → T8: paddingen og 12/16-typografien ejer .aura-tooltip i
+   components.css (slår .menu-materialets 6/4 på kildeorden) — ID-reglen
+   beholder kun fladens egen maksimalbredde. */
+#status-line-help { max-width: 380px; }
+.status-line-help p { margin: 0 0 6px; color: var(--ink); }
 .status-line-help p:last-child { margin-bottom: 0; }
 .features-list { display: grid; gap: 8px; margin: 0 0 12px; }
 .feature-row { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; background: var(--surface); }
 .feature-toggle { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin: 0; font-weight: 400; cursor: pointer; }
 .feature-toggle strong { display: flex; align-items: center; font-size: 13px; font-weight: 600; }
 .feature-toggle small { display: block; color: var(--muted); font-size: 12px; line-height: 1.5; margin-top: 2px; }
-input[type=checkbox][role=switch] { appearance: none; width: 36px; height: 20px; margin: 2px 0 0; border-radius: 999px; background: #c5d0de; position: relative; cursor: pointer; flex-shrink: 0; transition: background var(--motion-fast); }
-input[type=checkbox][role=switch]::before { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 2px #14263b40; transition: transform var(--motion-fast); }
+/* T8 (audit §4): switchen på --aura-tokens i BEGGE temaer — af-sporet er
+   --aura-bg-tint, knappen --aura-ink-muted, til-knappen --aura-bg på accent-
+   sporet (P1s målte par: 4,26/4,23:1 lyst, 5,24/6,86:1 mørkt — alt ≥3:1).
+   #c5d0de/#14263b40-æraen er væk; tastaturbetjening er Space på checkboxen,
+   og :focus-visible bærer accent-ringen. */
+input[type=checkbox][role=switch] { appearance: none; width: 36px; height: 20px; margin: 2px 0 0; border-radius: 999px; background: var(--aura-bg-tint); position: relative; cursor: pointer; flex-shrink: 0; transition: background var(--motion-fast); }
+input[type=checkbox][role=switch]::before { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--aura-ink-muted); transition: transform var(--motion-fast); }
 input[type=checkbox][role=switch]:checked { background: var(--accent); }
-input[type=checkbox][role=switch]:checked::before { transform: translateX(16px); }
+input[type=checkbox][role=switch]:checked::before { transform: translateX(16px); background: var(--aura-bg); }
+input[type=checkbox][role=switch]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 input[type=checkbox][role=switch]:disabled { cursor: not-allowed; opacity: .5; }
 .features-always ul { margin: 0; padding-left: 18px; font-size: 12px; line-height: 1.6; color: var(--muted); }
 .feature-note { margin: 8px 0 0; font-size: 12px; color: var(--accent); }
@@ -590,15 +596,17 @@ input[type=checkbox][role=switch]:disabled { cursor: not-allowed; opacity: .5; }
 .features-scope label:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 2px; }
 .features-always, #features-advanced { margin-top: 14px; }
 @media (prefers-reduced-motion: reduce) { .feature-toggle input[role=switch], input[type=checkbox][role=switch]::before { transition: none; } }
-/* ⓘ: lille rund knap med en forklaring i en boble. Forklaringen åbnes med et klik, aldrig kun ved at holde musen over. */
-.info { display: inline-grid; place-items: center; width: 18px; height: 18px; margin: 0 0 0 6px; padding: 0; border: 1px solid #b9c7dc; border-radius: 50%; background: var(--surface); color: var(--accent); font: italic 700 11px/1 Georgia, serif; vertical-align: text-bottom; cursor: pointer; flex-shrink: 0; }
-.info:hover:not(:disabled) { background: var(--tint); border-color: var(--accent); }
-.info[aria-expanded="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
-/* Boblen bærer menu-materialet (P1: ét popover-grammatik) — teksten er
-   12/1,6 og forudformateret; materialet kommer fra .menu-material.
-   Review F3: paddingen står på ID-reglen — ellers vinder .menu-materialets
-   6/4 på kildeorden, og 4 px er for trangt til tekst. */
-#info-pop { margin: 0; padding: 10px 12px; font-size: var(--aura-text-12); line-height: 1.6; white-space: pre-line; }
+/* ⓘ: lille knap med en forklaring i en boble. Forklaringen åbnes med et klik, aldrig kun ved at holde musen over. */
+/* T8 (audit §4): systemfont + linjeglyf i fast 16 px-boks som de øvrige glyffer
+   (13/1) — kursiv Georgia med kant #b9c7dc er væk. Glyffen hviler i den læsbare
+   sekundærfarve (AA i begge temaer), hover er alfa-fyldet, og den åbne tilstand
+   bærer primærknappens kontrastsikre par. */
+.info { display: inline-grid; place-items: center; width: 16px; height: 16px; margin: 0 0 0 6px; padding: 0; border: 0; border-radius: var(--aura-radius-xs); background: transparent; color: var(--aura-ink-secondary); font-family: var(--aura-font-family); font-size: 13px; line-height: 1; font-weight: 600; vertical-align: text-bottom; cursor: pointer; flex-shrink: 0; }
+.info:hover:not(:disabled) { background: var(--aura-bg-hover); color: var(--aura-ink); }
+.info[aria-expanded="true"] { background: var(--aura-button-primary); color: var(--aura-button-primary-text); }
+/* Boblen bærer ÉN tooltip-grammatik (T8): menu-materiale + .aura-tooltip giver
+   12/16, radius 8, ind 40 ms / ud 80 ms og paddingen; teksten er forudformateret. */
+#info-pop { margin: 0; white-space: pre-line; }
 .info-pop:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .label-row { display: flex; align-items: center; margin: 16px 0 7px; }
 .label-row label { margin: 0; }
@@ -828,7 +836,11 @@ body.sidebar-overlay .sidebar { width: 230px; z-index: 30; box-shadow: var(--aur
 .agent-activity .text-button { padding: 2px 6px; font-size: 11px; }
 
 /* Godkendelser: hvad, hvorfor og hvad det betyder. Tekniske detaljer og ændringen er foldet sammen. */
-.approval-kind { margin: 0 0 2px; font-size: 11px; font-weight: 650; letter-spacing: .02em; color: #8a5a12; }
+/* T8 (audit pkt. 9, MUST-FIX): advarselsteksten bærer --aura-warning-ink —
+   --aura-warning/#8a5a12-æraen målte kun 2,92:1 på warning-subtle i lyst
+   tema; warning-ink måler 5,17:1 lyst / 6,46:1 mørkt (begge ≥5:1), og
+   etiketten er løftet fra 11 px til typeskalaens 12 px. */
+.approval-kind { margin: 0 0 2px; font-size: var(--aura-text-12); font-weight: 650; letter-spacing: .02em; color: var(--aura-warning-ink); }
 .approval-title { display: block; margin-bottom: 8px; font-size: 14px; }
 .approval-facts { display: grid; grid-template-columns: minmax(70px, auto) minmax(0, 1fr); gap: 6px 12px; margin: 0 0 10px; font-size: 12px; line-height: 1.6; }
 .approval-facts dt { color: var(--muted); font-weight: 600; }
@@ -870,7 +882,10 @@ body.sidebar-overlay .sidebar { width: 230px; z-index: 30; box-shadow: var(--aur
 .pick-toggle:disabled { color: var(--muted); }
 body.picking #preview-stage { box-shadow: 0 0 0 2px var(--accent); }
 .pick-hint { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 2; display: flex; align-items: center; gap: 4px; max-width: calc(100% - 24px); margin: 0; padding: 5px 6px 5px 14px; border-radius: 999px; background: var(--ink); color: #fff; font-size: 12px; line-height: 1.5; box-shadow: 0 4px 14px #18223529; }
-.pick-hint .info { color: #fff; background: transparent; border-color: #ffffff99; }
+/* Ret-i-siden-hintet er en mørk pille: glyffen arver pillens tekstfarve, og
+   hover/åben er et hvidt alfa-fyld (T8: .info bærer ingen egen kant længere). */
+.pick-hint .info { color: inherit; background: transparent; }
+.pick-hint .info:is(:hover:not(:disabled), [aria-expanded="true"]) { background: rgba(255, 255, 255, .14); color: inherit; }
 .pick-card { position: absolute; left: 12px; right: 12px; bottom: 12px; z-index: 2; max-width: 460px; margin: 0 auto; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); box-shadow: 0 10px 30px #18223524; animation: step-arrive var(--motion-step) var(--ease-out); overflow-wrap: anywhere; }
 .pick-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
 .pick-head h2 { margin: 0; font-size: 12px; font-weight: 650; color: var(--accent); letter-spacing: .02em; }
@@ -1511,11 +1526,8 @@ details.plan-detail > .plan-detail-body { padding: 0 14px 12px 14px; font-size: 
   .updates-notice.critical, .updates-warning { background: var(--aura-warning-subtle); color: var(--aura-warning-ink); }
   .copy-notice { background: var(--accent-soft); }
   .journey-card, .startup-summary { background: var(--surface); }
-  /* Switch-kontakter: mørke spor med lys knop — på tokens (P1) */
-  input[type=checkbox][role=switch] { background: var(--aura-bg-tint); }
-  input[type=checkbox][role=switch]::before { background: var(--aura-ink-muted); box-shadow: none; }
-  input[type=checkbox][role=switch]:checked { background: var(--accent); }
-  input[type=checkbox][role=switch]:checked::before { background: var(--aura-bg); }
+  /* Switch-kontakter: T8 — basisreglen er på --aura-tokens og ejer begge
+     temaer; de mørke duplikater fra P1-overgangen er fjernet. */
   /* Funktionelle signalfarver */
   .chat-message.error { color: var(--aura-error); background: var(--aura-error-subtle); }
   .markdown code { background: var(--aura-bg-tint); }

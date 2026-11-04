@@ -62,7 +62,7 @@ const anyRunning = () => running || [...views.values()].some(v => v.running);
 const chatTitle = id => window.chats?.projects().find(project => project.root === current?.root)?.chats?.find(chat => chat.id === id)?.title || 'Ny samtale';
 // ⓘ: en kort forklaring, der åbnes med et klik og lukkes med Escape eller et klik udenfor. Teksten står i knappens data-info.
 // Boblen flyttes ind i den åbne dialog, så den ikke bliver utilgængelig bag en modal dialog.
-const infoPop = node('div', '', 'info-pop menu-material'); infoPop.id = 'info-pop'; infoPop.popover = 'auto'; infoPop.setAttribute('role', 'dialog'); infoPop.tabIndex = -1;
+const infoPop = node('div', '', 'info-pop menu-material aura-tooltip'); infoPop.id = 'info-pop'; infoPop.popover = 'auto'; infoPop.setAttribute('role', 'dialog'); infoPop.tabIndex = -1;
 let infoSource = null, infoClosed = { at: 0, source: null };
 function info(label, text) { const button = node('button', 'i', 'info'); button.type = 'button'; button.setAttribute('aria-label', `Mere om ${label}`); button.setAttribute('aria-expanded', 'false'); button.dataset.info = text; return button; }
 function showInfo(button) {
@@ -289,6 +289,9 @@ function renderProfileIconRow() {
     slot.onclick = () => action(uploadProfileAvatar);
   }
   row.replaceChildren(...choices, slot);
+  // T8 (ventelistens parked minor): ikonvælgeren er ét tab-stop med roving
+  // tabindex — pile flytter fokus (uden at vælge), Home/End går til enderne.
+  window.ProfileIcons?.wireRadioGroup?.(row);
   $('#profile-avatar-remove').hidden = !profileAvatarAvailable;
 }
 // The initials preview follows the name field as it is typed; the hint's example
@@ -2002,10 +2005,11 @@ function renderStatusLine() {
   help.replaceChildren(...shaped.tooltip.map(text => node('p', text)));
   if (help.matches(':popover-open')) window.PopoverLayer?.position();
 }
-// Tooltippet åbnes ved hover, tastaturfokus og klik/touch (native »title« er
-// utilstrækkeligt). Popover-laget ejer placeringen; browseren ejer lukning —
-// og et klik udenfor må ikke straks åbne boblen igen.
-let statusHelpClosed = { at: 0 };
+// Tooltippet åbnes ved hover (400 ms forsinkelse), tastaturfokus og klik/touch
+// (native »title« er utilstrækkeligt). ÉN mekanisme (ui/tooltip.js): Popover-
+// laget ejer placeringen, browseren ejer lukning — og et klik udenfor må ikke
+// straks åbne boblen igen (mekanismens 400 ms-vagt). Ind 40 ms / ud 80 ms og
+// 12/16-radius-8-looket kommer fra .aura-tooltip (components.css).
 function openStatusHelp() {
   const line = $('#context-status');
   if (!line) return;
@@ -2014,15 +2018,7 @@ function openStatusHelp() {
 function wireStatusLineHelp() {
   const line = $('#context-status'), help = $('#status-line-help');
   if (!line || !help) return;
-  help.addEventListener('beforetoggle', event => { if (event.newState === 'closed') statusHelpClosed = { at: performance.now() }; });
-  line.addEventListener('mouseenter', openStatusHelp);
-  line.addEventListener('focus', openStatusHelp);
-  line.addEventListener('blur', () => { if (!line.matches(':hover')) window.PopoverLayer.close(); });
-  line.addEventListener('mouseleave', () => { if (document.activeElement !== line) window.PopoverLayer.close(); });
-  line.addEventListener('click', () => {
-    if (help.matches(':popover-open')) window.PopoverLayer.close();
-    else if (performance.now() - statusHelpClosed.at > 400) openStatusHelp();
-  });
+  window.Tooltip.wire({ layer: help, invoker: line, open: openStatusHelp, click: 'toggle' });
 }
 wireStatusLineHelp();
 // Kladdestatus: kortvarig role=status yderst til højre i samme række. Succes-

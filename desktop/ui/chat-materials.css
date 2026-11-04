@@ -4,9 +4,13 @@
 
 /* One attachment menu; native review and permissions remain unchanged. */
 .material-menu-wrap{position:relative;flex:none}#chat-materials-plus{height:34px;width:34px;padding:0;font-size:25px;line-height:1;color:var(--muted);border:0;background:transparent;border-radius:8px}
-#chat-materials-menu{position:absolute;bottom:44px;left:0;width:min(270px,calc(100vw - 65px));padding:9px;border:1px solid var(--line);border-radius:14px;background:var(--surface,#fff);box-shadow:0 12px 35px #14284126;z-index:20}
-#chat-materials-menu>strong{display:block;padding:7px 9px;font-size:11px;font-weight:600;color:var(--muted);text-align:left}
-#chat-materials-menu button{display:block;text-align:left;width:100%;border:0;background:transparent;padding:10px;font-size:13px;border-radius:8px}
-#chat-materials-menu button:hover{background:var(--soft,#f1f5f9)}#chat-materials-menu small{display:block;color:var(--muted);font-weight:400;font-size:11px;margin-top:3px}
-#chat-materials-menu #chat-materials-folder{border-top:1px solid var(--line);border-radius:0;margin-top:5px;padding-top:13px}
+/* T8 (S3-fund, udskudt hertil): menuen bærer .menu-material i markuppen
+   (index.html) — alfa + blur, 0,5 px-kant, radius 16 og --aura-shadow-menu
+   kommer derfra. Denne regel ejer kun ankeret: position ved (+)-knappen og
+   bredden. Egne skygge/kant/flade/rækker (0 12px 35px #14284126, radius 14,
+   solid hover, 11 px-tekster) er væk — rækkerne følger menu-materialets
+   grammatik (34 px rækker, 13/20 + small 12/16, neutral alfa-hover). */
+#chat-materials-menu{position:absolute;bottom:44px;left:0;width:min(270px,calc(100vw - 65px));z-index:20}
+#chat-materials-menu>strong{display:block;margin:6px 10px 4px;font-size:var(--aura-text-12);font-weight:var(--aura-font-weight-medium);color:var(--aura-ink-secondary);text-align:left}
+#chat-materials-menu #chat-materials-folder{border-top:0.5px solid var(--line);border-radius:0;margin-top:4px;padding-top:10px}
 .composer-shortcut{font-size:12px;margin:0 5px 3px;color:var(--muted)}

@@ -406,6 +406,9 @@
         slot.onclick = () => { void uploadAvatar(); };
       }
       row.append(slot);
+      // T8 (the parked "roving tabindex" minor): same one-tab-stop discipline
+      // as the onboarding picker — arrows move focus, click selects.
+      icons?.wireRadioGroup?.(row);
       const iconWrap = document.createElement('div');
       iconWrap.className = 'profile-icon-wrap';
       iconWrap.append(row);

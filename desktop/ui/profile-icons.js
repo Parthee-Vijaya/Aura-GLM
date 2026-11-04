@@ -63,5 +63,30 @@
     const second = words.length > 1 ? words[1].charAt(0) : words[0].charAt(1);
     return (first + second).toLocaleUpperCase('da');
   }
-  return Object.freeze({ IDS, LABELS, svg, avatarImage, attachAvatarFallback, setAvatarRevision, initials });
+  // T8 (the parked "roving tabindex" minor): the icon picker is a radiogroup
+  // of buttons — one tab stop, arrow keys move focus, Home/End reach the ends.
+  // Focus does NOT select (arrowing through must not change the profile);
+  // Space/Enter or click selects, and the tab stop follows the choice.
+  // Wireable on every icon row (onboarding and settings); idempotent.
+  function wireRadioGroup(row) {
+    if (!row || typeof row.querySelector !== 'function' || typeof row.addEventListener !== 'function' || row.dataset.roving === '1') return;
+    row.dataset.roving = '1';
+    const radios = () => [...row.querySelectorAll('button[role="radio"]')];
+    const stopIndex = list => Math.max(0, list.findIndex(button => button.getAttribute('aria-checked') === 'true'));
+    const syncTabStops = () => { const list = radios(), stop = stopIndex(list); for (const [index, button] of list.entries()) button.tabIndex = index === stop ? 0 : -1; };
+    row.addEventListener('keydown', event => {
+      const list = radios(); if (!list.length || event.defaultPrevented) return;
+      const steps = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
+      const step = steps[event.key];
+      if (step) { event.preventDefault(); list[(stopIndex(list) + step + list.length) % list.length].focus(); }
+      else if (event.key === 'Home') { event.preventDefault(); list[0].focus(); }
+      else if (event.key === 'End') { event.preventDefault(); list[list.length - 1].focus(); }
+    });
+    row.addEventListener('click', () => setTimeout(syncTabStops));
+    // The checked state can arrive after the row is built (settings' profile
+    // answer) — the tab stop follows it either way.
+    if (typeof MutationObserver === 'function') new MutationObserver(syncTabStops).observe(row, { subtree: true, attributeFilter: ['aria-checked'] });
+    syncTabStops();
+  }
+  return Object.freeze({ IDS, LABELS, svg, avatarImage, attachAvatarFallback, setAvatarRevision, initials, wireRadioGroup });
 });

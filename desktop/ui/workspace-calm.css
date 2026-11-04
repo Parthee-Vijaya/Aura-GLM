@@ -145,7 +145,10 @@ body.workspace-calm[data-workspace-theme="light"] {
 .workspace-calm :is(.markdown pre,.markdown code,.activity-output pre,.approval pre,.live-draft pre,.diff,.code-lines,.permission-boundary,.journey-card,.plan-card,.question-card,.material-candidates,.material-review) { background:var(--calm-raised); color:var(--ink); border-color:var(--line); }
 .workspace-calm :is(.panel-notice,.model-controls,.approval .answer-choice,.approval-facts code.action-target,.share-summary,.data-summary,#data-summary,.features-intro) { background:var(--calm-raised); color:var(--ink); border-color:var(--line); }
 .workspace-calm :is(.approval,.panel-warning,.activity-entry.status-waiting,.restore-conflicts,.code-line.is-marked) { background:var(--calm-warning-bg); color:var(--ink); border-color:color-mix(in srgb,var(--calm-warning) 40%,var(--line)); }
-.workspace-calm :is(.approval-kind,.activity-entry.status-waiting .activity-state) { color:var(--calm-warning); }
+/* T8 (audit pkt. 9, MUST-FIX): advarselsteksterne bærer --aura-warning-ink
+   (målt 5,17:1 lyst / 6,46:1 mørkt på warning-subtle — ikke --calm-warning,
+   der målte 2,92:1 i lyst tema). */
+.workspace-calm :is(.approval-kind,.activity-entry.status-waiting .activity-state) { color:var(--aura-warning-ink); }
 .workspace-calm :is(.chat-message.error,.dialog-notice.error,.error) { color:var(--calm-error); background:var(--calm-error-bg); }
 .workspace-calm :is(.activity-error,.activity-entry.status-error .activity-state,.activity-entry.status-rejected .activity-state) { color:var(--calm-error); }
 .workspace-calm :is(.diff-row.add,.change-tag.change-ny) { background:var(--aura-diff-add-bg); }
@@ -153,7 +156,9 @@ body.workspace-calm[data-workspace-theme="light"] {
 .workspace-calm :is(.file-stats .add,.diff-row.add .sign,.change-tag.change-ny) { color:var(--aura-diff-add); }
 .workspace-calm :is(.file-stats .del,.diff-row.del .sign,.change-tag.change-slettet) { color:var(--aura-diff-del); }
 .workspace-calm .activity-entry { border-color:var(--line); }
-.workspace-calm #chat-materials-menu { background:var(--calm-raised); box-shadow:0 14px 38px #0004; }
+/* T8 (S3-fund, P1-bekymring 5): (+)-menuen bærer .menu-materialet i markuppen —
+   dens egen flade/skygge (0 14px 38px #0004) og den gamle calm-override er
+   væk; rækkerne og fyldet kommer fra .menu-material i components.css. */
 .workspace-calm :is(#chat-materials-menu button,.chat-menu button,[popover] button) { color:var(--ink); }
 .workspace-calm :is(.hint,.approval-scope-text,.material-hint) { color:var(--muted); }
 .calm-navigation,.calm-mobile-tabs { display:none; }
@@ -172,8 +177,10 @@ body.workspace-calm[data-workspace-theme="light"] {
   .workspace-calm .sidebar { display:none; }
   .workspace-calm .calm-navigation { display:inline-grid; place-items:center; width:30px; height:30px; padding:0; }
   /* Overlay-skuffen følger topbjælken gennem --aura-workspace-bar (52 px) —
-     ikke længere en hårdkodet 51 px (audit §3). */
-  .workspace-calm.calm-sidebar-open .sidebar { display:flex; position:fixed; inset:var(--aura-workspace-bar) auto 0 0; width:230px; z-index:30; box-shadow:10px 0 35px #0004; align-items:stretch; }
+     ikke længere en hårdkodet 51 px (audit §3). D1-noten (T8): skyggen er
+     tokenet — --aura-shadow-overlay, samme som legacy-overlay-stien i
+     styles.css, ikke den hårdkodede 10px 0 35px #0004. */
+  .workspace-calm.calm-sidebar-open .sidebar { display:flex; position:fixed; inset:var(--aura-workspace-bar) auto 0 0; width:230px; z-index:30; box-shadow:var(--aura-shadow-overlay); align-items:stretch; }
   .workspace-calm.calm-sidebar-open .sidebar :is(.brand-name,.app-version,.nav-label,#project-list,#tools-button,#intro-button,.sidebar-bottom) { display:revert; }
   .workspace-calm.calm-sidebar-open .sidebar .nav-text { position:static!important; width:auto; height:auto; margin:0; clip:auto; overflow:visible; }
   .workspace-calm.calm-sidebar-open .brand { flex-direction:row; padding:8px; }

@@ -14,12 +14,36 @@ const emptyChat = (id, title = '') => ({ version: 1, id, title, renamed: false, 
 const emptyProject = () => ({ version: 2, brief: null, chats: [], active: null, restorationID: null });
 const idPattern = /^[0-9a-f-]{36}$/;
 const damaged = 'Oversigten over projektets samtaler kan ikke læses. Projektfilerne er ikke berørt, og filen er bevaret. Start en ny samtale med + for at fortsætte.';
-// En samtales navn: brugerens første besked, til første punktum og højst 60 tegn ved et ordskifte.
+// Slash-token-grammatikken er ÉN kilde (ui/slash-commands.js) — popuppen,
+// værten og titelafledningen stripper de samme tokens.
+const sharedSlash = require('../ui/slash-commands.js');
+// T8 (S3-fund f): Samtalens navn afledes af INDHOLDET — ikke af kommandosyntaksen.
+// Alle slash-tokens (/design, /stil …) strippes med den delte grammatik, så
+// "/design Lav en rolig forside til projektet" hedder "Lav en rolig forside til
+// projektet" — i topbjælken, projektlisten og Fortryd/genoptag-stierne, der
+// alle læser netop denne titel (ingen flade afleder sin egen). Derederfter er
+// navnet brugerens egen første meningsfulde sætning af den første brugerbesked
+// med indhold (dansk ordfølge er brugerens egen — intet omordnes eller genereres),
+// til første punktum og højst 60 tegn ved et ordskifte. Uden meningsfuldt indhold
+// er navnet tomt, og forbrugerne viser »Ny samtale«. Ren lokal afledning:
+// intet netværk, ingen modelkald — kun teksten og token-grammatikken.
+function stripCommandTokens(text) {
+  const tokens = sharedSlash.parseTokens(text);
+  if (!tokens.length) return text;
+  let out = '', at = 0;
+  for (const token of tokens) { out += text.slice(at, token.start); at = token.end; }
+  return out + text.slice(at);
+}
 function titleFrom(messages) {
-  const text = String(messages.find(m => m.role === 'user')?.text || '').split('\n\n')[0].replace(/\s+/g, ' ').trim();
-  if (!text) return '';
-  const sentence = (text.match(/^.+?[.!?](?=\s|$)/) || [text])[0].replace(/[.!?]$/, '');
-  return sentence.length <= 60 ? sentence : sentence.slice(0, 60).replace(/[\s,.;:]+\S*$/, '') + ' …';
+  for (const message of Array.isArray(messages) ? messages : []) {
+    if (message?.role !== 'user') continue;
+    const first = stripCommandTokens(String(message?.text || '')).split('\n\n').map(part => part.replace(/\s+/g, ' ').trim()).find(Boolean) || '';
+    if (!first) continue;
+    const sentence = (first.match(/^.+?[.!?](?=\s|$)/) || [first])[0].replace(/[.!?]$/, '');
+    if (!sentence) continue;
+    return sentence.length <= 60 ? sentence : sentence.slice(0, 60).replace(/[\s,.;:]+\S*$/, '') + ' …';
+  }
+  return '';
 }
 // Oversigten i projektfilen, så sidepanelet kan vise samtalerne uden at læse dem alle.
 // En samtale uden beskeder hedder det, brugeren er begyndt at skrive.
