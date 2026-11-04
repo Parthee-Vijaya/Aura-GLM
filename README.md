@@ -8,7 +8,7 @@ Aura Prime hjælper dig fra idé til plan, kode og forhåndsvisning i et lokalt 
 
 ## Det nye arbejdsområde
 
-Det fulde redesign tager udgangspunkt i den installerede DeepSeek Harness-app og dens opstartsforløb. Aura beholder sit eget navn, logo og sine eksisterende funktioner.
+Det fulde redesign giver en roligere arbejdsapp med et nyt opstartsforløb. Aura beholder sit eget navn, logo og sine eksisterende funktioner.
 
 - **Ingen konto eller login til Aura.** Start direkte, eller opret en valgfri lokal profil. Navn og ikon kan stå tomme. Profil og indstillinger gemmes på computeren.
 - **En rolig start.** Et kompakt velkomstvindue åbner projektopsætningen. Arbejdsdetaljer, AI-forbindelser og idéhjælp er stadig tilgængelige gennem onboarding.
@@ -29,9 +29,9 @@ Idéen gemmes som lokal kladde. Oprettelse af et projekt kontakter ikke i sig se
 
 ### Palette, indstillinger og sidepanel
 
-Paletten følger de faktiske farver i installeret DeepSeek Harness 0.2.1-rc.5. Lyst tema har hvide felter og næsten hvid sidebar. Mørkt tema bruger referenceappens mørke lærred og felter. Auras eget navn og logo bevares.
+Paletten er neutral med en blå accentfarve. Lyst tema har hvide felter og næsten hvid sidebar. Mørkt tema har et mørkt lærred og lidt lysere felter. Auras eget navn og logo bevares.
 
-![Nyt projekt med referenceappens mørke farver og fast opret-handling](docs/images/aura-prime-0.6.0-beta.2/03-new-project-dark.png)
+![Nyt projekt i mørkt tema med fast opret-handling](docs/images/aura-prime-0.6.0-beta.2/03-new-project-dark.png)
 
 Profilen er fortsat valgfri og lokal. Tema, skriftstørrelse og arbejdsdetaljer ændres i de samlede indstillinger. Sidepanelet kan skjules helt og åbnes igen fra arbejdsområdets top.
 

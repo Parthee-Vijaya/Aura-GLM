@@ -7,7 +7,7 @@ Teknisk version: `0.6.0-beta.4`, tag `v0.6.0-beta.4`. DMG og opdaterings-ZIP er 
 ## Nyt i Aura Prime
 
 
-- **Nyt UI/UX efter den installerede DeepSeek Harness-app.** Integreret Aura-logo, sidebar der kan skjules helt, centreret samtalestart og samlede indstillinger i lyst og mørkt tema.
+- **Nyt UI/UX.** Integreret Aura-logo, sidebar der kan skjules helt, centreret samtalestart og samlede indstillinger i lyst og mørkt tema.
 - **Ingen konto.** Kompakt velkomstvindue med Kom i gang eller Fortsæt uden profil. Profilen er valgfri og gemmes lokalt.
 - **Nyt projekt uden scroll** ved 980×720. Opret-handlingen har en fast bundrække, og idékladden bevares, hvis du går tilbage til arbejdsfladen.
 - **Opsætningen holder næste handling synlig.** Gem og fortsæt står fast i bunden af lange trin. Trinlisten vises kun i det guidede førstegangsforløb.
