@@ -32,7 +32,7 @@ function nativeConfig(config, plugin) {
     permissions,
     agents: { plan: { permissions }, title: { model: config.small_model } },
     share: 'disabled', update: 'disable', snapshots: false,
-    plugins: Array.isArray(plugin) ? plugin : plugin ? [plugin] : [], mcp: { servers: {} }, lsp: false, formatter: false, warming: false,
+    plugins: Array.isArray(plugin) ? plugin : plugin ? [plugin] : [], mcp: { servers: {} }, websearch: false, lsp: false, formatter: false, warming: false,
   };
 }
 function normalizedConfig(config) {

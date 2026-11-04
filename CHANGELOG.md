@@ -1,5 +1,17 @@
 # Ændringslog
 
+## Ikke udgivet
+
+- **Forbindelsestjek i trin.** En gemt forbindelse kan tjekkes for adresse, nøgle og modelliste hver for sig, uden modelkald.
+- **Modelevner.** Modelvælgeren viser værktøjer, billeder, streaming og ræsonnement, når udbyderen eller kataloget oplyser det. Ukendt vises som ukendt.
+- **Kontekstvisning virker.** Når plugin'et er slået til, viser statuslinjen en lille måler for brugt kontekst.
+- **Acceptprøve af den færdige pakke** (`npm run test:package-acceptance`) med isoleret profil, lokal mockserver og opgradering fra beta 4.
+- **Cloudflare Workers AI** udfyldes ud fra konto-id, og LM Studio, vLLM og Ollama har porthjælp.
+- **Ventetid forklares.** Under et svar står det, om Aura starter motoren, venter på modellen, venter på godkendelse eller prøver igen.
+- **Lokale servere findes automatisk.** LM Studio og vLLM på standardporte foreslås under AI-forbindelser. Logo-fliser til de nye udbydere, og vinduet maksimeres ikke længere efter velkomsten.
+- **Vilkår med dato pr. emne** (træning, region, opbevaring). Kontroller ældre end 180 dage markeres.
+- **Websøgning forbliver slået fra** med en præcis begrundelse, og søgeværktøjet fjernes nu helt fra motorens værktøjsliste.
+
 ## 0.6.0-beta.5 · 4. november 2026
 
 - **Flere AI-udbydere under Indstillinger › AI-forbindelser.** Tilføj forbindelse har stadig kortene med logoer for Corti, Alexandra, Mistral, OpenAI, Claude, Azure, OpenRouter, Zen, Ollama og Egen server. Under kortene ligger en dropdown med de nye udbydere: Google Gemini, Groq, Together, Fireworks, Cerebras, xAI, Perplexity, Hugging Face, NVIDIA, Moonshot (Kimi), Cloudflare Workers AI, LM Studio og vLLM. Adressen er udfyldt på forhånd, og der er et link til udbyderens nøgleside. Ukontrollerede vilkår vises som "Ikke kontrolleret af Aura".
