@@ -38,6 +38,10 @@ const { ExternalEgress } = require('./privacy/external-egress.cjs');
 const { PrivacyGateError, composePolicy, stable } = require('./privacy/policy.cjs');
 const { inspectRequest } = require('./privacy/inspector.cjs');
 const { DESIGN_MAX_BYTES, designDocumentText } = require('./build-design.cjs');
+// Én delt grammatikkilde med afsendelsesvagterne (app.js kræver dette modul
+// gennem core/slash-commands.cjs-mønsteret): styleMessage afgør, om en besked
+// er en selvstændig /stil-kommando; styleCommand her tilføjer slug-formatet.
+const { styleMessage } = require('../ui/slash-commands.js');
 
 const ORIGIN = 'https://ui.gradientdeck.com';
 const DESTINATION_ID = 'aura-gradientdeck';
@@ -71,16 +75,14 @@ const drain = async response => { try { await response?.body?.cancel?.(); } catc
 
 // ── Den rene kommando-grammatik: hvornår er en besked en /stil-kommando? ──
 // Kun en SELVSTÆNDIG `/stil <slug>` (eller aliaset /style) er kommandoen: ét
-// token, ét argument. Blandt prosa er den inert tekst (S2-semantikken), en bar
-// `/stil` efter Send er også inert, og et argument med ugyldigt format får den
-// ærlige fejl — uden dekodning, rettelse eller netværk.
+// token, ét argument — grænsen (styleMessage) lever i ui/slash-commands.js og
+// deles med afsendelsesvagterne i app.js, så vært og grænse aldrig divergerer.
+// Blandt prosa er den inert tekst (S2-semantikken), en bar `/stil` efter Send
+// er også inert, og et argument med ugyldigt format får den ærlige fejl —
+// uden dekodning, rettelse eller netværk.
 function styleCommand(text) {
-  if (typeof text !== 'string') return null;
-  const parts = text.trim().split(/\s+/).filter(Boolean);
-  if (!parts.length || !/^\/(?:stil|style)$/i.test(parts[0])) return null;
-  if (parts.length === 1) return null;   // bar kommando: inert tekst efter Send
-  if (parts.length > 2) return null;    // prosa omkring kommandoen: almindelig besked
-  const raw = parts[1];
+  if (!styleMessage(text)) return null;
+  const raw = text.trim().split(/\s+/)[1];
   if (!validSlug(raw)) return { invalid: true };
   return { slug: raw };
 }
@@ -260,27 +262,45 @@ class GradientDeck {
   // Registry-posten 'aura-gradientdeck' skrives KUN én gang og kun uden aktiv
   // kørsel: ExternalEgress.binding() dækker registreringen, så en skrivning
   // midt i en handling ville give PRIVACY_STALE for den igangværende handling.
+  // OG ALDRIG oven på et register, der ikke kunne læses: en eksisterende fil,
+  // der er for stor, beskadiget eller et symlink, afvises ærligt — kun en
+  // reelt ABSENTE fil (ENOENT) må oprettes. (S4-gennemgangens Fund 1: det
+  // gamle 64 KiB-læseloft tolkede et stort, gyldigt register som manglende og
+  // overskrev det lydløst med KUN gradientdeck-posten — brugerens egne
+  // destinationer blev slettet.)
   async ensureDestination() {
     const service = this.getPrivacy();
     const directory = service?.directory;
     if (!directory) throw new Error('GradientDeck er ikke klar endnu. Åbn et projekt først.');
     const file = path.join(directory, 'external-destinations.json');
     const registry = await this.#readRegistry(file);
-    if (registry && registry[DESTINATION_ID] && typeof registry[DESTINATION_ID] === 'object' && !Array.isArray(registry[DESTINATION_ID])) return false;
+    if (registry.exists && registry.value[DESTINATION_ID] && typeof registry.value[DESTINATION_ID] === 'object' && !Array.isArray(registry.value[DESTINATION_ID])) return false;
     if (!this.quiet()) throw new Error('GradientDeck venter: En opgave er i gang. Prøv igen, når den er færdig.');
-    const next = { ...(registry || {}), [DESTINATION_ID]: { endpoint: ORIGIN, locality: 'cloud', revision: 'gradientdeck-v1', actions: [DESTINATION_ACTION] } };
+    const next = { ...(registry.exists ? registry.value : {}), [DESTINATION_ID]: { endpoint: ORIGIN, locality: 'cloud', revision: 'gradientdeck-v1', actions: [DESTINATION_ACTION] } };
     await writeAtomic(file, Buffer.from(JSON.stringify(next, null, 2) + '\n'));
     return true;
   }
 
+  // Læsning af registreringen med samme loft som privacy-servicens readConfig
+  // (2 MB — den fil kan legitimt være langt over 64 KiB). ENOENT er den ene
+  // "ingen fil"-tilstand; alt andet — for stor, ugyldig JSON, ikke-objekt,
+  // symlink (ELOOP) — er en EKSISTERENDE fil, der aldrig må overskrives med
+  // en nyoprettet registrering: den ærlige fejl i stedet for datatab.
   async #readRegistry(file) {
-    const bytes = await readCacheFile(file, 65536);
-    if (bytes === null) return null;
+    let handle;
     try {
-      const value = JSON.parse(bytes.toString('utf8'));
-      if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error();
-      return value;
-    } catch { throw Object.assign(new Error('GradientDeck er ikke klar: destinationerne kunne ikke læses.'), { code: 'GRADIENTDECK_CACHE' }); }
+      handle = await fs.open(file, fsSync.constants.O_RDONLY | fsSync.constants.O_NOFOLLOW);
+      const stat = await handle.stat();
+      if (!stat.isFile() || stat.size > 2_000_000) throw new Error('registry unreadable');
+      const value = JSON.parse((await handle.readFile()).toString('utf8'));
+      if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('registry unreadable');
+      return { exists: true, value };
+    } catch (error) {
+      if (error.code === 'ENOENT') return { exists: false, value: null };
+      throw Object.assign(new Error('GradientDeck er ikke klar: destinationerne kunne ikke læses sikkert.'), { code: 'GRADIENTDECK_REGISTRY' });
+    } finally {
+      await handle?.close().catch(() => {});
+    }
   }
 
   async #policyOn(root) { return this.egress().active(root); }

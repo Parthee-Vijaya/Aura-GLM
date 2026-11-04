@@ -119,6 +119,16 @@
     return { start, end: start + word[0].length, query: (word[0].split(/[ \t]/)[1] || '').toLowerCase() };
   }
 
+  // S4-gennemgangens Fund 4: er HELE beskeden en selvstændig /stil-kommando med
+  // præcis ét argument? Grammatikken deles med værten (core/gradientdeck.cjs
+  // kræver dette modul) og med afsendelsesvagterne i app.js, så grænsen og
+  // værten aldrig divergerer. Slug'ens FORMAT hører værten til (styleCommand
+  // svarer med den ærlige fejl) — her afgøres kun formen: to led, /stil|/style.
+  function styleMessage(text) {
+    const parts = typeof text === 'string' ? text.trim().split(/\s+/).filter(Boolean) : [];
+    return parts.length === 2 && /^\/(?:stil|style)$/i.test(parts[0]);
+  }
+
   // ── Command registration (S3-S5 add /design and /stil through this) ──
   const commands = new Map();
   function registerCommand(command) {
@@ -541,7 +551,7 @@
 
   return Object.freeze({
     RESERVED, RULES_ID, MAX_ROWS, SKILL_TOKENS, skillToken, tokenSkill,
-    parseTokens, tokenAt, argumentAt, insideFence,
+    parseTokens, tokenAt, argumentAt, styleMessage, insideFence,
     registerCommand, commands: () => [...commands.values()],
     init, open: () => state.open, close, rows: () => [...state.rows], inserted,
     level: () => (state.open ? state.level : null), statusText: () => state.statusText, overflowText: () => state.overflowText

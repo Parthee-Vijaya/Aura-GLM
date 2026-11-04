@@ -1650,8 +1650,15 @@ $('#chat-form').onsubmit = event => {
   sourceView.submitting = true;
   action(async () => {
     try {
-      if (!$('#connection-select').value && !state?.connections?.length) { showSetup('Tilslut en AI for at sende beskeden. Din kladde er bevaret.'); return; }
-      if (!$('#connection-select').value || !$('#model-select').value || (!$('#route-row').hidden && !$('#route-select').value)) { openTaskSettings(); message('Vælg model og eventuel modeludbyder.', true); return; }
+      // S4-gennemgangens Fund 4: en selvstændig `/stil <slug>` håndteres i
+      // værten uden nogen model — de almindelige forbindelses- og modelvagte
+      // gælder den ikke. Grammatikken kommer fra det delte modul
+      // (styleMessage), og værten genvaliderer kommandoen fra selve teksten
+      // (core/gradientdeck.cjs styleCommand) og svarer selv på et ugyldigt
+      // slug-format.
+      const styleOnly = window.SlashCommands?.styleMessage?.(text) === true;
+      if (!styleOnly && !$('#connection-select').value && !state?.connections?.length) { showSetup('Tilslut en AI for at sende beskeden. Din kladde er bevaret.'); return; }
+      if (!styleOnly && (!$('#connection-select').value || !$('#model-select').value || (!$('#route-row').hidden && !$('#route-select').value))) { openTaskSettings(); message('Vælg model og eventuel modeludbyder.', true); return; }
       $('#send').disabled = true;
       if (['chat', 'plan'].includes($('#work-mode').value) && window.ConversationMode.buildRequest(text)) {
         $('#work-mode').value = activePlan ? 'build' : 'free'; $('#include-history').checked = true; acceptedFingerprint = null; updateWorkMode(); saveChatDraft();

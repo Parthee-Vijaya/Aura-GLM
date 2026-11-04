@@ -740,8 +740,7 @@ const STYLES_CATALOG = {
   ]
 };
 
-test('S4: argumentAt — `/stil ` med markøren i argumentet åbner katalogniveauet', () => {
-  assert.deepEqual(shared.argumentAt('/stil ', 6), { start: 0, end: 6, query: '' }, 'tomt argument er katalogniveauet');
+test('S4: argumentAt — `/stil ` med markøren i argumentet åbner katalogniveauet', () => {  assert.deepEqual(shared.argumentAt('/stil ', 6), { start: 0, end: 6, query: '' }, 'tomt argument er katalogniveauet');
   assert.deepEqual(shared.argumentAt('/stil cl', 8), { start: 0, end: 8, query: 'cl' }, 'det tastede argument er forespørgslen');
   assert.deepEqual(shared.argumentAt('Se /style bl', 12), { start: 3, end: 12, query: 'bl' }, 'aliaset gælder også efter whitespace');
   assert.deepEqual(shared.argumentAt('/stil cloudflare', 16), { start: 0, end: 16, query: 'cloudflare' }, 'fuldt slug er stadig katalogniveauet');
@@ -947,4 +946,49 @@ test('S4: /stil aktiverer intet og ændrer ikke fingeraftrykket — resolve beho
   ]);
   assert.deepEqual(resolved.skills, ['harness-design'], '/design aktiverer; /stil og /style gør ikke');
   assert.deepEqual(resolved.reserved, ['stil', 'style'], 'de reserverede navne rapporteres som før');
+});
+
+// ─── 8 · S4-gennemgangen Fund 4: grammatikken deles mellem vært og afsendelse ──
+// En selvstændig `/stil <slug>` hentes i værten uden nogen model, så app.js'
+// forbindelses- og modelvagte må ikke stoppe den. Ren grense-grammatik i ÉN
+// kilde (styleMessage i ui/slash-commands.js): værten (core/gradientdeck.cjs
+// styleCommand) og afsendelsesvagten (app.js) kan aldrig divergere.
+
+test('S4-fix (Fund 4): styleMessage — er beskeden en selvstændig /stil-kommando med argument?', () => {
+  assert.equal(shared.styleMessage('/stil cloudflare'), true);
+  assert.equal(shared.styleMessage('/style cloudflare'), true, 'aliaset gælder');
+  assert.equal(shared.styleMessage('  /stil skygge  '), true, 'yderste whitespace er ligegyldigt');
+  assert.equal(shared.styleMessage('/STIL skygge'), true, 'kommandonavnet er versaluafhængigt — værtens validSlug svarer på formatet');
+  assert.equal(shared.styleMessage('/stil UGYLDIGT-format'), true, 'et ugyldigt slug-format er stadig kommandoen: værten svarer med den ærlige fejl');
+  assert.equal(shared.styleMessage('/stil'), false, 'en bar /stil er almindelig tekst og kræver en model');
+  assert.equal(shared.styleMessage('/stil '), false, 'tomt argument er ikke en kommando');
+  assert.equal(shared.styleMessage('Byg noget med /stil skygge'), false, 'blandet prosa er en almindelig besked');
+  assert.equal(shared.styleMessage('/stil skygge og byg'), false, 'prosa efter argumentet gør den til en almindelig besked');
+  assert.equal(shared.styleMessage('```\n/stil skygge\n```'), false, 'kodeblokke er ikke kommandoen');
+  assert.equal(shared.styleMessage(''), false);
+  assert.equal(shared.styleMessage(null), false);
+});
+
+test('S4-fix (Fund 4): styleCommand genbruger styleMessage — vært og grænse er én kilde', () => {
+  const { styleCommand } = require('../core/gradientdeck.cjs');
+  for (const text of ['/stil cloudflare', '/style cloudflare', '  /stil skygge  ']) {
+    assert.deepEqual(styleCommand(text), { slug: text.trim().split(/\s+/)[1].toLowerCase() }, `${text}: kommandoen anerkendes gennem styleMessage`);
+  }
+  for (const text of ['/stil UGYLDIGT', '/style ../', '/STIL Cloudflare']) {
+    assert.deepEqual(styleCommand(text), { invalid: true }, `${text}: ugyldigt format gennem samme grense`);
+  }
+  for (const text of ['/stil', 'Byg med /stil skygge', '/stil skygge og byg', '', null]) {
+    assert.equal(styleCommand(text), null, `${JSON.stringify(text)}: ikke en kommando — styleMessage siger nej, og værten følger`);
+  }
+});
+
+test('S4-fix (Fund 4): app.js afsender en selvstændig /stil-kommando uden valgt AI-forbindelse', () => {
+  assert.match(appSource, /styleMessage/, 'app.js genbruger den delte grammatik');
+  // Udsnittet er selve onsubmit-floden: fra dens start til DENNE handlers
+  // prepare-kald (med owner — dataknappens kommer først i filen).
+  const slice = appSource.slice(appSource.indexOf("$('#chat-form').onsubmit"), appSource.indexOf("const data = await call('prepare', selection(), owner)"));
+  assert.ok(slice.includes('styleOnly'), 'onsubmit beregner styleOnly ud fra beskedteksten');
+  assert.match(slice, /!styleOnly && !\$\('#connection-select'\)\.value/, 'forbindelsesvagten springer for kommandoen');
+  assert.match(slice, /!styleOnly && \(!\$\('#connection-select'\)\.value \|\| !\$\('#model-select'\)\.value/, 'modelvagten springer for kommandoen');
+  assert.match(slice, /window\.SlashCommands\?\.styleMessage/, 'grammatikken kommer fra det delte modul — aldrig en lokal kopi');
 });

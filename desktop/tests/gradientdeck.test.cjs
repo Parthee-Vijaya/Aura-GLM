@@ -136,6 +136,15 @@ async function fixture(t, { privacy = null, respond } = {}) {
 const blocked = error => Boolean(error?.code?.startsWith('PRIVACY_'));
 const cacheDirectory = store => path.join(store.root, 'cache', 'gradientdeck', 'v1');
 
+// ── Gennemgang Fund 2: stilruttens negative tests skal ramme STILRUTEN.
+// Responderen serverer altid et gyldigt katalog på /library.json og kun
+// FIXTUREN på /styles/<slug>/design.md, så fetchStyle når forbi
+// kataloghentningen — og hver test hævder, at stil-URL'en reelt blev kaldt.
+const VALID_CATALOG = () => mockResponse(catalogText([catalogEntry('cloudflare', 'Cloudflare')]), { type: 'application/json' });
+const styleRoute = body => (url => url.endsWith('/library.json') ? VALID_CATALOG() : mockResponse(body));
+const styleRouteTyped = (body, options) => (url => url.endsWith('/library.json') ? VALID_CATALOG() : mockResponse(body, options));
+const styleUrlHit = f => f.network.calls.filter(call => call.url === `${ORIGIN}/styles/cloudflare/design.md`).length;
+
 // ── 1 · Ren kommando-grammatik: hvad er en selvstændig /stil-besked? ─────────
 
 test('styleCommand: kun en selvstændig /stil|/style <slug> er kommandoen', () => {
@@ -223,40 +232,49 @@ test('catalog og fetchStyle bygger ALDRIG andre stier — slug kan ikke smugle s
   }
 });
 
-// ── 3 · Responskontrol: status, MIME, loft, redirect ─────────────────────────
+// ── 3 · Responskontrol: status, MIME, loft, redirect ── STILRUTEN (Fund 2) ──
 
-test('3xx afvises altid med den ærlige viderestillingsbesked', async t => {
-  const f = await fixture(t, { respond: () => mockResponse('flyttet', { status: 302 }) });
+test('3xx på STILRUTEN afvises altid med den ærlige viderestillingsbesked', async t => {
+  const f = await fixture(t, { respond: styleRouteTyped('flyttet', { status: 302 }) });
   const result = await f.deck.fetchStyle({ root: f.root, slug: 'cloudflare' });
+  assert.equal(styleUrlHit(f), 1, 'kataloget bestod — stil-URL\'en blev reelt kaldt');
   assert.equal(result.status, 'error');
   assert.match(result.message, /viderestiller/);
+  assert.equal(await fs.stat(path.join(cacheDirectory(f.store), 'styles', 'cloudflare.md')).then(() => true, () => false), false, 'intet gemmes');
 });
 
-test('ikke-200 giver HTTP-koden ærligt tilbage — 404 er ingen hemmelighed', async t => {
-  const f = await fixture(t, { respond: () => mockResponse('borte', { status: 404 }) });
+test('ikke-200 på STILRUTEN giver HTTP-koden ærligt tilbage — 404 er ingen hemmelighed', async t => {
+  const f = await fixture(t, { respond: styleRouteTyped('borte', { status: 404 }) });
   const result = await f.deck.fetchStyle({ root: f.root, slug: 'cloudflare' });
+  assert.equal(styleUrlHit(f), 1, 'stil-URL\'en blev reelt kaldt');
   assert.equal(result.status, 'error');
   assert.match(result.message, /HTTP 404/);
+  assert.equal(await fs.stat(path.join(cacheDirectory(f.store), 'styles', 'cloudflare.md')).then(() => true, () => false), false, 'intet gemmes');
 });
 
-test('forkert MIME-type afvises: kun text/markdown og text/plain til stile', async t => {
+test('forkert MIME-type på STILRUTEN afvises: kun text/markdown og text/plain', async t => {
   for (const type of ['text/html; charset=utf-8', 'application/octet-stream', 'application/json']) {
-    const f = await fixture(t, { respond: () => mockResponse(styleText(), { type }) });
+    const f = await fixture(t, { respond: styleRouteTyped(styleText(), { type }) });
     const result = await f.deck.fetchStyle({ root: f.root, slug: 'cloudflare' });
+    assert.equal(styleUrlHit(f), 1, `${type}: stil-URL'en blev reelt kaldt`);
     assert.equal(result.status, 'error', `${type} afvises`);
     assert.match(result.message, /afvist/);
-    assert.equal(await fs.stat(cacheDirectory(f.store) + '/styles/cloudflare.md').then(() => true, () => false), false, 'afvist indhold gemmes aldrig');
+    assert.equal(await fs.stat(path.join(cacheDirectory(f.store), 'styles', 'cloudflare.md')).then(() => true, () => false), false, 'afvist indhold gemmes aldrig');
   }
 });
 
-test('loft-afbrydelse: 32 KiB + 1 afbryder strømmen — ikke bare efter læsning', async t => {
-  const chunk = Buffer.alloc(16 * 1024, 0x61); // 'a'
-  const f = await fixture(t, { respond: () => mockResponse(null, { chunks: [chunk, chunk, chunk] }) });
+test('loft-afbrydelse på STILRUTEN: 32 KiB + 1 afbryder strømmen — ikke bare efter læsning', async t => {
+  const chunk = Buffer.alloc(16 * 1024, 0x61); // 'a' — fem bidder = 80 KiB, langt over loftet
+  const f = await fixture(t, { respond: styleRouteTyped(chunk, { chunks: [chunk, chunk, chunk, chunk, chunk] }) });
   const result = await f.deck.fetchStyle({ root: f.root, slug: 'cloudflare' });
-  assert.equal(result.status, 'error', '32 KiB-loftet fra DESIGN_MAX_BYTES håndhæves');
-  assert.equal(DESIGN_MAX_BYTES, 32768, 'loftet GENBRUGES fra build-design.cjs');
+  assert.equal(styleUrlHit(f), 1, 'kataloget bestod — loftprøven rammer stilruten');
   const call = f.network.calls.at(-1);
-  assert.ok(call.consumed <= 2 * chunk.length + 1024, `strømmen blev afbrudt tidligt (forbrugte ${call.consumed} af 49.152 bytes)`);
+  assert.equal(call.url, `${ORIGIN}/styles/cloudflare/design.md`, 'det sidste kald er stilfilen');
+  assert.equal(result.status, 'error', '32 KiB-loftet fra DESIGN_MAX_BYTES håndhæves');
+  assert.match(result.message, /afvist/);
+  assert.equal(DESIGN_MAX_BYTES, 32768, 'loftet GENBRUGES fra build-design.cjs');
+  assert.ok(call.consumed > 2 * chunk.length, `strømmen blev påbegyndt og afbrudt MIDT I den (forbrugte ${call.consumed} af 81.920 bytes — aldrig hele strømmen)`);
+  assert.ok(call.consumed < 5 * chunk.length, `strømmen blev afbrudt, før den var læst færdig (forbrugte ${call.consumed} af 81.920 bytes)`);
   assert.equal(await fs.stat(path.join(cacheDirectory(f.store), 'styles', 'cloudflare.md')).then(() => true, () => false), false, 'intet gemmes');
 });
 
@@ -292,21 +310,28 @@ test('formkontrol: negative fixtures afvises uden at noget gemmes', async t => {
   const script = '# Titel\n<script>alert(1)</script>\n## Farver\n## Typografi\n## Spacing\n## Komponenter\n';
   const tooFewSections = '# Titel\n\n## Farver\n- #fff\n';
   for (const [label, text] of [['mangler # titel', noTitle], ['html-side', htmlPage], ['script', script], ['for få sektioner', tooFewSections]]) {
-    const f = await fixture(t, { respond: () => mockResponse(text) });
+    const f = await fixture(t, { respond: styleRoute(text) });
     const result = await f.deck.fetchStyle({ root: f.root, slug: 'cloudflare' });
+    assert.equal(styleUrlHit(f), 1, `${label}: kataloget bestod — stil-URL'en blev reelt kaldt`);
     assert.equal(result.status, 'error', `${label} afvises`);
     assert.match(result.message, /afvist/);
     assert.equal(await fs.stat(path.join(cacheDirectory(f.store), 'styles', 'cloudflare.md')).then(() => true, () => false), false, `${label}: intet gemmes`);
   }
 });
 
-test('formkontrol: strikt UTF-8 og NUL afvises', async t => {
+test('formkontrol: strikt UTF-8 og NUL på STILRUTEN afvises', async t => {
   const invalid = Buffer.concat([Buffer.from('# Titel\n\n## Farver\n## Typografi\n## Spacing\n## Komponenter\n', 'utf8'), Buffer.from([0xff, 0xfe, 0xfd])]);
-  const f = await fixture(t, { respond: () => mockResponse(invalid) });
-  assert.equal((await f.deck.fetchStyle({ root: f.root, slug: 'cloudflare' })).status, 'error', 'ugyldig UTF-8 afvises');
+  const f = await fixture(t, { respond: styleRoute(invalid) });
+  const utf8 = await f.deck.fetchStyle({ root: f.root, slug: 'cloudflare' });
+  assert.equal(styleUrlHit(f), 1, 'ugyldig UTF-8: stil-URL\'en blev reelt kaldt');
+  assert.equal(utf8.status, 'error', 'ugyldig UTF-8 afvises');
+  assert.equal(await fs.stat(path.join(cacheDirectory(f.store), 'styles', 'cloudflare.md')).then(() => true, () => false), false, 'ugyldig UTF-8: intet gemmes');
   const nul = Buffer.concat([Buffer.from('# Titel\n## Farver\n## Typografi\n## Spacing\n## Komponenter\n', 'utf8'), Buffer.from([0x00])]);
-  const g = await fixture(t, { respond: () => mockResponse(nul) });
-  assert.equal((await g.deck.fetchStyle({ root: g.root, slug: 'cloudflare' })).status, 'error', 'NUL-bytes afvises');
+  const g = await fixture(t, { respond: styleRoute(nul) });
+  const nulResult = await g.deck.fetchStyle({ root: g.root, slug: 'cloudflare' });
+  assert.equal(styleUrlHit(g), 1, 'NUL: stil-URL\'en blev reelt kaldt');
+  assert.equal(nulResult.status, 'error', 'NUL-bytes afvises');
+  assert.equal(await fs.stat(path.join(cacheDirectory(g.store), 'styles', 'cloudflare.md')).then(() => true, () => false), false, 'NUL: intet gemmes');
 });
 
 test('katalogvalidering: industry normaliseres til category, ugyldige poster droppes, over 10 % forkastes', async t => {
@@ -604,6 +629,49 @@ test('registry-posten skrives KUN én gang og kun uden aktiv kørsel', async t =
   assert.equal(await fs.readFile(registryFile, 'utf8'), first, 'indholdet er urørt');
   f.quiet = false;
   assert.equal(await f.deck.ensureDestination(), false, 'posten findes — kørslen ændrer intet');
+});
+
+// ── Gennemgang Fund 1: registreringen må ALDRIG behandles som manglende, når
+// den findes. Det gamle 64 KiB-læseloft overskrev et stort, gyldigt register
+// lydløst med KUN gradientdeck-posten (live-reproduceret: 700 poster → 1).
+
+test('Fund 1: et stort, gyldigt register (>64 KiB) består urørt — posten tilføjes ved siden af, aldrig i stedet for', async t => {
+  const f = await fixture(t, { privacy: { enabled: true, version: 'synthetic-v1', defaultClass: 'public', maxClass: 'internal', allowedDestinationIds: [], requireApproval: true } });
+  // 700 brugerdestinationer ≈ 81 KiB — reelt over det gamle loft; privacy-
+  // servicens egen readConfig accepterer 2 MB til netop denne fil.
+  const users = Object.fromEntries(Array.from({ length: 700 }, (_unused, index) => [`min-webfetch-${index}`, { endpoint: `https://eksempel-${index}.dk`, locality: 'cloud', revision: `v${index}`, actions: ['browser-http'] }]));
+  await fs.mkdir(f.service.directory, { recursive: true, mode: 0o700 });
+  const registryFile = path.join(f.service.directory, 'external-destinations.json');
+  const original = JSON.stringify(users, null, 2);
+  await fs.writeFile(registryFile, original, { mode: 0o600 });
+  assert.ok(Buffer.byteLength(original) > 65536, 'fixturen er reelt over det gamle 64 KiB-loft');
+  assert.equal(await f.deck.ensureDestination(), true, 'posten tilføjes uden at røre brugerens egne');
+  const after = JSON.parse(await fs.readFile(registryFile, 'utf8'));
+  for (let index = 0; index < 700; index++) assert.deepEqual(after[`min-webfetch-${index}`], users[`min-webfetch-${index}`], `min-webfetch-${index} består urørt`);
+  assert.ok(after['aura-gradientdeck'], 'gradientdeck-posten står ved siden af brugerens egne');
+  assert.equal(Object.keys(after).length, 701, 'præcis én post er kommet til');
+});
+
+test('Fund 1: et eksisterende, beskadiget register afvises ærligt og overskrives ALDRIG', async t => {
+  const f = await fixture(t);
+  await fs.mkdir(f.service.directory, { recursive: true, mode: 0o700 });
+  const registryFile = path.join(f.service.directory, 'external-destinations.json');
+  const original = '{"min-webfetch": {"endpoint": "https://eksempel.dk"';  // afbrudt JSON
+  await fs.writeFile(registryFile, original, { mode: 0o600 });
+  await assert.rejects(f.deck.ensureDestination(), /kunne ikke læses/, 'en eksisterende, ulæselig fil er en fejl — aldrig «mangler»');
+  assert.equal(await fs.readFile(registryFile, 'utf8'), original, 'filen er byte-identisk — ingen nyoprettet registrering er skrevet hen over den');
+});
+
+test('Fund 1: et register over privacy-servicens eget loft (2 MB) afvises ærligt — intet skrives', async t => {
+  const f = await fixture(t);
+  await fs.mkdir(f.service.directory, { recursive: true, mode: 0o700 });
+  const registryFile = path.join(f.service.directory, 'external-destinations.json');
+  const users = Object.fromEntries(Array.from({ length: 21000 }, (_unused, index) => [`regel-${index}`, { endpoint: `https://eksempel-${index}.dk`, locality: 'cloud', revision: 'v', actions: ['browser-http'] }]));
+  const original = JSON.stringify(users);
+  assert.ok(Buffer.byteLength(original) > 2_000_000, 'fixturen er reelt over 2 MB-loftet');
+  await fs.writeFile(registryFile, original, { mode: 0o600 });
+  await assert.rejects(f.deck.ensureDestination(), /kunne ikke læses/, 'et for stort register er en ærlig fejl — ikke et blankt register');
+  assert.equal(await fs.readFile(registryFile, 'utf8'), original, 'filen er byte-identisk');
 });
 
 test('med Privacy Gate slået fra: legacyPermit-vejen — kontrol af rute og redirect består', async t => {
