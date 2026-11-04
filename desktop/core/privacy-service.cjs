@@ -513,13 +513,20 @@ class PrivacyService {
     const id = randomUUID();
     const expiresAt = Math.min(review.expiresAt || this.now() + 120000, this.now() + 120000);
     return new Promise((resolve, reject) => {
-      const finish = decision => { clearTimeout(timer); signal?.removeEventListener('abort', aborted); this.pending.delete(id); this.bench.emit({ type: 'privacy.resolved', id, decision }); resolve(decision); };
-      const aborted = () => { clearTimeout(timer); this.pending.delete(id); this.bench.emit({ type: 'privacy.resolved', id, decision: 'cancel' }); reject(signal.reason || new Error('Delingen blev afbrudt.')); };
+      let endPhaseWait;
+      const releasePhase = () => { try { endPhaseWait?.(); } catch { /* Phase observation cannot affect approval. */ } };
+      const finish = decision => { clearTimeout(timer); signal?.removeEventListener('abort', aborted); this.pending.delete(id); releasePhase(); this.bench.emit({ type: 'privacy.resolved', id, decision }); resolve(decision); };
+      const aborted = () => { clearTimeout(timer); this.pending.delete(id); releasePhase(); this.bench.emit({ type: 'privacy.resolved', id, decision: 'cancel' }); reject(signal.reason || new Error('Delingen blev afbrudt.')); };
       const timer = setTimeout(() => finish('cancel'), Math.max(0, expiresAt - this.now()));
       const publicReview = { ...review, id, body: review.payload, recipient: review.destination?.label || review.destination?.id, model: review.destination?.model, policyVersion: (review.policyVersions || []).map(item => `${item.layer}:${item.version}`).join(' / '), expiresAt, allowedDecisions: ['approve', 'local', 'cancel'] };
       this.pending.set(id, { id, scope, review: publicReview, finish });
       signal?.addEventListener('abort', aborted, { once: true });
       if (signal?.aborted) { aborted(); return; }
+      // Only the host-bound conversation owns this wait, even after a tab change.
+      try {
+        const chat = scope?.kind === 'conversation' ? this.bench.chats?.get(scope.chat) || (this.bench.chat?.id === scope.chat ? this.bench.chat : null) : null;
+        if (chat && (chat.project?.root || this.bench.project?.root) === scope.root) endPhaseWait = chat.workPhases?.waitForApproval?.();
+      } catch { /* Phase observation cannot affect approval. */ }
       this.bench.emit({ type: 'privacy.review', ...publicReview });
     });
   }

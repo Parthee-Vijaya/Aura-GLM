@@ -76,6 +76,21 @@ test('service sends exact reviewed sanitized bytes and records metadata without 
   assert.equal(JSON.parse(audit.trim()).decision, 'rewrite');
 });
 
+test('model dispatch reports waiting for data approval before any transport and resumes its actual phase', async t => {
+  const f = await fixture(t), phases = new (require('../core/work-phase.cjs').WorkPhases)({ emit: event => f.events.push(event) });
+  f.bench.chat.workPhases = phases;
+  phases.begin(f.connection);
+  const reviewReady = f.nextReview(), sending = f.dispatch({ body: packet('Contact alice@example.invalid.') });
+  const review = await reviewReady;
+  assert.equal(phases.phase, 'waiting-approval'); assert.equal(f.received.length, 0);
+  phases.set('waiting-model');
+  assert.equal(phases.phase, 'waiting-approval');
+  f.service.decide({ id: review.id, decision: 'approve' });
+  await (await sending).text();
+  assert.equal(f.received.length, 1); assert.equal(phases.phase, 'waiting-model');
+  assert.deepEqual(f.events.filter(event => event.type === 'work.phase').map(event => event.phase), ['starting-engine', 'waiting-approval', 'waiting-model']);
+});
+
 test('trusted IPC conversation scope survives a selected-tab change and ignores renderer retargeting', async t => {
   const f = await fixture(t), first = { ...f.bench.chat, project: f.bench.project, close: async () => {} }, other = { id: 'conversation-2', project: f.bench.project, close: async () => {} };
   f.bench.chats = new Map([[first.id, first], [other.id, other]]); f.bench.chat = other;

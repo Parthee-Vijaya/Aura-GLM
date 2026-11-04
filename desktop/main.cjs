@@ -119,7 +119,7 @@ const failures = [];
 function recordFailure(area, type) { failures.push({ area, type, at: new Date().toISOString() }); if (failures.length > 10) failures.shift(); }
 function supportReport() {
   // Hjælp må ikke kontakte nøgleringen. Kontrollen sker først ved brug af en nøgle.
-  return require('./core/diagnostics.cjs').diagnostics({ version: app.getVersion(), platform: process.platform, arch: process.arch, packaged: app.isPackaged, versions: require('./core/runtime.cjs').get()?.versions, project: Boolean(currentProject()), running: workbench?.running, preview: currentSpace().devServer?.state, failures });
+  return require('./core/diagnostics.cjs').diagnostics({ version: app.getVersion(), platform: process.platform, arch: process.arch, packaged: app.isPackaged, versions: require('./core/runtime.cjs').get()?.versions, project: Boolean(currentProject()), running: workbench?.running, preview: currentSpace().devServer?.state, failures, connection: workbench?.chat?.workPhases?.snapshot() });
 }
 function shutdown() {
   if (!shuttingDown) shuttingDown = (async () => {
@@ -747,7 +747,7 @@ handle('setup:status', async () => {
     return { git: `${version} · projektets historik og identitet kontrolleres, når du åbner et projekt.`, project: false };
   } catch (error) { return { git: error.message, project: Boolean(currentProject()) }; }
 });
-handle('connections:discover', () => require('./core/local-discovery.cjs').discoverLocalModels());
+handle('connections:discover', () => require('./core/local-discovery.cjs').discoverForWorkbench(currentWorkbench(), requests.getStore()?.chat));
 const komplaiLogin = new (require('./core/komplai.cjs').KomplaiLogin)();
 handle('komplai:login', () => komplaiLogin.start(url => shell.openExternal(url)));
 handle('komplai:cancel', () => komplaiLogin.cancel());

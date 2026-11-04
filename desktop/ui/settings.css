@@ -308,3 +308,7 @@ body.native-welcome-window #welcome-dialog::backdrop { background: var(--aura-bg
 #cloudflare-fields { display: grid; gap: 6px; }
 #cloudflare-fields[hidden], #local-port-help[hidden] { display: none; }
 #cloudflare-destination { margin: 0; overflow-wrap: anywhere; }
+.local-discovery-more { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
+.local-discovery-more[hidden] { display: none; }
+.provider-catalog .catalog-terms[data-stale="true"] { color: var(--aura-warning-ink); }
+#connection-add-flow > .catalog-terms { margin: -4px 0 14px; }

@@ -123,6 +123,7 @@ class ChatSession {
     // Ændringer og Aktivitet for denne samtale, så længe appen er åben: udgangspunkt, afsluttede opgaver og loggen.
     // De ligger hos arbejdsbænken, så de bevares, når projektet genåbnes, fx efter en gendannelse.
     this.changes = bench.changesFor(this.id, root);
+    this.workPhases = new (require('./work-phase.cjs').WorkPhases)({ emit: event => bench.emit({ ...event, chat: this.id }) });
   }
   get checkpoints() {
     if (!this.copy) return this.bench.checkpoints;
@@ -480,6 +481,7 @@ class ChatSession {
     // faktisk observationstidspunkt, aldrig et bagefter opfundet tidspunkt.
     this.runUser = { id: crypto.randomUUID(), role: 'user', text: shown, at: Date.now() };
     this.running = true; this.starting = true; bench.chatsChanged();
+    this.workPhases?.begin(prepared.connection);
     await this.saveHistory('working', true);
     this.emit({ type: 'run.status', status: 'starting' });
     const session = this.changes;
@@ -597,13 +599,14 @@ class ChatSession {
         if (typeof this.engine.setRunMeasurement === 'function') this.engine.setRunMeasurement(this.runMeasurement);
         else this.runMeasurement?.unsupported('observer-unavailable');
       }
-      checkStopped(); await this.engine.send(text, system); checkStopped();
+      checkStopped(); this.workPhases?.set('waiting-model'); await this.engine.send(text, system); checkStopped();
       // De senest accepterede vilkår huskes for projektet, så de samme oplysninger ikke vises igen ved hver opgave.
       await modelConsent.remember(bench.store, projectRoot, prepared.disclosure.consentKey);
       checkStopped();
       if (generation === this.generation && this.running && !this.finishing) this.emit({ type: 'run.status', status: 'working' });
       return true;
     } catch (error) {
+      if (!this.runStopped) this.workPhases?.failure(this.runFailure?.status || error.status);
       if ((this.copy || bench.checkpointOwner === this)) { this.checkpoints.cancel(); await this.checkpoints.finish(); }
       bench.release(this);
       if (!this.runStopped) this.log({ kind: 'error', title: 'Opgaven kunne ikke starte', detail: error.message, status: 'error', task: this.task?.id });
@@ -656,6 +659,7 @@ class ChatSession {
   }
   // En afsluttet opgave gemmes med sine ændringer, så Ændringer kan vise dem og sige, hvem der lavede dem.
   async finishTask(status, diff) {
+    this.workPhases?.finish();
     // D5a: turens hastighedsmåling afsluttes med turen — fra TURENS EGET register,
     // også når kørselsflagene er sat fra på forhånd (afbrudt/fejlet tur): resultatet
     // bevares til genåbning, sene trin kan ikke lægge tal til en lukket tur, og en
@@ -904,6 +908,7 @@ class ChatSession {
     }
     if (!current()) return;
     this.waiting = true; this.bench.chatsChanged();
+    this.workPhases?.set('waiting-approval');
     this.log({ id: `approval-${p.id}`, kind: 'approval', permission: p.permission, title: approvalTitles[p.permission] || 'Godkendelse', target: approvalTarget(p, this.root), status: 'waiting', started: Date.now(), task: this.task?.id });
     this.emit({ ...event, properties: { ...p, policy: { ...descriptor, conversationEligible: Boolean((descriptor.projectFile || descriptor.persistable || descriptor.kind === 'bash') && descriptor.match && !descriptor.blockedMode && this.commandSandbox && this.engine?.sandbox === this.commandSandbox && ['free','build'].includes(context.mode)) } } });
   }
@@ -918,6 +923,11 @@ class ChatSession {
     if (event.type === 'engine.recovery') {
       if (!this.running || this.runStopped || this.finishing) return;
       const phase = event.recovery?.phase;
+      // A pending question or approval is what the person must act on; a late
+      // recovery status never hides it behind a model wait (review 4.11).
+      if (this.approvals?.size || this.questions?.size) this.workPhases?.set('waiting-approval');
+      else if (phase === 'retrying') this.workPhases?.set('retrying', event.recovery);
+      else if (['waiting', 'checking', 'recovered'].includes(phase)) this.workPhases?.set('waiting-model', event.recovery);
       const details = { waiting: 'Modellen tager længere tid. Aura venter videre på det samme kald.', retrying: 'Aura forsøger at genoprette forbindelsen med samme model og samtale.', checking: 'Aura kontrollerer, om agenten allerede modtog beskeden, før arbejdet fortsætter.', recovered: 'Forbindelsen er genoprettet. Den eksisterende samtale fortsætter.' };
       this.log({ kind: 'session', title: phase === 'recovered' ? 'Forbindelsen er genoprettet' : 'Genoptager forbindelsen', detail: details[phase], status: phase === 'recovered' ? 'completed' : 'running', task: this.task?.id });
       return;
@@ -926,6 +936,12 @@ class ChatSession {
       if (event.type === 'message.part.updated' && p.part?.type === 'step-finish' && this.runSteps && !this.runSteps.has(p.part.id)) { this.runSteps.set(p.part.id, p.part.tokens || {}); if(Object.hasOwn(event,'privacyPrice')) (this.runPrices ||= new Map()).set(p.part.id,event.privacyPrice); observeRunContext(this, event, p.part); this.emit({ type: 'usage', usage: this.currentUsage(), contextUsage: this.contextUsage.snapshot(), speed: this.currentSpeed() }); }
       if (['session.error', 'engine.error'].includes(event.type)) this.runFailure = { kind: event.failure?.kind || sessionFailure(p.error), message: String(event.message || p.error?.data?.message || 'Sammenfatningen mislykkedes.').slice(0, 800) };
       return;
+    }
+    if (this.running && !this.runStopped && !this.finishing) {
+      if (['session.error', 'engine.error'].includes(event.type) && !event.permissionRejected) this.workPhases?.failure(event.failure?.status || p.error?.data?.statusCode);
+      const assistantPart = event.type === 'message.part.updated' && this.runRoles?.get(p.part?.messageID) === 'assistant' && ['text', 'reasoning'].includes(p.part?.type) && typeof p.part.text === 'string' && p.part.text.length;
+      const assistantDelta = event.type === 'message.part.delta' && this.runRoles?.get(this.runText?.get(p.partID)?.messageID) === 'assistant' && p.field === 'text' && typeof p.delta === 'string' && p.delta.length;
+      if ((assistantPart || assistantDelta) && !this.approvals?.size && !this.questions?.size) this.workPhases?.set('responding');
     }
     // D5a: trinregistret ser turens hændelser (start, første indhold, streamed,
     // afslutning) — det afviser selv fremmede sessioner, recovery-tider og
@@ -938,13 +954,14 @@ class ChatSession {
       if (this.questions.has(p.id) || this.closedQuestions.has(p.id)) return;
       this.questions.set(p.id, { questions: p.questions, engine: this.engine, generation: this.generation, sessionID: this.engine.session?.id, submitting: false });
     }
-    if (event.type === 'question.asked') { this.waiting = true; bench.chatsChanged(); this.log({ id: `question-${p.id}`, kind: 'question', title: 'Spørgsmål til dig', target: (p.questions || []).map(q => q.question).join('\n').slice(0, 2000), status: 'waiting', started: Date.now(), task: this.task?.id }); }
+    if (event.type === 'question.asked') { this.waiting = true; this.workPhases?.set('waiting-approval'); bench.chatsChanged(); this.log({ id: `question-${p.id}`, kind: 'question', title: 'Spørgsmål til dig', target: (p.questions || []).map(q => q.question).join('\n').slice(0, 2000), status: 'waiting', started: Date.now(), task: this.task?.id }); }
     if (['question.replied', 'question.rejected'].includes(event.type)) {
       const id = p.requestID || p.id, record = this.questions.get(id);
       if (record) { record.rejected = event.type === 'question.rejected'; this.closedQuestions.add(id); }
       this.questions.delete(id); this.waiting = this.approvals.size > 0 || this.questions.size > 0; bench.chatsChanged();
       const entry = this.changes.activity.get(`question-${id}`); if (entry?.status === 'waiting') this.log({ id: entry.id, status: event.type === 'question.rejected' ? 'rejected' : 'answered', ended: Date.now() });
     }
+    if (['permission.replied', 'question.replied', 'question.rejected'].includes(event.type)) this.workPhases?.set(this.approvals.size || this.questions.size ? 'waiting-approval' : 'waiting-model');
     if (['session.error', 'engine.error'].includes(event.type) && !event.permissionRejected && this.running && !this.runFailure) this.runFailure = { kind: event.failure?.kind || sessionFailure(p.error), status: event.failure?.status || p.error?.data?.statusCode || null, message: String(event.message || p.error?.data?.message || p.error?.message || '').slice(0, 800) };
     if (['session.error', 'engine.error'].includes(event.type) && !event.permissionRejected && this.running) this.log({ kind: 'error', title: 'Fejl under opgaven', detail: String(event.message || p.error?.data?.message || p.error?.message || 'Modelkaldet mislykkedes.').slice(0, 800), status: 'error', task: this.task?.id });
     if (event.type === 'message.part.updated' && p.part?.type === 'step-finish' && this.runSteps && !this.runSteps.has(p.part.id)) {
@@ -1146,7 +1163,7 @@ class ChatSession {
   }
   async stopCurrentRun() {
     const bench = this.bench, owner = (this.copy || bench.checkpointOwner === this);
-    this.runStopped = true; this.cancelQuality(); this.questions.clear(); this.allowProjectEdits = false; this.taskRules.clear(); this.approvals.clear(); this.retirePlan('stoppet'); if (owner) this.checkpoints.cancel(); ++this.generation; this.engineIdentity = null;
+    this.runStopped = true; this.workPhases?.finish(); this.cancelQuality(); this.questions.clear(); this.allowProjectEdits = false; this.taskRules.clear(); this.approvals.clear(); this.retirePlan('stoppet'); if (owner) this.checkpoints.cancel(); ++this.generation; this.engineIdentity = null;
     this.log({ kind: 'stop', title: 'Du trykkede på Stop', detail: 'AI\'en stopper. Det, den nåede at ændre, står under Ændringer.', status: 'stopped', task: this.task?.id });
     // Godkendelser, der stadig venter, kan ikke længere besvares.
     for (const entry of this.changes.activity.list()) if (['approval', 'question'].includes(entry.kind) && entry.status === 'waiting') this.log({ id: entry.id, status: 'expired', ended: Date.now() });

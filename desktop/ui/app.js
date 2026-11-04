@@ -1126,6 +1126,13 @@ function catalogTerms(kind) {
     ? 'Vilkår ikke kontrolleret af Aura. Læs udbyderens vilkår for træning, region og opbevaring, før du sender projektindhold.'
     : [definition.trainingShort, definition.regionShort, definition.retentionShort].filter(Boolean).join(' · ');
   note.dataset.verified = String(definition.termsVerified !== false);
+  // Vilkår med dato pr. emne (4.11): name the oldest check and flag it when stale.
+  const dates = Object.values(definition.terms || {}).map(item => item?.checkedAt).filter(value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)).sort();
+  if (dates.length && definition.termsVerified !== false) {
+    const oldest = dates[0], days = Math.floor((Date.now() - Date.parse(oldest)) / 86400000), stale = days > (Number(definition.staleAfterDays) || 180);
+    note.textContent += ` · Kontrolleret ${new Date(oldest).toLocaleDateString('da-DK', { day: 'numeric', month: 'long', year: 'numeric' })}${stale ? ' – over et halvt år siden, kontrollér udbyderens vilkår' : ''}`;
+    note.dataset.stale = String(stale);
+  }
 }
 $('#catalog-provider').onchange = () => { const kind = $('#catalog-provider').value; catalogTerms(kind); if (kind) chooseAddProvider(kind); };
 let addingConnectionStage = '';
@@ -1151,6 +1158,7 @@ function chooseAddProvider(kind) {
   addingConnectionStage = 'form';
   renderProviderKindOptions(); $('#provider-kind').value = kind; updateProvider();
   $('#add-provider-cards').hidden = true; $('#add-provider-catalog').hidden = true; $('#add-connection-home').hidden = false;
+  catalogTerms(kind);
   $('#connection-add-lead').textContent = `Forbind ${providerCards.find(item => item.kind === kind)?.name || state?.definitions?.[kind]?.provider || state?.definitions?.[kind]?.name || kind}`;
   $('#connection-feedback').textContent = '';
   (LOCAL_KINDS.includes(kind) || state?.definitions?.[kind]?.editableBaseURL === true && kind !== 'azure' ? $('#base-url') : kind === 'azure' ? $('#azure-endpoint') : $('#credential-open')).focus();
@@ -2129,6 +2137,28 @@ function renderStatusLine() {
 // laget ejer placeringen, browseren ejer lukning — og et klik udenfor må ikke
 // straks åbne boblen igen (mekanismens 400 ms-vagt). Ind 40 ms / ud 80 ms og
 // 12/16-radius-8-looket kommer fra .aura-tooltip (components.css).
+// Ventetid forklaret (4.11): the main process names the current phase of the
+// active conversation; the composer row says it plainly and how long it has lasted.
+const WORK_PHASES = { 'starting-engine': 'Starter motoren', 'waiting-model': 'Venter på svar fra modellen', 'waiting-approval': 'Venter på din godkendelse', retrying: 'Prøver igen' };
+let workPhase = null, workPhaseTimer = null;
+function renderWorkPhase() {
+  let el = $('#work-phase');
+  if (!el) { const row = $('#status-line-row'); if (!row) return; el = node('span', undefined, 'work-phase'); el.id = 'work-phase'; el.setAttribute('role', 'status'); el.setAttribute('aria-live', 'polite'); row.prepend(el); }
+  // While the data review dialog is open, the dialog itself is what to act on.
+  const label = workPhase && view?.id === workPhase.chat && !$('#data-dialog')?.open ? WORK_PHASES[workPhase.phase] : null;
+  el.hidden = !label;
+  if (!label) { clearInterval(workPhaseTimer); workPhaseTimer = null; return; }
+  const seconds = Number.isFinite(workPhase.since) ? Math.max(0, Math.round((Date.now() - workPhase.since) / 1000)) : null;
+  const attempt = workPhase.phase === 'retrying' && Number.isInteger(workPhase.attempt) && Number.isInteger(workPhase.of) ? ` · forsøg ${workPhase.attempt} af ${workPhase.of}` : '';
+  el.textContent = `${label}${attempt}${seconds !== null && seconds >= 3 ? ` · ${seconds} s` : ''} …`;
+  if (!workPhaseTimer) workPhaseTimer = setInterval(renderWorkPhase, 1000);
+}
+window.harness?.onEvent?.(event => {
+  if (event?.type !== 'work.phase' || typeof event.chat !== 'string') return;
+  workPhase = ['responding', 'idle'].includes(event.phase) ? null : { chat: event.chat, phase: event.phase, since: event.since, attempt: event.attempt, of: event.of };
+  renderWorkPhase();
+});
+window.addEventListener('aura:project', () => { workPhase = null; renderWorkPhase(); });
 // Kontekstvisning (plugin, 4.11): a compact context meter beside the model
 // chip. It shows only a measured share of the model's window — never a guess —
 // and is off unless the user turns it on under Indstillinger › Plugins.
@@ -3162,7 +3192,8 @@ async function discoverLocal() {
   $('#local-discovery-use').hidden = true;
   $('#local-discovery-retry').disabled = true;
   $('#local-discovery-models').replaceChildren();
-  $('#local-discovery-status').textContent = 'Leder efter Ollama på denne computer …';
+  $('#local-discovery-status').textContent = 'Leder efter Ollama, LM Studio og vLLM på denne computer …';
+  renderOtherLocalServers([]);
   try {
     const result = await call('discoverLocalModels');
     if (generation !== localDiscoveryGeneration) return;
@@ -3171,7 +3202,35 @@ async function discoverLocal() {
     for (const model of result.models.slice(0, 6)) $('#local-discovery-models').append(node('li', model.name + (model.remote ? ' · mulig cloudmodel' : '')));
     if (result.models.length > 6) $('#local-discovery-models').append(node('li', `Og ${result.models.length - 6} andre modeller`));
     $('#local-discovery-use').hidden = result.status !== 'found';
+    renderOtherLocalServers(result.servers);
   } finally { if (generation === localDiscoveryGeneration) $('#local-discovery-retry').disabled = false; }
+}
+// LM Studio and vLLM found on their usual loopback ports (4.11). The main
+// process probes only fixed 127.0.0.1 ports; using one saves a keyless
+// connection and runs the same connection check as Ollama.
+function renderOtherLocalServers(servers = []) {
+  let wrap = $('#local-discovery-more');
+  if (!wrap) { wrap = node('div', undefined, 'local-discovery-more'); wrap.id = 'local-discovery-more'; $('#local-discovery-models').after(wrap); }
+  const found = (Array.isArray(servers) ? servers : []).filter(server => server && server.kind !== 'ollama' && server.status === 'found' && ['lmstudio', 'vllm'].includes(server.kind));
+  wrap.replaceChildren(...found.map(server => {
+    const button = node('button', `Brug ${server.title || state?.definitions?.[server.kind]?.name || server.kind} · ${server.models?.length || 0} ${server.models?.length === 1 ? 'model' : 'modeller'}`);
+    button.type = 'button';
+    button.onclick = () => action(async () => {
+      if (running) return;
+      button.disabled = true;
+      try {
+        let saved = state.connections.find(c => c.kind === server.kind && c.baseURL === server.baseURL);
+        if (!saved) {
+          state = await call('saveConnection', { kind: server.kind, name: `${server.title || state.definitions?.[server.kind]?.name || server.kind} på denne computer`, baseURL: server.baseURL });
+          saved = state.connections.find(c => c.kind === server.kind && c.baseURL === server.baseURL);
+        }
+        renderConnections(); $('#setup-connection').value = saved.id;
+        verifiedConnection = ''; setupPage('saved'); await testSetupConnection();
+      } finally { button.disabled = false; }
+    });
+    return button;
+  }));
+  wrap.hidden = !found.length;
 }
 $('#local-discovery-retry').onclick = () => action(discoverLocal);
 $('#local-discovery-use').onclick = () => action(async () => {
@@ -3434,12 +3493,15 @@ window.addEventListener('harness:komplai-connected', () => action(async () => { 
 
 window.ChatMaterials.connect({read:()=>({root:current?.root,chat:view.id,running:running||projectLoading}),invoke:(method,value,owner)=>call(method,value,owner),invalidate:()=>{acceptedFingerprint=null;pendingSend=null;if($('#data-dialog').open)$('#data-dialog').close();}});
 function syncCloudflareAddress() {
-  const id = $('#cloudflare-account').value.trim().toLowerCase();
+  // Normalise in the field itself (paste with capitals or spaces), so the
+  // pattern and the built address always describe the same id.
+  const raw = $('#cloudflare-account').value, id = raw.trim().toLowerCase();
+  if (raw !== id) $('#cloudflare-account').value = id;
   const valid = /^[a-f0-9]{32}$/.test(id);
   if (valid) $('#base-url').value = `https://api.cloudflare.com/client/v4/accounts/${id}/ai/v1`;
   $('#cloudflare-destination').textContent = valid ? `Adressen bliver ${$('#base-url').value}` : 'Du finder konto-id\'et i Cloudflare-dashboardet under Workers AI. Adressen bygges ud fra det.';
 }
-$('#cloudflare-account').addEventListener('input', syncCloudflareAddress);
+$('#cloudflare-account').addEventListener('input', () => { const before = $('#base-url').value; syncCloudflareAddress(); if ($('#base-url').value !== before) clearConnectionReceipt(); });
 function connectionInput(){return {id:$('#connection-id').value||undefined,kind:$('#provider-kind').value,name:$('#connection-name').value,baseURL:$('#provider-kind').value==='azure'?$('#azure-endpoint').value:$('#base-url').value,deployment:$('#azure-deployment').value,protocol:$('#provider-kind').value==='compatible'?$('#custom-protocol').value:$('#azure-protocol').value,...($('#provider-kind').value==='compatible'&&$('#provider-id').value.trim()?{providerID:$('#provider-id').value.trim()}:{}),clearKey:$('#clear-key').checked};}
 function clearConnectionReceipt(){connectionReceipt=null;connectionTicket++;$('#credential-status').textContent='Ingen ny nøgle valgt';void call('credentialCancel').catch(()=>{});}
 $('#credential-open').onclick=()=>action(async()=>{

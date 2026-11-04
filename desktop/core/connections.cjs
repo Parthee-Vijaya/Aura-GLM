@@ -106,6 +106,22 @@ Object.assign(definitions, {
   vllm: catalogEntry({ name: 'vLLM', baseURL: 'http://127.0.0.1:8000/v1', group: 'local', keyRequired: false, keyURL: 'https://docs.vllm.ai/en/latest/serving/openai_compatible_server.html', source: 'https://docs.vllm.ai/en/latest/serving/openai_compatible_server.html', endpointSource: 'https://docs.vllm.ai/en/latest/serving/openai_compatible_server.html', termsVerified: false })
 });
 for (const kind of ['azure', 'ollama', 'compatible', 'cloudflare', 'lmstudio', 'vllm']) definitions[kind].editableBaseURL = true;
+// Provenance only: these dates inherit the existing review, never a new audit.
+for (const def of Object.values(definitions)) {
+  def.staleAfterDays = 180;
+  def.terms = Object.fromEntries(['training', 'region', 'retention'].map(topic => [topic, { checkedAt: def.termsVerified === true ? def.checkedAt || null : null, source: def.source || null }]));
+}
+function providerTermsReport({ now = new Date() } = {}) {
+  const timestamp = new Date(now);
+  if (!Number.isFinite(timestamp.getTime())) throw new Error('Angiv en gyldig dato til vilkårsoversigten.');
+  return { format: 1, generatedAt: timestamp.toISOString(), staleAfterDays: 180, providers: Object.entries(definitions).map(([kind, def]) => ({ kind, name: def.name, termsVerified: def.termsVerified, staleAfterDays: def.staleAfterDays,
+    terms: Object.fromEntries(Object.entries(def.terms).map(([topic, item]) => {
+      const date = typeof item.checkedAt === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(item.checkedAt) ? new Date(item.checkedAt + 'T00:00:00Z') : null;
+      const valid = date && Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === item.checkedAt && date <= timestamp;
+      const ageDays = valid ? Math.floor((timestamp - date) / 86_400_000) : null;
+      return [topic, { ...item, ageDays, stale: ageDays === null ? null : ageDays >= def.staleAfterDays }];
+    })) })) };
+}
 // Zens gratis modeller har forskellige vilkår. Kontrolleret på opencode.ai/docs/zen 29. september 2026.
 const zenTerms = [
   [/^(space-bunny|longcat)/, 'Gemmes ikke og bruges ikke til træning, ifølge Zen', 'Zen oplyser nul opbevaring, og at data ikke bruges.'],
@@ -449,4 +465,4 @@ function engineProvider(connection, model, gatewayURL, token) {
     options: { baseURL: gatewayURL, apiKey: token, timeout: 1_230_000, headerTimeout: 1_230_000, chunkTimeout: 1_230_000 },
     models: { [model.id]: { name: model.name, tool_call: true, limit: modelLimits(connection, model), ...(usesResponses(connection) ? { options: { store: false, include: ['reasoning.encrypted_content'] } } : {}) } } };
 }
-module.exports = { definitions, assertSupported, endpoint, normalize, requestJSON, modelCatalogURL, listModels, diagnoseConnection, skippedLiveDiagnosis, routes, disclosure, engineProvider, modelLimits, effortLevels, reasons, priceFor, usesResponses, usesAnthropic, OUTPUT_CEILING, WORKING_WINDOW };
+module.exports = { definitions, providerTermsReport, assertSupported, endpoint, normalize, requestJSON, modelCatalogURL, listModels, diagnoseConnection, skippedLiveDiagnosis, routes, disclosure, engineProvider, modelLimits, effortLevels, reasons, priceFor, usesResponses, usesAnthropic, OUTPUT_CEILING, WORKING_WINDOW };
