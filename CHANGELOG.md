@@ -1,5 +1,9 @@
 # Ændringslog
 
+## 0.6.0-beta.4 · 4. november 2026
+
+- Versionsmærket i appen viser nu hele versionen på samme form som releasen, fx **0.6.0 beta 4** (tidligere "beta 0.6.0").
+
 ## 0.6.0-beta.3 · 4. november 2026
 
 Rettelser efter en selvstændig UX/UI-gennemgang af beta.2.
