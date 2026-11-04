@@ -9,9 +9,15 @@ const { loadLibrary } = require('./library.cjs');
 class WorkspaceRegistry {
   constructor(options) {
     this.options = options; this.store = options.store || new Store(options.directory, options.safeStorage);
-    this.history = new WorkspaceHistory(this.store); this.benches = new Map(); this.aliases = new Map(); this.opening = new Map(); this.selection = 0; this.connectionRemovals = new Set();
-    let library = null;
-    this.library = options.library || (() => library ??= loadLibrary(options.profiles).catch(error => { library = null; throw error; }));
+    // Efter-byg F5 (Codex d1): titelafledningen stripper kun KENDTE kommando-
+    // tokens — heriblandt bibliotekets registrerede skills, som værtens
+    // provider leverer. Biblioteket læses dovent og caches: provideren
+    // svarer med det LÆSTE bibliotek (og ellers ingenting — det statiske
+    // sæt gælder da, og titlen afledes igen ved næste gem).
+    let libraryPromise = null, libraryValue = null;
+    this.library = options.library || (() => libraryPromise ??= loadLibrary(options.profiles).then(value => { libraryValue = value; return value; }, error => { libraryPromise = null; throw error; }));
+    this.history = new WorkspaceHistory(this.store, { knownTokens: () => libraryValue?.skills.map(skill => skill.name) || null });
+    this.benches = new Map(); this.aliases = new Map(); this.opening = new Map(); this.selection = 0; this.connectionRemovals = new Set();
     this.empty = this.create(); this._selected = this.empty;
   }
   create() {

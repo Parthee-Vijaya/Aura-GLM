@@ -40,8 +40,8 @@ const helpers = require('./ui-test-helpers.cjs');
     // Læsning af en utilgængelig mappe afvises før første besked og uden automatisk skrivning.
     await fs.chmod(project, 0o000);
     await app.evaluate(({ dialog }, folder) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [folder] }); }, project);
-    await page.click('#open'); await page.locator('#message.error').filter({ hasText: /adgang/ }).waitFor();
-    await fs.chmod(project, 0o700); await page.click('#open'); await page.waitForSelector('#workspace:not([hidden])');
+    await require('./ui-test-helpers.cjs').clickOpen(page); await page.locator('#message.error').filter({ hasText: /adgang/ }).waitFor();
+    await fs.chmod(project, 0o700); await require('./ui-test-helpers.cjs').clickOpen(page); await page.waitForSelector('#workspace:not([hidden])');
     assert.deepEqual(await fs.readdir(project), [], 'åbning af mappe må ikke oprette projektfiler');
     await page.waitForFunction(() => document.querySelector('#model-select').options.length === 2);
     await helpers.taskOptions(page); await page.locator('#model-shortlist button').first().click();
@@ -74,8 +74,8 @@ const helpers = require('./ui-test-helpers.cjs');
     assert.equal(await page.locator('.activity-spinner').evaluate(el => getComputedStyle(el).animationName), 'none');
     while (!finish) await new Promise(resolve => setTimeout(resolve, 100)); finish();
     await page.locator('#run-status').filter({ hasText: 'Klar' }).waitFor({ timeout: 30000 });
-    assert.equal(await page.isVisible('#agent-activity'), false);
-    assert.match(await page.locator('#usage-status').textContent(), /20.*10/);
+    assert.equal(await page.locator('#agent-activity').isVisible(), false);
+    assert.match(await page.locator('#context-status').getAttribute('aria-label'), /^20 · \d+ tok\/s · 30 tokens · \$0,00\*$/);
     const instructions = JSON.stringify(requests[0].messages);
     assert.match(instructions, /Python med FastAPI/); assert.match(instructions, /Node.js med TypeScript/);
     // Udgivelsesvejledningen fra core/hosting-guidance.cjs når modellen uændret. Udgivelse er ikke slået til i prøven.

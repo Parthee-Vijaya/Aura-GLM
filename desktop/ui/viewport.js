@@ -5,22 +5,41 @@
   const preset = el('viewport-preset'), width = el('viewport-width'), height = el('viewport-height'), zoom = el('viewport-zoom');
   const sizes = { desktop: [1920, 1080], tablet: [768, 1024], phone: [390, 844] };
   const storageKey = 'harness-workspace-layout-v1';
-  let settings = { chat: 420, preset: 'fluid', width: 390, height: 844, zoom: 'fit' };
+  let settings = { chat: 360, preset: 'fluid', width: 390, height: 844, zoom: 'fit' };
+  // Fresh installs size the chat column with the shared workspace CSS clamp
+  // (360-880px, 54% of the grid). An inline --chat-width would override it,
+  // so this module writes one only after the user has actually chosen a
+  // width; until then the divider announces the width the clamp rendered.
+  let userWidth = false;
+  const fluidWidth = () => Math.round(Math.min(880, Math.max(360, grid.clientWidth * 0.54)));
   try {
     const saved = JSON.parse(localStorage.getItem(storageKey));
-    if (saved && Number.isFinite(saved.chat)) settings.chat = Math.max(280, saved.chat);
+    if (saved && Number.isFinite(saved.chat)) { settings.chat = Math.max(280, saved.chat); userWidth = true; }
     if (saved && ['fluid', 'custom', ...Object.keys(sizes)].includes(saved.preset)) settings.preset = saved.preset;
     if (saved && Number.isInteger(saved.width) && saved.width >= 240 && saved.width <= 7680) settings.width = saved.width;
     if (saved && Number.isInteger(saved.height) && saved.height >= 240 && saved.height <= 7680) settings.height = saved.height;
     if (saved?.zoom === 'actual') settings.zoom = 'actual';
   } catch { /* Layout kan bruges, selv om lokal lagring ikke er tilgængelig. */ }
-  function save() { try { localStorage.setItem(storageKey, JSON.stringify(settings)); } catch { /* Kun brugerfladevalg. */ } }
+  // A chosen width persists; until one exists the chat width is left out, so
+  // the next start keeps the responsive default instead of a frozen default.
+  function save() {
+    try {
+      // D1/R5: layout-objektet er fælles — læs-ændre-skriv, så nøgler andre
+      // moduler har gemt (sidepanelets bredde i 'sidebar') aldrig tabes.
+      let stored = {}; try { stored = JSON.parse(localStorage.getItem(storageKey)) || {}; } catch { /* Første gemning. */ }
+      const next = userWidth ? settings : { ...settings, chat: undefined };
+      if (!userWidth) delete stored.chat;
+      for (const key of Object.keys(next)) if (next[key] !== undefined) stored[key] = next[key];
+      localStorage.setItem(storageKey, JSON.stringify({ ...stored }));
+    } catch { /* Kun brugerfladevalg. */ }
+  }
   function split(value = settings.chat) {
     if (!grid.clientWidth) return;
     // Arbejdsfladen beholder mindst 300 px, så fanerne og forhåndsvisningens værktøjer kan stå.
     const max = Math.max(280, grid.clientWidth - 307);
-    const actual = Math.round(Math.min(max, Math.max(280, value)));
-    grid.style.setProperty('--chat-width', `${actual}px`);
+    const actual = userWidth ? Math.round(Math.min(max, Math.max(280, value))) : fluidWidth();
+    // Only a chosen width may pin the column; the clamp renders on its own.
+    if (userWidth) grid.style.setProperty('--chat-width', `${actual}px`);
     divider.setAttribute('aria-valuemin', '280'); divider.setAttribute('aria-valuemax', String(max));
     divider.setAttribute('aria-valuenow', String(actual)); divider.setAttribute('aria-valuetext', `${actual} pixels til samtalen`);
     return actual;
@@ -64,14 +83,22 @@
   });
   divider.addEventListener('pointermove', event => {
     if (event.pointerId !== pointer) return;
+    // Moving the divider is the user's choice: the clamp hands the column over.
+    userWidth = true;
     settings.chat = split(event.clientX - grid.getBoundingClientRect().left - 3.5); render();
   });
   function finish() { if (pointer === null) return; pointer = null; document.body.classList.remove('resizing-workspace'); delete grid.dataset.dragging; save(); }
   divider.addEventListener('pointerup', finish); divider.addEventListener('pointercancel', finish); divider.addEventListener('lostpointercapture', finish); window.addEventListener('blur', finish);
-  divider.addEventListener('dblclick', () => { settings.chat = 420; split(); save(); });
+  divider.addEventListener('dblclick', () => {
+    userWidth = false;
+    grid.style.removeProperty('--chat-width');
+    split(); save(); render();
+  });
   divider.addEventListener('keydown', event => {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
+    // Keys choose a width the way a drag does; the clamp hands over.
+    userWidth = true;
     const current = Number(divider.getAttribute('aria-valuenow'));
     settings.chat = split(event.key === 'Home' ? 280 : event.key === 'End' ? grid.clientWidth : current + (event.key === 'ArrowLeft' ? -1 : 1) * (event.shiftKey ? 50 : 10)); save();
   });

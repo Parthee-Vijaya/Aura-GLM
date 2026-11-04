@@ -39,6 +39,9 @@ class RunMeasurement {
       privacyMode: null, outcome: 'created', engineSupport: 'pending', engineReused: false,
       prepare_ms: null, engine_start_ms: null, send_setup_ms: null, send_ack_ms: null,
       ack_observed_ms: null, ackSource: null, ttft_ms: null, ttft_upper_bound_ms: null, ttftSource: null,
+      // Observed answer speed (tok/s) for the finished turn, from the step
+      // register — recorded alongside ttft_ms, never invented here.
+      tps: null, tpsSteps: 0,
       prompt: { scope: 'aura-added-text-only', estimateMethod: 'utf8-bytes-div4-v1',
         components: [], reviewed: null, system: null, runtimeSuffix: null, user: null },
       providerUsage: { source: 'engine-step-finish', calls: 0, partial: false, input: null, output: null, reasoning: null, cacheRead: null, cacheWrite: null },
@@ -109,6 +112,15 @@ class RunMeasurement {
     this.data.ttftSource = recovered ? 'recovered-snapshot-upper-bound' : 'engine-content-observed';
     this.data[recovered ? 'ttft_upper_bound_ms' : 'ttft_ms'] = this.elapsed('dispatch');
     this.update();
+  }
+  speed(dto) {
+    // Host diagnostics mirror the register's finished-turn aggregate; an
+    // unknown measurement never overwrites a known one, and a finished
+    // record is terminal.
+    if (this.terminal || !dto || dto.known !== true) return;
+    const value = Number.isSafeInteger(dto.value) && dto.value >= 0 ? dto.value : null;
+    const steps = Number.isSafeInteger(dto.stepCount) && dto.stepCount >= 0 ? dto.stepCount : 0;
+    if (this.data.tps == null) { this.data.tps = value; this.data.tpsSteps = steps; this.update(); }
   }
   observe(event) {
     if (this.terminal) return;

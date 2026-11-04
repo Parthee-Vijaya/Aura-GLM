@@ -235,7 +235,12 @@ class PrivacyService {
     try {
       this.privateDirectorySync();
       const handle = await fs.open(file, fsSync.constants.O_RDONLY | fsSync.constants.O_NOFOLLOW);
-      let value; try { const stat = await handle.stat(); if (!stat.isFile() || stat.size > 65536) throw new Error(); value = JSON.parse(await handle.readFile('utf8')); } finally { await handle.close(); }
+      // S5 (S4-re-gennemgangens note): registeret læses med samme loft som
+      // dets øvrige læsere (external-egress readConfig, gradientdeck
+      // #readRegistry, snapshotBinding): 2 MB. Det PRÆ-EKSISTERENDE 64 KiB-loft
+      // fik et legitimt register til at kaste PRIVACY_CONTROL_FAILED i
+      // allowDestination og configure; over 2 MB er fejlen stadig ærlig.
+      let value; try { const stat = await handle.stat(); if (!stat.isFile() || stat.size > 2_000_000) throw new Error(); value = JSON.parse(await handle.readFile('utf8')); } finally { await handle.close(); }
       if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error();
       return value;
     } catch (error) { if (error.code === 'ENOENT') return {}; throw controlFailed(); }
@@ -336,6 +341,60 @@ class PrivacyService {
   }
   validatePair(pair) {
     if (!pair || typeof pair !== 'object' || !['local','external'].every(key => pair[key] && typeof pair[key].connectionID === 'string' && typeof pair[key].modelID === 'string' && pair[key].connectionID && pair[key].modelID)) throw new Error('Vælg både en lokal model og en cloudmodel.');
+  }
+  // S4 (GradientDeck): en ekstern destination, brugeren har samtykket til pr.
+  // projekt, tilføjes til projektets allowedDestinationIds. Konfigurerede
+  // destinationer bevarer kun allerede tilladte id'er (configuredDestinationIds),
+  // så en ny destination skal tilføjes her — med de samme vagter som configure():
+  // aldrig under en kørsel (binding-skift giver PRIVACY_STALE for igangværende
+  // handlinger), kun projektet, kun registrerede destinationer. Tilføjelsen er
+  // idempotent og ophæver aldrig strengere regler: composePolicy skærer med
+  // organisationens loft, og gate-vejen blokerer stadig.
+  async allowDestination(input = {}, trustedChatID) {
+    const scope = this.scope(input, trustedChatID);
+    if (scope.kind !== 'project') throw new Error('Tilladelsen gælder projektet.');
+    const destinationId = input.destinationId;
+    if (typeof destinationId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,199}$/.test(destinationId)) throw new Error('Vælg en gyldig modtager.');
+    if (this.bench.running) throw new Error('Stop den aktive opgave, før du ændrer dataregler.');
+    const registered = await this.privateConfig('external-destinations.json');
+    const entry = registered[destinationId];
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) throw new Error('Modtageren er ikke registreret i appen.');
+    const key = this.bench.store.projectKey(scope.root);
+    await this.bench.store.update(state => {
+      const project = (state.projects[key] ||= {});
+      const privacy = project.privacy ||= { version: randomUUID() };
+      if (typeof privacy.version !== 'string' || !privacy.version) privacy.version = randomUUID();
+      const allowed = privacy.allowedDestinationIds === undefined ? [] : privacy.allowedDestinationIds;
+      if (!Array.isArray(allowed) || allowed.some(id => typeof id !== 'string' || !id || id.length > 200)) throw new Error('Projektets dataregler kunne ikke kontrolleres.');
+      // Kun additiv: eksisterende id'er bevares ordret — en midlertidigt
+      // uregistreret post må aldrig stryge en tidligere tilladelse.
+      privacy.allowedDestinationIds = [...new Set([...allowed, destinationId])];
+    });
+    // En ændret politik starter en frisk motor næste gang — som ved configure().
+    for (const chat of this.bench.chats.values()) if (!chat.running && !chat.sending && !chat.starting && !chat.finishing) chat.prepared = null;
+    return true;
+  }
+  // S5 (GradientDeck, kendelse 3-betingelsen fra S4-gennemgangen): spejlet af
+  // allowDestination — fjerner KUN det navngivne id fra projektets tilladelser.
+  // Fjernelsen er idempotent (et fraværende id er en ingen-handling, ikke en
+  // fejl — den kan aldrig tildele noget), og den gælder kun projektet.
+  // Organisationens loft skærer stadig: projektets egen liste bliver kortere,
+  // og det, organisationen selv tillader, genindføres ikke her.
+  async revokeDestination(input = {}, trustedChatID) {
+    const scope = this.scope(input, trustedChatID);
+    if (scope.kind !== 'project') throw new Error('Tilbagekaldelsen gælder projektet.');
+    const destinationId = input.destinationId;
+    if (typeof destinationId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,199}$/.test(destinationId)) throw new Error('Vælg en gyldig modtager.');
+    if (this.bench.running) throw new Error('Stop den aktive opgave, før du ændrer dataregler.');
+    const key = this.bench.store.projectKey(scope.root);
+    await this.bench.store.update(state => {
+      const privacy = state.projects[key]?.privacy;
+      if (!privacy || !Array.isArray(privacy.allowedDestinationIds) || !privacy.allowedDestinationIds.includes(destinationId)) return;
+      privacy.allowedDestinationIds = privacy.allowedDestinationIds.filter(id => id !== destinationId);
+    });
+    // En ændret politik starter en frisk motor næste gang — som ved configure().
+    for (const chat of this.bench.chats.values()) if (!chat.running && !chat.sending && !chat.starting && !chat.finishing) chat.prepared = null;
+    return true;
   }
   async hybridSelection(scope, pair, input, { assertCurrent = () => true } = {}) {
     this.validatePair(pair); assertCurrent();

@@ -1,0 +1,390 @@
+/* Aura Prime · shared UI components (UI/UX overhaul, slice 4).
+   One sheet for component classes: each component owns its selector prefix and
+   takes every value from aura-tokens.css. Linked LAST in index.html so the
+   component contracts win source-order ties with the older per-surface rules. */
+
+/* Height animations may interpolate to and from the `auto` keyword
+   (Chromium >= 129; the app ships Electron >= Chromium 131). Inherited from
+   the root — checked: no existing sheet transitions to an auto size, so this
+   only enables the disclosure animation below. */
+:root { interpolate-size: allow-keywords; }
+
+/* ── .disclosure — the one fold-out component for every <details> surface ──
+   Native <details>/<summary> everywhere: ids, structure and toggle behavior
+   are untouched; the class carries the shared look. Closed = one compact row;
+   open height comes from the content — no empty minimums. */
+
+/* Summary: 13px ink text on a >= 32px click row, flex-centered. The 3px
+   token-accent focus ring comes from the shared :where rule in styles.css. */
+details.disclosure > summary { display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 4px 2px; font-size: 13px; line-height: 1.5; font-weight: 550; color: var(--aura-ink); cursor: pointer; list-style: none; border-radius: var(--aura-radius-xs); }
+details.disclosure > summary::-webkit-details-marker { display: none; }
+
+/* Temporary inline-SVG chevron, masked so it follows the summary's
+   currentColor. Task 8 replaces it centrally through the shared icon system. */
+details.disclosure > summary::after { content: ""; width: 16px; height: 16px; flex: none; margin-left: auto; background-color: currentColor; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat; rotate: 0deg; transition: rotate var(--aura-transition-duration) var(--aura-ease-in-out); }
+details.disclosure[open] > summary::after { rotate: 180deg; }
+
+/* Optional right-aligned note slot on the summary row (counts like "3 valgt").
+   CSS only — later slices set the content. */
+details.disclosure > summary > [data-summary-note] { margin-left: auto; font-size: 12px; font-weight: 450; color: var(--aura-ink-muted); }
+details.disclosure > summary:has([data-summary-note])::after { margin-left: 8px; }
+
+/* Open fold: content-sized. The token padding keeps the summary gap small and
+   gives the content bottom breathing room; height is always the content's. */
+details.disclosure[open] { padding-bottom: 12px; }
+details.disclosure[open] > summary { margin-bottom: 6px; }
+
+/* Height animation, following Chromium's documented details pattern: the
+   content region starts at 0 and clips, block-size interpolates to auto, and
+   `allow-discrete` keeps content-visibility visible until the close transition
+   has finished. The whole block is feature-gated: a runtime without
+   interpolate-size AND ::details-content gets fully native folds — nothing is
+   permanently clipped and no JS shim is involved. overflow-clip-margin lets
+   focus rings (3px + 3px offset) of inner controls paint past the clip edge.
+   Transitions are read from the after-change style, which makes the two
+   directions deliberately asymmetric: closing (base rule) transitions
+   content-visibility too, so it flips to hidden only at the end of the
+   collapse; opening ([open] rule) transitions block-size ONLY, so
+   content-visibility flips to visible in the same style recalc as the click —
+   rendered text (innerText) and the a11y tree are correct immediately, with
+   the expanding box clipping the reveal. */
+@supports (interpolate-size: allow-keywords) and selector(::details-content) {
+  details.disclosure::details-content { block-size: 0; overflow: clip; overflow-clip-margin: 6px; transition: block-size var(--aura-transition-duration) var(--aura-ease-in-out), content-visibility var(--aura-transition-duration) allow-discrete; }
+  details.disclosure[open]::details-content { block-size: auto; padding: 8px 0 0; border-top: 1px solid var(--aura-border); transition: block-size var(--aura-transition-duration) var(--aura-ease-in-out); }
+}
+
+/* Reduced motion: styles.css kills transitions for *, ::before and ::after —
+   but ::details-content is its own pseudo-element that this selector does not
+   match, so the fold animation needs its own kill here. Verified manually in
+   Electron with prefers-reduced-motion on and off (task-4-report.md). */
+@media (prefers-reduced-motion: reduce) {
+  details.disclosure::details-content { transition: none !important; }
+}
+
+/* Surfaces that carried their own arrow glyph or ID-anchored muted styling
+   before the component existed: the shared chevron replaces the surface glyphs
+   so every fold reads as the same component. */
+details.disclosure.plan-detail > summary::before { content: none; }
+details.disclosure.work-progress-card > summary::after { transform: none; }
+#deployment-dialog details.disclosure > summary { color: var(--aura-ink); }
+
+/* ── .menu-material — D2+D3: det delte menu-materiale for ankrede lag ──
+   Alle menuer over det fælles popover-lag (arbejdsmåde, tilladelser,
+   projekt-chip, idé-chips) bærer det samme halvgennemsigtige materiale med
+   blur (DSH §2). R4: kontrasten er målt over den SAMMENSATTE baggrund
+   (18,01:1 lyst / 12,88:1 mørkt over lærredet), og uden backdrop-filter
+   falder materialet tilbage til en uigennemsigtig flade. */
+.menu-material { position: fixed; inset: auto; margin: 0; padding: 6px 4px; border: 0.5px solid var(--aura-border); border-radius: var(--aura-radius-lg); background: var(--aura-menu-bg); -webkit-backdrop-filter: blur(40px) saturate(150%); backdrop-filter: blur(40px) saturate(150%); box-shadow: var(--aura-shadow-menu); color: var(--aura-ink); }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .menu-material { background: var(--aura-bg-raised); }
+}
+@media (forced-colors: active) {
+  .menu-material { background: Canvas; border: 1px solid CanvasText; -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+.menu-material[popover]:popover-open { display: block; }
+
+/* Menuens rækker: mindst 34 px klikhøjde (§5.4), radius 12, titel 13/20 i
+   primær farve over en beskrivelse i 12/16 sekundær (wrapper-strukturen
+   findes allerede i arbejdsmåde-menuens opmærkning). */
+.menu-material button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 34px; padding: 6px 8px; border: 0; border-radius: var(--aura-radius-md); background: transparent; color: var(--aura-ink); text-align: left; font-size: 13px; line-height: 20px; }
+.menu-material button:hover:not(:disabled) { background: var(--aura-bg-hover); }
+.menu-material button:focus-visible { outline: 2px solid var(--aura-accent); outline-offset: 1px; }
+.menu-material button:disabled { color: var(--aura-ink-muted); }
+.menu-material button[aria-checked="true"] { background: var(--aura-bg-hover); }
+.menu-material small { display: block; font-size: 12px; line-height: 16px; color: var(--aura-ink-secondary); }
+
+/* Radiomarkering i chip-menuerne: det lille flueben til højre er tekst-ærligt
+   (aria-checked) og dekoreret med accent (4,23:1 ≥ 3:1 for grafik). */
+.menu-material [role="menuitemradio"]::after, .menu-material [role="radio"]::after { content: ""; width: 14px; height: 14px; margin-left: auto; flex: none; }
+.menu-material [aria-checked="true"]::after { content: "✓"; margin-left: auto; color: var(--aura-accent); font-size: 13px; text-align: right; }
+
+/* ── .aura-tooltip — ÉN tooltip-grammatik (T8, audit pkt. 9) ──
+   Alle tooltips bærer menu-materialet ovenfor (DSH §2: alfa + blur med
+   uigennemsigtig fallback) med tooltip-målet: tekst 12/16, radius 8, padding
+   10/12. Bevægelsen er asymmetrisk som DSH: ind på 40 ms, ud på 80 ms
+   (@starting-style giver ind-fasen dens udgangspunkt; allow-discrete holder
+   popover-laget live gennem udfasen). Forsinkelsen (400 ms), hover OG fokus
+   og aria-describedby bor i ui/tooltip.js — ÉN mekanisme, ingen flade med
+   sin egen timing. Kendelse (native title): native title-attributter
+   forbliver appens lette lag; mekanismen dækker fokus for sine flader, og
+   S1-review Minor-2s nuance (Chromium tegner ikke native title ved
+   tastaturfokus) er accepteret og dokumenteret dér. */
+.aura-tooltip { padding: 10px 12px; border-radius: var(--aura-radius-sm); font-size: var(--aura-text-12); line-height: var(--aura-text-12-line); color: var(--aura-ink); transition: opacity 80ms var(--aura-ease-in-out), display 80ms allow-discrete, overlay 80ms allow-discrete; }
+.aura-tooltip:popover-open { transition: opacity 40ms var(--aura-ease-in-out), display 40ms allow-discrete, overlay 40ms allow-discrete; }
+@starting-style { .aura-tooltip:popover-open { opacity: 0; } }
+/* Global reduced-motion-kill (styles.css) rammer transition på * — udfasen
+   dør der; popoveren lukker stadig øjeblikkeligt (display flips synkront). */
+
+/* ── Samtalerodens faser (§4): hero · active · settling ── */
+/* Settling: mens en gemt samtale genindlæses, er de flytbare dele skjult med
+   visibility (pladsen reserveres), så det forkerte layout aldrig blinker frem. */
+#chat-panel[data-phase="settling"] :is(#chat-form, #composer-mode, #conversation-permission-status) { visibility: hidden; }
+/* Hero: indholdet i samtalekolonnen centreres; stakken står lidt over midten
+   (padding-bottom 32 px, §4) — ingen vh-luft også ved lave vinduer. */
+#chat-panel[data-phase="hero"] .chat-content { display: flex; flex-direction: column; }
+#conversation-hero { display: flex; flex-direction: column; align-items: center; gap: 12px; margin: auto 0; padding-bottom: 32px; text-align: center; }
+.hero-mark { width: 40px; height: 40px; }
+.hero-heading { margin: 0; font-size: 26px; line-height: 32px; font-weight: var(--aura-font-weight-medium); color: var(--aura-ink); }
+/* Kladde i feltet: dekorationerne trækker sig — kun composeren står tilbage
+   (ingen layoutspring midt i en skrivning; fasen skifter først ved besked). */
+#chat-panel[data-phase="hero"][data-hero-quiet="true"] #conversation-hero > :not(#hero-composer-slot) { display: none; }
+/* Forbrugs- og kontekstlinjen hører til den aktive samtale: i helten står
+   kun stakken (§4-skitsen) — linjens felter dukker op, når samtalen er i gang.
+   Rækken selv står, så Datakontrol-knappen (sattes efter #context-status) er
+   fortsat en altid-synlig sikkerhedsflade. */
+#chat-panel[data-phase="hero"] :is(#context-status, #draft-status) { display: none; }
+/* Composeren har samme bredde i begge tilstande (T1-rammen): i helten fylder
+   kortet pladsen (chat-content er allerede gutter-paddet), dokket trækker den
+   fra — begge ender ved --chat-cols kant. */
+#conversation-hero .composer { margin: 0; width: 100%; max-width: none; }
+#hero-composer-slot { width: 100%; margin-top: 12px; display: grid; gap: 10px; }
+#conversation-hero #resume-notice { text-align: left; margin: 0; }
+#conversation-hero #conversation-permission-status { margin: 0; }
+#project-intro { max-width: 640px; }
+#project-intro > p { margin: 0; font-size: 14px; line-height: 22px; color: var(--aura-ink-muted); }
+
+/* ── .hero-chip — projekt- og arbejdsmåde-chips over composeren (§4) ── */
+.hero-chips { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; }
+.project-chip-wrap { display: inline-flex; align-items: center; gap: 4px; }
+.hero-chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 0.5px solid var(--aura-border); border-radius: var(--aura-radius-sm); background: var(--aura-bg-tint); color: var(--aura-ink-secondary); font-size: 13px; line-height: 20px; font-weight: var(--aura-font-weight-medium); }
+.hero-chip:hover:not(:disabled) { background: var(--aura-bg-hover); color: var(--aura-ink); }
+.hero-chip:focus-visible { outline: 2px solid var(--aura-accent); outline-offset: 2px; }
+.hero-chip-caret { color: var(--aura-ink-caption); font-size: 11px; }
+.hero-chip-glyph { color: var(--aura-accent); }
+.project-chip-name { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#project-chip-list { display: grid; gap: 2px; }
+.project-chip-item { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#project-chip-list .project-chip-item[aria-current="true"] { color: var(--aura-ink-muted); background: var(--aura-bg-hover); }
+.project-chip-open { border-top: 0.5px solid var(--aura-border); border-radius: 0; margin-top: 4px; }
+
+/* Arbejdsmåde-chippen (den flyttede #composer-mode) læses som chip i helten;
+   glyfferne følger data-mode gennem CSS (◌ ≡ ◇ — D0-ikonsættet er afvist). */
+#chat-panel[data-phase="hero"] #composer-mode { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 0.5px solid var(--aura-border); border-radius: var(--aura-radius-sm); background: var(--aura-bg-tint); color: var(--aura-ink-secondary); font-size: 13px; line-height: 20px; font-weight: var(--aura-font-weight-medium); }
+#chat-panel[data-phase="hero"] #composer-mode:hover:not(:disabled) { background: var(--aura-bg-hover); color: var(--aura-ink); }
+#composer-mode[data-mode="chat"]::before, #composer-mode[data-mode="plan"]::before, #composer-mode[data-mode="free"]::before, #composer-mode[data-mode="build"]::before { content: "◌"; }
+#composer-mode[data-mode="plan"]::before { content: "≡"; }
+#composer-mode[data-mode="free"]::before, #composer-mode[data-mode="build"]::before { content: "◇"; }
+/* P1 (audit §2.5): tekstglyfferne bor i én fast 16 px-boks med samme
+   font-size/line-height overalt — samme grundlinje i chip, topbjælke og
+   indstillingsmenu, uanset font. */
+#composer-mode::before { display: inline-grid; place-items: center; width: 16px; height: 16px; font-size: 13px; line-height: 1; color: var(--aura-accent); margin-right: 6px; }
+
+/* ── .permission-pill — tilladelses-pillen i bundrækken (§5.3) ──
+   Et ærligt resumé (R1), 28 px høj; YOLO-tonen bærer den målte læsbare
+   advarselsfarve (--aura-warning-ink: 5,59:1 lyst / 7,24:1 mørkt) på et
+   svagt advarselsfyld. */
+.permission-pill { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 0.5px solid var(--aura-border); border-radius: var(--aura-radius-sm); background: var(--aura-bg-tint); color: var(--aura-ink-secondary); font-size: 13px; line-height: 20px; font-weight: var(--aura-font-weight-medium); flex-shrink: 0; }
+.permission-pill:hover:not(:disabled) { background: var(--aura-bg-hover); color: var(--aura-ink); }
+.permission-pill:focus-visible { outline: 2px solid var(--aura-accent); outline-offset: 2px; }
+.permission-pill[data-tone="yolo"] { background: var(--aura-warning-subtle); color: var(--aura-warning-ink); border-color: color-mix(in srgb, var(--aura-warning) 45%, transparent); }
+.permission-pill[data-tone="yolo"] .permission-shield { color: var(--aura-warning-ink); }
+.permission-shield { width: 14px; height: 14px; flex: none; }
+.permission-menu-text { margin: 4px 10px 8px; font-size: 12px; line-height: 17px; color: var(--aura-ink-secondary); text-align: left; }
+.permission-menu-actions { border-top: 0.5px solid var(--aura-border); margin-top: 2px; padding: 4px 0 2px; }
+.permission-menu-actions button { color: var(--aura-ink); }
+.permission-menu-boundary { margin: 4px 10px 6px; font-size: 12px; line-height: 17px; color: var(--aura-ink-muted); text-align: left; }
+.permission-menu-boundary[hidden] { display: none; }
+
+/* ── .idea-chip — T5's idé-valg som chips under composeren (§4) ──
+   De dæmpede chips bærer den valgte værdi synligt; select'erne forbliver
+   værdikilden (payloaden er byte-identisk). */
+.idea-chips { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.idea-chips > .hint { margin: 0; font-size: 12px; line-height: 17px; color: var(--aura-ink-muted); }
+.idea-chip-row { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 8px; }
+.idea-chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border: 0.5px solid var(--aura-border); border-radius: var(--aura-radius-sm); background: var(--aura-bg-raised); color: var(--aura-ink-secondary); font-size: 13px; line-height: 20px; }
+.idea-chip:hover:not(:disabled) { background: var(--aura-bg-hover); color: var(--aura-ink); }
+.idea-chip:focus-visible { outline: 2px solid var(--aura-accent); outline-offset: 2px; }
+.idea-chip#start-idea { border-color: transparent; background: transparent; color: var(--aura-ink-muted); }
+.idea-chip#start-idea:hover:not(:disabled) { background: var(--aura-bg-hover); color: var(--aura-ink); }
+.idea-source { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.idea-menu-group-title { margin: 6px 10px 4px; font-size: 12px; line-height: 17px; font-weight: var(--aura-font-weight-medium); color: var(--aura-ink-secondary); text-align: left; }
+.idea-menu-group { display: grid; gap: 2px; }
+.idea-menu-group + .idea-menu-group { margin-top: 4px; border-top: 0.5px solid var(--aura-border); padding-top: 4px; }
+#idea-chip-technique-panel > .hint { margin: 4px 10px 6px; text-align: left; }
+
+/* ── .step — trinrækkerne (D4b, §6.3) ──
+   AI'ens arbejde som 24 px enlinje-rækker: 16 px glyf-boks, verb + detalje i
+   tertiær med · imellem (hover → sekundær), tid og udfald (✓/!/×) til højre i
+   tabelcifre. Detaljeniveauet (body.transcript-*, D4a) bestemmer om den
+   igangværende tur viser alle rækker (detailed) eller én live-linje
+   (compact/standard); en færdig tur folder altid til én grupperække.
+   Farverne er målt: --aura-ink-muted på lærredet 4,69:1 lyst / 5,56:1 mørkt,
+   --aura-success 3,4:1 og --aura-error 5,2:1 som grafik (≥3:1). */
+.turn-steps { display: grid; gap: 4px; margin: 8px 0 14px; }
+
+/* Rækken: den kompakte variant af .disclosure-summary — 24 px, én linje. */
+details.disclosure.step { padding-bottom: 0; }
+details.disclosure.step > summary { display: flex; align-items: center; gap: 6px; min-height: 24px; padding: 0 2px; font-size: 12px; line-height: 16px; font-weight: 450; color: var(--aura-ink-muted); border-radius: var(--aura-radius-xs); }
+details.disclosure.step > summary:hover { color: var(--aura-ink-secondary); }
+details.disclosure.step > summary::after { content: none; } /* chevronen bor i glyf-boksen */
+details.disclosure.step[open] > summary { margin-bottom: 0; color: var(--aura-ink-secondary); }
+details.disclosure.step[open] { padding-bottom: 0; }
+.step-text { flex: 1; min-width: 0; display: flex; align-items: baseline; overflow: hidden; white-space: nowrap; }
+.step-verb { flex: none; font-weight: 500; }
+/* P1 (audit §2.2): flex folder mellemrummene omkring · væk — adskilleren
+   bærer sit eget luftrum, så rækken læser "Læser · skolemælk.txt". */
+.step-sep { flex: none; margin-inline: 4px; }
+.step-detail { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.step-meta { flex: none; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; line-height: 16px; font-variant-numeric: tabular-nums; color: var(--aura-ink-muted); }
+.step-mark { font-size: 12px; }
+.step.status-completed .step-mark { color: var(--aura-success); }
+.step.status-error > summary .step-mark, .step.status-error[open] .step-error { color: var(--aura-error); }
+.step.status-waiting > summary .step-mark, .step.status-waiting > summary .step-verb { color: var(--aura-warning-ink); }
+.step.status-stopped .step-mark { color: var(--aura-ink-muted); }
+
+/* Glyf-boksen med krydsfade til chevron (100 ms) ved hover og fokus (O2:
+   tastaturfokus bærer samme tydelighed som hover). */
+.step-glyph { position: relative; flex: none; width: 16px; height: 16px; display: grid; place-content: center; color: var(--aura-ink-muted); }
+.step-glyph-char { font-size: 13px; line-height: 1; transition: opacity var(--aura-transition-duration-fast) var(--aura-ease-in-out), rotate var(--aura-transition-duration) var(--aura-ease-in-out); }
+.step-glyph::after { content: ""; position: absolute; inset: 0; background-color: currentColor; opacity: 0; transition: opacity var(--aura-transition-duration-fast) var(--aura-ease-in-out); mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 6 6 6-6 6'/%3E%3C/svg%3E") center / contain no-repeat; }
+details.disclosure.step > summary:hover .step-glyph-char, details.disclosure.step > summary:focus-visible .step-glyph-char { opacity: 0; }
+details.disclosure.step > summary:hover .step-glyph::after, details.disclosure.step > summary:focus-visible .step-glyph::after { opacity: 1; }
+/* Grupperækkens ▸ drejer 90°, når den er foldet ud. */
+details.disclosure.step.step-group[open] > summary .step-glyph-char { rotate: 90deg; }
+details.disclosure.step.step-group[open] > summary .step-glyph::after { opacity: 0; }
+
+/* Running work keeps stable text and an explicit status at every motion setting. */
+.step.status-running .step-text { color: var(--aura-ink); background: none; animation: none; }
+.step-running-note { display: inline; color: var(--aura-ink-muted); }
+
+/* Det foldede indhold: målet står altid fuldt og umaskeret øverst, fejl er
+   aldrig fanget af maskerne — kun det lange output ruller bag en 24 px
+   fade-maske (O2) med maks. højde min(400px, 50vh) og intern scroll. */
+.step-content { padding: 4px 2px 8px 22px; }
+.step-content > :last-child { margin-bottom: 0; }
+.step-target, .step-error, .step-output, .step-draft, .step-draft-head { margin: 0 0 8px; font: 12px/1.6 var(--aura-font-family-code); white-space: pre-wrap; overflow-wrap: anywhere; }
+.step-target { color: var(--aura-ink-secondary); }
+.step-error { color: var(--aura-error); border-inline-start: 1px solid var(--aura-error); padding-left: 8px; }
+.step-exit { margin: 0 0 8px; font-size: 12px; line-height: 16px; color: var(--aura-ink-muted); }
+.step-output { max-height: min(400px, 50vh); overflow: auto; padding: 8px 10px; border: 0.5px solid var(--aura-border); border-radius: var(--aura-radius-sm); background: var(--aura-bg-raised); color: var(--aura-ink); -webkit-mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 24px), transparent 100%); mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 24px), transparent 100%); }
+.step-draft-note { margin: 0 0 8px; }
+.step-content .text-button { justify-self: start; padding: 4px 6px; font-size: 12px; min-height: 24px; }
+.step-group-rows { display: grid; gap: 4px; margin: 4px 0 2px 7px; padding: 4px 0 2px 16px; border-inline-start: 1px solid var(--aura-border); }
+.step-content .step-group-rows { margin: 0; padding: 0; border: 0; }
+
+/* Aktivitetspanelet: de eksisterende tekniske folds (activity-output) får
+   samme udfoldede behandling — mono pre, maks. højde og 24 px maske (O2).
+   DOM og id'er er uændrede; kun udseendet følger rækkerne. */
+.activity-output pre { max-height: min(400px, 50vh); overflow: auto; -webkit-mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 24px), transparent 100%); mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 24px), transparent 100%); }
+
+/* ── Live-indikatoren (§6.4) ──
+   "≋ Arbejder · 12 s" i accentblanding med tabelcifre og sekundur; uret
+   opdateres af den eksisterende status-render. Venter-tilstanden er
+   "● Venter på dig · godkend ændring" i den målte advarselsfarve og linker
+   til godkendelsen (is-actionable-overlayet består). Skillelinjen står kun,
+   når der er AI-indhold ovenover (data-sep, app.js). Farver målt:
+   --aura-accent-ink 6,08:1 lyst / 6,56:1 mørkt; --aura-warning-ink
+   5,59:1 / 7,24:1 — begge ≥4,5:1 (12 px tekst, R4). */
+.workspace-calm #agent-activity { display: flex; flex-wrap: wrap; align-items: center; align-content: center; gap: 4px 10px; min-height: 30px; margin: 0 14px; padding: 5px 3px 7px; border: 0; background: none; color: var(--aura-accent-ink); font-size: 12px; line-height: 22px; font-variant-numeric: tabular-nums; }
+.workspace-calm #agent-activity[data-sep="on"] { border-top: 0.5px solid var(--aura-border); margin-top: 4px; }
+.workspace-calm #agent-activity.is-waiting { color: var(--aura-warning-ink); background: none; font-weight: 400; }
+.workspace-calm #agent-activity .activity-spinner { display: inline-grid; place-items: center; width: 16px; height: 16px; margin: 0; border: 0; background: none; animation: none; opacity: 1; flex: none; color: inherit; font-size: 13px; line-height: 1; }
+.workspace-calm #agent-activity .activity-spinner::before { content: '≋'; }
+.workspace-calm #agent-activity.is-waiting .activity-spinner::before { content: '●'; }
+.workspace-calm #agent-activity-text { min-width: 0; flex: 1; color: var(--aura-accent-ink); font-weight: var(--aura-font-weight-medium); }
+.workspace-calm #agent-activity.is-waiting #agent-activity-text { color: var(--aura-warning-ink); }
+.workspace-calm #agent-activity:not(.is-idle):not(.is-waiting) #agent-activity-text { color: var(--aura-accent-ink); background: none; animation: none; }
+.workspace-calm #agent-progress { flex-basis: 100%; margin: 0; font-size: 12px; line-height: 16px; color: var(--aura-ink-muted); }
+.workspace-calm #agent-activity button { font-size: 12px; padding: 4px 6px; min-height: 24px; }
+.workspace-calm #agent-activity.is-actionable { color: var(--aura-warning-ink); background: none; }
+.workspace-calm #agent-activity.is-actionable:hover { background: var(--aura-warning-subtle); }
+@media (prefers-reduced-motion: reduce) { .workspace-calm #agent-activity:not(.is-idle):not(.is-waiting) #agent-activity-text { animation: none; background: none; } }
+
+/* ── Topbjælken (§6.1) ──
+   Mindst 52 px, titel 15/22 vægt 500, projektnavnet som tertiær brødkrumme,
+   arbejdsmåde-chippen (B3) 22 px, 0,5 px bundlinje. #run-status er skjult som
+   role=status; status står i live-indikatoren. */
+.workspace-calm .workspace-bar { min-height: var(--aura-workspace-bar); padding: 10px 20px 0; border-bottom: 0.5px solid var(--aura-border); gap: 12px; }
+.workspace-calm .workspace-bar h1 { display: flex; align-items: baseline; gap: 6px; min-width: 0; flex: 1; margin: 0; font-size: 15px; line-height: 22px; font-weight: var(--aura-font-weight-medium); }
+.workspace-calm .workspace-bar h1 .workspace-chat-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--aura-ink); }
+.workspace-calm .workspace-bar h1 .workspace-crumb { flex: none; max-width: 42%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--aura-ink-muted); font-weight: 400; }
+.workspace-calm .workspace-bar h1 .workspace-crumb:empty { display: none; }
+.workspace-calm .workspace-bar h1 .workspace-crumb::before { content: '·'; margin-right: 6px; color: var(--aura-ink-muted); }
+.topbar-mode { display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border: 0.5px solid var(--aura-border); border-radius: var(--aura-radius-sm); background: var(--aura-bg-tint); color: var(--aura-ink-secondary); font-size: 12px; line-height: 22px; font-weight: var(--aura-font-weight-medium); flex: none; }
+.topbar-mode:hover:not(:disabled) { background: var(--aura-bg-hover); color: var(--aura-ink); border-color: var(--aura-border-strong); }
+.topbar-mode:focus-visible { outline: 2px solid var(--aura-accent); outline-offset: 2px; }
+.topbar-mode::after { content: '⌄'; font-size: 11px; line-height: 1; color: var(--aura-ink-caption); }
+.topbar-mode[data-mode="chat"]::before, .topbar-mode[data-mode="plan"]::before, .topbar-mode[data-mode="free"]::before, .topbar-mode[data-mode="build"]::before { content: "◌"; }
+.topbar-mode[data-mode="plan"]::before { content: "≡"; }
+.topbar-mode[data-mode="free"]::before, .topbar-mode[data-mode="build"]::before { content: "◇"; }
+/* Samme faste 16 px-glyfboks som composer-chippen (P1 §2.5). */
+.topbar-mode::before { display: inline-grid; place-items: center; width: 16px; height: 16px; font-size: 13px; line-height: 1; color: var(--aura-accent); }
+.workspace-calm #surface-toggle { flex: none; min-width: 30px; padding: 4px 8px; font-size: 15px; line-height: 1; }
+/* T8 (P1-bekymring a): chippen har altid ét synligt hjem. Container-reglen
+   nedenfor skjuler composer-chippen i aktiv fase under 480 px — topbjælken
+   ejer valget dér. Den gamle 700 px-regel skjulte topbjælke-chippen på smalle
+   vinduer, og et vindue <700 px kunne derved miste BEGGE chips; chippen
+   viger derfor ikke længere — kun brødkrummen snævres. */
+@media (max-width: 700px) { .workspace-calm .workspace-bar h1 .workspace-crumb { max-width: 30%; } }
+
+/* ── Indstillingsmenuens ikonkolonne (P1, audit §2.5 → review F2) ──
+   #settings-menu bærer .menu-material; ikonerne — både svg'erne og
+   Datakontrol-skjoldet — står i én fast 16 px-boks, så tekst og ikoner
+   flugter på tværs af rækkerne (skjoldet stod ~3 px til venstre).
+   Selektoren er skræmmet til IKON-spans'ene (span[aria-hidden="true"]):
+   privacy-gate.js' span.privacy-entry-word er også et direkte span-barn, og
+   den uskremmede regel klemte "Datakontrol" til ét bogstav pr. linje. */
+#settings-menu button > span[aria-hidden="true"] { display: grid; place-items: center; width: 16px; flex: none; }
+#settings-menu button > span[aria-hidden="true"] svg { width: 16px; height: 16px; }
+#settings-menu .privacy-entry .privacy-shield { width: 16px; height: 16px; }
+
+/* ── Container queries på samtalepanelet (P1, audit §3) ──
+   Composeren kender sin egen bredde: panelet kan trækkes (og zoomes) uden,
+   at vinduets mediabrek kanter afgør layoutet. Under 480 px: arbejdsmåde-
+   chippen i AKTIV fase er skjult (B3 — topbjælken har den), tilladelsespillen
+   er et 28 px ikon, og værktøjslinjens gap går op på 8 px (§5.2). Heltefasen
+   beholder sin chip — dér er den eneste vælger. */
+#chat-panel { container: chat / inline-size; }
+@container chat (width < 480px) {
+  #chat-panel:not([data-phase="hero"]) #composer-mode { display: none; }
+  #permission-pill { width: 28px; height: 28px; padding: 0; gap: 0; justify-content: center; }
+  /* Etiketten fjernes visuelt men forbliver i tilgængelighedstræet som
+     pillens navn (wcag-mønsteret fra .visually-hidden) — et 28 px ikon uden
+     navn er ikke en kontrol. */
+  #permission-pill #permission-pill-label, #permission-pill .hero-chip-caret { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  /* #chat-panel-scopet slår .workspace-calm .composer-toolbar (0,2,0) —
+     panelets bredde, ikke vinduets, styrer gap'et (§5.2: 8 px under 560 px). */
+  #chat-panel .composer-toolbar { gap: 8px; }
+}
+
+/* ── Brugerbobler (§6.2) ──
+   Højrestillet med maks. 70% af kolonnen (ét tal — Codex' nit), padding
+   10/16, radius 20. Handlingsrækken (tid 13 px tertiær + kopi-glyf) er 28 px;
+   på den seneste besked er den altid synlig, på ældre fader den ind ved
+   hover/fokus på 80 ms. O2: tastatur- og touch-paritet — fokus-within viser
+   rækken, og uden hover-enhed står den altid frem. */
+.workspace-calm .chat-message.user { display: flex; flex-direction: column; gap: 2px; margin: 10px 0 2px auto; max-width: 70%; padding: 10px 16px; border-radius: var(--aura-radius-xl); }
+.workspace-calm .chat-message.user .chat-message-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; height: 28px; margin: 0 -6px 0 0; opacity: 0; transition: opacity 80ms var(--aura-ease-in-out); }
+.workspace-calm .chat-message.user:hover .chat-message-actions, .workspace-calm .chat-message.user:focus-within .chat-message-actions, .workspace-calm .chat-message.user.message-latest .chat-message-actions { opacity: 1; }
+@media (hover: none) { .workspace-calm .chat-message.user .chat-message-actions { opacity: 1; } }
+.chat-message-time { font-size: 13px; line-height: 18px; color: var(--aura-ink-muted); font-variant-numeric: tabular-nums; }
+.chat-message-time[hidden] { display: none; }
+.chat-message-copy { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; border: 0; background: none; color: var(--aura-ink-muted); }
+.chat-message-copy:hover:not(:disabled) { background: none; border: 0; color: var(--aura-ink); }
+.chat-message-copy:focus-visible { outline: 2px solid var(--aura-accent); outline-offset: 2px; }
+.chat-message-copy svg { width: 14px; height: 14px; }
+@media (prefers-reduced-motion: reduce) { .workspace-calm .chat-message.user .chat-message-actions { transition: none; } }
+
+/* Aura Prime: one stroke grammar for navigation, setup and workspace tools.
+   The SVGs carry no accessible text; their existing controls retain names. */
+.aura-ui-icon { display: inline-block; width: 18px; height: 18px; flex: none; vertical-align: middle; pointer-events: none; }
+.hero-chip-caret .aura-ui-icon { width: 12px; height: 12px; }
+.setup-symbol .aura-ui-icon { width: 24px; height: 24px; }
+.empty-code .aura-ui-icon { width: 28px; height: 28px; }
+.chat-choice-icon .aura-ui-icon { width: 22px; height: 22px; }
+:is(#surface-toggle, #project-menu-toggle, #refresh, #preview-options, #viewport-rotate) { display: inline-flex; align-items: center; justify-content: center; }
+/* A layout display on the slash list must not override the browser's closed
+   popover state. Otherwise an empty elevated strip remains above the chat. */
+#slash-menu:not(:popover-open) { display: none; }
+
+/* Review 4.11: optical sizing for the chip glyphs (same 16 px box as before). */
+#composer-mode[data-mode="chat"]::before, .topbar-mode[data-mode="chat"]::before { font-size: 15px; }
+#composer-mode[data-mode="plan"]::before, .topbar-mode[data-mode="plan"]::before { font-size: 13px; }
+#composer-mode:is([data-mode="free"], [data-mode="build"])::before, .topbar-mode:is([data-mode="free"], [data-mode="build"])::before { font-size: 11px; }
+
+/* Review 4.11: the info control reads as a recognisable circled "i" rather
+   than a loose letter beside chips and labels. Same 16 px hit box. */
+.info { width: 16px; height: 16px; border: 1px solid currentColor; border-radius: 50%; font-size: 11px; font-weight: 700; color: var(--aura-ink-secondary); opacity: .85; }
+.info:hover:not(:disabled), .info[aria-expanded="true"] { opacity: 1; }
+/* Review 4.11: the setup reason is guidance, not a warning. One info tone in both themes. */
+:root #setup-reason { background: var(--aura-accent-faint); color: var(--aura-ink); border: 1px solid var(--aura-accent-subtle); }

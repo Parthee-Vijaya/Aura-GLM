@@ -39,6 +39,10 @@ const helpers = require('./ui-test-helpers.cjs');
     await page.screenshot({ path: path.join(evidence, 'setup-design-baseline.png') });
     const obsolete = await page.evaluate(() => window.harness.featuresSave({ scope: 'alle', values: { design: false } }));
     check('The real IPC cannot switch design off', obsolete.ok && obsolete.value.effective.design === true);
+    // Fuldvinduesfladen: idéfladen viser intet panel — prøven opretter først
+    // en idé, så panelets indgange er tilbage.
+    await page.fill('#name', 'Designprøve'); await page.fill('#purpose', 'Holder designgrundlagets prøver adskilt.');
+    await page.click('#create'); await page.waitForSelector('#workspace:not([hidden])');
     await helpers.menuClick(page, '#features-button');
     await page.click('.features-always > summary');
     const rules = await page.locator('.features-always li').allTextContents();

@@ -51,6 +51,15 @@ test('historikken har en øvre grænse, og værktøjsdata lagres ikke', async t 
   const stored=await history.readChat(root,id); assert.equal(stored.messages.length,200); assert.equal(stored.trimmed,true); assert.equal(stored.messages.at(-1).text,'Svar 219');
   assert.equal(JSON.stringify(stored).includes('hemmeligt'),false);
 });
+test('modtagelsestidspunktet gemmes med beskeden — og opfindes aldrig for ældre beskeder', async t => {
+  const {root,history}=await setup(t); const {active:id}=await history.open({root,name:'Tider'});
+  await history.saveRun(root,id,run([{id:'u',role:'user',text:'Med tid',at:1730000000000},{id:'g',role:'user',text:'Uden tid'}]));
+  const stored=await history.readChat(root,id);
+  assert.equal(stored.messages[0].at,1730000000000,'D4b §6.2: brugerrækkens tidspunkt overlever gemningen');
+  assert.equal(stored.messages[1].at,undefined,'en besked uden målt tidspunkt får intet opfundet');
+  assert.deepEqual(Object.keys(stored.messages[0]).sort(),['at','id','role','text'],'saneringen lukker alle andre felter ude');
+});
+
 test('ny samtale efter en beskadiget projektfil gemmer filen til side og finder samtalerne igen', async t => {
   const {root,history}=await setup(t);
   const {active:id}=await history.open({root,name:'Arkiv'});
@@ -142,4 +151,36 @@ test('samtalens navn er første sætning af første besked, højst 60 tegn ved e
   const long=titleFrom([{role:'user',text:'En lang beskrivelse af en side til foreningens medlemmer med kalender og tilmelding til arrangementer'}]);
   assert.ok(long.endsWith(' …')); assert.ok(long.length<=62); assert.doesNotMatch(long,/\S+[^\s…]…$/);
   assert.equal(titleFrom([]),''); assert.equal(titleFrom([{role:'user',text:'   '}]),'');
+});
+
+// Efter-byg F5 (Codex d1): titel-stripningen filtrerer på KENDTE tokens —
+// RESERVED ∪ SKILL_TOKENS-aliasser ∪ de registrerede skill-tokens fra
+// biblioteket. Et bart /ord er indhold; en ÆGTE skill-aktivering er kommando.
+test('efter-byg F5: WorkspaceHistory stripper registrerede skill-tokens men bevarer bare /ord', async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'harness-history-known-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const store = new Store(path.join(root, 'state'));
+  const history = new WorkspaceHistory(store, { knownTokens: () => ['harness-kodestil', 'harness-design'] });
+  const project = { root, name: 'Kendte tokens' };
+  const { active: id } = await history.open(project);
+  await history.saveRun(root, id, run([{ id: 'u', role: 'user', text: '/harness-kodestil Ret typografien på forsiden. Blå.' }]));
+  const chats = await history.chats(root);
+  assert.equal(chats[0].title, 'Ret typografien på forsiden', 'en ÆGTE skill-aktivering er kommandosyntaks — ikke titelindhold');
+  // Kladde-faldet: en ny tom samtale med en kladde afleder titlen fra kladden
+  // gennem samme kilde (summary) — kendte tokens strippes også dér.
+  const fresh = (await history.createChat(root)).id;
+  await history.draft(root, fresh, { text: '/harness-kodestil Ret fonte. Grøn.', mode: 'chat' });
+  const withDraft = await history.chats(root);
+  assert.equal(withDraft.find(chat => chat.id === fresh).title, 'Ret fonte', 'kladde-faldet stripper kendte tokens med — samme kilde');
+  // Et bart /ord er indhold: en ny samtale med '/src-mappen' som FØRSTE besked.
+  const third = (await history.createChat(root)).id;
+  await history.saveRun(root, third, run([{ id: 'u2', role: 'user', text: 'Ryd op i /src-mappen. Blåt.' }]));
+  const kept = await history.chats(root);
+  assert.equal(kept.find(chat => chat.id === third).title, 'Ryd op i /src-mappen', 'et bart /ord er brugerens indhold og bevares');
+});
+
+test('efter-byg F5: uden provider gælder det statiske sæt (RESERVED ∪ aliaser)', () => {
+  assert.equal(titleFrom([{ role: 'user', text: '/design Lav en forside. Blå.' }]), 'Lav en forside', 'aliasset /design er kendt uden provider');
+  assert.equal(titleFrom([{ role: 'user', text: '/stil Vælg en stil. Blå.' }]), 'Vælg en stil', '/stil er kendt (RESERVED)');
+  assert.equal(titleFrom([{ role: 'user', text: '/harness-kodestil Ret typografien. Blå.' }]), '/harness-kodestil Ret typografien', 'en skill er IKKE kendt uden provider — intet strippes i faldet');
 });

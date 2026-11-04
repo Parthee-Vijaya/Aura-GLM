@@ -6,9 +6,23 @@ const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { PrivacyGateError, stable } = require('./policy.cjs');
 const { relativePath, assertUnambiguousPaths } = require('./hybrid-paths.cjs');
+// S3-fix (Codex Important 1): snapshottet accepterer de samme præcise datatyper
+// med de samme budgetter som skillloaderen — ellers fejler ethvert /design-send
+// i hybrid, kontrolleret cloud og beskyttet lokal med PRIVACY_STALE, FØR
+// inspektøren når at vurdere indholdet.
+const { DATA_FILE, DATA_FILE_BUDGET } = require('../library.cjs');
 const fail = () => new PrivacyGateError('PRIVACY_STALE', 'De valgte skills eller referencer kunne ikke fastholdes. Gennemgå materialet igen.');
 const sha = value => createHash('sha256').update(value).digest('hex');
 function freeze(value) { if (value && typeof value === 'object') { Object.freeze(value); for (const item of Object.values(value)) freeze(item); } return value; }
+function assertSkillFile(file) {
+  if (!/^(SKILL\.md|references\/[a-z0-9-]+\.md)$/.test(file?.path || '') && !DATA_FILE.test(file?.path || '')) throw fail();
+  if (typeof file.content !== 'string') throw fail();
+  if (DATA_FILE.test(file.path)) {
+    if (Buffer.byteLength(file.content) > DATA_FILE_BUDGET[file.path]) throw fail();
+    if (/\.json$/.test(file.path)) { try { JSON.parse(file.content); } catch { throw fail(); } }
+  }
+  return true;
+}
 async function referenceBytes(file, before) {
   const handle = await fs.open(file, constants.O_RDONLY | constants.O_NOFOLLOW);
   try {
@@ -28,7 +42,8 @@ async function snapshotInputs(root, context, references = []) {
   const skills = context.skills.map(skill => {
     if (!/^[a-z0-9-]{1,100}$/.test(skill?.name || '') || !Array.isArray(skill.files) || !skill.files.some(file => file.path === 'SKILL.md')) throw fail();
     const files = skill.files.map(file => {
-      if (!/^(SKILL\.md|references\/[a-z0-9-]+\.md)$/.test(file?.path || '') || typeof file.content !== 'string' || (size += Buffer.byteLength(file.content)) > 8_000_000) throw fail();
+      assertSkillFile(file);
+      if ((size += Buffer.byteLength(file.content)) > 8_000_000) throw fail();
       return { path: file.path, content: file.content, sha256: sha(file.content) };
     });
     return { name: skill.name, files, sha256: sha(stable(files)) };

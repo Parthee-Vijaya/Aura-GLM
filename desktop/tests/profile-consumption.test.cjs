@@ -238,7 +238,7 @@ function runChat({ profile = null, storage = {}, view = freshView() } = {}) {
     current: { root: '/projekt' }, activePlan: null,
     appendMessage: () => { const element = new El('div'); view.log.children.push(element); return element; },
     renderHistoryControls: () => {}, updatePlanOffer: () => {}, defaultMode: () => 'chat',
-    setRunning: () => {}, renderStatus: () => {}, renderUsage: () => {},
+    setRunning: () => {}, renderStatus: () => {}, renderStatusLine: () => {}, setDraftStatus: () => {},
     updateWorkMode: () => {}, updateStartIdea: () => {}, applyRunning: () => {}, node
   };
   vm.runInNewContext([
@@ -628,7 +628,7 @@ function runPanelSurface({ profile = { appearance: { theme: 'dark' } }, panelSav
     localStorage: { getItem: key => { storage.push(['getItem', key]); return null; }, setItem: (key, value) => { storage.push(['setItem', key]); }, removeItem: key => { storage.push(['removeItem', key]); } },
     show: () => {}
   };
-  vm.runInNewContext(sliceOf(workspaceSource, '// ── DSH-stil: arbejdsfladen er et valgfrit højrepanel ──', 'function show(name, { focus = false } = {}) {'), context);
+  vm.runInNewContext(sliceOf(workspaceSource, '// ── DSH-stil: arbejdsfladen er et valgfrit højrepanel ──', 'function show(name,'), context);
   return { context, grid, toggle, windowListeners, saves, storage, announced };
 }
 test('arbejdsfladen: starttilstanden kommer fra aura:profile, og skift gemmes i profilen — ikke localStorage', async () => {
@@ -664,6 +664,8 @@ function makeProjectChoiceDom() {
   make('select', 'connection-select'); make('select', 'model-select'); make('div', 'route-row');
   make('select', 'route-select'); make('details', 'model-options'); make('button', 'start-idea');
   make('p', 'project-startup');
+  // D2+D3: projekt-chippen (navnet + ⓘ'en med projektoplysningerne).
+  make('span', 'project-chip-name'); make('button', 'project-chip-info'); make('p', 'project-path');
   return { ...makeDocument(body), registry };
 }
 function runProjectChoice({ saved = null, startup = null, autoConnect = false, connections = [{ id: 'c1' }], standardAI = { connectionID: '', modelID: '' } } = {}) {

@@ -39,7 +39,7 @@ const helpers = require('./ui-test-helpers.cjs');
       ipcMain.removeHandler('deployment:setup-cancel');
       ipcMain.handle('deployment:setup-cancel', (_event, input, owner) => { probe.cancelled.push({ input, owner }); probe.loginReject?.(Error('Login blev afbrudt.')); return { ok: true, value: true }; });
     }, project);
-    await helpers.skipIntroduction(page); await helpers.enableSharing(page); await page.click('#open'); await page.waitForSelector('#workspace:not([hidden])');
+    await helpers.skipIntroduction(page); await helpers.enableSharing(page); await require('./ui-test-helpers.cjs').clickOpen(page); await page.waitForSelector('#workspace:not([hidden])');
     await helpers.menuClick(page, '#features-button');
     const feature = page.locator('#features-list .feature-row[data-feature="integration-komplai-run"]');
     const toggle = feature.locator('input[role="switch"]');

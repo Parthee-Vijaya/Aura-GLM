@@ -10,12 +10,14 @@ const { content } = require('./git.cjs');
 const { capture, changes } = require('./changes.cjs');
 const connections = require('./connections.cjs');
 const { ContextUsage } = require('./context-usage.cjs');
+const { StepTiming, toDTO: speedDTO } = require('./step-timing.cjs');
 const { localMetrics } = require('./run-metrics.cjs');
 const contextEngine = 'opencode@' + require('../runtime-lock.json').opencode;
 const modelConsent = require('./model-consent.cjs');
 const { projectInstructions, instructionText } = require('./project-instructions.cjs');
 const { guidanceFor, appRules } = require('./project-guidance.cjs');
-const { primaryBuildGuidance } = require('./build-design.cjs');
+const slashCommands = require('./slash-commands.cjs');
+const { primaryBuildGuidance, readProjectDesignDocument, designDocumentText } = require('./build-design.cjs');
 const { startGateway } = require('./gateway.cjs');
 const { toolEntry, toolFiles, approvalTarget, approvalTitles } = require('./activity.cjs');
 const { taskSummary, sessionSummary, fileDetail, sessionAttribution, hash } = require('./change-review.cjs');
@@ -44,6 +46,9 @@ function composeAppContext({ prepared, project, plan, planConversation, dismisse
     primaryColor: prepared.disclosure.projectDesign?.primaryColor
   });
   if (design) system += add('Hovedskill til bygning', '\n' + design);
+  // S3: projektets egen DESIGN.md sendes som en selvstændig, hashbundet komponent —
+  // data med kilde og kontrolsum, aldrig en tilladelse.
+  if (prepared.projectDesignDocument) system += add('Projektets DESIGN.md', '\n' + designDocumentText(prepared.projectDesignDocument));
   system += add('Projektets AGENTS.md', '\n' + instructionText(prepared.context.projectInstructions));
   system += add('Samtaleregler', '\n' + conversationMode.rules);
   if (prepared.mode === 'chat') system += add('Arbejdsmåde', '\nAktuel arbejdsmåde: Samtale. Besvar brugerens spørgsmål; skriv ikke en byggeplan.');
@@ -105,6 +110,10 @@ class ChatSession {
     this.bench = bench; this.projectContext = bench.project; this.id = data.id; this.data = data; this.root = root;
     this.plan = data.plan || null; this.planConversation = [...(data.planConversation || [])]; this.lastPlan = data.lastPlan || null;
     this.usageBase = { ...emptyUsage(), ...(data.usage || {}) };
+    // D5a: den seneste afsluttede turs hastighedsmåling (indholdsfri DTO). Ukendt
+    // forbliver ukendt — 0 i statuslinjen er en visningsværdi, ikke en måling.
+    this.speedBase = speedDTO(data.speed);
+    this.runStepTiming = null;
     this.contextUsage = new ContextUsage();
     this.running = false; this.starting = false; this.finishing = null; this.stopping = null; this.closing = null; this.qualityChecking = null; this.generation = 0; this.task = null; this.prepared = null;
     this.engine = null; this.gateway = null; this.engineIdentity = null; this.allowProjectEdits = false; this.historyWarning = '';
@@ -130,8 +139,30 @@ class ChatSession {
     for (const [id,tokens] of this.runSteps || []) addStep(usage, tokens, this.runPrices?.has(id)?this.runPrices.get(id):this.runPrice);
     return usage;
   }
+  // Den aktuelle turs observerede svarhastighed (D5a). Kører en tur, er det
+  // turens eget aggregat (ukendt, indtil et gyldigt trin er målt); Privacy
+  // Gate-runtid måler ikke. Efter turen vises den afsluttede turs resultat.
+  currentSpeed() {
+    if (this.running || this.starting || this.sending) return this.turnSpeed();
+    return this.speedBase || null;
+  }
+  // Turens EGEN måling — registret vinder, også når kørselsflagene allerede er
+  // sat fra (afbrudt tur i closeCurrentRun og fejlstien i sendPrepared): den
+  // afsluttende tur må aldrig genindlæse den forrige turs tal, og en tur uden
+  // register (Privacy Gate) eller uden gyldige trin efterlader ukendt — 0 i
+  // linjen er en visningsværdi. Faldet tilbage til speedBase gælder kun, når
+  // ingen tur er i gang.
+  turnSpeed() {
+    if (this.runStepTiming) {
+      const dto = this.runStepTiming.dto();
+      const ttft = this.runMeasurement?.data?.ttft_ms;
+      return Number.isFinite(ttft) ? { ...dto, ttftMs: Math.round(ttft) } : dto;
+    }
+    if (this.running || this.starting || this.sending) return null;
+    return this.speedBase || null;
+  }
   // Det, brugerfladen skal bruge for at vise samtalen.
-  view() { return { id: this.id, title: this.title, workspace: this.data, plan: this.plan, lastPlan: this.lastPlan, usage: this.currentUsage(), contextUsage: this.contextUsage.snapshot(), running: this.running, historyWarning: this.historyWarning }; }
+  view() { return { id: this.id, title: this.title, workspace: this.data, plan: this.plan, lastPlan: this.lastPlan, usage: this.currentUsage(), speed: this.currentSpeed(), contextUsage: this.contextUsage.snapshot(), running: this.running, historyWarning: this.historyWarning }; }
   checkpointEvent(event) {
     if (event.type !== 'git.checkpoint') return;
     this.lastCheckpoint = event;
@@ -198,7 +229,7 @@ class ChatSession {
   historySnapshot(status, clearDraft = false) {
     const messages = this.runUser ? [this.runUser] : [];
     for (const part of this.runText?.values() || []) if (this.runRoles?.get(part.messageID) === 'assistant') messages.push({ id: part.id, role: 'assistant', text: conversationMode.visible(part.text || '') });
-    return { messages, plan: this.plan || null, lastPlan: this.lastPlan || null, planConversation: [...(this.planConversation || [])], status, mode: this.runMode || 'chat', clearDraft, usage: this.currentUsage() };
+    return { messages, plan: this.plan || null, lastPlan: this.lastPlan || null, planConversation: [...(this.planConversation || [])], status, mode: this.runMode || 'chat', clearDraft, usage: this.currentUsage(), speed: this.currentSpeed() };
   }
   async saveHistory(status, clearDraft = false) {
     if (this.historyWarning) return;
@@ -251,6 +282,21 @@ class ChatSession {
     if (input.chatMaterials != null && !chatMaterials) throw new Error('Gennemgå filvalget igen.');
     const context = await bench.skills.context(projectRoot);
     context.projectInstructions = await projectInstructions(this.root);
+    // S3 (Codex finding): byggevejledningen læser selv projektets DESIGN.md —
+    // en kontrolleret læsning (almindelig fil, intet symlink, loft, streng
+    // UTF-8), bundet som data med sha256. Nøglen findes kun, når filen findes,
+    // så projekter uden DESIGN.md beholder et byte-identisk fingeraftryk.
+    const projectDesignDocument = await readProjectDesignDocument(this.root);
+    // S2 slash-framework: værten genvaliderer beskedens /-tokens fra selve
+    // teksten — både indsatte og håndskrevne — og aktiverer de navngivne
+    // skills for DENNE afsendelse. Fjernes tokenet, fjernes aktiveringen.
+    // Rendererens invokedSkills er kun en formvalideret meddelelse; aktiveringen
+    // kommer aldrig fra den. Grundreglerne, de altid-aktive skills og projektets
+    // funktionsvalg kan ikke slås fra gennem kommandoen — aktivering tilføjer.
+    if (input.invokedSkills !== undefined && (!Array.isArray(input.invokedSkills) || input.invokedSkills.length > 8 || input.invokedSkills.some(name => typeof name !== 'string' || name.length > 64))) throw new Error('Ugyldige kommandoer i beskeden.');
+    const command = slashCommands.resolve(typeof input.text === 'string' ? input.text : '', await bench.skills.list(projectRoot));
+    const runContext = await bench.skills.effective(projectRoot, command.skills);
+    runContext.projectInstructions = context.projectInstructions;
     const settings = await bench.store.project(projectRoot);
     const approvalSettings = await bench.approvalsPolicy.settings(projectRoot);
     const autoCommandsSnapshot = !['chat', 'plan'].includes(mode) && approvalSettings.autoCommands === true;
@@ -275,6 +321,13 @@ class ChatSession {
     disclosure.projectDesign = require('./projects.cjs').designContext(currentProject);
     disclosure.projectGuidance = guidanceFor(bench.surface, settings.runtime);
     disclosure.projectInstructions = context.projectInstructions;
+    if (projectDesignDocument) disclosure.projectDesignDocument = projectDesignDocument;
+    // S5: en anvendt GradientDeck-stil oplyses i gennemgangen («Ekstern
+    // designreference: <navn> · ui.gradientdeck.com») — nøglen findes KUN,
+    // når DESIGN.md bærer kildelinjen, så projekter uden en ekstern reference
+    // beholder et byte-identisk fingeraftryk. Selve stilens INDHOLD tæller
+    // allerede med gennem projectDesignDocument (S3).
+    if (projectDesignDocument?.external) disclosure.gradientdeckStyle = `${projectDesignDocument.external.name} · ui.gradientdeck.com`;
     const sessionMaterial = disclosure.material;
     disclosure.rules = context.rules;
     if (['plan', 'build'].includes(mode)) disclosure.material += ' Plan og tidligere afklaring medsendes. De kan indeholde oplysninger fra tidligere valgte referencer, også efter at referencerne fravælges. Gennemgå indholdet nedenfor.';
@@ -285,7 +338,11 @@ class ChatSession {
     disclosure.effort = input.effort || null;
     disclosure.planID = mode === 'build' ? this.plan.id : null;
     disclosure.references = references;
-    disclosure.skills = context.titles;
+    disclosure.skills = runContext.titles;
+    // Før du sender viser de aktiverede kommandoer; nøglen findes kun, når der
+    // er aktiveringer, så fingeraftrykket for en besked uden kommandoer er
+    // byte-identisk med tidligere versioner (ældre modelsessioner genkendes).
+    if (command.invocations.length) disclosure.commandInvocations = command.invocations.map(item => `${item.token} · ${item.title}`);
     // Briefen følger med, når planlægning er slået til eller bruges. Den står under Se alle oplysninger.
     disclosure.brief = (context.features.planlaegning !== false || mode !== 'free') ? brief.briefText(bench.brief) : '';
     disclosure.fileReferences = checkedRefs.map(projectFiles.referenceLabel);
@@ -301,14 +358,14 @@ class ChatSession {
     // Indsatsen sættes på gatewayen ved hver besked og starter ikke en ny modelsession; samtalens historik bevares.
     const { planContext, conversation, historyIncluded, fileReferences, fileReferenceText, previewReference, previewReferenceText, brief: briefContext, workspace: localWorkspace, effort: chosenEffort, effortLevels, ...consent } = disclosure;
     // Den fulde afsendelsesbinding genstarter motoren med den aktuelle tilladelsespolitik.
-    disclosure.fingerprint = crypto.createHash('sha256').update(JSON.stringify(consent) + JSON.stringify({ connectionRevision: selection.connection.revision || null, rules: context.rules, skills: context.skills, features: context.features, projectInstructions: context.projectInstructions, surface: bench.surface, autoCheckpoint, commandIsolation, commandStandby, autoCommandsSnapshot })).digest('hex');
+    disclosure.fingerprint = crypto.createHash('sha256').update(JSON.stringify(consent) + JSON.stringify({ connectionRevision: selection.connection.revision || null, rules: context.rules, skills: runContext.skills, features: context.features, projectInstructions: context.projectInstructions, surface: bench.surface, autoCheckpoint, commandIsolation, commandStandby, autoCommandsSnapshot })).digest('hex');
     // Hukommelsen følger samme konto, model, regler og referenceadgang gennem
     // Planlæg/Byg og planrevisioner. Den giver ingen nye værktøjstilladelser.
     // Startpunktet beskriver aktuelle projektfiler; øvrige designvalg er bundet.
     const { mode: policyMode, planID: approvedPlan, projectDesign, ...sessionConsent } = consent;
     const { startingPoint, ...sessionDesign } = projectDesign;
     const engineVersion = require('./engine.cjs').VERSION;
-    const fingerprintForVersion = version => crypto.createHash('sha256').update(JSON.stringify({ version: 1, connectionID: selection.connection.id, engineVersion: version, workspaceRoot: this.root, ...sessionConsent, material: sessionMaterial, projectDesign: sessionDesign }) + JSON.stringify({ connectionRevision: selection.connection.revision || null, rules: context.rules, skills: context.skills, features: context.features, projectInstructions: context.projectInstructions, surface: bench.surface, autoCheckpoint, autoCommands: approvalSettings.autoCommands === true })).digest('hex');
+    const fingerprintForVersion = version => crypto.createHash('sha256').update(JSON.stringify({ version: 1, connectionID: selection.connection.id, engineVersion: version, workspaceRoot: this.root, ...sessionConsent, material: sessionMaterial, projectDesign: sessionDesign }) + JSON.stringify({ connectionRevision: selection.connection.revision || null, rules: context.rules, skills: runContext.skills, features: context.features, projectInstructions: context.projectInstructions, surface: bench.surface, autoCheckpoint, autoCommands: approvalSettings.autoCommands === true })).digest('hex');
     const sessionFingerprint = fingerprintForVersion(engineVersion);
     const previousEngine = this.data.opencode;
     // A runtime upgrade must not silently discard same-account conversational
@@ -343,7 +400,7 @@ class ChatSession {
     // Forhåndsvisningens størrelse til før/efter-billederne. Kun tal; siden findes i hovedprocessen.
     const view = input.view && Number.isFinite(input.view.width) && Number.isFinite(input.view.height) ? { width: Math.round(input.view.width), height: Math.round(input.view.height) } : null;
     if ((bench.connectionVersions.get(input.connectionID) || 0) !== connectionVersion) throw new Error('Forbindelsen blev ændret. Gennemgå oplysningerne igen.');
-    this.prepared = { mode, engineFingerprint, chatMaterials, ...selection, disclosure, sessionFingerprint, engineVersion, engineMigration, references, fileRefs: checkedRefs, previewTarget: target, view, context, autoCheckpoint, commandIsolation, commandStandby, commandSandboxSupported: commandSupport.available, autoCommandsSnapshot, startup, runtime: settings.runtime, root: this.root };
+    this.prepared = { mode, engineFingerprint, chatMaterials, ...selection, disclosure, sessionFingerprint, engineVersion, engineMigration, references, fileRefs: checkedRefs, previewTarget: target, view, context: runContext, autoCheckpoint, commandIsolation, commandStandby, commandSandboxSupported: commandSupport.available, autoCommandsSnapshot, startup, runtime: settings.runtime, projectDesignDocument, root: this.root };
     const prepared = this.prepared;
     prepared.privacy = await bench.privacyRuntimeProvider?.prepareChat(this, prepared);
     prepared.handoff = engineMigration ? disclosure.conversation : this.engineIdentity === engineFingerprint && this.engine?.active ? this.engineConversation || '' : this.data.opencode?.sessionFingerprint === sessionFingerprint ? this.data.opencode.conversation || '' : disclosure.conversation || '';
@@ -386,6 +443,10 @@ class ChatSession {
     this.runMeasurement = this.preparedMeasurement;
     const checkStopped = () => { if (generation !== this.generation) throw new Error('Opgaven blev stoppet før afsendelse.'); };
     if (Object.hasOwn(prepared.context, 'projectInstructions') && JSON.stringify(await projectInstructions(this.root)) !== JSON.stringify(prepared.context.projectInstructions)) throw new Error('Projektets AGENTS.md har ændret sig. Gennemgå oplysningerne igen før afsendelse.');
+    // S3: et ændret projektdesign ugyldiggør gennemgangen — indholdet er bundet med sha256, ikke genlæst i stilhed.
+    // S3-fix (Minor 4): også FRAVÆR er bundet — en DESIGN.md, der oprettes efter
+    // gennemgangen, kræver ny gennemgang, præcis som en ændret eller slettet fil.
+    if (JSON.stringify(await readProjectDesignDocument(this.root)) !== JSON.stringify(prepared.projectDesignDocument ?? null)) throw new Error('Projektets DESIGN.md har ændret sig. Gennemgå oplysningerne igen.');
     if (prepared.guard) {
       if (prepared.messageText !== null && prepared.messageText !== input.text) throw new Error('Beskeden er ændret. Gennemgå konteksten igen.');
       if (input.contextBinding !== prepared.disclosure.contextBinding) throw new Error('Gennemgå den aktuelle kontekst før afsendelse.');
@@ -407,12 +468,17 @@ class ChatSession {
     this.runQuality = null; this.qualityFingerprints = new Set(); this.qualityAwaitingReply = null; this.runRejected = false; this.runSystem = null; this.qualityBinding = null;
     this.runMode = prepared.mode; this.runConnectionID = prepared.connection.id; this.runText = new Map(); this.runTools = new Map(); this.runRoles = new Map(); this.allowProjectEdits = false; this.taskRules = new Set(); this.approvals.clear(); this.runFinish = null; this.runFailure = null;
     this.usageBase = this.currentUsage(); this.runSteps = new Map(); this.runPrices = new Map(); this.runPrice = connections.priceFor(prepared.connection, prepared.model, prepared.route);
+    // D5a: denne turs trinregister — bundet til samtalen, generationen og den
+    // valgte forbindelse, model og rute. Privacy Gate-runtiden måler ikke.
+    this.runStepTiming = prepared.privacy ? null : new StepTiming({ chatID: this.id, engineID: contextEngine, connectionID: prepared.connection.id, modelID: prepared.model.id, routeID: prepared.route?.id || '' });
     if (prepared.mode === 'plan') {
       if (this.planConversation.join('\n').length + text.length > 120000) throw new Error('Afklaringen er blevet for lang. Start en ny samtale for at lave en ny plan.');
       this.retirePlan('ny'); this.planConversation.push(text);
     }
     const runPlan = JSON.stringify({ plan: this.plan, conversation: this.planConversation, dismissed: this.data.planOffersDismissed });
-    this.runUser = { id: crypto.randomUUID(), role: 'user', text: shown };
+    // at er modtagelsestidspunktet til brugerrækken i samtalen (§6.2) — et
+    // faktisk observationstidspunkt, aldrig et bagefter opfundet tidspunkt.
+    this.runUser = { id: crypto.randomUUID(), role: 'user', text: shown, at: Date.now() };
     this.running = true; this.starting = true; bench.chatsChanged();
     await this.saveHistory('working', true);
     this.emit({ type: 'run.status', status: 'starting' });
@@ -460,7 +526,11 @@ class ChatSession {
       } else {
       if (this.engineIdentity !== (prepared.engineFingerprint || prepared.disclosure.fingerprint) || sessionIdentityChanged || !this.engine?.active || prepared.commandIsolation) {
         await this.close(false); await bench.closeOthers(this); checkStopped();
-        this.commandSandbox = (prepared.commandIsolation || prepared.commandStandby) ? await require('./command-sandbox.cjs').prepare({ standby: !prepared.commandIsolation, workspaceRoot: this.root, scratchRoot: this.scratchRoot, directory: path.join(bench.store.root, 'sandboxes', bench.store.projectKey(projectRoot), this.id, this.task.id + '-policy') }) : null;
+        // S3-fix (Codex Important 2): motorens konfigmappe er én sti — sandboxens
+        // læseadgang til skillmappen og engineFactory bruger den samme, så
+        // rollen altid kan læse sine filer fra det sted, motoren skrev dem.
+        const engineDirectory = path.join(bench.store.root, 'runtime-v2', bench.store.projectKey(this.root));
+        this.commandSandbox = (prepared.commandIsolation || prepared.commandStandby) ? await require('./command-sandbox.cjs').prepare({ standby: !prepared.commandIsolation, workspaceRoot: this.root, scratchRoot: this.scratchRoot, skillsRoot: path.join(engineDirectory, 'config', 'skills'), directory: path.join(bench.store.root, 'sandboxes', bench.store.projectKey(projectRoot), this.id, this.task.id + '-policy') }) : null;
         checkStopped();
         const key = bench.store.decrypt(prepared.connection);
         const gateway = await startGateway(prepared.connection, prepared.model, key, prepared.route, (message, failure) => {
@@ -484,7 +554,7 @@ class ChatSession {
         const resume = sameSession ? savedSession.session : null;
         // V2 has an automatic, in-place legacy database migration. Keep the V1
         // engine directory intact; host-owned context is handed to a fresh V2 DB.
-        this.engine = bench.engineFactory({ root: this.root, directory: path.join(bench.store.root, 'runtime-v2', bench.store.projectKey(this.root)), provider, model: prepared.model, references: prepared.references, mode: prepared.mode, skills: prepared.context.skills, resume, sandbox: this.commandSandbox, measurement: this.runMeasurement, onEvent: event => { if (this.engine === instance) this.event(event); } });
+        this.engine = bench.engineFactory({ root: this.root, directory: engineDirectory, provider, model: prepared.model, references: prepared.references, mode: prepared.mode, skills: prepared.context.skills, resume, sandbox: this.commandSandbox, measurement: this.runMeasurement, onEvent: event => { if (this.engine === instance) this.event(event); } });
         const instance = this.engine;
         await this.engine.start(); checkStopped(); this.engineIdentity = (prepared.engineFingerprint || prepared.disclosure.fingerprint);
         this.engineConversation = prepared.handoff ?? (this.engine.resumed ? this.data.opencode?.conversation || '' : prepared.disclosure.conversation || '');
@@ -496,6 +566,11 @@ class ChatSession {
       }
       }
       this.contextUsage.bind({ connectionID: prepared.connection.id || '', modelID: prepared.model.id, routeID: prepared.route?.id || '', engineID: contextEngine, sessionID: this.engine.session?.id || '', model: prepared.model });
+      // Motorens session er nu kendt: registraturet bindes til den. En ny tur
+      // nulstiller hastighedsmålingen (D5a/Codex): linjen viser 0, indtil
+      // denne tur leverer en gyldig måling — kontekstbindingen er også ny.
+      this.runStepTiming?.bindSession(this.engine.session?.id || '');
+      this.emit({ type: 'usage', usage: this.currentUsage(), contextUsage: this.contextUsage.snapshot(), speed: this.currentSpeed() });
       let system = prepared.appContext ? prepared.appContext.system : composeAppContext({ prepared, project: this.project, plan: this.plan, planConversation: this.planConversation, dismissed: this.data.planOffersDismissed, handoff: this.engineConversation, surface: bench.surface }).system;
       if (this.copy && !prepared.privacy) system += '\nArbejd kun i denne samtales kopi: ' + this.root + '. Projektets oprindelige mappe er ikke dit arbejdsområde. Aura håndterer indfletning separat efter brugerens gennemgang.';
       system += prepared.privacy ? '\nMidlertidige hjælpefiler skal blive i det isolerede arbejdsområde, som denne kørsel stiller til rådighed. Aura gennemgår tilbageførsel til projektet separat.' : '\nMidlertidige hjælpefiler til denne opgave kan ligge i ' + JSON.stringify(this.scratchRoot) + '. Brug kun denne midlertidige mappe; den hører til denne samtale.';
@@ -530,10 +605,13 @@ class ChatSession {
       return true;
     } catch (error) {
       if ((this.copy || bench.checkpointOwner === this)) { this.checkpoints.cancel(); await this.checkpoints.finish(); }
-      this.running = false; bench.release(this);
+      bench.release(this);
       if (!this.runStopped) this.log({ kind: 'error', title: 'Opgaven kunne ikke starte', detail: error.message, status: 'error', task: this.task?.id });
       const diff = this.runStopped && this.runBefore ? await changes(this.root, this.runBefore).catch(() => null) : null;
+      // finishTask fryser turens EGEN måling, mens kørselsflaget endnu står —
+      // ellers ville den fejlslagne tur arve den forrige turs tal (D5a).
       const task = await this.finishTask(this.runStopped ? 'stopped' : 'error', diff);
+      this.running = false;
       if (this.runStopped) { this.emit(this.runReview('stopped', diff, task)); this.afterImage(task); }
       await this.saveHistory(this.runStopped ? 'stopped' : 'error'); await this.close(); this.emit({ type: 'run.status', status: this.runStopped ? 'stopped' : 'error' }); bench.chatsChanged(); throw error;
     } finally { this.starting = false; }
@@ -578,6 +656,14 @@ class ChatSession {
   }
   // En afsluttet opgave gemmes med sine ændringer, så Ændringer kan vise dem og sige, hvem der lavede dem.
   async finishTask(status, diff) {
+    // D5a: turens hastighedsmåling afsluttes med turen — fra TURENS EGET register,
+    // også når kørselsflagene er sat fra på forhånd (afbrudt/fejlet tur): resultatet
+    // bevares til genåbning, sene trin kan ikke lægge tal til en lukket tur, og en
+    // tur uden kvalificeret måling (fx Privacy Gate-runtid) efterlader ukendt:
+    // 0 i linjen er en visningsværdi. Diagnostics får tallet ved siden af ttft_ms.
+    this.speedBase = this.turnSpeed();
+    this.runMeasurement?.speed(this.speedBase);
+    this.runStepTiming = null;
     this.runMeasurement?.finish(status === 'idle' ? 'completed' : status === 'stopped' ? 'stopped' : 'error');
     const task = this.task; if (!task) return null;
     this.task = null;
@@ -709,9 +795,11 @@ class ChatSession {
     return this.changes;
   }
   // En ændring, brugeren selv har lavet i Aura, står under Ændringer og Aktivitet som brugerens.
-  recordEdit({ kind, label, files, title, target, detail, undoes, log = true }) {
+  // `what` navngiver ændringen i Fortryd-kvitteringen (fx 'stil-anvendelsen');
+  // uden den vælges den sædvanlige tekst efter ændringens art.
+  recordEdit({ kind, label, files, title, target, detail, undoes, log = true, what = null }) {
     const at = Date.now();
-    const task = { id: crypto.randomUUID(), root: this.root, kind, label, mode: kind, status: 'idle', startedAt: at, endedAt: at, files, skipped: 0, unavailable: false, commands: 0, aiFiles: new Set(), aiHashes: new Map(), checkpoint: null, ...(undoes ? { undoes } : {}) };
+    const task = { id: crypto.randomUUID(), root: this.root, kind, label, mode: kind, status: 'idle', startedAt: at, endedAt: at, files, skipped: 0, unavailable: false, commands: 0, aiFiles: new Set(), aiHashes: new Map(), checkpoint: null, ...(what ? { what } : {}), ...(undoes ? { undoes } : {}) };
     this.changes.tasks.push(task); while (this.changes.tasks.length > 20) this.changes.tasks.shift();
     if (log) this.log({ id: `edit-${task.id}`, kind: 'edit', task: task.id, title, target, detail, status: 'completed', at });
     this.emit({ type: 'changes.updated', root: this.project.root, task: task.id });
@@ -754,7 +842,7 @@ class ChatSession {
       else { await fs.mkdir(path.dirname(target), { recursive: true }); await fs.writeFile(target, entry.before); }
     }
     task.undone = true;
-    const what = task.kind === 'direct' ? 'tekstrettelsen' : task.kind === 'undo' ? 'fortrydelsen' : 'opgaven';
+    const what = task.what || (task.kind === 'direct' ? 'tekstrettelsen' : task.kind === 'undo' ? 'fortrydelsen' : 'opgaven');
     const undo = this.recordEdit({ kind: 'undo', label: `Fortrudt: ${shortText(task.label, 60)}`, files: plan.map(({ entry, relative }) => ({ file: relative, before: entry.after, after: entry.before })), title: `Du fortrød ${what}`, target: plan.map(item => item.relative).join(', ').slice(0, 300), detail: shortText(task.label, 120), undoes: task.id });
     return { task: undo.id, files: plan.map(item => item.relative) };
   }
@@ -835,10 +923,14 @@ class ChatSession {
       return;
     }
     if (event.compacting || this.compacting) {
-      if (event.type === 'message.part.updated' && p.part?.type === 'step-finish' && this.runSteps && !this.runSteps.has(p.part.id)) { this.runSteps.set(p.part.id, p.part.tokens || {}); if(Object.hasOwn(event,'privacyPrice')) (this.runPrices ||= new Map()).set(p.part.id,event.privacyPrice); observeRunContext(this, event, p.part); this.emit({ type: 'usage', usage: this.currentUsage(), contextUsage: this.contextUsage.snapshot() }); }
+      if (event.type === 'message.part.updated' && p.part?.type === 'step-finish' && this.runSteps && !this.runSteps.has(p.part.id)) { this.runSteps.set(p.part.id, p.part.tokens || {}); if(Object.hasOwn(event,'privacyPrice')) (this.runPrices ||= new Map()).set(p.part.id,event.privacyPrice); observeRunContext(this, event, p.part); this.emit({ type: 'usage', usage: this.currentUsage(), contextUsage: this.contextUsage.snapshot(), speed: this.currentSpeed() }); }
       if (['session.error', 'engine.error'].includes(event.type)) this.runFailure = { kind: event.failure?.kind || sessionFailure(p.error), message: String(event.message || p.error?.data?.message || 'Sammenfatningen mislykkedes.').slice(0, 800) };
       return;
     }
+    // D5a: trinregistret ser turens hændelser (start, første indhold, streamed,
+    // afslutning) — det afviser selv fremmede sessioner, recovery-tider og
+    // dubletter. Sammenfatningstrin (compacting) når aldrig hertil.
+    if (this.runStepTiming) this.runStepTiming.observe(event);
     if (event.type === 'permission.asked') return this.permissionAsked(event).catch(() => this.emit({ type: 'engine.error', message: 'Godkendelsen kunne ikke vises. Stop opgaven, og prøv igen.' }));
     if (event.type === 'permission.replied') { if (p.reply === 'reject') this.runRejected = true; this.approvals.delete(p.requestID); this.waiting = this.approvals.size > 0; bench.chatsChanged(); const entry = this.changes.activity.get(`approval-${p.requestID}`); if (entry?.status === 'waiting') this.log({ id: entry.id, status: p.reply === 'reject' ? 'rejected' : 'answered', ended: Date.now() }); }
     if (event.type === 'question.asked') {
@@ -860,7 +952,7 @@ class ChatSession {
       observeRunContext(this, event, p.part);
       // Grunden til modellens sidste stop, fx "length", når svaret blev afskåret ved grænsen for svarlængde.
       this.runFinish = p.part.reason || null;
-      this.emit({ type: 'usage', usage: this.currentUsage(), contextUsage: this.contextUsage.snapshot() });
+      this.emit({ type: 'usage', usage: this.currentUsage(), contextUsage: this.contextUsage.snapshot(), speed: this.currentSpeed() });
     }
     if (this.qualityAwaitingReply) {
       const awaiting = this.qualityAwaitingReply;
@@ -1183,7 +1275,7 @@ class ChatSession {
         if ((this.copy || this.bench.checkpointOwner === this)) this.checkpoints.cancel();
         await this.stopping;
         await this.finishing;
-        if (this.running) { ++this.generation; this.runStopped = true; this.running = false; await this.finishTask('interrupted', null); await this.saveHistory('interrupted'); this.bench.release(this); }
+        if (this.running) { ++this.generation; this.runStopped = true; await this.finishTask('interrupted', null); this.running = false; await this.saveHistory('interrupted'); this.bench.release(this); }
         clearTimeout(this.historyTimer); this.historyTimer = null;
         await this.bench.history.queue;
       } catch (error) { failures.push(error); }

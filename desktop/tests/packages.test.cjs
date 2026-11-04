@@ -33,7 +33,12 @@ test('hver pakke indeholder præcis det, installationen ville skrive, med gyldig
     assert.deepEqual(manifest.tools, [tool.id]);
     for (const [file, hash] of Object.entries(manifest.files)) assert.equal(sha(files.get(`projekt/${file}`)), hash, `${tool.id}: ${file}`);
     assert.ok(Object.keys(manifest.blocks).length >= 2, tool.id);
-    assert.ok(![...files.keys()].some(name => /\.(sh|js|cjs|py|ps1|exe)$/.test(name)), `${tool.id} må ikke indeholde scripts`);
+    assert.ok(![...files.keys()].some(name => /\.(sh|js|cjs|py|ps1|exe|cmd|bat)$/i.test(name)), `${tool.id} må ikke indeholde scripts`);
+    // S3: den eneste medfølgende executable er GradientDecks roll — et
+    // gennemset, MIT-licenseret Node-script, som beslutningen af 2.11.
+    // udtrykkeligt installerer med skillen (den kører med Node i brugerens
+    // projekt). Ingen andre .mjs-filer må nogensinde pakkes med.
+    assert.ok(![...files.keys()].some(name => /\.mjs$/i.test(name) && !/harness-design\/scripts\/roll\.mjs$/.test(name)), `${tool.id}: ingen andre .mjs-scripts end den medfølgende roll`);
     const guide = files.get('LAES-MIG.md');
     // Tallet i vejledningen er det antal skills, pakken faktisk indeholder. Integrationer vælges til i appen.
     assert.ok(guide.includes(`grundregler og ${layout.skills.length} skills`), `${tool.id}: antal skills`);

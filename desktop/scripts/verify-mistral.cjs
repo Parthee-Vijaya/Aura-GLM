@@ -67,7 +67,7 @@ async function main() {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await helpers.skipIntroduction(page);
     await app.evaluate(({ dialog }, folder) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [folder] }); }, project);
-    await page.click('#open'); await page.waitForSelector('#workspace:not([hidden])');
+    await require('./ui-test-helpers.cjs').clickOpen(page); await page.waitForSelector('#workspace:not([hidden])');
     await helpers.openSetup(page); await page.click('#setup-add-provider'); await page.click('#provider-cards [data-kind="mistral"]');
     await require('./ui-test-helpers.cjs').enterCredential(page, key); await page.click('#save-connection');
     await page.waitForFunction(() => document.querySelector('#setup').dataset.step === 'saved' && !document.querySelector('#setup-continue').disabled);
@@ -137,13 +137,13 @@ async function main() {
     assert.doesNotMatch(await page.locator('body').textContent(), new RegExp(key));
     assert.match(await page.locator('#messages').textContent(), /API-nøglen|afvist|afviste/);
     assert.equal(requests.filter(request => request.phase === 'error').length, 1, 'ingen automatisk genafsendelse ved afvist nøgle');
-    await page.click('#open'); await page.waitForFunction(() => !document.querySelector('#open').disabled && document.querySelector('#model-select').value === 'mistral-large-4');
+    await require('./ui-test-helpers.cjs').clickOpen(page); await page.waitForFunction(() => !document.querySelector('#open').disabled && document.querySelector('#model-select').value === 'mistral-large-4');
     assert.match(await page.locator('#model-chip').textContent(), /Mistral Large 4/, 'genåbning bevarer brugerens modelvalg');
     // Samme konto, men et katalog uden Medium: et nyt projekt må ikke stiltiende vælge prøveversionen.
     offerMedium = false;
     const another = path.join(root, 'Uden standardmodel'); await fs.mkdir(another);
     await app.evaluate(({ dialog }, folder) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [folder] }); }, another);
-    await page.click('#open'); await page.waitForFunction(() => document.querySelector('#project-name').textContent === 'Uden standardmodel' && !document.querySelector('#open').disabled && document.querySelector('#model-select').options.length === 3);
+    await require('./ui-test-helpers.cjs').clickOpen(page); await page.waitForFunction(() => document.querySelector('#project-name').textContent === 'Uden standardmodel' && !document.querySelector('#open').disabled && document.querySelector('#model-select').options.length === 3);
     assert.equal(await page.inputValue('#model-select'), '');
     await page.click('#model-chip');
     assert.doesNotMatch(await page.locator('#model-shortlist').textContent(), /Den første er udbyderens eget/);

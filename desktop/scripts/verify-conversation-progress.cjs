@@ -52,8 +52,17 @@ const { GitVersions } = require('../core/git.cjs');
     await app.evaluate(({ BrowserWindow }) => { const w = BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')); w.setSize(1480, 900); w.webContents.setBackgroundThrottling(false); w.setIgnoreMouseEvents(true); w.showInactive(); });
     await helpers.addConnection(page, { name: 'Lokal testmodel', baseURL: `http://127.0.0.1:${server.address().port}/v1` });
     await app.evaluate(({ dialog }, folder) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [folder] }); }, project);
-    await page.click('#open'); await page.waitForSelector('#workspace:not([hidden])');
+    await require('./ui-test-helpers.cjs').clickOpen(page); await page.waitForSelector('#workspace:not([hidden])');
     await page.waitForFunction(() => document.querySelector('#model-select').options.length === 2);
+    // Forudbestående fund (ikke D4b): en helt ny profil starter på grundpakken
+    // uden Versioner, så prøvens versionsforløb aldrig nåede #version-status.
+    // Funktionen slås til over IPC — samme vej som Indstillinger › Funktioner —
+    // og versionsstatusken vågner af den samme hændelse, der trækker den ellers.
+    await page.evaluate(async () => { await call('featuresSave', { scope: 'alle', values: { versioner: true } }, selectedOwner()); await window.refreshFeatures(); });
+    await app.evaluate(({ BrowserWindow }, { root }) => {
+      BrowserWindow.getAllWindows().find(window => window.webContents.getURL().startsWith('harness://')).webContents.send('harness:event', { type: 'changes.updated', root });
+    }, { root: project });
+    await page.waitForFunction(() => !document.querySelector('#version-status').hidden);
     await helpers.taskOptions(page); await page.locator('#model-shortlist button').first().click();
     assert.equal(await page.inputValue('#work-mode'), 'chat');
     assert.match(await page.getAttribute('#prompt', 'placeholder'), /Stil et spørgsmål/);
@@ -91,35 +100,42 @@ const { GitVersions } = require('../core/git.cjs');
     assert.equal(await page.isVisible('#conversation-permission-status'), false);
     await page.waitForFunction(() => document.querySelector('#data-dialog').open || !document.querySelector('#stop').hidden);
     if (await page.locator('#data-dialog').evaluate(e => e.open)) await page.click('#accept-send');
-    await page.locator('#agent-activity-text').filter({ hasText: 'forbereder næste skridt' }).waitFor();
+    // D4b: fasen står i samtalens trinrække (R6), uret i live-indikatoren.
+    await page.locator('.turn-steps .step-live .step-detail').filter({ hasText: 'Forbereder svaret' }).waitFor({ timeout: 30000 });
+    assert.match(await page.textContent('#agent-activity-text'), /^Arbejder · \d+ s$/);
     assert.match(await page.getAttribute('#prompt', 'placeholder'), /bygge eller ændre/);
     await page.waitForFunction(() => document.querySelector('#version-rename').disabled);
     assert.ok(!(await page.textContent('#messages')).includes('Interne noter'));
     assert.ok(!(await page.textContent('#agent-progress')).includes('tegn modtaget'));
-    gates.reasoning(); await page.locator('#agent-activity-text').filter({ hasText: 'Forbereder en filændring' }).waitFor();
+    gates.reasoning(); await page.locator('.turn-steps .step-live .step-detail').filter({ hasText: 'index.html' }).waitFor({ timeout: 30000 });
+    // Trinrækken (§6.3): én live-linje, der kan folde det aktuelle trins
+    // tekniske detaljer ud — udkastet står først i den foldede række.
+    const liveRow = page.locator('.turn-steps details.step-live').last();
+    assert.equal(await liveRow.evaluate(e => e.open), false, 'live-rækken starter foldet');
+    assert.doesNotMatch(await liveRow.innerText(), /<h1>En blomst/, 'uklipset udkast er ikke synligt bag den foldede række');
     const selectedTab = await page.locator('.work-tab[aria-selected="true"]').getAttribute('id');
     await page.click('#agent-follow');
-    assert.equal(await page.locator('.work-tab[aria-selected="true"]').getAttribute('id'), selectedTab);
-    const progressCard = page.locator('.work-progress-card').last();
-    assert.equal(await progressCard.locator('.work-progress-technical').evaluate(e => e.open), false);
-    assert.doesNotMatch(await progressCard.innerText(), /<h1>|public\/index.html/);
-    await progressCard.locator('> summary').click();
-    await page.waitForTimeout(1200); assert.equal(await progressCard.evaluate(e => e.open), false);
-    await progressCard.locator('> summary').click();
+    assert.equal(await page.locator('.work-tab[aria-selected="true"]').getAttribute('id'), selectedTab, 'Følg arbejdet skifter ikke fane');
+    assert.equal(await liveRow.evaluate(e => e.open), true, 'Følg arbejdet folder den aktuelle række ud');
+    await page.waitForTimeout(1200); assert.equal(await liveRow.evaluate(e => e.open), true, 'åbningen fryser ikke');
     await capture('aktivitet-undervejs.png');
     await capture('aktivitet-chatpanel.png', await page.locator('.chat').boundingBox());
-    await progressCard.locator('.work-progress-technical > summary').click();
-    assert.match(await progressCard.locator('pre').innerText(), /<h1>En blomst/);
-    await page.waitForTimeout(1200); assert.equal(await progressCard.locator('.work-progress-technical').evaluate(e => e.open), true);
+    assert.match(await liveRow.innerText(), /ikke gemt endnu/);
     assert.equal(await fs.readFile(target, 'utf8'), '<h1>Før blomsten</h1>');
-    assert.match(await progressCard.innerText(), /ikke gemt/);
+    assert.match(await liveRow.locator('.step-output').innerText(), /<h1>En blomst/, 'udkastets kode står i den foldede række');
+    gates.draft();
+    await page.waitForTimeout(400); assert.equal(await liveRow.evaluate(e => e.open), true, 'foldet række overlever hændelser');
     await capture('kode-undervejs.png');
-    await progressCard.locator('.work-progress-technical > summary').click();
-    gates.draft(); await page.locator('#approvals .approval').waitFor();
+    await liveRow.locator('> summary').click();
+    assert.equal(await liveRow.evaluate(e => e.open), false, 'brugerens fold lukker rækken igen');
+    // Bemærk: denne ventetid fejler i dag af en forudbestående, motor-side årsag
+    // (skriveværktøjets argumenter når ikke frem samlet — reproduceret på HEAD),
+    // ikke af trinrækkerne; se d4b-report.md.
+    await page.locator('#approvals .approval').waitFor({ timeout: 60000 });
     assert.equal(await fs.readFile(target, 'utf8'), '<h1>Før blomsten</h1>');
     assert.deepEqual(await app.evaluate(() => globalThis.testPermissionAudit), []);
     assert.match(await page.locator('#approvals').innerText(), /index.html/);
-    assert.match(await progressCard.innerText(), /Venter på dit valg/);
+    assert.match(await page.locator('.turn-steps').last().innerText(), /Venter på dit valg/);
     await capture('aktivitet-godkendelse.png');
     await page.locator('#approvals').getByRole('button', { name: 'Flere valg', exact: true }).click();
     await page.getByRole('button', { name: 'Tillad for denne opgave', exact: true }).click();
@@ -155,6 +171,6 @@ const { GitVersions } = require('../core/git.cjs');
     await fs.writeFile(path.join(root, 'permission-audit.json'), JSON.stringify(await app.evaluate(() => globalThis.testPermissionAudit), null, 2));
     await fs.writeFile(path.join(root, 'click-audit.json'), JSON.stringify(await page.evaluate(() => window.testClickAudit), null, 2));
     console.log(JSON.stringify({ status: 'bestået', root, package: bundle, app: testedApp, requests: requests.length, checks: ['Samtale som standard', 'demoens afvisning uden byggekort', 'frivilligt planvalg', 'afvisning huskes', 'konkret plan før bygning', 'ræsonnement skjules', 'kode før filskrivning', 'live filliste og diff', 'versioner under arbejde', 'fortryd med gennemgang og kvittering', '980 × 720'] }));
-  } catch (error) { if (app) { await capture('fejl.png').catch(() => {}); await fs.writeFile(path.join(root, 'permission-audit.json'), JSON.stringify(await app.evaluate(() => globalThis.testPermissionAudit || []), null, 2)); await fs.writeFile(path.join(root, 'click-audit.json'), JSON.stringify(await (await app.firstWindow()).evaluate(() => window.testClickAudit || []), null, 2)); } console.error('Evidens:', root, errors); throw error; }
+  } catch (error) { if (app) { await capture('fejl.png').catch(() => {}); await fs.writeFile(path.join(root, 'permission-audit.json'), JSON.stringify(await app.evaluate(() => globalThis.testPermissionAudit || []), null, 2)); await fs.writeFile(path.join(root, 'click-audit.json'), JSON.stringify(await (await app.firstWindow()).evaluate(() => window.testClickAudit || []), null, 2)); } console.error('Evidens:', root, errors); console.error(error); throw error; }
   finally { Object.values(gates).forEach(resolve => resolve()); await app?.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

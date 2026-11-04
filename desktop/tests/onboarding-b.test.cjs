@@ -95,15 +95,53 @@ test('ukendte udbydere og faser kan ikke tilføje nye destinationer eller efterl
   assert.ok(icons(root).every(image => /^[a-z0-9-]+\.svg$/i.test(image.src)));
 });
 
-test('fremgangslinjen har tre punkter: profil, forbindelse og idé', () => {
+test('onboarding-fladerne er omstilet; #task-dialog bevarer onboarding-b og sit visual', () => {
   const index = fs.readFileSync(path.join(__dirname, '..', 'ui', 'index.html'), 'utf8');
-  const start = index.indexOf('<ol class="onboarding-b-progress"');
-  assert.ok(start >= 0, 'index.html skal have en fremgangslinje');
-  const progress = index.slice(start, index.indexOf('</ol>', start));
-  const phases = [...progress.matchAll(/data-phase="([a-z]+)"/g)].map(match => match[1]);
-  assert.deepEqual(phases, ['profile', 'connection', 'idea'], 'udbyder og forbindelse er ét punkt nummer 2 — funktioner vælges i Indstillinger');
-  const numbers = [...progress.matchAll(/<span>(\d)<\/span>/g)].map(match => match[1]);
-  assert.deepEqual(numbers, ['1', '2', '3']);
+  assert.ok(!index.includes('onboarding-b-progress'), 'fremgangslinjen er fjernet fra onboarding');
+  assert.ok(index.includes('<main id="setup" class="onboarding-simple"'), '#setup bruger den enkle flade');
+  assert.ok(index.includes('<main id="onboarding" class="onboarding-simple">'), '#onboarding bruger den enkle flade');
+  assert.ok(index.includes('id="task-dialog" data-size="complex" class="onboarding-b"'), '#task-dialog beholder onboarding-b — modulet og dets typografi-pin består');
+  assert.ok(index.includes('id="model-visual"'), 'modeldialogens visual bruger stadig OnboardingB.render');
+  assert.ok(!index.includes('id="setup-visual"') && !index.includes('id="idea-visual"'), 'opsætningens og idéfladens asides er fjernet');
+  const assets = require('../core/ui-assets.cjs');
+  assert.ok(assets.FILES.includes('onboarding-simple.css'), 'den enkle stil er registreret i manifestet');
+});
+
+test('fuldvinduesfladen: apprammen er væk, mens onboarding vises — og vender tilbage af sig selv', () => {
+  const css = fs.readFileSync(path.join(__dirname, '..', 'ui', 'onboarding-simple.css'), 'utf8');
+  // Godkendt tilføjelse (2.11.2026): sidepanel, skillelinje og topbjælke er
+  // væk, mens begge onboardingflader vises. Mekanismen er ren :has() på body
+  // — rammen vender tilbage i det øjeblik fladen skjules, og display:none
+  // fjerner den fra tab-rækkefølgen undervejs.
+  for (const surface of ['#setup.onboarding-simple:not([hidden])', '#onboarding.onboarding-simple:not([hidden])']) {
+    assert.ok(css.includes(`body:has(${surface}) :is(.sidebar, #sidebar-divider)`), `${surface} skjuler sidepanel og skillelinje`);
+    assert.ok(css.includes(`body:has(${surface}) .app-content > header`), `${surface} skjuler topbjælken`);
+    assert.ok(css.includes(`body:has(${surface}) .app-content`), `${surface} udvider indholdsområdet til hele vinduet`);
+  }
+  // Fladen fylder vinduet: min-højden er hele dokken, ikke dokken minus en topbjælke.
+  assert.match(css, /:is\(#setup\.onboarding-simple, #onboarding\.onboarding-simple\)\s*\{\s*display:\s*flex;\s*flex-direction:\s*column;\s*min-height:\s*100dvh/, 'onboardingfladerne fylder hele vinduet');
+});
+
+test('idéfladen har én stille vej tilbage — kun når et projekt ligger bagved', () => {
+  const index = fs.readFileSync(path.join(__dirname, '..', 'ui', 'index.html'), 'utf8');
+  const app = fs.readFileSync(path.join(__dirname, '..', 'ui', 'app.js'), 'utf8');
+  const css = fs.readFileSync(path.join(__dirname, '..', 'ui', 'onboarding-simple.css'), 'utf8');
+  // Markup: linket står i idéfladens backline, skjult som udgangspunkt (første
+  // start har intet at vende tilbage til) og med sin danske tekst.
+  const onboarding = index.slice(index.indexOf('<main id="onboarding"'), index.indexOf('</main>', index.indexOf('<main id="onboarding"')));
+  assert.ok(onboarding.includes('id="idea-back"'), 'tilbage-linket findes på idéfladen');
+  assert.match(onboarding, /id="idea-back"[^>]*hidden/, 'linket er skjult fra starten — første start viser det ikke');
+  assert.ok(onboarding.includes('← Tilbage til arbejdsfladen'), 'linket har sin danske tekst');
+  // Wiring: "Nyt projekt" stasher projektet bagved og viser linket kun dér;
+  // displayProject rydder stasen igen, og linket ender i displayProject —
+  // samme flow som panelets åbn-knap — uden at oprette noget.
+  assert.ok(app.includes('ideaReturn = current; $(\'#idea-back\').hidden = !ideaReturn;'), 'Nyt projekt stasher projektet og viser kun linket, når et projekt ligger bagved');
+  assert.ok(app.includes('ideaReturn = null; $(\'#idea-back\').hidden = true;'), 'enhver projektvisning rydder stasen og skjuler linket');
+  const handler = app.slice(app.indexOf("$('#idea-back').onclick"), app.indexOf("$('#create-form').onsubmit"));
+  assert.ok(handler.includes('await displayProject(project);'), 'linket bruger displayProject — vej tilbage uden oprettelse');
+  assert.ok(!handler.includes('createProject'), 'linket opretter intet');
+  // CSS: den tomme backline kollapser, så førstestarts-fladen ikke får luft.
+  assert.ok(css.includes('#onboarding.onboarding-simple .setup-backline:has(#idea-back[hidden]) { display: none; }'), 'den tomme backline fylder intet på førstestarts-fladen');
 });
 
 test('profil-trinnet tilføjer ingen ny visuel fase i Onboarding B', () => {

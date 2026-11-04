@@ -1,0 +1,658 @@
+{
+  "version": "0.6.0-beta.1",
+  "date": "2026-11-04",
+  "platform": "macOS Apple Silicon",
+  "capture": "Native running Electron app through macOS computer-use API; isolated profile and synthetic local project; network blocked",
+  "measurements": [
+    {
+      "state": "welcome",
+      "viewport": {
+        "width": 600,
+        "height": 700,
+        "scrollWidth": 600
+      },
+      "dialogs": [
+        "welcome-dialog"
+      ],
+      "centers": {
+        "welcome-dialog": {
+          "x": 0,
+          "y": 0,
+          "w": 600,
+          "h": 700,
+          "cx": 300,
+          "cy": 350
+        },
+        "welcome-path-title": {
+          "x": 164.1796875,
+          "y": 243.453125,
+          "w": 271.640625,
+          "h": 63.09375,
+          "cx": 300,
+          "cy": 275
+        },
+        "welcome-skip": {
+          "x": 160,
+          "y": 628,
+          "w": 280,
+          "h": 44,
+          "cx": 300,
+          "cy": 650
+        }
+      },
+      "rendererErrors": [],
+      "visibleControls": 3,
+      "measuredIconControls": []
+    },
+    {
+      "state": "project-setup",
+      "viewport": {
+        "width": 1440,
+        "height": 940,
+        "scrollWidth": 1440
+      },
+      "dialogs": [],
+      "centers": {},
+      "rendererErrors": [],
+      "visibleControls": 15,
+      "measuredIconControls": []
+    },
+    {
+      "state": "workspace-light",
+      "viewport": {
+        "width": 1440,
+        "height": 940,
+        "scrollWidth": 1440
+      },
+      "dialogs": [],
+      "centers": {
+        "chat-form": {
+          "x": 443.5234375,
+          "y": 464.625,
+          "w": 832.953125,
+          "h": 118.75,
+          "cx": 860,
+          "cy": 524
+        },
+        "chat-panel": {
+          "x": 280,
+          "y": 44,
+          "w": 1160,
+          "h": 896,
+          "cx": 860,
+          "cy": 492
+        },
+        "conversation-hero": {
+          "x": 443.5234375,
+          "y": 352.625,
+          "w": 832.953125,
+          "h": 230.75,
+          "cx": 860,
+          "cy": 468
+        }
+      },
+      "rendererErrors": [],
+      "visibleControls": 25,
+      "measuredIconControls": [
+        {
+          "id": "sidebar-toggle",
+          "iconDeltaX": 0,
+          "iconDeltaY": 0
+        },
+        {
+          "id": "new-chat",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "new",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "open",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "history-search-open",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "tools-button",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "intro-button",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "project-menu-toggle",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "settings-toggle",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "profile-chip",
+          "iconToTextDeltaY": 0
+        },
+        {
+          "id": "surface-toggle",
+          "iconDeltaX": 0,
+          "iconDeltaY": 0
+        },
+        {
+          "id": "chat-materials-plus",
+          "iconDeltaX": 0.0,
+          "iconDeltaY": 0.0
+        },
+        {
+          "id": "send",
+          "iconDeltaX": 0.0,
+          "iconDeltaY": 0.0
+        },
+        {
+          "id": "privacy-gate-button",
+          "iconToTextDeltaY": 0
+        }
+      ]
+    },
+    {
+      "state": "settings-light",
+      "viewport": {
+        "width": 1440,
+        "height": 940,
+        "scrollWidth": 1440
+      },
+      "dialogs": [
+        "settings-dialog"
+      ],
+      "centers": {
+        "chat-form": {
+          "x": 443.5234375,
+          "y": 464.625,
+          "w": 832.953125,
+          "h": 118.75,
+          "cx": 860,
+          "cy": 524
+        },
+        "chat-panel": {
+          "x": 280,
+          "y": 44,
+          "w": 1160,
+          "h": 896,
+          "cx": 860,
+          "cy": 492
+        },
+        "conversation-hero": {
+          "x": 443.5234375,
+          "y": 352.625,
+          "w": 832.953125,
+          "h": 230.75,
+          "cx": 860,
+          "cy": 468
+        }
+      },
+      "rendererErrors": [],
+      "visibleControls": 34,
+      "measuredIconControls": [
+        {
+          "id": "sidebar-toggle",
+          "iconDeltaX": 0,
+          "iconDeltaY": 0
+        },
+        {
+          "id": "new-chat",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "new",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "open",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "history-search-open",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "tools-button",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "intro-button",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "project-menu-toggle",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "settings-toggle",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "profile-chip",
+          "iconToTextDeltaY": 0
+        },
+        {
+          "id": "surface-toggle",
+          "iconDeltaX": 0,
+          "iconDeltaY": 0
+        },
+        {
+          "id": "chat-materials-plus",
+          "iconDeltaX": 0.0,
+          "iconDeltaY": 0.0
+        },
+        {
+          "id": "send",
+          "iconDeltaX": 0.0,
+          "iconDeltaY": 0.0
+        },
+        {
+          "id": "privacy-gate-button",
+          "iconToTextDeltaY": 0
+        },
+        {
+          "id": "Lokal profil",
+          "iconToTextDeltaY": 0.102
+        },
+        {
+          "id": "Generelt",
+          "iconToTextDeltaY": 0.102
+        },
+        {
+          "id": "AI-forbindelser",
+          "iconToTextDeltaY": 0.102
+        },
+        {
+          "id": "Funktioner",
+          "iconToTextDeltaY": 0.102
+        },
+        {
+          "id": "Opdateringer",
+          "iconToTextDeltaY": 0.102
+        },
+        {
+          "id": "Hjælp og feedback",
+          "iconToTextDeltaY": 0.098
+        }
+      ]
+    },
+    {
+      "state": "settings-dark",
+      "viewport": {
+        "width": 1440,
+        "height": 940,
+        "scrollWidth": 1440
+      },
+      "dialogs": [
+        "settings-dialog"
+      ],
+      "centers": {
+        "chat-form": {
+          "x": 443.5234375,
+          "y": 464.625,
+          "w": 832.953125,
+          "h": 118.75,
+          "cx": 860,
+          "cy": 524
+        },
+        "chat-panel": {
+          "x": 280,
+          "y": 44,
+          "w": 1160,
+          "h": 896,
+          "cx": 860,
+          "cy": 492
+        },
+        "conversation-hero": {
+          "x": 443.5234375,
+          "y": 352.625,
+          "w": 832.953125,
+          "h": 230.75,
+          "cx": 860,
+          "cy": 468
+        }
+      },
+      "rendererErrors": [],
+      "visibleControls": 34,
+      "measuredIconControls": [
+        {
+          "id": "sidebar-toggle",
+          "iconDeltaX": 0,
+          "iconDeltaY": 0
+        },
+        {
+          "id": "new-chat",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "new",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "open",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "history-search-open",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "tools-button",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "intro-button",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "project-menu-toggle",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "settings-toggle",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "profile-chip",
+          "iconToTextDeltaY": 0
+        },
+        {
+          "id": "surface-toggle",
+          "iconDeltaX": 0,
+          "iconDeltaY": 0
+        },
+        {
+          "id": "chat-materials-plus",
+          "iconDeltaX": 0.0,
+          "iconDeltaY": 0.0
+        },
+        {
+          "id": "send",
+          "iconDeltaX": 0.0,
+          "iconDeltaY": 0.0
+        },
+        {
+          "id": "privacy-gate-button",
+          "iconToTextDeltaY": 0
+        },
+        {
+          "id": "Lokal profil",
+          "iconToTextDeltaY": 0.102
+        },
+        {
+          "id": "Generelt",
+          "iconToTextDeltaY": 0.102
+        },
+        {
+          "id": "AI-forbindelser",
+          "iconToTextDeltaY": 0.102
+        },
+        {
+          "id": "Funktioner",
+          "iconToTextDeltaY": 0.102
+        },
+        {
+          "id": "Opdateringer",
+          "iconToTextDeltaY": 0.102
+        },
+        {
+          "id": "Hjælp og feedback",
+          "iconToTextDeltaY": 0.098
+        }
+      ]
+    },
+    {
+      "state": "profile-dark-fixed",
+      "viewport": {
+        "width": 3008,
+        "height": 1662,
+        "scrollWidth": 3008
+      },
+      "dialogs": [
+        "settings-dialog"
+      ],
+      "centers": {
+        "chat-form": {
+          "x": 1214,
+          "y": 825.625,
+          "w": 860,
+          "h": 118.75,
+          "cx": 1644,
+          "cy": 885
+        },
+        "chat-panel": {
+          "x": 280,
+          "y": 44,
+          "w": 2728,
+          "h": 1618,
+          "cx": 1644,
+          "cy": 853
+        },
+        "conversation-hero": {
+          "x": 1214,
+          "y": 713.625,
+          "w": 860,
+          "h": 230.75,
+          "cx": 1644,
+          "cy": 829
+        }
+      },
+      "rendererErrors": [],
+      "visibleControls": 38,
+      "measuredIconControls": [
+        {
+          "id": "sidebar-toggle",
+          "iconDeltaX": 0,
+          "iconDeltaY": 0
+        },
+        {
+          "id": "new-chat",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "new",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "open",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "history-search-open",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "tools-button",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "intro-button",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "project-menu-toggle",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "settings-toggle",
+          "iconToTextDeltaY": 0.25
+        },
+        {
+          "id": "profile-chip",
+          "iconToTextDeltaY": 0
+        },
+        {
+          "id": "surface-toggle",
+          "iconDeltaX": 0,
+          "iconDeltaY": 0
+        },
+        {
+          "id": "chat-materials-plus",
+          "iconDeltaX": 0,
+          "iconDeltaY": 0.0
+        },
+        {
+          "id": "send",
+          "iconDeltaX": 0,
+          "iconDeltaY": 0.0
+        },
+        {
+          "id": "privacy-gate-button",
+          "iconToTextDeltaY": 0
+        },
+        {
+          "id": "Lokal profil",
+          "iconToTextDeltaY": 0.102
+        },
+        {
+          "id": "Generelt",
+          "iconToTextDeltaY": 0.102
+        },
+        {
+          "id": "AI-forbindelser",
+          "iconToTextDeltaY": 0.102
+        },
+        {
+          "id": "Funktioner",
+          "iconToTextDeltaY": 0.102
+        },
+        {
+          "id": "Opdateringer",
+          "iconToTextDeltaY": 0.102
+        },
+        {
+          "id": "Hjælp og feedback",
+          "iconToTextDeltaY": 0.098
+        },
+        {
+          "id": "Intet ikon",
+          "iconDeltaX": 0.0,
+          "iconDeltaY": 0.0
+        },
+        {
+          "id": "Aura · ring",
+          "iconDeltaX": 0.0,
+          "iconDeltaY": 0.0
+        },
+        {
+          "id": "Aura · bølge",
+          "iconDeltaX": 0.0,
+          "iconDeltaY": 0.0
+        },
+        {
+          "id": "Aura · kredsløb",
+          "iconDeltaX": 0.0,
+          "iconDeltaY": 0.0
+        },
+        {
+          "id": "settings-avatar-slot",
+          "iconDeltaX": 0.0,
+          "iconDeltaY": 0.0
+        }
+      ]
+    },
+    {
+      "state": "sidebar-hidden-dark",
+      "viewport": {
+        "width": 1440,
+        "height": 940,
+        "scrollWidth": 1440
+      },
+      "dialogs": [],
+      "centers": {
+        "chat-form": {
+          "x": 290,
+          "y": 464.625,
+          "w": 860,
+          "h": 118.75,
+          "cx": 720,
+          "cy": 524
+        },
+        "chat-panel": {
+          "x": 0,
+          "y": 44,
+          "w": 1440,
+          "h": 896,
+          "cx": 720,
+          "cy": 492
+        },
+        "conversation-hero": {
+          "x": 290,
+          "y": 352.625,
+          "w": 860,
+          "h": 230.75,
+          "cx": 720,
+          "cy": 468
+        }
+      },
+      "rendererErrors": [],
+      "visibleControls": 11,
+      "measuredIconControls": [
+        {
+          "id": "workspace-navigation",
+          "iconDeltaX": 0,
+          "iconDeltaY": 0
+        },
+        {
+          "id": "workspace-new-chat",
+          "iconDeltaX": 0,
+          "iconDeltaY": 0
+        },
+        {
+          "id": "surface-toggle",
+          "iconDeltaX": 0,
+          "iconDeltaY": 0
+        },
+        {
+          "id": "chat-materials-plus",
+          "iconDeltaX": 0,
+          "iconDeltaY": 0.0
+        },
+        {
+          "id": "send",
+          "iconDeltaX": 0,
+          "iconDeltaY": 0.0
+        },
+        {
+          "id": "privacy-gate-button",
+          "iconToTextDeltaY": 0
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "file": "01-welcome.png",
+      "sha256": "f97278d500819066e31883b2a273cd5f788ccec0f7788febc27bd830db6ad0bf"
+    },
+    {
+      "file": "02-project-setup.png",
+      "sha256": "10a1c22a2edc19d20cf78ca30ed509158a3ea91c0fe1cec9fdf501bf5b5d9681"
+    },
+    {
+      "file": "03-workspace.png",
+      "sha256": "3bd0763311fdccf6f11097fc2c4bb9ad72d3830ace10f56bfc5dd2d5515c4e66"
+    },
+    {
+      "file": "04-settings-light.png",
+      "sha256": "857a262d2bffebcab3a240f73e441a4432d2ab5abdd99c68fae3ae5a315b82d2"
+    },
+    {
+      "file": "05-settings-dark.png",
+      "sha256": "d8b3a19f4bafe08eb6fb675ee3b355c4571f1c01afde7b30999c25992a54bf12"
+    },
+    {
+      "file": "06-local-profile.png",
+      "sha256": "e5b06afe91d547b6aa4bcfd453bbfb74cbb60e6ef7af03e89949aad7e1b39f95"
+    },
+    {
+      "file": "07-sidebar-hidden.png",
+      "sha256": "d80fd2d9a4ec69e3078b180e43b6800ee6f252db45e494255b37c90c9f115627"
+    }
+  ]
+}

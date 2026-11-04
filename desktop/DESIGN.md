@@ -1,230 +1,394 @@
-# Lys præcision
+---
+name: "Aura Prime"
+description: "Lokal arbejdsapp med integreret Aura-brand, helt skjulbar navigation og centreret samtalestart."
+colors:
+  aura-accent: "light-dark(rgb(65, 118, 230), rgb(122, 170, 255))"
+  aura-accent-hover: "light-dark(rgb(72, 104, 178), rgb(122, 170, 255))"
+  aura-accent-subtle: "light-dark(rgb(228, 237, 253), rgb(33, 43, 66))"
+  aura-accent-faint: "light-dark(rgb(237, 243, 254), rgb(27, 35, 54))"
+  aura-accent-ink: "light-dark(rgb(52, 94, 186), rgb(125, 154, 222))"
+  aura-button-primary: "light-dark(rgb(21, 21, 23), rgb(240, 240, 242))"
+  aura-button-primary-hover: "light-dark(rgb(40, 40, 42), rgb(255, 255, 255))"
+  aura-button-primary-text: "light-dark(rgb(255, 255, 255), rgb(21, 21, 23))"
+  aura-bg: "light-dark(rgb(255, 255, 255), rgb(21, 21, 23))"
+  aura-bg-sidebar: "light-dark(rgb(249, 250, 251), rgb(27, 27, 28))"
+  aura-bg-panel: "light-dark(rgb(255, 255, 255), rgb(35, 35, 36))"
+  aura-bg-raised: "light-dark(rgb(255, 255, 255), rgb(35, 35, 36))"
+  aura-bg-overlay: "light-dark(rgb(255, 255, 255), rgb(44, 44, 46))"
+  aura-bg-composer: "light-dark(rgb(255, 255, 255), rgb(44, 44, 46))"
+  aura-bg-bubble: "light-dark(rgb(237, 243, 254), rgb(44, 44, 46))"
+  aura-bg-tint: "light-dark(rgb(255, 255, 255), rgb(44, 44, 46))"
+  aura-bg-hover: "light-dark(rgba(38, 49, 72, 0.06), rgba(255, 255, 255, 0.08))"
+  aura-bg-active: "light-dark(rgb(235, 238, 242), rgb(67, 69, 74))"
+  aura-ink: "light-dark(rgb(15, 17, 21), rgb(249, 250, 251))"
+  aura-ink-secondary: "light-dark(rgb(97, 102, 107), rgb(207, 211, 214))"
+  aura-ink-muted: "light-dark(rgb(101, 105, 113), rgb(150, 152, 158))"
+  aura-border: "light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.08))"
+  aura-border-strong: "light-dark(rgba(0, 0, 0, 0.12), rgba(255, 255, 255, 0.12))"
+  aura-border-strongest: "light-dark(rgba(0, 0, 0, 0.16), rgba(255, 255, 255, 0.2))"
+  aura-success-ink: "light-dark(rgb(24, 113, 69), rgb(108, 205, 151))"
+  aura-success-subtle: "light-dark(rgb(230, 247, 239), rgb(22, 48, 36))"
+  aura-warning-ink: "light-dark(rgb(146, 92, 15), rgb(220, 160, 60))"
+  aura-warning-subtle: "light-dark(rgb(254, 245, 231), rgb(48, 38, 22))"
+  aura-error-ink: "light-dark(rgb(200, 52, 44), rgb(230, 90, 80))"
+  aura-error-subtle: "light-dark(rgb(253, 240, 239), rgb(50, 24, 22))"
+  aura-diff-add-bg: "light-dark(rgba(34, 154, 96, 0.08), rgba(72, 180, 120, 0.1))"
+  aura-diff-del-bg: "light-dark(rgba(200, 52, 44, 0.06), rgba(230, 90, 80, 0.08))"
+typography:
+  body:
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    fontSize: "13px"
+    fontWeight: 400
+    lineHeight: 1.65
+  conversation:
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    fontSize: "15px"
+    fontWeight: 400
+    lineHeight: "25px"
+  user-message:
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    fontSize: "14px"
+    fontWeight: 400
+    lineHeight: "23px"
+  composer:
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    fontSize: "14px"
+    fontWeight: 400
+    lineHeight: "24px"
+  headline:
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    fontSize: "20px"
+    fontWeight: 600
+    lineHeight: "28px"
+    letterSpacing: "-0.025em"
+  subheading:
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    fontSize: "16px"
+    fontWeight: 600
+    lineHeight: "24px"
+  setup-title:
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    fontSize: "23px"
+    fontWeight: 500
+    lineHeight: 1.3
+    letterSpacing: "-0.02em"
+  label:
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    fontSize: "12px"
+    fontWeight: 500
+    lineHeight: "20px"
+  caption:
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    fontSize: "11px"
+    fontWeight: 400
+  code:
+    fontFamily: "'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas, 'Liberation Mono', Menlo, Courier, 'PingFang SC', 'Microsoft YaHei'"
+    fontSize: "12px"
+    fontWeight: 400
+    lineHeight: "22px"
+  welcome-title:
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    fontSize: "26px"
+    fontWeight: 400
+    lineHeight: 1.35
+    letterSpacing: "-0.02em"
+  hero-brand:
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    fontSize: "28px"
+    fontWeight: 550
+    letterSpacing: "-0.025em"
+  sidebar-brand:
+    fontFamily: "'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    fontSize: "23px"
+    fontWeight: 600
+    letterSpacing: "-0.025em"
+rounded:
+  xs: "4px"
+  sm: "8px"
+  md: "12px"
+  lg: "16px"
+  xl: "20px"
+  control: "7px"
+  choice: "10px"
+  panel: "24px"
+  circle: "50%"
+spacing:
+  "4": "4px"
+  "8": "8px"
+  "10": "10px"
+  "12": "12px"
+  "14": "14px"
+  "16": "16px"
+  "18": "18px"
+  "20": "20px"
+  "22": "22px"
+  "24": "24px"
+  "26": "26px"
+  "28": "28px"
+  "32": "32px"
+  "40": "40px"
+components:
+  button-primary:
+    backgroundColor: "{colors.aura-button-primary}"
+    textColor: "{colors.aura-button-primary-text}"
+    rounded: "{rounded.sm}"
+    padding: "8px 12px"
+  button-primary-hover:
+    backgroundColor: "{colors.aura-button-primary-hover}"
+    textColor: "{colors.aura-button-primary-text}"
+  button-secondary:
+    backgroundColor: "{colors.aura-bg-raised}"
+    textColor: "{colors.aura-ink}"
+    rounded: "{rounded.sm}"
+    padding: "8px 12px"
+  field:
+    backgroundColor: "{colors.aura-bg-raised}"
+    textColor: "{colors.aura-ink}"
+    rounded: "{rounded.sm}"
+    padding: "10px 12px"
+  chat-selected:
+    backgroundColor: "{colors.aura-bg-hover}"
+    textColor: "{colors.aura-ink}"
+    rounded: "{rounded.sm}"
+    padding: "6px 10px"
+  material-chip:
+    backgroundColor: "{colors.aura-bg}"
+    textColor: "{colors.aura-ink}"
+    rounded: "{rounded.control}"
+    padding: "4px 5px 4px 9px"
+  task-card:
+    backgroundColor: "{colors.aura-bg}"
+    textColor: "{colors.aura-ink}"
+    rounded: "{rounded.md}"
+  composer:
+    backgroundColor: "{colors.aura-bg-composer}"
+    textColor: "{colors.aura-ink}"
+    rounded: "{rounded.panel}"
+    padding: "13px"
+  work-tab-selected:
+    backgroundColor: "transparent"
+    textColor: "{colors.aura-accent-ink}"
+    padding: "0 2px"
+    height: "46px"
+  setup-field:
+    backgroundColor: "{colors.aura-bg-tint}"
+    textColor: "{colors.aura-ink}"
+    rounded: "{rounded.choice}"
+    padding: "11px 12px"
+  send:
+    backgroundColor: "{colors.aura-accent}"
+    textColor: "light-dark(white,rgb(21,21,23))"
+    rounded: "{rounded.circle}"
+    width: "34px"
+    height: "34px"
+    padding: "0"
+  settings-selected:
+    backgroundColor: "{colors.aura-bg-active}"
+    textColor: "{colors.aura-ink}"
+    rounded: "{rounded.choice}"
+    padding: "10px 12px"
+---
 
-Designretning for Aura. Arbejdsområdet skal give plads til samtalen og det, brugeren bygger. Det er en app til at arbejde i, ikke en præsentation af alle funktionerne.
+# Aura Primes designsystem
 
-## Få valg
+## Overview
 
-Aura skal kunne bruges af en person uden teknisk baggrund, som klikker sig igennem opsætningen uden at gå i stå. Det gælder appen, webguiden og installationerne.
+**Creative North Star: "Samtalen i den lokale app"**
 
-- **Ét spørgsmål pr. skærm.** Overskriften er spørgsmålet, fx "Hvilket kodeværktøj bruger du?".
-- **Få, store valg.** Ét eller to hovedvalg, højst tre til fire synlige. Når vi anbefaler et valg, står det først og er markeret som anbefalet. Spørger vi om noget, brugeren allerede har, fx sit kodeværktøj, vises de mest udbredte først.
-- **Resten bag ét link.** Fx "Et andet værktøj". Lange lister får søgning. Udbyderoversigten har sin egen undtagelse nedenfor.
-- **Et klik fører videre,** når valget er entydigt. Der skal ikke også trykkes Næste.
-- **Resumé først, detaljer bagefter.** Sig i almindeligt dansk, hvad der sker. Filstier, modelnavne med versionsnumre, priser pr. token og konfiguration ligger bag "Se detaljer".
-- **Knappen siger, hvad der sker.** Skriv "Installer resten" frem for et afkrydsningsfelt og en generel knap.
-- **Én næste handling.** Når noget er færdigt, vises det vigtigste næste skridt; andre handlinger er sekundære.
+Aura Prime følger nu kompositionen fra den faktisk installerede DeepSeek Harness 0.2.1-rc.5: integreret brand under systemtitelbaren, en helt skjulbar sidebar, centreret samtalestart og en samlet indstillingsramme. Hovedfladen er neutral, sidebar er lysere, og den runde Send-knap er blå. Den første implementering blev afvist; dens slutvurdering er ikke brugeraccept.
 
-Eksempler i appen: AI-adgang har to store valg. Udbyderoversigten er en udtrykkeligt valgt undtagelse fra grænsen på fire valg: alle ti udbydere har store kort med logo og forbindelsesstatus. Ingen udbyder eller model anbefales. Kun det valgte kort åbner en formular. Modellen er udbyderens eget udgangspunkt, valgt på forhånd; modelknappen viser det, to alternativer og "Alle modeller". En filgodkendelse viser Tillad én gang, Tillad altid i projektet og Afvis; tilladelse til resten af opgaven ligger under Flere valg. Funktioner vælges ad gangen under Indstillinger › Funktioner — første start spørger ikke om dem. Kodeværktøj har fire kort og "Et andet værktøj".
+Dette er en beskrivelse af den lokale, byggede verden. Aura bruger sit eget navn og symbol og sine eksisterende controllere. Profilen er valgfri og lokal, og appen har ingen kontologin. En ny samtale starter uden åbent værktøjspanel; en kladde bliver i den centrerede komposition, indtil samtalen har en faktisk besked.
 
-Tæl de synlige valg, før en skærm kaldes færdig, og gennemfør forløbet i appen.
+**Key Characteristics:**
 
-### Visuel opsætning med onboarding B
+- Integreret Aura-symbol og wordmark på fladen, uden appikonets mørke tile eller fast versionsbadge.
+- 280 px sidebar som grundmål; skjul giver hele bredden tilbage uden ikonrail.
+- Neutral composer med 24 px radius, blå rund Send og projekt/arbejdsmåde over feltet ved samtalestart.
+- Centreret velkomst og fælles 800×680 px ramme med venstrenavigation og rullende indhold.
+- Ingen tvungen identitet; Lokal profil forbliver en findbar indgang.
+- Første rene opstart bruger et reelt 600×700 native vindue; afslutning gemmer kun desktopWelcomeComplete lokalt og udvider arbejdsrammen.
 
-Udbyderoversigten, den eksisterende forbindelsesformular, projektets idéfelt og **Din AI** bruger store kort og en visualisering til højre. Visualiseringen følger mus og tastaturfokus uden at gemme et valg eller sende noget. Udbyderkortet åbner fortsat formularen med ét klik; modelvalg sker fortsat i projektet, ikke i et nyt trin før projektoprettelse.
+### Autoritet, historik og kilder
 
-Brandfarver bruges i logo og visualisering, mens kortfladerne forbliver neutrale. Claude og Mistrals farvede logoer har særskilt kildeangivelse i `ui/provider-icons-LICENSE.txt`; de øvrige logoer bevares. Et transparent Aura-symbol bruges kun som dekoration i visualiseringen. Appens originale logo og installationsikon erstattes ikke.
+[Native-referencekontrakten](../docs/design/native-reference-20261104.md) er den bindende kompositionskontrakt. Den [registrerede surfacebrief](.impeccable/surfaces/desktop-ui-index-html.md) henviser til den med mål `desktop/ui/index.html` og mode Operate. Den ejer den konkrete komposition og uafklarede slutstatus. [PRODUCT.md](PRODUCT.md) beskriver produktet og ejes af koordinatoren. Denne fil registrerer genbrugelige tokens og faktisk implementerede mønstre. De otte engelske sektionsoverskrifter er formatets maskinoverskrifter; dokumentationen er dansk.
 
-Gemte forbindelser, katalogkontrol og modelvalg er forskellige tilstande. Grøn markering kræver en faktisk kontrol af den samme forbindelse i den aktuelle session. Et katalogsvar er ikke bevis for modelkørsel eller kvote. Hover, fejl og afventende kontrol må aldrig vise en gammel kontrol som gældende. Det eksisterende modelsamtykke, planer og værktøjsgodkendelser er uændrede.
+Den første redesignrunde og [redesign-20261104.md](../docs/design/redesign-20261104.md) er historik, ikke en godkendt visuel kontrakt. [Det oprindelige DESIGN-arkiv](../docs/design/archive/design-before-20261104.md) bevares uændret. Dets øvrige semantiske og adfærdsmæssige kontrakter videreføres; de konkrete visuelle regler og den automatiske profilopsætning ajourføres her. Hosting, versionsrestore, samtidighed, datagennemgang og øvrige underforløb må ikke forsvinde ved denne omstrukturering.
 
-Layoutet lægger visualiseringen under indholdet på smalle vinduer og gør dekorationen kompakt på korte adgangs- og funktionstrin. Ingen arbejdsområde-, plan- eller godkendelsesstilarter ændres af onboardingens CSS. Reduceret bevægelse og tastaturfokus skal fortsat fungere.
+Faktisk kilde: [aura-tokens.css](ui/aura-tokens.css), [workspace-calm.css](ui/workspace-calm.css), [workspace-calm.js](ui/workspace-calm.js), [onboarding-compact.css](ui/onboarding-compact.css), [settings.css](ui/settings.css), [settings.js](ui/settings.js), [profile-chip.js](ui/profile-chip.js), [app.js](ui/app.js), [onboarding-window.cjs](core/onboarding-window.cjs), [viewport.js](ui/viewport.js) og [components.css](ui/components.css). CSS-cascade og aktiv DOM afgør visningen; en gammel kommentar eller plan erstatter den ikke.
 
+## Colors
 
-Dialogens tilgængelige navn skal bruge den overskrift, der faktisk vises i det aktuelle trin. Kontakter har deres eget navn, også når rækken indeholder en ⓘ-knap. Ved lukning skal fokus lande på en synlig åbner; en skjult menuhandling er ikke et brugbart returpunkt. Første lag i Før du sender forklarer tidligere beskeder i den fortsatte AI-session. Et tilvalg af en ekstra historikkopi må ikke ligne en kontakt til at slå den eksisterende session fra. Uden gemt AI-forbindelse skal Vælg AI føre direkte til forbindelsesguiden.
+Farverne i frontmatter er de uændrede CSS-værdier fra `aura-tokens.css`. Første argument i `light-dark()` er lyst tema, andet er mørkt. Temaet styres med `color-scheme` på html/body gennem profilens eksisterende temavej.
 
-## Det, man møder
+### Accent og handlinger
 
-- Første skærm spørger, om man vil bygge i appen eller bruge Aura Harness i sit eget kodeværktøj.
-- Den guidede opstart viser ét spørgsmål ad gangen med stor overskrift og to eller tre store valg. Først vises Din profil med navn, ikon (initialer, en Aura-variant eller et eget billede), tema og hjælpeniveau — alt kan udelades. Derefter vælger man adgangsnøgle eller AI på computeren; en gemt forbindelse bliver et tredje valg. Adgangsnøgle fører til ti udbyderkort på lige vilkår, inklusive Alexandra, Azure, Claude, Corti, Egen server, Mistral, Ollama, OpenAI, OpenCode Zen og OpenRouter. Nøglefeltet vises først, når en udbyder er valgt. "Har du ikke en nøgle? Sådan får du en" viser konto, betaling, månedlig grænse og nøgle som nummererede trin med en knap til hver side hos udbyderen. Sidepanelet er skjult under introduktionen.
-- Efter AI-trinnet fører den guidede opstart direkte videre til idéen; funktioner spørges ikke ved første start.
-  - Standarden er grundpakken: grundregler og designhjælpen (altid aktiv). Øvrige funktioner tilvælges ad gangen under Indstillinger › Funktioner. En installation, der allerede er i brug, låses automatisk til hele pakken ved opdateringen, så ingen mister funktioner stille.
-  - Fremgangslinjen er "1 Din profil · 2 Forbindelse · 3 Din idé".
-- Indstillinger › Funktioner viser én kontakt pr. funktion med én linje forklaring.
-  - Skills og "Altid slået til" er foldet sammen.
-  - Med et projekt åbent vælger man Alle projekter eller Kun projektet. En undtagelse står under funktionen med Brug standarden.
-  - En slået fra funktion skjuler sine knapper, fx Sikkerhedskopi, Gem version eller designvalgene. Den sletter intet.
-  - Under overskriften Integrationer står én kontakt pr. system, fx CVR. Integrationer er slået fra, til man vælger dem. Deres ⓘ viser system, ejer, adgang, data, dataflow, pris og kontroldato. Ved første start vises kun de almindelige funktioner.
-- "Hvad vil du bygge?" viser idé, projektnavn og Opret og fortsæt. Projektet gemmes i Dokumenter › Aura uden mappedialog; "Vælg en anden placering" er et link.
-  - Idéen bliver en redigerbar kladde i **Byg**. Første afsendelse går gennem det almindelige modelsamtykke. En ekstra samtale oprettet med projektets + starter i **Samtale**.
-  - Flere valg er én flad liste med AI, udgivelse, tests og design, hver med ⓘ. Farve, logo og inspiration ligger ét lag længere nede.
-  - Valgene forudfyldes fra profilens projektstandarder. Det enkelte projekts valg skriver aldrig tilbage, og Glem projektstandarder står under Indstillinger › Din profil.
-- Aura Harness i dit kodeværktøj viser fire kort og "Et andet værktøj" med søgning. Et klik fører videre til mappevalget og derefter til et resumé i almindeligt dansk; de præcise filændringer ligger under Se de præcise ændringer.
-  - Under Tilpas er integrationerne en kategori for sig og ikke valgt på forhånd. De tælles for sig, fx "9 af 12 skills valgt og 1 integration", og står aldrig som fravalgte. Vælg alle skills vælger ikke integrationer.
-- Næste trin viser kun det valgte forløb. Nøglehjælp og tekniske oplysninger er foldet sammen. GitHub og lokale værktøjer ligger under Avanceret opsætning. Tilbage og Vælg senere er altid tilgængelige.
-- Sidepanelet indeholder projekter, Nyt projekt, Åbn projekt og Indstillinger. Indstillinger har Din profil, Udseende, AI-forbindelser, Funktioner, Opdateringer og Hjælp og feedback.
-- Opdateringer viser version og status med én næste handling: Søg, Hent eller Genstart og opdatér. Automatisk søgning kan slås fra under Indstillinger i dialogen. En ny version vises med en diskret linje over arbejdsområdet. En kritisk rettelse giver en vedvarende advarsel, men blokerer ikke arbejdet. Genstart venter på igangværende opgaver og gemmer kladden først.
-- AI-forbindelser er en liste med Rediger på hver forbindelse. Tilføj forbindelse er et let flow inde i dialogen med udbyderkortene: udfyld, gem, kontrollér. Rediger viser formularen med Test forbindelse og Fjern forbindelse. Gennemgå opsætningen er den avancerede indgang.
-- Arbejdsområdet består af samtalen og en arbejdsflade med en flytbar skillelinje. Arbejdsfladen har fem faner: Forhåndsvisning, Plan, Ændringer, Kode og Aktivitet. Forhåndsvisning er udgangspunktet.
-  - Kun brugeren skifter fane. AI'ens hændelser giver Ændringer et tal og Aktivitet en prik, men flytter ikke brugeren. Nyt indhold i en åben fane vises først, når brugeren vælger det, fx med Vis dem.
-  - Faneskift bevarer previewets formularer og rulning, filvalget, rulningen i de andre faner og beskedkladden.
-  - Ændringer viser først et resumé med sammenligningsgrundlaget og derefter en linje-diff. Hver fil siger, om AI'en, AI'en og andre, en kommando eller brugeren ændrede den. Brugerens egne ændringer må aldrig stå som AI'ens.
-  - Kode er skrivebeskyttet og viser kode som tekst. Beskyttede filer vises ikke. Filhenvisninger til AI'en står i skrivefeltet og i Før du sender.
-  - Aktivitet viser kun faktiske hændelser med klokkeslæt og status i ord. Ingen simuleret terminal og ingen opdigtede testresultater.
-  - Sidepanelet kan foldes sammen til ikoner. Ved 980 × 720 står fanerne på én linje; med større tekst må de bryde, men aldrig forsvinde. Et mærke på en fane ligger oven på hjørnet, så fanerne ikke flytter sig.
-- Skrivefeltet er den vigtigste handling. Under det står den aktive model, udbyder og indsats og samtalens tokens ind og ud med en anslået pris. Modelknappen åbner Din AI. Den viser højst tre modeller: for kendte udbydere udbyderens eget udgangspunkt og to alternativer med faktuelle forklaringer, ellers et udvalg. Et klik på et modelkort vælger og lukker. Alle modeller og forbindelser ligger under Avanceret. Referencer vises kun, når projektet har referencefiler.
-- Indsatsen er udbyderens standard, indtil brugeren selv vælger en, fx "Prøv igen med lav indsats" på fejlkortet. En valgt indsats står under skrivefeltet og nulstilles under Din AI med "Brug udbyderens standard" eller ved skift af model.
-- Når et svar stopper ved loftet uden tekst, forklarer fejlkortet det i én sætning og viser højst tre valg: lav indsats (når modellen tager imod den), "Gør samtalen kortere og prøv igen" (når samtalen har mere end én besked) og "Prøv igen". Intet sendes uden et klik.
-- Før første afsendelse viser "Før du sender" fire linjer: AI, hvor, træning og pris.
-  - Under dem står én linje om pris og data med ⓘ. Tidligere samtale nævnes kun, når den sendes med.
-  - "Se alle oplysninger" er korte rækker, og lange tekster som appens vejledning og planen har hver sin fold.
-  - Resuméet vises igen, når modtager, model, pris, vilkår eller valgte private referencer ændrer sig. Almindelig fortsættelse, interne filhenvisninger og skift mellem Samtale, Planlæg og Byg gentager ikke et allerede accepteret resumé.
-- Første filændring i en opgave spørger, om AI'en må ændre filer i projektet, medmindre projektets Auto-godkend er slået til. "Tillad for denne opgave" gælder kun til opgaven slutter. Gemte tilladelser til en konkret kommando eller mappe kan ses og fjernes i projektindstillingerne. Valg af overordnet mappe viser omfanget før godkendelsen.
-  - **Byg og kontrollér automatisk** tillader kun agentkommandoer, når Auras tekniske isolation faktisk er startet. Manglende understøttelse vises ved indstillingen; appen falder aldrig tilbage til automatisk kørsel uden isolation. Ændringer gælder næste opgave.
-  - Et godkendelseskort siger Hvad, Hvorfor og Hvis du tillader i tre korte rækker. Ændringen og de tekniske detaljer er foldet sammen. AI'ens begrundelse er markeret som AI'ens, og et gæt om en kommando siger, at det er et gæt.
-  - Afvis stopper opgaven. Afvis med en besked er et link under knapperne og lader AI'en fortsætte med brugerens besked.
-- Én status: overskriften over samtalen siger kort, hvor opgaven er, og linjen under siger, hvad der sker, eller hvad AI'en venter på. Efter Stop, afvisning og fejl står vejen videre på resultatkortet; der er ingen ekstra advarselsboks eller rød linje ved siden af.
-- Resultatkortet viser en kort kvittering, **Se ændringer** og **Flere valg**. Efter gennemgang hedder knappen **Ændringer gennemgået**. Kommandoer og kontrolresultater står i Aktivitet, ikke som lange lister i samtalen.
-- Ekstra samtaler starter i **Samtale**. Et nyt projekts første idé står som en redigerbar kladde i **Byg**. I Samtale kan AI'en læse projektet og svare, men hverken ændre filer eller køre kommandoer. En relevant anbefaling viser kun **Planlæg** og **Bliv i samtalen**. Planlæg forbereder en redigerbar besked; den sendes ikke automatisk. Et fravalg huskes i samtalen. Et almindeligt svar bliver aldrig alene til et byggekort. Indeholder svaret allerede de fire konkrete planafsnit, vises **Byg planen** i stedet for endnu et tilbud om planlægning, også efter genåbning.
-- Fremdriften skelner mellem modellens forberedelse, svartekst og kode under modtagelse. Ræsonnement vises ikke som svartekst. **Følg arbejdet** åbner Aktivitet med faktiske delopgaver og et valgfrit kodeudkast, tydeligt mærket som endnu ikke gemt. En model uden disse signaler får den almindelige ventestatus; ingen fremdrift opfindes.
-- Når filværktøjet har skrevet, opdateres Kode og Ændringer under opgaven. Projektets versionsstatus står ved projektmenuen. Historikken kan læses under arbejde; handlinger, der ændrer versioner eller filer, venter på opgaven.
-- Planlægning fører til et konkret forslag. Brugeren vælger at bygge; efter bygning kan man fortsætte med rettelser.
-  - Arbejdsmåderne hedder **Samtale**, **Planlæg** og **Byg**. Byg er et almindeligt valg. En direkte brugerbesked som "byg" skifter til bygning før afsendelse; spørgsmål, citater og et nej gør ikke. Efter et byggeforslag uden genkendelige planafsnit kan **Byg videre** bruge den eksisterende samtale, uden at kalde forslaget en godkendt plan.
-  - **Enter sender, Shift+Enter laver en ny linje.** ⌘Enter på Mac og Ctrl+Enter virker også. Alle går gennem samme forløb som Send, inklusive eventuelt modelsamtykke. Tastegentagelse og tekstkomposition må ikke sende to gange.
-  - AI'ens spørgsmål vises ét ad gangen som store svarkort, højst fire synlige. AI'ens anbefaling står først og er markeret som AI'ens, ikke Auras. Eget svar, Tilbage og Spring over er links.
-  - Projektbriefen indeholder kun brugerens egne ord: idé, ønsker og svar. Hver linje siger, hvor den kommer fra, og kan rettes.
-  - Planen står under Plan i fire afsnit med teknik foldet sammen. Samtalen viser et kort med planens første linje og én primær handling: Byg. Planen kan rettes direkte eller af AI'en og genåbnes. En plan, der ikke må bygges, kan stadig læses.
-- Nye projekter har versioner fra start. Efter hver AI-opgave gemmes en version, og resultatkortet tilbyder Fortryd opgaven. Historikken står under Ændringer › Versioner: "Alt er gemt" eller antallet af ugemte ændringer, én knap til Gem version og versionerne som rækker med et lille billede, et navn, typen og tiden. Én række er ét valg; de to veje tilbage står først, når en version er åbnet. Filvalg, branch og identitet ligger under Avanceret.
-- Før og efter vises side om side, med samme side i samme størrelse. Mangler et billede, siger teksten det. Billederne er hjælp, ikke bevis for, at koden virker.
-- Enhver gendannelse og fortrydelse har én gennemgang: billederne, et udfald pr. fil, dine ugemte ændringer og ét spørgsmål, hvis du og AI'en har rettet de samme linjer. Dine linjer er det anbefalede svar. Hvad der ellers berøres, er foldet sammen.
-- **Fortryd opgaven** ligger under **Flere valg** på resultatkortet. Efter gendannelsen fjernes handlingen for den fortrudte opgave, og samtalen viser en kvittering med antal berørte filer og oplysning om versionsgemning. Kvitteringen får fokus.
-- Appen åbner det projekt, der sidst var åbent. Et projekt, der er lukket med Nyt projekt, åbnes ikke igen.
-- Sidepanelet viser de 12 senest åbnede projekter med deres samtaler; ældre projekter ligger bag "Vis alle N projekter". Kun det åbne projekt er foldet ud, og højst seks samtaler vises, før "Vis alle". En ny samtale startes med + ved projektet; sidepanelet har ingen særskilt Ny samtale øverst, så det første valg er Nyt projekt. En samtales status står under navnet med tekst og farvet prik: arbejder, venter på dig, nyt resultat eller afbrudt. Omdøb og slet ligger under •••.
-- Flere samtaler og projekter kan arbejde samtidigt. Nyt projekt, Åbn projekt, AI-forbindelser, Funktioner, introduktion og Udgiv kan bruges imens. Ændrede indstillinger gælder næste opgave. Kun en handling, der faktisk ændrer de optagne filer eller uploader dem, venter og forklarer hvorfor.
-- Et projekt er én fælles app. En opgave får en arbejdskopi, hvis projektmappen er optaget. **Arbejdskopi · Ikke flettet ind i appen** står over preview, og **Flet ind i projektet** er næste handling. Stien og udeladte filer er foldet sammen. Sidepanelet viser **klar til at flette**. Godkendelser og spørgsmål tilhører den samtale, der stillede dem. Udgiv viser, at projektets gemte version bruges, når brugeren ser en uflettet kopi.
-- Indfletning bruger gennemgangen før Fortryd: projektet og kopien vises side om side, øvrige projektlinjer bevares, og dine linjer er anbefalet ved konflikt. Den venter kun på opgaver i projektet og kildekopien; en synlig linje forklarer ventetiden. Et samtaleskift bevarer previewets felter og rulning. En baggrundsopgave må hverken flytte den åbne fane eller kontrollere en anden samtales preview som sit eget resultat.
-- Korte handlingsbeskeder har deres egen plads i den aktive skærm. De må ikke ligge oven på skrivefeltet, fanerne eller andre knapper.
-- Kommandopaletten (⌘K) er valgfri og har ingen knap; den nævnes i Hjælp. Den viser kun handlinger, der findes og kan bruges lige nu, og uden søgning højst seks handlinger, fem samtaler og tre projekter.
-- Eksempler på idéer ligger bag ét link under idéfeltet og vises kun, når feltet er tomt: tre faste eksempler, der kan bygges uden server.
-- Projektmenuen indeholder versioner og sikkerhedskopi. Udgiv åbner valg af udgivelsessted og viser tydeligt, om destinationen er et testmiljø eller en offentlig hjemmeside. Udgiv er altid synlig; er Udgivelse slået fra, viser den ét trin, Slå udgivelse til. Sikkerhedskopi vises kun, når Udgivelse er slået til. Funktionen er ikke med i den anbefalede pakke, så længe udgivelse kræver udviklerværktøjer.
-- Knappen, funktionen og forløbet hedder Udgiv og Udgivelse overalt. Del og deling bruges ikke om at lægge en app ud.
-- Ret i siden er en frivillig til/fra-knap i forhåndsvisningens værktøjslinje. Kortet for et valgt element har højst to hovedvalg: Ret teksten og Bed AI'en ændre det. Kan Aura ikke rette selv, står grunden på kortet, og AI'en er det fremhævede valg. Tekst rettes i et felt i Aura, aldrig i selve siden, og Fortryd står ved resultatet. Et mål for AI'en står over skrivefeltet og i Før du sender, før det sendes.
-- Preview viser skærmstørrelse og genindlæsning. Server, skalering og egne mål ligger i en menu. Hvis en framework-app mangler sin server, vises én handling i det tomme preview: Start forhåndsvisning. Installation og start gennemgås i en dialog; procesloggen er foldet sammen.
+Send er blå med `aura-accent`, hover følger `aura-accent-hover`, og teksten er hvid i lyst tema og næsten sort i mørkt. Stop og almindelige primærhandlinger beholder `aura-button-primary` med sort/hvid temaveksling. Velkomstens Kom i gang er neutral primærhandling. Det er en konkret rollefordeling; den tidligere generelle regel om aldrig at bruge blå hovedhandling er udgået.
 
-## Rolige skærme
+Samtalevisningens blå linje, links, caret, fokus og udbydervalg bruger accentrollerne. Valgte samtaler og indstillingssektioner har nu neutral flade og almindelig tekst. Temaets store valgfelter bruger neutral kant og aktiv flade. Et visuelt valg giver aldrig samtykke eller filadgang.
 
-Hver skærm og dialog følger samme mønster:
-- **Én ting øverst:** ét spørgsmål eller én status i almindelige ord og én primær knap.
-- **Højst én linje forklaring.** Resten ligger bag en ⓘ eller Se detaljer. Fagord som branch, commit, identitet, endpoint og token står kun under Avanceret.
-- **Indstillinger som lister:** en kontakt eller en liste pr. række. Detaljer ligger på et lag længere nede, ikke foldet ud på samme skærm.
-- **Det, der afgør beslutningen, er synligt:** Modtageren af data, prisen og handlinger, der ikke kan fortrydes, står altid som én kort linje. Tidligere samtale nævnes, når den sendes med.
+### Neutrale flader
 
-ⓘ er en lille rund knap:
-- Et klik åbner en boble ved knappen, og Escape eller et klik udenfor lukker den. Den åbner aldrig kun ved, at man holder musen over.
-- Teksten står i knappens `data-info`, og knappen har et tilgængeligt navn, fx "Mere om pris".
-- Inde i en dialog flyttes boblen ind i dialogen, så skærmlæsere kan nå den.
+| Rolle / CSS-token | Lyst | Mørkt |
+| --- | --- | --- |
+| `--aura-bg` | `rgb(255, 255, 255)` | `rgb(21, 21, 23)` |
+| `--aura-bg-sidebar` | `rgb(249, 250, 251)` | `rgb(27, 27, 28)` |
+| `--aura-bg-composer` | `rgb(255, 255, 255)` | `rgb(44, 44, 46)` |
+| `--aura-bg-raised` | `rgb(255, 255, 255)` | `rgb(35, 35, 36)` |
+| `--aura-bg-panel` | `rgb(255, 255, 255)` | `rgb(35, 35, 36)` |
+| `--aura-ink` | `rgb(15, 17, 21)` | `rgb(249, 250, 251)` |
+| `--aura-ink-secondary` | `rgb(97, 102, 107)` | `rgb(207, 211, 214)` |
+| `--aura-ink-muted` | `rgb(101, 105, 113)` | `rgb(150, 152, 158)` |
+| `--aura-accent` | `rgb(65, 118, 230)` | `rgb(122, 170, 255)` |
+| `--aura-accent-ink` | `rgb(52, 94, 186)` | `rgb(125, 154, 222)` |
+| `--aura-button-primary` | `rgb(21, 21, 23)` | `rgb(240, 240, 242)` |
+| `--aura-button-primary-text` | `rgb(255, 255, 255)` | `rgb(21, 21, 23)` |
+| `--aura-bg-active` | `rgb(235, 238, 242)` | `rgb(67, 69, 74)` |
 
-`npm run measure:screens` måler alle skærme med en kontrolleret model:
-- synlige ord, valg, ⓘ og felter pr. skærm;
-- klik pr. opgave;
-- et skærmbillede af hver.
+Tabellen er en læsevisning af frontmatter. Sidebarens mørke grå er med vilje lysere end hovedfladen. Composerens flade står mellem dem. Tynde alpha-kanter, neutral hover og faktisk tekstkontrast bærer hierarkiet. Previewets iframe beholder projektets eget tema.
 
-Kør målingen før og efter en ændring af en skærm, og sammenlign. Der er ingen fast grænse; tallene viser, om en skærm vokser.
+### Status og hændelser
 
-## Hvad der vises hvornår
+Succes, advarsel og fejl bruger de eksisterende semantiske roller og tekst, ikke farve alene. Stop er neutralt, fejl rødt. Diffs bruger både farve, tegn og linjer. En gemt forbindelse eller et katalogsvar beviser ikke inferens, kvote eller en vellykket modelkørsel. Ældre logocaptures eller tidligere F3-lukning kvalificerer ikke automatisk denne revisions udbyderflade.
 
-En indstilling skal have et sted, hvor den naturligt hører til. Den skal ikke gentages i navigation, status, formular og hjælpetekst på samme skærm.
+## Typography
 
-Værktøjsaktivitet står under Aktivitet; samtalen viser én linje med antallet og Se Aktivitet. Spørgsmål, fejl og handlinger, der kræver godkendelse, vises på det tidspunkt, brugeren skal tage stilling. Tekniske detaljer kan åbnes. En kort resultatoversigt beskriver de faktiske ændringer; den er ikke et testbevis.
+Systemfonten fra frontmatter bruges til indhold og den centrale Aura-brandrække. Sidebarens wordmark deklarerer den eksisterende Montserrat-token med systemfallback; der er ikke tilføjet en ny fontdownload. Kode har den eksisterende monospace-stak.
 
-Datamodtagere, pris, behandlingssted og ukendte vilkår skal fortsat kunne vurderes før afsendelse. Forenklingen må ikke skjule en ændret modtager eller give adgang på brugerens vegne.
+| Rolle | Faktisk anvendelse |
+| --- | --- |
+| `body` | Rodtekst 13 px; almindelige p-elementer har 1,65 i linjehøjde. |
+| `conversation` | Assistentens prosa 15/25 px og fuld tekstkontrast. |
+| `user-message` | Højrestillet neutral boble 14/23 px. |
+| `composer` | 14/24 px, også i den centrerede kladde. |
+| `headline` / `subheading` | Markdown 20/28 px og 16/24 px. |
+| `setup-title` | 23 px, vægt 500, linjehøjde 1,3. |
+| `welcome-title` | 26 px, vægt 400, linjehøjde 1,35. |
+| `hero-brand` / `sidebar-brand` | Henholdsvis 28 px/vægt 550 og 23 px/vægt 600. |
+| `label` / `caption` | Kompakt kontroltekst og metadata. Den konkrete sidebar bruger også 14 px med normal vægt. |
+| `code` | Kodelinjer og diff 12/22 px; tekniske godkendelsesdetaljer 12 px med linjehøjde 1,7. |
 
-## Visuelle valg
+Profilens skriftstørrelse er fortsat 10 til 16 med 13 som normalværdi. Electron-zoom `fontSize / 13` skalerer hele appen og nøglevinduet. Layoutmål er CSS-pixels. Referencens egen fontstørrelseslogik er ikke kopieret over Auras eksisterende tilgængelighedsvalg.
 
-- Aura-logoet i `docs/images/aura-icon.png` er fælles kilde til appen, introduktionen, websidernes favicon og installationsikonerne. Brug billedet uændret; et tastatursymbol eller et tegnet A erstatter ikke logoet. `npm run icons` i `desktop/` kopierer det til brugerfladen og pakningen.
-- Baggrund: kølig hvid `#F8FAFC`. Flader: hvid `#FFFFFF`.
-- Primær handling: kobolt `#0052CC`. Svag markering: `#E8F1FF`.
-- Brødtekst: `#182235`. Sekundær tekst: `#58677D`. Skillelinjer: `#E0E7F0`.
-- Systemskrift på macOS og Windows. Brødtekst i samtalen er 13 px med linjehøjde 1,75. Teksten skal kunne læses uden at åbne en større visning.
-- Afstande tager udgangspunkt i 4, 8, 12, 16, 24 og 32 px. Formularfelter har 8 px runding, skrivefelt 14 px og dialoger 16 px.
-- Ikoner er enkle stregikoner. Ikonknapper har tilgængeligt navn og en forklarende titel.
-- Bevægelse bruges ved åbning af dialoger og trin. Overgange varer 140–220 ms og slås fra ved reduceret bevægelse.
+## Layout
 
-Farver og fælles komponentregler ligger i `ui/styles.css`. Nye skærme skal bruge dem, før der tilføjes særregler.
+### Systemtitelbar og sidebar
 
-## Sprog og adgang
+macOS-vinduet bruger `hiddenInset` med de rigtige systemknapper ved x16/y16. CSS reserverer en 44 px titelbarrække og en synlig åbnknap i hovedfladen, når sidebar er skjult. Ingen falske systemknapper tegnes i HTML. Et platformspecifikt native vindue skal verificeres som sådan; et renderer-screenshot beviser ikke hele vinduesrammen.
 
-Skriv kort, konkret dansk. Brug handlinger som Gem version, Tilslut AI og Ret forslaget. Forklar konsekvensen ved den handling, der udløser den. Undgå faste opsummeringer, unødige gentagelser og slogans.
+Sidebarens standard er nu 280 px. Den har først titelbarrækken, derefter en brandrække på mindst 58 px med transparent Aura-symbol og wordmark. Ny samtale er en neutral fuldbreddeknap på mindst 40 px. Nyt projekt, Åbn projekt og Søg i samtaler ligger nedenunder. Flere muligheder samler kodeværktøjer, introduktion, projektmenu, versioner og Udgiv, når deres eksisterende feature- og projektbetingelser tillader dem. Lokal profil og indstillinger ligger nederst. Versionen står ikke som et permanent mærke ved logoet.
 
-Kontroller skal kunne bruges med tastatur og have synligt fokus. Menuer skal kunne lukkes med Escape. Dialoger må gerne rulle på små skærme, men handlinger må ikke forsvinde. Brug farve sammen med tekst, når noget fejler eller kræver opmærksomhed.
+Ved skjul bliver sidebarbredden **0 px**, og hele sidebaren forsvinder. Åbn sidebar og Ny samtale vises i hovedfladens titelbarområde. Desktopvalget gemmes i den eksisterende `aura.sidebar.v1`; småvindues-skuffen må ikke overskrive det. Skjulte flader er inert, og fokus flyttes til den synlige åbnknap. Den tidligere 60 px ikonrail er udgået.
 
-## Afprøvning
+Eksisterende manuel sidebarbredde bevares. Resize har 224 px gulv og `max(224, min(360, vinduesbredde - 680))` som loft. Pile flytter 10 px, Shift+pil 40 px, Home/End vælger grænserne. Dobbeltklik nulstiller kun sidebarbredden til 280 px. Skrivning fletter i `harness-workspace-layout-v1` uden tab af andre layoutvalg.
 
-Gennemgå både velkomst, tomt projekt, igangværende opgave, godkendelse, færdigt resultat, genåbning og fejl. Brug også vinduet ved 980 × 720 og reduceret bevægelse. Skærmbilleder alene viser ikke, om menuernes handlinger virker; gennemfør brugerforløbene i Electron.
+**Regel: Den observerede app.** Brug den installerede references faktiske komposition og den aktuelle Aura-kode som grundlag. Tidligere rapporter og previews er historik, når de modsiges af den nye bestilling.
 
-## Deling: version, destination og faktisk kontrol
+### Tom samtale, kladde og beskeder
 
-Delingsdialoger stiller ét spørgsmål ad gangen: destination, forbindelse, app, navn, adgang og til sidst gennemgang. Trin, hvis svar allerede er kendt, springes over. Tilbage bevarer felterne, og samme valg kan bruges igen. Den endelige gennemgang viser appnavn, adresse, gemt version, modtager, adgang og omkostninger. Udgiv er den udtrykkelige godkendelse; der er ingen ekstra afkrydsning med samme betydning. Ændringer kasserer godkendelsen og kræver en ny gennemgang.
+En tom samtale viser den centrale brandrække, projekt/arbejdsmåde over skrivefeltet og den brede composer i en centreret stak. Den bruger 76 % af indholdsområdet op til 860 px og en lille lodret forskydning på 16 px. Under højst 720 px bruger den hele sin indholdsbredde uden forskydning. At skrive en kladde dokker ikke composeren nederst.
 
-Kvitteringen har et tydeligt appnavn og en læsbar adresse. Udgivelse, adgang og indholdskontrol vises som adskilte statusoplysninger, aldrig som én sammenkædet linje. Åbn appen er den direkte handling, når udgivelsen er bekræftet. Tekniske ID'er, fingeraftryk, HTTP-status og kontroltidspunkt ligger i en struktureret detaljevisning med ombrydning af lange værdier. Det samme forhold forklares kun én gang i første lag.
+Højre panel lukkes midlertidigt for en ny tom samtale **uden** at gemme et nyt `profile.appearance.panelOpen` eller ændre layoutobjektet. Hvis brugeren åbner det eksplicit, respekteres valget. Panelets almindelige toggle bruger stadig den eksisterende controller og gemmevej. Den tomme samtales præsentation må ikke kalde gemning ved at simulere klik på toggleknappen.
 
-Et uploadresultat er knyttet til den gennemgåede version og destination. Udbyderens status, HTTP-svar uden login, filmatch og testpersonens adgang må ikke blandes sammen. En mislykket frisk kontrol erstatter gammel evidens. Ved ukendt upload er udbyderens oversigt vejen videre; ingen automatisk gentagelse. Sikkerhedskopi til GitHub viser kode og historik. GitHub Pages er et særskilt udgivelsesforløb for en hjemmeside. Uflettede kopier står synligt som udeladt fra delingen.
+Når samtalen har en faktisk besked, vises titel/tilstand, linjen Samtale/Arbejdsspor og en bunddokket composer. Samtalekolonnen er centreret med `--chat-col: 920px` og 32 px sideluft. Lukket værktøjspanel giver hele arbejdsbredden til chatpanelet. Ved mindst 1600 CSS-px bliver indholdets loft 960 px og ved mindst 2000 px 1040 px. Den tidligere separate lukkede kolonne på 960/1080/1200 px er udgået.
 
-Dialogerne kan rulle ved større tekst; gennemgang og resultat får synligt tastaturfokus, og Escape returnerer til åbneren. Handlingsrækken i gennemgangen bliver synlig ved større tekst, så Udgiv og Ret ikke forsvinder under indholdet. Skærmbilleder ved Electron-zoom tages med vinduets capturePage efter den færdige overgang. Forståeligheden afgøres ved observation med en testperson efter docs/testforloeb.md; automatiske prøver tæller som separat teknisk evidens.
+Interne projekt- og samtalerefreshes bruger nu `reveal:false`, så de ikke genåbner panelet eller omskriver et gemt `panelOpen:false` ved genstart. Eksplicit faneskift og panelåbning beholder den almindelige controller og `reveal:true`.
 
-## Forbindelser og hosting
+Når værktøjspanelet er åbent på bred skærm, består fordelingen `clamp(360px, 54%, 880px)`, separator på 7 px og resterende værktøjsbredde. Manuelt valgt samtalebredde bevares, med 280 px gulv og mindst 300 px tilbage til værktøjer plus separator. Pile flytter 10 px, Shift+pil 50 px. Dobbeltklik fjerner kun gemt `chat` og genskaber den responsive fordeling.
 
-- komplai findes kun under Udgiv som komplai Run. Browserlogin giver særskilt udgivelsesadgang. Én organisation vises direkte; flere organisationer giver et valg. Tidligere AI-forbindelser kan fjernes fra AI-oversigten, men ikke vælges eller bruges. Et gemt valg af komplai må aldrig udløse et automatisk skift til en anden AI. Run-adgang og historiske samtaler bevares.
-- Udgiv starter med Udgiv fra Aura og Se udgivelsesvejledning. Udbyderne står på lige fod i alfabetisk rækkefølge, uden anbefaling eller forvalg. En tidligere valgt destination kan genbruges. komplai Run har ingen særplacering.
-- komplai Run kræver ingen CLI. Login og særskilt udgivelsesadgang gennemføres før appvalget. Én organisation kræver ingen rullemenu. Ny app og Eksisterende app er to valg; navn, adresse og adgang har deres egne trin. Ved en ny app har Hvem kan åbne appen to lige store kort uden forvalg. En eksisterende app viser sin aktuelle adgang; upload ændrer den ikke. Konto og adgang samler Log ud og linket Skift adgang i komplai. Gennemgangen henter adgang igen og viser adresse, organisation, adgang, placering og omkostninger. Resultatet kontrollerer udgivelsen hos komplai og startsiden samt fremhæver, hvis observeret adgang afviger fra valget ved upload. En ny version går til den app, der senest blev udgivet til; Skift app åbner appvalget direkte. Filer, komplai ikke modtager, nævnes ved navn før upload.
-- Gemte AI-forbindelser vises fire ad gangen med søgning. Navn og udbyder står hver for sig. Status siger, hvornår kataloget senest svarede; ukontrollerede forbindelser får ingen grøn markering.
-- Efter tilslutning er Fortsæt hovedhandlingen. Tilføj en AI mere er et frivilligt valg. Gentagen opsætning må ikke slette kladder, projekt eller andre forbindelser.
-- Hostingens korte tekst beskriver leverandør og dataplacering. Opsætning, databehandleraftale, sikkerhed og kilde ligger i en fold. Ingen generel grøn GDPR-markering. En vejledning må ikke ligne en færdig uploadintegration.
-- Chatstatus viser faktisk aktivitet fra opstarten, også inden første svar. Tegn og tokens holdes adskilt. Ingen opdigtet procent eller tokenhastighed. Automatisk rulning stopper, når brugeren ruller op, og Seneste svar fører tilbage.
+### Kompakt layout og indstillingsrammer
 
+| Betingelse | Præsentation |
+| --- | --- |
+| Højst 1100 px | Værktøjspanel bliver skuffe, højst 540 px eller 88 %. Til samtalen, Escape og baggrundslukning består med fokusretur. |
+| Højst 900 px | Sidebar åbnes som 280 px skuffe; den gemte desktoppræference bevares. |
+| Højst 720 px | Samtale og arbejdsflade veksler som hele flader med bundnavigation. Tom samtale skjuler bundnavigationen. |
+| Opsætning/indstillinger højst 680 px | Navigation bliver 138 px, felter kan stables og udbydere vises i én kolonne. |
+| Opsætning/indstillinger højst 440 px | Navigation ligger vandret over det rullende indhold. |
 
-## Udgivelsesvalg og fælles status · 20. oktober 2026
+Første rene opstart bruger nu et faktisk native vindue på **600×700** med minimum 520×620. Det kan ikke resizes, maksimeres eller sættes i fuld skærm under den kompakte velkomst. `core/onboarding-window.cjs` vælger vinduestilstanden før BrowserWindow oprettes; main maksimerer kun den normale ramme. I kompakt tilstand fylder velkomstindholdet vinduet med `100vw`/`100dvh`, uden indvendig modalramme, radius eller skygge. Native vinduesmål og rendererens CSS-indholdsmål er forskellige målinger.
 
-- Udgiv viser alle seks udbydere på samme skærm, som udtrykkelig undtagelse fra grænsen på fire valg: Azure Static Web Apps, Cloudflare Pages, GitHub Pages, komplai Run, Promte Apps og Vercel. De står alfabetisk med logo, navn og kontokrav, uden anbefaling eller forvalg. Promte viser krav om konto og betalt aftale. komplai viser kun kravet om en komplai-konto, og komplai-loginet viser kun knappen Log ind med komplai uden salgstekst eller kontaktlink.
-- Gennemgå udgivelse, Byg og gennemgå samt Udgiv viser en spinner straks efter klikket med en kort tekst om det aktuelle arbejde. Der vises ingen procent uden målt fremdrift. Resultatet har **Udgiv et andet sted**. Et afventende Promte-login kan afbrydes, så adresse og udbyder kan vælges igen uden at vente på udløb.
-- Forbindelse, destination, filer og gennemgang har fælles opbygning. Browserlogin er førstevalg, hvor integrationen understøtter det. Manglende værktøj, udløbet login og manglende adgang giver et konkret næste trin. API-nøgler vises kun i det nødvendige opsætningsforløb og må ikke ligge i projektfiler.
-- Azure viser abonnementer og eksisterende apps fra brugerens konto. Ressourcegruppen aflæses automatisk. Promte spørger om organisationens adresse og arbejdsområde. Komplais OAuth-forløb bevares uden særplacering.
-- GitHub Pages og Cloudflare Pages viser opsætningsfilerne før skrivning. Brugeren gemmer og sender selv ændringerne til GitHub. Udgiv med GitHub Actions godkender én manuel kørsel; der startes ikke automatisk ved push. Cloudflares token gemmes hos GitHub.
-- Vercel har to valg: automatisk udgivelse fra Git eller én testversion. Git-forbindelsen oprettes hos Vercel. Aura viser repository, produktionsbranch og projektmappe før lokal tilknytning. Gemte projektindstillinger kan genbruges, men aktiverer aldrig sporing eller udgivelse alene.
-- Status ved Udgiv gælder alle udbydere og det aktuelle projekt. Fejlet kontrol viser aldrig gammel grøn status. Vercels status skelner mellem produktion og testudgave. En igangværende kontrol må ikke overskrive en nyere udgivelse eller et andet projekt.
-- Promte kan give en udgivet version uden en dokumenteret appadresse. I det tilfælde er Åbn Promte den direkte handling; der opfindes intet link. Tekniske detaljer forbliver foldet sammen.
-- Er projektet ikke en Promte-app, siger Udgiv **Appen er ikke klar til Promte endnu** før login, med **Gør klar til Promte** og **Vælg en anden udbyder**. Den tekniske årsag ligger bag "Se detaljer". Gør klar slår Promte-integrationen til, lukker udgivelsesdialogen og starter den tydelige ombygningsbesked i **Byg** gennem det normale afsendelsesforløb. En eksisterende beskedkladde overskrives ikke.
+Den separate boolean `desktopWelcomeComplete` gemmes atomisk i det eksisterende lokale Store og indeholder hverken identitet, adgang eller samtykke. Når markøren mangler, regnes migreret profil, eksisterende projekter eller forbindelser som en etableret installation, der bruger normal ramme. En ren, uafsluttet velkomst får false og åbner kompakt igen efter genstart. Ved afslutning gemmes true, vinduet får resize/maksimering/fuld skærm tilbage, minimum 980×720 og grundmål 1440×940, centreres og maksimeres. Et senere Vis introduktion gør ikke et etableret vindue kompakt igen.
 
-## Arbejdsfladen i Codex-stil · 1. november 2026
+`showIntroduction` læser den eksisterende kompakte tilstand gennem den validerede boolean-IPC `window:onboarding`; det skaber ikke en ny kompakt tilstand. `closeIntroduction` afslutter den. Har rendereren allerede afsluttet introduktionen, synkroniseres det ved opstart. Vinduesmarkøren er adskilt fra profilfravalg og må ikke gemme en udeladt identitet.
 
-- **Skrivefeltets bundbjælke** læses som: ＋, arbejdsmåde, fleksibelt mellemrum, model med udbyder og indsats, Send/Stop. Modelnavnet afkortes med ellipsis i stedet for at skubbe Send ud. Send og Stop deler samme plads: mens en opgave kører, står Stop der; ellers Send. Send er altid synlig, når den er mulig, og spærret under indlæsning og afsendelse.
-- **Én statusafledning** bestemmer badge, statuslinje og sidepanelets prik ud fra turens tilstand: venter på dig → gendannelse → arbejde → seneste resultat. Farven følger tilstanden, ikke teksten: Stoppet er gråt, aldrig rødt; Fejl er rødt; venten er aktivt arbejde.
-- **Tur-oversigt**: hver opgave er ét sammenfoldeligt kort i samtalen med én summary-linje — 'N af M handlinger · fejl · tid'. Kortet folder automatisk sammen, når turen slutter; brugerens eget valg vinder altid over den automatiske sammenfoldning. Op til seks seneste trin vises foldet ud; detaljerne forbliver i Aktivitet, og fanen skiftes aldrig automatisk.
-- **Resultatkortets "Aura har set"**: Auras egne målinger af turen — filer læst på disken, kommandoudfald med fejl og ukendte udfald, den lokale appkontrol og en observationslinje ved gentagne handlinger — adskilt fra modellens egen tekst og opstillet som en dæmpet række factuals. Ukendt hedder ukendt; intet felt opdigtes.
-- **Kommandoudfald i Aktivitet**: hver kommando viser sit udfald i ord — 'Afsluttet', 'Afsluttet med fejl (kode 1)', 'Tidsgrænse nået', 'Stoppet af dig', 'Udfald ukendt'. Kode 0 er kun en succes, når hverken timeout, stop eller signal er sket samtidig.
-- **Ændringer og omdøbninger**: filer, der er blevet flyttet, vises som 'gammel sti → ny sti' i fillisten. Diff-rækkerne er én fælles renderer med linjenumre, tegn og gap-markeringer. n og p flytter mellem filerne, når Ændringspanelet har fokus; aldrig globalt og aldrig i tekstfelter.
-- **Tastatur**: ⌘1-5 skifter faner (skjult Plan giver ingen handling), ⌘. stopper den kørende opgave, ⌘⇧M åbner modelvælgeren og ⌘L fokuserer skrivefeltet. Genvejene virker også med fokus i forhåndsvisningen; åbne dialoger og popovers spærrer navigation, men ikke Stop og paletten. Tekstkomposition (IME) og gentagelser røres ikke.
-- **Sendt til AI**: Aktivitet har en sammenfoldelig sektion, 'Sendt til AI', der pr. kald viser klokkeslæt, modtager, antal beskeddele, samlet størrelse og kilder — fra den lokale journal skrevet ved transportgrænsen. Indhold og nøgler gemmes og vises aldrig. Det er en læsevisning: intet kan sendes eller godkendes derfra.
-- **Genindlæsning**: efter et renderer-nedbrud genopbygges status fra hovedprocessens sandhed, og ventende godkendelser og spørgsmål hentes igen og vises som almindelige kort. Intet sendes på ny, intet godkendes automatisk, og YOLO aktiveres ikke igen.
+**Regel: Førstestartens ramme.** Native førstestart og senere introduktion er forskellige vinduestilstande. Fuldførelse gemmer kun den lokale præsentationsmarkør; den opretter ingen profil og giver ingen tilladelse.
 
-## DSH-stil · 1. november 2026 (seneste)
+Opsætning og indstillinger har højst 800×680 px, 20 px radius, 66 px header, 174 px navigation og et rullende højre indholdsområde. De har ingen forklaringsrail eller dobbeltsidekort. Afstandene i frontmatter er observerede, genbrugte mål, ikke en ny obligatorisk CSS-variabelskala.
 
-Aura Prime følger DeepSeek Harness' visuelle sprog (MIT, design-platform.css) som sin primære designretning. Tokens har én kilde i `ui/aura-tokens.css`.
+## Elevation & Depth
 
-- **Farver:** Hvid baggrund, off-white sidebar rgb(249,250,251). Accent er DSH-blå rgb(65,118,230); blå bruges kun til valgt tilstand, links, aktivitet og markering — ikke til primærknapper.
-- **Primærknapper:** Næsten sorte (lyst) / næsten hvide (mørkt). DSH-stil.
-- **Kanter:** Alpha-baserede rgba(0,0,0,0.04-0.16); ingen faste hex-kanter.
-- **Radius:** 4/8/12/16/20/28px skala. Composer: 28px panel-radius. Bobler: 20px. Kort: 16px.
-- **Hjørner:** superellipse(1.5) bag @supports for bløde squircles.
-- **Beskeder:** Brugerbobler højrestillet, maks. 75% bredde, neutral fyldfarve. Assistentens svar er ren prosa i fuld kontrast — ikke dæmpet.
-- **Composer:** Centreret kort med maks. 800px bredde, blød skygge, diskret kant. Ikke en fast bundbjælke.
-- **Samtalebredde:** Maks. 800px centreret (DSH bruger 920px).
-- **Arbejdsflade:** Valgfrit højrepanel. Lukket = chat-først med centreret fuldbredde-samtale. Åbnes med knap eller ⌘1-5. Panelet åbner aldrig automatisk.
-- **Onboarding B:** Samme tokens. Montserrat til brandnavn, sans-serif til indhold (Georgia er fjernet). Kort med radius 16-20, blå valgt-ring. Hero-overskrift: 28-44px, vægt 500, letter-spacing -1px.
-- **Tom-tilstand:** Centreret hero med projektbeskrivelse og composer.
-- **Bevægelse:** DSH's kurve cubic-bezier(0.4,0,0.2,1) ved 100/200/300ms. Reduceret bevægelse gælder fortsat.
-- **Skrift:** Systemfont til indhold. Montserrat (SIL OFL) kun til brandnavnet. Kodefont: SF Mono/JetBrains Mono/Fira Code.
+Hovedflade, sidebar og composer bygger på toneforskelle. Composeren har ingen skygge eller dekorativ metalglød. Den fokuserede opsætnings-/indstillingsramme bruger `aura-shadow-overlay`. Materialemenuer bruger deres eksisterende blur på 40 px, 150 % saturering og `aura-shadow-menu`; uden backdrop-filter bruges den uigennemsigtige temaegne flade.
 
-**Bevares uændret:** Auras navn, logo, datamappe, nøglering, appId, CLI-identitet, fem arbejdsfladers funktionalitet, Privacy Gate-dialoger, YOLO-reglen, onboarding B's struktur og alle godkendelsesforløb.
+Fælles bevægelse er 100/200/300 ms og den eksisterende easing. Gridfordeling har 240 ms særkurve. Åbning af dialog/fold og faktisk indsendelse kan animere. Reduceret bevægelse stopper animationer og overgange, inklusive `::details-content`, og gør rulning uden animation. Forced colors bruger systemets Highlight til markeringer. Bevægelse må ikke stå som erstatning for en faktisk status.
 
-## Profil og Indstillinger · 2. november 2026
+## Shapes
 
-Én profil husker de valg, brugeren ellers skulle træffe igen og igen: navn og ikon, standard-AI, standard arbejdsmåde, udseende, projektstandarder og hjælpeniveau. Profilen er ren UI-tilstand i `settings.json` under nøglen `profile`, ejet af hovedprocessen: `name`, `icon` (initialer som standard, tre Aura-stregglyffer eller `upload` for et eget billede), `helpLevel` (fuld/delvis/ingen), `appearance` (tema, om sidepanelet starter åbent, og skriftstørrelsen), `standardAI` (forbindelse og evt. standardmodel), `workMode` (Samtale/Planlæg), `projectDefaults` (udgivelse, designpakke, tests) og migrationsmarkøren `migrated`. Hver skrivning gemmer kun de felter, brugeren har rørt; `standardAI` og `projectDefaults` gemmes som hele enheder, mens `appearance` flettes felt for felt i hovedprocessen, så et temavalg aldrig trækker en forældet panelstart eller skriftstørrelse med — og omvendt.
+Skalaen er 4/8/12/16/20 px plus den aktuelle panelradius på 24 px. Composer bruger 24 px, velkomst 16 px, indstillinger/opsætning 20 px, felt- og navigationsvalg ofte 10 px, øvrige felter 8 px og kort 12 px. Send/Stop og vedhæftningsplus deklarerer 50 % runding. `superellipse(1.5)` er fortsat featuregated og kan påvirke den beregnede hjørneform; radius alene er ikke hele silhouetten.
 
-- **Onboarding:** Første guidede introduktion viser trinnet "Din profil" med navn (forslag fra computerens brugernavn), ikonrækken, tema og hjælpeniveau; alt kan udelades, og Vælg senere er altid tilladt. Trinnet vises også ved en tom profil, så en opgraderende bruger møder det én gang; en udfyldt profil spørges aldrig igen — Gennemgå opsætningen starter direkte ved valget af adgang. Fremgangslinjen har tre punkter: Din profil · Forbindelse · Din idé.
-- **Indstillinger:** Én dialog med sektionerne Din profil, Udseende, AI-forbindelser, Funktioner, Opdateringer og Hjælp og feedback; Indstillinger i sidepanelet og i popoveren åbner den samme dialog. De fire etablerede dialoger består som selvstændige og åbnes fra settings-dialogen — aldrig dialog i dialog. Tilføj forbindelse er et let flow inde i AI-forbindelser med rækkefølgen udfyld, gem, kontrollér; Gennemgå opsætningen består som avanceret indgang, og en gemt nøgle kan genbruges til en ny forbindelse hos samme udbyder og serveradresse.
-- **Prioriteringsregler:** En gemt kladde eller genindlæst historik vinder altid over profilens arbejdsmåde; profilen gælder kun helt nye samtaler uden kladde og historik, og et nyt projekts første opgave bygger fortsat frit. Valgkortene i en ny samtale markerer profilens arbejdsmåde som Anbefalet — begge valg forbliver. Nye projekter forvælger standard-AI'ets forbindelse og model, temaet, panelstart og projektstandarderne. Et projekts egne valg — model, arbejdsmåde, tema, Flere valg — skriver aldrig tilbage til profilen; Glem projektstandarder står under Indstillinger › Din profil. Fjernes standardforbindelsen, ryddes standard-AI'et med en advarsel; det samme gælder en slettet designpakke.
-- **Tema:** `appearance.theme` sætter `nativeTheme.themeSource` i hovedprocessen, før vinduet tegnes, så den første visning ikke flimrer; en skrivebeskyttet lokal kopi (`aura.theme-hint.v1`) giver skærmen et synkront start-hint. Profilen forbliver eneste kilde — kopien skrives kun af temamodulet (workspace-calm.js), som resten af appen når gennem `setTheme`. Følg system følger operativsystemets lys/mørke.
-- **Ikonrække:** Ikonerne står som en kompakt række i stedet for et gitter, med tre valg: initialer (standarden — de to første bogstaver i en cirkel), tre stregvarianter af Aura-mærket og upload af et eget billede (jpg/png). Uploaden er hovedprocessens sag alene: filvælger, størrelsestjek (ca. 1 MB og højst 4096 × 4096 pixels), skalering til højst 256 px og atomisk gemning under ét fast navn i appens private datamappe — aldrig base64 i settings.json. Rendereren ser kun udfaldet; forsvinder billedet, falder ikonet lydløst tilbage til initialerne, og udgåede ikon-id'er fra tidligere versioner gemmes som initialer.
-- **Skriftstørrelse og store skærme:** `appearance.fontSize` (10–16 px, standard 13) skalerer hele appen: hovedprocessen sætter `webContents.setZoomFactor(fontSize / 13)`, før vinduet tegnes, og efter hver gemning, så alle flader — også popovers og portaler — vokser ens. Vis-menuens zoom (⌘+, ⌘−, ⌘0) går gennem samme indstilling og gemmes i profilen; Electrons egne zoom-trin er taget ud, så der ikke kan opstå en zoom, profilen ikke kender, og vinduet til nøgleindtastning følger samme faktor. De bredere indholdsbredder måles i CSS-pixels og interagerer med zoomen: ved min-width 1600 px vokser chat og komposer til 960 px (panel-lukket 1080 px), og ved 2000 px til 1040/1200 px — men en større skrift gør visningsfladen mindre i fysiske pixels, så de samme trin rammer først på et fysisk større vindue.
-- **Migration:** Ved første appstart overføres gamle valg én gang, felt for felt og kun i felter, profilen ikke har valgt: `startupDefaults` (forbindelsen → standard-AI, resten → projektstandarder) og de tre pensionerede localStorage-nøgler (foretrukken forbindelse, arbejdsvisningstema, åbent panel). Markøren `migrated` gør overførslen idempotent, de gamle nøgler slettes først efter bekræftet lagring, og de gamle skrivere er pensioneret.
-- **Hjælpeniveau:** Tre trin. *Fuld hjælp* viser de udpegede korte hint: genvejslinjen under skrivefeltet, hintet ved en genoptaget samtale og idéfeltets forklaring. *Hjælp ved behov* skjuler dem og viser til gengæld en "?"-knap ved skrivefeltet, der åbner en popover med netop de hint; *Ingen hjælp* viser hverken hint eller "?"-knap. Før du sender, privacyvalg, advarsler og godkendelser er markeret `data-help="essential"` og skjules aldrig ved noget niveau; et gemt *Minimal*-valg fra tidligere versioner migreres til *Hjælp ved behov*.
-- **Fortrolighed:** Navn, ikon og billede er ren UI-tilstand. De bruges kun i appens egen visning og sendes aldrig til AI'en, prompts, modellog, diagnostik eller feedbackrapporter; billedet serveres kun til appens egen renderer.
+## Components
+
+### Identitet og lokal profil
+
+Brandet bruger det eksisterende transparente `ui/onboarding-aura-mark.svg` direkte på fladen, nu også i sidebar og central samtalestart. Det ændrer ikke appens installationsikon, appId eller datamappe. Det oprindelige rasterikon bevares som installationsasset; et referencebrand eller referenceindhold kopieres ikke ind i Aura.
+
+Profilnavn, ikon og billede er valgfrie og forbliver lokale. En tom profilchip er synlig som Lokal profil med neutralt personikon. Det ikon er en UI-indgang og gemmes ikke som valgt identitet. Klik åbner Lokal profil i Indstillinger. Navn/billede bruges ikke som prompt- eller serverdata.
+
+Kom i gang åbner den guidede vej. Fortsæt uden profil er en reel handling og huskes lokalt. Der foreslås ikke længere et OS-brugernavn. Profiltrinnets eget fravalg registreres som `skipped`, og `leaveSetup` må ikke gemme formularens ugemte identitet. Lokale storagefejl må ikke blokere adgangen. Gemte profilfelter, tema og øvrig konfiguration bruger fortsat det eksisterende lager. Ingen kontosynkronisering eller sikker konfigurationseksport er tilføjet.
+
+**Regel: Valgfri identitet.** Et fravalg må ikke gemme OS-brugernavn eller ugemte profilfelter og må ikke føre til gentagne profilspørgsmål.
+
+### Composer, input og tastatur
+
+Composeren har neutral flade, 24 px radius, ingen kant og 13 px padding. Feltet er 14/24 px, mindst 44 px og højst 336 px; tom samtale har mindst 52 px. Ved længere tekst ruller feltet internt. Send og Stop deler 34 px plads. Send er blå, Stop er neutral. Modelvalget har ellipsis og må ikke presse Send ud. Vedhæftninger, filer, PDF, billeder og referencemapper bevarer deres almindelige gennemgange.
+
+Enter sender, Shift+Enter laver en ny linje, og Cmd/Ctrl+Enter følger det samme sendeforløb med samtykke. IME og gentagelser må ikke give dobbeltafsendelse. Samtale, Planlæg og Byg beholder deres adgangsgrænser. Visningsvalg sender intet og godkender ingen plan. Idéen i et nyt projekt bliver en redigerbar Byg-kladde.
+
+De fleste kontroller har 2 px blå fokus med 3 px afstand. Den aktuelle composer bruger i stedet en 1 px neutral outline uden afstand ved synligt tekstfeltfokus. Dette registrerer den faktiske implementering; det er ikke en ny generel fokusregel eller en erklæring om bestået fokuskontrast. Den detalje indgår i det friske review. Native radiofelter eller deres labels bevarer fokus og normale tastaturvalg.
+
+### Onboarding og indstillinger
+
+De fire faser Din profil, Arbejdsdetaljer, Forbindelse og Din idé vises i venstrenavigationen. Den er en statusvisning, ikke genveje forbi nødvendige trin. Navn, ikon, eget billede, tema, tre hjælpeniveauer og tre detaljeniveauer består. Profilen kan udelades uden at miste forbindelses- og idéforløbet.
+
+Alle ti udbydere, gemte forbindelser, lokal AI, nøglehjælp og avanceret opsætning består. Provideroversigten har to kolonner i stor ramme, én ved smalt layout. Fokusnavigation henter ikke katalog og vælger ikke udbyder automatisk. Gemte/afventende/fejlende/svarende forbindelser vises som forskellige tilstande. Katalogkontrol er ikke inferens.
+
+Kodeværktøjsvejen beholder fire hovedvalg, søgbar liste, mappe, gennemgang, tilpasning, installation og fjernelse. Integrationer vælges særskilt. Grundregler og designhjælp forbliver aktive. Et funktionsfravalg skjuler indgange uden at slette brugerdata.
+
+Indstillinger har Lokal profil, Generelt, AI-forbindelser, Funktioner, Opdateringer og Hjælp og feedback. Sektionerne bruger samme visuelle shell. De fire særskilte eksisterende dialogcontrollere består, men er ikke en stak dialoger; højst én er åben ad gangen. Pile/Home/End flytter fokus i sektions-/udbyderlister; Enter/Space aktiverer. Temaets tre store felter har sol/måne/skærm, neutral valgt tilstand og tastaturfokus. Indstillingsrækker har forklaring til venstre, kontrol til højre og tynde skillelinjer. Profilskrivninger fletter ændrede felter; projektvalg skriver ikke tilbage.
+
+### Værktøjer og ærlig status
+
+Samtale/Arbejdsspor er navigation til eksisterende samtale og Aktivitet, ikke en ny motor eller kopieret DeepSeek-datalog. Højre panel åbnes eksplicit. Forhåndsvisning, Plan, Ændringer, Kode og Aktivitet består med samme dataansvar. De fem faners pile/Home/End vælger den næste synlige fane. Skjulte featurefaner springes over. Faneskift og AI-hændelser bevarer brugerens kladde, previewformular, rulning og filvalg.
+
+Planen har fortsat fire afsnit og bevidst bygning. Diffs viser reelle ændringer og korrekt ophav; Kode er skrivebeskyttet med beskyttede filer skjult. Aktivitet viser faktiske hændelser, tid og udfald. Private ræsonnementstekster bliver ikke svartekst. Ukendt måling står som ukendt; kontekstkapacitet er adskilt fra arbejdsgrænser. Modeller, indsats, resultater, versioner, fortryd/restore, konflikter og samtidige arbejdskopier bevarer deres fulde adfærd fra arkivet.
+
+**Regel: Brugerens tilstand.** Præsentation må ikke omskrive gemt panelvalg, kladde, fane, datagrænse eller godkendelse uden brugerens handling.
+
+### Datagennemgang og godkendelser
+
+Før du sender bevarer AI, sted, træning, pris, relevante historikdele og referencer. Ændret binding kræver ny gennemgang. Hjælpeniveau og arbejdsdetaljer skjuler aldrig væsentlig datainformation eller samtykke. Den isolerede nøgleindtastning og dens præcise ressourceliste bevares.
+
+Godkendelser viser Hvad, Hvorfor og Hvis du tillader med læsbare tekniske detaljer. Opgavetilladelse er adskilt fra gemte regler. Afvis og Afvis med besked følger deres eksisterende handlinger. YOLO kræver advarsel og aktiv bekræftelse, gælder kun samtalen under Byg, kan tilbagekaldes og nulstilles ved appstart. Det ophæver aldrig planer, datadeling, beskyttede filer eller isolation. Den nye komposition ændrer ingen tilladelser.
+
+## Do's and Don'ts
+
+### Gør
+
+- Brug de aktuelle light-dark-tokens og kontroller manuelt mørkt tema på lyst OS.
+- Bevar det transparente Aura-symbol i brandrækkerne og installationsikonet som særskilt appasset.
+- Kontroller både centreret kladde, samtale med beskeder, helt skjult sidebar og eksplicit åbnet værktøjspanel.
+- Bevar alle onboardingfelter, lokal profiladgang, samtykker, planer og værktøjsgodkendelser.
+
+### Undgå
+
+- Genindfør ikke 248 px som standard, ikonrail eller den afviste forklaringsrail med dobbeltsidekort.
+- Gør ikke en profil, en konto eller en AI-forbindelse til et krav for at åbne appen og oprette lokalt projekt.
+- Brug ikke en gammel grøn slutvurdering som brugeraccept eller som kvalifikation af den nye implementering.
+- Opfind ikke aktivitet, modelresultater, fremdrift, hastighed eller en grøn samlet suite.
+
+Slutstatus: Den uafhængige native genprøve har lukket NF-01 og NF-02 med qualified PASS på disse to fund. Faktisk 600×700 førstestart, udvidelse, uafsluttet velkomstgenstart og begge gemte panelvalg er verificeret. Samlet lokal check: 2.654 tests, 2.619 bestået, 34 skips og én kendt ZIP-baselinefejl. Ingen commit, push, DMG eller releaseaccept. Evidens: `/Users/parthee/aura-prime-redesign-20261104/native-finish-verdict.md` og `native-verification.json`.
+
+## Palette og projektlayout, 4. november 2026
+
+Brugerens opfølgning erstatter de grå tilnærmelser med de faktiske flade-, tekst- og accentfarver fra installeret DeepSeek Harness 0.2.1-rc.5. Lyst tema bruger hvidt lærred, hvide felter og sidebar #f9fafb. Mørkt tema bruger lærred #151517, sidebar #1b1b1c og felter #2c2c2e. Statiske farveværdier er læst fra den installerede apps theme-modul. Auras navn, grønne logo og semantiske advarsels-/statusfarver bevares.
+
+Nyt projekt har en tættere formular og en fast bundrække uden for det rullende indhold. Den oprindelige opret-knap bevarer HTML-formtilknytning, validering og disabled-guards. Returhandlingen ligger i headeren. Standardfelter, tilvalg og placering vises uden scroll ved 980×720 og normal tekststørrelse. Åbnede tilvalg, lange fejl/idéresultater og forstørret tekst kan fortsat rulle uden at skjule opret-handlingen.

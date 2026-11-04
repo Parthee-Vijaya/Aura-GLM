@@ -53,7 +53,7 @@ const helpers = require('./ui-test-helpers.cjs');
   const appWindow = fn => app.evaluate(({ BrowserWindow }, source) => { const win = BrowserWindow.getAllWindows().find(w => w.webContents.getURL().startsWith('harness://')); return new Function('win', `return (${source})(win)`)(win); }, fn.toString());
   async function open(folder) {
     await app.evaluate(({ dialog }, folder) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [folder] }); }, folder);
-    await page.click('#open'); await page.locator('#project-name').filter({ hasText: path.basename(folder) }).waitFor();
+    await require('./ui-test-helpers.cjs').clickOpen(page); await page.locator('#project-name').filter({ hasText: path.basename(folder) }).waitFor();
   }
   const row = title => page.locator('#project-list .chat-row').filter({ hasText: title });
   const more = title => page.locator('#project-list .chat-list > li').filter({ has: page.locator('.chat-row', { hasText: title }) }).locator('.chat-more');

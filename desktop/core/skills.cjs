@@ -50,5 +50,31 @@ class Skills {
     const integrations = library.features.filter(feature => feature.group === 'integrationer' && features[feature.id]).map(feature => feature.title);
     return { rules: list.find(skill => skill.id === RULES).content, skills, titles: enabled.map(skill => skill.title), features, integrations };
   }
+  // S2 slash-framework: the effective skill selection for ONE send — the
+  // project's enabled skills plus the skills the message's `/name` tokens
+  // activate. Activation lasts a single send; the project's feature choices
+  // are never touched, ground rules and always-on skills are never removed,
+  // and activation can only add. Unknown names are ignored; an already
+  // enabled skill is not activated again (its token still shows in the
+  // send review). `activated` lists the names that were added for this send.
+  async effective(projectRoot, names = []) {
+    const base = await this.context(projectRoot);
+    if (!Array.isArray(names) || !names.length) return { ...base, activated: [] };
+    const library = await this.library(), list = await this.list(projectRoot);
+    const seen = new Set(base.skills.map(skill => skill.name));
+    const activated = [], titles = [];
+    for (const name of names) {
+      if (typeof name !== 'string' || seen.has(name)) continue;
+      const entry = list.find(skill => skill.id === name && skill.id !== RULES);
+      if (!entry) continue;
+      activated.push({ name: entry.id, files: [{ path: 'SKILL.md', content: entry.content }, ...library.skills.find(item => item.name === entry.id).files.filter(file => file.path !== 'SKILL.md')] });
+      titles.push(entry.title);
+      seen.add(entry.id);
+    }
+    const skills = [...base.skills, ...activated];
+    for (const skill of activated) validateSkillFiles(skill.name, skill.files);
+    validateSkillLinks(skills, new Set(library.skills.map(skill => skill.name)));
+    return { ...base, skills, titles: [...base.titles, ...titles], activated: activated.map(skill => skill.name) };
+  }
 }
 module.exports = { Skills, RULES };

@@ -25,7 +25,11 @@
       return `${count} ${types[type]?.[language === 'en' ? 1 : 0] || (language === 'en' ? 'protected finding' : 'beskyttet fund')}`;
     }).join(' · ');
   }
-  if (typeof module !== 'undefined' && module.exports) module.exports = { contextKey, allowedDecisions, settingsInput, findingSummary };
+  function shieldState(snapshot) {
+    if (!snapshot) return 'pending';
+    return snapshot.enabled === true || snapshot.settings?.enabled === true ? 'on' : 'off';
+  }
+  if (typeof module !== 'undefined' && module.exports) module.exports = { contextKey, allowedDecisions, settingsInput, findingSummary, shieldState };
   if (typeof document === 'undefined') return;
 
   const make = (tag, text, className) => { const value = document.createElement(tag); if (text !== undefined) value.textContent = text; if (className) value.className = className; return value; };
@@ -35,7 +39,7 @@
   const classLabel = value => ({ public: t('Offentligt', 'Public'), internal: t('Internt', 'Internal'), confidential: t('Fortroligt', 'Confidential'), strict: t('Strengt beskyttet', 'Strictly protected') })[value] || t('Ikke oplyst', 'Not reported');
   const locality = value => ({ device: t('Denne computer', 'This computer'), local: t('Denne computer', 'This computer'), organization: t('Organisationens server · en anden maskine', 'Organization server · another machine'), cloud: t('Cloud', 'Cloud'), external: t('Ekstern destination', 'External destination') })[value] || t('Behandlingssted ikke dokumenteret', 'Processing location not documented');
   const textValue = value => typeof value === 'string' ? value : '';
-  let api = null, connected = false, snapshot = null, context = null, scope = 'project', generation = 0, busy = false, reviewing = null, lastFocus = null, expiryTimer = null, pendingQueue = [], reviewGeneration = 0, refreshPromise = null;
+  let api = null, connected = false, snapshot = null, context = null, scope = 'project', generation = 0, busy = false, reviewing = null, lastFocus = null, expiryTimer = null, pendingQueue = [], reviewGeneration = 0, refreshPromise = null, announcedState = null;
   let settingsDialog, sharingDialog, statusLine, loadingReviewID = null, choicesLoading = false;
 
   function button(text, action, className = '') { const value = make('button', text, className); value.type = 'button'; value.onclick = action; return value; }
@@ -53,12 +57,41 @@
     row.append(heading); if (close) row.append(button(t('Luk', 'Close'), close, 'text-button'));
     dialog.setAttribute('aria-labelledby', heading.id); return row;
   }
+  // Datakontrol-skjoldet: farve OG form bærer tilstanden (WCAG 1.4.1) — grøn
+  // fyldt med ✓, rødt omrids med ✕, gråt omrids uden tegn, mens status hentes.
+  // Stien genbruges fra tilladelses-pillens .permission-shield (ui/index.html).
+  const SHIELD_PATH = 'M12 3.4l6.6 2.6v5c0 4.3-2.8 8.1-6.6 9.6-3.8-1.5-6.6-5.3-6.6-9.6v-5z';
+  const SHIELD_MARKS = { on: 'M8.7 12.3l2.4 2.4 4.5-5', off: 'M9.3 9.5l5.4 5.4M14.7 9.5l-5.4 5.4' };
+  function shieldMarkup(state) {
+    const mark = SHIELD_MARKS[state] ? `<path class="privacy-shield-mark" d="${SHIELD_MARKS[state]}" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>` : '';
+    return `<svg class="privacy-shield" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="privacy-shield-shape" d="${SHIELD_PATH}" fill="none"/>${mark}</svg>`;
+  }
+  // Én sætning i den eksisterende statuslinje — kun ved reelt on/off-skift efter
+  // første indlæsning, aldrig ved pending, uændret tilstand eller igangværende
+  // gennemgang. Første kendte tilstand er grundlag, ikke en besked.
+  function announceStateChange(state) {
+    if (reviewing) return;
+    if (state !== 'on' && state !== 'off') return;
+    if (announcedState === state) return;
+    const previous = announcedState; announcedState = state;
+    if (!previous || !statusLine) return;
+    statusLine.textContent = state === 'on' ? t('Datakontrol er slået til.', 'Data control is now on.') : t('Datakontrol er slået fra.', 'Data control is now off.');
+    statusLine.hidden = false;
+  }
   function renderStatus() {
-    const enabled = snapshot?.enabled === true || snapshot?.settings?.enabled === true;
+    const state = shieldState(snapshot);
     const mode = snapshot?.effective?.workMode || snapshot?.settings?.workMode;
-    const title = !snapshot ? t('Datakontrol · hent status', 'Data control · load status') : enabled ? mode === 'local' ? t('Kun lokal · modelkald', 'Local only · model calls') : mode === 'hybrid' ? t('Hybrid · datakontrol', 'Hybrid · data control') : t('Cloud med datakontrol', 'Cloud with data control') : t('Datakontrol · ikke aktiveret', 'Data control · not enabled');
-    for (const id of ['privacy-gate-button', 'privacy-model-button', 'privacy-settings-button']) { const value = get(id); if (value) { value.textContent = title; value.title = snapshot?.capabilities?.isolation === true ? t('Arbejdsform og dataregler. Lokal og ekstern behandling holdes adskilt; planer og værktøjsgodkendelser gælder fortsat.', 'Work mode and data rules. Local and external processing stay separate; plans and tool approvals still apply.') : t('Arbejdsform og dataregler. Leverance 1 kontrollerer modelkald; værktøjer er endnu ikke isoleret.', 'Work mode and data rules. Delivery 1 controls model calls; tools are not yet isolated.'); } }
+    const title = !snapshot ? t('Datakontrol · hent status', 'Data control · load status') : state === 'on' ? mode === 'local' ? t('Kun lokal · modelkald', 'Local only · model calls') : mode === 'hybrid' ? t('Hybrid · datakontrol', 'Hybrid · data control') : t('Cloud med datakontrol', 'Cloud with data control') : t('Datakontrol · ikke aktiveret', 'Data control · not enabled');
+    const scope = snapshot?.capabilities?.isolation === true ? t('Arbejdsform og dataregler. Lokal og ekstern behandling holdes adskilt; planer og værktøjsgodkendelser gælder fortsat.', 'Work mode and data rules. Local and external processing stay separate; plans and tool approvals still apply.') : t('Arbejdsform og dataregler. Leverance 1 kontrollerer modelkald; værktøjer er endnu ikke isoleret.', 'Work mode and data rules. Delivery 1 controls model calls; tools are not yet isolated.');
+    for (const id of ['privacy-gate-button', 'privacy-model-button', 'privacy-settings-button']) {
+      const value = get(id); if (!value) continue;
+      value.dataset.privacyState = state;
+      value.setAttribute('aria-label', t(`Datakontrol: ${title}. Åbn dataregler`, `Data control: ${title}. Open data rules`));
+      value.title = `${title}. ${scope}`;
+      value.innerHTML = `${shieldMarkup(state)}<span class="privacy-entry-word">${t('Datakontrol', 'Data control')}</span>`;
+    }
     if (statusLine && !reviewing) statusLine.hidden = true;
+    announceStateChange(state);
   }
   function destinationRows() {
     const list = make('ul', undefined, 'privacy-destination-list');
@@ -69,6 +102,36 @@
     }
     if (!list.children.length) list.append(make('li', t('Vælg forbindelse og model i Auras eksisterende modelvælger. Ingen destination er frigivet her.', 'Choose a connection and model in Aura’s existing model picker. No destination is authorized here.')));
     return list;
+  }
+  // S5 · GradientDeck-tilbagekaldelsen (kendelse 3-betingelsen fra S4-gennemgangen):
+  // linjen findes kun, når der er noget at tilbagekalde — et husket «Husk for
+  // projektet»-samtykke ELLER destinationens id i projektets tilladelser — og
+  // den viser id'et additivt. Tilbagekaldelsen går gennem værten
+  // (gradientdeck:revoke): rydder samtykket OG fjerner id'et, så fremtidige
+  // hentninger spørger igen straks. En allerede igangværende hentning afbrydes
+  // ikke — den er gennemgået på sit eget grundlag.
+  function gradientdeckRow() {
+    const state = snapshot.gradientdeck;
+    const row = make('div', undefined, 'privacy-gradientdeck-row');
+    row.append(make('strong', t('GradientDeck-hentning', 'GradientDeck fetching')));
+    row.append(make('span', state.remembered === true ? t('Tilladt for dette projekt', 'Allowed for this project') : t('Engangstilladelse givet', 'One-time permission given')));
+    row.append(make('small', t(`Modtager-id ${state.destinationId}`, `Destination id ${state.destinationId}`)));
+    const revoke = button(t('Tilbagekald', 'Revoke'), () => { void revokeGradientdeck(); }, 'text-button');
+    revoke.disabled = busy || choicesLoading || api.read().running;
+    row.append(revoke);
+    return row;
+  }
+  async function revokeGradientdeck() {
+    if (busy || choicesLoading || api.read().running) return;
+    const sourceContext = context, sourceScope = scope, version = generation;
+    busy = true; renderSettings({ preserve: true });
+    let failed = false;
+    try { await api.invoke('gradientdeckRevoke', { scope: sourceScope }); }
+    catch { failed = true; }
+    busy = false;
+    if (version !== generation || sourceContext !== context || sourceScope !== scope) return;
+    await refresh();
+    if (failed && get('privacy-settings-feedback')) setNotice(get('privacy-settings-feedback'), t('Tilbagekaldelsen kunne ikke gennemføres. Datareglerne er ikke ændret.', 'The revocation could not be completed. The data rules are unchanged.'), true);
   }
   function renderSettings({ preserve = false } = {}) {
     if (!settingsDialog) return;
@@ -135,7 +198,11 @@
     rules.append(make('p', locked ? t('Organisationens regler er låst. Projekt og samtale kan ikke udvide adgangen.', 'Organization rules are locked. Projects and conversations cannot expand access.') : t('Organisationens regler sætter loftet. Hostlaget afgør de faktiske tilladelser ved hvert modelkald.', 'Organization rules set the ceiling. The host determines actual permissions for every model call.')));
     const sources = snapshot?.rules?.protectedSources || snapshot?.effective?.protectedSources || [];
     if (Array.isArray(sources) && sources.length) rules.append(make('p', t(`${sources.length} beskyttede kilderegler. Kildeindhold og følsomme filnavne vises ikke i aktivitetsloggen.`, `${sources.length} protected-source rules. Source contents and sensitive filenames are not shown in the activity log.`)));
-    rules.append(destinationRows()); settingsDialog.append(rules);
+    rules.append(destinationRows());
+    // S5: tilbagekaldelses-linjen står under destinationerne — kun når værten
+    // rapporterer noget at tilbagekalde (husket samtykke eller id i tilladelserne).
+    if (snapshot?.gradientdeck) rules.append(gradientdeckRow());
+    settingsDialog.append(rules);
     const feedback = make('p', '', 'privacy-feedback'); feedback.id = 'privacy-settings-feedback'; feedback.setAttribute('role', 'status'); settingsDialog.append(feedback);
     const actions = make('div', undefined, 'privacy-actions'); const save = button(t('Gem dataregler', 'Save data rules'), () => { void saveSettings(); }, 'primary'); save.id = 'privacy-save'; save.disabled = busy || choicesLoading || !snapshot || api.read().running;
     actions.append(button(t('Luk', 'Close'), () => closeDialog(settingsDialog), 'text-button'), save); settingsDialog.append(actions);
@@ -330,12 +397,15 @@
   window.PrivacyGate = { connect(value) {
     if (connected || !value || typeof value.read !== 'function' || typeof value.invoke !== 'function') return;
     api = value; connected = true;
-    settingsDialog = make('dialog', undefined, 'privacy-dialog privacy-settings'); settingsDialog.id = 'privacy-settings-dialog'; settingsDialog.setAttribute('data-i18n-content', ''); settingsDialog.setAttribute('data-help', 'essential');
-    sharingDialog = make('dialog', undefined, 'privacy-dialog privacy-sharing'); sharingDialog.id = 'privacy-sharing-dialog'; sharingDialog.setAttribute('data-i18n-content', ''); sharingDialog.setAttribute('data-help', 'essential');
+    settingsDialog = make('dialog', undefined, 'privacy-dialog privacy-settings'); settingsDialog.id = 'privacy-settings-dialog'; settingsDialog.setAttribute('data-i18n-content', ''); settingsDialog.setAttribute('data-help', 'essential'); settingsDialog.setAttribute('data-size','wide');
+    sharingDialog = make('dialog', undefined, 'privacy-dialog privacy-sharing'); sharingDialog.id = 'privacy-sharing-dialog'; sharingDialog.setAttribute('data-i18n-content', ''); sharingDialog.setAttribute('data-help', 'essential'); sharingDialog.setAttribute('data-size','wide');
     settingsDialog.addEventListener('cancel', event => { event.preventDefault(); closeDialog(settingsDialog); });
     sharingDialog.addEventListener('cancel', event => { event.preventDefault(); if (allowedDecisions(reviewing).includes('cancel')) void decide('cancel'); else if (!allowedDecisions(reviewing).length) closeReview(); });
     document.body.append(settingsDialog, sharingDialog);
-    for (const [anchor, id, placement] of [[get('connections-button'), 'privacy-settings-button', 'after'], [get('advanced-model-context'), 'privacy-model-button', 'before'], [get('context-status'), 'privacy-gate-button', 'after']]) {
+    // P1 (§7.1): skjoldet er statuslinjens FØRSTE segment — 'before' sætter
+    // knappen foran forbrugslinjen i den centrerede række (én række, ikke
+    // en egen venstrestillet linje). De andre to ankere er uændrede.
+    for (const [anchor, id, placement] of [[get('connections-button'), 'privacy-settings-button', 'after'], [get('advanced-model-context'), 'privacy-model-button', 'before'], [get('context-status'), 'privacy-gate-button', 'before']]) {
       if (!anchor) continue; const entry = button(t('Datakontrol og arbejdsform', 'Data control and work mode'), open, 'text-button privacy-entry'); entry.id = id; entry.setAttribute('aria-haspopup', 'dialog'); entry.setAttribute('aria-controls', settingsDialog.id); anchor[placement](entry);
     }
     statusLine = make('p', '', 'privacy-status'); statusLine.id = 'privacy-gate-status'; statusLine.setAttribute('role', 'status'); statusLine.setAttribute('data-help', 'essential'); statusLine.hidden = true; get('chat-form')?.before(statusLine);

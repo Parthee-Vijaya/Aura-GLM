@@ -47,6 +47,10 @@ const helpers = require('./ui-test-helpers.cjs');
   }
   try {
     let page = await launch();
+    // Fuldvinduesfladen: idéfladen viser ingen app-ramme, så panelets
+    // indgange først er tilbage efter den første idé er oprettet.
+    await page.fill('#name', 'Prøveprojekt'); await page.fill('#purpose', 'Holder forbindelserne åbne for prøven.');
+    await page.click('#create'); await page.waitForSelector('#workspace:not([hidden])');
     await helpers.menuClick(page, '#connections-button'); await measure(page, process.argv.includes('--before') ? 'foer' : 'efter');
     if (!process.argv.includes('--before')) {
       assert.equal(await page.locator('.saved-connection').count(), 4);
@@ -67,6 +71,10 @@ const helpers = require('./ui-test-helpers.cjs');
       await page.click('[data-close="connections-dialog"]');
       await app.evaluate(({ dialog }, folder) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [folder] }); }, project);
       await page.click('#open'); await page.waitForSelector('#workspace:not([hidden])');
+      // Skiftet til et andet projekt gendindlæser dets klade i skrivefeltet;
+      // fyldningen venter, til projektet har sat sig (sti + fokus).
+      await page.waitForFunction(folder => document.querySelector('#project-path').textContent === folder, await require('node:fs/promises').realpath(project));
+      await page.waitForTimeout(400);
       await page.fill('#prompt', 'Min kladde skal bevares.');
       await helpers.menuClick(page, '#connections-button');
       await page.fill('#connections-search', 'Testforbindelse 3'); await page.locator('#saved-connections button').first().click();
@@ -75,13 +83,14 @@ const helpers = require('./ui-test-helpers.cjs');
       await helpers.closeTaskOptions(page);
       await helpers.menuClick(page, '#connections-button');
       // Tom profil: "Gennemgå opsætningen" starter på profil-trinnet (godkendt
-      // profil-gating). Fortsæt gemmer felterne og fører videre til valget.
+      // profil-gating). Fortsæt gemmer felterne, Detaljeniveauet (D6) følger
+      // efter, og prøven fortsætter til valget af adgang.
       await page.click('#connections-setup'); await page.waitForSelector('#setup-profile:not([hidden])');
-      await page.click('#profile-continue'); await page.waitForSelector('#setup-choice:not([hidden])');
+      await page.click('#profile-continue'); await page.waitForSelector('#setup-detail:not([hidden])'); await page.click('#detail-continue'); await page.waitForSelector('#setup-choice:not([hidden])');
       await page.click('#setup-add-provider');
-      // Godkendt tilbage-navigation: udbyder → valg → profil → opsætningen
-      // forlades, og repeat-opsætningen genåbner AI-forbindelser.
-      await page.click('#setup-back'); await page.click('#setup-back'); await page.click('#setup-back');
+      // Godkendt tilbage-navigation: udbyder → valg → detaljer → profil →
+      // opsætningen forlades, og repeat-opsætningen genåbner AI-forbindelser.
+      await page.click('#setup-back'); await page.click('#setup-back'); await page.click('#setup-back'); await page.click('#setup-back');
       await page.waitForSelector('#connections-dialog[open]'); await page.click('[data-close="connections-dialog"]');
       assert.equal(await page.inputValue('#connection-select'), 'connection-2');
       assert.equal(await page.inputValue('#prompt'), 'Min kladde skal bevares.');

@@ -1,5 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 const methods = {
+  onboardingWindow: 'window:onboarding',
   privacyGet:'privacy:get', privacyConfigure:'privacy:configure', privacyReview:'privacy:review', privacyDecide:'privacy:decide',
   openExternalLink: 'links:open',
   historySearch: 'history:search',
@@ -25,7 +26,7 @@ const methods = {
   komplaiLogin: 'komplai:login', komplaiCancel: 'komplai:cancel', komplaiConnect: 'komplai:connect', komplaiPublishState: 'komplai:publish-state', komplaiPublishOverview: 'komplai:publish-overview', komplaiPublishAddress: 'komplai:publish-address', komplaiPublishDisconnect: 'komplai:publish-disconnect',
   connectionState: 'connections:state', saveConnection: 'connections:save', removeConnection: 'connections:remove', models: 'connections:models', routes: 'connections:routes', effortLevels: 'connections:effort-levels', modelLogList: 'model-log:list',
   toolsCatalog: 'tools:catalog', toolsFolder: 'tools:folder', toolsReview: 'tools:review', toolsInstall: 'tools:install', toolsRemoval: 'tools:removal', toolsRemove: 'tools:remove', toolsReveal: 'tools:reveal',
-  permissionReview: 'permission:review', permissionConfirm: 'permission:confirm', permissionRevoke: 'permission:revoke', pendingChoices: 'permission:pending', prepare: 'agent:prepare', send: 'agent:send', stop: 'agent:stop', reply: 'agent:reply', question: 'agent:question', briefSave: 'plan:brief', briefWishes: 'plan:wishes', planEdit: 'plan:edit', planRestore: 'plan:restore', changesOverview: 'changes:overview', changesFile: 'changes:file', codeList: 'code:list', codeRead: 'code:read', activityList: 'activity:list', skills: 'skills:list', saveSkill: 'skills:save', featuresGet: 'features:get', featuresSave: 'features:save'
+  permissionReview: 'permission:review', permissionConfirm: 'permission:confirm', permissionRevoke: 'permission:revoke', pendingChoices: 'permission:pending', prepare: 'agent:prepare', send: 'agent:send', stop: 'agent:stop', reply: 'agent:reply', question: 'agent:question', briefSave: 'plan:brief', briefWishes: 'plan:wishes', planEdit: 'plan:edit', planRestore: 'plan:restore', changesOverview: 'changes:overview', changesFile: 'changes:file', codeList: 'code:list', codeRead: 'code:read', activityList: 'activity:list', skills: 'skills:list', saveSkill: 'skills:save', featuresGet: 'features:get', featuresSave: 'features:save', gradientdeckCatalog: 'gradientdeck:catalog', gradientdeckConsent: 'gradientdeck:consent', gradientdeckApply: 'gradientdeck:apply', gradientdeckRevoke: 'gradientdeck:revoke'
 };
 let selection = null;
 const api = Object.fromEntries(Object.entries(methods).map(([name, channel]) => [name, (value, owner = selection) => ipcRenderer.invoke(channel, value, owner)]));

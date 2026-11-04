@@ -40,7 +40,7 @@ test('mixed-stage context and cost use the actual model rather than the initial 
   contextUsage.bind({ connectionID: 'cloud', modelID: 'cloud-model', sessionID: 'cloud-session', model: { limits: { context: 1000000 } } });
   const chat = { bench: {}, compacting: true, runPrivacy: { mode: 'hybrid' }, contextUsage,
     runSteps: new Map(), runPrice: { input: 10, output: 10, cacheRead: 10, cacheWrite: 10 },
-    currentUsage: ChatSession.prototype.currentUsage, emit: event => events.push(event) };
+    currentUsage: ChatSession.prototype.currentUsage, currentSpeed: ChatSession.prototype.currentSpeed, emit: event => events.push(event) };
   function step(id, selection, price) {
     ChatSession.prototype.event.call(chat, { type: 'message.part.updated', privacySelection: selection, privacyPrice: price,
       properties: { part: { id, type: 'step-finish', sessionID: 'wrapper-session', tokens: { input: 2000, output: 10, cache: { read: 0, write: 0 } } } } });
@@ -60,7 +60,7 @@ test('mixed-stage context and cost use the actual model rather than the initial 
 test('ordinary runs retain the existing context binding without privacy metadata', () => {
   const contextUsage = new ContextUsage();
   contextUsage.bind({ modelID: 'ordinary', sessionID: 'ordinary-session', model: { limits: { context: 16000 } } });
-  const chat = { bench: {}, compacting: true, contextUsage, runSteps: new Map(), currentUsage: ChatSession.prototype.currentUsage, emit() {} };
+  const chat = { bench: {}, compacting: true, contextUsage, runSteps: new Map(), currentUsage: ChatSession.prototype.currentUsage, currentSpeed: ChatSession.prototype.currentSpeed, emit() {} };
   ChatSession.prototype.event.call(chat, { type: 'message.part.updated', properties: { part: { id: 'ordinary-step', type: 'step-finish', tokens: { input: 4000, cache: { read: 0, write: 0 } } } } });
   assert.equal(contextUsage.snapshot().percentage, 25);
   assert.equal(contextUsage.snapshot().binding.sessionID, 'ordinary-session');

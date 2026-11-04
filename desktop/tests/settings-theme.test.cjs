@@ -57,7 +57,9 @@ class El {
   getAttribute(name) { return this.attributes.has(name) ? this.attributes.get(name) : null; }
   removeAttribute(name) { this.attributes.delete(name); }
   append(...children) { for (const child of children) { child.parentElement = this; this.children.push(child); } }
+  replaceChildren(...children) { this._text = ''; this.children = []; this.append(...children); }
   prepend(...children) { for (const child of children) { child.parentElement = this; this.children.unshift(child); } }
+  before(child) { const siblings = this.parentElement.children; child.parentElement = this.parentElement; siblings.splice(siblings.indexOf(this), 0, child); }
   addEventListener(name, handler) { (this.listeners[name] ||= []).push(handler); }
   emit(name, fields = {}) { const event = { target: this, ...fields }; for (const handler of this.listeners[name] || []) handler(event); return event; }
   focus() { if (this._document) this._document.activeElement = this; }
@@ -162,11 +164,20 @@ function runCalm({ store = {}, harness = null, systemDark = false, profileSaveQu
   const registry = new Map();
   document.getElementById = id => registry.get(id) || null;
   document.body = new El('body'); document.body._document = document;
+  document.documentElement = new El('html');
   const make = (tag, id) => { const el = new El(tag); el._document = document; if (id) { el.id = id; registry.set(id, el); } return el; };
+  document.createElementNS = (namespace, tag) => make(tag);
+  document.createTextNode = text => { const el = new El('span'); el.textContent = text; return el; };
   const root = make('div', 'workspace'); root.hidden = false;
+  const grid = new El('div'); grid.className = 'work-grid'; grid.dataset.surface = 'off'; root.append(grid);
   const bar = new El('div'); bar.className = 'workspace-bar'; root.append(bar);
-  for (const id of ['project-menu', 'sidebar-toggle', 'sidebar', 'chat-panel', 'work-surface', 'prompt']) make('div', id);
-  const window = { harness, previewLayout: null, calmWorkspace: null, profileSaveQueued };
+  for (const id of ['project-menu', 'sidebar-toggle', 'sidebar', 'chat-panel', 'work-surface', 'prompt', 'send', 'stop', 'chat-materials-plus', 'tools-button', 'surface-toggle', 'new-chat', 'conversation-hero', 'messages']) make('div', id);
+  document.body.append(root, registry.get('sidebar'));
+  registry.get('sidebar').append(make('nav'));
+  const toolsText = make('span'); toolsText.className = 'nav-text'; registry.get('tools-button').append(toolsText);
+  const heroMark = make('img'); heroMark.className = 'hero-mark'; registry.get('conversation-hero').append(heroMark); root.append(registry.get('conversation-hero'));
+  const tabs = make('nav'); tabs.className = 'work-tabs'; root.append(tabs);
+  const window = { harness, previewLayout: null, calmWorkspace: null, profileSaveQueued, addEventListener() {} };
   const context = {
     document, window, registry,
     localStorage: { getItem: key => (key in store ? store[key] : null), setItem: (key, value) => { store[key] = String(value); }, removeItem: key => { delete store[key]; } },
@@ -347,6 +358,37 @@ test('app.js: applyProfilePresentation oversætter alle tre hjælpeniveauer til 
   assert.equal((await run('ingen')).contains('help-delvis'), false, 'ingen sætter ikke delvis-klassen');
   assert.equal((await run('fuld')).contains('help-delvis'), false, 'fuld fjerner delvis-klassen');
   assert.equal((await run('fuld')).contains('help-ingen'), false, 'fuld fjerner ingen-klassen');
+});
+
+// app.js — the transcript detail level follows the same presentation pass:
+// every level carries its own body class, and an unreadable value folds to
+// the neutral 'standard' (help level and detail level stay independent).
+test('app.js: applyProfilePresentation oversætter alle tre detaljeniveauer til kropsklasser', async () => {
+  const run = async transcriptView => {
+    const document = { body: new El('body') };
+    const context = {
+      document,
+      profileState: { helpLevel: 'fuld', transcriptView, appearance: { theme: 'system' } },
+      window: { calmWorkspace: { setTheme: () => {} } }
+    };
+    vm.runInNewContext(appSlice('async function applyProfilePresentation', '// The profile is adopted'), context);
+    await context.applyProfilePresentation();
+    return document.body.classList;
+  };
+  for (const view of ['compact', 'standard', 'detailed']) {
+    const classes = await run(view);
+    assert.equal(classes.contains(`transcript-${view}`), true, `${view} sætter sin egen klasse`);
+    for (const other of ['compact', 'standard', 'detailed']) if (other !== view) assert.equal(classes.contains(`transcript-${other}`), false, `${view} lader ${other}s klasse være ude`);
+    assert.equal(classes.contains('help-delvis'), false, 'detaljeniveauet rører ikke hjælpeniveaus klasser');
+  }
+  // An unreadable value folds to the neutral standard — the class set is the
+  // same as a fresh profile's.
+  for (const bad of [undefined, 'ultra', null]) {
+    const classes = await run(bad);
+    assert.equal(classes.contains('transcript-standard'), true, `${String(bad)} folder til standard-klassen`);
+    assert.equal(classes.contains('transcript-compact'), false);
+    assert.equal(classes.contains('transcript-detailed'), false);
+  }
 });
 
 // Hint key has exactly one writer: workspace-calm.js. settings.js only

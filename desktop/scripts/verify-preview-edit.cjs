@@ -51,7 +51,7 @@ const helpers = require('./ui-test-helpers.cjs');
   const file = () => fs.readFile(path.join(project, 'public/index.html'), 'utf8');
   async function open(folder) {
     await app.evaluate(({ dialog }, folder) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [folder] }); }, folder);
-    await page.click('#open'); await page.waitForFunction(folder => document.querySelector('#project-path').textContent === folder, folder);
+    await require('./ui-test-helpers.cjs').clickOpen(page); await page.waitForFunction(folder => document.querySelector('#project-path').textContent === folder, folder);
   }
   try {
     app = await electron.launch({ executablePath: require('electron'), args: [path.join(__dirname, '..'), '--user-data-dir=' + path.join(root, 'appdata')], env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined } });

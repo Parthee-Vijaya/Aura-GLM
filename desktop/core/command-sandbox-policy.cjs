@@ -50,8 +50,15 @@ function assertBoundedJSON(value) {
   }
 }
 
-function buildPolicy({ workspaceRoot: root, scratchRoot: scratch, node, platform }) {
+function buildPolicy({ workspaceRoot: root, scratchRoot: scratch, node, skillsRoot, platform }) {
   if (!['darwin', 'linux'].includes(platform) || ![root, scratch, node].every(absolutePath)) throw policyError();
+  // S3-fix (Codex Important 2): the engine's skill folder is bounded READ
+  // access for isolated commands — the roll script and its data live there,
+  // outside the workspace and scratch. The path must be a strict absolute
+  // path that is not already covered (never '/', never the granted roots);
+  // writing stays denied — allowWrite keeps only workspace and scratch.
+  if (skillsRoot !== undefined && (!absolutePath(skillsRoot) || skillsRoot === '/' || skillsRoot === root || skillsRoot === scratch)) throw policyError();
+  const skills = skillsRoot === undefined ? undefined : path.normalize(skillsRoot);
   const home = path.join(scratch, 'home'), temp = path.join(scratch, 'tmp');
   const literal = value => ({ path: value, literal: true });
   const systemRead = platform === 'darwin'
@@ -59,9 +66,9 @@ function buildPolicy({ workspaceRoot: root, scratchRoot: scratch, node, platform
     : ['/bin', '/sbin', '/usr/bin', '/usr/sbin', '/usr/lib', '/usr/lib64', '/lib', '/lib64', '/usr/share', '/etc/ssl', '/etc/resolv.conf', '/etc/hosts', '/etc/localtime'];
   const runtimeRoot = path.dirname(path.dirname(node));
   const sensitive = protectedPaths.toSandboxGlobs();
-  return { version: 1, workspaceRoot: root, scratchRoot: scratch, node, env: { PATH: [path.dirname(node), '/usr/bin', '/bin', '/usr/sbin', '/sbin'].join(':'), HOME: home, TMPDIR: temp, TMP: temp, TEMP: temp, LANG: 'en_US.UTF-8', npm_config_cache: path.join(home, '.npm'), PIP_CACHE_DIR: path.join(home, '.cache', 'pip') }, config: {
+  return { version: 1, workspaceRoot: root, scratchRoot: scratch, node, ...(skills === undefined ? {} : { skillsRoot: skills }), env: { PATH: [path.dirname(node), '/usr/bin', '/bin', '/usr/sbin', '/sbin'].join(':'), HOME: home, TMPDIR: temp, TMP: temp, TEMP: temp, LANG: 'en_US.UTF-8', npm_config_cache: path.join(home, '.npm'), PIP_CACHE_DIR: path.join(home, '.cache', 'pip') }, config: {
     network: { allowedDomains: [...PACKAGE_HOSTS], deniedDomains: [], strictAllowlist: true, allowLocalBinding: false, allowUnixSockets: [], allowAllUnixSockets: false },
-    filesystem: { denyRead: ['/', ...[root, scratch].flatMap(folder => sensitive.map(pattern => path.join(folder, pattern)))], allowRead: [root, scratch, runtimeRoot, ...systemRead, '/dev/null', '/dev/urandom', '/dev/random', '/dev/fd'].map(literal), allowWrite: [root, scratch].map(literal), denyWrite: ['/tmp/claude', '/private/tmp/claude', ...[root, scratch].flatMap(folder => sensitive.map(pattern => path.join(folder, pattern)))] },
+    filesystem: { denyRead: ['/', ...[root, scratch].flatMap(folder => sensitive.map(pattern => path.join(folder, pattern)))], allowRead: [root, scratch, runtimeRoot, ...(skills === undefined ? [] : [skills]), ...systemRead, '/dev/null', '/dev/urandom', '/dev/random', '/dev/fd'].map(literal), allowWrite: [root, scratch].map(literal), denyWrite: ['/tmp/claude', '/private/tmp/claude', ...[root, scratch].flatMap(folder => sensitive.map(pattern => path.join(folder, pattern)))] },
     allowPty: false, enableWeakerNestedSandbox: false, enableWeakerNetworkIsolation: false
   } };
 }
@@ -70,14 +77,14 @@ function validatePolicy(value, { platform = process.platform } = {}) {
   try {
     assertBoundedJSON(value);
     if (!value || typeof value !== 'object') throw policyError();
-    const expected = buildPolicy({ workspaceRoot: value.workspaceRoot, scratchRoot: value.scratchRoot, node: value.node, platform });
+    const expected = buildPolicy({ workspaceRoot: value.workspaceRoot, scratchRoot: value.scratchRoot, node: value.node, skillsRoot: value.skillsRoot, platform });
     if (!isDeepStrictEqual(value, expected) || Buffer.byteLength(JSON.stringify(value)) > MAX_POLICY_BYTES) throw policyError();
     return value;
   } catch { throw policyError(); }
 }
 
-function createPolicy({ workspaceRoot, scratchRoot, node, platform = process.platform }) {
-  return validatePolicy(buildPolicy({ workspaceRoot, scratchRoot, node, platform }), { platform });
+function createPolicy({ workspaceRoot, scratchRoot, node, skillsRoot, platform = process.platform }) {
+  return validatePolicy(buildPolicy({ workspaceRoot, scratchRoot, node, skillsRoot, platform }), { platform });
 }
 
 async function readPolicy(file, options) {

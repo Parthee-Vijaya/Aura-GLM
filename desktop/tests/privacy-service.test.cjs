@@ -435,3 +435,63 @@ test('recordTransport modtager den kontrollerede body og gatens metadata; fejl a
     assert.ok(recorded[0].gate?.requestId, 'gatens requestId er med');
   }
 });
+
+// ── S5: registerets læseloft og tilbagekaldelse af en ekstern destination ───
+// S4-re-gennemgangens note: privateConfig læste external-destinations.json med
+// et PRÆ-EKSISTERENDE 64 KiB-loft, mens registerets øvrige læsere (readConfig i
+// external-egress.cjs, #readRegistry i gradientdeck.cjs, snapshotBinding)
+// accepterer 2 MB. Et legitimt register over 64 KiB fik allowDestination og
+// configure-flows til at kaste PRIVACY_CONTROL_FAILED. S5 retter loftet til
+// samme grænse: 2 MB — og over grænsen er fejlen stadig ærlig.
+
+test('S5: privateConfig læser et register over 64 KiB — konsistent med 2 MB-loftet', async t => {
+  const f = await fixture(t);
+  // Et legitimt register: 700 brugerdestinationer (~81 KiB) — over det gamle loft.
+  const registry = {};
+  for (let index = 0; index < 700; index++) registry[`min-webfetch-${index}`] = { endpoint: `https://eksempel-${index}.dk`, locality: 'cloud', revision: 'webfetch-v1', actions: ['browser-http'] };
+  registry['aura-gradientdeck'] = { endpoint: 'https://ui.gradientdeck.com', locality: 'cloud', revision: 'gradientdeck-v1', actions: ['integration'] };
+  await f.writeConfig('external-destinations.json', registry);
+  const bytes = fsSync.statSync(path.join(f.root, 'privacy', 'external-destinations.json')).size;
+  assert.ok(bytes > 65536, `fixturen er reelt over 64 KiB (${bytes} bytes)`);
+  // policy-læsningen og allowDestination virker nu med det store, gyldige register.
+  const policy = await f.service.policies(f.scope);
+  assert.ok(policy.project, 'politikken læser registreringen uden kontrolfejl');
+  await f.service.allowDestination({ scope: 'project', destinationId: 'aura-gradientdeck' });
+  const state = await f.store.read();
+  const privacy = state.projects[f.store.projectKey(f.bench.project.root)].privacy;
+  assert.ok(privacy.allowedDestinationIds.includes('aura-gradientdeck'), 'tilladelsen tilføjes med det store register til stede');
+  assert.ok(privacy.allowedDestinationIds.includes('aura-gradientdeck') && (await f.service.get({ scope: 'project' })).rules.approvedDestinations.includes('aura-gradientdeck'), 'get() læser også registeret uden fejl');
+});
+
+test('S5: et register over 2 MB afvises ærligt — loftet er 2 MB, ikke tavst',
+async t => {
+  const f = await fixture(t);
+  const big = { 'stor-destination': { endpoint: 'https://eksempel.dk', locality: 'cloud', revision: 'r', actions: ['browser-http'] } };
+  big.pad = 'x'.repeat(2_100_000);
+  await f.writeConfig('external-destinations.json', big);
+  // allowDestination læser registeret gennem privateConfig — over loftet er
+  // fejlen stadig den ærlige PRIVACY_CONTROL_FAILED, aldrig tavs genanskaffelse.
+  await assert.rejects(f.service.allowDestination({ scope: 'project', destinationId: 'stor-destination' }), error => error.code === 'PRIVACY_CONTROL_FAILED', 'den ærlige kontrolfejl — aldrig tavs genanskaffelse');
+});
+
+test('S5: revokeDestination fjerner KUN det navngivne id — idempotent og aldrig under en kørsel', async t => {
+  const f = await fixture(t);
+  await f.writeConfig('external-destinations.json', {
+    'aura-gradientdeck': { endpoint: 'https://ui.gradientdeck.com', locality: 'cloud', revision: 'gradientdeck-v1', actions: ['integration'] },
+    'andet-integration': { endpoint: 'https://andet.dk', locality: 'cloud', revision: 'v1', actions: ['integration'] },
+  });
+  await f.service.allowDestination({ scope: 'project', destinationId: 'aura-gradientdeck' });
+  await f.service.allowDestination({ scope: 'project', destinationId: 'andet-integration' });
+  await f.service.revokeDestination({ scope: 'project', destinationId: 'aura-gradientdeck' });
+  let privacy = (await f.store.read()).projects[f.store.projectKey(f.bench.project.root)].privacy;
+  assert.deepEqual(privacy.allowedDestinationIds, [f.connection.id, 'andet-integration'], 'kun det navngivne id fjernes — andre bevares');
+  // Idempotent: at fjernes igen er en ingen-handling, ikke en fejl.
+  await f.service.revokeDestination({ scope: 'project', destinationId: 'aura-gradientdeck' });
+  privacy = (await f.store.read()).projects[f.store.projectKey(f.bench.project.root)].privacy;
+  assert.ok(!privacy.allowedDestinationIds.includes('aura-gradientdeck'));
+  await assert.rejects(f.service.revokeDestination({ scope: 'project', destinationId: 'OVK/status' }), /gyldig modtager/, 'id-formatet valideres som i allowDestination');
+  await assert.rejects(f.service.revokeDestination({ scope: 'conversation', destinationId: 'aura-gradientdeck' }), /gælder projektet/, 'tilbagekaldelsen gælder projektet');
+  f.bench.running = true;
+  await assert.rejects(f.service.revokeDestination({ scope: 'project', destinationId: 'andet-integration' }), /Stop den aktive opgave/, 'aldrig under en kørsel — som allowDestination');
+  f.bench.running = false;
+});

@@ -1,186 +1,98 @@
-/* Aura Prime · fælles designtokens i DeepSeek Harness-stil.
-   Én kilde for alle skærme: arbejdsflade, onboarding og dialoger.
-   Værdierne følger DSH's design-platform.css (MIT); auraens egen identitet
-   (navn, logo, datamappe, nøglering) er urørt.
-
-   Indlæses FØR alle andre stylesheets i index.html. */
-
+/* Aura Prime: én tema- og tokenskilde for arbejdsflade, onboarding og dialoger.
+   Flader, primær/sekundær tekst og accent følger den installerede DeepSeek Harness 0.2.1-rc.5.
+   light-dark følger color-scheme ved brug, også efter et manuelt temaskift. */
 :root {
-  /* ── Typografi ── */
+  color-scheme: light dark;
   --aura-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
     'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --aura-font-family-ui: var(--aura-font-family);
   --aura-font-family-brand: 'Montserrat', var(--aura-font-family);
   --aura-font-family-code: 'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas,
     'Liberation Mono', Menlo, Courier, 'PingFang SC', 'Microsoft YaHei';
   --aura-font-weight-medium: 500;
-
-  /* ── Bevægelse ── */
+  --aura-text-12: 12px;
+  --aura-text-12-line: 16px;
+  --aura-text-13: 13px;
+  --aura-text-13-line: 20px;
+  --aura-text-14: 14px;
+  --aura-text-14-line: 22px;
+  --aura-text-15: 15px;
+  --aura-text-15-line: 22px;
+  --aura-text-26: 26px;
+  --aura-text-26-line: 32px;
   --aura-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
   --aura-transition-duration-fast: 0.1s;
   --aura-transition-duration: 0.2s;
   --aura-transition-duration-slow: 0.3s;
-
-  /* ── Radius-skala ── */
   --aura-radius-xs: 4px;
   --aura-radius-sm: 8px;
   --aura-radius-md: 12px;
   --aura-radius-lg: 16px;
   --aura-radius-xl: 20px;
-  --aura-radius-panel: 28px;
-
-  /* ── Lyst tema (standard) ── */
-  /* Accent: DSH-blå til valgt tilstand, links, aktivitet og markering. */
-  --aura-accent: rgb(65, 118, 230);
-  --aura-accent-hover: rgb(72, 104, 178);
-  --aura-accent-subtle: rgb(228, 237, 253);
-  --aura-accent-faint: rgb(237, 243, 254);
-
-  /* Primærknapper er næsten sorte (DSH-stil), ikke blå. */
-  --aura-button-primary: rgb(21, 21, 23);
-  --aura-button-primary-hover: rgb(40, 40, 42);
-  --aura-button-primary-text: rgb(255, 255, 255);
-
-  /* Flader. */
-  --aura-bg: rgb(255, 255, 255);
-  --aura-bg-sidebar: rgb(249, 250, 251);
-  --aura-bg-raised: rgb(255, 255, 255);
-  --aura-bg-overlay: rgb(255, 255, 255);
-  --aura-bg-tint: rgb(243, 244, 246);
-  --aura-bg-hover: rgb(243, 244, 246);
-  --aura-bg-active: rgb(237, 238, 241);
-
-  /* Tekst. */
-  --aura-ink: rgb(21, 21, 23);
-  --aura-ink-secondary: rgb(64, 64, 68);
-  --aura-ink-muted: rgb(112, 116, 124);
-  --aura-ink-caption: rgb(145, 148, 155);
-  --aura-ink-faint: rgb(180, 182, 187);
-
-  /* Kanter — meget diskrete alpha-værdier. */
-  --aura-border: rgba(0, 0, 0, 0.08);
-  --aura-border-strong: rgba(0, 0, 0, 0.12);
-  --aura-border-faint: rgba(0, 0, 0, 0.04);
-  --aura-border-invert: rgba(255, 255, 255, 0.08);
-
-  /* Skygger. */
-  --aura-shadow-panel: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 14px rgba(0, 0, 0, 0.06);
-  --aura-shadow-overlay: 0 4px 20px rgba(0, 0, 0, 0.12);
-  --aura-shadow-composer: 0 1px 2px rgba(0, 0, 0, 0.03), 0 2px 8px rgba(0, 0, 0, 0.06);
-
-  /* Status. */
-  --aura-success: rgb(34, 154, 96);
-  --aura-success-subtle: rgb(230, 247, 239);
-  --aura-warning: rgb(200, 130, 20);
-  --aura-warning-subtle: rgb(254, 245, 231);
-  --aura-error: rgb(200, 52, 44);
-  --aura-error-subtle: rgb(253, 240, 239);
-
-  /* Diff-farver — separate fra accent. */
-  --aura-diff-add: rgb(34, 154, 96);
-  --aura-diff-add-bg: rgba(34, 154, 96, 0.08);
-  --aura-diff-del: rgb(200, 52, 44);
-  --aura-diff-del-bg: rgba(200, 52, 44, 0.06);
-
-  /* Metalkant (composer-glow under arbejde). */
-  --aura-glow: linear-gradient(135deg, rgb(65, 118, 230), rgb(103, 158, 254));
+  --aura-radius-panel: 24px;
+  --chat-col: 920px;
+  --chat-gutter: 32px;
+  --aura-workspace-bar: 44px;
+  --aura-accent: light-dark(rgb(65, 118, 230), rgb(122, 170, 255));
+  --aura-accent-hover: light-dark(rgb(72, 104, 178), rgb(122, 170, 255));
+  --aura-accent-subtle: light-dark(rgb(228, 237, 253), rgb(33, 43, 66));
+  --aura-accent-faint: light-dark(rgb(237, 243, 254), rgb(27, 35, 54));
+  --aura-button-primary: light-dark(rgb(21, 21, 23), rgb(240, 240, 242));
+  --aura-button-primary-hover: light-dark(rgb(40, 40, 42), rgb(255, 255, 255));
+  --aura-button-primary-text: light-dark(rgb(255, 255, 255), rgb(21, 21, 23));
+  --aura-bg: light-dark(rgb(255, 255, 255), rgb(21, 21, 23));
+  --aura-bg-sidebar: light-dark(rgb(249, 250, 251), rgb(27, 27, 28));
+  --aura-bg-raised: light-dark(rgb(255, 255, 255), rgb(35, 35, 36));
+  --aura-bg-overlay: light-dark(rgb(255, 255, 255), rgb(44, 44, 46));
+  --aura-bg-tint: light-dark(rgb(255, 255, 255), rgb(44, 44, 46));
+  --aura-bg-hover: light-dark(rgba(38, 49, 72, 0.06), rgba(255, 255, 255, 0.08));
+  --aura-bg-active: light-dark(rgb(235, 238, 242), rgb(67, 69, 74));
+  --aura-bg-bubble: light-dark(rgb(237, 243, 254), rgb(44, 44, 46));
+  --aura-ink: light-dark(rgb(15, 17, 21), rgb(249, 250, 251));
+  --aura-ink-secondary: light-dark(rgb(97, 102, 107), rgb(207, 211, 214));
+  --aura-ink-muted: light-dark(rgb(101, 105, 113), rgb(150, 152, 158));
+  --aura-ink-caption: light-dark(rgb(101, 105, 113), rgb(150, 152, 158));
+  --aura-ink-faint: light-dark(rgb(180, 182, 187), rgb(75, 77, 82));
+  --aura-border: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.08));
+  --aura-border-strong: light-dark(rgba(0, 0, 0, 0.12), rgba(255, 255, 255, 0.12));
+  --aura-border-faint: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.04));
+  --aura-border-strongest: light-dark(rgba(0, 0, 0, 0.16), rgba(255, 255, 255, 0.2));
+  --aura-border-invert: light-dark(rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.08));
+  --aura-shadow-panel: 0 4px 16px light-dark(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.24));
+  --aura-shadow-overlay: 0 12px 36px light-dark(rgba(0, 0, 0, 0.14), rgba(0, 0, 0, 0.4));
+  --aura-shadow-composer: none;
+  --aura-shadow-menu: 0 8px 24px light-dark(rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.36));
+  --aura-scrim: rgba(0, 0, 0, .42);
+  --aura-switch-track: light-dark(rgb(233, 234, 238), rgb(63, 64, 68));
+  --aura-menu-bg: light-dark(rgba(252, 253, 254, 0.7), rgba(48, 49, 54, 0.64));
+  --aura-warning-ink: light-dark(rgb(146, 92, 15), rgb(220, 160, 60));
+  --aura-accent-ink: light-dark(rgb(52, 94, 186), rgb(125, 154, 222));
+  --aura-success: light-dark(rgb(34, 154, 96), rgb(72, 180, 120));
+  --aura-success-subtle: light-dark(rgb(230, 247, 239), rgb(22, 48, 36));
+  --aura-warning: light-dark(rgb(200, 130, 20), rgb(220, 160, 60));
+  --aura-warning-subtle: light-dark(rgb(254, 245, 231), rgb(48, 38, 22));
+  --aura-error: light-dark(rgb(200, 52, 44), rgb(230, 90, 80));
+  --aura-error-subtle: light-dark(rgb(253, 240, 239), rgb(50, 24, 22));
+  --aura-diff-add: light-dark(rgb(34, 154, 96), rgb(72, 180, 120));
+  --aura-diff-add-bg: light-dark(rgba(34, 154, 96, 0.08), rgba(72, 180, 120, 0.1));
+  --aura-diff-del: light-dark(rgb(200, 52, 44), rgb(230, 90, 80));
+  --aura-diff-del-bg: light-dark(rgba(200, 52, 44, 0.06), rgba(230, 90, 80, 0.08));
+  --aura-glow: linear-gradient(135deg, var(--aura-accent), var(--aura-accent-hover));
+  --aura-bg-panel: light-dark(rgb(255, 255, 255), rgb(35, 35, 36));
+  --aura-bg-composer: light-dark(rgb(255, 255, 255), rgb(44, 44, 46));
+  --aura-success-ink: light-dark(rgb(24, 113, 69), rgb(108, 205, 151));
+  --aura-error-ink: light-dark(rgb(200, 52, 44), rgb(230, 90, 80));
 }
 
-/* ── Mørkt tema ── */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-workspace-theme="light"]) {
-    --aura-accent: rgb(103, 158, 254);
-    --aura-accent-hover: rgb(122, 170, 255);
-    --aura-accent-subtle: rgb(33, 43, 66);
-    --aura-accent-faint: rgb(27, 35, 54);
+[data-workspace-theme="light"] { color-scheme: light; }
+[data-workspace-theme="dark"] { color-scheme: dark; }
 
-    --aura-button-primary: rgb(240, 240, 242);
-    --aura-button-primary-hover: rgb(255, 255, 255);
-    --aura-button-primary-text: rgb(21, 21, 23);
-
-    --aura-bg: rgb(21, 21, 23);
-    --aura-bg-sidebar: rgb(27, 27, 28);
-    --aura-bg-raised: rgb(30, 30, 32);
-    --aura-bg-overlay: rgb(30, 30, 32);
-    --aura-bg-tint: rgb(38, 38, 40);
-    --aura-bg-hover: rgb(38, 38, 40);
-    --aura-bg-active: rgb(45, 45, 47);
-
-    --aura-ink: rgb(238, 238, 240);
-    --aura-ink-secondary: rgb(190, 192, 196);
-    --aura-ink-muted: rgb(140, 142, 148);
-    --aura-ink-caption: rgb(110, 112, 118);
-    --aura-ink-faint: rgb(75, 77, 82);
-
-    --aura-border: rgba(255, 255, 255, 0.08);
-    --aura-border-strong: rgba(255, 255, 255, 0.12);
-    --aura-border-faint: rgba(255, 255, 255, 0.04);
-    --aura-border-invert: rgba(0, 0, 0, 0.08);
-
-    --aura-shadow-panel: 0 1px 3px rgba(0, 0, 0, 0.2), 0 4px 14px rgba(0, 0, 0, 0.3);
-    --aura-shadow-overlay: 0 4px 20px rgba(0, 0, 0, 0.4);
-    --aura-shadow-composer: 0 1px 2px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.25);
-
-    --aura-success: rgb(72, 180, 120);
-    --aura-success-subtle: rgb(22, 48, 36);
-    --aura-warning: rgb(220, 160, 60);
-    --aura-warning-subtle: rgb(48, 38, 22);
-    --aura-error: rgb(230, 90, 80);
-    --aura-error-subtle: rgb(50, 24, 22);
-
-    --aura-diff-add: rgb(72, 180, 120);
-    --aura-diff-add-bg: rgba(72, 180, 120, 0.1);
-    --aura-diff-del: rgb(230, 90, 80);
-    --aura-diff-del-bg: rgba(230, 90, 80, 0.08);
-  }
-}
-
-/* Eksplicit lyst valg via data-attribut (bevarer Auras eksisterende manuelle valg). */
-[data-workspace-theme="light"] {
-  --aura-accent: rgb(65, 118, 230);
-  --aura-accent-hover: rgb(72, 104, 178);
-  --aura-accent-subtle: rgb(228, 237, 253);
-  --aura-accent-faint: rgb(237, 243, 254);
-  --aura-button-primary: rgb(21, 21, 23);
-  --aura-button-primary-hover: rgb(40, 40, 42);
-  --aura-button-primary-text: rgb(255, 255, 255);
-  --aura-bg: rgb(255, 255, 255);
-  --aura-bg-sidebar: rgb(249, 250, 251);
-  --aura-bg-raised: rgb(255, 255, 255);
-  --aura-bg-overlay: rgb(255, 255, 255);
-  --aura-bg-tint: rgb(243, 244, 246);
-  --aura-bg-hover: rgb(243, 244, 246);
-  --aura-bg-active: rgb(237, 238, 241);
-  --aura-ink: rgb(21, 21, 23);
-  --aura-ink-secondary: rgb(64, 64, 68);
-  --aura-ink-muted: rgb(112, 116, 124);
-  --aura-ink-caption: rgb(145, 148, 155);
-  --aura-ink-faint: rgb(180, 182, 187);
-  --aura-border: rgba(0, 0, 0, 0.08);
-  --aura-border-strong: rgba(0, 0, 0, 0.12);
-  --aura-border-faint: rgba(0, 0, 0, 0.04);
-  --aura-shadow-panel: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 14px rgba(0, 0, 0, 0.06);
-  --aura-shadow-overlay: 0 4px 20px rgba(0, 0, 0, 0.12);
-  --aura-shadow-composer: 0 1px 2px rgba(0, 0, 0, 0.03), 0 2px 8px rgba(0, 0, 0, 0.06);
-  --aura-success: rgb(34, 154, 96);
-  --aura-success-subtle: rgb(230, 247, 239);
-  --aura-warning: rgb(200, 130, 20);
-  --aura-warning-subtle: rgb(254, 245, 231);
-  --aura-error: rgb(200, 52, 44);
-  --aura-error-subtle: rgb(253, 240, 239);
-  --aura-diff-add: rgb(34, 154, 96);
-  --aura-diff-add-bg: rgba(34, 154, 96, 0.08);
-  --aura-diff-del: rgb(200, 52, 44);
-  --aura-diff-del-bg: rgba(200, 52, 44, 0.06);
-}
-
-/* ── Superellipse-hjørner (DSH's smooth corners) ── */
 @supports (corner-shape: superellipse(1.5)) {
-  :root {
-    --aura-corner-shape: superellipse(1.5);
-  }
-  *,
-  *::before,
-  *::after {
-    corner-shape: var(--aura-corner-shape);
-  }
+  :root { --aura-corner-shape: superellipse(1.5); }
+  *, *::before, *::after { corner-shape: var(--aura-corner-shape); }
 }
+
+/* Review 4.11: the Aura mark keeps its centre dot in both themes. The
+   authored mark has a white centre for dark surfaces; light surfaces use the
+   same geometry with the primary ink centre. */
+:root:not([data-workspace-theme="dark"]) img[src$="onboarding-aura-mark.svg"] { content: url("onboarding-aura-mark-light.svg"); }

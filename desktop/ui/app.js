@@ -1,5 +1,9 @@
 const $ = selector => document.querySelector(selector);
 let current = null, revision = null, polling = false, state = null, modelRequest = 0, acceptedFingerprint = null, pendingSend = null, running = false;
+// The project "Nyt projekt" left open in the background — the idea surface's
+// quiet return link (hidden on the first-run surface, where there is nothing
+// behind it) brings it back through displayProject.
+let ideaReturn = null;
 let projectLoading = true, projectDisplayRequest = 0, navigationRequest = 0, startupLoads = 0;
 // All owners contribute to availability. Finishing one task must not unlock a
 // form still owned by startup, project creation or idea refinement.
@@ -58,7 +62,7 @@ const anyRunning = () => running || [...views.values()].some(v => v.running);
 const chatTitle = id => window.chats?.projects().find(project => project.root === current?.root)?.chats?.find(chat => chat.id === id)?.title || 'Ny samtale';
 // ⓘ: en kort forklaring, der åbnes med et klik og lukkes med Escape eller et klik udenfor. Teksten står i knappens data-info.
 // Boblen flyttes ind i den åbne dialog, så den ikke bliver utilgængelig bag en modal dialog.
-const infoPop = node('div', '', 'info-pop'); infoPop.id = 'info-pop'; infoPop.popover = 'auto'; infoPop.setAttribute('role', 'dialog'); infoPop.tabIndex = -1;
+const infoPop = node('div', '', 'info-pop menu-material aura-tooltip'); infoPop.id = 'info-pop'; infoPop.popover = 'auto'; infoPop.setAttribute('role', 'dialog'); infoPop.tabIndex = -1;
 let infoSource = null, infoClosed = { at: 0, source: null };
 function info(label, text) { const button = node('button', 'i', 'info'); button.type = 'button'; button.setAttribute('aria-label', `Mere om ${label}`); button.setAttribute('aria-expanded', 'false'); button.dataset.info = text; return button; }
 function showInfo(button) {
@@ -69,12 +73,10 @@ function showInfo(button) {
   if (open && infoSource === button) return;
   infoSource = button; infoPop.textContent = button.dataset.info; infoPop.setAttribute('aria-label', button.getAttribute('aria-label') || 'Forklaring');
   (button.closest('dialog[open]') || document.body).append(infoPop);
-  infoPop.showPopover(); button.setAttribute('aria-expanded', 'true');
-  const box = button.getBoundingClientRect(), width = Math.min(320, innerWidth - 32);
-  infoPop.style.width = `${width}px`;
-  const left = Math.min(Math.max(16, box.left + box.width / 2 - width / 2), innerWidth - width - 16);
-  const below = box.bottom + 8 + infoPop.offsetHeight <= innerHeight - 16;
-  Object.assign(infoPop.style, { left: `${left}px`, top: `${below ? box.bottom + 8 : Math.max(16, box.top - 8 - infoPop.offsetHeight)}px` });
+  // Boblen anker centreret under knappen gennem det fælles popover-lag og
+  // følger zoom, rulning og vinduesstørrelse, mens den står åben.
+  window.PopoverLayer.open({ layer: infoPop, invoker: button, align: 'center', place: 'below', gap: 8, margin: 16, width: () => Math.min(320, innerWidth - 32) });
+  button.setAttribute('aria-expanded', 'true');
   infoPop.focus();
 }
 // beforetoggle kommer med det samme, når et klik udenfor lukker boblen; toggle kommer først efter klikket.
@@ -95,9 +97,9 @@ async function saveChatDraft(required = false) {
   if (!chat) return;
   view.draft = { text, mode };
   try { localStorage.setItem(`harness.chatDraft.${root}.${chat}`, JSON.stringify({ text, mode })); } catch {}
-  $('#draft-status').textContent = 'Gemmer kladde …';
-  try { await call('saveDraft', { root, chat, text, mode }, { root, chat }); if (current?.root === root && view.id === chat && $('#prompt').value === text) $('#draft-status').textContent = 'Kladde gemt på denne computer'; }
-  catch { if (current?.root === root && view.id === chat) $('#draft-status').textContent = 'Kladden kunne ikke gemmes. Kopiér teksten, før du lukker.'; if (required === true) throw new Error('Kladden kunne ikke gemmes. Kopiér teksten, før du opdaterer.'); }
+  setDraftStatus('Gemmer kladde …');
+  try { await call('saveDraft', { root, chat, text, mode }, { root, chat }); if (current?.root === root && view.id === chat && $('#prompt').value === text) setDraftStatus('Kladde gemt på denne computer'); }
+  catch { if (current?.root === root && view.id === chat) setDraftStatus('Kladden kunne ikke gemmes. Kopiér teksten, før du lukker.', false); if (required === true) throw new Error('Kladden kunne ikke gemmes. Kopiér teksten, før du opdaterer.'); }
 }
 function option(value, label) { const el = node('option', label); el.value = value; return el; }
 // Keep model text inert; external links cross the validated main-process boundary.
@@ -115,12 +117,39 @@ function showAssistant(id, text, v = view) {
   if (!v.pendingMarkdown.size) requestAnimationFrame(() => { for (const part of v.pendingMarkdown) markdownInto(partElement(part, 'assistant', v), v.assistantText.get(part)); v.pendingMarkdown.clear(); });
   v.pendingMarkdown.add(id);
 }
-function appendMessage(text, role = 'assistant', v = view) {
+function appendMessage(text, role = 'assistant', v = view, at) {
   const active = v === view;
   if (active) { $('#project-intro').hidden = true; $('#start-idea').hidden = true; $('#chat-choice').hidden = true; }
-  const el = node('div', text, `chat-message ${role}`); if (role === 'assistant' && text) markdownInto(el, text); v.log.append(el);
+  const el = node('div', '', `chat-message ${role}`);
+  if (role === 'user') {
+    // §6.2: boblen bærer teksten; handlingsrækken (tid + kopiér) står under
+    // boblen på lærredet. Tiden er modtagelsestidspunktet, når det er kendt
+    // (gemt med beskeden fra D4b) — der opfindes intet tidspunkt.
+    el.append(node('div', text, 'user-bubble'));
+    el.append(userActions(text, at));
+    if (active) for (const message of v.log.querySelectorAll('.chat-message.user.message-latest')) message.classList.remove('message-latest');
+    el.classList.add('message-latest');
+  } else if (text) markdownInto(el, text);
+  v.log.append(el);
+  // Første besked flytter samtalen fra hero til active — composeren dokker.
+  if (active) applyChatPhase();
   if (active && role === 'user') view.followChat = true;
   return el;
+}
+// Handlingsrækken under brugerboblen (§6.2): tid i 13 px tertiær med
+// tabelcifre og et kopiér-ikon. Rækken fader ind ved hover/fokus; den seneste
+// besked har den altid synlig (CSS: .message-latest).
+function userActions(text, at) {
+  const row = node('div', undefined, 'chat-message-actions');
+  const time = node('time', Number.isFinite(at) ? new Date(at).toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' }) : '', 'chat-message-time');
+  if (Number.isFinite(at)) time.dateTime = new Date(at).toISOString();
+  time.hidden = !Number.isFinite(at);
+  const copy = node('button', '', 'chat-message-copy'); copy.type = 'button';
+  copy.setAttribute('aria-label', 'Kopiér beskeden'); copy.title = 'Kopiér beskeden';
+  copy.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H15"/></svg>';
+  copy.onclick = async () => { try { await navigator.clipboard.writeText(text); copy.setAttribute('aria-label', 'Kopieret'); setTimeout(() => copy.setAttribute('aria-label', 'Kopiér beskeden'), 1500); } catch { copy.setAttribute('aria-label', 'Kunne ikke kopiere'); } };
+  row.append(time, copy);
+  return row;
 }
 const chatContent = $('#chat-content');
 function updateChatScroll() { $('#chat-latest').hidden = chatContent.scrollHeight - chatContent.scrollTop - chatContent.clientHeight < 48; }
@@ -133,9 +162,17 @@ let connectionReceipt=null, connectionTicket=0;
 let setupActive = false, setupGeneration = 0, verifiedConnection = '', recovery = '';
 // F20 changes presentation only; connection checks and all actions remain owned by the existing controllers.
 let onboardingPreviewKind = '';
+// The four onboarding steps in order: Din profil, Detaljeniveau, Forbindelse
+// (the choice and its sub-steps) and Din idé. The idea step lives on its own
+// surface (#onboarding), so the discrete counter under the back button reads
+// this map for every setup step.
+const SETUP_STEPS = Object.freeze({ profile: 1, detail: 2, choice: 3, provider: 3, local: 3, saved: 3, tools: 3 });
 // The onboarding profile step holds pure UI state: the fields are saved through
 // profileSave and never reach prompts, the model log or diagnostics.
-let profileStepShown = false, profileStepDone = false, profileIconChoice = '';
+let profileStepShown = false, profileIconChoice = '';
+const profileChoiceKey = 'aura.profile-choice.v1';
+function hasProfileChoice() { try { return ['saved', 'skipped'].includes(localStorage.getItem(profileChoiceKey)); } catch { return false; } }
+function recordProfileChoice(value) { try { localStorage.setItem(profileChoiceKey, value); } catch { /* This preference never blocks local use. */ } }
 // Whether the stored avatar file exists — the main process owns the truth and
 // answers it with every profile read, upload and removal.
 let profileAvatarAvailable = false;
@@ -146,25 +183,23 @@ function syncOnboardingVisuals() {
   const setupConnection = details ? state?.connections?.find(c => c.id === $('#connection-id').value) : setupStep === 'saved' ? selected : null;
   const setupCheck = setupConnection && connectionChecks.get(setupConnection.id);
   const kind = details ? $('#provider-kind').value : setupStep === 'local' ? 'ollama' : setupConnection?.kind || onboardingPreviewKind || '';
-  const phase = setupStep === 'profile' ? 'profile' : setupStep === 'saved' || setupStep === 'local' || details ? 'connection' : setupStep === 'provider' ? 'provider' : 'choice';
+  const phase = setupStep === 'profile' || setupStep === 'detail' ? 'profile' : setupStep === 'saved' || setupStep === 'local' || details ? 'connection' : setupStep === 'provider' ? 'provider' : 'choice';
   const checked = Boolean(setupConnection && setupConnection.kind === kind && verifiedConnection === setupConnection.id && setupCheck?.status === 'ok' && setupCheck.count);
-  window.OnboardingB.render($('#setup-visual'), { kind, phase, preview: setupStep === 'provider' && !details, connectionName: setupConnection?.name || '', saved: Boolean(setupConnection), checked, error: setupCheck?.status === 'error', pending: setupCheck?.status === 'checking' });
-  for (const step of document.querySelectorAll('#setup .onboarding-b-progress li')) {
-    // Provider and connection are one logical choice: both setup phases mark item 2,
-    // which only completes once the connection has been verified.
-    const complete = step.dataset.phase === 'profile' ? profileStepDone : step.dataset.phase === 'connection' && checked;
-    step.dataset.complete = String(complete);
-    step.querySelector('span').textContent = complete ? '✓' : String(['profile', 'connection', 'idea'].indexOf(step.dataset.phase) + 1);
-    const active = step.dataset.phase === (phase === 'profile' ? 'profile' : 'connection');
-    if (active) step.setAttribute('aria-current', 'step'); else step.removeAttribute('aria-current');
-  }
+  // The simple restyle removed the setup's and the idea screen's visual
+  // asides; the module stays for the model dialog's #model-visual. Every
+  // render is guarded by its element, so a missing surface skips cleanly.
+  const setupVisual = $('#setup-visual');
+  if (setupVisual) window.OnboardingB.render(setupVisual, { kind, phase, preview: setupStep === 'provider' && !details, connectionName: setupConnection?.name || '', saved: Boolean(setupConnection), checked, error: setupCheck?.status === 'error', pending: setupCheck?.status === 'checking' });
   const connection = state?.connections?.find(c => c.id === $('#connection-select').value);
   const check = connection && connectionChecks.get(connection.id);
   const model = $('#model-select');
   window.OnboardingB.render($('#model-visual'), { kind: connection?.kind || '', phase: 'model', connectionName: connection?.name || '', modelName: model.value ? model.selectedOptions[0]?.textContent || model.value : '', saved: Boolean(connection), checked: Boolean(check?.status === 'ok' && check.count), error: check?.status === 'error', pending: check?.status === 'checking', modelChosen: Boolean(model.value) });
-  const startup = state?.connections?.find(c => c.id === $('#startup-connection').value);
-  const startupCheck = startup && connectionChecks.get(startup.id);
-  window.OnboardingB.render($('#idea-visual'), { kind: startup?.kind || '', phase: 'idea', connectionName: startup?.name || '', saved: Boolean(startup), checked: Boolean(startupCheck?.status === 'ok' && startupCheck.count), error: startupCheck?.status === 'error' });
+  const ideaVisual = $('#idea-visual');
+  if (ideaVisual) {
+    const startup = state?.connections?.find(c => c.id === $('#startup-connection').value);
+    const startupCheck = startup && connectionChecks.get(startup.id);
+    window.OnboardingB.render(ideaVisual, { kind: startup?.kind || '', phase: 'idea', connectionName: startup?.name || '', saved: Boolean(startup), checked: Boolean(startupCheck?.status === 'ok' && startupCheck.count), error: startupCheck?.status === 'error' });
+  }
 }
 
 // Profilen er eneste kilde for appens standarder: arbejdsmåden i helt nye
@@ -180,7 +215,7 @@ function setupControls() {
   const id = $('#setup-connection').value, busy = projectLoading;
   $('#setup-test').disabled = !id || busy;
   $('#setup-continue').disabled = !id || verifiedConnection !== id || busy;
-  $('#new').disabled = busy; $('#open').disabled = busy;
+  $('#new').disabled = busy; $('#new-chat').disabled = busy; $('#open').disabled = busy;
   $('#skills-button').disabled = busy || setupActive || !current; $('#features-button').disabled = busy;
   $('#setup-local').disabled = busy;
   $('#setup-git-open').disabled = busy;
@@ -203,15 +238,19 @@ function moveConnectionForm(guided, addFlow = false) {
 function setupPage(step) {
   ++setupGeneration;
   setupStep = step;
-  const headings = { profile: ['Din profil', 'Udfyld din profil — du kan altid ændre den under Indstillinger.'], choice: ['Hvordan vil du forbinde din AI?', 'Vælg den adgang, du allerede har.'], provider: ['Hvem er din udbyder?', 'Har du ikke en nøgle, viser vi dig, hvordan du får en.'], local: ['AI på din computer', 'Vi leder efter modeller, du allerede har i Ollama.'], saved: ['Din AI-forbindelse', 'Kontrollér forbindelsen, før du fortsætter.'], tools: ['Avanceret opsætning', 'Forbindelser og lokale værktøjer.'] };
+  const headings = { profile: ['Din lokale profil', 'Profilen er valgfri. Du kan også tilpasse Aura senere under Indstillinger.'], detail: ['Hvor meget vil du se af AI’ens arbejde?', 'Det ændrer kun, hvordan arbejdet vises — ikke hvad Aura kan.'], choice: ['Hvordan vil du forbinde din AI?', 'Vælg den adgang, du allerede har.'], provider: ['Hvem er din udbyder?', 'Har du ikke en nøgle, viser vi dig, hvordan du får en.'], local: ['AI på din computer', 'Vi leder efter modeller, du allerede har i Ollama.'], saved: ['Din AI-forbindelse', 'Kontrollér forbindelsen, før du fortsætter.'], tools: ['Avanceret opsætning', 'Forbindelser og lokale værktøjer.'] };
   $('#setup-title').textContent = headings[step][0]; $('#setup-subtitle').textContent = headings[step][1];
-  $('#setup-eyebrow').textContent = step === 'profile' ? 'DIN PROFIL' : 'DIN AI';
   for (const el of document.querySelectorAll('[data-setup-step]')) el.hidden = el.dataset.setupStep !== step;
   moveConnectionForm(step === 'provider');
   $('#setup-advanced').hidden = step !== 'choice';
-  // The profile step has its own continue button; the quick actions belong to the connection choice.
-  $('.setup-quick-actions').hidden = step === 'profile';
+  // The profile and detail steps own their complete action rows (Fortsæt and,
+  // on the detail step, its own "Vælg senere"); the quick actions under the
+  // sections belong to the connection choice and its sub-steps.
+  $('.setup-quick-actions').hidden = step === 'profile' || step === 'detail';
   $('#setup').dataset.step = step;
+  // The discrete counter under the back button (Parthee's approved "Trin N
+  // af 4"); the idea step is number 4 on its own surface (#onboarding).
+  $('#setup-step-state').textContent = `Trin ${SETUP_STEPS[step] ?? 3} af 4`;
   $('#setup-title').focus(); window.scrollTo(0, 0); setupControls();
 }
 // The profile step in onboarding: name, icon, theme and help level. Every field is
@@ -227,7 +266,7 @@ function renderProfileIconRow() {
   initialsChoice.dataset.icon = '';
   initialsChoice.setAttribute('role', 'radio'); initialsChoice.setAttribute('aria-checked', 'false');
   initialsChoice.setAttribute('aria-label', 'Initialer');
-  initialsChoice.textContent = initialsPreview();
+  renderProfileInitialsChoice(initialsChoice);
   initialsChoice.onclick = () => selectProfileIcon('');
   const choices = [initialsChoice, ...ids.map(id => {
     const choice = node('button', undefined, 'profile-icon-choice'); choice.type = 'button';
@@ -253,16 +292,23 @@ function renderProfileIconRow() {
     slot.onclick = () => action(uploadProfileAvatar);
   }
   row.replaceChildren(...choices, slot);
+  // T8 (ventelistens parked minor): ikonvælgeren er ét tab-stop med roving
+  // tabindex — pile flytter fokus (uden at vælge), Home/End går til enderne.
+  window.ProfileIcons?.wireRadioGroup?.(row);
   $('#profile-avatar-remove').hidden = !profileAvatarAvailable;
 }
-// The initials preview follows the name field as it is typed; the hint's example
-// (AK) stands in while the name is still empty.
+// Empty identity uses a person affordance. Initials follow only a name the user entered.
 function initialsPreview() {
-  return window.ProfileIcons?.initials($('#profile-name').value.trim()) || 'AK';
+  return window.ProfileIcons?.initials($('#profile-name').value.trim()) || '';
+}
+function renderProfileInitialsChoice(choice) {
+  const initials = initialsPreview();
+  choice.textContent = initials;
+  if (!initials) choice.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg>';
 }
 function updateProfileInitialsPreview() {
   const initialsChoice = document.querySelector('#profile-icon-row .profile-initials');
-  if (initialsChoice) initialsChoice.textContent = initialsPreview();
+  if (initialsChoice) renderProfileInitialsChoice(initialsChoice);
 }
 function selectProfileIcon(icon) {
   profileIconChoice = window.ProfileIcons?.IDS.includes(icon) || icon === 'upload' && profileAvatarAvailable ? icon : '';
@@ -279,15 +325,13 @@ function profilePatch() {
 }
 async function prepareProfileStep(profile) {
   renderProfileIconRow();
-  if (profile?.name) $('#profile-name').value = profile.name;
-  else {
-    $('#profile-name').value = '';
-    try { const suggestion = await call('profileSuggest'); if (suggestion) $('#profile-name').value = suggestion; } catch { /* the suggestion is optional */ }
-  }
+  // Identity is an explicit local choice. Never adopt the macOS account name.
+  $('#profile-name').value = profile?.name || '';
   updateProfileInitialsPreview();
   selectProfileIcon(profile?.icon || '');
   for (const input of document.querySelectorAll('#profile-theme input')) input.checked = input.value === (profile?.appearance?.theme || 'system');
   $('#profile-help').value = profile?.helpLevel || 'fuld';
+  syncProfileHelpCards();
 }
 async function saveProfileStep() {
   const patch = profilePatch();
@@ -316,6 +360,14 @@ async function applyProfilePresentation() {
     // so removing both classes restores the standing hints.
     document.body.classList.toggle('help-delvis', profile.helpLevel === 'delvis');
     document.body.classList.toggle('help-ingen', profile.helpLevel === 'ingen');
+    // The transcript detail level maps the same way, but every level carries
+    // its own class — 'standard' (Nøgletrin) is the neutral default, and the
+    // workspace writers key on the explicit class. An unreadable value folds
+    // to 'standard', like the lenient read in the main process.
+    const transcriptView = ['compact', 'detailed'].includes(profile.transcriptView) ? profile.transcriptView : 'standard';
+    document.body.classList.toggle('transcript-compact', transcriptView === 'compact');
+    document.body.classList.toggle('transcript-standard', transcriptView === 'standard');
+    document.body.classList.toggle('transcript-detailed', transcriptView === 'detailed');
     window.calmWorkspace?.setTheme?.(profile.appearance?.theme);
   } catch { /* the profile is optional at startup */ }
 }
@@ -360,7 +412,44 @@ async function startupProfile() {
   await applyProfilePresentation();
   try { if (state?.features) state.features = await call('featuresGet'); } catch { /* the features keep the connectionState answer */ }
 }
-$('#profile-continue').onclick = () => action(async () => { await saveProfileStep(); profileStepDone = true; setupPage('choice'); });
+// The three help cards are the visible choice surface for #profile-help; the
+// hidden select keeps the save path byte-for-byte (profilePatch and
+// prepareProfileStep read and write its value). One sync after every write
+// keeps the pair from drifting; a card change writes the select back.
+function syncProfileHelpCards() {
+  const value = $('#profile-help').value;
+  for (const input of document.querySelectorAll('#setup-profile .help-cards input')) input.checked = input.value === value;
+}
+for (const input of document.querySelectorAll('#setup-profile .help-cards input')) input.onchange = () => { $('#profile-help').value = input.value; };
+$('#profile-continue').onclick = () => action(async () => { await saveProfileStep(); recordProfileChoice('saved'); setupPage('detail'); });
+$('#profile-skip').onclick = () => action(() => {
+  // Do not let leaveSetup save values from a profile the user declined.
+  profileStepShown = false;
+  recordProfileChoice('skipped');
+  setupPage('detail');
+});
+// D6 · Detaljeniveau: three radio cards between the profile and the access
+// choice. Fortsæt saves only the transcript level through the shared profile
+// queue; "Vælg senere" skips the step without a save, so an existing saved
+// level always survives (R7 — only a brand-new profile has none, and
+// blank() answers 'standard').
+function detailViewValue() { return [...document.querySelectorAll('#setup-detail input')].find(input => input.checked)?.value || 'standard'; }
+function prepareDetailStep(profile) {
+  const value = ['compact', 'detailed'].includes(profile?.transcriptView) ? profile.transcriptView : 'standard';
+  for (const input of document.querySelectorAll('#setup-detail input')) input.checked = input.value === value;
+}
+$('#detail-continue').onclick = () => action(async () => {
+  try {
+    const saved = await call('profileSave', { transcriptView: detailViewValue() });
+    // The cache, the announcement and the presentation follow the canonical
+    // profile, like every other profile save in the setup.
+    adoptProfile(saved.profile);
+    announceProfileSaved(saved.profile);
+    await applyProfilePresentation();
+  } catch { /* saving the profile never blocks the setup */ }
+  setupPage('choice');
+});
+$('#detail-skip').onclick = () => action(() => setupPage('choice'));
 // The avatar upload and removal run in the main process: the picker opens there,
 // the picture is stored there, and this step only re-renders the row from the
 // answer. A rejected upload shows its Danish error through action(); a canceled
@@ -464,6 +553,7 @@ async function setupGit() {
   finally { $('#setup-git-refresh').disabled = false; }
 }
 async function showSetup(reason = '', fromIntroduction = false) {
+  if (fromIntroduction) $('#onboarding').classList.remove('idea-without-steps');
   guidedSetup = fromIntroduction; document.body.classList.toggle('setup-guided', fromIntroduction);
   // The profile step opens first when a guided setup starts with an empty profile:
   // a first guided introduction always has one, and a filled profile is never asked
@@ -472,10 +562,9 @@ async function showSetup(reason = '', fromIntroduction = false) {
   if (fromIntroduction) { try { const read = await call('profileGet'); profile = read.profile; profileAvatarAvailable = read.hasAvatar === true; window.ProfileIcons?.setAvatarRevision?.(read.avatarRevision || 0); readProfile = true; adoptProfile(profile); } catch { /* without a readable profile the setup starts at the connection choice */ } }
   setupActive = true; $('#setup').hidden = false; $('#workspace').hidden = true; $('#onboarding').hidden = true;
   $('#view-title').textContent = 'Opsætning'; $('#setup-reason').textContent = reason; $('#setup-reason').hidden = !reason;
-  renderSetup(); profileStepShown = readProfile && !profile?.name && !profile?.icon; profileStepDone = false;
-  // The step is on screen before the name suggestion lands; the field fills in when it does.
+  renderSetup(); profileStepShown = readProfile && !profile?.name && !profile?.icon && !hasProfileChoice();
   setupPage(profileStepShown ? 'profile' : 'choice'); action(discoverLocal);
-  if (profileStepShown) await prepareProfileStep(profile);
+  if (profileStepShown) { await prepareProfileStep(profile); prepareDetailStep(profile); }
 }
 function connectionFailed(reason) {
   invalidateConnection($('#connection-select').value, reason);
@@ -512,9 +601,11 @@ async function leaveSetup(useAI) {
       await applyProfilePresentation();
     }
   } catch { /* saving the profile never blocks completing the setup */ }
-  profileStepShown = false; profileStepDone = false;
+  profileStepShown = false;
   ++setupGeneration; ++localDiscoveryGeneration; clearConnectionReceipt(); moveConnectionForm(false);
-  guidedSetup = false; completeIntroduction('guided');
+  // Review 4.11: a repeat setup (e.g. from idea refinement) never rewrites an earlier "skipped" choice.
+  { let earlier = null; try { earlier = localStorage.getItem(introductionKey); } catch {} if (guidedSetup || !earlier) completeIntroduction('guided'); }
+  guidedSetup = false;
   document.body.classList.remove('setup-guided'); setupActive = false; $('#setup').hidden = true; $('#workspace').hidden = !current; $('#onboarding').hidden = Boolean(current);
   $('#view-title').textContent = current ? 'Arbejdsområde' : 'Projektopstart'; setupControls();
   if (useAI && current) { const saved = $('#connection-select').value === id ? { modelID: $('#model-select').value, routeID: $('#route-select').value } : {}; $('#connection-select').value = id; await loadModels(saved); }
@@ -527,7 +618,7 @@ $('#setup-remove-all').onclick = () => action(async () => {
   const removeAll = (state?.connections || []).slice();
   if (!removeAll.length) return;
   const make = (tag, text, className) => { const element = document.createElement(tag); if (text) element.textContent = text; if (className) element.className = className; return element; };
-  const dialog = make('dialog', '', 'connection-removal-dialog'); dialog.id = 'remove-all-dialog';
+  const dialog = make('dialog', '', 'connection-removal-dialog'); dialog.id = 'remove-all-dialog'; dialog.setAttribute('data-size','confirm');
   const heading = make('h2', 'Fjern alle gemte nøgler?'); heading.id = 'remove-all-title'; dialog.setAttribute('aria-labelledby', 'remove-all-title');
   const description = make('p');
   description.append(make('strong', removeAll.length === 1 ? '1 forbindelse' : `${removeAll.length} forbindelser`), document.createTextNode(' og deres gemte adgangsoplysninger fjernes fra Aura Prime. Dine projekter og samtaler bevares.'));
@@ -631,6 +722,9 @@ async function displayProject(project, { firstTask = false } = {}) {
   modelCatalog = []; $('#model-shortlist').replaceChildren(); $('#work-mode').value = 'chat'; updateWorkMode();
   if (current?.workspaceRoot) previewRevisions.set(current.workspaceRoot, revision);
   current = project; revision = null; acceptedFingerprint = null;
+  // Every project display closes the idea surface's return link: the
+  // workspace is back, and the next "Nyt projekt" stashes a fresh one.
+  ideaReturn = null; $('#idea-back').hidden = true;
   window.dispatchEvent(new CustomEvent('aura:project', { detail: { root: project.root } }));
   // Projekter beholder samtaler, godkendelser og forhåndsvisning i baggrunden.
   const known = views.has(project.workbench.chat);
@@ -638,9 +732,16 @@ async function displayProject(project, { firstTask = false } = {}) {
   if (firstTask) view.firstProjectTask = true;
   try { localStorage.setItem(lastProjectKey, project.root); } catch {}
   $('#idea-options').open = false; for (const el of document.querySelectorAll('#idea-options select')) el.value = '';
+  // Chip-etiketterne følger select-nulstillingen (kompas-fix 2): ellers står
+  // det gamle valg på chippen, efter at payloadkilden er ryddet.
+  window.HeroComposer?.syncIdeaChips();
   $('#new').removeAttribute('aria-current'); $('#view-title').textContent = 'Arbejdsområde';
   $('#onboarding').hidden = true; $('#workspace').hidden = false; $('#skills-button').disabled = false;
-  $('#project-name').textContent = project.name; $('#project-purpose').textContent = project.purpose || 'Eksisterende mappe. Beskriv din opgave i samtalen.'; $('#project-path').textContent = project.root;
+  $('#project-name').textContent = project.name; $('#project-purpose').textContent = project.purpose || 'Eksisterende mappe. Beskriv din opgave i samtalen.'; $('#project-path').textContent = project.root; syncTopbar();
+  // Projekt-chippen (§4): navnet på chippen, og »Projektoplysninger« som ⓘ
+  // ved chippen — stien og opstartsvalgene står i data-info, id'erne består
+  // som skjult tekst (prøverne læser dem).
+  $('#project-chip-name').textContent = project.name; $('#project-chip').title = `Projekt: ${project.name}`;
   $('#reference-choices').replaceChildren();
   for (const asset of (project.assets || []).filter(a => a.kind === 'reference')) {
     const label = node('label', undefined, 'check-label'); const input = node('input'); input.type = 'checkbox'; input.value = asset.file;
@@ -676,6 +777,9 @@ async function displayProject(project, { firstTask = false } = {}) {
     }
   }
   $('#project-startup').textContent = startup ? `Hostingønske: ${hostingLabel(startup.hosting)} · Tests: ${testLabel(startup.tests)}` : 'Ingen opstartsvalg gemt for dette projekt.';
+  // ⓘ'ens tekst på projekt-chippen sammensættes af de samme kilder (§4):
+  // sti, opstartsvalg og den faste sætning om lokal kørsel.
+  $('#project-chip-info').dataset.info = `${$('#project-path').textContent}\n${$('#project-startup').textContent}\nFiler og agent kører på denne computer. Ingen installationer eller Git-handlinger udføres ved åbning.`;
   $('#model-options').open = !$('#model-select').value; $('#start-idea').textContent = project.purpose ? 'Forbered første besked' : 'Beskriv din idé'; updateModelSummary();
   if (saved && state.connections.some(c => c.id === saved.connectionID) && !$('#model-select').value) {
     $('#connection-select').value = saved.connectionID; $('#model-select').replaceChildren(option(saved.modelID, saved.modelID));
@@ -714,7 +818,7 @@ function fillChat(next, fresh) {
   // Startup events can create an empty view before displayProject receives the
   // stored conversation. Its existence does not mean its plan was restored.
   fresh ||= !v.historyLoaded && !v.log.children.length;
-  if (fresh || !v.historyLoaded && !v.log.children.length) { const page=window.HistoryPages.takePrevious(history?.messages || []);v.historyPending=page.older;v.historyLoaded=true;for(const item of page.recent){const element=appendMessage(item.text,item.role);if(typeof item.id==='string')element.dataset.messageId=item.id;} }
+  if (fresh || !v.historyLoaded && !v.log.children.length) { const page=window.HistoryPages.takePrevious(history?.messages || []);v.historyPending=page.older;v.historyLoaded=true;for(const item of page.recent){const element=appendMessage(item.text,item.role,undefined,item.at);if(typeof item.id==='string')element.dataset.messageId=item.id;} }
   renderHistoryControls();
   const empty = !v.log.children.length;
   // Første samtale i projektet viser den fulde intro med projektdetaljerne.
@@ -761,8 +865,9 @@ function fillChat(next, fresh) {
     }).catch(() => { /* Ventende valg kan ikke genfindes; statuslinjen viser fortsat arbejdet. */ });
     renderStatus();
   }
-  renderUsage(v.usage || next.usage);
-  updateWorkMode(); $('#draft-status').textContent = history?.draft ? 'Kladde hentet fra denne computer' : '';
+  v.usage = v.usage || next.usage; v.speed = next.speed || v.speed || null;
+  renderStatusLine();
+  updateWorkMode(); setDraftStatus(history?.draft ? 'Kladde hentet fra denne computer' : '');
   updateStartIdea(); applyRunning();
   // Anbefalingen følger profilen, også når chat-choice netop er blevet vist.
   applyChatChoiceRecommendation();
@@ -804,7 +909,7 @@ window.openStoredMessage = async result => {
     // Reload only the transcript. A same-chat search must not reset an unsaved
     // brief/plan editor, model selection, draft or approval controls.
     owner.log.replaceChildren(); owner.parts.clear(); owner.assistantText.clear(); owner.pendingMarkdown.clear();
-    for (const item of next.workspace?.messages || []) { const element = appendMessage(item.text, item.role, owner); if (typeof item.id === 'string') element.dataset.messageId = item.id; }
+    for (const item of next.workspace?.messages || []) { const element = appendMessage(item.text, item.role, owner, item.at); if (typeof item.id === 'string') element.dataset.messageId = item.id; }
     owner.historyPending=[];owner.historyLoaded=true;owner.historyNotice='';renderHistoryControls();
   }
   const target = find(); if (!target) throw new Error('Beskeden findes ikke længere i den gemte samtale. Søg igen.');
@@ -1151,10 +1256,10 @@ async function loadRoutes(saved = '') {
   $('#route-select').replaceChildren(option('', 'Vælg udbyder – ingen automatisk routing'));
   for (const route of routes) $('#route-select').append(option(route.id, route.name));
   if (routes.some(route => route.id === saved)) $('#route-select').value = saved;
-  renderContextUsage();
+  renderStatusLine();
 }
-function selection() { return { text: $('#prompt').value, chatMaterials:window.chatMaterials?.selection() || null, effort: view?.effort || null, includeHistory: $('#include-history').checked, mode: $('#work-mode').value, planID: activePlan?.id, connectionID: $('#connection-select').value, modelID: $('#model-select').value, routeID: $('#route-select').value, references: [...document.querySelectorAll('#reference-choices input:checked')].map(el => el.value), fileRefs: window.workspace?.references() || [], previewTarget: window.workspace?.target()?.id || null, view: window.previewViewSize?.() || null, chat: view.id }; }
-const detailLabels = { rules: 'Fælles grundregler, der sendes', projectInstructions: 'Projektets egne regler, der sendes', workspace: 'Arbejdsmappe', mode: 'Arbejdsmåde', brief: 'Projektbrief, der sendes', previewReferenceText: 'Valgt element, der sendes', conversation: 'Tidligere samtale, der sendes', projectGuidance: 'Appens vejledning om projektvalg og design', planContext: 'Plan og afklaring, der sendes', projectChoices: 'Projektets opstartsvalg', projectDesign: 'Projektets designvalg', fileReferences: 'Filhenvisninger i beskeden', connection: 'Forbindelse', model: 'Model', endpoint: 'Serveradresse', recipients: 'Modtagere', region: 'Behandlingssted', retention: 'Opbevaring', training: 'Brug til træning', price: 'Pris og gratisbegrænsninger', capabilities: 'Modelmuligheder', material: 'Hvad sendes?', references: 'Udvalgte private referencer', skills: 'Skills, AI’en kan hente', localStorage: 'Lokal historik og yderligere netværk', security: 'Forbindelsens sikkerhed', source: 'Kilde', checkedAt: 'Dokumentation kontrolleret', evidence: 'Grundlag' };
+function selection() { return { text: $('#prompt').value, chatMaterials:window.chatMaterials?.selection() || null, effort: view?.effort || null, includeHistory: $('#include-history').checked, mode: $('#work-mode').value, planID: activePlan?.id, connectionID: $('#connection-select').value, modelID: $('#model-select').value, routeID: $('#route-select').value, references: [...document.querySelectorAll('#reference-choices input:checked')].map(el => el.value), fileRefs: window.workspace?.references() || [], previewTarget: window.workspace?.target()?.id || null, view: window.previewViewSize?.() || null, chat: view.id, invokedSkills: window.SlashCommands?.inserted() || [] }; }
+const detailLabels = { rules: 'Fælles grundregler, der sendes', projectInstructions: 'Projektets egne regler, der sendes', projectDesignDocument: 'Projektets DESIGN.md, der sendes', gradientdeckStyle: 'Ekstern designreference, der sendes', workspace: 'Arbejdsmappe', mode: 'Arbejdsmåde', brief: 'Projektbrief, der sendes', previewReferenceText: 'Valgt element, der sendes', conversation: 'Tidligere samtale, der sendes', projectGuidance: 'Appens vejledning om projektvalg og design', planContext: 'Plan og afklaring, der sendes', projectChoices: 'Projektets opstartsvalg', projectDesign: 'Projektets designvalg', fileReferences: 'Filhenvisninger i beskeden', connection: 'Forbindelse', model: 'Model', endpoint: 'Serveradresse', recipients: 'Modtagere', region: 'Behandlingssted', retention: 'Opbevaring', training: 'Brug til træning', price: 'Pris og gratisbegrænsninger', capabilities: 'Modelmuligheder', material: 'Hvad sendes?', references: 'Udvalgte private referencer', skills: 'Skills, AI’en kan hente', commandInvocations: 'Kommandoer aktiveret i beskeden', localStorage: 'Lokal historik og yderligere netværk', security: 'Forbindelsens sikkerhed', source: 'Kilde', checkedAt: 'Dokumentation kontrolleret', evidence: 'Grundlag' };
 // Kort resumé i almindeligt dansk. Alle oplysninger ligger under "Se alle oplysninger".
 function showData(data, canSend) {
   $('#data-summary').replaceChildren();
@@ -1169,7 +1274,9 @@ function showData(data, canSend) {
   $('#data-history-text').hidden = false;
   // Filhenvisninger står i første lag, fordi de er nyt materiale, brugeren selv har valgt at dele.
   // Et valgt element står også i første lag: AI'en får elementets tekst, placering og et uddrag af sidens HTML.
-  const shared = [data.fileReferences?.length ? `Filhenvisninger: ${data.fileReferences.join(', ')}. AI’en får stien og læser selv filen i projektet.` : '', data.previewReference ? `Valgt i forhåndsvisningen: ${data.previewReference}. AI’en får elementets tekst, placering og et uddrag af sidens HTML; se det under alle oplysninger.` : ''].filter(Boolean);
+  // S5: en anvendt GradientDeck-stil står i første lag — tredjepartstekst fra
+  // ui.gradientdeck.com medsendes som en del af projektets DESIGN.md.
+  const shared = [data.fileReferences?.length ? `Filhenvisninger: ${data.fileReferences.join(', ')}. AI’en får stien og læser selv filen i projektet.` : '', data.previewReference ? `Valgt i forhåndsvisningen: ${data.previewReference}. AI’en får elementets tekst, placering og et uddrag af sidens HTML; se det under alle oplysninger.` : '', data.gradientdeckStyle ? `Ekstern designreference: ${data.gradientdeckStyle}. Stilen er tredjepartstekst, der medsendes som projektets DESIGN.md.` : ''].filter(Boolean);
   $('#data-refs-text').textContent = shared.join(' ');
   $('#data-refs-text').hidden = !shared.length;
   for (const [label, value] of Object.entries({ 'AI': data.modelName ? `${data.modelName} · ${data.provider || data.connection}` : `${data.model} · ${data.connection}`, 'Hvor': data.regionShort || data.region, 'Træning': data.trainingShort || data.training, 'Pris': data.priceShort || data.price })) {
@@ -1180,10 +1287,10 @@ function showData(data, canSend) {
   for (const [key, label] of Object.entries(detailLabels)) {
     const value = data[key];
     if (key === 'projectInstructions' && !value) continue;
-    if (['fileReferences', 'brief', 'previewReferenceText'].includes(key) && !value?.length) continue;
+    if (['fileReferences', 'brief', 'previewReferenceText', 'commandInvocations', 'gradientdeckStyle'].includes(key) && !value?.length) continue;
     const text = key === 'mode' ? ({ chat: 'Samtale', plan: 'Planlæg', build: 'Byg den valgte plan', free: 'Byg' }[value]) : key === 'conversation' && !value ? 'Medsendes ikke. Den aktive samtale og en valgt plan indgår stadig.' : Array.isArray(value) ? value.join(', ') || 'Ingen' : value && typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value || 'Ingen');
     const dd = node('dd');
-    if (text.length > 160) { const fold = node('details'); fold.append(node('summary', `Vis (${text.split(/\s+/).length} ord)`), node('pre', text)); dd.append(fold); }
+    if (text.length > 160) { const fold = node('details', undefined, 'disclosure'); fold.append(node('summary', `Vis (${text.split(/\s+/).length} ord)`), node('pre', text)); dd.append(fold); }
     else dd.textContent = text;
     $('#data-details').append(node('dt', label), dd);
   }
@@ -1192,12 +1299,12 @@ function showData(data, canSend) {
     const dd = node('dd'), list = node('div');
     list.append(node('p', data.appContext.scope, 'hint'));
     for (const part of data.appContext.components) {
-      const fold = node('details'); fold.append(node('summary', part.title), node('p', `${part.source} · revision ${part.revision}`, 'hint'), node('p', `SHA-256: ${part.hash}`, 'hint'), node('pre', part.text)); list.append(fold);
+      const fold = node('details', undefined, 'disclosure'); fold.append(node('summary', part.title), node('p', `${part.source} · revision ${part.revision}`, 'hint'), node('p', `SHA-256: ${part.hash}`, 'hint'), node('pre', part.text)); list.append(fold);
     }
     dd.append(list); $('#data-details').append(node('dt', 'Sporbar kontekst · vis præcis tekst'), dd);
   }
   if (data.modelSupport) {
-    const support = data.modelSupport, dd = node('dd'), fold = node('details');
+    const support = data.modelSupport, dd = node('dd'), fold = node('details', undefined, 'disclosure');
     fold.append(node('summary', 'Katalogoplysninger og faktiske prøver'));
     const word = value => value === true ? 'angivet' : value === false ? 'ikke angivet som understøttet' : 'ukendt';
     fold.append(node('p', `Katalog · værktøjer: ${word(support.catalog.model.tools)} · billeder: ${word(support.catalog.model.images)}`));
@@ -1219,7 +1326,7 @@ async function sendNow(data, text) {
   if ($('#work-mode').value === 'free') { activePlan = null; $('#plan-card').hidden = true; }
   $('#run-review').hidden = true; if ($('#work-mode').value === 'build') $('#plan-card').hidden = true; if ($('#work-mode').value === 'plan') { activePlan = null; $('#plan-card').hidden = true; }
   Object.assign(v, { lastSentText: text, lastTarget: data.previewReference || '', lastTargetRef: window.workspace?.target() || null, lastCheckpoint: null, rejectedThisRun: false, lastRejection: null });
-  appendMessage(text + (data.fileReferenceText || '') + (v.lastTarget ? `\n\nMål i forhåndsvisningen: ${v.lastTarget}` : ''), 'user', v); $('#prompt').value = ''; await saveChatDraft();
+  appendMessage(text + (data.fileReferenceText || '') + (v.lastTarget ? `\n\nMål i forhåndsvisningen: ${v.lastTarget}` : ''), 'user', v, Date.now()); $('#prompt').value = ''; await saveChatDraft();
   const compact = v.compactNext === true; v.compactNext = false; v.effortLevels = data.effortLevels || [];
   try { await call('send', { text, fingerprint: data.fingerprint, contextBinding: data.contextBinding, chat: v.id, compact }, owner); if (view === v) { acceptedFingerprint = reviewKey(data); window.workspace?.clearReferences(); } }
   catch (error) { if (error.message === 'Opgaven blev stoppet før afsendelse.') { setRunning(false, 'Stoppet', v); return; } if (view === v) { $('#prompt').value = text; await saveChatDraft(); } setRunning(false, 'Fejl', v); renderRunReview({ status: 'error', files: [], tools: [], failure: { kind: 'start', message: error.message } }, v); }
@@ -1244,23 +1351,42 @@ function updateBadgeClass() {
 function setStatusDetail(text, v = view) { v.statusDetail = text; if (v === view) { renderStatus(); updateBadgeClass(); } }
 function waitFor(id, title, element, v = view) { v.waitingFor = [...v.waitingFor.filter(item => item.id !== id), { id, title, element }]; if (v === view) renderStatus(); window.chats?.render(); }
 function doneWaiting(id, v = view) { v.waitingFor = v.waitingFor.filter(item => item.id !== id); if (v === view) renderStatus(); window.chats?.render(); }
+// Topbjælken (§6.1): samtaletitlen 15/22 vægt 500, projektnavnet som teriær
+// brødkrumme. Titlen læses fra sidepanelets projektliste — ingen ny kilde.
+function syncTopbar() {
+  if (typeof document === 'undefined' || !document.getElementById) return;
+  const chat = window.chats?.projects().find(project => project.root === current?.root)?.chats?.find(item => item.id === view.id)?.title || 'Ny samtale';
+  const title = view.id ? chat : 'Ny samtale';
+  if ($('#chat-title').textContent !== title) $('#chat-title').textContent = title;
+  const name = current?.name || '';
+  if ($('#project-name').textContent !== name) $('#project-name').textContent = name;
+}
+// Sidepanelets opdatering (omdøb, ny titel) skubber titlen op i bjælken.
+window.topbarSync = syncTopbar;
 function renderStatus() {
   const v = view, waiting = v.running && v.waitingFor.length > 0;
-  // Båndet hører til samtalefladen; idle skjules medopacity, så pladsen altid er reserveret.
+  // Båndet hører til samtalefladen; idle skjules med opacity, så pladsen altid er reserveret.
   $('#agent-activity').hidden = false;
+  // Skillelinjen over live-indikatoren (§6.4) står kun, når der er indhold i loggen.
+  $('#agent-activity').dataset.sep = v.log.childElementCount > 0 ? 'on' : 'off';
   // Lyskanten følger kun den aktive samtale; ventende valg står stille.
   $('#chat-form').dataset.metalState = v.running ? (waiting ? 'waiting' : 'working') : 'idle';
   $('#agent-activity').classList.toggle('is-idle', !v.running); $('#agent-activity').classList.toggle('is-waiting', waiting);
-  $('#agent-activity-text').textContent = waiting ? `Venter på dig: ${v.waitingFor[0].title}${v.waitingFor.length > 1 ? ` Og ${v.waitingFor.length - 1} mere.` : ''}` : `${window.ChatDisplay.phase(v) || v.statusDetail}${v.repeat ? ` · Gentager samme handling (${v.repeat.count}. gang)` : ''}`;
+  // Live-indikatoren (§6.4): "Arbejder · 12 s" med sekundur — fasen og det
+  // aktuelle trin står i samtalens trinrækker (§6.3/§6.5), ikke her.
+  $('#agent-activity-text').textContent = waiting ? `Venter på dig · ${v.waitingFor[0].title}${v.waitingFor.length > 1 ? ` Og ${v.waitingFor.length - 1} mere.` : ''}` : v.running ? `Arbejder · ${elapsedText(Date.now() - v.runStartedAt)}${v.repeat ? ` · Gentager samme handling (${v.repeat.count}. gang)` : ''}` : v.runLabel || 'Klar';
   $('#agent-activity-jump').hidden = !waiting; $('#agent-follow').hidden = waiting;
   window.liveWork?.render();
   window.previewWorking?.render();
   const progress = window.ChatDisplay.progress(v);
-  $('#agent-progress').textContent = progress.text; $('#agent-progress').hidden = waiting;
+  // P1: nuance-linjen står kun med indhold — aldrig som fyld ved siden af
+  // live-indikatorens ene "Arbejder · 12 s".
+  $('#agent-progress').textContent = progress.text; $('#agent-progress').hidden = waiting || progress.text === '';
   $('#agent-activity').classList.toggle('is-quiet', progress.quiet && !waiting);
   window.feedbackLayout?.update({ running: v.running, waitingTarget: waiting ? v.waitingFor[0].element : null });
   $('#chat-form').setAttribute('aria-busy', String(v.running));
   if (v.running) $('#run-status').textContent = waiting ? 'Venter på dig' : `${v.runLabel} ${elapsedText(Date.now() - v.runStartedAt)}`;
+  syncTopbar();
 }
 $('#agent-activity-jump').onclick = () => { const item = view.waitingFor[0]; if (!item?.element?.isConnected) return; item.element.scrollIntoView({ block: 'nearest' }); item.element.querySelector('button, textarea, input')?.focus(); };
 function setRunning(value, status, v = view) {
@@ -1279,6 +1405,10 @@ function setRunning(value, status, v = view) {
 function applyRunning() {
   const busy = projectLoading || running;
   clearInterval(runTimer); runTimer = running ? setInterval(renderStatus, 1000) : null;
+  // Samtalerodens fase følger indlæsning og beskeder (settling → hero/active).
+  applyChatPhase();
+  // Afsendelsesbuen: Send viser en roterende bue, mens besedden forberedes.
+  $('#chat-form').dataset.submitting = String(Boolean(view.submitting));
   // Den tomme forhåndsvisning ånder roligt, mens AI'en arbejder. Animationen slås fra ved reduceret bevægelse.
   $('#preview-empty').classList.toggle('is-working', busy);
   // En samtale, der ikke arbejder, viser sin egen seneste status, fx Stoppet eller Fejl. Linjen over skrivefeltet siger, hvis en anden arbejder.
@@ -1290,8 +1420,8 @@ function applyRunning() {
   $('#merge-copy').disabled = projectLoading || running || Boolean(mainRunning);
   $('#copy-wait').hidden = !current?.isolated || running || !mainRunning;
   const value = projectLoading;
-  for (const selector of ['#new', '#open', '#connections-button', '#skills-button', '#features-button', '#publish-button', '#setup-hosting', '#deploy-button', '#intro-button']) $(selector).disabled = value;
-  for (const selector of ['#composer-mode', '#accept-plan-offer', '#work-mode', '#build-plan', '#revise-plan', '#start-idea']) $(selector).disabled = running;
+  for (const selector of ['#new', '#new-chat', '#open', '#connections-button', '#skills-button', '#features-button', '#publish-button', '#setup-hosting', '#deploy-button', '#intro-button']) $(selector).disabled = value;
+  for (const selector of ['#composer-mode', '#topbar-mode', '#accept-plan-offer', '#work-mode', '#build-plan', '#revise-plan', '#start-idea']) $(selector).disabled = running;
   for (const selector of ['#model-chip', '#model-load', '#model-search', '#connection-select', '#model-select', '#route-select']) $(selector).disabled = projectLoading;
   for (const button of document.querySelectorAll('#model-shortlist button')) button.disabled = projectLoading;
   $('#task-next-note').hidden = !running;
@@ -1350,7 +1480,7 @@ window.harness.onEvent(event => {
   if (event.type === 'chat.workspace' && event.chat === view.id) { window.workspace?.onChat(); return; }
   if (event.type === 'preview.runtime' && event.workspaceRoot && event.workspaceRoot !== current?.workspaceRoot) return;
   if (event.type === 'preview.runtime') return window.previewServer?.update(event);
-  if (event.type === 'history.error' && (!event.chat || event.chat === view.id) && (!event.root || event.root === current?.root)) { $('#draft-status').textContent = event.message; message(event.message, true); }
+  if (event.type === 'history.error' && (!event.chat || event.chat === view.id) && (!event.root || event.root === current?.root)) { setDraftStatus(event.message, false); message(event.message, true); }
   if (event.type === 'preview.ready' && event.workspaceRoot && event.workspaceRoot !== current?.workspaceRoot) return;
   if (event.type === 'preview.ready') { showPreview(event.url); window.previewServer?.refresh(); return; }
   if (event.type === 'chats.updated') { Promise.resolve(window.chats?.update(event)).then(applyRunning, () => {}); return; }
@@ -1366,14 +1496,14 @@ window.harness.onEvent(event => {
   if (event.type === 'files.written') { if (v.modelProgress) v.modelProgress.draft = null; if (active) renderStatus(); }
   if (event.type === 'model.progress') { if (v.running) { v.modelProgress = event.progress; v.lastSignalAt = event.progress.lastContentAt; if (active) renderStatus(); } return; }
   if (event.type === 'message.part.delta' && typeof p.delta === 'string' && v.partTypes.get(p.partID) === 'text') { v.receivedChars += p.delta.length; if (active) renderStatus(); }
-  if (event.type === 'usage') { v.usage = event.usage; v.contextUsage = event.contextUsage || null; if (active) renderUsage(event.usage); return; }
+  if (event.type === 'usage') { v.usage = event.usage; v.contextUsage = event.contextUsage || null; v.speed = event.speed || null; if (active) renderStatusLine(); return; }
   if (event.type === 'plan.offer') { v.planOffer = event.offered; updatePlanOffer(v); }
   if (event.type === 'plan.retired') { v.plan = null; v.planCard = false; if (active) { activePlan = null; $('#plan-card').hidden = true; } }
   if (event.type === 'plan.ready') { v.plan = event.plan; v.planCard = true; if (v.buildOffer) { v.buildOffer = false; v.review.hidden = true; } updatePlanOffer(v); if (active) { activePlan = event.plan; window.planning?.onPlan(event.plan); $('#plan-card').hidden = false; if (v.followChat) requestAnimationFrame(() => $('#plan-card').scrollIntoView({ block: 'nearest' })); } }
   if (event.type === 'run.review') { renderRunReview(event, v); if (!active) { v.unread = true; window.chats?.render(); } }
   // Versionen efter opgaven vises på resultatkortet. Kun en oversprunget version nævnes i samtalen.
   if (event.type === 'git.checkpoint') { v.lastCheckpoint = event; if (event.status === 'skipped') appendMessage(event.message, 'system', v); return; }
-  if (event.type === 'session.new') { v.contextUsage = null; if (active) renderContextUsage(); v.roles.clear(); v.parts.clear(); v.partTypes.clear(); }
+  if (event.type === 'session.new') { v.contextUsage = null; if (active) renderStatusLine(); v.roles.clear(); v.parts.clear(); v.partTypes.clear(); }
   if (event.type === 'run.status') {
     const working = ['starting', 'working'].includes(event.status);
     const statuses = { starting: 'Starter agent …', working: 'Arbejder …', idle: 'Klar', error: 'Fejl', stopped: 'Stoppet', rejected: 'Klar' };
@@ -1433,13 +1563,34 @@ $('#new').onclick = () => action(async () => {
   document.body.classList.remove('setup-guided'); setupActive = false; $('#setup').hidden = true;
   ++modelRequest; ++projectDisplayRequest; recovery = ''; $('#connection-warning').hidden = true;
   if (current?.workspaceRoot) previewRevisions.set(current.workspaceRoot, revision);
+  // The frame-less idea surface offers one quiet way back: when "Nyt projekt"
+  // leaves a project open in the background, the link returns to it. A
+  // first-run idea screen has nothing behind it and never shows the link.
+  ideaReturn = current; $('#idea-back').hidden = !ideaReturn;
+  // Review 4.11: the onboarding step rail belongs to the first-run setup only.
+  if (ideaReturn) $('#onboarding').classList.add('idea-without-steps');
   current = null; window.harness.selectContext?.(null);
   window.dispatchEvent(new CustomEvent('aura:project', { detail: { root: null } })); revision = null; acceptedFingerprint = null;
   mountView(makeView(null)); $('#workspace').hidden = true; $('#onboarding').hidden = false; $('#skills-button').disabled = true;
   $('#new').setAttribute('aria-current', 'page'); $('#view-title').textContent = 'Projektopstart'; $('#create-form').reset(); setProjectColor(null); showAssets([]);
   const features = await call('featuresGet', undefined, null); if (request !== navigationRequest || current) return;
   state.features = features; await loadStartup(); if (request !== navigationRequest || current) return;
-  applyFeatures(); nameTouched = false; saveIdeaDraft(); showIdeaExamples(); $('#purpose').focus();
+  applyFeatures(); nameTouched = false; restoreIdeaDraft(); saveIdeaDraft(); showIdeaExamples(); $('#purpose').focus();
+});
+// Parthee 4.11 (D1-previewgodkendelsen): "Ny samtale" og "Nyt projekt" er to
+// adskilte handlinger. Den store knap starter en ny samtale i det åbne
+// projekt — samme vej som + ved et projekt i listen (newChat →
+// newConversation-IPC). Uden et åbet projekt er der intet at samtale i, og
+// knappen fører da samme sted hen som "Nyt projekt" (DSH §3).
+$('#new-chat').onclick = () => { if (!current) return $('#new').onclick(); action(newChat); };
+// The return link uses the very flow the sidebar's open button ends in —
+// displayProject re-mounts the retained view, restores the frame and brings
+// the workspace back without creating anything. The idea draft stays a
+// draft: it survives the round-trip untouched.
+$('#idea-back').onclick = () => action(async () => {
+  const project = ideaReturn; if (!project) return;
+  await displayProject(project);
+  if (current === project) $('#prompt').focus();
 });
 $('#create-form').onsubmit = event => {
   event.preventDefault();
@@ -1510,7 +1661,18 @@ $('#connection-form').onsubmit = event => {
   });
 };
 $('#connection-select').onchange = () => { autoConnect = true; action(() => loadModels()); }; $('#model-select').onchange = () => { updateModelSummary(); action(() => loadRoutes()); };
-$('#data-button').onclick = () => action(async () => showData(await call('prepare', selection()), false));
+$('#data-button').onclick = () => action(async () => {
+  const data = await call('prepare', selection());
+  // S4: en selvstændig /stil-kommando har ingen modelgennemgang — værten har
+  // allerede hentet stilen (samtykke skete der); kvitteringen står i rækken.
+  // S5: en HENTET stil åbner stilkortet med dens faktiske anvendelse.
+  if (data.styleCommand) {
+    if (data.styleCommand.status === 'ok') showStyleCard(data.styleCommand);
+    else setDraftStatus(data.styleCommand.message, false);
+    return;
+  }
+  showData(data, false);
+});
 // Låsen tilhører samtalen og sættes før første await, også ved tastaturafsendelse.
 $('#chat-form').onsubmit = event => {
   event.preventDefault();
@@ -1519,14 +1681,32 @@ $('#chat-form').onsubmit = event => {
   sourceView.submitting = true;
   action(async () => {
     try {
-      if (!$('#connection-select').value && !state?.connections?.length) { showSetup('Tilslut en AI for at sende beskeden. Din kladde er bevaret.'); return; }
-      if (!$('#connection-select').value || !$('#model-select').value || (!$('#route-row').hidden && !$('#route-select').value)) { openTaskSettings(); message('Vælg model og eventuel modeludbyder.', true); return; }
+      // S4-gennemgangens Fund 4: en selvstændig `/stil <slug>` håndteres i
+      // værten uden nogen model — de almindelige forbindelses- og modelvagte
+      // gælder den ikke. Grammatikken kommer fra det delte modul
+      // (styleMessage), og værten genvaliderer kommandoen fra selve teksten
+      // (core/gradientdeck.cjs styleCommand) og svarer selv på et ugyldigt
+      // slug-format.
+      const styleOnly = window.SlashCommands?.styleMessage?.(text) === true;
+      if (!styleOnly && !$('#connection-select').value && !state?.connections?.length) { showSetup('Tilslut en AI for at sende beskeden. Din kladde er bevaret.'); return; }
+      if (!styleOnly && (!$('#connection-select').value || !$('#model-select').value || (!$('#route-row').hidden && !$('#route-select').value))) { openTaskSettings(); message('Vælg model og eventuel modeludbyder.', true); return; }
       $('#send').disabled = true;
       if (['chat', 'plan'].includes($('#work-mode').value) && window.ConversationMode.buildRequest(text)) {
         $('#work-mode').value = activePlan ? 'build' : 'free'; $('#include-history').checked = true; acceptedFingerprint = null; updateWorkMode(); saveChatDraft();
       }
       const data = await call('prepare', selection(), owner);
       if (view !== sourceView || current?.root !== owner?.root) return;
+      // S4: en selvstændig `/stil <slug>` er håndteret i værten FØR selve
+      // prepare — samtykke, snæver GET, indholdskontrol og kvittering. Ingen
+      // modelkald. Succes rydder kommandoen ud af feltet; en fejl lader teksten
+      // stå, så den kan prøves igen.
+      // S5: en hentet stil åbner stilkortet — anvendelsen skriver DESIGN.md i
+      // projektet gennem værten, med Bevar/Erstat, hvis der findes et i forvejen.
+      if (data.styleCommand) {
+        if (data.styleCommand.status === 'ok') { $('#prompt').value = ''; saveChatDraft(); showStyleCard(data.styleCommand); }
+        else setDraftStatus(data.styleCommand.message, false);
+        return;
+      }
       if (data.accepted || reviewKey(data) === acceptedFingerprint) await sendNow(data, text);
       else { pendingSend = { data, text }; showData(data, true); }
     } catch (error) { if (view === sourceView) { connectionFailed(error.message); throw error; } }
@@ -1535,10 +1715,159 @@ $('#chat-form').onsubmit = event => {
 };
 $('#prompt').addEventListener('keydown', event => {
   if (event.key !== 'Enter' || event.altKey || event.shiftKey || event.isComposing || event.keyCode === 229) return;
+  // S2: En åben slash-popup ejer Enter — indsættelsen må aldrig sende beskeden.
+  // Popuppen stopper selv tasten her; dette er det andet led i samme garanti.
+  if (window.SlashCommands?.open()) return;
   event.preventDefault();
   if (event.repeat || !$('#prompt').value.trim() || $('#send').disabled || view.submitting || pendingSend) return;
   $('#chat-form').requestSubmit();
 });
+// S3: Den generiske slash-popup kobles til skrivefeltet. /design er hævet som
+// skillalias for harness-design (GradientDeck-porten); /stil venter på S4-S5.
+// Rækkerne er skills fra skills:list; aliaset gør, at harness-design vises og
+// indsættes som /design. Skills hentes gennem den samme IPC som
+// Skills-dialogen; uden projekt svarer udbyderen med en tom liste, og
+// popuppen åbner ikke. selection() fører de indsatte tokens videre som
+// invokedSkills; værten genvaliderer aktiveringen fra selve beskedteksten.
+//
+// S4: /stil (alias /style) er en betroet indbygget række, og `/stil ` åbner
+// katalogniveauet. Kataloget hentes VED FØRSTE åbning i projektet — aldrig
+// ved appstart — gennem gradientdeck:catalog; rendereren sender aldrig URL,
+// headere eller transport, kun projektet. Én hentning pr. åben popupsession
+// (som skills:list); lukningen kasserer den.
+window.SlashCommands?.init({
+  prompt: $('#prompt'),
+  layer: document.getElementById('slash-menu'),
+  skills: async () => call('skills', undefined, selectedOwner()),
+  styles: async () => call('gradientdeckCatalog', undefined, selectedOwner()),
+  // Efter-byg F4 (Codex, Vigtig): hentningerne bindes til projekt og samtale
+  // gennem en stabil nøgle — et sent svar fra et forrigt projekt/chat kan
+  // aldrig genåbne popuppen eller trænge en nyere popup til side.
+  owner: () => { const owner = selectedOwner(); return owner ? `${owner.root}\u0000${owner.chat}` : null; }
+});
+// S4 · GradientDeck-samtykke: værten ejer beslutningen og kilden; rendereren
+// viser dialogen og fører KUN valget tilbage (once/project/cancel) — aldrig
+// URL'er, stier eller transport. «Annullér», Luk og Escape er samme svar.
+let gradientdeckConsentID = null;
+window.harness?.onEvent?.(event => {
+  if (event?.type !== 'gradientdeck.consent') return;
+  gradientdeckConsentID = event.id;
+  $('#gradientdeck-consent-title').textContent = event.kind === 'style' ? `Hent stilen «${event.name}»?` : 'Hent stilkatalog fra GradientDeck?';
+  $('#gradientdeck-consent-lead').textContent = event.kind === 'style'
+    ? 'Stilen hentes til appens private cache. Du vælger bagefter på stilkortet, om den skal anvendes i projektet.'
+    : 'Kataloget med stilbiblioteket hentes fra GradientDeck og gemmes kun i appens private cache. Ingen projektfiler eller beskeder sendes.';
+  $('#gradientdeck-consent-url').textContent = event.url;
+  $('#gradientdeck-consent').showModal();
+});
+$('#gradientdeck-consent').addEventListener('close', () => {
+  if (!gradientdeckConsentID) return;
+  const id = gradientdeckConsentID; gradientdeckConsentID = null;
+  void action(async () => { try { await call('gradientdeckConsent', { id, choice: 'cancel' }); } catch { /* værtens samtykke er måske allerede udløbet */ } });
+});
+const gradientdeckChoice = choice => action(async () => {
+  if (!gradientdeckConsentID) return;
+  const id = gradientdeckConsentID; gradientdeckConsentID = null;
+  $('#gradientdeck-consent').close();
+  try { await call('gradientdeckConsent', { id, choice }); }
+  catch (error) { message(error.message, true); }
+});
+$('#gradientdeck-consent-once').onclick = () => gradientdeckChoice('once');
+$('#gradientdeck-consent-project').onclick = () => gradientdeckChoice('project');
+
+// S5 · Stilkortet: en hentet stil bliver til en faktisk anvendelse. Kortets
+// data kommer fra værtens hentningsresultat (navn, kategori, tema, præcis
+// kilde); ANVENDELSEN går gennem gradientdeck:apply — værten skriver
+// DESIGN.md i projektet, rendereren sender kun slug, valg og det
+// forventnings-mærke, diff-gennemgangen gav. Findes der et DESIGN.md i
+// forvejen, viser værten forskellen og valgene Bevar/Erstat; Bevar lukker
+// uden nogen skrivning (intet er rørt). En sendable:false-stil har ingen
+// «klar»-status: kortet siger ærligt, at datakontrollen afviser den ved
+// afsendelse, og Anvend-knappen er slået fra — værten blokerer den samme vej.
+const styleTheme = value => ({ dark: 'Mørk', light: 'Lys', mixed: 'Blandet' }[value] || 'Ukendt tema');
+const styleCard = { data: null, busy: false };
+const styleDate = value => Number.isFinite(value) ? new Date(value).toLocaleDateString('da-DK', { day: 'numeric', month: 'long', year: 'numeric' }) : 'ukendt dato';
+function showStyleCard(data) {
+  styleCard.data = { ...data };
+  styleCard.busy = false;
+  renderStyleCard();
+  $('#gradientdeck-style').showModal();
+}
+function renderStyleCard() {
+  const data = styleCard.data, dialog = $('#gradientdeck-style');
+  if (!data || !dialog) return;
+  const meta = $('#gradientdeck-style-meta');
+  meta.replaceChildren();
+  for (const [label, value] of [
+    ['Kategori', data.category || '—'], ['Tema', styleTheme(data.theme)],
+    ['Kilde', data.sourceUrl || ''], ['Hentet', data.fetchedAt ? styleDate(data.fetchedAt) : ''],
+  ]) if (value) { meta.append(node('dt', label), node('dd', value)); }
+  const warning = $('#gradientdeck-style-warning'), diffwrap = $('#gradientdeck-style-diffwrap');
+  const keep = $('#gradientdeck-style-keep'), apply = $('#gradientdeck-style-apply');
+  warning.hidden = true; diffwrap.hidden = true; apply.hidden = false; apply.disabled = false;
+  keep.textContent = 'Luk'; keep.dataset.close = 'gradientdeck-style';
+  if (data.status === 'conflict') {
+    $('#gradientdeck-style-title').textContent = 'Erstat DESIGN.md?';
+    $('#gradientdeck-style-lead').textContent = `Projektet har allerede et DESIGN.md. Her er forskellen til «${data.name}»-stilen.`;
+    const diff = $('#gradientdeck-style-diff');
+    diff.replaceChildren();
+    for (const hunk of data.diff?.hunks || []) {
+      if (hunk.skippedBefore) diff.append(node('p', `${hunk.skippedBefore} uændrede linjer`, 'style-card-skip'));
+      for (const line of hunk.lines) diff.append(node('span', `${line.type === '+' ? '+' : line.type === '-' ? '−' : ' '} ${line.text || ''}`, `style-card-line is-${line.type === '+' ? 'add' : line.type === '-' ? 'del' : 'ctx'}`));
+    }
+    $('#gradientdeck-style-diffstats').textContent = `${data.diff?.added ?? 0} tilføjede og ${data.diff?.removed ?? 0} fjernede linjer${data.diff?.truncated ? ' · visningen er afkortet' : ''}`;
+    diffwrap.hidden = false;
+    keep.textContent = 'Bevar eksisterende'; keep.dataset.close = '';
+    keep.onclick = () => { dialog.close(); setDraftStatus('Eksisterende DESIGN.md er bevaret. Intet er ændret.'); };
+    apply.textContent = 'Erstat';
+    apply.onclick = () => applyStyleCard('replace', data.expected, data.expectedStyle);
+  } else if (data.status === 'applied') {
+    $('#gradientdeck-style-title').textContent = `«${data.name}»-stilen er anvendt`;
+    $('#gradientdeck-style-lead').textContent = data.message || 'DESIGN.md er opdateret.';
+    apply.textContent = 'Vis ændring';
+    apply.onclick = () => { dialog.close(); $('#tab-changes').click(); };
+    keep.onclick = () => dialog.close();
+  } else if (data.status === 'kept') {
+    $('#gradientdeck-style-title').textContent = 'DESIGN.md er bevaret';
+    $('#gradientdeck-style-lead').textContent = data.message || 'Eksisterende DESIGN.md er bevaret. Intet er ændret.';
+    apply.hidden = true;
+    keep.onclick = () => dialog.close();
+  } else if (data.status === 'blocked') {
+    $('#gradientdeck-style-title').textContent = `Stilen «${data.name}» kan ikke anvendes`;
+    $('#gradientdeck-style-lead').textContent = 'Stilen er hentet til appens private cache.';
+    warning.hidden = false; warning.textContent = data.message;
+    apply.hidden = true;
+    keep.textContent = 'Luk';
+    keep.onclick = () => dialog.close();
+  } else if (data.status === 'error') {
+    $('#gradientdeck-style-title').textContent = 'Stilen kunne ikke anvendes';
+    $('#gradientdeck-style-lead').textContent = data.message || 'Prøv igen.';
+    apply.hidden = true;
+    keep.onclick = () => dialog.close();
+  } else {
+    $('#gradientdeck-style-title').textContent = `Stilen «${data.name}» er hentet`;
+    $('#gradientdeck-style-lead').textContent = 'Stilen ligger i appens private cache. Anvend den for at gøre den til projektets DESIGN.md — designhjælpen bruger den fra din næste besked.';
+    if (data.sendable === false) { warning.hidden = false; warning.textContent = data.message; apply.disabled = true; apply.title = data.message; }
+    apply.textContent = 'Anvend i projektet';
+    apply.onclick = () => applyStyleCard('apply', null);
+    keep.onclick = () => dialog.close();
+  }
+  apply.disabled = apply.disabled || styleCard.busy;
+  apply.textContent = styleCard.busy ? `${apply.textContent} …` : apply.textContent;
+}
+async function applyStyleCard(choice, expected, expectedStyle) {
+  const data = styleCard.data;
+  if (!data || styleCard.busy) return;
+  styleCard.busy = true; renderStyleCard();
+  try {
+    const result = await call('gradientdeckApply', { slug: data.slug, choice, ...(expected ? { expected } : {}), ...(expectedStyle ? { expectedStyle } : {}) }, selectedOwner());
+    styleCard.data = { ...data, ...result };
+    if (styleCard.data.status === 'applied') setDraftStatus(styleCard.data.message, false);
+  } catch (error) {
+    styleCard.data = { ...data, status: 'error', message: error.message };
+  } finally {
+    styleCard.busy = false; renderStyleCard();
+  }
+}
 $('#send').setAttribute('aria-keyshortcuts', 'Enter Meta+Enter Control+Enter');
 $('#send').title = 'Enter sender. Shift+Enter giver en ny linje.';
 $('#data-dialog').addEventListener('close', () => { pendingSend = null; });
@@ -1653,43 +1982,104 @@ function updateModelSummary() {
   const effortRow = typeof document !== 'undefined' ? document.getElementById('model-effort') : null;
   if (effortRow) effortRow.hidden = allowedEfforts.length === 0;
   if (typeof document !== 'undefined' && document.querySelectorAll) for (const chip of document.querySelectorAll('.effort-chip')) { const active = chip.dataset.effort === view?.effort; chip.setAttribute('aria-checked', active ? 'true' : 'false'); chip.hidden = !allowedEfforts.includes(chip.dataset.effort); chip.disabled = !allowedEfforts.includes(chip.dataset.effort); }
-  const label = model.value ? [pentModelNavn(model.value, model.selectedOptions[0]?.textContent), provider, effortLabel].filter(Boolean).join(' · ') : 'Vælg AI';
+  // Chippen deler navn og indsats: navnet (model + modtager) står i 13/20 i
+  // sekundær farve, indsatsen i en læsbar dæmpet tone (§5.2.4; R4-målt
+  // 4,69:1 lyst / 5,08:1 mørkt — caption er for svag til tekst).
+  const name = model.value ? [pentModelNavn(model.value, model.selectedOptions[0]?.textContent), provider].filter(Boolean).join(' · ') : 'Vælg AI';
+  // Review 4.11: Send stays clickable (it routes to setup), but looks quiet until an AI is chosen.
+  { const send = $('#send'); if (send?.dataset) send.dataset.noModel = String(!model.value); }
   $('#model-summary').textContent = model.value ? pentModelNavn(model.value, model.selectedOptions[0]?.textContent) : 'Vælg din AI';
   const brand = view.running && view.activeModelSummary ? view.activeModelBrand : { kind: connection?.kind, modelID: model.value };
-  window.ProviderBrand.decorate($('#model-chip'), { ...brand, label: view.running && view.activeModelSummary ? view.activeModelSummary : label });
+  window.ProviderBrand.decorate($('#model-chip'), { ...brand, label: view.running && view.activeModelSummary ? view.activeModelSummary : name, note: view.running && view.activeModelSummary ? '' : effortLabel });
   $('#model-chip').title = chosen ? `Du har valgt ${chosen} indsats i denne samtale. Klik for at skifte model eller indsats.` : effort ? `${effort[0].toUpperCase()}${effort.slice(1)} indsats er udbyderens standard for modellen. Klik for at skifte model.` : connection?.kind === 'mistral' ? 'Aura Prime sender ikke et valg af indsats. Mistrals standard gælder; niveauet er ikke verificeret. Klik for at skifte model eller forbindelse.' : 'Klik for at skifte model eller forbindelse.';
-  renderContextUsage();
+  renderStatusLine();
   $('#connection-status').textContent = model.value ? (state?.connections.find(c => c.id === $('#connection-select').value)?.name || 'Valgt forbindelse') + ' · ' + model.value : 'Ingen model valgt';
   syncOnboardingVisuals();
 }
-// Forbruget i samtalen: tokens ind og ud og en anslået pris ud fra udbyderens prisliste. Det faktiske forbrug står hos udbyderen.
-const tokenCount = value => Math.round(value).toLocaleString('da-DK');
-function renderUsage(usage) {
-  renderContextUsage();
-  const target = $('#usage-status');
-  if (!usage || !usage.calls) { target.textContent = 'Intet forbrug i denne samtale endnu'; target.title = ''; return; }
-  const input = usage.input + usage.cacheRead + usage.cacheWrite;
-  const amounts = [];
-  if (usage.calls > usage.unpriced + (usage.otherCalls || 0)) amounts.push(usage.cost < 0.01 ? 'under 0,01 USD' : `ca. ${usage.cost.toLocaleString('da-DK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`);
-  if (usage.otherCosts?.DKK != null) amounts.push(usage.otherCosts.DKK < 0.01 ? 'under 0,01 DKK' : `ca. ${usage.otherCosts.DKK.toLocaleString('da-DK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} DKK`);
-  if (usage.unpriced) amounts.push('pris ukendt');
-  const price = amounts.join(' + ');
-  target.textContent = `Denne samtale: ${tokenCount(input)} tokens ind · ${tokenCount(usage.output + usage.reasoning)} ud · ${price}`;
-  target.title = `${usage.calls} modelkald. Ind: ${tokenCount(usage.input)} nye, ${tokenCount(usage.cacheRead)} fra cache og ${tokenCount(usage.cacheWrite)} skrevet til cache. Ud: ${tokenCount(usage.output)} svar og ${tokenCount(usage.reasoning)} ræsonnement. Prisen er et overslag ud fra udbyderens listepris og kan afvige fra din faktura; se det faktiske forbrug hos udbyderen.`;
+// Forbrugets tal står i statuslinjen; det faktiske forbrug står hos udbyderen.
+// Én statuslinje under composeren (D5b §7): kontekst · tok/s · tokens · pris — altid
+// alle fire felter, og manglende data viser 0 (Parthee/Codex-varianten), aldrig
+// »ukendt« og aldrig en udeladt del. Linjen har bevidst INGEN aria-live — den
+// opdaterer hver tur og ville støje i skærmlæseren (den gamle forbrugsstatus'
+// aria-live="polite" er bortfaldet med den); nuancerne står i tooltippet.
+function statusSelection() {
+  return view.running && view.runContextSelection ? view.runContextSelection : { connectionID: $('#connection-select').value, modelID: $('#model-select').value, routeID: $('#route-row').hidden ? '' : $('#route-select').value };
 }
-// Viser kun den åbne samtales seneste måling for den valgte AI. Ingen deling eller estimeret historik.
-function renderContextUsage() {
-  const selected = view.running && view.runContextSelection ? view.runContextSelection : { connectionID: $('#connection-select').value, modelID: $('#model-select').value, routeID: $('#route-row').hidden ? '' : $('#route-select').value };
+function renderStatusLine() {
+  const line = $('#context-status');
+  if (!line) return;
+  const selected = statusSelection();
+  const connection = state?.connections.find(item => item.id === selected.connectionID) || null;
   const model = modelCatalog?.find(item => item.id === selected.modelID);
-  const value = window.ContextDisplay.project(selected, view.contextUsage, model, $('#connection-select').value);
-  const text = window.ContextDisplay.format(value), target = $('#context-status'), meter = $('#context-meter');
-  target.hidden = !current || !view.id || !selected.modelID;
-  $('#context-label').textContent = text.label; target.title = text.description;
-  meter.hidden = value.percentage === null;
-  if (value.percentage !== null) { meter.value = Math.min(value.percentage, 100); meter.setAttribute('aria-label', text.description); meter.setAttribute('aria-valuetext', text.label); }
-  else { meter.removeAttribute('value'); meter.removeAttribute('aria-label'); meter.removeAttribute('aria-valuetext'); }
+  const shaped = window.StatusLine.format({
+    selected, connection, modelName: model?.name || selected.modelID || '',
+    contextValue: window.ContextDisplay.project(selected, view.contextUsage, model, $('#connection-select').value),
+    usage: view.usage || null, speed: view.speed || null,
+  });
+  line.hidden = !current || !view.id;
+  $('#context-field').textContent = shaped.context;
+  $('#speed-field').textContent = shaped.speed;
+  $('#tokens-field').textContent = shaped.tokens;
+  $('#price-field').textContent = shaped.price;
+  line.setAttribute('aria-label', [shaped.context, shaped.speed, shaped.tokens, shaped.price].join(' · '));
+  const help = $('#status-line-help');
+  help.replaceChildren(...shaped.tooltip.map(text => node('p', text)));
+  if (help.matches(':popover-open')) window.PopoverLayer?.position();
 }
-$('#route-select').addEventListener('change', renderContextUsage);
+// Tooltippet åbnes ved hover (400 ms forsinkelse), tastaturfokus og klik/touch
+// (native »title« er utilstrækkeligt). ÉN mekanisme (ui/tooltip.js): Popover-
+// laget ejer placeringen, browseren ejer lukning — og et klik udenfor må ikke
+// straks åbne boblen igen (mekanismens 400 ms-vagt). Ind 40 ms / ud 80 ms og
+// 12/16-radius-8-looket kommer fra .aura-tooltip (components.css).
+function openStatusHelp() {
+  const line = $('#context-status');
+  if (!line) return;
+  window.PopoverLayer.open({ layer: $('#status-line-help'), invoker: line, align: 'center', place: 'above', gap: 6, margin: 16, width: () => Math.min(380, innerWidth - 32) });
+}
+function wireStatusLineHelp() {
+  const line = $('#context-status'), help = $('#status-line-help');
+  if (!line || !help) return;
+  window.Tooltip.wire({ layer: help, invoker: line, open: openStatusHelp, click: 'toggle' });
+}
+wireStatusLineHelp();
+// Kladdestatus: kortvarig role=status yderst til højre i samme række. Succes-
+// tekster fader ud efter ca. 2,5 s (teksten består til skærmlæseren); fejl står
+// synligt, indtil de er løst (Codex). verify-chats/verify-resume/verify-demo
+// afhænger af "Kladde gemt/hentet på denne computer".
+//
+// S4-UI (livefundet 4.11): rækken er ÉN nowrap-række, og kladdestatussen er et
+// forbigående segment EFTER $0,00*. Får segmentet og målingerne ikke plads på
+// samme linje, viger MÅLINGERNE først (draft-crowded) — Datakontrol-knappen er
+// en altid-synlig sikkerhedsflade og viger aldrig. Målingen sker efter DOM-
+// opdateringen (requestAnimationFrame), og tilstanden ryddes, når segmentet
+// toner ud eller erstattes — målingerne kommer altid tilbage.
+let draftFadeTimer = null;
+function draftCrowding(text) {
+  const row = $('#status-line-row'), el = $('#draft-status');
+  if (!row || !el) return;
+  row.classList.remove('draft-crowded');
+  if (!text) return;
+  requestAnimationFrame(() => {
+    if (el.textContent !== text || !el.isConnected) return;
+    if (row.scrollWidth > row.clientWidth + 1) row.classList.add('draft-crowded');
+  });
+}
+function setDraftStatus(text, fade = true) {
+  const el = $('#draft-status');
+  if (!el) return;
+  clearTimeout(draftFadeTimer);
+  el.textContent = text || '';
+  el.classList.remove('draft-faded', 'draft-gone');
+  draftCrowding(text || '');
+  // Transient: fad ud efter ca. 2,5 s og giv pladsen tilbage (Codex: ingen
+  // permanent plads under talrækken). Teksten bliver i DOM'en til skærmlæseren
+  // og prøverne; fejltekster står, indtil de er løst.
+  if (text && fade) draftFadeTimer = setTimeout(() => {
+    el.classList.add('draft-faded');
+    draftFadeTimer = setTimeout(() => { el.classList.add('draft-gone'); draftCrowding(''); }, 700);
+  }, 2500);
+}
+$('#route-select').addEventListener('change', renderStatusLine);
 function showConnectionWarning(reason) {
   $('#connection-warning-text').textContent = reason;
   $('#connection-warning').hidden = false;
@@ -1699,6 +2089,9 @@ $('#repair-connection').onclick = () => showSetup($('#connection-warning-text').
 $('#dismiss-connection').onclick = () => { $('#connection-warning').hidden = true; $('#prompt').focus(); };
 $('#model-manage').onclick = () => { $('#task-dialog').close(); showSetup(); };
 // Forbered første besked vises kun, når skrivefeltet er tomt og samtalen ikke er begyndt. Så står der aldrig to måder at starte på.
+// Helten (§4) står, når samtalen er tom; purpose og idé-chips hører til projektets
+// første opgave, og chat-choice-kortene er fjernet visuelt (arbejdsmåde-chippen er
+// den synlige vej — id'erne og deres logik bevares til testene).
 function updateStartIdea() {
   // Vis kun intro-elementer, når samtalen er tom og der ikke er skrevet i feltet.
   const emptyPrompt = !$('#prompt').value.trim();
@@ -1708,10 +2101,119 @@ function updateStartIdea() {
   $('#project-intro').hidden = !(show && firstChat);
   $('#start-idea').hidden = !(show && firstChat);
   $('#chat-choice').hidden = !(show && !firstChat);
+  // Så snart der står en kladde i feltet, trækker helt-dekorationerne sig
+  // (§4): composeren står alene i ro — ingen layoutspring midt i skrivningen.
+  $('#chat-panel').dataset.heroQuiet = emptyPrompt ? 'false' : 'true';
+}
+// Samtalerodens fase (§4): hero (tom samtale — centreret helt med composeren),
+// active (beskeder — composeren dokket i bunden) eller settling (indlæsning —
+// composeren er visibility:hidden, så det forkerte layout aldrig blinker frem,
+// mens en gemt samtale genindlæses). Composeren, resume-banneret, YOLO-baren og
+// arbejdsmåde-chippen er de samme noder, der flyttes mellem de to pladser —
+// kladder og fokus overlever flytningen, og bredden er --chat-col-rammen fra T1
+// i begge tilstande.
+function applyChatPhase() {
+  const panel = $('#chat-panel');
+  if (!panel) return;
+  const hero = !view?.log?.children.length;
+  const phase = projectLoading ? 'settling' : hero ? 'hero' : 'active';
+  if (panel.dataset.phase === phase) return;
+  panel.dataset.phase = phase;
+  const heroRoot = $('#conversation-hero'), slot = $('#hero-composer-slot');
+  const form = $('#chat-form'), mode = $('#composer-mode'), resume = $('#resume-notice'), bar = $('#conversation-permission-status');
+  if (phase === 'hero') {
+    // Chip over composeren (B3), banneret over composeren, composeren i stakken.
+    $('#hero-chips').append(mode);
+    slot.append(resume, ...(bar ? [bar] : []), form);
+    heroRoot.hidden = false;
+  } else {
+    heroRoot.hidden = true;
+    $('#chat-content').prepend(resume);
+    $('#model-chip').before(mode);
+    // Composeren dokker først; statusrækken sættes derefter ind umiddelbart før
+    // den (before virker i formens NUVÆRENDE forælder — rækkefølgen er
+    // kontrakten; #context-status forblever i rækken som privacy-gate-anker).
+    $('#status-line-row').before(form);
+    if (bar) form.before(bar);
+  }
+  updateWorkMode();
 }
 function v_logHasMessages() { return Boolean(view?.log?.children.length); }
 $('#choice-plan').onclick = () => { $('#chat-choice').hidden = true; $('#work-mode').value = 'plan'; updateWorkMode(); if (!$('#prompt').value.trim()) $('#prompt').value = 'Lad os lave en plan for det, jeg vil bygge.'; $('#prompt').focus(); };
 $('#choice-chat').onclick = () => { $('#chat-choice').hidden = true; $('#work-mode').value = 'chat'; updateWorkMode(); $('#prompt').focus(); };
+// Projekt-chip og idé-chips (§4/T5) bindes ved start; syntetiske testkontekster
+// uden de rigtige select-elementer (ingen .options) har intet at binde.
+function wireHeroComposer() {
+  if (!$('#idea-platform') || !$('#idea-platform').options || !$('#idea-chip-platform')) return;
+  // Projekt-chippen: listen svarer til sidepanelet — samme openProject-handler
+  // — med »Åbn mappe …« nederst som #open's egen klikvej (R5: ingen logikduplikat).
+  // Det åbne projekt står som valgt og kan ikke klikkes (openProject ville blot
+  // folde sidepanelet ud).
+  $('#project-chip').onclick = () => {
+    const list = $('#project-chip-list'); list.replaceChildren();
+    for (const project of window.chats?.projects() || []) {
+      const item = node('button', project.name, 'project-chip-item'); item.type = 'button'; item.title = project.root;
+      if (project.root === current?.root) { item.setAttribute('aria-current', 'true'); item.disabled = true; }
+      else item.onclick = () => action(() => window.chats.openProject(project));
+      list.append(item);
+    }
+    window.PopoverLayer.open({ layer: $('#project-chip-menu'), invoker: $('#project-chip'), align: 'start', place: 'below', gap: 8, width: () => 288 });
+  };
+  $('#project-chip-open').onclick = () => { window.PopoverLayer.close(); $('#open').click(); };
+  const IDEA_CHIP_PICKS = [
+    { chip: 'idea-chip-platform', menu: 'idea-chip-platform-menu', label: 'idea-chip-platform-label', select: 'idea-platform', name: 'Platform' },
+    { chip: 'idea-chip-data', menu: 'idea-chip-data-menu', label: 'idea-chip-data-label', select: 'idea-data', name: 'Data' }
+  ];
+  const IDEA_TECHNIQUE_GROUPS = [['idea-ui', 'Brugerflade'], ['idea-design', 'Designværktøjer'], ['idea-backend', 'Backend']];
+  // En radioregel bygger alt fra select'ens egne valg — ét kilde, én sandhed.
+  function ideaRadio(text, value, onChoose) {
+    const item = node('button', text, 'idea-menu-item'); item.type = 'button'; item.dataset.value = value;
+    item.setAttribute('role', 'menuitemradio'); item.onclick = onChoose;
+    return item;
+  }
+  function checkRadios(container, value) { for (const item of container.querySelectorAll('[role="menuitemradio"],[role="radio"]')) item.setAttribute('aria-checked', String(item.dataset.value === value)); }
+  function syncIdeaChipLabels() {
+    for (const pick of IDEA_CHIP_PICKS) {
+      const value = $(`#${pick.select}`).value;
+      $(`#${pick.label}`).textContent = value ? `${pick.name} · ${value}` : pick.name;
+    }
+    const chosen = IDEA_TECHNIQUE_GROUPS.filter(([id]) => $(`#${id}`).value);
+    $('#idea-chip-technique-label').textContent = !chosen.length ? 'Tekniske ønsker' : chosen.length === 1 ? `Teknik · ${$(`#${chosen[0][0]}`).value}` : `Teknik · ${chosen.length} valgte`;
+  }
+  for (const pick of IDEA_CHIP_PICKS) {
+    const menu = $(`#${pick.menu}`), select = $(`#${pick.select}`), chip = $(`#${pick.chip}`);
+    for (const option of [...select.options]) menu.append(ideaRadio(option.textContent, option.value, () => {
+      select.value = option.value; syncIdeaChipLabels(); window.PopoverLayer.close(); chip.focus();
+    }));
+    chip.onclick = () => {
+      checkRadios(menu, select.value);
+      window.PopoverLayer.open({ layer: menu, invoker: chip, align: 'start', place: 'below', gap: 8, width: () => 288 });
+    };
+  }
+  // Den flade tekniksektion bygges én gang fra select'ernes egne valg.
+  const ideaTechniqueGroups = new Map();
+  for (const [id, name] of IDEA_TECHNIQUE_GROUPS) {
+    const group = node('div', undefined, 'idea-menu-group'); group.setAttribute('role', 'group'); group.setAttribute('aria-label', name);
+    group.append(node('p', name, 'idea-menu-group-title'));
+    const select = $(`#${id}`);
+    for (const option of [...select.options]) {
+      const radio = ideaRadio(option.textContent, option.value, () => { select.value = option.value; checkRadios(group, select.value); syncIdeaChipLabels(); });
+      radio.setAttribute('role', 'radio');
+      group.append(radio);
+    }
+    ideaTechniqueGroups.set(id, group);
+    $('#idea-technique-groups').append(group);
+  }
+  $('#idea-chip-technique').onclick = () => {
+    for (const [id, group] of ideaTechniqueGroups) checkRadios(group, $(`#${id}`).value);
+    window.PopoverLayer.open({ layer: $('#idea-chip-technique-panel'), invoker: $('#idea-chip-technique'), align: 'start', place: 'below', gap: 8, width: () => 320 });
+  };
+  syncIdeaChipLabels();
+  // displayProject nulstiller select'erne ved projektskift — synkroniseringen
+  // skal kunne kaldes derfra, så chippen aldrig viser et valg, kilden ikke har.
+  window.HeroComposer = { syncIdeaChips: syncIdeaChipLabels };
+}
+wireHeroComposer();
 $('#start-idea').onclick = () => {
   if (running) return;
   if ($('#prompt').value.trim()) { message('Din kladde er bevaret. Send eller ryd den, før du forbereder en ny besked.'); $('#prompt').focus(); return; }
@@ -1763,6 +2265,7 @@ function applyFeatures() {
   // Udgiv er altid synlig; uden udgivelse eller en gemt version viser Udgiv det næste trin.
   for (const id of ['#publish-button', '#setup-hosting', '#startup-hosting-row']) $(id).hidden = !featureOn('deling');
   window.dispatchEvent(new Event('aura:features'));
+  window.planning?.render();
   for (const id of ['#design-options', '#design-row']) $(id).hidden = !featureOn('design');
   updateStartupSummary();
 }
@@ -1897,25 +2400,33 @@ $('#model-load').onclick = () => action(() => loadModels(state?.projectSettings.
 const introductionKey = 'harness.introduction.v1';
 const ideaDraftKey = 'harness.ideaDraft.v1';
 let nameTouched = false;
+function syncOnboardingWindow(open) {
+  if (typeof window.harness?.onboardingWindow !== 'function') return;
+  void window.harness.onboardingWindow(open).then(result => {
+    if (result?.ok) document.body.classList.toggle('native-welcome-window', result.value.compact);
+  }).catch(() => {});
+}
 function completeIntroduction(mode) {
   try { localStorage.setItem(introductionKey, mode); } catch {}
 }
 function showIntroduction(step = 'path') {
+  syncOnboardingWindow(true);
   $('#welcome-path').hidden = step !== 'path'; $('#welcome-start').hidden = step !== 'start'; $('#welcome-demo').hidden = true;
   $('#welcome-dialog').setAttribute('aria-labelledby', step === 'path' ? 'welcome-path-title' : 'welcome-title');
   document.body.classList.add('introduction-open'); if (!$('#welcome-dialog').open) $('#welcome-dialog').showModal(); $(step === 'path' ? '#welcome-path-title' : '#welcome-title').focus();
 }
-function closeIntroduction() { document.body.classList.remove('introduction-open'); $('#welcome-dialog').close(); }
+function closeIntroduction() { document.body.classList.remove('introduction-open'); $('#welcome-dialog').close(); syncOnboardingWindow(false); }
 function leaveIntroduction() {
   if (setupActive) action(() => leaveSetup(false));
-  completeIntroduction('skipped'); closeIntroduction();
+  recordProfileChoice('skipped');
+  completeIntroduction('skipped'); $('#onboarding').classList.add('idea-without-steps'); closeIntroduction();
   (current ? $('#prompt') : $('#purpose')).focus();
 }
 $('#welcome-skip').onclick = leaveIntroduction;
 $('#welcome-dialog').addEventListener('close', () => { if (!$('#welcome-dialog').open) document.body.classList.remove('introduction-open'); });
 $('#welcome-dialog').addEventListener('cancel', event => { event.preventDefault(); leaveIntroduction(); });
 $('#intro-button').onclick = () => showIntroduction();
-$('#setup-back').onclick = () => { const leave = () => repeatSetup ? action(() => leaveSetup(false)) : guidedSetup ? showIntroduction('start') : action(() => leaveSetup(false)); if (setupStep === 'provider' && $('#setup-provider').dataset.view === 'details') providerPicker(); else if (setupStep === 'profile') leave(); else if (setupStep !== 'choice') { clearConnectionReceipt(); setupPage('choice'); } else if (profileStepShown) setupPage('profile'); else leave(); };
+$('#setup-back').onclick = () => { const leave = () => repeatSetup ? action(() => leaveSetup(false)) : guidedSetup ? showIntroduction('start') : action(() => leaveSetup(false)); if (setupStep === 'provider' && $('#setup-provider').dataset.view === 'details') providerPicker(); else if (setupStep === 'detail') setupPage('profile'); else if (setupStep === 'profile') leave(); else if (setupStep !== 'choice') { clearConnectionReceipt(); setupPage('choice'); } else if (profileStepShown) setupPage('detail'); else leave(); };
 async function beginGuidedProject() {
   if (current) { await $('#new').onclick(); if (current) return; }
   closeIntroduction(); showSetup('', true);
@@ -1982,7 +2493,7 @@ function renderToolsCatalog() {
   $('#tools-skill-count').textContent = base;
   $('#tools-included-summary').textContent = `Hvad følger med? Grundregler og ${base} skills${extra ? ` · ${extra} ${extra === 1 ? 'integration' : 'integrationer'} kan vælges til` : ''}`;
   $('#tools-skills').replaceChildren(...toolsCatalog.skills.map(skill => {
-    const details = node('details', undefined, 'tools-skill');
+    const details = node('details', undefined, 'tools-skill disclosure');
     const summary = node('summary'); summary.append(node('strong', skill.title), node('span', ` · ${skill.summary}`));
     const list = node('dl');
     for (const [label, key] of [['Hvad gør den?', 'hvad'], ['Hvornår bruges den?', 'hvornaar'], ['Hvad får du?', 'resultat'], ['Hvad gør den ikke?', 'ikke']]) list.append(node('dt', label), node('dd', skill.faq[key]));
@@ -2060,14 +2571,14 @@ function renderOperations(target, operations) {
   const groups = new Map();
   for (const op of operations) { if (!groups.has(op.action)) groups.set(op.action, []); groups.get(op.action).push(op); }
   target.replaceChildren(...[...groups].map(([actionName, ops]) => {
-    const details = node('details', undefined, `tools-ops tools-ops-${actionName}`);
+    const details = node('details', undefined, `tools-ops tools-ops-${actionName} disclosure`);
     details.open = ['konflikt', 'tilfoej', 'bevar'].includes(actionName) || ops.length <= 4;
     details.append(node('summary', `${operationText[actionName]} · ${ops.length}`));
     const list = node('ul');
     for (const op of ops) {
       const item = node('li'); item.append(node('code', op.path));
       if (op.reason) item.append(node('span', ` ${op.reason}`, 'hint'));
-      if (op.preview) { const view = node('details'); view.append(node('summary', op.kind === 'blok' ? 'Se afsnittet' : 'Se filen'), node('pre', op.preview)); item.append(view); }
+      if (op.preview) { const view = node('details', undefined, 'disclosure'); view.append(node('summary', op.kind === 'blok' ? 'Se afsnittet' : 'Se filen'), node('pre', op.preview)); item.append(view); }
       list.append(item);
     }
     details.append(list);
@@ -2174,7 +2685,7 @@ $('#provider-account').onclick = () => action(() => call('providerAccount', $('#
 function renderLocation(location) { $('#project-location').textContent = `Projektet gemmes i ${location.label}.`; $('#project-location').title = location.path; }
 $('#choose-location').onclick = () => action(async () => renderLocation(await call('chooseProjectLocation')));
 function saveIdeaDraft() {
-  try { localStorage.setItem(ideaDraftKey, JSON.stringify({name: $('#name').value, purpose: $('#purpose').value, nameTouched})); $('#idea-draft-status').textContent = 'Kladden er gemt på denne computer.'; } catch { $('#idea-draft-status').textContent = 'Kladden kan ikke gemmes automatisk på denne computer.'; }
+  try { localStorage.setItem(ideaDraftKey, JSON.stringify({name: $('#name').value, purpose: $('#purpose').value, nameTouched})); $('#idea-draft-status').textContent = ($('#name').value.trim() || $('#purpose').value.trim()) ? 'Kladden er gemt på denne computer.' : 'Gemmes som kladde. Ingen AI kontaktes endnu.'; } catch { $('#idea-draft-status').textContent = 'Kladden kan ikke gemmes automatisk på denne computer.'; }
 }
 function clearIdeaDraft() { try { localStorage.removeItem(ideaDraftKey); } catch {} }
 function restoreIdeaDraft() {
@@ -2230,7 +2741,7 @@ $('#idea-examples-toggle').onclick = () => {
   $('#idea-examples').hidden = !open; $('#idea-examples-toggle').setAttribute('aria-expanded', String(open));
   if (open) $('#idea-examples .idea-example').focus();
 };
-try { if (!localStorage.getItem(introductionKey)) showIntroduction(); } catch { showIntroduction(); }
+try { const intro = localStorage.getItem(introductionKey); if (!intro) showIntroduction(); else { if (intro === 'skipped') $('#onboarding').classList.add('idea-without-steps'); syncOnboardingWindow(false); } } catch { showIntroduction(); }
 
 // Det guidede forløb ændrer aldrig model, rute eller betaling uden et aktivt valg.
 let modelCatalog = [], activePlan = null;
@@ -2288,8 +2799,24 @@ $('#model-search').oninput = () => { const query = $('#model-search').value.toLo
 function updateWorkMode() {
   const mode = $('#work-mode').value;
   view.composerMode = mode;
-  $('#composer-mode').textContent = ({ chat: 'Samtale', plan: 'Planlæg', build: 'Byg', free: 'Byg' })[mode];
-  $('#prompt').placeholder = window.workspace?.target() ? 'Hvad skal AI’en ændre her? Fx Gør teksten kortere.' : mode === 'chat' ? 'Stil et spørgsmål, eller beskriv din idé …' : 'Beskriv det, du vil bygge eller ændre …';
+  const label = ({ chat: 'Samtale', plan: 'Planlæg', build: 'Byg', free: 'Byg' })[mode];
+  $('#composer-mode').textContent = label;
+  // Topbjælke-chippen (B3) er en anden visning af SAMME tilstand: samme etiket,
+  // samme datamarkør, samme disabled-forløb — de fire interne værdier
+  // (chat/plan/free/build) og "Byg den valgte plan"-forløbet er urørt.
+  $('#topbar-mode').textContent = label;
+  // Chip-glyfferne (◌ ≡ ◇) følger datattributten via CSS — D0-ikonsættet er
+  // afvist af Parthee, så de eksisterende glyffer genbruges.
+  $('#composer-mode').dataset.mode = mode;
+  $('#composer-mode').setAttribute('aria-label', `Arbejdsmåde: ${label}. Vælg arbejdsmåde`);
+  $('#topbar-mode').dataset.mode = mode;
+  // Helteoverskriften følger arbejdsmåden (§4).
+  $('#hero-heading').textContent = ({ chat: 'Hvad vil du tale om?', plan: 'Hvad skal vi planlægge?', build: 'Hvad skal vi bygge?', free: 'Hvad skal vi bygge?' })[mode];
+  // Ærlig pladsholder pr. tilstand (§5.1): helt for den tomme samtale, aktiv
+  // under beskeder — og der loves intet om »/« eller »@« (R5: ingen
+  // slash- eller mention-parser findes i dag).
+  const hero = $('#chat-panel')?.dataset.phase === 'hero';
+  $('#prompt').placeholder = window.workspace?.target() ? 'Hvad skal AI’en ændre her? Fx Gør teksten kortere.' : hero ? (mode === 'chat' ? 'Stil et spørgsmål, eller beskriv din idé …' : 'Beskriv hvad du vil bygge …') : ['chat', 'plan'].includes(mode) ? 'Skriv en besked …' : 'Beskriv det, du vil bygge eller ændre …';
   $('#mode-help').textContent = mode === 'chat' ? 'Tal med AI’en om projektet. Filerne ændres ikke.' : mode === 'plan' ? 'Lav en plan sammen med AI’en, før den ændrer appen.' : mode === 'build' ? 'AI’en bygger efter den plan, du har valgt. Handlinger kræver fortsat godkendelse.' : 'AI’en ændrer appen efter din besked og projektets tilladelser.';
   window.ConversationPermission?.sync(); window.ComposerWorkMode?.sync();
 }
@@ -2299,6 +2826,9 @@ $('#work-mode').onchange = () => {
   if ($('#work-mode').value === 'chat') { view.planCard = false; $('#plan-card').hidden = true; }
 };
 $('#composer-mode').onclick = () => { if (window.ComposerWorkMode) return window.ComposerWorkMode.open(); $('#task-dialog').showModal(); $('#task-dialog .workflow').open = true; $('#work-mode').focus(); };
+// B3: topbjælke-chippen åbner den samme forankrede arbejdsmåde-menu (§5.4) —
+// to visninger af én tilstand, ét ændringsforløb.
+$('#topbar-mode').onclick = () => { if (window.ComposerWorkMode) return window.ComposerWorkMode.open($('#topbar-mode')); $('#task-dialog').showModal(); $('#task-dialog .workflow').open = true; $('#work-mode').focus(); };
 $('#accept-plan-offer').onclick = () => {
   if (running) return;
   if (activePlan) { view.planCard = true; $('#plan-card').hidden = false; updatePlanOffer(); $('#build-plan').focus(); return; }
@@ -2361,7 +2891,7 @@ function resultActions(result, v = view) {
     })));
   }
   const undo = undoAction(result, 'Fortryd opgaven', 'Fortryd opgaven', v);
-  if (undo) { const menu = node('details', undefined, 'result-options'); menu.append(node('summary', 'Flere valg'), undo); actions.append(menu); }
+  if (undo) { const menu = node('details', undefined, 'result-options disclosure'); menu.append(node('summary', 'Flere valg'), undo); actions.append(menu); }
   return actions;
 }
 function syncResultPreview() {
@@ -2450,7 +2980,7 @@ function renderRunReview(result, v = view) {
     actions.append(reviewButton('Prøv igen', retrySend, info.action === 'retry'));
     if (result.files.length) actions.append(resultActions(result, v));
     box.append(actions);
-    if (result.failure?.message) { const fold = node('details', undefined, 'review-details'); fold.append(node('summary', 'Se detaljer'), node('pre', result.failure.message)); box.append(fold); }
+    if (result.failure?.message) { const fold = node('details', undefined, 'review-details disclosure'); fold.append(node('summary', 'Se detaljer'), node('pre', result.failure.message)); box.append(fold); }
     return;
   }
   if (result.status === 'stopped') {
@@ -2562,26 +3092,17 @@ function openTaskSettings() {
   if (!state?.connections?.length) { showSetup('Tilslut en AI for at bygge videre. Din kladde er bevaret.'); return; }
   $('#model-options').open = true; if (!$('#task-dialog').open) $('#task-dialog').showModal();
 }
-// Codex 1:1: vælgeren anker ved Vælg AI-knappen inde i chatvinduet — ikke ved siden af eller centreret.
-function placerModelVaelger() {
-  const p = document.getElementById('model-picker');
-  const r = document.getElementById('model-chip')?.getBoundingClientRect();
-  const chatLeft = document.getElementById('chat-panel')?.getBoundingClientRect().left || 10;
-  if (!p || !r) return;
-  p.style.width = '340px'; p.style.maxWidth = '340px';
-  const bredde = p.offsetWidth, marg = 8;
-  const hoyde = p.offsetHeight || 380;
-  let venstre = Math.max(chatLeft + 4, r.right - bredde);
-  venstre = Math.min(venstre, innerWidth - bredde - 10);
-  let topp;
-  if (r.top - hoyde - marg > 50) topp = r.top - hoyde - marg;
-  else topp = Math.min(innerHeight - hoyde - 10, r.bottom + marg);
-  p.style.left = `${Math.round(venstre)}px`; p.style.top = `${Math.round(topp)}px`;
-}
-$('#model-chip').onclick = async () => { await buildModelPicker(); document.getElementById('model-picker').showPopover(); placerModelVaelger(); document.getElementById('model-picker-search')?.focus(); };
+// Modelvælgeren anker ved chippen gennem det fælles popover-lag: højre kant
+// ved chippen (align 'end'), så vælgeren følger kolonnen og aldrig krydser
+// skillelinjen i nogen chatbredde. Zoom og vinduesstørrelse genankorer gennem
+// lagets resize-lyttere — der er ingen faste koordinater.
+$('#model-chip').onclick = async () => {
+  await buildModelPicker();
+  window.PopoverLayer.open({ layer: document.getElementById('model-picker'), invoker: $('#model-chip'), align: 'end', width: 340 });
+  document.getElementById('model-picker-search')?.focus();
+};
 // Combobox-relationen: aria-expanded følger popoberen, så skærmlæseren ved, om listen er åben.
 document.getElementById('model-picker').addEventListener('toggle', () => { document.getElementById('model-picker-search')?.setAttribute('aria-expanded', String(document.getElementById('model-picker').matches(':popover-open'))); });
-addEventListener('resize', () => { if (document.getElementById('model-picker')?.matches(':popover-open')) placerModelVaelger(); });
 let pickerEntries = [];
 function syncPickerEffort() {
   const range = document.getElementById('picker-effort-range');
@@ -2793,7 +3314,7 @@ $('#history-load').onclick=()=>{
   const v=view,container=$('#chat-content'),height=container.scrollHeight,top=container.scrollTop;
   const page=window.HistoryPages.takePrevious(v.historyPending);if(!page.recent.length)return;
   const fragment=document.createDocumentFragment(),staging={...v,log:fragment};
-  for(const item of page.recent){const element=appendMessage(item.text,item.role,staging);if(typeof item.id==='string')element.dataset.messageId=item.id;}
+  for(const item of page.recent){const element=appendMessage(item.text,item.role,staging,item.at);if(typeof item.id==='string')element.dataset.messageId=item.id;}
   v.followChat=false;v.log.prepend(fragment);v.historyPending=page.older;v.historyNotice=`${page.recent.length} tidligere beskeder indlæst fra denne computer.`;renderHistoryControls();
   const position=top+container.scrollHeight-height;container.scrollTop=position;v.scrollTop=position;
   if(!page.older.length)$('#history-load-status').focus({preventScroll:true});

@@ -35,7 +35,7 @@ const { launchTestApp } = require('./electron-test-launch.cjs');
     const owner = await page.evaluate(() => selectedOwner());
     await page.fill('#prompt', 'Min kladde og mine valg bevares.');
     const focusedHeight = (await page.locator('#chat-form').boundingBox()).height;
-    await page.click('.section-title h2');
+    await page.click('#project-name');
     assert.ok(Math.abs((await page.locator('#chat-form').boundingBox()).height - focusedHeight) < 1, 'Focus and blur must not move action targets by changing composer height.');
     await page.locator('#prompt').focus();
     assert.equal(await page.locator('#prompt').inputValue(), 'Min kladde og mine valg bevares.');

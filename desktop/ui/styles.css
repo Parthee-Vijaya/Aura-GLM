@@ -6,7 +6,7 @@
   /* Bevar gamle variabelnavne som aliaser, så alle eksisterende regler virker videre. */
   --ink: var(--aura-ink); --muted: var(--aura-ink-muted); --accent: var(--aura-accent); --accent-hover: var(--aura-accent-hover);
   --tint: var(--aura-accent-faint); --surface: var(--aura-bg-raised); --canvas: var(--aura-bg); --line: var(--aura-border);
-  --radius: var(--aura-radius-md); --sidebar: 216px; --motion-fast: var(--aura-transition-duration-fast); --motion-step: var(--aura-transition-duration);
+  --radius: var(--aura-radius-md); --radius-xs: var(--aura-radius-sm); --sidebar: 280px; --motion-fast: var(--aura-transition-duration-fast); --motion-step: var(--aura-transition-duration);
   --ease-out: var(--aura-ease-in-out);
   /* Diff- og statusfarver som aliaser. */
   --success: var(--aura-success); --error: var(--aura-error); --warning: var(--aura-warning);
@@ -40,32 +40,67 @@ input[type=checkbox] { accent-color: var(--accent); width: 16px; height: 16px; f
 summary { cursor: pointer; font-size: 12px; font-weight: 550; color: var(--muted); line-height: 1.6; }
 details[open] > summary { margin-bottom: 12px; }
 .check-label { display: flex; gap: 9px; align-items: flex-start; font-weight: 400; line-height: 1.6; }
-.sidebar { width: var(--sidebar); position: fixed; inset: 0 auto 0 0; background: linear-gradient(165deg, color-mix(in srgb, var(--canvas) 92%, var(--surface)), var(--surface) 60%); border-right: 1px solid var(--line); padding: 28px 14px 16px; display: flex; flex-direction: column; }
-.brand { display: flex; align-items: center; gap: 10px; padding: 0 8px 30px; font-size: 16px; font-weight: 650; letter-spacing: -.02em; }
-.brand-copy, .brand-name { min-width: 0; }
-.app-version { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; font-weight: 500; line-height: 1.25; letter-spacing: 0; white-space: nowrap; }
+.sidebar { width: var(--sidebar); position: fixed; inset: 0 auto 0 0; background: var(--aura-bg-sidebar); border-right: 0.5px solid var(--aura-border); padding: 0 10px 14px; display: flex; flex-direction: column; }
+/* Kolonnebørn med nowrap-tekst må aldrig presse panelet: flex/grid-items
+   har min-width:auto som standard (D1: lange danske navne, zoom 10-16). */
+.sidebar > * { min-width: 0; }
+/* DSH §3: brandrækken er 60 px — logo, navn og versionpillen (versionen
+   står KUN her; den gamle Testversion-badge i bunden er væk). */
+.brand { display: flex; align-items: center; min-height: 60px; gap: 8px; padding: 0 10px; margin: 0 -10px; border-bottom: 0.5px solid var(--aura-border); font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.brand-copy, .brand-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app-version { display: inline-flex; align-items: center; flex: none; height: 17px; padding: 0 6px; border-radius: 999px; background: var(--aura-bg-tint); color: var(--aura-ink-secondary); font-size: 11px; font-weight: 500; line-height: 17px; letter-spacing: 0; white-space: nowrap; }
 .aura-logo { display: block; width: 36px; height: 36px; flex: 0 0 auto; object-fit: contain; }
 .aura-brand { display: inline-flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 650; letter-spacing: -.02em; }
 nav { display: grid; gap: 5px; }
 nav button { display: flex; gap: 10px; align-items: center; text-align: left; border-color: transparent; background: transparent; padding: 10px; font-weight: 500; }
 nav button span:not(.nav-text) { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; color: var(--muted); flex-shrink: 0; }
 nav svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-nav button[aria-current=page] { color: var(--accent); background: var(--tint); }
-nav button[aria-current=page] span { color: var(--accent); }
-.nav-label { color: var(--muted); font-size: 10px; font-weight: 650; letter-spacing: .08em; margin: 28px 10px 10px; }
+/* DSH §3 · Sidepanelets egne rækker — den flade der bærer appens DSH-
+   identitet. Menupunkter (nav-knapperne, Indstillinger, Værktøjer og
+   Introduktion) er 36 px-rækker i radius 12 med ikon + 6 px og
+   venstrestillet 13/20-tekst; "Søg i samtaler" står i nav-rækken med
+   samme grammatik (S3-fund: centreret uden ikon "ligner en ældre epoke").
+   Teksten bærer --aura-ink-secondary: DSH's egen tertiær måler under 4,5:1
+   på sidepanelet (R4), så det er den målte sekundærfarve der bærer rollen.
+   Review-fund 1 (basis/kold start): nav-knappernes række er ID-FRI, så
+   valg-reglen nedenfor kan vinde kaskaden — ID'er i :is() gav markeringen
+   transparent fyld, mens den gamle accent-span-reglen farvede .nav-text
+   i 4,07:1. De tre text-button-rækker deler én :is()-regel (uden valg). */
+.sidebar nav button { display: flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 8px; border-color: transparent; background: transparent; border-radius: var(--aura-radius-md); color: var(--aura-ink-secondary); text-align: left; font-size: 13px; line-height: 20px; font-weight: 500; }
+.sidebar :is(#settings-toggle,#tools-button,#intro-button) { display: flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 8px; border-color: transparent; background: transparent; border-radius: var(--aura-radius-md); color: var(--aura-ink-secondary); text-align: left; font-size: 13px; line-height: 20px; font-weight: 500; }
+.sidebar nav button:hover:not(:disabled), .sidebar :is(#settings-toggle,#tools-button,#intro-button):hover:not(:disabled) { background: var(--aura-bg-hover); color: var(--aura-ink); border-color: transparent; }
+/* Den valgte nav-række ("Nyt projekt" på Projektopstart) bærer DSH-behandlingen
+   i BASIS-tilstanden: ink på det neutrale hover-fyld — samme par som calm. */
+.sidebar nav button[aria-current="page"] { color: var(--aura-ink); background: var(--aura-bg-hover); }
+.sidebar :is(nav button,#settings-toggle,#tools-button,#intro-button) span:not(.nav-text) { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; color: inherit; flex-shrink: 0; }
+.sidebar :is(nav button,#settings-toggle,#tools-button,#intro-button) svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+/* DSH §3 · "Ny samtale": 38 px primærknap i radius 12 med plus-glyfen.
+   Parthee 4.11: handlingerne er adskiltte — knappen starter en ny samtale
+   i det åbne projekt (app.js binder newChat); projektoprettelsen bor i
+   menupunktet "Nyt projekt" (#new). Primærparret er DSH's sort/hvid
+   (målt 17,4/16,0:1). */
+#new-chat { display: flex; align-items: center; gap: 6px; width: 100%; min-height: 38px; padding: 0 10px; margin-top: 10px; border-color: transparent; border-radius: var(--aura-radius-md); background: var(--aura-button-primary); color: var(--aura-button-primary-text); font-size: 14px; line-height: 20px; font-weight: 500; }
+#new-chat:hover:not(:disabled) { background: var(--aura-button-primary-hover); color: var(--aura-button-primary-text); border-color: transparent; }
+#new-chat span:not(.nav-text) { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; flex-shrink: 0; }
+#new-chat svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* DSH §3 · Sektionshovedet: 36 px-række i 13/500 med ALMINDELIG skrift —
+   versaler og .08em-spatiering hører ikke til DSH-tonen (audit §3). */
+.nav-label { display: flex; align-items: center; min-height: 36px; margin: 8px 0 0; padding: 0 8px; color: var(--aura-ink-secondary); font-size: 13px; line-height: 20px; font-weight: 500; letter-spacing: 0; }
 .project-item { padding: 10px; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; border-radius: 8px; }
 .project-item.active { color: var(--ink); background: var(--tint); }
 #settings-toggle { margin-top: auto; text-align: left; }
 #intro-button, #tools-button { margin-top: 2px; text-align: left; }
 .sidebar-bottom { padding: 18px 8px 0; font-size: 11px; }
 .sidebar-bottom p { font-size: 11px; color: var(--muted); margin: 8px 0; }
-/* Profil-chip i sidepanelets bund: ikonet eller initialerne og navnet — den
-   mindste ærlige visning af profilen. Klik åbner Indstillinger › Din profil. */
-.profile-chip { display: flex; align-items: center; gap: 6px; width: 100%; margin: 0 0 10px; padding: 5px 8px; border: 1px solid var(--line); border-radius: var(--aura-radius-sm); background: var(--surface); color: var(--ink); font-size: 12px; font-weight: 500; text-align: left; cursor: pointer; transition: border-color var(--motion-fast), color var(--motion-fast); }
+/* Profil-rækken i sidepanelets bund (DSH §3: 44 px kontorække): ikonet
+   eller initialerne og navnet. Klik åbner Indstillinger › Din profil —
+   den eksisterende profilflade (datakontrol-skjoldet bor i composer- og
+   datakontrol-fladerne og røres ikke her). */
+.profile-chip { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; margin: 0; padding: 0 8px; border: 0; border-radius: var(--aura-radius-md); background: transparent; color: var(--aura-ink); font-size: 13px; line-height: 20px; font-weight: 500; text-align: left; cursor: pointer; transition: background-color var(--motion-fast), color var(--motion-fast); }
 .profile-chip[hidden] { display: none; }
-.profile-chip:hover { border-color: var(--accent); color: var(--accent); }
+.profile-chip:hover { background: var(--aura-bg-hover); color: var(--aura-ink); }
 .profile-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.profile-chip-mark { display: inline-grid; place-items: center; width: 20px; height: 20px; flex: none; border-radius: 50%; background: var(--tint); color: var(--ink); font-size: 10px; font-weight: 600; letter-spacing: 0.02em; overflow: hidden; }
+.profile-chip-mark { display: inline-grid; place-items: center; width: 20px; height: 20px; flex: none; border-radius: 50%; background: var(--tint); color: var(--ink); font-size: 11px; font-weight: 600; letter-spacing: 0.02em; overflow: hidden; }
 .profile-chip-mark svg { width: 14px; height: 14px; }
 .profile-chip-mark img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
 .profile-chip-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -98,7 +133,6 @@ form > section.panel { margin-bottom: 24px; }
 .design-save-row button { white-space: nowrap; }
 .create-footer { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 28px; }
 .create-footer p { margin: 0; font-size: 12px; color: var(--muted); }
-.section-title { display: flex; align-items: center; gap: 12px; }
 #workspace { height: 100dvh; display: flex; flex-direction: column; background: var(--canvas); overflow: clip; }
 .app-content:has(#workspace:not([hidden])) > header { display: none; }
 /* Arbejdsområdet har faste vinduesgrænser. Kun de indre paneler ruller.
@@ -111,13 +145,19 @@ html:has(#workspace:not([hidden])), body:has(#workspace:not([hidden])) { height:
 .workspace-storage { margin: 5px 0 0; font-size: 11px; }
 .actions { display: flex; flex-shrink: 0; gap: 8px; }
 .actions button { font-size: 12px; }
-.work-grid { display: grid; grid-template-columns: var(--chat-width, 420px) 7px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); flex: 1; min-height: 0; overflow: clip; }
+/* Panel-open chat column: fresh installs scale with the viewport — 35% of
+   the grid, floored at 420px and capped at 720px. viewport.js writes
+   --chat-width inline only once the user has dragged or keyed a width;
+   that chosen width then wins over this fallback. */
+.work-grid { display: grid; grid-template-columns: var(--chat-width, clamp(420px, 35%, 720px)) 7px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); flex: 1; min-height: 0; overflow: clip; }
 .chat { display: flex; flex-direction: column; min-height: 0; min-width: 0; overflow: clip; }
-.chat .section-title { padding: 10px 20px; min-height: 46px; border-bottom: 1px solid var(--line); justify-content: space-between; }
-.chat .section-title h2 { font-size: 12px; margin: 0; }
 .chat-content { padding: 26px 22px; overflow: auto; overscroll-behavior: contain; flex: 1; min-height: 0; font-size: 13px; line-height: 1.75; }
 .chat-message { white-space: pre-wrap; overflow-wrap: anywhere; margin: 18px 0; font-size: 13px; line-height: 1.75; }
-.chat-message.user { background: var(--tint); border-radius: 12px; padding: 14px 16px; margin-left: 20px; }
+/* §6.2: boblen er sin egen boks; handlingsrækken står under den på lærredet.
+   ÉN boble (P1): fyld, padding og radius findes kun på .chat-message.user —
+   den indre .user-bubble er ren tekstbærer uden egen boks (audit §2.1). */
+.chat-message.user { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; margin: 10px 0 2px auto; max-width: 70%; }
+.chat-message.user .user-bubble { background: none; border-radius: 0; padding: 0; }
 .chat-message.assistant { padding-right: 8px; }
 .markdown { white-space: normal; }
 .markdown > :first-child { margin-top: 0; } .markdown > :last-child { margin-bottom: 0; }
@@ -131,10 +171,9 @@ html:has(#workspace:not([hidden])), body:has(#workspace:not([hidden])) { height:
 .markdown pre code { background: none; padding: 0; }
 .chat-message.tool, .chat-message.system { font-size: 11px; color: var(--muted); border-left: 2px solid var(--line); padding-left: 10px; }
 .chat-message.error { color: #d26b68; background: #4c231f; padding: 12px; border-radius: 8px; }
-#project-intro details { margin-top: 14px; }
 #project-path { font: 11px/1.6 ui-monospace, monospace; overflow-wrap: anywhere; }
-#idea-options { padding: 12px; background: var(--canvas); border: 1px solid var(--line); border-radius: 10px; }
-#start-idea { margin-top: 14px; padding: 9px 12px; background: var(--tint); color: var(--accent); }
+/* #idea-options og #start-idea bærer nu chip-udseendet fra components.css
+   (.idea-chips/.idea-chip); select'erne er værdikilden (visually-hidden). */
 .agent-activity { margin: 0; padding: 9px 18px; background: var(--tint); color: #214f91; border-bottom: 1px solid var(--line); font-size: 11px; min-height: 36px; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; }
 .agent-activity.is-idle { opacity: 0; visibility: hidden; pointer-events: none; min-height: 36px; border-bottom: none; }
 .journey-card { padding: 16px; margin: 18px 0; border: 1px solid var(--line); border-radius: 12px; background: #f8faff; animation: step-arrive var(--motion-step) var(--ease-out); overflow-wrap: anywhere; }
@@ -153,9 +192,13 @@ html:has(#workspace:not([hidden])), body:has(#workspace:not([hidden])) { height:
 .workflow label { margin: 0; }
 .workflow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .workflow select { padding: 5px 8px; font-size: 12px; flex: 1; width: auto; }
-.workflow .hint { width: 100%; margin: 0; font-size: 11px; }
-.composer { margin: 8px 16px 6px; border: 1px solid var(--line); border-radius: 14px; padding: 10px; background: var(--surface); box-shadow: 0 3px 12px #1b3a6410; text-align: right; }
-.composer:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px #e8f1ff; }
+.workflow .hint { width: 100%; margin: 0; font-size: 12px; }
+/* Én indholdsramme: kortet lukker ved --chat-col minus gutteren og fylder
+   panelet minus gutteren (aura-tokens) — kant mod kant med tekstkolonnen. */
+.composer { margin: 8px auto 6px; max-width: calc(var(--chat-col) - var(--chat-gutter) * 2); width: calc(100% - var(--chat-gutter) * 2); border: 0.5px solid var(--aura-border); border-radius: 14px; padding: 10px; background: var(--surface); box-shadow: 0 3px 12px #1b3a6410; text-align: right; }
+/* Rolig composer (P1/DSH §5.1): fokus = neutral stærk hårlinje, skyggen
+   består; ringen vises kun ved :focus-visible (nedenfor). Ingen accentkant. */
+.composer:focus-within { border-color: var(--aura-border-strongest); }
 .composer textarea { border: 0; border-radius: 6px; background: transparent; resize: none; min-height: 68px; font-size: 13px; padding: 7px; }
 .composer textarea:focus-visible { outline: none; }
 .composer:has(textarea:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -194,16 +237,17 @@ html:has(#workspace:not([hidden])), body:has(#workspace:not([hidden])) { height:
 .provider-brand-icon { flex: 0 0 18px; width: 18px; height: 18px; object-fit: contain; }
 .provider-brand-label, .provider-brand-heading > span { min-width: 0; overflow-wrap: anywhere; }
 .model-choice .provider-brand-heading > span { margin-top: 0; font-size: inherit; color: inherit; }
-#composer-mode { font-size: 11px; margin: 0; white-space: nowrap; padding: 4px; }
+/* Review F4: chippen står på typeskalaen — det femte reelle 11 px (audit §3 +
+   T3-gulvet). Calm-reglen (13 px) og heltefasen (13 px) består uændret. */
+#composer-mode { font-size: var(--aura-text-12); margin: 0; white-space: nowrap; padding: 4px; }
 .composer button { padding: 6px 13px; font-size: 12px; }
 /* "Aura har set": Auras egne målinger på resultatkortet — facts, ikke modellens tekst. */
 .run-evidence { margin: 10px 0; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; }
-.run-evidence h4 { margin: 0 0 6px; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.run-evidence h4 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
 .run-evidence dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 0; font-size: 12px; }
 .run-evidence dt { color: var(--muted); }
 .run-evidence dd { margin: 0; }
-#draft-status { font-size: 10px; margin: 0 20px 8px; color: var(--muted); min-height: 15px; }
-#resume-notice { margin: 0 0 16px; border-radius: 8px; padding: 12px 18px; background: #edf4ff; font-size: 12px; border-bottom: 1px solid var(--line); }
+#draft-status { font-size: 12px; margin: 0 20px 8px; color: var(--muted); min-height: 15px; }#resume-notice { margin: 0 0 16px; border-radius: 8px; padding: 12px 18px; background: var(--aura-accent-faint); font-size: 12px; border-bottom: 1px solid var(--line); }
 #resume-notice p { margin-bottom: 6px; }
 #resume-notice .check-label { margin: 6px 0 0; font-size: 11px; }
 #workspace-divider { cursor: col-resize; background: var(--tint); touch-action: none; position: relative; }
@@ -224,7 +268,7 @@ body.resizing-workspace iframe { pointer-events: none; }
 #viewport-dimensions { display: flex; align-items: center; gap: 4px; }
 #viewport-dimensions input { width: 65px; padding: 5px; font-size: 11px; }
 #viewport-rotate { padding: 5px 8px; }
-#viewport-info { font: 10px ui-monospace, monospace; color: var(--muted); }
+#viewport-info { font: 11px ui-monospace, monospace; color: var(--muted); }
 #preview-surface { position: relative; flex: 1; min-height: 0; overflow: auto; background: var(--tint); }
 #preview-stage { position: relative; margin: 0 auto; flex-shrink: 0; overflow: hidden; background: var(--surface); }
 iframe { border: 0; width: 100%; height: 100%; background: var(--surface); }
@@ -235,7 +279,7 @@ iframe { border: 0; width: 100%; height: 100%; background: var(--surface); }
 #server-log { max-height: 200px; overflow: auto; }
 #server-review { border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-top: 20px; }
 #server-folder, #server-packages { overflow-wrap: anywhere; }
-.preview-footer { padding: 9px 16px; border-top: 1px solid var(--line); font-size: 10px; color: var(--muted); }
+.preview-footer { padding: 9px 16px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
 .empty-state { max-width: 400px; padding: 32px; margin: 12vh auto 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
 .empty-state h2 { color: var(--ink); font-size: 19px; }
 .empty-state h2:empty { display: none; }
@@ -258,7 +302,19 @@ iframe { border: 0; width: 100%; height: 100%; background: var(--surface); }
 #setup-choice strong { margin-bottom: 6px; font-size: 14px; }
 #setup-choice span { color: var(--muted); font-weight: 400; font-size: 12px; line-height: 1.6; }
 dialog { width: min(700px, 92vw); max-height: 88vh; padding: 28px; overflow: auto; border: 1px solid var(--line); border-radius: 16px; color: var(--ink); background: var(--surface); box-shadow: 0 24px 80px #18365826, 0 3px 8px #18365812; }
-dialog::backdrop { background: #14263b40; backdrop-filter: blur(4px); }
+/* Dialog-størrelsesklasserne (uiux-overhaulens "Kernetal"): indholdet vælger
+   klassen — bekræftelser 480-560 px, oversigts-/formulardialoger 880-1040 px,
+   sammensatte opgave-/datadialoger 1120-1280 px. Alt er loftet af 92vw, højden
+   følger indholdet (kun max-height mod viewporten), og selve dialogen er den
+   eneste rulleregion. #settings-dialog beholder sin egen 780 px-bredde, og
+   kommandopaletten har sin egen regel — begge dokumenteret i
+   tests/ui-typography.test.cjs. Bredderne pins af samme test. */
+dialog[data-size="confirm"] { width: min(520px, 92vw); }
+dialog[data-size="wide"] { width: min(1000px, 92vw); }
+dialog[data-size="complex"] { width: min(1130px, 92vw); }
+/* Efter-byg F7 (Codex d3): sløret bærer ÉT delt token (--aura-scrim i
+   aura-tokens.css) — basis og calm rettes fra det samme sted. */
+dialog::backdrop { background: var(--aura-scrim); backdrop-filter: blur(4px); }
 dialog[open] { animation: dialog-arrive var(--motion-step) var(--ease-out); }
 .dialog-heading, .dialog-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .dialog-heading { margin-bottom: 18px; }
@@ -287,15 +343,13 @@ dialog p { font-size: 13px; }
 #data-details pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
 #skill-content { font: 12px/1.7 ui-monospace, monospace; }
 .approval { border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin: 18px 0; background: var(--tint); }
-.approval pre, #changes-list pre, #git-files pre { font: 11px/1.7 ui-monospace, monospace; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 260px; overflow: auto; padding: 12px; background: #f2f5f9; border-radius: 8px; }
+.approval pre, #changes-list pre, #git-files pre { font: 12px/1.7 var(--aura-font-family-code); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 260px; overflow: auto; padding: 12px; color: var(--aura-ink); background: var(--aura-bg-raised); border-radius: 8px; }
 .approval button { margin: 8px 5px 0 0; }
 .action-target { white-space: pre-wrap; overflow-wrap: anywhere; }
-#changes-dialog { width: min(1000px, 92vw); }
 #changes-list details { margin: 18px 0; }
 #changes-list h3 { font-size: 12px; }
 #git-files > section { border-top: 1px solid var(--line); padding: 10px 0; }
 #git-save { margin-top: 16px; }
-#hosting-dialog, #deployment-dialog { width: min(820px, 92vw); }
 #hosting-body, #deployment-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
 #hosting-dialog form, #hosting-project { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 16px; }
 #hosting-files, #deployment-files { max-height: 220px; overflow: auto; font: 12px/1.6 ui-monospace, monospace; }
@@ -305,7 +359,7 @@ dialog p { font-size: 13px; }
 #deployment-form > button { margin-top: 18px; }
 #deployment-form details { margin-top: 18px; }
 #hosting-feedback, #hosting-destination, #git-feedback, #deployment-state { overflow-wrap: anywhere; }
-#welcome-dialog { width: min(940px, 94vw); padding: 36px; background: linear-gradient(145deg,#fff,#f6f9ff); }
+#welcome-dialog { padding: 36px; background: linear-gradient(145deg,#fff,#f6f9ff); }
 .welcome-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; font-size: 16px; font-weight: 650; }
 #welcome-start { max-width: 620px; margin: 64px auto; text-align: center; }
 #welcome-title { font-size: 36px; letter-spacing: -.04em; }
@@ -326,7 +380,7 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus { outline: none; }
 @keyframes step-arrive { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 #welcome-start:not([hidden]), #welcome-demo:not([hidden]), #setup:not([hidden]), #onboarding:not([hidden]) { animation: step-arrive var(--motion-step) var(--ease-out); }
 @media (max-width: 1100px) { :root { --sidebar: 184px; } .sidebar { padding: 22px 10px 14px; } #onboarding, #setup { padding: 32px 26px; } .actions button { font-size: 11px; padding: 7px 9px; } }
-@media (max-height: 800px) { .chat-content { padding: 16px; } .model-controls { max-height: 170px; } .workflow .hint { font-size: 10px; } #welcome-start { margin: 30px auto; } }
+@media (max-height: 800px) { .chat-content { padding: 16px; } .model-controls { max-height: 170px; } .workflow .hint { font-size: 12px; } #welcome-start { margin: 30px auto; } }
 @media (max-width: 720px) { .design-row, #setup-choice, .demo-layout { grid-template-columns: 1fr; } #data-summary { grid-template-columns: 1fr; gap: 6px; } #data-summary dd { margin-bottom: 12px; } .create-footer { flex-wrap: wrap; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
 
@@ -344,7 +398,6 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus { outline: none; }
 #preview-options { anchor-name: --preview-options; }
 #preview-menu { position-anchor: --preview-options; inset: auto; top: anchor(bottom); right: anchor(right); margin: 6px 0 0; width: 275px; padding: 14px; }
 #preview-menu #viewport-info { margin-top: 8px; }
-#task-dialog { width: min(580px, 92vw); }
 #task-dialog .model-controls, #task-dialog .reference-choice { max-height: none; background: transparent; padding: 18px 0; }
 #task-dialog .workflow { display: block; padding: 18px 0; }
 #task-dialog .workflow label { margin: 12px 0 8px; }
@@ -387,7 +440,7 @@ body.setup-guided .app-content { margin-left: 0; }
    the avatar slot — an upload button until a picture is stored. */
 .profile-icon-wrap { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
 .profile-icon-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
-.profile-icon-choice { display: inline-grid; place-items: center; width: 44px; height: 44px; flex: none; border: 1px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--ink); cursor: pointer; transition: border-color var(--motion-fast), color var(--motion-fast), box-shadow var(--motion-fast); }
+.profile-icon-choice { display: inline-grid; place-items: center; padding: 0; width: 44px; height: 44px; flex: none; border: 1px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--ink); cursor: pointer; transition: border-color var(--motion-fast), color var(--motion-fast), box-shadow var(--motion-fast); }
 .profile-icon-choice svg { width: 22px; height: 22px; }
 .profile-icon-choice:hover { border-color: var(--accent); color: var(--accent); }
 .profile-icon-choice[aria-checked="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); color: var(--accent); }
@@ -415,7 +468,6 @@ body.setup-guided .app-content { margin-left: 0; }
 .path-choice:hover { border-color: var(--accent); box-shadow: 0 6px 20px #0052cc14; }
 .path-choice:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (max-height: 800px) { #welcome-path { margin: 30px auto; } }
-.tools-dialog { width: min(760px, 94vw); }
 #tools-error { color: #982f28; background: #4c231f; border: 1px solid #dfb8b3; padding: 10px 12px; border-radius: 8px; }
 .tools-step h3 { font-size: 22px; letter-spacing: -.02em; margin: 4px 0 8px; }
 .tools-lead { font-size: 14px; line-height: 1.6; color: var(--muted); margin: 0 0 18px; }
@@ -483,17 +535,59 @@ body.setup-guided .app-content { margin-left: 0; }
 .key-steps { margin: 8px 0 12px; padding-left: 22px; }
 .key-steps li { margin: 6px 0; line-height: 1.6; }
 .key-steps .text-button { padding: 0 4px; }
-.composer-status { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 11px; color: var(--muted); margin: 0 16px 6px; min-height: 15px; }
-.composer-status #draft-status { margin: 0; }
+/* ── Statuslinjen under composeren (D5b §7 → P1: ÉN centreret række) ──
+   Skjoldet er første segment, forbrugslinjen det andet, og kladdestatus er
+   et forbigående segment på samme række (fader ud, pladsen forsvinder med
+   den). Segmenterne er pill-knapper: 12 px, padding 1/8, radius 8, 16 px
+   mellem segmenter, med hover-fyld (§7.1) — ingen tre rækker med hver sin
+   justering, og ingen +43 px-indrykning. Datakontrol-knappen (privacy-gate.js
+   sætter den som første segment i rækken) er fortsat synlig i heltefasen,
+   hvor linjen og kladden er skjult. Tallene står i tabellariske cifre, og
+   ombrydning sker mellem felterne ved smal reflow — aldrig midt i et tal. */
+/* S4-UI (livefundet 4.11): statusrækken er ÉN nowrap-række. Før satte
+   flex-wrap kladdestatussen på egen linje (tre linjer ved 980 px, målt i
+   live-t2). Kladdestatussen er nu et forbigående segment EFTER $0,00*, der
+   fader ud; når pladsen mangler, viger MÅLINGERNE først (draft-crowded) —
+   Datakontrol-knappen i rækken er en altid-synlig sikkerhedsflade og viger
+   aldrig. Sidste udvej ved ekstreme tal: ellipsis på linjen, aldrig ombrydning. */
+.composer-status { display: flex; flex-wrap: nowrap; justify-content: center; align-items: center; gap: 16px; font-size: var(--aura-text-12); line-height: var(--aura-text-12-line); color: var(--muted); margin: 0 16px 6px; min-height: 24px; }
+.composer-status.draft-crowded > #context-status { display: none; }
+.status-line { display: inline-flex; flex-wrap: nowrap; justify-content: center; align-items: baseline; gap: 0 6px; max-width: 100%; min-height: 24px; padding: 1px 8px; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: var(--aura-text-12); line-height: var(--aura-text-12-line); font-variant-numeric: tabular-nums; cursor: default; border-radius: var(--radius-xs); min-width: 0; overflow: hidden; }
+.status-line:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.status-line[hidden] { display: none; }
+.status-field { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.status-sep { flex: none; }
+.composer-status #draft-status { margin: 0; min-width: 0; max-width: 60%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; transition: opacity 600ms ease; }
+#draft-status.draft-faded { opacity: 0; }
+#draft-status.draft-gone { display: none; }
+@media (prefers-reduced-motion: reduce) { #draft-status { transition: none; } }
+/* Skjoldet som segment: samme pill-grammatik som linjen (padding 1/8,
+   radius 8) — ikonbæreren, ikke en egen venstrestillet række. */
+.composer-status > #privacy-gate-button { padding: 1px 8px; border-radius: var(--radius-xs); min-height: 24px; font-size: var(--aura-text-12); }
+/* Review F3 → T8: paddingen og 12/16-typografien ejer .aura-tooltip i
+   components.css (slår .menu-materialets 6/4 på kildeorden) — ID-reglen
+   beholder kun fladens egen maksimalbredde. */
+#status-line-help { max-width: 380px; }
+.status-line-help p { margin: 0 0 6px; color: var(--ink); }
+.status-line-help p:last-child { margin-bottom: 0; }
 .features-list { display: grid; gap: 8px; margin: 0 0 12px; }
 .feature-row { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; background: var(--surface); }
 .feature-toggle { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin: 0; font-weight: 400; cursor: pointer; }
 .feature-toggle strong { display: flex; align-items: center; font-size: 13px; font-weight: 600; }
 .feature-toggle small { display: block; color: var(--muted); font-size: 12px; line-height: 1.5; margin-top: 2px; }
-input[type=checkbox][role=switch] { appearance: none; width: 36px; height: 20px; margin: 2px 0 0; border-radius: 999px; background: #c5d0de; position: relative; cursor: pointer; flex-shrink: 0; transition: background var(--motion-fast); }
-input[type=checkbox][role=switch]::before { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 2px #14263b40; transition: transform var(--motion-fast); }
+/* T8 (audit §4): switchen på --aura-tokens i BEGGE temaer — af-sporet er
+   --aura-switch-track (efter-byg F12: --aura-bg-tint var identisk med kortet
+   i mørkt tema, 38/44, så switchen læses som en løs prik; sporet har nu sit
+   EGEN token, synligt over kortet i begge temaer), knappen --aura-ink-muted,
+   til-knappen --aura-bg på accent-sporet (P1s målte par holdt ≥3:1 — sporets
+   nye værdi er målt igen i controls-tooltips-titles.test.cjs).
+   #c5d0de/#14263b40-æraen er væk; tastaturbetjening er Space på checkboxen,
+   og :focus-visible bærer accent-ringen. */
+input[type=checkbox][role=switch] { appearance: none; width: 36px; height: 20px; margin: 2px 0 0; border-radius: 999px; background: var(--aura-switch-track); position: relative; cursor: pointer; flex-shrink: 0; transition: background var(--motion-fast); }
+input[type=checkbox][role=switch]::before { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--aura-ink-muted); transition: transform var(--motion-fast); }
 input[type=checkbox][role=switch]:checked { background: var(--accent); }
-input[type=checkbox][role=switch]:checked::before { transform: translateX(16px); }
+input[type=checkbox][role=switch]:checked::before { transform: translateX(16px); background: var(--aura-bg); }
+input[type=checkbox][role=switch]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 input[type=checkbox][role=switch]:disabled { cursor: not-allowed; opacity: .5; }
 .features-always ul { margin: 0; padding-left: 18px; font-size: 12px; line-height: 1.6; color: var(--muted); }
 .feature-note { margin: 8px 0 0; font-size: 12px; color: var(--accent); }
@@ -507,11 +601,17 @@ input[type=checkbox][role=switch]:disabled { cursor: not-allowed; opacity: .5; }
 .features-scope label:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 2px; }
 .features-always, #features-advanced { margin-top: 14px; }
 @media (prefers-reduced-motion: reduce) { .feature-toggle input[role=switch], input[type=checkbox][role=switch]::before { transition: none; } }
-/* ⓘ: lille rund knap med en forklaring i en boble. Forklaringen åbnes med et klik, aldrig kun ved at holde musen over. */
-.info { display: inline-grid; place-items: center; width: 18px; height: 18px; margin: 0 0 0 6px; padding: 0; border: 1px solid #b9c7dc; border-radius: 50%; background: var(--surface); color: var(--accent); font: italic 700 11px/1 Georgia, serif; vertical-align: text-bottom; cursor: pointer; flex-shrink: 0; }
-.info:hover:not(:disabled) { background: var(--tint); border-color: var(--accent); }
-.info[aria-expanded="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
-.info-pop { position: fixed; inset: auto; margin: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); box-shadow: 0 10px 30px #1836581f; font-size: 12px; line-height: 1.6; white-space: pre-line; }
+/* ⓘ: lille knap med en forklaring i en boble. Forklaringen åbnes med et klik, aldrig kun ved at holde musen over. */
+/* T8 (audit §4): systemfont + linjeglyf i fast 16 px-boks som de øvrige glyffer
+   (13/1) — kursiv Georgia med kant #b9c7dc er væk. Glyffen hviler i den læsbare
+   sekundærfarve (AA i begge temaer), hover er alfa-fyldet, og den åbne tilstand
+   bærer primærknappens kontrastsikre par. */
+.info { display: inline-grid; place-items: center; width: 16px; height: 16px; margin: 0 0 0 6px; padding: 0; border: 0; border-radius: var(--aura-radius-xs); background: transparent; color: var(--aura-ink-secondary); font-family: var(--aura-font-family); font-size: 13px; line-height: 1; font-weight: 600; vertical-align: text-bottom; cursor: pointer; flex-shrink: 0; }
+.info:hover:not(:disabled) { background: var(--aura-bg-hover); color: var(--aura-ink); }
+.info[aria-expanded="true"] { background: var(--aura-button-primary); color: var(--aura-button-primary-text); }
+/* Boblen bærer ÉN tooltip-grammatik (T8): menu-materiale + .aura-tooltip giver
+   12/16, radius 8, ind 40 ms / ud 80 ms og paddingen; teksten er forudformateret. */
+#info-pop { margin: 0; white-space: pre-line; }
 .info-pop:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .label-row { display: flex; align-items: center; margin: 16px 0 7px; }
 .label-row label { margin: 0; }
@@ -531,20 +631,24 @@ h2 .info, h3 .info { vertical-align: middle; }
 /* Sidepanelet kan foldes sammen til en smal række ikoner. Navnene står stadig som tilgængelige navne og titler. */
 .brand { position: relative; }
 .brand-name { flex: 1; }
-.sidebar-toggle { display: inline-grid; place-items: center; width: 30px; height: 30px; padding: 0; border-color: transparent; background: transparent; color: var(--muted); }
+.sidebar-toggle { display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border-color: transparent; background: transparent; color: var(--muted); }
 .sidebar-toggle svg, .settings-icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .settings-icon { display: none; }
 .visually-hidden, body.sidebar-collapsed .nav-text { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 body.sidebar-collapsed { --sidebar: 60px; }
 body.sidebar-collapsed .sidebar { padding: 18px 8px 14px; align-items: center; }
 body.sidebar-collapsed .brand { flex-direction: column; gap: 14px; padding: 0 0 22px; }
-body.sidebar-collapsed :is(.brand-name, .nav-label, #project-list, #tools-button, #intro-button, .sidebar-bottom) { display: none; }
+body.sidebar-collapsed :is(.brand-name, .app-version, .nav-label, #project-list, #tools-button, #intro-button, .sidebar-bottom) { display: none; }
 body.sidebar-collapsed nav button { justify-content: center; padding: 10px; }
+body.sidebar-collapsed #new-chat { width: 40px; min-height: 40px; padding: 0; margin-top: 10px; justify-content: center; }
 body.sidebar-collapsed #settings-toggle { display: inline-grid; place-items: center; width: 40px; height: 40px; padding: 0; color: var(--muted); }
 body.sidebar-collapsed .settings-icon { display: inline-flex; }
-/* I et smalt vindue lægger det udfoldede sidepanel sig oven på indholdet og lukker med Escape eller et klik udenfor. */
+/* I et smalt vindue lægger det udfoldede sidepanel sig oven på indholdet og lukker med Escape eller et klik udenfor.
+   Review-fund 2 (D1): stien er med på token-toget — samme bredde og materiale
+   som calm-skuffen (230 px, --aura-bg-sidebar, --aura-shadow-overlay), ikke
+   den gamle 216 px/tint/hex-skygge. */
 body.sidebar-overlay { --sidebar: 60px; }
-body.sidebar-overlay .sidebar { width: 216px; z-index: 30; box-shadow: 0 12px 40px #17325233; background: var(--tint); }
+body.sidebar-overlay .sidebar { width: 230px; z-index: 30; box-shadow: var(--aura-shadow-overlay); background: var(--aura-bg-sidebar); }
 
 /* Arbejdsfladen: fire faner ved siden af samtalen. Fanerne ligger oven på hinanden, så skjulte faner bevarer deres tilstand. */
 .work-surface { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--canvas); container: work / inline-size; }
@@ -555,7 +659,7 @@ body.sidebar-overlay .sidebar { width: 216px; z-index: 30; box-shadow: 0 12px 40
 /* I et smalt panel rykker fanerne tættere, så alle fire står på én linje ved 980 px. Bliver der for lidt plads, brydes de. */
 @container work (max-width: 430px) { .work-tabs { gap: 2px; padding: 6px 8px; } .work-tab { padding: 6px 6px; } .panel-bar { padding-left: 12px; padding-right: 8px; } .panel-scroll, .code-view { padding-left: 14px; padding-right: 14px; } }
 /* Mærket ligger oven på fanens hjørne, så fanerne ikke flytter sig, når det dukker op. */
-.tab-badge { position: absolute; top: -5px; right: -5px; display: inline-grid; place-items: center; min-width: 17px; height: 17px; padding: 0 4px; border: 2px solid #fff; border-radius: 999px; background: var(--accent); color: #fff; font-size: 9.5px; font-weight: 700; line-height: 1; box-sizing: border-box; }
+.tab-badge { position: absolute; top: -5px; right: -5px; display: inline-grid; place-items: center; min-width: 17px; height: 17px; padding: 0 4px; border: 2px solid #fff; border-radius: 999px; background: var(--aura-button-primary); color: var(--aura-button-primary-text); font-size: 11px; font-weight: 700; line-height: 1; box-sizing: border-box; }
 .tab-badge.dot { top: 2px; right: 0; min-width: 10px; width: 10px; height: 10px; padding: 0; background: var(--accent); }
 .tab-badge.dot.running { background: #24835b; animation: pulse 1.6s ease-in-out infinite; }
 .tab-badge.dot.waiting { background: #b7791f; }
@@ -589,7 +693,7 @@ body.sidebar-overlay .sidebar { width: 216px; z-index: 30; box-shadow: 0 12px 40
 .by-tag { grid-column: 2 / -1; font-size: 11px; font-weight: 500; color: var(--muted); }
 .by-tag.by-ai { color: var(--accent); }
 .by-tag.by-blandet, .by-tag.by-kommando { color: #8a5a12; }
-.change-tag { display: inline-block; padding: 1px 7px; border-radius: 999px; background: #eef2f7; color: var(--ink); font-size: 10px; font-weight: 650; white-space: nowrap; }
+.change-tag { display: inline-block; padding: 1px 7px; border-radius: 999px; background: #eef2f7; color: var(--ink); font-size: 11px; font-weight: 650; white-space: nowrap; }
 .change-tag.change-ny { background: #e3f4ea; color: #1d6b43; }
 .change-tag.change-slettet { background: #fbe9e9; color: #a3282a; }
 .diff-view { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
@@ -665,7 +769,7 @@ body.sidebar-overlay .sidebar { width: 216px; z-index: 30; box-shadow: 0 12px 40
 .file-ref code { color: inherit; }
 .review-files { margin: 0 0 8px; padding-left: 20px; font: 12px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace; }
 .journey-card .review-files button { margin: 0; }
-.activity-pointer { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; margin: 12px 0; padding-left: 10px; border-left: 2px solid var(--line); font-size: 11px; color: var(--muted); }
+.activity-pointer { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; margin: 12px 0; padding-left: 10px; border-left: 1px solid var(--line); font-size: 12px; color: var(--muted); }
 .activity-pointer .text-button { padding: 2px 4px; font-size: 11px; }
 .composer-refs { display: flex; flex-wrap: wrap; gap: 6px; padding: 2px 2px 6px; text-align: left; }
 .ref-chip { display: inline-flex; align-items: center; gap: 2px; max-width: 100%; padding: 2px 2px 2px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--tint); color: #214f91; font: 11px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
@@ -717,7 +821,7 @@ body.sidebar-overlay .sidebar { width: 216px; z-index: 30; box-shadow: 0 12px 40
 .answer-choice[aria-pressed="true"] { border-color: var(--accent); background: var(--tint); box-shadow: inset 0 0 0 1px var(--accent); }
 .answer-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
 .answer-head strong { font-size: 13px; font-weight: 650; }
-.answer-choice .recommended { padding: 1px 8px; border-radius: 999px; background: var(--tint); color: var(--accent); font-size: 10px; font-weight: 650; }
+.answer-choice .recommended { padding: 1px 8px; border-radius: 999px; background: var(--tint); color: var(--accent-hover); font-size: 11px; font-weight: 650; }
 .answer-description { font-size: 12px; line-height: 1.5; color: var(--muted); }
 .answer-own { margin-top: 10px; }
 .answer-own label { margin-top: 0; }
@@ -737,7 +841,11 @@ body.sidebar-overlay .sidebar { width: 216px; z-index: 30; box-shadow: 0 12px 40
 .agent-activity .text-button { padding: 2px 6px; font-size: 11px; }
 
 /* Godkendelser: hvad, hvorfor og hvad det betyder. Tekniske detaljer og ændringen er foldet sammen. */
-.approval-kind { margin: 0 0 2px; font-size: 11px; font-weight: 650; letter-spacing: .02em; color: #8a5a12; }
+/* T8 (audit pkt. 9, MUST-FIX): advarselsteksten bærer --aura-warning-ink —
+   --aura-warning/#8a5a12-æraen målte kun 2,92:1 på warning-subtle i lyst
+   tema; warning-ink måler 5,17:1 lyst / 6,46:1 mørkt (begge ≥5:1), og
+   etiketten er løftet fra 11 px til typeskalaens 12 px. */
+.approval-kind { margin: 0 0 2px; font-size: var(--aura-text-12); font-weight: 650; letter-spacing: .02em; color: var(--aura-warning-ink); }
 .approval-title { display: block; margin-bottom: 8px; font-size: 14px; }
 .approval-facts { display: grid; grid-template-columns: minmax(70px, auto) minmax(0, 1fr); gap: 6px 12px; margin: 0 0 10px; font-size: 12px; line-height: 1.6; }
 .approval-facts dt { color: var(--muted); font-weight: 600; }
@@ -779,7 +887,10 @@ body.sidebar-overlay .sidebar { width: 216px; z-index: 30; box-shadow: 0 12px 40
 .pick-toggle:disabled { color: var(--muted); }
 body.picking #preview-stage { box-shadow: 0 0 0 2px var(--accent); }
 .pick-hint { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 2; display: flex; align-items: center; gap: 4px; max-width: calc(100% - 24px); margin: 0; padding: 5px 6px 5px 14px; border-radius: 999px; background: var(--ink); color: #fff; font-size: 12px; line-height: 1.5; box-shadow: 0 4px 14px #18223529; }
-.pick-hint .info { color: #fff; background: transparent; border-color: #ffffff99; }
+/* Ret-i-siden-hintet er en mørk pille: glyffen arver pillens tekstfarve, og
+   hover/åben er et hvidt alfa-fyld (T8: .info bærer ingen egen kant længere). */
+.pick-hint .info { color: inherit; background: transparent; }
+.pick-hint .info:is(:hover:not(:disabled), [aria-expanded="true"]) { background: rgba(255, 255, 255, .14); color: inherit; }
 .pick-card { position: absolute; left: 12px; right: 12px; bottom: 12px; z-index: 2; max-width: 460px; margin: 0 auto; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); box-shadow: 0 10px 30px #18223524; animation: step-arrive var(--motion-step) var(--ease-out); overflow-wrap: anywhere; }
 .pick-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
 .pick-head h2 { margin: 0; font-size: 12px; font-weight: 650; color: var(--accent); letter-spacing: .02em; }
@@ -845,7 +956,6 @@ body.picking #preview-stage { box-shadow: 0 0 0 2px var(--accent); }
 @container work (max-width: 430px) { .compare { grid-template-columns: minmax(0, 1fr); } }
 #version-images { margin: 0 0 6px; }
 /* Gennemgang før gendannelse og fortryd. */
-#restore-dialog { width: min(760px, 92vw); }
 .restore-outcomes { margin: 10px 0; padding-left: 20px; font-size: 13px; line-height: 1.7; overflow-wrap: anywhere; }
 .restore-outcomes code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
 .restore-conflicts { margin: 12px 0; padding: 12px 14px; border: 1px solid #f1d39a; border-radius: 10px; background: var(--surface)af0; }
@@ -859,25 +969,33 @@ body.picking #preview-stage { box-shadow: 0 0 0 2px var(--accent); }
 .restore-data { margin: 8px 0; padding-left: 20px; font-size: 12px; line-height: 1.7; color: var(--muted); }
 #restore-dialog .compare img { max-height: 220px; }
 
-/* Sidepanelet: projekter med deres samtaler. Det åbne projekt og den åbne samtale er markeret med farve og tekst. */
+/* Sidepanelet: projekter med deres samtaler (DSH §3). Det åbne projekt og
+   den åbne samtale er markeret med det NEUTRALE hover-fyld — ikke en
+   hårdkodet accentfarve (audit §3). Danske navne afkortes med ellipsis på
+   én linje; det fulde navn står i title. */
 .project-list { list-style: none; margin: 0; padding: 0; display: grid; align-content: start; gap: 2px; flex: 1 1 auto; min-height: 60px; overflow: auto; }
+/* Grid-item'ets standard min-width:auto lader en nowrap-række vokse ud over
+   panelet; 0 lader ellipsen gøre arbejdet (D1: danske navne på én linje). */
+.project-entry { min-width: 0; }
 .project-row { display: flex; align-items: center; gap: 2px; }
-.project-name { flex: 1 1 auto; min-width: 0; text-align: left; border: 0; background: transparent; padding: 7px 8px; font-size: 12px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; display: flex; gap: 6px; align-items: center; }
-.project-name::before { content: "▸"; color: var(--muted); font-size: 10px; flex: 0 0 auto; }
+.project-name { flex: 1 1 auto; min-width: 0; position: relative; text-align: left; border: 0; background: transparent; min-height: 34px; padding: 7px 8px 7px 24px; font-size: 14px; line-height: 20px; font-weight: 450; color: var(--aura-ink-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-radius: var(--aura-radius-md); }
+/* Chevronen er absolut i en fast 16 px-boks: den deler ikke linjeboxen
+   med teksten, så rækken holder præcis 34 px (7 + 20 + 7) uanset glyf. */
+.project-name::before { content: "▸"; position: absolute; left: 8px; top: 50%; width: 16px; transform: translateY(-50%); color: var(--aura-ink-caption); font-size: 12px; line-height: 1; }
 .project-name[aria-expanded="true"]::before { content: "▾"; }
-.project-entry:not(.is-current) .project-name { font-weight: 500; color: var(--muted); }
-.project-name:hover:not(:disabled), .project-add:hover:not(:disabled) { background: var(--tint); }
+.project-entry.is-current .project-name { color: var(--aura-ink); font-weight: 500; background: var(--aura-bg-hover); }
+.project-name:hover:not(:disabled), .project-add:hover:not(:disabled) { background: var(--aura-bg-hover); }
 .project-add { flex: 0 0 auto; border: 0; background: transparent; padding: 2px 8px; font-size: 15px; line-height: 1.4; color: var(--muted); }
 .project-entry:not(:hover):not(:focus-within):not(.is-current) .project-add { opacity: 0; }
 .chat-list { list-style: none; margin: 0 0 6px; padding: 0 0 0 14px; display: grid; gap: 1px; }
 .chat-list > li { position: relative; display: flex; align-items: center; min-width: 0; }
-.chat-row { flex: 1 1 auto; min-width: 0; display: grid; grid-template-columns: 8px minmax(0, 1fr) auto; align-items: center; gap: 7px; border: 0; background: transparent; padding: 6px 8px; font-size: 12px; font-weight: 450; text-align: left; color: var(--ink); }
-.chat-row:hover:not(:disabled) { background: var(--tint); }
-.chat-row[aria-current="true"] { background: #e3ecfa; color: #163b75; font-weight: 600; }
+.chat-row { flex: 1 1 auto; min-width: 0; display: grid; grid-template-columns: 8px minmax(0, 1fr) auto; align-items: center; gap: 7px; min-height: 32px; border: 0; background: transparent; padding: 6px 8px; font-size: 14px; line-height: 20px; font-weight: 450; text-align: left; color: var(--aura-ink); border-radius: var(--aura-radius-md); }
+.chat-row:hover:not(:disabled) { background: var(--aura-bg-hover); }
+.chat-row[aria-current="true"] { background: var(--aura-bg-hover); color: var(--aura-ink); font-weight: 500; }
 .chat-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.chat-meta { font-size: 10.5px; color: var(--muted); white-space: nowrap; }
+.chat-meta { font-size: 11px; color: var(--aura-ink-secondary); white-space: nowrap; }
 .chat-meta.is-waiting { color: #8a5300; font-weight: 600; }
-.chat-meta.is-running, .chat-meta.is-unread { color: var(--accent); font-weight: 600; }
+.chat-meta.is-running, .chat-meta.is-unread { color: var(--accent-hover); font-weight: 600; }
 .chat-status { width: 7px; height: 7px; border-radius: 50%; background: transparent; }
 .chat-status.is-running { background: var(--accent); animation: chat-pulse 1.4s ease-in-out infinite; }
 .chat-status.is-waiting { background: #d58a00; }
@@ -885,16 +1003,42 @@ body.picking #preview-stage { box-shadow: 0 0 0 2px var(--accent); }
 .chat-status.is-interrupted { background: #c3ccd8; }
 @keyframes chat-pulse { 50% { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .chat-status.is-running { animation: none; } }
-.chat-more { position: absolute; right: 2px; top: 50%; transform: translateY(-50%); border: 0; background: #e9f0fb; padding: 2px 6px; font-size: 11px; color: var(--muted); }
+.chat-more { position: absolute; right: 2px; top: 50%; transform: translateY(-50%); border: 0.5px solid var(--aura-border); border-radius: var(--aura-radius-xs); background: var(--aura-bg-raised); padding: 2px 6px; font-size: 11px; color: var(--muted); }
 .chat-list > li:not(:hover):not(:focus-within) .chat-more:not([aria-expanded="true"]) { opacity: 0; }
+/* Efter-byg F11 (Claude, bekræftet live på HEAD: «•••» dækkede statusteksten
+   med ~22 px — «arbe•••»): når menu-knappen står frem (hover eller tastatur-
+   fokus — knappens egne synlighedsbetingelser), viger statusteksten. DSH-
+   mønsteret: ét stykke ad gangen i rækkens højre side, aldrig to lag oven på
+   hinanden. Layoutet består (visibility gemmer uden reflow). */
+.chat-list > li:is(:hover, :focus-within) .chat-meta { visibility: hidden; }
 .chat-all, .project-all { padding: 4px 8px; font-size: 11px; }
 .chat-rename { flex: 1 1 auto; margin: 0; }
 .chat-rename input { padding: 5px 8px; font-size: 12px; }
-.chat-menu { position: fixed; inset: auto; margin: 0; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: 0 8px 24px #18223524; display: none; flex-direction: column; min-width: 150px; }
+/* Efter-byg F6 (Codex d2 + Claude): #chat-menu (samtalerækkens «•••») og
+   #composer-help-popover bærer nu det SAME menu-materiale som appens øvrige
+   ankrede menuer (.menu-material i components.css): --aura-shadow-menu,
+   alfaskyen --aura-menu-bg med blur, radius 16 og 0,5 px kant — ikke den
+   gamle tunge skygge og uigennemsigtige flade. Materiale-reglen er ID-båren:
+   den slår calm-reglernes :where(dialog,[popover]) (0,1,0 — ellers uafgjort
+   med en klasseregel og tabt på kildeorden) og den generiske [popover]-regel
+   i styles.css uanset rækkefølge. Faldgrunderne følger med (uden
+   backdrop-filter: uigennemsigtig raised; forced-colors: Canvas). */
+.chat-menu { position: fixed; inset: auto; margin: 0; padding: 6px 4px; display: none; flex-direction: column; min-width: 150px; }
 .chat-menu:popover-open { display: flex; }
-.chat-menu button { border: 0; background: transparent; text-align: left; padding: 7px 10px; font-size: 12px; font-weight: 500; }
-.chat-menu button:hover { background: var(--tint); }
-.chat-menu .danger { color: #a3282a; }
+#chat-menu, #composer-help-popover { border: 0.5px solid var(--aura-border); border-radius: var(--aura-radius-lg); background: var(--aura-menu-bg); -webkit-backdrop-filter: blur(40px) saturate(150%); backdrop-filter: blur(40px) saturate(150%); box-shadow: var(--aura-shadow-menu); color: var(--aura-ink); }
+.chat-menu button { border: 0; background: transparent; text-align: left; display: flex; align-items: center; gap: 10px; width: 100%; min-height: 34px; padding: 6px 8px; border-radius: var(--aura-radius-md); font-size: 13px; line-height: 20px; font-weight: 450; }
+.chat-menu button:hover:not(:disabled) { background: var(--aura-bg-hover); }
+.chat-menu button:focus-visible { outline: 2px solid var(--aura-accent); outline-offset: 1px; }
+.chat-menu .danger { color: var(--aura-error); }
+/* #composer-help-popover har sin geometri i settings.css (position, bredde,
+   padding) — materialet tilhører den delte menu-grammatik og står her, så
+   ét sted ejer alle ankrede lags materiale. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  #chat-menu, #composer-help-popover { background: var(--aura-bg-raised); }
+}
+@media (forced-colors: active) {
+  #chat-menu, #composer-help-popover { background: Canvas; border: 1px solid CanvasText; -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
 .composer-wait { color: #8a5300; }
 
 /* Kommandopaletten: et søgefelt øverst i vinduet med appens egne handlinger, samtaler og projekter. */
@@ -920,10 +1064,9 @@ kbd { font: 600 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
 .idea-example strong { font-weight: 600; font-size: 13px; }
 .idea-example span { font-size: 12px; color: var(--muted); line-height: 1.5; }
 
-/* En samtale med status har statussen på en linje under navnet, så navnet får hele rækkens bredde. */
-.chat-row.has-status { row-gap: 0; }
-.chat-row.has-status .chat-meta { grid-column: 2; grid-row: 2; }
-.chat-row.has-status .chat-status { grid-row: 1 / span 2; }
+/* DSH §3: samtalerækken er ALTID én linje i 32 px — statussen ("arbejder",
+   "venter på dig") står i metakolonnen til højre som tiden, ikke på en egen
+   linje under navnet (audit §3: 32 px i 14/20). */
 .composer-wait { margin: 0 0 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .copy-notice { padding: 12px; margin: 12px 0; background: var(--accent-soft, #e8f1ff); border-radius: 10px; }
@@ -973,7 +1116,7 @@ kbd { font: 600 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
 .color-swatch::after { content: ''; position: absolute; inset: 0; background: var(--swatch-color); }
 .chat-latest { align-self: center; flex-shrink: 0; margin: 2px 0; font-size: 12px; }
 .activity-spinner { flex: 0 0 12px; width: 12px; height: 12px; border: 2px solid #bdd1ed; border-top-color: var(--accent); border-radius: 50%; animation: activity-spin .9s linear infinite; }
-#agent-progress { flex-basis: 100%; padding-left: 20px; font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
+#agent-progress { flex-basis: 100%; padding-left: 20px; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .agent-activity.is-waiting .activity-spinner, .agent-activity.is-quiet .activity-spinner { animation: none; border-color: currentColor; opacity: .6; }
 @keyframes activity-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .activity-spinner { animation: none; } }
@@ -994,7 +1137,6 @@ kbd { font: 600 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
 .updates-notice { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; gap: 16px; padding: 8px 16px; background: #E8F1FF; border-bottom: 1px solid #E0E7F0; font-size: 13px; }
 .updates-notice.critical, .updates-warning { background: #FFF4DC; color: #644207; }
 .updates-warning { padding: 12px; border-radius: 8px; }
-#updates-dialog { max-width: 520px; }
 #updates-dialog progress { width: 100%; height: 8px; accent-color: #0052CC; }
 #updates-dialog details { margin-top: 24px; }
 #updates-error { color: #A1362E; }
@@ -1086,7 +1228,6 @@ kbd { font: 600 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
 @media (max-width: 560px) { .visibility-choice { grid-template-columns: 1fr; } }
 
 /* Udgiv viser kun det aktuelle spørgsmål. */
-#deployment-dialog { width: min(640px, 92vw); }
 #deployment-dialog > .dialog-heading { align-items: flex-start; gap: 20px; margin-bottom: 24px; }
 #deployment-heading { font-size: 22px; line-height: 1.3; letter-spacing: -.025em; }
 #deployment-heading:focus { outline: none; }
@@ -1208,14 +1349,10 @@ kbd { font: 600 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
 #deployment-copy { margin-bottom: 16px; }
 @media (prefers-reduced-motion: reduce) { .operation-spinner { animation: none; } }
 
-.composer-shortcut { margin: 0 16px 4px; color: var(--muted); font-size: 11px; line-height: 1.4; }
+.composer-shortcut { margin: 0 16px 4px; color: var(--muted); font-size: 12px; line-height: 1.4; }
 
-/* F07: sidste observerede kontekst er adskilt fra den eksisterende forbrugslinje. */
-.context-status { padding: 0 16px; color: var(--muted); font-size: 10px; overflow-wrap: anywhere; }
-#context-meter { display: block; width: min(180px, 100%); height: 4px; margin-top: 3px; }
-#context-meter[hidden], .context-status[hidden] { display: none; }
-#context-meter::-webkit-meter-bar { background: var(--line); border: 0; border-radius: 3px; }
-#context-meter::-webkit-meter-optimum-value { background: var(--muted); }
+/* F07 → D5b: den gamle meter- og etiketvisning er afløst af den ene statuslinje
+   (.status-line-rækken ovenfor); heltefasen skjuler felterne i components.css. */
 /* Answer tools use the existing app controls; wide tables scroll inside the answer. */
 .markdown-table { max-width: 100%; overflow: auto; margin: 0 0 10px; }
 .markdown-table table { width: 100%; border-collapse: collapse; font-size: inherit; }
@@ -1225,7 +1362,6 @@ kbd { font: 600 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
 .markdown-code { margin-bottom: 10px; }
 .markdown-copy-code, .markdown-copy-answer { font-size: 11px; }
 /* Local conversation search follows the app's existing dialog and button style. */
-.history-search-dialog { width: min(760px, calc(100vw - 32px)); }
 .history-search-form { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; }
 .history-search-form label, .history-search-form input { grid-column: 1 / -1; }
 .history-search-results { list-style: none; padding: 0; display: grid; gap: 8px; }
@@ -1234,36 +1370,10 @@ kbd { font: 600 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
 .search-message-hit { outline: 2px solid var(--accent, #0055ce); outline-offset: 4px; }
 @media (max-width: 600px) { .history-search-form { grid-template-columns: minmax(0, 1fr); } }
 
-/* Approved compact activity: ordinary words first, exact actions by choice. */
-.work-progress-card { margin: 18px 0 22px; padding: 0; border: 0; color: var(--muted); }
-.work-progress-card > summary { display: flex; align-items: flex-start; gap: 10px; list-style: none; cursor: pointer; padding: 6px 0; }
-.work-progress-card > summary::-webkit-details-marker { display: none; }
-.work-progress-card > summary::after { content: '⌄'; margin-left: auto; font-size: 14px; transform: rotate(-90deg); }
-.work-progress-card[open] > summary::after { transform: none; }
-.work-progress-card > summary > span:nth-child(2) { display: grid; gap: 3px; min-width: 0; }
-.work-progress-card > summary strong { color: var(--ink); font-size: 12px; font-weight: 550; line-height: 1.5; overflow-wrap: anywhere; }
-.work-progress-card > summary small { font-size: 10px; line-height: 1.5; }
-.work-progress-symbol { color: var(--accent); padding-top: 2px; font-size: 13px; }
-.work-progress-body { margin: 9px 0 0 6px; padding-left: 18px; border-left: 1px solid var(--line); }
-.work-progress-steps { display: grid; gap: 15px; margin: 0; padding: 2px 0; list-style: none; }
-.work-progress-step { position: relative; display: flex; align-items: flex-start; gap: 8px; min-width: 0; font-size: 11px; line-height: 1.6; }
-.work-progress-step > div { flex: 1; min-width: 0; }
-.work-progress-step strong { font-weight: 500; overflow-wrap: anywhere; }
-.work-progress-step p { margin: 3px 0 0; font-size: 10px; line-height: 1.65; overflow-wrap: anywhere; }
-.work-progress-step time { white-space: nowrap; font-size: 9px; padding-top: 1px; }
-.work-progress-mark { position: absolute; left: -25px; top: 2px; width: 12px; height: 12px; display: grid; place-content: center; color: var(--accent); background: var(--surface, #fff); font-size: 10px; }
-.work-progress-step.status-running { color: var(--ink); }
-.work-progress-step.status-running .work-progress-mark { border: 1px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: work-progress-spin 1s linear infinite; }
-.work-progress-step.status-waiting { color: var(--calm-warning, #775823); }
-.work-progress-step.status-error { color: var(--calm-error, #963636); }
-.work-progress-step.status-error .work-progress-mark { color: inherit; }
-.work-progress-technical { margin-top: 14px; }
-.work-progress-technical > summary { font-size: 10px; cursor: pointer; padding: 3px 0; }
-.work-progress-technical pre { max-height: 220px; overflow: auto; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--calm-raised, #f2f5f9); color: var(--ink); font: 10px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
-.work-progress-technical .text-button, .work-progress-choice { padding: 6px 0; font-size: 10px; }
+/* Godkendte kompakte aktivitet: arbejdskortet (T7/D4b) er erstattet af
+   trinrækkerne i components.css (.disclosure.step, §6.3). Fællesklasser,
+   der stadig bruges af Aktivitetspanelet, står ovenfor. */
 .activity-technical-title { font-size: 11px; margin-bottom: 4px; }
-@keyframes work-progress-spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .work-progress-step.status-running .work-progress-mark { animation: none; } }
 
 /* Sammenklappelige planafsnit (design: expanderbar opgaveliste) */
 details.plan-detail { border: 1px solid var(--line); border-radius: 8px; padding: 0; margin: 6px 0; background: var(--surface); }
@@ -1294,7 +1404,7 @@ details.plan-detail > .plan-detail-body { padding: 0 14px 12px 14px; font-size: 
 /* Animeret indsats-slider: glidende fyld, svajende glød og pæren ved ny værdi. */
 .picker-effort-slider { margin: 10px 2px 0; padding-top: 8px; border-top: 1px solid var(--line); }
 .picker-effort-slider .effort-heading { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
-.picker-effort-slider .effort-label { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.picker-effort-slider .effort-label { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .picker-effort-slider .effort-value { font-size: 12.5px; font-weight: 650; color: var(--ink); }
 .picker-effort-slider .effort-slider { position: relative; height: 28px; }
 .picker-effort-slider #picker-effort-range { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; margin: 0; }
@@ -1306,22 +1416,79 @@ details.plan-detail > .plan-detail-body { padding: 0 14px 12px 14px; font-size: 
 .picker-effort-slider .effort-slider-thumb-dot { width: 6px; height: 6px; border-radius: 999px; background: var(--surface); animation: effortPuls 2.2s ease-in-out infinite; }
 .picker-effort-slider .effort-slider-thumb.pop { animation: effortPop .34s cubic-bezier(.3,1.4,.4,1); }
 .picker-effort-slider .effort-slider-labels { position: absolute; left: 11px; right: 11px; bottom: -3px; display: flex; justify-content: space-between; pointer-events: none; }
-.picker-effort-slider .effort-slider-labels span { font-size: 10px; color: var(--muted); border-radius: 6px; padding: 0 2px; pointer-events: auto; cursor: pointer; }
+.picker-effort-slider .effort-slider-labels span { font-size: 12px; color: var(--muted); border-radius: 6px; padding: 0 2px; pointer-events: auto; cursor: pointer; }
 .picker-effort-slider .effort-slider-labels span:hover { color: var(--ink); }
 @keyframes effortShimmer { 0% { background-position: 0% 0; } 100% { background-position: 200% 0; } }
 @keyframes effortPuls { 0%, 100% { opacity: .45; transform: scale(.75); } 50% { opacity: 1; transform: scale(1.18); } }
 @keyframes effortPop { 0% { transform: translate(-50%, -50%) scale(1); } 55% { transform: translate(-50%, -50%) scale(1.26); } 100% { transform: translate(-50%, -50%) scale(1); } }
-#model-picker { position: fixed; left: 220px; bottom: 120px; width: 340px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); box-shadow: 0 12px 32px #00000030; margin: 0; }
+/* Modelvælgeren bærer menu-materialet (P1: ét popover-grammatik — radius 16,
+   0,5 px kant, --aura-shadow-menu, neutral hover); ID-reglen ejer kun bredde,
+   placering og egen padding. Rækkerne er neutrale: valgt model ses på
+   fluebenet › og fed navn, ikke på en blå række. */
+#model-picker { position: fixed; inset: auto; width: 340px; padding: 10px; margin: 0; }
 #model-picker-search { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--canvas); color: var(--ink); font: inherit; margin: 0; }
 #model-picker-search:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 32%, transparent); }
 #model-picker-list { max-height: 260px; overflow-y: auto; display: grid; gap: 2px; margin-top: 8px; }
 #model-picker-list button[aria-selected="true"]::before { content: '›  '; color: var(--accent); }
-#model-picker-list button[data-aktiv] { background: var(--tint); }
+#model-picker-list button[data-aktiv] { background: var(--aura-bg-hover); }
 #model-picker-list p.hint { margin: 0; padding: 7px 10px; font-size: 12px; color: var(--muted); }
 #model-picker-list button { display: block; width: 100%; text-align: left; padding: 8px 12px; border: none; background: transparent; border-radius: 8px; font-size: 13px; cursor: pointer; color: var(--ink); }
-#model-picker-list button:hover { background: var(--tint); }
-#model-picker-list button[aria-selected="true"] { background: var(--tint); font-weight: 600; }
+#model-picker-list button:hover { background: var(--aura-bg-hover); }
+#model-picker-list button[aria-selected="true"] { background: var(--aura-bg-hover); font-weight: 600; }
 #model-picker .mode-menu-footer { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+/* S2 slash-popup → P1: samme menu-materiale som resten af appen (.menu-material:
+   radius 16, 0,5 px kant, --aura-shadow-menu, neutral hover — ingen blå
+   aktiv-række). Bredden følger COMPOSEREN (slash-commands.js), ikke vinduet;
+   højst 420 px bred og cirka 320 px høj. Højst 8 rækker; en række er navn og
+   en beskrivelse med ellipsis, 36 px høj og 44 px ved pegefelter. */
+/* S3-fix (UX 7): ingen vandret scroll i popuppen. Sporet er låst til lagets
+   bredde (minmax(0,1fr) — ellers vokser 'auto'-sporet med nowrap-indholdet,
+   målt live: rækker ~930 px i et 387 px lag), overflow-x er lukket, og både
+   navn og beskrivelse afkortes med ellipsis i stedet for at klippe midt i
+   et ord. */
+/* Efter-byg F9 (Claude, bekræftet live på HEAD): basisreglen satte
+   `display: grid` — en forfatterregel, der slår browserens egen
+   `display: none` for lukkede popovers til side. Den LUKKede popup tegnede
+   sig derfor som en tom, indrammet strimmel (420×13 px) direkte under
+   topbjælken i begge temaer. display: grid står KUN på :popover-open-reglen;
+   basisreglen ejer geometrien og intet visnings-lag. */
+#slash-menu { position: fixed; inset: auto; width: 420px; max-width: 420px; max-height: 320px; overflow-y: auto; overflow-x: hidden; padding: 6px; margin: 0; grid-template-columns: minmax(0, 1fr); gap: 2px; }
+#slash-menu.menu-material:popover-open { display: grid; gap: 2px; }
+#slash-menu button { display: flex; gap: 8px; align-items: center; text-align: left; min-height: 36px; min-width: 0; overflow: hidden; padding: 6px 10px; border: none; background: transparent; border-radius: 8px; font-size: 13px; font-weight: 400; cursor: pointer; color: var(--ink); }
+/* S5-UI-fix (b) fra S3-liveanalysen: navnekolonnen får min-content-plads op
+   til ~55 % — et langt kommandonavn (harness-præfiks osv.) afkortes så lidt
+   som muligt, og kun over loftet kommer ellipsis; beskrivelsen viger først
+   (den har min-width: 0). Rækken er stadig ÉN linje: nowrap består (DSH). */
+#slash-menu button strong { font-family: var(--aura-font-family-code); font-size: 12px; font-weight: 550; color: var(--ink); flex: 0 1 auto; min-width: min-content; max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#slash-menu button small { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--muted); }
+/* Hover og den aktive række bærer samme NEUTRALE flade (P1), og beskrivelsen
+   skifter til --aura-ink-secondary, så den lille tekst holder kontrasten på
+   fyldet i begge temaer (målt: 9,19:1 lyst / 6,43:1 mørkt). */
+#slash-menu button:hover, #slash-menu button[aria-selected="true"] { background: var(--aura-bg-hover); }
+#slash-menu button:hover small, #slash-menu button[aria-selected="true"] small { color: var(--aura-ink-secondary); }
+@media (pointer: coarse) { #slash-menu button { min-height: 44px; } }
+
+/* ── S4 · /stil-kataloget — andet niveau i den samme S2-popup ──
+   Rækkerne bor i en INDRE beholder med CSS-ejet højde til otte faste rækker
+   (S2-rækkernes 36 px; 44 px ved berøring). Højden kommer fra klassen — aldrig
+   fra inline-stile — så popover-lagets rydning af sin egen maxHeight (place()
+   nulstiller layer.style.maxHeight ved hver ankring) aldrig kan ændre listens
+   højde. Status («Henter katalog…», «Ingen stile matcher «x»», konkrete
+   fejl), «Gemt katalog»-markeringen og overflow-rækken står uden for listen
+   og er ikke valgbare. */
+:root { --slash-style-row-height: 36px; }
+#slash-menu .slash-styles { max-block-size: calc(8 * var(--slash-style-row-height, 36px)); overflow-y: auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; }
+#slash-menu .slash-row--style { height: var(--slash-style-row-height); }
+@media (pointer: coarse) { #slash-menu .slash-styles { max-block-size: calc(8 * 44px); } #slash-menu .slash-row--style { height: 44px; } }
+#slash-menu .slash-row--style strong { font-family: inherit; font-size: 13px; font-weight: 550; max-width: 52%; }
+/* Tema-prikken er DEKORATIV (aria-hidden): fyldt prik = mørkt tema, ring =
+   lyst tema — betydningen bæres altid af rækkens tilgængelige tekst
+   («Kategori · Mørk/Lys»), aldrig af farven alene (WCAG 1.4.1). */
+#slash-menu .slash-theme-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; }
+#slash-menu .slash-theme-dot.is-dark { background: var(--aura-ink-secondary); border: 0.5px solid var(--aura-border); }
+#slash-menu .slash-theme-dot.is-light { background: transparent; border: 1.5px solid var(--aura-ink-caption); }
+#slash-menu .slash-status, #slash-menu .slash-note, #slash-menu .slash-more { min-height: var(--slash-style-row-height); display: flex; align-items: center; padding: 6px 10px; font-size: 12px; color: var(--muted); }
+#slash-menu .slash-more { color: var(--aura-ink-caption); }
 
 /* Status-badges: farve-kodede piller for agenttilstande (Paradev-mønster) */
 .badge.run-idle { background: var(--aura-success-subtle); color: var(--aura-success); border: 1px solid transparent; }
@@ -1338,76 +1505,88 @@ details.plan-detail > .plan-detail-body { padding: 0 14px 12px 14px; font-size: 
 
 /* D: Flydende scroll-til-bund-knap (Paradev ScrollToBottomButton-mønster) */
 /* 'Seneste svar' ligger i aktivitetsbåndets anden række med fast plads — flydende og ALDRIG oven på beskedtekst. */
-.chat-latest { justify-self: end; margin-left: 8px; padding: 2px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--tint); color: var(--ink); font-size: 11px; font-weight: 600; cursor: pointer; }
+.chat-latest { justify-self: end; margin-left: 8px; padding: 2px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--tint); color: var(--ink); font-size: var(--aura-text-12); font-weight: 600; cursor: pointer; }
 .chat-latest:hover { border-color: var(--accent); color: var(--accent); }
 #agent-activity .chat-latest { grid-column: 3; grid-row: 2; }
+/* #run-status er skjult som role=status (§6.1) — ingen puls på en usynlig flade. */
+.badge.visually-hidden { animation: none; }
 
-/* B: Kompakte diff-stats-badge i opgave-resultater */
-.diff-stat-badge { display: inline-grid; place-items: center; gap: 4px; padding: 2px 6px; border-radius: 999px; background: var(--tint); font-size: 10px; font-weight: 600; color: var(--muted); margin-left: 6px; }
-.diff-stat-badge .added { color: #1d6b43; }
-.diff-stat-badge .removed { color: #9c2a27; }
-@media (prefers-color-scheme: dark) {
-  .diff-stat-badge { background: #233043; }
-  .diff-stat-badge .added { color: #6ecf8f; }
-  .diff-stat-badge .removed { color: #f0a8a5; }
-}
+/* B: Kompakte diff-stats-badge i opgave-resultater — på aura-tokens i begge
+   temaer (P1: ingen egen mørk navy-blok). Tal-parrene er color-mix af
+   diff-farven og ink (målt 5,29/7,40:1 lys, 7,26/5,86:1 mørk — P1-rapporten). */
+.diff-stat-badge { display: inline-grid; place-items: center; gap: 4px; padding: 2px 6px; border-radius: 999px; background: var(--tint); font-size: 11px; font-weight: 600; color: var(--aura-ink-secondary); margin-left: 6px; }
+.diff-stat-badge .added { color: color-mix(in srgb, var(--aura-diff-add) 70%, var(--aura-ink)); }
+.diff-stat-badge .removed { color: color-mix(in srgb, var(--aura-diff-del) 70%, var(--aura-ink)); }
 
 .chat.panel { position: relative; }
+
+/* ── S5 · Stilkortet (gradientdeck-style-dialogen) ──
+   Samme dialog-grammatik som samtykke-dialogen (data-size="confirm"). Meta-
+   rækkerne er en lille definitionslister; diff-visningen er ét rullefelt med
+   præcis linjebredde, så +/−-linjerne står stille under læsning. Farverne er
+   Auras tokens — ingen rå hexværdier — og betydningen bæres af +/−-tegnet
+   og tekstfarve, aldrig af farven alene (WCAG 1.4.1). */
+#gradientdeck-style .style-card-meta { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 0 0 8px; }
+#gradientdeck-style .style-card-meta dt { color: var(--muted); }
+#gradientdeck-style .style-card-meta dd { margin: 0; overflow-wrap: anywhere; }
+#gradientdeck-style .style-card-diff { max-height: 220px; overflow: auto; border: 0.5px solid var(--aura-border); border-radius: 8px; padding: 6px 8px; font-family: var(--aura-font-family-code); font-size: 12px; line-height: 1.5; }
+#gradientdeck-style .style-card-diff .style-card-line { display: block; white-space: pre-wrap; overflow-wrap: anywhere; }
+#gradientdeck-style .style-card-diff .style-card-line.is-add { color: var(--aura-success-ink, var(--ink)); }
+#gradientdeck-style .style-card-diff .style-card-line.is-del { color: var(--aura-error-ink, var(--muted)); }
+#gradientdeck-style .style-card-diff .style-card-line.is-ctx { color: var(--muted); }
+#gradientdeck-style .style-card-skip { margin: 4px 0; color: var(--aura-ink-caption); }
+#gradientdeck-style .hint { overflow-wrap: anywhere; }
 
 /* ============================================================================
    DARKMODE · samlet afslutningsblok (skal ligge SIDST i filen, så disse
    regler vinder kildeordens-kaskaden over alle tidligere baseregler).
-   Teknik: :root-variabler gensættes her, og flader/signalfarver der har
-   hårdkodede lyse værdier i tidligere baseregler overskrives på ny.
+   P1: Den gamle navy-palet (#0d1219/#141c26/#1d2a3d/#2a3648 …) er væk —
+   aliaserne peger nu på aura-tokens (DSH's neutrale mørke flader), og de
+   enkelte overfyldninger bruger samme tokens som arbejdsfladen. Teknikken
+   er uændret: :root-variabler + overfyldninger, så flader uden for
+   .workspace-calm (onboarding, dialoger, genoptagelsesbanner) følger med.
    ============================================================================ */
 @media (prefers-color-scheme: dark) {
   :root {
-    --ink: #e2e8f0; --muted: #9aa8bd; --accent: #4f8ff7; --accent-hover: #6ba1ff;
-    --tint: #1d2a3d; --surface: #141c26; --canvas: #0d1219; --line: #2a3648;
-    --soft: #1c232e; --accent-soft: #1d2a3d; --calm-veil: rgba(13, 18, 25, .85);
+    --ink: var(--aura-ink); --muted: var(--aura-ink-muted); --accent: var(--aura-accent); --accent-hover: var(--aura-accent-hover);
+    --tint: var(--aura-bg-tint); --surface: var(--aura-bg-raised); --canvas: var(--aura-bg); --line: var(--aura-border);
+    --soft: var(--aura-bg-raised); --accent-soft: var(--aura-accent-subtle); --calm-veil: rgba(0,0,0,.55);
   }
   body { background: var(--canvas); }
-  #setup-reason, #connection-warning { background: #3a2f18; color: #f4d9a6; border-color: #5c451f; }
-  .composer-wait { color: #e0b34d; }
-  .composer:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--tint); }
+  #setup-reason, #connection-warning { background: var(--aura-warning-subtle); color: var(--aura-warning-ink); border-color: color-mix(in srgb, var(--aura-warning) 45%, transparent); }
+  .composer-wait { color: var(--aura-warning-ink); }
   .preview-toolbar, .viewport-toolbar { background: var(--surface); }
   #preview-stage, iframe { background: var(--surface); }
   #setup-choice button { background: var(--surface); }
   /* Notificeringer og kort */
-  .updates-notice { background: #1d2433; border-bottom-color: var(--line); color: var(--ink); }
-  .updates-notice.critical, .updates-warning { background: #3a2f18; color: #f4d9a6; }
-  #resume-notice { background: #1d2942; }
+  .updates-notice { background: var(--aura-accent-subtle); border-bottom-color: var(--line); color: var(--ink); }
+  .updates-notice.critical, .updates-warning { background: var(--aura-warning-subtle); color: var(--aura-warning-ink); }
   .copy-notice { background: var(--accent-soft); }
   .journey-card, .startup-summary { background: var(--surface); }
-  /* Switch-kontakter: mørke spor med lys knop */
-  input[type=checkbox][role=switch] { background: #2a3648; }
-  input[type=checkbox][role=switch]::before { background: #9aa8bd; box-shadow: none; }
-  input[type=checkbox][role=switch]:checked { background: var(--accent); }
-  input[type=checkbox][role=switch]:checked::before { background: var(--canvas); }
+  /* Switch-kontakter: T8 — basisreglen er på --aura-tokens og ejer begge
+     temaer; de mørke duplikater fra P1-overgangen er fjernet. */
   /* Funktionelle signalfarver */
-  .chat-message.user { background: #1e2a3c; }
-  .chat-message.error { color: #f0a8a5; background: #3d1f1c; }
-  .markdown code { background: #1a2433; }
-  .markdown pre { background: #182230; }
-  .project-item.active { background: #1e2a3c; }
-  .approval pre, #changes-list pre, #git-files pre { background: #111823; }
-  .question-card { background: #16202d; border-color: var(--line); }
-  .answer-record { border-left-color: #3a4d63; }
-  .change-tag { background: #233043; color: #c4d2e0; }
-  .change-tag.change-ny { background: #1d3a2a; color: #6ecf8f; }
-  .tools-ops-konflikt { border-color: #5c4a1f; background: #31291a; }
-  .panel-warning { background: #31291a; border-color: #5c4a1f; color: #e0c9a0; }
-  #data-warning { color: #e0c9a0; background: #31291a; }
-  .data-summary { background: #182030; }
-  .dialog-notice { background: #31291a; }
-  .key-guide { background: #1a2433; }
-  .ref-chip { background: #233043; border-color: var(--line); color: var(--ink); }
-  .work-tab[aria-selected="true"] { background: #1e2a3c; border-color: var(--line); }
-  .sidebar { background: linear-gradient(165deg, #0f151e, #141c26 60%); }
-  .agent-activity { background: #1a2433; }
-  .diff-row.add { background: #1d3a2a22; }
-  .diff-row.del { background: #4a1c1c22; }
-  .badge { background: #233043; color: #c4d2e0; }
+  .chat-message.error { color: var(--aura-error); background: var(--aura-error-subtle); }
+  .markdown code { background: var(--aura-bg-tint); }
+  .markdown pre { background: var(--aura-bg-tint); }
+  .project-item.active { background: var(--tint); }
+  .approval pre, #changes-list pre, #git-files pre { background: var(--aura-bg); }
+  .question-card { background: var(--aura-bg-tint); border-color: var(--line); }
+  .answer-record { border-left-color: var(--line); }
+  .change-tag { background: var(--aura-bg-tint); color: var(--ink); }
+  .change-tag.change-ny { background: var(--aura-success-subtle); color: var(--aura-success); }
+  .tools-ops-konflikt { border-color: color-mix(in srgb, var(--aura-warning) 45%, transparent); background: var(--aura-warning-subtle); }
+  .panel-warning { background: var(--aura-warning-subtle); border-color: color-mix(in srgb, var(--aura-warning) 45%, transparent); color: var(--aura-warning-ink); }
+  #data-warning { color: var(--aura-warning-ink); background: var(--aura-warning-subtle); }
+  .data-summary { background: var(--aura-bg-tint); }
+  .dialog-notice { background: var(--aura-warning-subtle); }
+  .key-guide { background: var(--aura-bg-tint); }
+  .ref-chip { background: var(--aura-bg-tint); border-color: var(--line); color: var(--ink); }
+  .work-tab[aria-selected="true"] { background: var(--aura-bg-tint); border-color: var(--line); }
+  .agent-activity { background: var(--aura-bg-tint); }
+  .diff-row.add { background: var(--aura-diff-add-bg); }
+  .diff-row.del { background: var(--aura-diff-del-bg); }
+  .badge { background: var(--aura-bg-tint); color: var(--ink); }
   .empty-code { color: var(--muted); border-color: var(--line); }
   .activity-entry { border-bottom: 1px solid var(--line); }
   .pick-hint { background: var(--ink); color: var(--canvas); }
@@ -1415,8 +1594,11 @@ details.plan-detail > .plan-detail-body { padding: 0 14px 12px 14px; font-size: 
   .code-viewer { color: var(--ink); }
   button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline-color: var(--accent); }
   /* Onboarding-B: hero-plade og orbit-kort (mørke varianter ligger i onboarding-b.css, som indlæses senere) */
-  .segmented { background: #1c232e; }
+  .segmented { background: var(--aura-bg-tint); }
   .segmented button[aria-pressed="true"] { box-shadow: 0 1px 2px #00000066; }
-  .chat-more { background: #1c2432; }
+  /* D1: .chat-more bærer --aura-bg-raised i basisreglen — tokenet følger
+     temaet selv, så den gamle mørke overfyldning er overflødig. */
+  /* 11 px-tidsstempler (typografi-gulvet): ventestatussen holder 4,5:1 på det
+     mørke sidepanelet — warning-ink måler 7,49:1 (P1-rapporten). */
+  .chat-meta.is-waiting { color: var(--aura-warning-ink); }
 }
-

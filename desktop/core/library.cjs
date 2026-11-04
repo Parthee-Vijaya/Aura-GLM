@@ -4,7 +4,13 @@ const path = require('node:path');
 // Det fælles bibliotek er læsbare filer i profiles/. Kataloget beskriver skills for mennesker og
 // værktøjernes filplaceringer; SKILL.md-filerne er instruktionerne til agenten.
 const NAME = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-const SKILL_FILE = /^(SKILL\.md|references\/[a-z0-9-]+\.md)$/;
+const SKILL_FILE = /^(SKILL\.md|references\/[a-z0-9-]+\.md|worlds\/worlds\.json|photos\/photos\.json|scripts\/roll\.mjs|LICENSE)$/;
+// S3: den fulde GradientDeck-port medbringer præcis tre datatyper samt den
+// bevarede MIT-licens. Hver type har sit eget størrelsesbudget i bytes, så en
+// skill aldrig kan pakke vilkærligt store datablokke med — og JSON-filerne
+// skal være gyldige, for motoren og rollen læser dem uændrede.
+const DATA_FILE = /^(worlds\/worlds\.json|photos\/photos\.json|scripts\/roll\.mjs|LICENSE)$/;
+const DATA_FILE_BUDGET = { 'worlds/worlds.json': 1024 * 1024, 'photos/photos.json': 1024 * 1024, 'scripts/roll.mjs': 128 * 1024, 'LICENSE': 32 * 1024 };
 const FAQ_FIELDS = ['hvad', 'hvornaar', 'resultat', 'ikke'];
 // En integration fortæller, hvem der ejer systemet, hvem der vedligeholder skillen, og hvad der sendes hvorhen.
 const INTEGRATION_TEXT = ['system', 'owner', 'maintainer', 'access', 'data', 'dataFlow', 'cost'];
@@ -45,6 +51,12 @@ function validateSkillFiles(name, files, where = `Skill ${name}`) {
   for (const file of files) {
     if (!SKILL_FILE.test(file.path) || typeof file.content !== 'string' || paths.has(file.path)) throw new Error(`${where}: Ugyldig eller gentaget referencefil ${file.path}.`);
     paths.add(file.path);
+    if (DATA_FILE.test(file.path)) {
+      if (Buffer.byteLength(file.content, 'utf8') > DATA_FILE_BUDGET[file.path]) throw new Error(`${where}: ${file.path} er for stor. Datafiler har et størrelsesbudget.`);
+      if (/\.json$/.test(file.path)) {
+        try { JSON.parse(file.content); } catch { throw new Error(`${where}: ${file.path} er ikke gyldig JSON.`); }
+      }
+    }
     if (file.path !== 'SKILL.md' && !result.body.includes(file.path)) throw new Error(`${where}: ${file.path} bruges ikke fra SKILL.md. Bevar henvisningen, eller gendan skillen.`);
   }
   for (const raw of result.body.match(/references\/[^\s)\]\x60"<>]+/g) || []) {
@@ -119,13 +131,27 @@ function safeRelative(file) {
 
 async function readSkillFiles(dir) {
   const files = [];
+  // S3: datamapperne accepterer præcis deres porterede fil — aldrig vilkårlige
+  // scripts eller ekstra filer. Roden håndhæves af validateSkillFiles.
+  const DATA_DIRECTORIES = { worlds: 'worlds.json', photos: 'photos.json', scripts: 'roll.mjs' };
   for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
-    if (entry.isFile()) files.push(entry.name);
-    else if (entry.isDirectory() && entry.name === 'references') for (const inner of await fs.readdir(path.join(dir, 'references'), { withFileTypes: true })) {
-      if (!inner.isFile()) throw new Error(`Skillmappen ${dir} indeholder en ugyldig post.`);
-      files.push(`references/${inner.name}`);
+    if (entry.isFile()) { files.push(entry.name); continue; }
+    if (!entry.isDirectory()) throw new Error(`Skillmappen ${dir} indeholder en ugyldig post.`);
+    const only = DATA_DIRECTORIES[entry.name];
+    if (only) {
+      const inner = await fs.readdir(path.join(dir, entry.name), { withFileTypes: true });
+      if (inner.length !== 1 || inner[0].name !== only || !inner[0].isFile()) throw new Error(`Skillmappen ${dir} indeholder en ugyldig post: ${entry.name}.`);
+      files.push(`${entry.name}/${only}`);
+      continue;
     }
-    else throw new Error(`Skillmappen ${dir} indeholder en ugyldig post: ${entry.name}.`);
+    if (entry.name === 'references') {
+      for (const inner of await fs.readdir(path.join(dir, 'references'), { withFileTypes: true })) {
+        if (!inner.isFile()) throw new Error(`Skillmappen ${dir} indeholder en ugyldig post.`);
+        files.push(`references/${inner.name}`);
+      }
+      continue;
+    }
+    throw new Error(`Skillmappen ${dir} indeholder en ugyldig post: ${entry.name}.`);
   }
   return Promise.all(files.sort().map(async file => ({ path: file, content: await fs.readFile(path.join(dir, file), 'utf8') })));
 }
@@ -193,4 +219,4 @@ function validateFeatures(features, names) {
   if (placed.length !== names.size || placed.some(name => !names.has(name)) || new Set(placed).size !== placed.length) throw new Error('Hver skill skal høre til præcis én funktion.');
 }
 
-module.exports = { loadLibrary, parseFrontmatter, validateSkillText, validateSkillFiles, validateSkillLinks, safeRelative };
+module.exports = { loadLibrary, parseFrontmatter, validateSkillText, validateSkillFiles, validateSkillLinks, safeRelative, DATA_FILE, DATA_FILE_BUDGET };

@@ -93,12 +93,14 @@ const helpers = require('./ui-test-helpers.cjs');
     await page.locator('#git-summary').filter({ hasText: 'Alt er gemt.' }).waitFor();
     assert.equal((await log())[0], 'Mine noter'); assert.equal(await clean(), true);
     await page.click('#tab-preview');
-    const usage = await page.locator('#usage-status').textContent();
-    assert.match(usage, /^Denne samtale: [\d.]+ tokens ind · [\d.]+ ud · pris ukendt$/);
+    const usage = await page.locator('#context-status').getAttribute('aria-label');
+    assert.match(usage, /^[\d.,]+[kM]? · \d+ tok\/s · [\d.]+ tokens · \$0,00\*$/, 'statuslinjen: kontekst · tok/s · tokens · pris — uden prisliste vises *');
     // 6. Kom tilbage: projektet, samtalen og forbruget er der efter genstart.
     await app.close(); app = null; await launch();
     await page.locator('#project-name').filter({ hasText: 'Oversigt over tre fiktive mødelokaler' }).waitFor();
-    await heading('Tre mødelokaler'); assert.equal(await page.locator('#usage-status').textContent(), usage);
+    await heading('Tre mødelokaler');
+    // Konteksten måles forfra efter genstart; hastighed, tokens og pris er gemt med samtalen.
+    assert.equal(await page.locator('#context-status').getAttribute('aria-label').then(text => text.replace(/^[^·]*·/, '')), usage.replace(/^[^·]*·/, ''));
     await page.screenshot({ path: path.join(root, 'kom-tilbage.png'), animations: 'disabled' });
     console.log(JSON.stringify({ status: 'bestået', root, checks: ['Git, anonym identitet og første version ved oprettelse', 'automatisk version efter AI-opgave', 'Fortryd opgaven som ny version', 'versioner i almindeligt dansk med tidspunkter', 'Gå tilbage hertil som ny version', 'Gem version med ét klik', 'seneste projekt genåbnet efter genstart med samtale og forbrug'] }, null, 2));
   } catch (error) {

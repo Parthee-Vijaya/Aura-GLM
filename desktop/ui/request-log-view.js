@@ -26,7 +26,7 @@
   function mount() {
     const scroll = document.getElementById('activity-scroll');
     if (!scroll) return;
-    const details = document.createElement('details'); details.className = 'request-log';
+    const details = document.createElement('details'); details.className = 'request-log disclosure';
     const summary = document.createElement('summary'); summary.textContent = 'Sendt til AI';
     const hint = document.createElement('p'); hint.className = 'hint';
     hint.textContent = 'Hvad Aura sendte ud over din tekst i denne samtale: kilde, størrelse og modtager pr. kald. Indhold og nøgler gemmes aldrig.';

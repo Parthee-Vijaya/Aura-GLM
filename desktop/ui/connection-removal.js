@@ -7,6 +7,7 @@
     const make = (tag, text, className) => { const element = document.createElement(tag); if (text) element.textContent = text; if (className) element.className = className; return element; };
     const dialog = make('dialog', '', 'connection-removal-dialog'), heading = make('h2', 'Fjern AI-forbindelsen?'), description = make('p');
     dialog.id = 'connection-removal-dialog'; heading.id = 'connection-removal-title'; description.id = 'connection-removal-description';
+    dialog.setAttribute('data-size','confirm');
     dialog.setAttribute('aria-labelledby', heading.id); dialog.setAttribute('aria-describedby', description.id);
     description.append(make('strong', connection.name || 'Den valgte forbindelse'), document.createTextNode(' og dens gemte adgangsoplysninger fjernes fra Aura Prime. Dine projekter og samtaler bevares.'));
     const details = make('p', connection.retiredOAuth ? 'Den tidligere komplai-loginadgang tilbagekaldes. komplai Run bevares.' : 'En API-nøgle tilbagekaldes ikke hos udbyderen. Den kan stadig bruges i andre programmer.', 'hint');

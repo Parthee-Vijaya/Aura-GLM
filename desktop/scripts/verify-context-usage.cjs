@@ -67,7 +67,7 @@ async function probe(version, root) {
       await app.evaluate(({ BrowserWindow }, { owner, usage, contextUsage }) => {
         BrowserWindow.getAllWindows().find(item => item.webContents.getURL().startsWith('harness://')).webContents.send('harness:event', { type: 'usage', usage, contextUsage, ...owner });
       }, { owner, usage: totals, contextUsage });
-      await page.waitForFunction(() => document.querySelector('#usage-status').textContent.includes('410.000'));
+      await page.waitForFunction(changed => document.querySelector(changed ? '#tokens-field' : '#usage-status').textContent.includes(changed ? '422.000' : '410.000'), changed);
     };
     const screenshot = async name => {
       const chat = await page.locator('.chat').boundingBox();
@@ -78,25 +78,26 @@ async function probe(version, root) {
     const context = new ContextUsage({ now: () => 123 }); context.bind(binding);
     const measured = context.observe({ type: 'step-finish', tokens: { input: 44000, output: 9000, cache: { read: 10000, write: 0 } } });
     await emit(measured);
-    const usageText = await page.textContent('#usage-status');
-    assert.match(usageText, /410.000 tokens ind.*12.000 ud.*0,20 USD/);
+    const lineText = await page.textContent(changed ? '#context-status' : '#usage-status');
+    if (changed) assert.match(lineText, /^54k\/128k \(42%\) · 0 tok\/s · 422\.000 tokens · \$0,20$/, 'én linje: kontekst med procent · hastighed · total · pris');
+    else assert.match(lineText, /410.000 tokens ind.*12.000 ud.*0,20 USD/);
     if (changed) {
-      await page.waitForFunction(() => document.querySelector('#context-label').textContent.includes('54.000'));
-      assert.equal(await page.textContent('#context-label'), 'Kontekst · 54.000 / 128.000 · 42,2 %');
-      assert.equal(await page.locator('#context-meter').isVisible(), true);
-      assert.equal(await page.locator('#context-meter').getAttribute('aria-valuetext'), 'Kontekst · 54.000 / 128.000 · 42,2 %');
+      await page.waitForFunction(() => document.querySelector('#context-field').textContent.includes('54k'));
+      assert.equal(await page.textContent('#context-field'), '54k/128k (42%)');
+      assert.equal(await page.textContent('#speed-field'), '0 tok/s', 'uden trinregister viser hastigheden 0 som visningsværdi');
+      assert.equal(await page.textContent('#price-field'), '$0,20');
     } else assert.equal(await page.locator('#context-status').count(), 0);
     await screenshot('measured'); check(`${version}: samme samlede forbrug; kun efter viser sidste målte kontekst separat.`);
 
     context.observe({ type: 'step-finish', tokens: { input: 44 } });
     await emit(context.snapshot());
-    if (changed) { await page.waitForFunction(() => document.querySelector('#context-label').textContent.startsWith('Kontekst ukendt')); assert.equal(await page.locator('#context-meter').isVisible(), false); }
+    if (changed) { await page.waitForFunction(() => document.querySelector('#context-field').textContent === '0/128k (0%)'); assert.equal(await page.textContent('#context-field'), '0/128k (0%)', 'manglende cachetal giver ingen opdigtet procent — 0 er visningsværdi'); }
     await screenshot('unknown-input'); check(`${version}: manglende cachetal giver ingen opdigtet procent eller nulmåling.`);
     await emit(measured);
     await page.evaluate(() => { document.querySelector('#route-select').value = 'rute-b'; document.querySelector('#route-select').dispatchEvent(new Event('change')); });
-    if (changed) assert.match(await page.textContent('#context-label'), /^Kontekst ukendt/);
+    if (changed) assert.equal(await page.textContent('#context-field'), '0/128k (0%)', 'en anden rute genbruger ikke målingen');
     await page.evaluate(() => { document.querySelector('#model-select').value = 'model-b'; updateModelSummary(); });
-    if (changed) assert.equal(await page.textContent('#context-label'), 'Kontekst ukendt · vindue 64.000');
+    if (changed) assert.equal(await page.textContent('#context-field'), '0/64k (0%)');
     check(`${version}: valg af anden rute eller model genbruger ikke kontekstmålingen.`);
 
     await page.evaluate(() => {
@@ -105,17 +106,17 @@ async function probe(version, root) {
       setRunning(true, 'Arbejder');
       document.querySelector('#model-select').value = 'model-b'; updateModelSummary();
     });
-    if (changed) assert.match(await page.textContent('#context-label'), /54.000 \/ 128.000/);
+    if (changed) assert.equal(await page.textContent('#context-field'), '54k/128k (42%)', 'den igangværende opgaves måling står fast');
     await page.evaluate(() => setRunning(false, 'Færdig'));
-    if (changed) assert.equal(await page.textContent('#context-label'), 'Kontekst ukendt · vindue 64.000');
+    if (changed) assert.equal(await page.textContent('#context-field'), '0/64k (0%)');
     check(`${version}: næste modelvalg overtager ikke målingen for den igangværende opgave.`);
 
     await page.evaluate(() => { document.querySelector('#model-select').value = 'model-a'; document.querySelector('#route-select').value = 'rute-a'; updateModelSummary(); });
     await emit(measured);
     const hiddenOwner = { ...owner, chat: 'baggrundsproeve' };
     await app.evaluate(({ BrowserWindow }, { owner, usage }) => BrowserWindow.getAllWindows().find(item => item.webContents.getURL().startsWith('harness://')).webContents.send('harness:event', { type: 'usage', ...owner, usage }), { owner: hiddenOwner, usage: { ...totals, input: 999999 } });
-    assert.equal(await page.textContent('#usage-status'), usageText);
-    if (changed) assert.match(await page.textContent('#context-label'), /54.000 \/ 128.000/);
+    assert.equal(await page.textContent(changed ? '#context-status' : '#usage-status'), lineText);
+    if (changed) assert.match(await page.textContent('#context-field'), /54k\/128k/);
     check(`${version}: baggrundssamtalens hændelser ændrer ikke det åbne skrivefelts forbrug eller kontekst.`);
     await resize(720, 800);
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));

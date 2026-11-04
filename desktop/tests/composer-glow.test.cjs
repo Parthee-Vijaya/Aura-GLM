@@ -37,7 +37,7 @@ function fixture() {
     Date: class extends Date { static now() { return 20000; } },
     clearInterval() {}, setInterval: () => 1, elapsedText: ms => `${Math.floor(ms / 1000)} s`,
     anyRunning: () => [...views.values()].some(view => view.running),
-    updateModelSummary() { calls.model++; }, setupControls() {}, showConnectionWarning() {}, updateBadgeClass() {},
+    updateModelSummary() { calls.model++; }, setupControls() {}, showConnectionWarning() {}, updateBadgeClass() {}, applyChatPhase() {},
     document: { querySelectorAll: () => [] },
     window: { ChatDisplay: { phase: ChatDisplay.phase, progress: view => ChatDisplay.progress(view, 20000) },
       liveWork: { render() { calls.liveWork++; } },
@@ -71,7 +71,7 @@ test('en faktisk kørende opgave markerer skrivefeltet og bevarer den læsbare f
   f.context.renderStatus();
   assert.equal(f.state(), 'working'); assert.equal(f.busy(), 'true');
   assert.equal(f.$('#agent-activity').classList.contains('is-idle'), false);
-  assert.equal(f.$('#agent-activity-text').textContent, 'AI’en skriver et svar …');
+  assert.equal(f.$('#agent-activity-text').textContent, 'Arbejder · 0 s');
   assert.equal(f.$('#agent-progress').textContent, '230 tegn modtaget');
   assert.equal(f.$('#run-status').textContent, 'Arbejder 0 s');
   assert.equal(f.$('#stop').hidden, false); assert.equal(f.$('#send').disabled, true);
@@ -83,16 +83,20 @@ test('ventende godkendelser og spørgsmål dæmper arbejdet indtil alle er besva
   f.context.waitFor('permission', 'Godkend filændringen', { isConnected: true });
   f.context.waitFor('question', 'Vælg en mulighed', { isConnected: true });
   assert.equal(f.state(), 'waiting'); assert.equal(f.busy(), 'true');
-  assert.equal(f.$('#agent-activity-text').textContent, 'Venter på dig: Godkend filændringen Og 1 mere.');
+  assert.equal(f.$('#agent-activity-text').textContent, 'Venter på dig · Godkend filændringen Og 1 mere.');
   assert.equal(f.$('#agent-activity').classList.contains('is-waiting'), true);
   assert.equal(f.$('#agent-activity-jump').hidden, false); assert.equal(f.$('#agent-progress').hidden, true);
   f.context.doneWaiting('permission');
   assert.equal(f.state(), 'waiting');
-  assert.equal(f.$('#agent-activity-text').textContent, 'Venter på dig: Vælg en mulighed');
+  assert.equal(f.$('#agent-activity-text').textContent, 'Venter på dig · Vælg en mulighed');
   f.context.doneWaiting('question');
   assert.equal(f.state(), 'working'); assert.equal(f.busy(), 'true');
   assert.equal(f.$('#agent-activity').classList.contains('is-waiting'), false);
-  assert.equal(f.$('#agent-activity-jump').hidden, true); assert.equal(f.$('#agent-progress').hidden, false);
+  assert.equal(f.$('#agent-activity-jump').hidden, true);
+  // P1 (audit §2.3): nuance-linjen står kun med indhold — der er endnu ikke
+  // modtaget tegn i denne fixture, så linjen er skjult i stedet for at vise
+  // et tredje "Venter på svar fra AI'en"-signal ved siden af live-indikatoren.
+  assert.equal(f.$('#agent-progress').hidden, true);
 });
 
 test('afslutning, stop og fejl fjerner markeringen uden at fjerne kladden eller planen', () => {

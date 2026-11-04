@@ -1,0 +1,358 @@
+{
+  "reference": "Installed DeepSeek Harness 0.2.1-rc.5, dsh-client-ui-theme/lib/client.js static token values",
+  "palette": {
+    "alias-bg-base": [
+      "#fff",
+      "#151517"
+    ],
+    "alias-bg-layer-1": [
+      "#fff",
+      "#232324"
+    ],
+    "alias-bg-layer-2": [
+      "#fff",
+      "#2c2c2e"
+    ],
+    "alias-bg-layer-3": [
+      "#fff",
+      "#353638"
+    ],
+    "alias-bg-module-platform": [
+      "#f5f6f7",
+      "#353638"
+    ],
+    "specific-sidebar-fill": [
+      "#f9fafb",
+      "#1b1b1c"
+    ],
+    "specific-sidebar-nav-item-active": [
+      "#ebeef2",
+      "#43454a"
+    ],
+    "specific-sidebar-nav-item-active-accent": [
+      "#e4edfd",
+      "#353638"
+    ],
+    "specific-input-major": [
+      "#fff",
+      "#2c2c2e"
+    ],
+    "specific-bubble": [
+      "#edf3fe",
+      "#2c2c2e"
+    ],
+    "alias-label-primary": [
+      "#0f1115",
+      "#f9fafb"
+    ],
+    "alias-label-secondary": [
+      "#61666b",
+      "#cfd3d6"
+    ],
+    "alias-label-tertiary": [
+      "#81858c",
+      "#adb2b8"
+    ],
+    "alias-state-business-primary": [
+      "#4176e6",
+      "#7aaaff"
+    ],
+    "alias-interactive-bg-hover": [
+      "#2631480f",
+      "#ffffff14"
+    ],
+    "alias-interactive-bg-active": [
+      "#2631481a",
+      "#ffffff24"
+    ],
+    "alias-border-l1": [
+      "#0000000a",
+      "#ffffff0f"
+    ],
+    "alias-border-l2": [
+      "#0000001a",
+      "#ffffff1f"
+    ],
+    "alias-border-l3": [
+      "#0000001f",
+      "#ffffff29"
+    ],
+    "alias-border-l4": [
+      "#00000029",
+      "#fff3"
+    ],
+    "specific-menu": [
+      "#f8f9fa94",
+      "#43454a73"
+    ]
+  },
+  "native": {
+    "final-980-light": {
+      "viewport": {
+        "width": 980,
+        "height": 720
+      },
+      "rects": {
+        "onboarding": {
+          "x": 90,
+          "y": 36,
+          "w": 800,
+          "h": 648,
+          "bottom": 684,
+          "right": 890
+        },
+        "name": {
+          "x": 286,
+          "y": 205.34375,
+          "w": 576,
+          "h": 43.5,
+          "bottom": 248.84375,
+          "right": 862
+        },
+        "purpose": {
+          "x": 286,
+          "y": 280.84375,
+          "w": 576,
+          "h": 96,
+          "bottom": 376.84375,
+          "right": 862
+        },
+        "create": {
+          "x": 286,
+          "y": 616.8046875,
+          "w": 132,
+          "h": 42,
+          "bottom": 658.8046875,
+          "right": 418
+        },
+        "choose-location": {
+          "x": 638.828125,
+          "y": 630.8046875,
+          "w": 162.0078125,
+          "h": 33.1953125,
+          "bottom": 664,
+          "right": 800.8359375
+        },
+        "project-options": {
+          "x": 286,
+          "y": 461.5390625,
+          "w": 576,
+          "h": 45.5,
+          "bottom": 507.0390625,
+          "right": 862
+        },
+        "project-options-summary": {
+          "x": 286,
+          "y": 462.5390625,
+          "w": 576,
+          "h": 43.5,
+          "bottom": 506.0390625,
+          "right": 862
+        }
+      },
+      "pane": {
+        "x": 264,
+        "y": 102,
+        "w": 626,
+        "h": 492.609375,
+        "bottom": 594.609375,
+        "right": 890,
+        "scrollTop": 0,
+        "clientHeight": 493,
+        "scrollHeight": 493
+      },
+      "formOwner": "create-form",
+      "colors": {
+        "onboarding": "rgb(255, 255, 255)",
+        "sidebar": "rgb(249, 250, 251)",
+        "chat-form": "rgb(255, 255, 255)",
+        "name": "rgb(255, 255, 255)",
+        "purpose": "rgb(255, 255, 255)"
+      }
+    },
+    "final-980-with-return": {
+      "viewport": {
+        "width": 980,
+        "height": 720
+      },
+      "rects": {
+        "onboarding": {
+          "x": 90,
+          "y": 36,
+          "w": 800,
+          "h": 648,
+          "bottom": 684,
+          "right": 890
+        },
+        "name": {
+          "x": 286,
+          "y": 205.34375,
+          "w": 576,
+          "h": 43.5,
+          "bottom": 248.84375,
+          "right": 862
+        },
+        "purpose": {
+          "x": 286,
+          "y": 280.84375,
+          "w": 576,
+          "h": 96,
+          "bottom": 376.84375,
+          "right": 862
+        },
+        "create": {
+          "x": 286,
+          "y": 616.8046875,
+          "w": 132,
+          "h": 42,
+          "bottom": 658.8046875,
+          "right": 418
+        },
+        "choose-location": {
+          "x": 638.828125,
+          "y": 630.8046875,
+          "w": 162.0078125,
+          "h": 33.1953125,
+          "bottom": 664,
+          "right": 800.8359375
+        },
+        "project-options": {
+          "x": 286,
+          "y": 495.5390625,
+          "w": 576,
+          "h": 45.5,
+          "bottom": 541.0390625,
+          "right": 862
+        },
+        "project-options-summary": {
+          "x": 286,
+          "y": 496.5390625,
+          "w": 576,
+          "h": 43.5,
+          "bottom": 540.0390625,
+          "right": 862
+        }
+      },
+      "pane": {
+        "x": 264,
+        "y": 102,
+        "w": 626,
+        "h": 492.609375,
+        "bottom": 594.609375,
+        "right": 890,
+        "scrollTop": 0,
+        "clientHeight": 493,
+        "scrollHeight": 493
+      },
+      "formOwner": "create-form",
+      "colors": {
+        "onboarding": "rgb(255, 255, 255)",
+        "sidebar": "rgb(249, 250, 251)",
+        "chat-form": "rgb(255, 255, 255)",
+        "name": "rgb(255, 255, 255)",
+        "purpose": "rgb(255, 255, 255)"
+      }
+    },
+    "expanded-980-light": {
+      "viewport": {
+        "width": 980,
+        "height": 720
+      },
+      "rects": {
+        "onboarding": {
+          "x": 90,
+          "y": 36,
+          "w": 800,
+          "h": 648,
+          "bottom": 684,
+          "right": 890
+        },
+        "name": {
+          "x": 286,
+          "y": 205.34375,
+          "w": 565,
+          "h": 43.5,
+          "bottom": 248.84375,
+          "right": 851
+        },
+        "purpose": {
+          "x": 286,
+          "y": 280.84375,
+          "w": 565,
+          "h": 96,
+          "bottom": 376.84375,
+          "right": 851
+        },
+        "create": {
+          "x": 286,
+          "y": 616.8046875,
+          "w": 132,
+          "h": 42,
+          "bottom": 658.8046875,
+          "right": 418
+        },
+        "choose-location": {
+          "x": 638.828125,
+          "y": 630.8046875,
+          "w": 162.0078125,
+          "h": 33.1953125,
+          "bottom": 664,
+          "right": 800.8359375
+        },
+        "project-options": {
+          "x": 286,
+          "y": 461.5390625,
+          "w": 565,
+          "h": 327.5,
+          "bottom": 789.0390625,
+          "right": 851
+        },
+        "project-options-summary": {
+          "x": 286,
+          "y": 462.5390625,
+          "w": 565,
+          "h": 43.5,
+          "bottom": 506.0390625,
+          "right": 851
+        }
+      },
+      "pane": {
+        "x": 264,
+        "y": 102,
+        "w": 626,
+        "h": 492.609375,
+        "bottom": 594.609375,
+        "right": 890,
+        "scrollTop": 0,
+        "clientHeight": 493,
+        "scrollHeight": 703
+      },
+      "formOwner": "create-form",
+      "colors": {
+        "onboarding": "rgb(255, 255, 255)",
+        "sidebar": "rgb(249, 250, 251)",
+        "chat-form": "rgb(255, 255, 255)",
+        "name": "rgb(255, 255, 255)",
+        "purpose": "rgb(255, 255, 255)"
+      }
+    }
+  },
+  "renderer": {
+    "checks": 228,
+    "failures": []
+  },
+  "screenshots": [
+    {
+      "file": "01-new-project-light.png",
+      "sha256": "3a83b39553cada1b3153883c795aa2dbd243a1730ddc85b713646eddba9cfa55"
+    },
+    {
+      "file": "02-workspace-light.png",
+      "sha256": "43a4d3960f2096348f56a76243538f55e14c06f4ebf5188ac65dda73b5b1be6a"
+    },
+    {
+      "file": "03-new-project-dark.png",
+      "sha256": "34f4435952b860114807d5d870cc78d1c17579ee79c42169dd005c0df2de212f"
+    }
+  ]
+}

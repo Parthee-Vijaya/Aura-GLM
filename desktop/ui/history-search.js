@@ -4,7 +4,7 @@
   if (typeof window.harness?.historySearch !== 'function') return;
   const make = (tag, text, className) => { const element = document.createElement(tag); if (text != null) element.textContent = text; if (className) element.className = className; return element; };
   const t = (da, en) => document.documentElement.lang === 'en' ? en : da;
-  const dialog = make('dialog', null, 'history-search-dialog'); dialog.id = 'history-search-dialog'; dialog.setAttribute('aria-labelledby', 'history-search-title');
+  const dialog = make('dialog', null, 'history-search-dialog'); dialog.id = 'history-search-dialog'; dialog.setAttribute('aria-labelledby', 'history-search-title'); dialog.setAttribute('data-size','wide');
   const header = make('div', null, 'dialog-heading'), title = make('h2'); title.id = 'history-search-title';
   const close = make('button'); close.type = 'button'; close.id = 'history-search-close'; header.append(title, close);
   const note = make('p', null, 'hint'), form = make('form', null, 'history-search-form'), queryLabel = make('label'), query = make('input'); query.type = 'search'; query.maxLength = 200; query.required = true; query.id = 'history-search-query'; queryLabel.htmlFor = query.id;

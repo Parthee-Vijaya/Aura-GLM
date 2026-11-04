@@ -32,7 +32,10 @@
       const item = node('li', undefined, `project-entry${open ? ' is-current' : ''}`);
       const row = node('div', undefined, 'project-row');
       const name = node('button', project.name, 'project-name'); name.type = 'button'; name.dataset.key = `p:${project.root}`;
-      name.setAttribute('aria-expanded', String(!folded)); name.title = project.root;
+      name.setAttribute('aria-expanded', String(!folded));
+      // D1: navnet afkortes med ellipsis på én linje — det fulde navn står i
+      // title, så det er tilgængeligt uden at bryde rækkens mål.
+      name.title = project.name;
       name.onclick = () => action(() => openProject(project));
       const add = node('button', '+', 'project-add'); add.type = 'button'; add.dataset.key = `a:${project.root}`;
       add.setAttribute('aria-label', `Ny samtale i ${project.name}`); add.title = 'Ny samtale';
@@ -78,6 +81,8 @@
     try { projects = await call('recentProjects'); } catch { projects = []; }
     if (current && !projects.some(project => project.root === current.root)) projects.unshift({ id: '', root: current.root, name: current.name, chats: [] });
     render();
+    // Omdøb og nye titler lander også i topbjælkens brødkrumme (§6.1).
+    window.topbarSync?.();
   }
   // Det åbne projekts samtaler opdateres med status fra hovedprocessen; andre projekter hentes ved næste opdatering.
   function update(event) {

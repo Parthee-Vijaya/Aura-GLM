@@ -1,0 +1,268 @@
+/* Aura Prime · onboarding-simple (UI/UX overhaul: D6 + the DSH-simple restyle).
+   The two onboarding surfaces (#setup and #onboarding) switch their class
+   from onboarding-b to onboarding-simple; #task-dialog keeps onboarding-b and
+   this sheet never matches it. One calm centered surface per step: a 560/840
+   px column for the setup steps and 720 px for the idea screen, a centered
+   28/39 heading of weight 400, a near-black/white Fortsæt of at least
+   160×44, and selectable cards with a 0.5 px resting border and a static
+   accent border when chosen. Every value comes from aura-tokens.css; the
+   sheet loads before components.css so the component contracts stay last. */
+
+:is(#setup.onboarding-simple, #onboarding.onboarding-simple) {
+  --os-line: var(--aura-border, rgba(0, 0, 0, 0.08));
+  --os-line-strong: var(--aura-border-strong, rgba(0, 0, 0, 0.12));
+  --os-ink: var(--aura-ink, #151517);
+  --os-muted: var(--aura-ink-muted, #70747c);
+  --os-surface: var(--aura-bg-raised, #ffffff);
+  --os-accent: var(--aura-accent, #4176e6);
+  --os-radius-card: 32px;
+  --os-radius-tile: 20px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0 clamp(20px, 5vw, 64px) 64px;
+  color: var(--os-ink);
+}
+
+/* The surface fills the window below the (now hidden) app frame; the step
+   column centers horizontally and — through its auto margin — vertically
+   while it fits. Longer content starts at the top and scrolls with the
+   document, so no fixed overlay can ever cover the buttons at any zoom. */
+:is(#setup.onboarding-simple, #onboarding.onboarding-simple) { display: flex; flex-direction: column; min-height: 100dvh; }
+
+/* The approved full-window surface: while either onboarding main is visible,
+   the app frame is gone — sidebar, sidebar divider and the app header — and
+   the step content owns the whole window (DSH's OnboardingSurface). Pure
+   :has() on body: the frame returns the very moment the surface hides and
+   the workspace takes over; display:none also removes the frame from the
+   tab order, so keyboard users stay inside the step flow. */
+body:has(#setup.onboarding-simple:not([hidden])) :is(.sidebar, #sidebar-divider),
+body:has(#onboarding.onboarding-simple:not([hidden])) :is(.sidebar, #sidebar-divider) { display: none; }
+body:has(#setup.onboarding-simple:not([hidden])) .app-content,
+body:has(#onboarding.onboarding-simple:not([hidden])) .app-content { margin-left: 0; }
+body:has(#setup.onboarding-simple:not([hidden])) .app-content > header,
+body:has(#onboarding.onboarding-simple:not([hidden])) .app-content > header { display: none; }
+
+/* Back line: "← Tilbage" top-left with the discrete step counter under it.
+   The idea surface carries the same line for its quiet return link ("←
+   Tilbage til arbejdsfladen"); an empty line collapses, so the first-run
+   idea screen — which has nothing to return to — shows no blank space. */
+:is(#setup.onboarding-simple, #onboarding.onboarding-simple) .setup-backline { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; padding: 18px 0 8px; }
+:is(#setup.onboarding-simple, #onboarding.onboarding-simple) .setup-backline .text-button { padding: 6px 2px; font-size: 13px; color: var(--os-muted); }
+:is(#setup.onboarding-simple, #onboarding.onboarding-simple) .setup-backline .text-button:hover { color: var(--os-ink); }
+:is(#setup.onboarding-simple, #onboarding.onboarding-simple) .setup-backline .text-button:focus-visible { outline: 2px solid var(--os-accent); outline-offset: 2px; }
+#onboarding.onboarding-simple .setup-backline:has(#idea-back[hidden]) { display: none; }
+#setup.onboarding-simple .setup-step-state { margin: 0 0 0 2px; font-size: 12px; line-height: 1.4; color: var(--os-muted); }
+
+/* The centered step column. The per-step width keys off #setup[data-step],
+   which setupPage already maintains; the provider step is widest while its
+   card grid is open and narrows to the form's 560 px once a provider is
+   chosen. */
+#setup.onboarding-simple .setup-simple { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 560px; margin: auto; }
+#setup.onboarding-simple .setup-simple > * { width: 100%; }
+#setup.onboarding-simple[data-step="detail"] .setup-simple,
+#setup.onboarding-simple[data-step="choice"] .setup-simple,
+#setup.onboarding-simple[data-step="provider"] .setup-simple { max-width: 840px; }
+#setup.onboarding-simple[data-step="provider"] .setup-simple:has(#setup-provider[data-view="details"]:not([hidden])) { max-width: 560px; }
+#setup.onboarding-simple[data-step="tools"] .setup-simple { max-width: 640px; }
+#setup.onboarding-simple :is(#setup-profile, #setup-detail, #setup-choice, #setup-provider, #setup-local-step, #setup-saved, #setup-tools) { max-width: none; margin: 0; }
+
+/* Heading: 28/39 weight 400 (clamped for narrow windows), subtitle 16/22 in
+   the muted help tone. 48 px of air between the text and the content. */
+:is(#setup.onboarding-simple, #onboarding.onboarding-simple) :is(.setup-heading, .intro) { text-align: center; }
+#setup.onboarding-simple .setup-heading { max-width: none; margin: 0 0 48px; }
+:is(#setup.onboarding-simple, #onboarding.onboarding-simple) :is(.setup-heading h1, .intro h1) {
+  max-width: none;
+  margin: 0;
+  font-size: clamp(22px, 4vw, 28px);
+  line-height: 1.4;
+  font-weight: 400;
+  letter-spacing: -0.3px;
+  overflow-wrap: anywhere;
+}
+:is(#setup.onboarding-simple, #onboarding.onboarding-simple) :is(#setup-subtitle, .intro > p) { max-width: none; margin: 10px 0 0; font-size: 16px; line-height: 22px; font-weight: 400; color: var(--os-muted); }
+
+/* The primary Fortsæt: at least 160×44, near-black on white themes and
+   near-white on dark ones (the token pair), pill-shaped and centered. */
+#setup.onboarding-simple .setup-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin: 32px 0 0; }
+:is(#setup.onboarding-simple, #onboarding.onboarding-simple) .setup-actions .primary,
+#onboarding.onboarding-simple .create-footer .primary {
+  min-width: 160px;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 12px 28px;
+  border: none;
+  border-radius: 999px;
+  background: var(--aura-button-primary);
+  color: var(--aura-button-primary-text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+:is(#setup.onboarding-simple, #onboarding.onboarding-simple) .setup-actions .primary:hover,
+#onboarding.onboarding-simple .create-footer .primary:hover { background: var(--aura-button-primary-hover); }
+:is(#setup.onboarding-simple, #onboarding.onboarding-simple) .setup-actions .primary:focus-visible,
+#onboarding.onboarding-simple .create-footer .primary:focus-visible { outline: 2px solid var(--os-accent); outline-offset: 2px; }
+
+/* The quiet choices: "Vælg senere" and its neighbours sit centered under the
+   step content; "Avanceret opsætning" reads as a discreet text link. */
+#setup.onboarding-simple .setup-quick-actions { display: flex; justify-content: center; align-items: baseline; flex-wrap: wrap; gap: 6px 24px; margin: 20px 0 0; }
+#setup.onboarding-simple .setup-quick-actions .text-button { padding: 8px 4px; font-size: 13px; color: var(--os-muted); }
+#setup.onboarding-simple .setup-quick-actions .text-button:hover { color: var(--os-ink); }
+#setup.onboarding-simple .setup-quick-actions .text-button:focus-visible { outline: 2px solid var(--os-accent); outline-offset: 2px; }
+#setup.onboarding-simple #setup-advanced { text-decoration: underline; text-underline-offset: 3px; }
+#setup.onboarding-simple .detail-skip { display: block; margin: 14px auto 0; padding: 8px 4px; font-size: 13px; color: var(--os-muted); }
+
+/* Selectable cards — one shared recipe: a 0.5 px resting border, a static
+   2 px accent border when chosen (no animation on the selection), and the
+   native radio stretched invisibly across the card so the whole card is one
+   click/keyboard target inside its radiogroup (arrow keys included). */
+#setup.onboarding-simple :is(.detail-card, .help-card, .theme-card) { position: relative; display: block; border: 0.5px solid var(--os-line); border-radius: var(--os-radius-tile); background: var(--os-surface); cursor: pointer; transition: border-color var(--aura-transition-duration) var(--aura-ease-in-out), background var(--aura-transition-duration) var(--aura-ease-in-out); }
+#setup.onboarding-simple :is(.detail-card, .help-card, .theme-card):has(input:checked) { border: 2px solid var(--os-accent); }
+#setup.onboarding-simple :is(.detail-card, .help-card, .theme-card):has(input:focus-visible) { outline: 2px solid var(--os-accent); outline-offset: 2px; }
+#setup.onboarding-simple :is(.detail-card, .help-card, .theme-card) input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+
+/* Detaljeniveau (D6): three equal cards in a row on the wide step. */
+#setup.onboarding-simple .detail-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+#setup.onboarding-simple .detail-card { display: grid; gap: 6px; padding: 28px 26px 26px; }
+#setup.onboarding-simple .detail-card strong { font-size: 20px; line-height: 28px; font-weight: 600; letter-spacing: -0.2px; }
+#setup.onboarding-simple .detail-card small { font-size: 14px; line-height: 21px; color: var(--os-muted); }
+
+/* The profile step: a quiet one-column form. The name field is large; the
+   icon row carries no frame; theme and help read as card choices. */
+#setup.onboarding-simple #setup-profile :is(label, .field-label) { display: block; margin: 26px 0 8px; font-size: 13px; font-weight: 600; color: var(--os-ink); }
+#setup.onboarding-simple #setup-profile > label:first-child { margin-top: 0; }
+#setup.onboarding-simple #profile-name { width: 100%; box-sizing: border-box; padding: 13px 16px; font-size: 16px; border: 0.5px solid var(--os-line-strong); border-radius: var(--aura-radius-md); background: var(--os-surface); color: var(--os-ink); }
+#setup.onboarding-simple #profile-name:focus-visible { outline: 2px solid var(--os-accent); outline-offset: 2px; }
+#setup.onboarding-simple .profile-icon-wrap { gap: 12px; }
+#setup.onboarding-simple :is(#setup-profile, #onboarding.onboarding-simple) .hint { margin: 8px 0 0; font-size: 13px; line-height: 1.6; color: var(--os-muted); }
+#setup.onboarding-simple #profile-help[aria-hidden="true"] { display: none; }
+#setup.onboarding-simple .profile-theme { margin: 26px 0 0; }
+#setup.onboarding-simple .profile-theme legend { padding: 0; margin: 0 0 8px; font-size: 13px; font-weight: 600; color: var(--os-ink); }
+#setup.onboarding-simple .theme-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+#setup.onboarding-simple .theme-card { padding: 13px 10px; text-align: center; font-size: 13px; font-weight: 550; color: var(--os-ink); }
+#setup.onboarding-simple .help-cards { display: grid; gap: 10px; margin: 8px 0 0; }
+#setup.onboarding-simple .help-card { padding: 16px 20px 15px; }
+#setup.onboarding-simple .help-card strong { display: block; font-size: 14px; line-height: 1.4; font-weight: 600; color: var(--os-ink); }
+#setup.onboarding-simple .help-card small { display: block; margin-top: 3px; font-size: 13px; line-height: 1.55; color: var(--os-muted); }
+
+/* The access choice: 2–3 calm cards in a grid instead of tall stacked
+   buttons; the small glyphs stay as text symbols. */
+#setup.onboarding-simple #setup-choice { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 0; }
+#setup.onboarding-simple #setup-choice > button {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 148px;
+  padding: 24px 22px 20px;
+  box-sizing: border-box;
+  border: 0.5px solid var(--os-line);
+  border-radius: var(--os-radius-card);
+  background: var(--os-surface);
+  color: var(--os-ink);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--aura-transition-duration) var(--aura-ease-in-out), background var(--aura-transition-duration) var(--aura-ease-in-out);
+}
+#setup.onboarding-simple #setup-choice > button:hover { background: var(--aura-bg-hover); border-color: var(--os-line-strong); }
+#setup.onboarding-simple #setup-choice > button:focus-visible { outline: 2px solid var(--os-accent); outline-offset: 2px; }
+#setup.onboarding-simple #setup-choice .setup-symbol { margin: 0; font-size: 22px; line-height: 1; color: var(--os-accent); }
+#setup.onboarding-simple #setup-choice strong { margin: 8px 0 0; max-width: none; font-size: 17px; line-height: 1.3; font-weight: 600; letter-spacing: -0.2px; }
+#setup.onboarding-simple #setup-choice span:not(.setup-symbol) { margin: 0; font-size: 13px; line-height: 1.55; color: var(--os-muted); }
+
+/* The provider grid: ten cards in three columns; the connected/error state
+   lines keep their own colors. The same .provider-cards grid in the
+   connections dialog is untouched (this scope ends at #setup). */
+#setup.onboarding-simple .provider-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 0; }
+#setup.onboarding-simple .provider-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 0;
+  min-width: 0;
+  min-height: 138px;
+  padding: 20px 18px 16px;
+  border: 0.5px solid var(--os-line);
+  border-radius: 24px;
+  background: var(--os-surface);
+  color: var(--os-ink);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--aura-transition-duration) var(--aura-ease-in-out), background var(--aura-transition-duration) var(--aura-ease-in-out);
+}
+#setup.onboarding-simple .provider-card:hover:not(:disabled) { background: var(--aura-bg-hover); border-color: var(--os-line-strong); }
+#setup.onboarding-simple .provider-card[aria-pressed="true"] { border: 2px solid var(--os-accent); }
+#setup.onboarding-simple .provider-card:focus-visible { outline: 2px solid var(--os-accent); outline-offset: 2px; }
+#setup.onboarding-simple .provider-card img { width: 34px; height: 32px; margin: 0 0 12px; padding: 0; background: transparent; filter: grayscale(1); opacity: 0.6; flex: none; }
+#setup.onboarding-simple .provider-card:is([aria-pressed="true"], :hover, :focus-visible) img { filter: none; opacity: 1; }
+#setup.onboarding-simple .provider-card strong { margin: 0 22px 0 0; font-size: 14px; font-weight: 600; line-height: 1.4; letter-spacing: -0.1px; }
+#setup.onboarding-simple .provider-card > span:not(.onboarding-b-choice-mark) { margin-top: 5px; font-size: 12px; line-height: 1.55; color: var(--os-muted); }
+#setup.onboarding-simple .provider-card > small { margin-top: 7px; font-size: 12px; line-height: 1.5; color: var(--os-muted); }
+#setup.onboarding-simple .provider-card > small[data-state="connected"] { color: var(--aura-success); }
+#setup.onboarding-simple .provider-card > small[data-state="error"] { color: var(--aura-error); }
+#setup.onboarding-simple .provider-card > small:empty { display: none; }
+#setup.onboarding-simple .provider-card[data-kind="openrouter"] { grid-column: span 2; }
+#setup.onboarding-simple .onboarding-b-choice-mark { position: absolute; right: 16px; top: 18px; display: grid; place-items: center; width: 18px; height: 18px; margin: 0; padding: 0; border: 0.5px solid var(--os-line); border-radius: 50%; background: var(--os-surface); color: transparent; }
+#setup.onboarding-simple .onboarding-b-choice-mark svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+#setup.onboarding-simple .provider-card[aria-pressed="true"] .onboarding-b-choice-mark { background: var(--os-accent); border-color: var(--os-accent); color: #ffffff; }
+
+/* The connection form sits directly on the surface — no inner panels — and
+   the control receipts read inline above the buttons, in every state. */
+#setup.onboarding-simple #setup-provider-body { border: none; border-radius: 0; background: transparent; padding: 0; }
+#setup.onboarding-simple #setup-provider-body :is(input, select) { max-width: 100%; box-sizing: border-box; }
+#setup.onboarding-simple :is(#setup-ai, #connection-feedback, #local-discovery-status) { margin: 16px 0 0; font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; color: var(--os-ink); }
+#setup.onboarding-simple :is(#setup-local-address, #setup-edit, #setup-add-another) { padding: 8px 4px; font-size: 13px; }
+#setup.onboarding-simple #setup-local-step .setup-actions { justify-content: center; }
+#setup.onboarding-simple #setup-saved label { margin-top: 0; }
+#setup.onboarding-simple .setup-footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 15px; margin-top: 28px; }
+
+/* The idea screen (#onboarding): a 720 px column, the same heading and the
+   same primary button. "Flere valg" stays a fold-out (the shared .disclosure
+   component) in a quiet bordered container; "Opret og fortsæt" stands
+   centered with the location text under it. */
+#onboarding.onboarding-simple .onboarding-simple-content { width: 100%; max-width: 720px; margin: auto; padding: 40px 0 0; }
+#onboarding.onboarding-simple .intro { margin: 0 0 40px; }
+#onboarding.onboarding-simple #create-form > .panel { margin: 0; }
+#onboarding.onboarding-simple #name { margin: 0 0 8px; }
+#onboarding.onboarding-simple #purpose { min-height: 132px; border-radius: var(--aura-radius-md); }
+#onboarding.onboarding-simple #project-options { margin-top: 18px; padding: 2px 16px; border: 0.5px solid var(--os-line); border-radius: var(--aura-radius-lg); background: transparent; }
+#onboarding.onboarding-simple .create-footer { display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 28px 0 0; }
+#onboarding.onboarding-simple .create-footer p { margin: 0; font-size: 13px; line-height: 1.6; color: var(--os-muted); text-align: center; }
+
+/* Narrow windows and 150 % zoom stack the card grids; the small theme cards
+   keep their row. Nothing introduces horizontal scrolling. */
+@media (max-width: 760px) {
+  :is(#setup, #onboarding).onboarding-simple { padding-left: 20px; padding-right: 20px; padding-bottom: 48px; }
+  #setup.onboarding-simple .setup-heading { margin-bottom: 32px; }
+  #setup.onboarding-simple .detail-cards { grid-template-columns: minmax(0, 1fr); }
+  #setup.onboarding-simple .provider-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #setup.onboarding-simple #setup-choice { grid-template-columns: minmax(0, 1fr); }
+  #setup.onboarding-simple .theme-card { padding: 11px 6px; font-size: 12px; }
+}
+@media (max-width: 420px) {
+  #setup.onboarding-simple .provider-cards { grid-template-columns: minmax(0, 1fr); }
+  #setup.onboarding-simple .provider-card[data-kind="openrouter"] { grid-column: auto; }
+}
+
+/* The simple surface arrives without motion (the global constraint: no
+   entrance animations), and reduced motion kills what remains — only the
+   token-based border/background transitions are left. */
+:is(#setup, #onboarding).onboarding-simple:not([hidden]) { animation: none; }
+#setup.onboarding-simple [data-setup-step]:not([hidden]) { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  :is(#setup, #onboarding).onboarding-simple *,
+  :is(#setup, #onboarding).onboarding-simple ::before,
+  :is(#setup, #onboarding).onboarding-simple ::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* Forced colors: the chosen card and the focused controls read through the
+   system palette, like onboarding-b's cards did. */
+@media (forced-colors: active) {
+  #setup.onboarding-simple :is(.detail-card, .help-card, .theme-card):has(input:checked) { border: 2px solid Highlight; }
+  #setup.onboarding-simple .provider-card[aria-pressed="true"] { border: 2px solid Highlight; }
+}

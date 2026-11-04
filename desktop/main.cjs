@@ -27,6 +27,10 @@ const { fileDetail } = require('./core/change-review.cjs');
 const { OwnTools } = require('./core/own-tools.cjs');
 const { buildAboutInfo } = require('./core/about-info.cjs');
 const runtimeLock = require('./runtime-lock.json');
+// S4 · GradientDeck: den rene kommando-grammatik (hvornår er en besked en
+// selvstændig /stil-kommando?) deles med værten her — hovedprocessen ejer
+// afgørelsen, ikke rendereren.
+const { styleCommand } = require('./core/gradientdeck.cjs');
 
 // Appen hedder Aura Prime. Datamappen og navnet i nøgleringen bevares fra før navneskiftene; se core/app-identity.cjs.
 const { appIdentity, rememberKeychain, projectParent, DISPLAY_NAME } = require('./core/app-identity.cjs');
@@ -45,7 +49,7 @@ app.on('second-instance', () => { if (window) { if (window.isMinimized()) window
 require('./core/engine-startup.cjs').install({ directory: path.join(identity.userData, 'harness', 'diagnostics') });
 
 protocol.registerSchemesAsPrivileged(['harness', 'aura-preview'].map(scheme => ({ scheme, privileges: { standard: true, secure: true, supportFetchAPI: true } })));
-let window, chosenParent = null;
+let window, chosenParent = null, onboardingWindow = null;
 let assets = [];
 let github, publishing, deployments, deploymentSetup, restoration, promtePreview, komplaiPreview;
 let registry, history, images;
@@ -145,7 +149,7 @@ async function confirmDiscardWork() {
 const uiURL = 'harness://app/index.html';
 const credentialEntry = require('./core/credential-entry.cjs').createCredentialEntry({ BrowserWindow, ipcMain, safeStorage, parent:() => window, zoomFactor:() => profileFontSize / FONT_SIZE.base, createSession:() => {
   const isolated = session.fromPartition(`credential-${crypto.randomUUID()}`, { cache:false });
-  const files = ['credential-entry.html','credential-entry.css','credential-entry.js'].map(file => require('node:url').pathToFileURL(path.join(__dirname, 'ui', file)).href);
+  const files = ['credential-entry.html','credential-entry.css','credential-entry.js','aura-tokens.css'].map(file => require('node:url').pathToFileURL(path.join(__dirname, 'ui', file)).href);
   isolated.webRequest.onBeforeRequest((details, callback) => callback({ cancel:!files.includes(details.url) }));
   isolated.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
   isolated.setPermissionCheckHandler(() => false);
@@ -193,7 +197,16 @@ function handle(channel, action) {
     }
   });
 }
-handle('privacy:get', value => workbench.privacy.get(value, requests.getStore()?.chat));
+handle('privacy:get', async value => {
+  const result = await workbench.privacy.get(value, requests.getStore()?.chat);
+  // S5 · GradientDeck (kendelse 3-betingelsen fra S4-gennemgangen): Datakontrol
+  // får linjens tilstand fra tjenesten selv — husket samtykke ELLER
+  // destinationens id i projektets tilladelser; findes ingen af delene, findes
+  // linjen heller ikke (intet at tilbagekalde).
+  const gradientdeck = await gradientDeck().consentState({ root: currentProject()?.root || null });
+  if (gradientdeck) result.gradientdeck = gradientdeck;
+  return result;
+});
 handle('privacy:configure', value => workbench.privacy.configure(value, requests.getStore()?.chat));
 // Reviews belong to their original workbench even while another project is open.
 handle('privacy:review', value => { const owner = [registry.empty, ...registry.values()].find(bench => bench.privacy.pending.has(value?.id)); if (!owner) throw new Error('Delingsgennemgangen er udløbet.'); return owner.privacy.review(value); });
@@ -465,6 +478,11 @@ async function performFontSizeStep(delta) {
 handle('profile:get', () => profileStore().get());
 handle('profile:save', input => exclusive(async () => { const result = await profileStore().save(input); if (input?.appearance?.theme !== undefined) applyProfileTheme(result.profile.appearance.theme); if (input?.appearance?.fontSize !== undefined) applyProfileFontSize(result.profile.appearance.fontSize); return result; }));
 handle('profile:migrate', input => exclusive(() => profileStore().migrate(input)));
+handle('window:onboarding', async open => {
+  if (typeof open !== 'boolean') throw new Error('Ugyldig vinduestilstand.');
+  if (!onboardingWindow) return { compact: false };
+  return open ? { compact: onboardingWindow.compact } : onboardingWindow.finish(window);
+});
 handle('profile:suggest', () => { try { return require('node:os').userInfo().username || ''; } catch { return ''; } });
 handle('designs:clear', () => exclusive(() => { assets = []; return []; }));
 handle('designs:list', () => new Designs(workbench.store).list());
@@ -749,7 +767,83 @@ handle('connections:routes', value => workbench.routes(value.connectionID, value
 handle('connections:effort-levels', value => workbench.effortLevels(value?.connectionID, value?.modelID, value?.capabilities));
 handle('model-log:list', value => workbench.modelLogList(value?.offset, value?.limit, requests.getStore()?.chat));
 require('./core/chat-materials-ipc.cjs').installChatMaterials({ getWorkbench:currentWorkbench, isSelected:bench => registry.selected === bench, register:handle, dialog, exclusive, normalizeImage:require('./core/screenshot-normalizer.cjs').createImageNormalizer({ nativeImage }), emit:event => sendEvent(event) });
-handle('agent:prepare', value => exclusive(() => workbench.prepare(chatInput(value))));
+// S4 · GradientDeck — kataloget til /stil-popuppen og samtykkedialogen. Værten
+// bygger ALLE URL'er (core/gradientdeck.cjs: fast origin, kun to ruter);
+// rendereren sender kun projektet og sit valg — aldrig URL, headere eller
+// transport. Samtykkedialogen er ét ventende spørgsmål ad gangen med samme
+// udløbstid som Privacy Gates gennemgange; Annullér, Luk og timeout er samme
+// ærlige svar, og intet sendes uden et givet samtykke.
+const gradientDeckConsents = new Map();
+const gradientDeckConsent = request => new Promise(resolve => {
+  const id = crypto.randomUUID();
+  const finish = choice => { clearTimeout(timer); if (gradientDeckConsents.delete(id)) resolve(choice); };
+  const timer = setTimeout(() => finish('cancel'), 120000);
+  gradientDeckConsents.set(id, finish);
+  sendEvent({ type: 'gradientdeck.consent', id, kind: request.kind, name: request.name || null, url: request.url });
+});
+const gradientDeck = () => new (require('./core/gradientdeck.cjs').GradientDeck)({
+  store: registry.store,
+  getPrivacy: () => workbench.privacy,
+  consent: gradientDeckConsent,
+  quiet: () => !aiWorking(),
+  version: app.getVersion(),
+});
+handle('gradientdeck:catalog', value => gradientDeck().catalog({ root: currentProject()?.root || null, refresh: value?.refresh === true }));
+handle('gradientdeck:consent', value => {
+  const finish = gradientDeckConsents.get(value?.id);
+  if (!finish) throw new Error('Samtykkespørgsmålet er udløbet. Prøv hentningen igen.');
+  finish(['once', 'project', 'cancel'].includes(value?.choice) ? value.choice : 'cancel');
+  return true;
+});
+// S5 · Anvendelsen: VÆRTEN skriver DESIGN.md i brugerens projekt. Rendereren
+// sender kun stilens slug og sit valg (apply/replace/keep + forventnings-
+// mærket fra diff-gennemgangen) — aldrig stier, indhold eller transport.
+// Ændringen registreres i den sendende samtale (recordEdit), så Fortryd virker
+// gennem det eksisterende spor, og kvitteringen står i Aktivitet.
+handle('gradientdeck:apply', value => exclusive(async () => {
+  const project = currentProject();
+  if (!project) throw new Error('Åbn et projekt først.');
+  const chat = currentChat();
+  if (!chat) throw new Error('Start en samtale, før du anvender stilen.');
+  const engine = new (require('./core/design-styles.cjs').DesignStyleApply)({
+    deck: gradientDeck(),
+    features: async root => (await workbench.features.get(root)).effective,
+    git: workbench.git,
+    chat,
+    busyRoot: root => workbench.busyRoot(root),
+  });
+  const result = await engine.apply({ root: project.root, slug: value?.slug, choice: value?.choice, expected: typeof value?.expected === 'string' ? value.expected : null, expectedStyle: typeof value?.expectedStyle === 'string' ? value.expectedStyle : null });
+  if (result.status === 'applied') {
+    workbench.log({ kind: 'gradientdeck', title: `«${result.name}»-stil anvendt`, detail: 'DESIGN.md opdateret · Fortryd under Ændringer', status: 'completed' }, requestChatID());
+  }
+  return result;
+}));
+// S5 · Tilbagekaldelsen (Datakontrol-linjen): rydder det huskede samtykke OG
+// fjerner 'aura-gradientdeck'-id'et fra projektets tilladelser — spejlet af
+// samtykke-flowet i S4. Fremtidige hentninger spørger igen straks; en
+// allerede igangværende GET afbrydes ikke (den er gennemgået på sit eget
+// grundlag — dokumenteret i s5-report).
+handle('gradientdeck:revoke', value => gradientDeck().revoke({ root: currentProject()?.root || null }));
+handle('agent:prepare', value => exclusive(async () => {
+  // S4: en selvstændig `/stil <slug>` (alias /style) håndteres FØR selve
+  // prepare — værten genvaliderer fra selve beskedteksten: snæver GET med
+  // samtykke, indholdskontrol, privat cache og en ærlig kvittering. Ingen
+  // modelkald, ingen aktivering, ingen DESIGN.md (det er S5). Blandet prosa
+  // omkring kommandoen er aldrig kommandoen (styleCommand), og en bar `/stil`
+  // er inert tekst som enhver anden reserveret token.
+  const command = styleCommand(typeof value?.text === 'string' ? value.text : '');
+  if (command) {
+    if (!currentProject()) throw new Error('Åbn et projekt først.');
+    const result = command.invalid
+      ? { status: 'error', message: 'Stilnavnet har ugyldigt format.' }
+      : await gradientDeck().fetchStyle({ root: currentProject().root, slug: command.slug });
+    workbench.log(result.status === 'ok'
+      ? { kind: 'gradientdeck', title: `Stilen «${result.name}» er hentet`, detail: result.sendable === false ? 'Datakontrollen vil afvise den ved afsendelse (indholdet ligner kodet data).' : 'Den bruges ikke i projektet endnu.', status: 'completed' }
+      : { kind: 'gradientdeck', title: 'Stilen kunne ikke hentes', detail: result.message, status: 'error' }, requestChatID());
+    return { styleCommand: result };
+  }
+  return workbench.prepare(chatInput(value));
+}));
 handle('agent:send', value => {
   if (!currentProject()) throw new Error('Åbn et projekt først.');
   value = chatInput(value);
@@ -1103,6 +1197,21 @@ app.whenReady().then(async () => {
     }
   });
   await updates.start();
+  // S4 · GradientDeck: registry-posten 'aura-gradientdeck' (action 'integration')
+  // skrives ved opstart — idempotent (findes den allerede, røres intet) og kun
+  // når ingen opgave kører: ExternalEgress.binding() dækker registreringen, så
+  // en skrivning midt i en handling ville give PRIVACY_STALE for den
+  // igangværende. Ved opstart er ingen motorer startet. En fejl her er ikke
+  // fatal — hentningsvejen prøver igen, når der er ro.
+  try {
+    await new (require('./core/gradientdeck.cjs').GradientDeck)({
+      store: registry.store,
+      getPrivacy: () => registry.empty?.privacy || registry.selected?.privacy,
+      consent: async () => 'cancel',
+      quiet: () => !aiWorking(),
+      version: app.getVersion(),
+    }).ensureDestination();
+  } catch { /* opstarten fortsætter; den dovne vej ved hentning prøver igen */ }
   protocol.handle('harness', async request => {
     const url = new URL(request.url);
     const name = url.pathname.slice(1);
@@ -1126,8 +1235,8 @@ app.whenReady().then(async () => {
     if (details.resourceType === 'subFrame' && previewAllowed(details.url)) remember(previewLog.documents, { at: Date.now(), status: details.statusCode, url: details.url });
   });
   function createWindow() {
-    window = new BrowserWindow({ width: 1440, height: 940, minWidth: 980, minHeight: 720, backgroundColor: nativeTheme.shouldUseDarkColors ? '#0d1219' : '#F8FAFC', title: DISPLAY_NAME, icon: appIcon, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, webviewTag: false, zoomFactor: profileFontSize / FONT_SIZE.base } });
-    window.maximize(); // Almindeligt maksimeret vindue, ikke macOS-fuldskærm.
+    window = new BrowserWindow({ width: 1440, height: 940, minWidth: 980, minHeight: 720, ...onboardingWindow?.options(), backgroundColor: nativeTheme.shouldUseDarkColors ? '#121212' : '#FFFFFF', title: DISPLAY_NAME, icon: appIcon, ...(process.platform === 'darwin' ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 16, y: 16 } } : {}), webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, webviewTag: false, zoomFactor: profileFontSize / FONT_SIZE.base } });
+    if (!onboardingWindow?.compact) window.maximize();
     // The profile's font size rides along from the first paint: the zoom factor
     // is set before the first load, so the app never flashes the base size.
     window.webContents.setZoomFactor(profileFontSize / FONT_SIZE.base);
@@ -1197,6 +1306,8 @@ app.whenReady().then(async () => {
   // atomic store update.
   try { await workbench.features.migrate(); } catch { /* the renderer's startup migration retries the pin */ }
   if (process.platform === 'darwin') app.dock.setIcon(appIcon);
+  onboardingWindow = new (require('./core/onboarding-window.cjs').OnboardingWindow)(workbench.store);
+  await onboardingWindow.initialize();
   createWindow();
   app.on('activate', () => { if (!window) createWindow(); });
 }).catch(startupFailure);

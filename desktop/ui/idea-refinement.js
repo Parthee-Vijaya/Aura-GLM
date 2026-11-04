@@ -3,8 +3,8 @@
   const panel = $('#idea-refinement'), status = $('#idea-refine-status');
   const connection = $('#idea-connection'), model = $('#idea-model'), route = $('#idea-route');
   let busy = false, generation = 0, answer = null, accepted = null, review = null;
-  const dialog = node('dialog'); dialog.id = 'idea-review-dialog'; dialog.setAttribute('aria-labelledby','idea-review-title');
-  dialog.innerHTML = '<h2 id="idea-review-title">Gennemgå din AI-forbindelse</h2><p>Kun idéhjælp. Ingen projektfiler eller værktøjer åbnes.</p><dl id="idea-review-details"></dl><details><summary>Se præcis teksten, der sendes</summary><pre id="idea-review-content"></pre></details><div class="dialog-actions"><button type="button" id="idea-review-cancel">Annuller</button><button type="button" id="idea-review-send" class="primary">Send til idéhjælp</button></div>';
+  const dialog = node('dialog'); dialog.id = 'idea-review-dialog'; dialog.setAttribute('aria-labelledby','idea-review-title'); dialog.setAttribute('data-size','confirm');
+  dialog.innerHTML = '<h2 id="idea-review-title">Gennemgå din AI-forbindelse</h2><p>Kun idéhjælp. Ingen projektfiler eller værktøjer åbnes.</p><dl id="idea-review-details"></dl><details class="disclosure"><summary>Se præcis teksten, der sendes</summary><pre id="idea-review-content"></pre></details><div class="dialog-actions"><button type="button" id="idea-review-cancel">Annuller</button><button type="button" id="idea-review-send" class="primary">Send til idéhjælp</button></div>';
   document.body.append(dialog);
   function working(value, text) {
     busy=value;panel.setAttribute('aria-busy',String(value));status.textContent=text||'';status.classList.toggle('is-thinking',value);
@@ -36,7 +36,7 @@
     const selected=$('#startup-connection').value;
     connection.replaceChildren(option('','Vælg forbindelse'),...(state?.connections||[]).map(c=>option(c.id,c.name)));
     if(selected)connection.value=selected;
-    if(!connection.options.length||connection.options.length===1){status.textContent='Tilføj en AI-forbindelse under Indstillinger → AI-forbindelser. Din idé er gemt her.';return;}
+    if(!connection.options.length||connection.options.length===1){panel.hidden=true;status.textContent='';if(typeof showSetup==='function'){await showSetup('Tilslut en AI for at forfine din idé. Din kladde er bevaret.');return;}status.textContent='Tilføj en AI-forbindelse under Indstillinger → AI-forbindelser. Din idé er gemt her.';panel.hidden=false;return;}
     await loadModelsForIdea();connection.focus();
   });
   async function prepare(){

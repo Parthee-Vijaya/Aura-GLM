@@ -201,6 +201,8 @@ const openSection = async (settings, section) => { await settings.open(section);
 
 test('seks sektioner i fast rækkefølge med navne og ærlige beskrivelser', () => {
   assert.deepEqual(Settings.SECTIONS.map(section => section.id), ['profile', 'appearance', 'connections', 'features', 'updates', 'support']);
+  assert.equal(sectionOf('profile').label, 'Lokal profil');
+  assert.equal(sectionOf('appearance').label, 'Generelt');
   for (const section of Settings.SECTIONS) {
     assert.ok(section.label.length >= 3, `${section.id} har et navn`);
     assert.ok(section.description.length >= 10, `${section.id} har en beskrivelse`);
@@ -210,6 +212,7 @@ test('seks sektioner i fast rækkefølge med navne og ærlige beskrivelser', () 
     assert.ok(description.length >= 30, `${id} beskriver, hvad sektionen kommer til at indeholde`);
     assert.doesNotMatch(description, /snart|næste trin|placeholder|todo/i, `${id} er ikke en "kommer snart"-pladsholder`);
   }
+  assert.ok(sectionOf('appearance').description.includes('AI’ens arbejde'), 'Generelt nævner arbejdsdetaljerne');
 });
 
 test('open(profile) viser dialogen med sektionen aktiv og felter udfyldt fra profilen', async () => {
@@ -228,7 +231,7 @@ test('open(profile) viser dialogen med sektionen aktiv og felter udfyldt fra pro
   assert.equal(navButton(dom, 'appearance').getAttribute('aria-current'), null);
   assert.equal(dom.content.children[0].id, 'settings-section-title');
   assert.equal(dom.content.getAttribute('aria-labelledby'), 'settings-section-title');
-  assert.ok(dom.content.textContent.startsWith('Din profil'));
+  assert.ok(dom.content.textContent.startsWith('Lokal profil'));
   assert.ok(dom.content.textContent.includes(sectionOf('profile').description));
   assert.equal(dom.document.activeElement, profileButton, 'fokus lægges på sektionens nav-knap');
   const q = selector => dom.content.querySelector(selector);
@@ -453,6 +456,52 @@ test('temaændring bevarer en gemt lukket starttilstand for panelet', async () =
   await flush();
   assert.deepEqual(harness.saves[0], { appearance: { theme: 'light', panelOpen: false } }, 'panelOpen bevares i den sendte enhed');
   assert.deepEqual(themes.at(-1), 'light', 'lys tema gives videre gennem temamodulet');
+});
+
+// Arbejdsdetaljer (D4a): Generelt viser tre valg fra profilen,
+// og hvert valg gemmer kun sit eget felt — hjælpeniveauet og detaljeniveauet
+// er uafhængige (R7: alle 3×3 kombinationer forbliver skrivbare).
+test('open(appearance) viser arbejdsdetaljerne som tre valgkort fra profilen', async () => {
+  const dom = makeDom();
+  const harness = makeHarness({ profile: { ...blank(), transcriptView: 'compact', appearance: { theme: 'light', panelOpen: true } } });
+  const settings = makeSettings(dom, harness);
+  await openSection(settings, 'appearance');
+  const radios = dom.content.querySelectorAll('#settings-transcript input');
+  assert.deepEqual(radios.map(radio => radio.value), ['compact', 'standard', 'detailed'], 'de tre trin er Kun resultater, Nøgletrin og Alle detaljer');
+  assert.deepEqual(radios.map(radio => radio.checked), [true, false, false], 'det gemte niveau er forvalgt');
+  assert.ok(dom.content.textContent.includes('Arbejdsdetaljer'), 'sektionen har sit danske navn');
+  for (const word of ['Kun resultater', 'Nøgletrin', 'Alle detaljer']) assert.ok(dom.content.textContent.includes(word), `${word} har sin danske titel`);
+  for (const card of dom.content.querySelectorAll('#settings-transcript label')) assert.ok(card.textContent.trim().length > 15, 'hvert kort har en ærlig kort forklaring');
+  assert.equal(dom.body.classList.contains('transcript-compact'), true, 'det gemte niveau sætter sin kropsklasse straks');
+  assert.equal(dom.body.classList.contains('transcript-standard'), false);
+  assert.equal(dom.body.classList.contains('transcript-detailed'), false);
+});
+
+test('et detaljeniveauvalg gemmer kun transcriptView og skifter kropsklassen straks', async () => {
+  const dom = makeDom();
+  const harness = makeHarness({ profile: { ...blank(), helpLevel: 'delvis', transcriptView: 'standard', appearance: { theme: 'system', panelOpen: true } } });
+  const settings = makeSettings(dom, harness);
+  await openSection(settings, 'appearance');
+  const detailed = dom.content.querySelectorAll('#settings-transcript input').find(radio => radio.value === 'detailed');
+  detailed.checked = true; detailed.emit('change');
+  await flush();
+  assert.deepEqual(harness.saves[0], { transcriptView: 'detailed' }, 'gemningen bærer kun detaljeniveauet');
+  assert.equal(dom.body.classList.contains('transcript-detailed'), true, 'Alle detaljer sætter sin kropsklasse');
+  assert.equal(dom.body.classList.contains('transcript-standard'), false);
+  assert.equal(dom.body.classList.contains('help-delvis'), true, 'hjælpeniveauet består uændret — niveauerne er uafhængige');
+  const compact = dom.content.querySelectorAll('#settings-transcript input').find(radio => radio.value === 'compact');
+  compact.checked = true; compact.emit('change');
+  await flush();
+  assert.deepEqual(harness.saves[1], { transcriptView: 'compact' });
+  assert.equal(dom.body.classList.contains('transcript-compact'), true);
+  assert.equal(dom.body.classList.contains('transcript-detailed'), false);
+  // A neighboring field write in the same section (appearance is one unit)
+  // never drags the detail level along: the merge keeps only the sent keys.
+  const light = dom.content.querySelectorAll('#settings-theme input').find(radio => radio.value === 'light');
+  light.checked = true; light.emit('change');
+  await flush();
+  assert.equal(harness.profile.transcriptView, 'compact', 'detaljeniveauet overlever en udseende-gemning i samme sektion');
+  assert.equal(dom.body.classList.contains('transcript-compact'), true, 'kropsklassen består efter naboens gemning');
 });
 
 // Skriftstørrelse-stepperen (4K-skalering): feltet viser profilens størrelse
@@ -705,7 +754,7 @@ test('sektionsskift flytter aria-current, indhold og fokus', async () => {
   assert.equal(dom.dialog.open, true);
   assert.equal(navButton(dom, 'appearance').getAttribute('aria-current'), 'true');
   assert.equal(navButton(dom, 'profile').getAttribute('aria-current'), null);
-  assert.ok(dom.content.textContent.startsWith('Udseende'));
+  assert.ok(dom.content.textContent.startsWith('Generelt'));
   assert.ok(dom.content.querySelector('#settings-theme'), 'udseendefelterne er rendering');
   assert.equal(dom.content.querySelector('#settings-name'), null, 'profilfelterne er væk efter skiftet');
   navButton(dom, 'profile').click();
@@ -795,7 +844,7 @@ test('Funktioner-panelet viser grundpakken for en ny bruger og hele pakken for e
   const fresh = await dialog(null);
   assert.equal(fresh.state.features.chosen, '', 'en ny bruger har ikke valgt en pakke');
   const freshInputs = fresh.dom.document.querySelectorAll('#features-list input[data-feature]');
-  assert.equal(freshInputs.length, 9, 'fem funktioner og fire integrationer');
+  assert.equal(freshInputs.length, 10, 'seks funktioner og fire integrationer');
   assert.ok(freshInputs.every(input => input.checked === false), 'grundpakken har ingen tilvalg');
   assert.equal(fresh.toggles('versioner')?.checked, false, 'versioner er fra indtil tilvalgt');
   assert.equal(fresh.dom.document.querySelectorAll('#features-list .feature-row[data-feature="design"]').length, 0, 'designhjælpen er altid aktiv og ikke en kontakt');

@@ -137,6 +137,11 @@ class EventAdapter {
     if (event.type === 'session.step.started') {
       this.models.set(d.assistantMessageID, d.model);
       info(d.assistantMessageID, 'assistant', { providerID: d.model?.providerID, modelID: d.model?.id });
+    } else if (event.type === 'session.step.streamed' && typeof d.assistantMessageID === 'string' && d.assistantMessageID && typeof d.sessionID === 'string' && d.sessionID) {
+      // The engine's own "step finished streaming" mark (before tool execution
+      // and step.ended). It owns the tok/s denominator in the step register;
+      // the decode/turn guards reject other sessions and pre-turn steps.
+      emit('message.part.streamed', { sessionID: d.sessionID, messageID: d.assistantMessageID });
     } else if (event.type === 'session.step.ended') {
       update({ id: this.partID(d.assistantMessageID, 'step', 'finish'), type: 'step-finish', sessionID: d.sessionID, messageID: d.assistantMessageID, reason: d.finish, cost: d.cost, tokens: d.tokens });
       info(d.assistantMessageID, 'assistant', { finish: d.finish, time: { completed: Date.now() }, tokens: d.tokens, cost: d.cost, providerID: this.models.get(d.assistantMessageID)?.providerID, modelID: this.models.get(d.assistantMessageID)?.id });

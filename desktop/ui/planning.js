@@ -48,7 +48,7 @@
     if (parsed.intro) parts.push(markdown(parsed.intro));
     for (const section of parsed.sections) {
       // Teknik og data er foldet sammen: brugeren skal ikke kende frameworknavne for at godkende planen.
-      if (section.key === 'teknik') { const fold = node('details', undefined, 'plan-part plan-teknik'); fold.append(node('summary', section.title), markdown(section.body)); parts.push(fold); continue; }
+      if (section.key === 'teknik') { const fold = node('details', undefined, 'plan-part plan-teknik disclosure'); fold.append(node('summary', section.title), markdown(section.body)); parts.push(fold); continue; }
       const box = node('section', undefined, `plan-part${section.key ? ` plan-${section.key}` : ''}`);
       box.append(node('h3', section.title), markdown(section.body)); parts.push(box);
     }
@@ -79,7 +79,7 @@
       for (const key of ['bygger', 'design', 'proev']) {
         const section = parsed.sections.find(part => part.key === key);
         if (!section?.body.trim()) continue;
-        const item = node('details', '', 'plan-detail');
+        const item = node('details', '', 'plan-detail disclosure');
         const head = node('summary'); head.append(node('strong', section.title));
         item.append(head);
         const body = node('div', '', 'plan-detail-body');
@@ -88,7 +88,7 @@
         summary.push(item);
       }
       // Frie planformater bevarer deres eksisterende resumé som ét åbent punkt.
-      if (!summary.length) { const item = node('details', '', 'plan-detail'); item.open = true; item.append(node('summary', view.planSummary(plan.text, 180))); summary.push(item); }
+      if (!summary.length) { const item = node('details', '', 'plan-detail disclosure'); item.open = true; item.append(node('summary', view.planSummary(plan.text, 180))); summary.push(item); }
     }
     $('#plan-summary').replaceChildren(...summary);
     // Fanen vises, når planlægning er slået til, eller når der findes en plan.

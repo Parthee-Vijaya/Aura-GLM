@@ -28,7 +28,7 @@ async function fixture(t, change = {}) {
 
 test('det rigtige bibliotek er gyldigt, og hvert værktøj kan installeres og fjernes igen', async t => {
   const library = await loadLibrary(profiles);
-  assert.equal(library.skills.length, 17);
+  assert.equal(library.skills.length, 18);
   assert.ok(library.tools.length >= 20, `${library.tools.length} værktøjer`);
   assert.ok(library.rules.includes(library.controlWord));
   for (const item of library.tools.filter(entry => entry.rules)) {
@@ -104,15 +104,21 @@ test('det rigtige bibliotek kan indlæses og installeres med Windows-linjeskift'
   assert.throws(() => validateSkillText(name, installed.replace('description:', 'ukendt-felt:')), /ikke tilladt/, 'Windows-linjeskift lemper ikke feltkontrollen');
 });
 
-test('skillsene overholder Agent Skills-formatet og indeholder ingen scripts', async () => {
+test('skillsene overholder Agent Skills-formatet; datafiler er kun de tre porterede typer', async () => {
   const library = await loadLibrary(profiles);
   for (const item of library.skills) {
     assert.match(item.name, /^harness-[a-z0-9]+(-[a-z0-9]+)*$/);
     assert.ok(item.description.length <= 1024 && item.description.length >= 80, item.name);
-    assert.ok(item.files.every(file => /^(SKILL\.md|references\/[a-z0-9-]+\.md)$/.test(file.path)), item.name);
+    // S3: udover SKILL.md og references/ medfølger præcis de tre porterede
+    // datatyper samt den bevarede MIT-licens — aldrig vilkårlige filer.
+    assert.ok(item.files.every(file => /^(SKILL\.md|references\/[a-z0-9-]+\.md|worlds\/worlds\.json|photos\/photos\.json|scripts\/roll\.mjs|LICENSE)$/.test(file.path)), item.name);
     const body = item.files.find(file => file.path === 'SKILL.md').content;
     assert.ok(body.split('\n').length < 300, item.name);
     assert.doesNotMatch(body, /disable-model-invocation|allowed-tools/, item.name);
+    for (const file of item.files) {
+      if (/^(worlds|photos)\//.test(file.path)) assert.doesNotThrow(() => JSON.parse(file.content), `${item.name}: ${file.path} skal være gyldig JSON`);
+      assert.ok(Buffer.byteLength(file.content, 'utf8') <= (file.path === 'LICENSE' ? 32768 : 2 * 1024 * 1024), `${item.name}: ${file.path} er inden for størrelsesbudgettet`);
+    }
   }
 });
 
@@ -183,11 +189,13 @@ test('integrationer skal beskrive system, ejer, adgang og dataflow og stå for s
 
 test('funktionerne i appen dækker hele biblioteket og bygger kun på kendte funktioner', async () => {
   const library = await loadLibrary(profiles);
-  assert.deepEqual(library.features.filter(feature => !feature.group).map(feature => feature.id), ['versioner', 'planlaegning', 'design', 'sikkerhed', 'kvalitet', 'deling']);
+  assert.deepEqual(library.features.filter(feature => !feature.group).map(feature => feature.id), ['versioner', 'planlaegning', 'design', 'gradientdesign', 'sikkerhed', 'kvalitet', 'deling']);
   assert.deepEqual(library.features.filter(feature => feature.group === 'integrationer').map(feature => feature.id), ['integration-adresser', 'integration-cvr', 'integration-promte', 'integration-komplai-run']);
   assert.deepEqual(library.features.flatMap(feature => feature.skills).sort(), library.skills.map(skill => skill.name).sort());
   assert.deepEqual(library.features.find(feature => feature.id === 'deling').requires, ['versioner'], 'Udgiv og sikkerhedskopi udgiver fra en gemt version');
-  assert.deepEqual(library.features.filter(feature => !feature.group && feature.default === false).map(feature => feature.id), ['deling'], 'Udgiv er ikke med i den anbefalede pakke, så længe den kræver udviklerværktøjer');
+  // S3: GradientDeck er et bevidst tilvalg — hverken grundpakken eller "hele
+  // pakken" slår den til; /design aktiverer den pr. besked oven på designhjælpen.
+  assert.deepEqual(library.features.filter(feature => !feature.group && feature.default === false).map(feature => feature.id), ['gradientdesign', 'deling'], 'GradientDeck og Udgiv er ikke med i den anbefalede pakke');
 });
 
 // Integrationsskills holder nøgler på en server og nævner de regler, der gælder for systemet.
@@ -203,4 +211,81 @@ test('integrationsskills holder nøgler på serveren og nævner systemets regler
   assert.match(text('harness-integration-adresser'), /EPSG:25832/);
   for (const rule of [/§ 17/, /reklamebeskyttede/, /CPR-numre må aldrig/, /opdigtede virksomheder/]) assert.match(text('harness-integration-cvr'), rule);
   for (const rule of [/PromteAppProvider/, /devDependencies/, /Kør dem kun, når brugeren har sagt ja/, /Bed aldrig brugeren indsætte et token/, /Udgiv → Promte Apps/, /Kør ikke upload-kommandoer fra Aura/, /Aura svarer som Promte/]) assert.match(text('harness-integration-promte'), rule);
+});
+
+// ─── S3: den fulde GradientDeck-port (harness-design) ────────────────────────
+
+test('S3: GradientDeck-skilllet er porteret komplet med MIT-licens, data og metode', async () => {
+  const library = await loadLibrary(profiles);
+  const skill = library.skills.find(item => item.name === 'harness-design');
+  assert.ok(skill, 'harness-design står i kataloget');
+  const paths = skill.files.map(file => file.path);
+  assert.equal(paths.filter(item => item.startsWith('references/')).length, 19, 'alle 19 referencer er med — intet indhold udelades');
+  for (const file of ['worlds/worlds.json', 'photos/photos.json', 'scripts/roll.mjs', 'LICENSE']) assert.ok(paths.includes(file), `${file} er med`);
+  const license = skill.files.find(file => file.path === 'LICENSE').content;
+  assert.match(license, /MIT License/, 'MIT-licensen fra kilden er bevaret i skillmappen');
+  assert.match(license, /GradientDeck/, 'licensens ophavsretsindehaver er kildens');
+  const main = skill.files.find(file => file.path === 'SKILL.md').content;
+  assert.match(main, /gradientdeck-skill/, 'SKILL.md krediterer kilderepoet');
+  for (const file of paths) if (file !== 'SKILL.md') assert.ok(main.includes(file), `${file} henvises fra SKILL.md`);
+  assert.match(main, /command approval/, 'rollen kræver kommandogodkendelse (engelsk metodekilde: command approval)');
+  assert.match(main, /plain text/, 'nægtes godkendelsen, bruges worlds.json som almindelig tekst (plain text)');
+  assert.match(main, /Inspiration, not imitation|inspiration, not imitation/i, 'output-reglen: inspiration, ikke efterligning');
+  assert.doesNotMatch(main, /hvis den er installeret/, 'SKILL.md skal ikke bære no-get frase fra andre skills');
+  const worlds = JSON.parse(skill.files.find(file => file.path === 'worlds/worlds.json').content);
+  assert.ok(Array.isArray(worlds) && worlds.length > 200, 'verdensbiblioteket er komplet');
+  const photos = JSON.parse(skill.files.find(file => file.path === 'photos/photos.json').content);
+  assert.ok(Array.isArray(photos.photos) && photos.photos.length > 700, 'fotobiblioteket er komplet');
+});
+
+test('S3: kun de porterede datatyper accepteres — gyldig JSON, budget og ingen vilkårlige filer', async t => {
+  const data = {
+    'skills/harness-a/worlds/worlds.json': '[]',
+    'skills/harness-a/photos/photos.json': '{"photos":[]}',
+    'skills/harness-a/scripts/roll.mjs': 'export default {};\n',
+    'skills/harness-a/LICENSE': 'MIT License\nCopyright (c) 2026 GradientDeck\n'
+  };
+  const skillWithAll = '---\nname: harness-a\ndescription: Gør A, når opgaven kræver det.\n---\n# A\nLæs references/detaljer.md, worlds/worlds.json, photos/photos.json, scripts/roll.mjs og LICENSE.\n';
+  const library = await loadLibrary(await fixture(t, { skill: skillWithAll, files: data }));
+  assert.deepEqual(library.skills[0].files.map(file => file.path).sort(),
+    ['LICENSE', 'SKILL.md', 'photos/photos.json', 'references/detaljer.md', 'scripts/roll.mjs', 'worlds/worlds.json']);
+  const rejects = async (change, pattern) => assert.rejects(loadLibrary(await fixture(t, change)), pattern);
+  await rejects({ skill: skillWithAll, files: { ...data, 'skills/harness-a/worlds/worlds.json': '{ugyldig' } }, /worlds\/worlds\.json[\s\S]*gyldig JSON/);
+  await rejects({ skill: skillWithAll, files: { ...data, 'skills/harness-a/scripts/kør.sh': 'echo hej' } }, /ugyldig post/, 'vilkårlige scripts afvises stadig');
+  await rejects({ skill: skillWithAll, files: { ...data, 'skills/harness-a/photos/andet.json': '{}' } }, /ugyldig post/, 'andre filnavne i datamapperne afvises');
+  await rejects({ skill: '---\nname: harness-a\ndescription: Gør A, når opgaven kræver det.\n---\n# A\nLæs references/detaljer.md.\n', files: data }, /bruges ikke fra SKILL\.md/, 'datafiler uden henvisning fra SKILL.md afvises');
+  // Størrelsesbudgettet holder de porterede filer små — ingen skill kan pakke vilkårligt store datablokke.
+  const huge = 'x'.repeat(2 * 1024 * 1024 + 1);
+  await rejects({ skill: skillWithAll, files: { ...data, 'skills/harness-a/worlds/worlds.json': huge } }, /for stor/);
+  await rejects({ skill: skillWithAll, files: { ...data, 'skills/harness-a/scripts/roll.mjs': 'x'.repeat(128 * 1024 + 1) } }, /for stor/);
+});
+
+// S3-fix (Minor 3): fallbacken er samlet — SKILL.md henviser til retning-
+// vejledningens without-Node-regel i stedet for at modsige den, og manuel
+// kontrol (inklusive check) er erstatningen for scriptet.
+test('S3-fix: fallbacken er samlet — manuel kontrol erstatter scriptets check', async () => {
+  const library = await loadLibrary(profiles);
+  const main = library.skills.find(item => item.name === 'harness-design').files.find(file => file.path === 'SKILL.md').content;
+  assert.match(main, /without-Node rule in `references\/direction\.md`/, 'SKILL.md følger retningevejledningens without-Node-regel');
+  assert.match(main, /do the roll's `check` yourself/, 'manuell kontrol erstatter scriptets check-kommando');
+  assert.match(main, /If Node is not available/, 'manglende Node er en egen, ærlig vej');
+  const direction = library.skills.find(item => item.name === 'harness-design').files.find(file => file.path === 'references/direction.md').content;
+  assert.match(direction, /Without Node, build your third-ranked candidate/, 'retningevejledningens without-Node-regel består uændret');
+});
+
+// S3-fix (UX 10): Funktioner-rækkens danske tekst forklarer sig selv — ingen
+// uforklaret fagjargon ("rollen"), og popup-rækkerne bruger den korte form.
+// S5-UI-fix (a) opdaterer pin: «verdener»- og «script, der trækker den visuelle
+// retning»-metaforerne fra S3-liveanalysen er erstattet af almindeligt dansk,
+// der forklarer, hvad funktionen gør — udtrækningen af en visuel retning.
+test('S3-fix: funktionsteksten er almindeligt dansk uden uforklaret jargon', async () => {
+  const library = await loadLibrary(profiles);
+  const feature = library.features.find(item => item.id === 'gradientdesign');
+  const skill = library.skills.find(item => item.name === 'harness-design');
+  for (const text of [feature.summary, feature.skills ? '' : '', skill.faq.resultat, skill.summary]) {
+    assert.doesNotMatch(text || '', /\brollen\b/, 'ordet "rollen" er erstattet af almindeligt dansk');
+  }
+  assert.doesNotMatch(feature.summary, /verden(er|erne)?\b/i, 'S5: «verdener»-metaforen er forklaret væk');
+  assert.match(feature.summary, /tilfældigt valgt, sammenhængende visuel retning/, 'S5: teksten forklarer udtrækningen af den visuelle retning i almindeligt dansk');
+  assert.match(skill.faq.resultat, /kræver kommandogodkendelse/, 'kommandogodkendelsen står der stadig');
 });

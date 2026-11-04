@@ -70,6 +70,22 @@ test('genoptegning erstatter tidligere mærker og viser ingen model før brugere
   assert.doesNotThrow(() => brand.decorate(null));
 });
 
+test('indsatsnoten står i sin egen span — den sammensatte tekst er uændret', () => {
+  const button = document.createElement('button');
+  brand.decorate(button, { kind: 'anthropic', modelID: 'claude', label: 'Claude prøve', note: 'Høj indsats' });
+  assert.deepEqual(button.children.map(child => child.tagName), ['img', 'span', 'span'], 'navn og indsats er adskilte spans');
+  const [, label, note] = button.children;
+  assert.equal(label.className, 'provider-brand-label');
+  assert.equal(label.textContent, 'Claude prøve');
+  assert.equal(note.className, 'provider-brand-note');
+  assert.equal(note.textContent, ' · Høj indsats', 'separatoren bor i noten');
+  assert.equal(button.textContent, 'Claude prøve · Høj indsats', 'chippen læser som ét hele — uændret i forhold til før');
+  // Genoptegning uden note fjerner den gamle note (ingen levning fra en tidligere indsats).
+  brand.decorate(button, { kind: 'anthropic', modelID: 'claude', label: 'Claude prøve' });
+  assert.equal(button.children.length, 2);
+  assert.equal(button.textContent, 'Claude prøve');
+});
+
 function fixture() {
   const elements = new Map();
   const $ = selector => { if (!elements.has(selector)) elements.set(selector, document.createElement('button')); return elements.get(selector); };
@@ -77,11 +93,11 @@ function fixture() {
   $('#connection-select').value = connection.id; $('#model-select').value = 'anthropic/claude-prøve';
   $('#model-select').selectedOptions = [{ textContent: 'Claude prøve' }];
   $('#route-select').value = 'konkret-rute'; $('#prompt').value = 'Bevar kladde';
-  const context = { $, renderContextUsage() {}, syncOnboardingVisuals() {}, state: { connections: [connection], definitions: { openrouter: { provider: 'OpenRouter' } } }, view: { running: false, effort: null },
+  const context = { $, renderContextUsage() {}, renderStatusLine() {}, syncOnboardingVisuals() {}, state: { connections: [connection], definitions: { openrouter: { provider: 'OpenRouter' } } }, view: { running: false, effort: null },
     window: { ProviderBrand: brand, ModelAdvice: advice }, acceptedFingerprint: 'godkendt-materiale', activePlan: Object.freeze({ id: 'godkendt-plan' }) };
   vm.createContext(context);
   const source = fs.readFileSync(path.join(__dirname, '../ui/app.js'), 'utf8');
-  vm.runInContext(source.slice(source.indexOf('const effortNames ='), source.indexOf('// Forbruget i samtalen:')), context);
+  vm.runInContext(source.slice(source.indexOf('const effortNames ='), source.indexOf('// Forbrugets tal står i statuslinjen')), context);
   return { context, $ };
 }
 
@@ -114,6 +130,23 @@ test('en kørende samtale uden visningsmetadata beholder teksten uden at gætte 
   f.context.updateModelSummary();
   assert.equal(f.$('#model-chip').children.length, 1);
   assert.equal(f.$('#model-chip').textContent, 'Tidligere model · Gemt forbindelse');
+});
+
+test('chippen viser den valgte indsats som en egen dæmpet note ved navnet', () => {
+  const f = fixture();
+  Object.assign(f.context.view, { effort: 'high' });
+  f.context.updateModelSummary();
+  const chip = f.$('#model-chip');
+  assert.equal(chip.textContent, 'Claude prøve · OpenRouter · høj indsats', 'den sammensatte tekst er som før adskillelsen');
+  const note = chip.children.find(child => child.className === 'provider-brand-note');
+  assert.ok(note, 'indsatsen står i sin egen provider-brand-note-span');
+  assert.equal(note.textContent, ' · høj indsats');
+  assert.equal(chip.children.find(child => child.className === 'provider-brand-label').textContent, 'Claude prøve · OpenRouter');
+  // Uden indsats findes noten ikke — ingen tom separator.
+  Object.assign(f.context.view, { effort: null });
+  f.context.updateModelSummary();
+  assert.equal(chip.textContent, 'Claude prøve · OpenRouter');
+  assert.equal(chip.children.some(child => child.className === 'provider-brand-note'), false);
 });
 
 test('afsendelsen knytter kun visningsmetadata til det valgte forløb uden at ændre sendefingeraftryk eller godkendelser', async () => {

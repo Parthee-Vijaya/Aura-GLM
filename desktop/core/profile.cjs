@@ -35,11 +35,21 @@ function clampFontSize(value) { return Number.isInteger(value) && value >= FONT_
 const HELP_VALUES = Object.freeze(['fuld', 'delvis', 'ingen']);
 const LEGACY_HELP = 'minimal';
 const WORK_MODES = Object.freeze(['chat', 'plan']);
+// The transcript detail level: how much of the AI's work the conversation
+// shows while it runs. 'compact' shows the answers, 'standard' (Nøgletrin —
+// Parthee's B5 default) adds the key steps, 'detailed' shows every allowed
+// work detail (R6: never reasoning content). Same contract as the help
+// level: saving is strict on the three values, a stored unknown value from a
+// newer beta reads leniently back to 'standard' with a Danish warning, and
+// the field stays independent of helpLevel — all 3×3 combinations are
+// writable and one writer never drags the other level.
+const TRANSCRIPT_VALUES = Object.freeze(['compact', 'standard', 'detailed']);
 
-// A fresh profile: no name or icon, full help, system theme, panel open,
-// no standard AI, chat as the work mode and undecided project standards.
+// A fresh profile: no name or icon, full help, standard transcript detail,
+// system theme, panel open, no standard AI, chat as the work mode and
+// undecided project standards.
 function blank() {
-  return { name: '', icon: '', helpLevel: 'fuld', appearance: { theme: 'system', panelOpen: true, fontSize: FONT_SIZE.base }, standardAI: { connectionID: '', modelID: '' }, workMode: 'chat', projectDefaults: { ...PROJECT_DEFAULTS }, migrated: 0 };
+  return { name: '', icon: '', helpLevel: 'fuld', transcriptView: 'standard', appearance: { theme: 'system', panelOpen: true, fontSize: FONT_SIZE.base }, standardAI: { connectionID: '', modelID: '' }, workMode: 'chat', projectDefaults: { ...PROJECT_DEFAULTS }, migrated: 0 };
 }
 
 function cleanID(value) { return typeof value === 'string' && value.length <= 100 && !/[\x00-\x1f]/.test(value) ? value : null; }
@@ -71,6 +81,12 @@ function cleanChoice(value, allowed, message) { if (!allowed.includes(value)) th
 function readHelpLevel(value) {
   if (value === LEGACY_HELP) return 'delvis';
   return cleanChoice(value, HELP_VALUES, 'Ukendt hjælpeniveau.');
+}
+// The transcript level has no retired two-step value like the help level's
+// 'minimal': the field is new, so the read needs no mapping — an unknown
+// value simply folds to 'standard' through the lenient read below.
+function readTranscriptView(value) {
+  return cleanChoice(value, TRANSCRIPT_VALUES, 'Ukendt detaljeniveau.');
 }
 
 // partial keeps only the fields the patch actually carries: appearance saves
@@ -110,6 +126,7 @@ function normalizePatch(input, hasAvatar = () => false) {
   if (input.name !== undefined) patch.name = cleanName(input.name);
   if (input.icon !== undefined) patch.icon = cleanIconPatch(input.icon, hasAvatar);
   if (input.helpLevel !== undefined) patch.helpLevel = cleanChoice(input.helpLevel, HELP_VALUES, 'Ukendt hjælpeniveau.');
+  if (input.transcriptView !== undefined) patch.transcriptView = cleanChoice(input.transcriptView, TRANSCRIPT_VALUES, 'Ukendt detaljeniveau.');
   if (input.appearance !== undefined) patch.appearance = normalizeAppearance(input.appearance, { partial: true });
   if (input.standardAI !== undefined) patch.standardAI = normalizeStandardAI(input.standardAI);
   if (input.workMode !== undefined) patch.workMode = cleanChoice(input.workMode, WORK_MODES, 'Ukendt arbejdsmåde.');
@@ -127,6 +144,7 @@ const READ_WARNINGS = Object.freeze({
   name: 'Dit profilnavn kunne ikke læses og er nulstillet.',
   icon: 'Dit profilikon kunne ikke læses og er nulstillet.',
   helpLevel: 'Dit hjælpeniveau kunne ikke læses og er nulstillet.',
+  transcriptView: 'Dine arbejdsdetaljer kunne ikke læses og er nulstillet.',
   appearance: 'Dit udseende kunne ikke læses og er nulstillet.',
   standardAI: 'Din standard-AI kunne ikke læses og er nulstillet.',
   workMode: 'Din arbejdsmåde kunne ikke læses og er nulstillet.',
@@ -158,6 +176,7 @@ function readProfile(input, hasAvatar = () => false) {
     name: field(READ_WARNINGS.name, '', () => input.name === undefined ? '' : cleanName(input.name)),
     icon: field(READ_WARNINGS.icon, '', () => input.icon === undefined ? '' : cleanIcon(input.icon, hasAvatar)),
     helpLevel: field(READ_WARNINGS.helpLevel, 'fuld', () => input.helpLevel === undefined ? 'fuld' : readHelpLevel(input.helpLevel)),
+    transcriptView: field(READ_WARNINGS.transcriptView, 'standard', () => input.transcriptView === undefined ? 'standard' : readTranscriptView(input.transcriptView)),
     appearance: group(input.appearance, fresh.appearance, normalizeAppearance, ['theme', 'panelOpen', 'fontSize'], READ_WARNINGS.appearance),
     standardAI: group(input.standardAI, fresh.standardAI, normalizeStandardAI, ['connectionID', 'modelID'], READ_WARNINGS.standardAI),
     workMode: field(READ_WARNINGS.workMode, 'chat', () => input.workMode === undefined ? 'chat' : cleanChoice(input.workMode, WORK_MODES, 'Ukendt arbejdsmåde.')),
@@ -268,4 +287,5 @@ class Profile {
 Profile.ICON_IDS = ICON_IDS;
 Profile.UPLOAD_ICON = UPLOAD_ICON;
 Profile.FONT_SIZE = FONT_SIZE;
-module.exports = { Profile, ICON_IDS, UPLOAD_ICON, FONT_SIZE, strictFontSize, clampFontSize, blank };
+Profile.TRANSCRIPT_VALUES = TRANSCRIPT_VALUES;
+module.exports = { Profile, ICON_IDS, UPLOAD_ICON, FONT_SIZE, strictFontSize, clampFontSize, blank, TRANSCRIPT_VALUES };

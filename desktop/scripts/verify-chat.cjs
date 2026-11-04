@@ -39,7 +39,7 @@ const { run } = require('../core/git.cjs');
   await page.waitForSelector('#connections-dialog[open]'); await page.click('[data-close="connections-dialog"]');
   await page.waitForSelector('#create-form');
   await app.evaluate(({dialog},project)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[project]});},project);
-  await page.click('#open'); await page.waitForSelector('#workspace:not([hidden])');
+  await require('./ui-test-helpers.cjs').clickOpen(page); await page.waitForSelector('#workspace:not([hidden])');
   await require('./ui-test-helpers.cjs').menuClick(page, '#git-button'); await page.click('#git-init');
   await page.waitForFunction(()=>document.querySelector('#git-init').hidden && !document.querySelector('#git-init').disabled);
   await run(project,['config','--local','user.name','Testbruger']); await run(project,['config','--local','user.email','test@example.invalid']);
@@ -70,13 +70,22 @@ const { run } = require('../core/git.cjs');
   assert.equal(await page.inputValue('#model-select'),'test-model');
   // Et klik på et modelkort vælger modellen og lukker dialogen.
   assert.equal(await page.locator('#task-dialog').evaluate(el=>el.open),false);
-  await page.locator('#idea-options').evaluate(el => el.open = true);
-  await page.selectOption('#idea-platform',{label:'Browser'});
-  await page.selectOption('#idea-data',{label:'Ja, flere brugere med fælles data'});
-  await page.locator('#idea-options details').evaluate(el => el.open = true);
-  await page.selectOption('#idea-ui',{label:'React og TypeScript'});
-  await page.selectOption('#idea-design',{label:'Tailwind CSS med shadcn/ui'});
-  await page.selectOption('#idea-backend',{label:'Serverless-funktioner'});
+  // Idé-chips (D2+D3): chips er den synlige vælger; select'erne forbliver
+  // værdikilden. Valgene sættes gennem chip-menuerne — samme værdier, samme
+  // ønske-payload som før (byte-identisk).
+  await page.click('#idea-chip-platform');
+  await page.getByRole('menuitemradio', { name: 'Browser' }).click();
+  await page.click('#idea-chip-data');
+  await page.getByRole('menuitemradio', { name: 'Ja, flere brugere med fælles data' }).click();
+  await page.click('#idea-chip-technique');
+  for (const choice of [['Brugerflade', 'React og TypeScript'], ['Designværktøjer', 'Tailwind CSS med shadcn/ui'], ['Backend', 'Serverless-funktioner']]) {
+    const group = page.locator(`#idea-technique-groups [aria-label="${choice[0]}"]`);
+    await group.getByRole('radio', { name: choice[1] }).click();
+  }
+  assert.equal(await page.textContent('#idea-chip-platform-label'), 'Platform · Browser', 'den valgte værdi står på chippen');
+  assert.equal(await page.textContent('#idea-chip-data-label'), 'Data · Ja, flere brugere med fælles data');
+  assert.equal(await page.textContent('#idea-chip-technique-label'), 'Teknik · 3 valgte');
+  await page.keyboard.press('Escape');
   // Med en kladde i skrivefeltet er der kun én måde at starte på, så kladden kan ikke overskrives.
   await page.fill('#prompt','Min eksisterende kladde'); assert.equal(await page.isVisible('#start-idea'),false);
   assert.equal(await page.inputValue('#prompt'),'Min eksisterende kladde');
@@ -200,7 +209,7 @@ const { run } = require('../core/git.cjs');
   await page.click('#skill-reset');await page.locator('#skill-source').filter({hasText:'Fælles version'}).waitFor();
   assert.equal(await page.inputValue('#skill-content'),original);await page.click('[data-close="skills-dialog"]');await page.click('[data-close="features-dialog"]');
   await page.screenshot({path:path.join(root,'chat.png'),fullPage:true});
-  await page.click('#open'); await page.waitForFunction(()=>document.querySelector('#model-select').value==='test-model');
+  await require('./ui-test-helpers.cjs').clickOpen(page); await page.waitForFunction(()=>document.querySelector('#model-select').value==='test-model');
   await require('./ui-test-helpers.cjs').menuClick(page, '#attach-preview'); await page.fill('#preview-url',`http://127.0.0.1:${server.address().port}/preview`); await page.click('#preview-form button[type="submit"]');
   await page.frameLocator('#preview').locator('h1').filter({hasText:'Eksisterende udviklingsserver'}).waitFor();
   await require('./ui-test-helpers.cjs').menuClick(page, '#attach-preview'); await page.click('#static-preview');
@@ -215,7 +224,7 @@ const { run } = require('../core/git.cjs');
   assert.equal((await run(project,['rev-list','--count','HEAD'])).toString().trim(),'2');
   const empty=path.join(root,'tom');await fs.mkdir(empty);
   await app.evaluate(({dialog},empty)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[empty]});},empty);
-  await page.click('#open');await page.waitForSelector('#preview-empty:not([hidden])');assert.deepEqual(await fs.readdir(empty),[]);
+  await require('./ui-test-helpers.cjs').clickOpen(page);await page.waitForSelector('#preview-empty:not([hidden])');assert.deepEqual(await fs.readdir(empty),[]);
   assert.equal(await page.inputValue('#idea-ui'),''); assert.equal(await page.isVisible('#agent-activity'),false);
   await page.click('#start-idea'); assert.doesNotMatch(await page.inputValue('#prompt'),/React og TypeScript/);
   console.log(JSON.stringify({status:'bestået',root,checks:['modelkort uden automatisk valg','planlægning, afklaring og eksplicit bygning gennem UI','resultatoversigt uden opdigtede testresultater','afvist modeladgang viser hjælp i arbejdsområdet og bevarer beskeden uden checkpoint','manuel Git-opstart og versionsgemning gennem UI',process.env.HARNESS_TEST_PACKAGE ? 'manuel version efter rigtig OpenCode-filændring i pakket app' : 'automatisk checkpoint efter rigtig OpenCode-filændring','Electron safeStorage uden klartekst i appdata eller renderer','UI-modelvalg og datagennemgang','streaming og godkendelse','rigtig filændring og preview','ændringsoversigt','skill redigering og gendannelse','tom mappe uden filændringer','bevaret modelvalg ved genåbning','tilsluttet udviklingsserver']}));

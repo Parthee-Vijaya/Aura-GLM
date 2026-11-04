@@ -21,7 +21,7 @@ function slice(from, to) {
 const setupCode = [
   slice("let onboardingPreviewKind = '';", 'function providerPicker'),
   slice('async function showSetup', 'function connectionFailed'),
-  slice('async function leaveSetup', "$('#setup-local').onclick"),
+  slice('async function leaveSetup', "$('#setup-remove-all').onclick"),
   slice("$('#setup-back').onclick", 'function demoPreview')
 ].join('\n');
 
@@ -94,33 +94,33 @@ function makeDom() {
   const registry = new Map();
   const make = (tag, id) => { const el = new El(tag); if (id) { el.id = id; registry.set(id, el); } return el; };
   const setup = make('main', 'setup'); body.append(setup);
-  const topbar = new El('div'); setup.append(topbar); topbar.append(make('button', 'setup-back'));
+  const backline = new El('div'); backline.className = 'setup-backline'; setup.append(backline);
+  backline.append(make('button', 'setup-back'), make('p', 'setup-step-state'));
   const heading = new El('div'); setup.append(heading);
-  heading.append(make('p', 'setup-eyebrow'), make('h1', 'setup-title'), make('p', 'setup-subtitle'));
+  heading.append(make('h1', 'setup-title'), make('p', 'setup-subtitle'));
+  setup.append(make('p', 'setup-reason'));
   const quick = new El('div'); quick.className = 'setup-quick-actions'; setup.append(quick);
   quick.append(make('button', 'setup-local'), make('button', 'setup-advanced'), make('button', 'setup-remove-all'));
-  const progress = new El('ol'); progress.className = 'onboarding-b-progress'; setup.append(progress);
-  const labels = { profile: 'Din profil', connection: 'Forbindelse', idea: 'Din idé' };
-  for (const phase of ['profile', 'connection', 'idea']) {
-    const item = new El('li'); item.dataset.phase = phase;
-    const number = new El('span'); number.textContent = String(['profile', 'connection', 'idea'].indexOf(phase) + 1);
-    item.append(number, labels[phase]); progress.append(item);
-  }
-  setup.append(make('p', 'setup-reason'));
-  const layout = new El('div'); setup.append(layout);
-  const content = new El('div'); content.className = 'onboarding-b-content'; layout.append(content);
-  const sections = { 'setup-profile': 'profile', 'setup-choice': 'choice', 'setup-provider': 'provider', 'setup-local-step': 'local', 'setup-saved': 'saved', 'setup-tools': 'tools' };
+  const content = new El('div'); content.className = 'setup-simple'; setup.append(content);
+  const sections = { 'setup-profile': 'profile', 'setup-detail': 'detail', 'setup-choice': 'choice', 'setup-provider': 'provider', 'setup-local-step': 'local', 'setup-saved': 'saved', 'setup-tools': 'tools' };
   for (const [id, step] of Object.entries(sections)) { const section = make('section', id); section.dataset.setupStep = step; section.hidden = id !== 'setup-choice'; content.append(section); }
   const profile = registry.get('setup-profile');
   profile.append(make('input', 'profile-name'));
   const grid = make('div', 'profile-icon-row'); grid.className = 'profile-icon-row'; profile.append(grid);
   profile.append(make('button', 'profile-avatar-remove'));
   const theme = make('fieldset', 'profile-theme'); profile.append(theme);
-  for (const value of ['system', 'light', 'dark']) { const label = new El('label'); const input = make('input'); input.type = 'radio'; input.value = value; input.checked = value === 'system'; label.append(input); theme.append(label); }
+  const themeCards = new El('div'); themeCards.className = 'theme-cards'; theme.append(themeCards);
+  for (const value of ['system', 'light', 'dark']) { const label = new El('label'); label.className = 'theme-card'; const input = make('input'); input.type = 'radio'; input.value = value; input.checked = value === 'system'; label.append(input); themeCards.append(label); }
+  const helpLabel = make('p', 'profile-help-label'); profile.append(helpLabel);
+  const helpCards = new El('div'); helpCards.className = 'help-cards'; profile.append(helpCards);
+  for (const value of ['fuld', 'delvis', 'ingen']) { const label = new El('label'); label.className = 'help-card'; const input = make('input'); input.type = 'radio'; input.value = value; input.checked = value === 'fuld'; label.append(input); helpCards.append(label); }
   profile.append(make('select', 'profile-help'));
   profile.append(make('button', 'profile-continue'));
-  layout.append(make('aside', 'setup-visual'));
-  return { document, registry, progress };
+  const detail = registry.get('setup-detail');
+  const detailCards = new El('div'); detailCards.className = 'detail-cards'; detail.append(detailCards);
+  for (const value of ['compact', 'standard', 'detailed']) { const label = new El('label'); label.className = 'detail-card'; const input = make('input'); input.type = 'radio'; input.value = value; input.checked = value === 'standard'; label.append(input); detailCards.append(label); }
+  detail.append(make('button', 'detail-continue'), make('button', 'detail-skip'));
+  return { document, registry };
 }
 function runSetup({ profile = blank(), suggestion = 'Parthee', repeat = null, avatar = false, uploadFails = null, uploadCanceled = false } = {}) {
   const dom = makeDom();
@@ -169,9 +169,8 @@ function runSetup({ profile = blank(), suggestion = 'Parthee', repeat = null, av
     showIntroduction: () => { context.introductions = (context.introductions || 0) + 1; }
   };
   vm.runInNewContext(setupCode, context);
-  return { context, $, document: dom.document, registry: dom.registry, progress: dom.progress, harness, saves, calls, visuals, announced, adoptCalls, messages };
+  return { context, $, document: dom.document, registry: dom.registry, harness, saves, calls, visuals, announced, adoptCalls, messages };
 }
-const progressItem = (fixture, phase) => fixture.progress.children.find(item => item.dataset.phase === phase);
 // Objects created inside the vm context belong to another realm; a JSON round
 // trip brings them into this realm so deepEqual compares values, not prototypes.
 const plain = value => JSON.parse(JSON.stringify(value));
@@ -204,18 +203,28 @@ test('profile-icons matcher kernerprofilens ikonliste og tegner Aura-stregglyffe
   assert.equal(ProfileIcons.initials(null), '');
 });
 
-test('index.html har profil-trinnet med felter og tre nummererede fremgangspunkter', () => {
+test('index.html har profil- og detaljetrinnet med den enkle opsætningsstruktur', () => {
   const index = fs.readFileSync(path.join(ui, 'index.html'), 'utf8');
   assert.ok(index.includes('<script src="profile-icons.js" defer></script>'), 'profil-ikonmodulet indlæses');
   assert.ok(index.indexOf('profile-icons.js') < index.indexOf('src="app.js"'), 'ikonmodulet indlæses før app.js');
-  const sectionStart = index.indexOf('<section id="setup-profile"');
+  const setupStart = index.indexOf('<main id="setup"');
   const choiceStart = index.indexOf('<section id="setup-choice"');
-  assert.ok(sectionStart >= 0 && sectionStart < choiceStart, 'profil-trinnet ligger som det første trin');
-  const section = index.slice(sectionStart, choiceStart);
-  assert.match(section, /data-setup-step="profile"/);
-  assert.match(section, /hidden/);
+  const detailStart = index.indexOf('<section id="setup-detail"');
+  assert.ok(setupStart >= 0 && detailStart > setupStart && detailStart < choiceStart, 'detaljetrinnet ligger mellem profilen og valget');
+  assert.match(index.slice(setupStart, detailStart), /data-setup-step="profile"/);
+  const detail = index.slice(detailStart, choiceStart);
+  assert.match(detail, /data-setup-step="detail"/);
+  assert.ok(detail.includes('Hvor meget vil du se af AI’ens arbejde?') === false, 'overskriften kommer fra app.js — ikke fra markup');
+  for (const word of ['Kun resultater', 'Nøgletrin', 'Alle detaljer']) assert.ok(detail.includes(word), `${word} findes som valgkort`);
+  assert.deepEqual([...detail.matchAll(/name="detail-view" value="([a-z]+)"/g)].map(match => match[1]), ['compact', 'standard', 'detailed'], 'de tre detaljeniveauer følger profilkontrakten');
+  assert.match(detail, /id="detail-continue"/);
+  assert.match(detail, /id="detail-skip"/);
+  assert.ok(detail.includes('Vælg senere'), 'spring over-knappen hedder Vælg senere som resten af opsætningen');
+  const section = index.slice(index.indexOf('<section id="setup-profile"'), detailStart);
   assert.match(section, /for="profile-name"/);
-  assert.ok(section.includes('Hvad skal Aura kalde dig?'));
+  assert.match(section, /for="profile-name">Navn · valgfrit/);
+  assert.match(section, /id="profile-skip"[^>]*>Fortsæt uden profil/);
+  assert.doesNotMatch(section, /id="profile-name"[^>]*required/);
   assert.match(section, /id="profile-icon-row"/);
   assert.match(section, /class="profile-icon-row"/, 'ikonvalget er en kompakt række — ikke et gitter');
   assert.match(section, /role="radiogroup"/);
@@ -226,19 +235,21 @@ test('index.html har profil-trinnet med felter og tre nummererede fremgangspunkt
   assert.match(section, /id="profile-theme"/);
   assert.ok(section.includes('value="system"') && section.includes('value="light"') && section.includes('value="dark"'), 'temavalgene er system, lyst og mørkt');
   assert.ok(section.includes('Temaet følger dit system, medmindre du vælger selv.'));
+  assert.ok(section.includes('class="theme-card"'), 'temavalget er tre små kort på én række');
   assert.match(section, /id="profile-help"/);
   assert.ok(section.includes('value="fuld"') && section.includes('value="delvis"') && section.includes('value="ingen"'), 'hjælpeniveauet har de tre trin: fuld, delvis og ingen');
   assert.ok(section.includes('Fuld hjælp') && section.includes('Hjælp ved behov') && section.includes('Ingen hjælp'), 'trinene har deres danske navne');
+  assert.ok(section.includes('class="help-card"'), 'hjælpeniveauet er tre lodrette valgkort');
   assert.match(section, /id="profile-continue"/);
-  const progressStart = index.indexOf('<ol class="onboarding-b-progress"');
-  const progress = index.slice(progressStart, index.indexOf('</ol>', progressStart));
-  const phases = [...progress.matchAll(/data-phase="([a-z]+)"/g)].map(match => match[1]);
-  assert.deepEqual(phases, ['profile', 'connection', 'idea'], 'funktionen er ikke længere et punkt — den vælges i Indstillinger');
-  assert.ok(!progress.includes('data-phase="provider"'), 'udbyderpunktet er forenet med forbindelsen');
-  const numbers = [...progress.matchAll(/<span>(\d)<\/span>/g)].map(match => match[1]);
-  assert.deepEqual(numbers, ['1', '2', '3']);
-  assert.ok(progress.includes('Din profil') && progress.includes('Forbindelse') && progress.includes('Din idé'));
-  assert.ok(!progress.includes('Funktioner'), 'funktionsspørgsmålet er ude af onboarding');
+  // The old onboarding chrome is gone from both restyled surfaces.
+  const setup = index.slice(setupStart, index.indexOf('</main>', setupStart));
+  for (const gone of ['setup-topbar', 'setup-eyebrow', 'onboarding-b-progress', 'setup-visual', 'idea-visual', 'aura-brand']) assert.ok(!setup.includes(gone), `${gone} er fjernet fra opsætningen`);
+  assert.match(setup, /id="setup-step-state"/, 'trintælleren står under Tilbage');
+  assert.ok(setup.includes('← Tilbage'));
+  assert.match(setup, /class="onboarding-simple"/, 'opsætningsfladen har den nye klasse');
+  assert.ok(index.includes('<main id="onboarding" class="onboarding-simple">'), 'idéfladen har den nye klasse');
+  assert.ok(index.includes('id="task-dialog" data-size="complex" class="onboarding-b"'), '#task-dialog beholder onboarding-b — modeldialogen røres ikke');
+  assert.ok(index.includes('id="model-visual"'), '#model-visual består i dialogen');
   // Skills ad gangen: intet funktionstrin står tilbage i opsætningen.
   for (const gone of ['setup-features', 'setup-features-pick', 'features-all', 'features-pick', 'features-continue', 'Hele pakken']) assert.ok(!index.includes(gone), `${gone} er fjernet fra onboarding`);
 });
@@ -249,12 +260,13 @@ test('profil-trinnet er det første trin, når den guidede opsætning starter me
   assert.equal(f.context.setupStep, 'profile');
   assert.equal(f.registry.get('setup-profile').hidden, false, 'profil-trinnet vises');
   assert.equal(f.registry.get('setup-choice').hidden, true);
-  assert.equal(f.registry.get('setup-eyebrow').textContent, 'DIN PROFIL');
-  assert.equal(f.registry.get('setup-title').textContent, 'Din profil');
-  assert.equal(f.registry.get('setup-subtitle').textContent, 'Udfyld din profil — du kan altid ændre den under Indstillinger.');
-  assert.equal(f.registry.get('profile-name').value, 'Parthee', 'navnefeltet præudfyldes med forslaget');
+  assert.equal(f.registry.get('setup-step-state').textContent, 'Trin 1 af 4', 'trintælleren står under Tilbage');
+  assert.equal(f.registry.get('setup-title').textContent, 'Din lokale profil');
+  assert.equal(f.registry.get('setup-subtitle').textContent, 'Profilen er valgfri. Du kan også tilpasse Aura senere under Indstillinger.');
+  assert.equal(f.registry.get('profile-name').value, '', 'identitet kræver et aktivt lokalt valg');
   assert.equal(f.registry.get('setup-back').hidden || f.registry.get('setup-back').disabled, false, 'tilbage-knappen virker');
   assert.equal(f.registry.get('profile-continue').disabled, false, 'Fortsæt er altid aktivt');
+  assert.equal(f.registry.get('setup-detail').hidden, true, 'detaljetrinnet venter');
 });
 
 test('repeat-opsætning springer profil-trinnet over, når profilen er udfyldt', async () => {
@@ -262,6 +274,7 @@ test('repeat-opsætning springer profil-trinnet over, når profilen er udfyldt',
   await f.context.showSetup('', true);
   assert.equal(f.context.setupStep, 'choice');
   assert.equal(f.registry.get('setup-profile').hidden, true, 'et udfyldt profil-trin vises aldrig igen');
+  assert.equal(f.registry.get('setup-detail').hidden, true, 'detaljetrinnet springes over sammen med profilen');
   assert.equal(f.registry.get('profile-name').value, '', 'intet forslag skriver i et trin, der ikke vises');
   assert.ok(!f.calls.includes('profileSuggest'));
 });
@@ -276,25 +289,27 @@ test('repeat-opsætning med tom profil starter på profil-trinnet — andre indg
   assert.equal(add.registry.get('setup-profile').hidden, true);
 });
 
-test('profil-trinnet står på skærmen, før navneforslaget lander', async () => {
+test('profilen kan fravælges uden at gemme navn eller spørge igen', async () => {
   const f = runSetup();
-  let release; const gate = new Promise(resolve => { release = resolve; });
-  f.harness.profileSuggest = async () => { f.calls.push('profileSuggest'); await gate; return 'Parthee'; };
-  const entering = f.context.showSetup('', true);
-  await new Promise(resolve => setImmediate(resolve));
-  assert.equal(f.context.setupStep, 'profile', 'profil-trinnet er valgt, så snart skærmen vises');
-  assert.equal(f.registry.get('setup-profile').hidden, false, 'valgskærmen når aldrig at vignette først');
-  assert.equal(f.registry.get('profile-name').value, '', 'navnefeltet udfyldes progressivt, når forslaget lander');
-  release();
-  await entering;
-  assert.equal(f.registry.get('profile-name').value, 'Parthee');
+  await f.context.showSetup('', true);
+  assert.equal(f.registry.get('profile-name').value, '');
+  assert.ok(!f.calls.includes('profileSuggest'));
+  f.registry.get('profile-name').value = 'Ugemt navn';
+  await f.$('#profile-skip').onclick();
+  assert.equal(f.context.setupStep, 'detail');
+  assert.equal(f.context.localStorage.getItem('aura.profile-choice.v1'), 'skipped');
+  assert.equal(f.saves.length, 0);
+  await f.context.leaveSetup(false);
+  assert.equal(f.saves.length, 0, 'forlad opsætning gemmer heller ikke fravalgt identitet');
+  await f.context.showSetup('', true);
+  assert.equal(f.context.setupStep, 'choice', 'tom identitet genudløser ikke profilspørgsmålet');
 });
 
-test('en gemt profil vises i trinnet, og forslaget bruges kun, når navnet er tomt', async () => {
+test('en gemt profil vises i trinnet uden at hente OS-identitet', async () => {
   const f = runSetup();
   await f.context.showSetup('', true);
   assert.equal(f.context.setupStep, 'profile');
-  assert.equal(f.calls.filter(call => call === 'profileSuggest').length, 1, 'en tom profil forslår et navn');
+  assert.equal(f.calls.filter(call => call === 'profileSuggest').length, 0, 'en tom profil henter ikke OS-identitet');
   const buttons = f.document.querySelectorAll('#profile-icon-row button');
   assert.equal(buttons.length, 5, 'kompakt række: initialer, tre Aura-varianter og upload-pladsen');
   const radios = buttons.filter(button => button.getAttribute('role') === 'radio');
@@ -304,7 +319,7 @@ test('en gemt profil vises i trinnet, og forslaget bruges kun, når navnet er to
   assert.equal(radios.find(radio => radio.dataset.icon === 'aura-1').getAttribute('aria-label'), 'Aura · ring');
   assert.equal(radios.find(radio => radio.dataset.icon === 'aura-2').getAttribute('aria-label'), 'Aura · bølge');
   assert.equal(radios.find(radio => radio.dataset.icon === 'aura-3').getAttribute('aria-label'), 'Aura · kredsløb');
-  assert.equal(radios.find(radio => radio.dataset.icon === '').textContent, 'PA', 'initialer-knappen viser forslaget fra navnefeltet');
+  assert.equal(radios.find(radio => radio.dataset.icon === '').textContent, '', 'tom profil viser ingen opfundne initialer');
   assert.ok(radios.filter(radio => radio.dataset.icon).every(radio => radio.innerHTML.includes('<svg')), 'hver variant bærer sin glyf');
   const upload = buttons.find(button => button.getAttribute('aria-label') === 'Upload eget billede');
   assert.ok(upload, 'upload-pladsen er en handlingsknap uden et gemt billede');
@@ -316,7 +331,8 @@ test('en gemt profil vises i trinnet, og forslaget bruges kun, når navnet er to
   assert.equal(row.find(button => button.dataset.icon === 'aura-1').getAttribute('aria-checked'), 'true', 'det gemte ikon er forvalgt');
   assert.equal(f.document.querySelectorAll('#profile-theme input').find(input => input.checked).value, 'dark', 'det gemte tema er forvalgt');
   assert.equal(f.registry.get('profile-help').value, 'delvis', 'det gemte hjælpeniveau er forvalgt');
-  assert.equal(f.calls.filter(call => call === 'profileSuggest').length, 1, 'forslaget overskriver aldrig et gemt navn');
+  assert.equal(f.document.querySelectorAll('#setup-profile .help-cards input').find(input => input.checked).value, 'delvis', 'valgkortene følger det gemte hjælpeniveau');
+  assert.equal(f.calls.filter(call => call === 'profileSuggest').length, 0, 'et gemt navn henter heller ikke OS-identitet');
 });
 
 test('upload-knappen beder hovedprocessen om filvælgeren — og billedet bliver det valgte ikon', async () => {
@@ -382,7 +398,7 @@ test('en upload der afvises, viser den danske fejl og lader rækken stå', async
   assert.equal(before.length, after.length);
 });
 
-test('Fortsæt gemmer alle fire feltgrupper og går videre til forbindelsesvalget', async () => {
+test('Fortsæt gemmer alle fire feltgrupper og går videre til detaljetrinnet', async () => {
   const f = runSetup();
   await f.context.showSetup('', true);
   f.registry.get('profile-name').value = 'Anna Klit';
@@ -390,13 +406,57 @@ test('Fortsæt gemmer alle fire feltgrupper og går videre til forbindelsesvalge
   for (const input of f.document.querySelectorAll('#profile-theme input')) input.checked = input.value === 'dark';
   f.registry.get('profile-help').value = 'ingen';
   await f.registry.get('profile-continue').onclick();
-  assert.equal(f.context.setupStep, 'choice');
+  assert.equal(f.context.setupStep, 'detail', 'Fortsæt fører til detaljetrinnet — ikke direkte til valget');
   assert.equal(f.registry.get('setup-profile').hidden, true);
+  assert.equal(f.registry.get('setup-detail').hidden, false);
   assert.deepEqual(plain(f.saves[0]), { name: 'Anna Klit', icon: 'aura-2', helpLevel: 'ingen', appearance: { theme: 'dark', panelOpen: true } });
   assert.equal(f.document.body.classList.contains('help-ingen'), true, 'det valgte hjælpeniveau gælder straks — ikke først efter genstart');
   assert.equal(f.document.body.classList.contains('help-delvis'), false);
-  assert.equal(progressItem(f, 'profile').dataset.complete, 'true', 'profilpunktet mærkes gennemført');
-  assert.equal(progressItem(f, 'profile').querySelector('span').textContent, '✓');
+});
+
+test('detaljetrinnet viser de tre niveauer og Fortsæt gemmer kun transcriptView', async () => {
+  const f = runSetup();
+  await f.context.showSetup('', true);
+  await f.registry.get('profile-continue').onclick();
+  assert.equal(f.registry.get('setup-step-state').textContent, 'Trin 2 af 4', 'detaljetrinnet er trin 2');
+  assert.equal(f.registry.get('setup-title').textContent, 'Hvor meget vil du se af AI’ens arbejde?');
+  assert.equal(f.registry.get('setup-subtitle').textContent, 'Det ændrer kun, hvordan arbejdet vises — ikke hvad Aura kan.');
+  const cards = f.document.querySelectorAll('#setup-detail .detail-card input');
+  assert.deepEqual(cards.map(card => card.value), ['compact', 'standard', 'detailed'], 'de tre niveauer følger profilkontrakten');
+  assert.equal(cards.find(card => card.checked).value, 'standard', 'Nøgletrin er forvalgt for en ny bruger');
+  assert.equal(f.registry.get('setup-detail').hidden, false);
+  // "Vælg senere" springer trinnet over uden en gemning.
+  await f.registry.get('detail-skip').onclick();
+  assert.equal(f.context.setupStep, 'choice', 'Vælg senere fører til valget af adgang');
+  assert.equal(f.saves.length, 1, 'spring over gemmer intet — den gemte værdi består (R7)');
+  // Tilbage fra valget vender til detaljetrinnet; Fortsæt gemmer niveauet.
+  f.registry.get('setup-back').onclick();
+  assert.equal(f.context.setupStep, 'detail');
+  for (const card of f.document.querySelectorAll('#setup-detail .detail-card input')) card.checked = card.value === 'detailed';
+  await f.registry.get('detail-continue').onclick();
+  assert.equal(f.context.setupStep, 'choice');
+  assert.deepEqual(plain(f.saves.at(-1)), { transcriptView: 'detailed' }, 'Fortsæt gemmer kun detaljeniveauet gennem profilkøen');
+  assert.equal(f.document.body.classList.contains('transcript-detailed'), true, 'kropsklassen følger gemningen straks');
+});
+
+test('detaljetrinnet forvælger et gemt niveau — Spring over bevarer det (R7)', async () => {
+  const f = runSetup({ profile: { ...blank(), name: '', icon: '', transcriptView: 'compact' } });
+  await f.context.showSetup('', true);
+  await f.registry.get('profile-continue').onclick();
+  assert.equal(f.document.querySelectorAll('#setup-detail .detail-card input').find(card => card.checked).value, 'compact', 'det gemte niveau er forvalgt');
+  await f.registry.get('detail-skip').onclick();
+  await f.context.leaveSetup(false);
+  assert.ok(f.saves.every(save => save.transcriptView === undefined), 'spring over gemmer aldrig over det gemte niveau');
+});
+
+test('en annulleret detaljegemning blokerer aldrig opsætningen', async () => {
+  const f = runSetup();
+  f.harness.profileSave = async value => { f.calls.push('profileSave'); throw new Error('Datamappen er låst.'); };
+  await f.context.showSetup('', true);
+  await f.registry.get('profile-continue').onclick();
+  f.document.querySelectorAll('#setup-detail .detail-card input').find(card => card.value === 'compact').checked = true;
+  await f.registry.get('detail-continue').onclick();
+  assert.equal(f.context.setupStep, 'choice', 'en fejlslagen gemning fører stadig videre');
 });
 
 test('Fortsæt adopterer den gemte profil og annoncerer den som aura:profile-saved', async () => {
@@ -416,15 +476,17 @@ test('Fortsæt virker uden udfyldte felter — tomme værdier er gyldige profilv
   const f = runSetup({ suggestion: '' });
   await f.context.showSetup('', true);
   await f.registry.get('profile-continue').onclick();
+  assert.equal(f.context.setupStep, 'detail');
+  await f.registry.get('detail-continue').onclick();
   assert.equal(f.context.setupStep, 'choice');
-  assert.deepEqual(plain(f.saves[0]), { name: '', icon: '', helpLevel: 'fuld', appearance: { theme: 'system', panelOpen: true } });
+  assert.deepEqual(plain(f.saves), [{ name: '', icon: '', helpLevel: 'fuld', appearance: { theme: 'system', panelOpen: true } }, { transcriptView: 'standard' }], 'et uudfyldt trin gemmer Nøgletrin som standard');
 });
 test('profil-trinnet bevarer panelets gemte starttilstand — appearance er én enhed', async () => {
   const f = runSetup({ profile: { ...blank(), appearance: { theme: 'light', panelOpen: false } } });
   await f.context.showSetup('', true);
   for (const input of f.document.querySelectorAll('#profile-theme input')) input.checked = input.value === 'dark';
   await f.registry.get('profile-continue').onclick();
-  assert.equal(f.context.setupStep, 'choice');
+  assert.equal(f.context.setupStep, 'detail');
   assert.deepEqual(plain(f.saves[0]).appearance, { theme: 'dark', panelOpen: false }, 'et gemt panelOpen: false nulstilles aldrig af trinnet');
 });
 
@@ -477,42 +539,51 @@ test('standard-AI udfyldes også, når profil-trinnet ikke blev vist', async () 
   assert.deepEqual(plain(f.saves), [{ standardAI: { connectionID: 'forbindelse-1', modelID: '' } }], 'uden profil-trin gemmes kun standard-AI');
 });
 
-test('fremgangslinjen mærker profil og forbindelse separat med numrene 1-3', async () => {
+test('trintælleren viser de fire trin: profil, detaljer, forbindelse og idé', async () => {
   const f = runSetup();
   await f.context.showSetup('', true);
-  assert.equal(progressItem(f, 'profile').getAttribute('aria-current'), 'step');
-  assert.equal(progressItem(f, 'connection').getAttribute('aria-current'), null);
+  assert.equal(f.registry.get('setup-step-state').textContent, 'Trin 1 af 4', 'profil-trinnet er nummer 1');
   await f.registry.get('profile-continue').onclick();
-  assert.equal(progressItem(f, 'connection').getAttribute('aria-current'), 'step', 'forbindelsesvalget mærker punkt 2');
-  f.context.setupPage('provider');
-  assert.equal(progressItem(f, 'connection').getAttribute('aria-current'), 'step', 'udbydertrinnet mærker også punkt 2');
-  assert.equal(progressItem(f, 'connection').querySelector('span').textContent, '2');
-  assert.equal(progressItem(f, 'idea').querySelector('span').textContent, '3', 'idéen er nummer 3 — funktioner spørges ikke længere');
+  assert.equal(f.registry.get('setup-step-state').textContent, 'Trin 2 af 4', 'detaljetrinnet er nummer 2');
+  await f.registry.get('detail-continue').onclick();
+  assert.equal(f.registry.get('setup-step-state').textContent, 'Trin 3 af 4', 'forbindelsesvalget er nummer 3');
+  for (const step of ['provider', 'local', 'saved', 'tools']) {
+    f.context.setupPage(step);
+    assert.equal(f.registry.get('setup-step-state').textContent, 'Trin 3 af 4', `${step} er en del af forbindelsestrinnet`);
+  }
+  f.context.setupPage('choice');
 });
 
-test('forbindelsespunktet får først ✓, når forbindelsen er kontrolleret', async () => {
+test('trinrækkefølgen er låst: profil → detaljer → forbindelse → idé', async () => {
+  const appSource = fs.readFileSync(path.join(ui, 'app.js'), 'utf8');
+  const profileHeading = appSource.indexOf("profile: ['Din lokale profil'");
+  const detailHeading = appSource.indexOf("detail: ['Hvor meget vil du se af AI’ens arbejde?'");
+  const choiceHeading = appSource.indexOf("choice: ['Hvordan vil du forbinde din AI?'");
+  assert.ok(profileHeading >= 0 && detailHeading > profileHeading && choiceHeading > detailHeading, 'overskrifterne står i den godkendte rækkefølge');
+  assert.ok(appSource.includes("await saveProfileStep(); recordProfileChoice('saved'); setupPage('detail');"), 'Fortsæt fra profilen fører til detaljetrinnet');
+  assert.ok(appSource.includes("if (setupStep === 'detail') setupPage('profile');"), 'Tilbage fra detaljetrinnet vender til profilen');
+  // Senere-valg virker på begge slags trin: detaljetrinnet springes over,
+  // forbindelsestrinnet forlades uden AI.
   const f = runSetup();
   await f.context.showSetup('', true);
   await f.registry.get('profile-continue').onclick();
-  f.context.state = { connections: [{ id: 'forbindelse-1', kind: 'corti', name: 'Testforbindelse' }] };
-  f.registry.get('setup-connection').value = 'forbindelse-1';
-  f.context.setupStep = 'saved';
-  f.context.syncOnboardingVisuals();
-  assert.equal(progressItem(f, 'connection').dataset.complete, 'false', 'en valgt forbindelse uden kontrol giver ikke ✓');
-  assert.equal(progressItem(f, 'connection').querySelector('span').textContent, '2');
-  f.context.verifiedConnection = 'forbindelse-1';
-  f.context.connectionChecks = { get: () => ({ status: 'ok', count: 3 }) };
-  f.context.syncOnboardingVisuals();
-  assert.equal(progressItem(f, 'connection').dataset.complete, 'true', 'den kontrollerede forbindelse fuldfører punkt 2');
-  assert.equal(progressItem(f, 'connection').querySelector('span').textContent, '✓');
+  await f.registry.get('detail-skip').onclick();
+  assert.equal(f.context.setupStep, 'choice', 'Vælg senere springer detaljetrinnet over');
+  await f.registry.get('setup-local').onclick();
+  assert.equal(f.registry.get('setup').hidden, true, 'Vælg senere forlader forbindelsestrinnet');
+  assert.equal(f.$('#onboarding').hidden, false, 'idéfladen er trin 4 og tager imod');
 });
 
-test('Tilbage fra forbindelsesvalget vender til profil-trinnet, når det blev vist', async () => {
+test('Tilbage følger trinrækkefølgen: valget → detaljer → profil → ud af opsætningen', async () => {
   const f = runSetup();
   await f.context.showSetup('', true);
   await f.registry.get('profile-continue').onclick();
+  await f.registry.get('detail-continue').onclick();
   f.registry.get('setup-back').onclick();
-  assert.equal(f.context.setupStep, 'profile', 'tilbage fra valget vender til profil-trinnet');
+  assert.equal(f.context.setupStep, 'detail', 'tilbage fra valget vender til detaljetrinnet');
+  assert.equal(f.registry.get('setup-detail').hidden, false);
+  f.registry.get('setup-back').onclick();
+  assert.equal(f.context.setupStep, 'profile', 'tilbage fra detaljetrinnet vender til profilen');
   assert.equal(f.registry.get('setup-profile').hidden, false);
   f.registry.get('setup-back').onclick();
   assert.ok(f.context.introductions >= 1, 'tilbage fra profil-trinnet forlader opsætningen baglæns');

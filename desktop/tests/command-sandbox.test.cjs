@@ -13,12 +13,12 @@ async function pluginHooks(directory) {
  await plugin.default.setup({tool:{hook:async(name,fn)=>{hooks['tool.'+name]=async(input,output)=>fn({tool:input.tool==='bash'?'shell':input.tool,input:output.args});}},shell:{hook:async(name,fn)=>{hooks['shell.'+name]=fn;}}}); return hooks;
 }
 const quote = value => "'" + value.replaceAll("'", "'\\''") + "'";
-async function fixture(t) {
+async function fixture(t, options = {}) {
   const base = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'aura-sandbox-test-')));
   t.after(() => fs.rm(base, { recursive: true, force: true }));
   const root = path.join(base, 'projekt'), scratch = path.join(base, 'scratch'), other = path.join(base, 'andet');
   await Promise.all([root, scratch, other].map(file => fs.mkdir(file)));
-  const configured = await sandbox.prepare({ workspaceRoot: root, scratchRoot: scratch, directory: path.join(base, 'policy') });
+  const configured = await sandbox.prepare({ workspaceRoot: root, scratchRoot: scratch, directory: path.join(base, 'policy'), ...(options.skillsRoot ? { skillsRoot: options.skillsRoot } : {}) });
   const execute = async (command, cwd = root) => {
     const payload = Buffer.from(JSON.stringify({ command, cwd })).toString('base64url');
     try { const result = await run(configured.node, [configured.runner, configured.policyPath, payload], { cwd: root, timeout: 30000, env: { PATH: process.env.PATH, OPENCODE_CONFIG_CONTENT: 'SYNTETISK-MODELNØGLE', ANTHROPIC_API_KEY: 'SYNTETISK-UDVIDER' } }); return { ...result, code: 0 }; }
@@ -127,4 +127,44 @@ test('real runner rejects unused TLS, credentials, proxy and oversized policy be
   await fs.writeFile(f.configured.policyPath, original);
   const restored = await f.execute('/usr/bin/touch ' + quote(marker));
   assert.equal(restored.code, 0, restored.stderr); await fs.access(marker);
+});
+
+// S3-fix (Codex Important 2): under command isolation the engine's skill
+// folder is the ONLY granted read outside workspace/scratch/runtime. Proven
+// with the real ported roll: it reads its worlds.json from the skills folder
+// and writes the plan file in the project — without the bounded read access
+// this is PRIVACY/permission-denied on every roll.
+test('isolerede kommandoer kan læse motorens skillmappe — rollen kører under isolation', async t => {
+  const reason = await sandboxPrerequisiteReason(); if (reason) return t.skip(reason);
+  const base = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'aura-sandbox-roll-')));
+  t.after(() => fs.rm(base, { recursive: true, force: true }));
+  const { loadLibrary } = require('../core/library.cjs');
+  const { writeSkills } = require('../core/engine.cjs');
+  const library = await loadLibrary(path.resolve(__dirname, '../../profiles'));
+  const skill = library.skills.find(item => item.name === 'harness-design');
+  assert.ok(skill, 'den portede GradientDeck-skill er i kataloget');
+  const engineDirectory = path.join(base, 'runtime-v2', 'projekt-noegle');
+  await writeSkills(engineDirectory, [skill]);
+  const skillsRoot = path.join(engineDirectory, 'config', 'skills');
+  const project = path.join(base, 'projekt'), scratch = path.join(base, 'scratch');
+  await Promise.all([project, scratch].map(file => fs.mkdir(file)));
+  const configured = await sandbox.prepare({ workspaceRoot: project, scratchRoot: scratch, directory: path.join(base, 'policy'), skillsRoot });
+  const execute = async (command, cwd = project) => {
+    const payload = Buffer.from(JSON.stringify({ command, cwd })).toString('base64url');
+    try { const result = await run(configured.node, [configured.runner, configured.policyPath, payload], { cwd, timeout: 60000, env: { PATH: process.env.PATH } }); return { ...result, code: 0 }; }
+    catch (error) { return { stdout: error.stdout, stderr: error.stderr, code: error.code }; }
+  };
+  const roll = path.join(skillsRoot, 'harness-design', 'scripts', 'roll.mjs');
+  const candidates = ['Trykkeriet: pladserne vises som en sat side og tilmeldingen er bestillingen | Fysikken: forsøgsbordets linjer viser pladser som målinger og tilmeldingen er notatet | Banegaarden: afgangstavlen viser pladser som afgange og tilmeldingen er billetten | Vaerkstedet: skamfilen viser pladser som emner og tilmeldingen er maerkerne | Koekkenet: menukortet viser pladser som retter og tilmeldingen er bordbestillingen'].join(' ');
+  const result = await execute(`${quote(configured.node)} ${quote(roll)} --page index --job "Find en kursusplads" --action "Tilmeld-knappen" --candidates ${quote(candidates)} --photos "none: ingen billeder givet" --mode persuade --root ${quote(project)}`);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /GRADIENTDECK DIRECTION ROLL/, 'rollen læser sine verdener fra skillmappen under isolation');
+  assert.match(result.stdout, /PLAN: saved to/, 'planfilen skrives i projektet');
+  assert.ok((await fs.stat(path.join(project, '.gradientdeck', 'pages', 'index.md'))).isFile(), 'planfilen findes');
+  // Skrivning til skillmappen forbliver spærret, og motorens øvrige konfigmappe (adgangskode) er stadig uden for.
+  const probeScript = `const fs=require('node:fs');let write='denied',read='denied';try{fs.writeFileSync(${JSON.stringify(path.join(skillsRoot, 'harness-design', 'forbudt.txt'))},'x');write='allowed'}catch{}try{fs.readFileSync(${JSON.stringify(path.join(engineDirectory, 'config', 'opencode.json'))});read='allowed'}catch{};console.log(write+' '+read)`;
+  await fs.writeFile(path.join(project, 'konfig-probe.cjs'), probeScript);
+  const configProbe = await execute(`${quote(configured.node)} konfig-probe.cjs`);
+  assert.match(configProbe.stdout, /denied denied/, 'skillmappen er læseadgang — aldrig skriveadgang, og resten af konfigmappen er lukket');
+  assert.ok(!(await fs.stat(path.join(skillsRoot, 'harness-design', 'forbudt.txt')).catch(() => null)), 'intet er skrevet i skillmappen');
 });

@@ -237,7 +237,7 @@
     function showConfigurationReview(value) {
       configReview = value;
       $('#deployment-config-files').replaceChildren(...configReview.files.map(file => {
-        const details = document.createElement('details'); details.append(text('summary', `${file.path} · ${file.changed ? file.before === null ? 'Ny fil' : 'Ændres' : 'Uændret'}`));
+        const details = document.createElement('details'); details.className = 'disclosure'; details.append(text('summary', `${file.path} · ${file.changed ? file.before === null ? 'Ny fil' : 'Ændres' : 'Uændret'}`));
         if (file.before !== null) { details.append(text('h4', 'Nuværende fil'), text('pre', file.before)); }
         details.append(text('h4', 'Efter ændringen'), text('pre', file.content)); return details;
       })); go('setupConfigReview');

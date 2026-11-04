@@ -14,22 +14,67 @@ const emptyChat = (id, title = '') => ({ version: 1, id, title, renamed: false, 
 const emptyProject = () => ({ version: 2, brief: null, chats: [], active: null, restorationID: null });
 const idPattern = /^[0-9a-f-]{36}$/;
 const damaged = 'Oversigten over projektets samtaler kan ikke læses. Projektfilerne er ikke berørt, og filen er bevaret. Start en ny samtale med + for at fortsætte.';
-// En samtales navn: brugerens første besked, til første punktum og højst 60 tegn ved et ordskifte.
-function titleFrom(messages) {
-  const text = String(messages.find(m => m.role === 'user')?.text || '').split('\n\n')[0].replace(/\s+/g, ' ').trim();
-  if (!text) return '';
-  const sentence = (text.match(/^.+?[.!?](?=\s|$)/) || [text])[0].replace(/[.!?]$/, '');
-  return sentence.length <= 60 ? sentence : sentence.slice(0, 60).replace(/[\s,.;:]+\S*$/, '') + ' …';
+// Slash-token-grammatikken er ÉN kilde (ui/slash-commands.js) — popuppen,
+// værten og titelafledningen stripper de samme tokens.
+const sharedSlash = require('../ui/slash-commands.js');
+// T8 (S3-fund f): Samtalens navn afledes af INDHOLDET — ikke af kommandosyntaksen.
+// Efter-byg F5 (Codex d1 + T8-review Minor): kun KENDTE kommando-tokens
+// strippes — sættet er RESERVED ∪ SKILL_TOKENS-aliasser ∪ de registrerede
+// skill-tokens (værtsiden leverer dem fra biblioteket; rendererens egne
+// registrerede kommandoer er tomme ved HEAD og dækkes af RESERVED). Et bart
+// /ord — «Ryd op i /src-mappen», «/løsning» — er brugerens eget indhold og
+// bevares; en ÆGTE aktivering (/design, /stil, /harness-kodestil) er syntaks
+// og strippes ved ALLE sine forekomster.
+const STATIC_KNOWN_TOKENS = new Set([...sharedSlash.RESERVED, ...Object.values(sharedSlash.SKILL_TOKENS)]);
+function stripCommandTokens(text, known = STATIC_KNOWN_TOKENS) {
+  const tokens = sharedSlash.parseTokens(text);
+  if (!tokens.length) return text;
+  let out = '', at = 0;
+  for (const token of tokens) {
+    out += text.slice(at, token.start);
+    if (!known.has(token.name)) out += text.slice(token.start, token.end);
+    at = token.end;
+  }
+  return out + text.slice(at);
+}
+function titleFrom(messages, known = STATIC_KNOWN_TOKENS) {
+  for (const message of Array.isArray(messages) ? messages : []) {
+    if (message?.role !== 'user') continue;
+    const first = stripCommandTokens(String(message?.text || ''), known).split('\n\n').map(part => part.replace(/\s+/g, ' ').trim()).find(Boolean) || '';
+    if (!first) continue;
+    const sentence = (first.match(/^.+?[.!?](?=\s|$)/) || [first])[0].replace(/[.!?]$/, '');
+    if (!sentence) continue;
+    return sentence.length <= 60 ? sentence : sentence.slice(0, 60).replace(/[\s,.;:]+\S*$/, '') + ' …';
+  }
+  return '';
 }
 // Oversigten i projektfilen, så sidepanelet kan vise samtalerne uden at læse dem alle.
 // En samtale uden beskeder hedder det, brugeren er begyndt at skrive.
-const summary = chat => ({ id: chat.id, title: chat.title || titleFrom(chat.messages) || titleFrom([{ role: 'user', text: chat.draft || '' }]), renamed: Boolean(chat.renamed), archived: Boolean(chat.archived), createdAt: chat.createdAt, updatedAt: chat.updatedAt, status: chat.status, count: chat.messages.length, draft: Boolean(chat.draft), copy: chat.copy || null });
+const summary = (chat, known = STATIC_KNOWN_TOKENS) => ({ id: chat.id, title: chat.title || titleFrom(chat.messages, known) || titleFrom([{ role: 'user', text: chat.draft || '' }], known), renamed: Boolean(chat.renamed), archived: Boolean(chat.archived), createdAt: chat.createdAt, updatedAt: chat.updatedAt, status: chat.status, count: chat.messages.length, draft: Boolean(chat.draft), copy: chat.copy || null });
 function validChat(data) {
   return data && data.version === 1 && idPattern.test(data.id) && Array.isArray(data.messages) && Array.isArray(data.planConversation) && typeof data.draft === 'string';
 }
 
 class WorkspaceHistory {
-  constructor(store) { this.store = store; this.queue = Promise.resolve(); }
+  // Det kendte sæt for én rod: statiske tokens ∪ providerens registrerede.
+  // Efter-byg F5: knownTokens er værtens provider af de REGISTREREDE
+  // skill-tokens (bibliotekets skillnavne) — kaldes med projektets rod og
+  // returnerer en iterabel af små bogstaver-navne. Uden provider gælder det
+  // statiske sæt (RESERVED ∪ aliasser); titlen afledes igen ved hvert gem,
+  // når biblioteket er læst, så intet tidligt udspring består.
+  constructor(store, { knownTokens = null } = {}) {
+    this.store = store;
+    this.queue = Promise.resolve();
+    this.knownTokens = typeof knownTokens === 'function' ? knownTokens : null;
+  }
+  // Det kendte sæt for én rod: statiske tokens ∪ providerens registrerede.
+  #known(root) {
+    const extra = this.knownTokens ? this.knownTokens(root) : null;
+    if (!extra) return STATIC_KNOWN_TOKENS;
+    const known = new Set(STATIC_KNOWN_TOKENS);
+    for (const name of extra) if (typeof name === 'string' && name) known.add(name.toLowerCase());
+    return known;
+  }
   file(root) { return path.join(this.store.root, 'workspaces', this.store.projectKey(root) + '.json'); }
   folder(root) { return this.file(root).replace(/\.json$/, '') + '-chats'; }
   chatFile(root, id) { if (!idPattern.test(id || '')) throw new Error('Samtalen findes ikke.'); return path.join(this.folder(root), `${id}.json`); }
@@ -59,7 +104,7 @@ class WorkspaceHistory {
     await fs.rename(file, path.join(archive, `beskadiget-${now().replace(/[:.]/g, '-')}.json`));
     const chats = [];
     let names = []; try { names = (await fs.readdir(this.folder(root))).filter(name => idPattern.test(name.replace(/\.json$/, ''))); } catch { /* Ingen samtalefiler. */ }
-    for (const name of names) { try { const data = await this.readJSON(path.join(this.folder(root), name)); if (validChat(data)) chats.push(summary(data)); } catch { /* Springes over og bevares. */ } }
+    for (const name of names) { try { const data = await this.readJSON(path.join(this.folder(root), name)); if (validChat(data)) chats.push(summary(data, this.#known(root))); } catch { /* Springes over og bevares. */ } }
     const project = { ...emptyProject(), chats, recoveredAt: now() };
     await this.write(file, project);
     return project;
@@ -78,8 +123,8 @@ class WorkspaceHistory {
     chats.sort((a, b) => a.updatedAt.localeCompare(b.updatedAt));
     const current = { ...emptyChat(randomUUID()), ...pick(old), createdAt: old.updatedAt || now(), updatedAt: old.updatedAt || now() };
     chats.push(current);
-    for (const chat of chats) { chat.title = titleFrom(chat.messages); await this.write(this.chatFile(root, chat.id), chat); }
-    const project = { version: 2, brief: old.brief || null, chats: chats.map(summary), active: current.id, restorationID: old.restorationID || null, migratedAt: now() };
+    for (const chat of chats) { chat.title = titleFrom(chat.messages, this.#known(root)); await this.write(this.chatFile(root, chat.id), chat); }
+    const project = { version: 2, brief: old.brief || null, chats: chats.map(chat => summary(chat, this.#known(root))), active: current.id, restorationID: old.restorationID || null, migratedAt: now() };
     await this.write(this.file(root), project);
     return project;
   }
@@ -95,9 +140,9 @@ class WorkspaceHistory {
     return this.serial(async () => {
       const project = await this.project(root), chat = await this.readChat(root, id);
       await change(chat);
-      chat.updatedAt = now(); if (!chat.renamed) chat.title = titleFrom(chat.messages);
+      chat.updatedAt = now(); if (!chat.renamed) chat.title = titleFrom(chat.messages, this.#known(root));
       await this.write(this.chatFile(root, id), chat);
-      project.chats = [...project.chats.filter(item => item.id !== id), summary(chat)];
+      project.chats = [...project.chats.filter(item => item.id !== id), summary(chat, this.#known(root))];
       project.updatedAt = chat.updatedAt; await this.write(this.file(root), project);
       return chat;
     });
@@ -109,7 +154,7 @@ class WorkspaceHistory {
       const visible = value.chats.filter(item => !item.archived);
       if (!visible.some(item => item.id === value.active)) {
         const chat = visible.length ? null : emptyChat(randomUUID());
-        if (chat) { await this.write(this.chatFile(project.root, chat.id), chat); value.chats.push(summary(chat)); }
+        if (chat) { await this.write(this.chatFile(project.root, chat.id), chat); value.chats.push(summary(chat, this.#known(project.root))); }
         value.active = chat?.id || visible.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0].id;
         value.updatedAt = now(); await this.write(this.file(project.root), value);
       }
@@ -136,7 +181,7 @@ class WorkspaceHistory {
       const empty = project.chats.find(item => !item.archived && !item.count && !item.draft);
       const chat = empty ? await this.readChat(root, empty.id) : emptyChat(randomUUID());
       if (!empty) await this.write(this.chatFile(root, chat.id), chat);
-      project.chats = [...project.chats.filter(item => item.id !== chat.id), summary(chat)]; project.active = chat.id;
+      project.chats = [...project.chats.filter(item => item.id !== chat.id), summary(chat, this.#known(root))]; project.active = chat.id;
       project.updatedAt = now(); await this.write(this.file(root), project);
       return chat;
     });
@@ -151,7 +196,7 @@ class WorkspaceHistory {
       if (chat.status === 'working') throw new Error('Vent, til opgaven er færdig, før du arkiverer samtalen.');
       chat.archived = archived; chat.updatedAt = now();
       await this.write(this.chatFile(root, id), chat);
-      project.chats = [...project.chats.filter(item => item.id !== id), summary(chat)];
+      project.chats = [...project.chats.filter(item => item.id !== id), summary(chat, this.#known(root))];
       if (archived && project.active === id) project.active = project.chats.filter(item => !item.archived).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0]?.id || null;
       project.updatedAt = chat.updatedAt; await this.write(this.file(root), project); return chat;
     });
@@ -190,6 +235,9 @@ class WorkspaceHistory {
         const existing = data.messages.findIndex(m => m.id === message.id);
         if (message.text.length > 30000) data.trimmed = true;
         const safe = { id: message.id, role: message.role, text: message.text.slice(0, 30000) };
+        // Modtagelsestidspunktet (brugerrækken i samtalen, D4b) bevares, når
+        // det er målt; ældre filer uden feltet får intet opfundet tidspunkt.
+        if (Number.isFinite(message.at)) safe.at = message.at;
         if (existing < 0) data.messages.push(safe); else data.messages[existing] = safe;
       }
       let size = data.messages.reduce((n,m) => n + m.text.length, 0);
@@ -198,13 +246,16 @@ class WorkspaceHistory {
       if (run.lastPlan !== undefined) data.lastPlan = run.lastPlan;
       data.status = run.status; data.mode = run.mode; data.lastRunMode = run.mode;
       if (run.usage && typeof run.usage === 'object') data.usage = run.usage;
+      // D5a: den afsluttede turs hastighedsmåling (indholdsfri, valideret DTO).
+      const speed = require('./step-timing.cjs').toDTO(run.speed);
+      if (speed) data.speed = speed; else delete data.speed;
       if (run.clearDraft) data.draft = '';
     });
   }
 }
 // Samtalens felter fra en ældre fil.
 function pick(data) {
-  const keys = ['draft', 'mode', 'messages', 'plan', 'planConversation', 'lastPlan', 'status', 'usage', 'trimmed', 'restorationID'];
+  const keys = ['draft', 'mode', 'messages', 'plan', 'planConversation', 'lastPlan', 'status', 'usage', 'speed', 'trimmed', 'restorationID'];
   return Object.fromEntries(keys.filter(key => data[key] !== undefined).map(key => [key, data[key]]));
 }
 module.exports = { WorkspaceHistory, titleFrom };

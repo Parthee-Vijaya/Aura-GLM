@@ -19,12 +19,12 @@
   // are opened through the functions app.js registers.
   const SECTIONS = Object.freeze([
     {
-      id: 'profile', label: 'Din profil',
-      description: 'Dit navn og ikon, din standard-AI, standard arbejdsmåde, projektstandarder og hvor meget hjælp appen giver undervejs.'
+      id: 'profile', label: 'Lokal profil',
+      description: 'Navn og ikon er valgfrie og gemmes kun på din computer. Du behøver ingen konto.'
     },
     {
-      id: 'appearance', label: 'Udseende',
-      description: 'Om appen følger systemets tema eller er lys eller mørk, om sidepanelet er åbnet ved start, og hvor stor appens tekst skal være.'
+      id: 'appearance', label: 'Generelt',
+      description: 'Vælg tema, tekststørrelse og hvor meget af AI’ens arbejde du vil se. Ændringer gemmes med det samme.'
     },
     {
       id: 'connections', label: 'AI-forbindelser',
@@ -53,6 +53,16 @@
   const THEMES = Object.freeze([['system', 'Følg system'], ['light', 'Lyst'], ['dark', 'Mørkt']]);
   const WORK_MODES = Object.freeze([['chat', 'Samtale · beskriv og byg'], ['plan', 'Planlæg · afklar og byg en plan først']]);
   const HELP_LEVELS = Object.freeze([['fuld', 'Fuld hjælp · forklaringer og forslag undervejs'], ['delvis', 'Hjælp ved behov · "?"-knappen viser tips ved skrivefeltet'], ['ingen', 'Ingen hjælp · hverken tips eller "?"-knap']]);
+  // The transcript detail levels mirror core/profile.cjs's TRANSCRIPT_VALUES
+  // contract (one test pins the two together): compact shows the answers,
+  // standard (Nøgletrin) adds the key steps, detailed shows every allowed
+  // work detail. The titles and descriptions are the exact texts the
+  // onboarding detail step (D6) uses, so the choice reads the same everywhere.
+  const TRANSCRIPT_LEVELS = Object.freeze([
+    ['compact', 'Kun resultater', 'Du ser svaret og det færdige resultat, uden arbejdet undervejs.'],
+    ['standard', 'Nøgletrin', 'Du ser svaret og de vigtigste trin undervejs.'],
+    ['detailed', 'Alle detaljer', 'Du ser alle trin undervejs: filer, kommandoer og status.']
+  ]);
   const HOSTINGS = Object.freeze([['', 'Beslut senere'], ['vercel', 'Vercel'], ['azure', 'Azure'], ['own', 'Organisationens løsning / egen server']]);
   const TEST_STYLES = Object.freeze([['senere', 'Beslut senere'], ['manuel', 'Manuel gennemgang af brugerrejsen'], ['automatiske', 'Automatiske tests og manuel gennemgang']]);
   // The font-size range mirrors core/profile.cjs's FONT_SIZE contract (one
@@ -63,6 +73,7 @@
   const FONT = Object.freeze({ min: 10, max: 16, base: 13 });
   // The empty project defaults, identical to core/preferences.cjs's blank values.
   const BLANK_STANDARDS = Object.freeze({ hosting: '', designID: '', tests: 'senere' });
+  const EMPTY_PROFILE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg>';
   const inert = { open: async () => false, register: () => {}, fill: () => {}, saveSection: async () => null };
 
   function create({ document = root.document, sections = SECTIONS, toggle = '#settings-toggle', harness = root.harness, icons = root.ProfileIcons, themeHost = () => root.calmWorkspace, saveQueue = root.profileSaveQueued } = {}) {
@@ -74,6 +85,25 @@
     const navButtons = new Map();
     for (const button of dialog.querySelectorAll('[data-settings-section]')) navButtons.set(button.dataset.settingsSection, button);
     const openers = new Map();
+    const secondaryDialogs = new Map([['connections', 'connections-dialog'], ['features', 'features-dialog'], ['updates', 'updates-dialog'], ['support', 'support-dialog']]);
+    // Preserve the existing dialogs and their guards, but carry the same
+    // navigation and row surface through every settings section.
+    for (const [section, dialogID] of secondaryDialogs) {
+      const target = document.querySelector('#' + dialogID);
+      const source = dialog.querySelector('.settings-nav');
+      if (!target || !source?.cloneNode || target.querySelector('.native-settings-layout')) continue;
+      target.classList.add('native-settings-shell');
+      const layout = document.createElement('div'); layout.className = 'native-settings-layout';
+      const nav = source.cloneNode(true); nav.setAttribute('aria-label', 'Indstillingsområder');
+      const body = document.createElement('div'); body.className = 'native-settings-content';
+      for (const child of [...target.children]) if (!child.classList.contains('dialog-heading')) body.append(child);
+      layout.append(nav, body); target.append(layout);
+      for (const button of nav.querySelectorAll('[data-settings-section]')) {
+        if (button.dataset.settingsSection === section) button.setAttribute('aria-current', 'true');
+        else button.removeAttribute('aria-current');
+        button.addEventListener('click', () => { void open(button.dataset.settingsSection); });
+      }
+    }
     // The last known profile, connection list, design list and avatar state;
     // fill() renders from them, so a failed save can always restore the last
     // known values.
@@ -88,6 +118,13 @@
       });
     }
     const byId = id => content.querySelector('#' + id);
+    function paintInitials(choice, name) {
+      if (!choice) return;
+      const text = typeof name === 'string' ? name.trim() : '';
+      if (text) choice.textContent = icons?.initials(text) || text.slice(0, 2).toUpperCase();
+      else choice.innerHTML = EMPTY_PROFILE_ICON;
+      choice.setAttribute('aria-label', text ? 'Initialer' : 'Intet ikon');
+    }
     function option(value, text) { const el = document.createElement('option'); el.value = value; el.textContent = text; return el; }
     function field(labelText, control, htmlFor) {
       const row = document.createElement('div');
@@ -99,6 +136,12 @@
       return row;
     }
     function note(text) { const el = document.createElement('p'); el.className = 'hint'; el.textContent = text; return el; }
+    function groupHeading(text) {
+      const heading = document.createElement('h4');
+      heading.className = 'settings-group-heading';
+      heading.textContent = text;
+      content.append(heading);
+    }
     function feedbackArea() {
       const el = document.createElement('p');
       el.id = 'settings-feedback';
@@ -146,6 +189,16 @@
       document.body.classList.toggle('help-delvis', helpLevel === 'delvis');
       document.body.classList.toggle('help-ingen', helpLevel === 'ingen');
     }
+    // The transcript detail level maps to its own body class at all three
+    // levels: 'standard' (Nøgletrin) is the neutral default but still carries
+    // its explicit class, and an unreadable value folds to it — the same
+    // mapping app.js's applyProfilePresentation applies at startup.
+    function applyTranscript(level) {
+      const choice = ['compact', 'detailed'].includes(level) ? level : 'standard';
+      document.body.classList.toggle('transcript-compact', choice === 'compact');
+      document.body.classList.toggle('transcript-standard', choice === 'standard');
+      document.body.classList.toggle('transcript-detailed', choice === 'detailed');
+    }
     // The font-size stepper's paint: the current value and honest bounds —
     // the buttons stop at 10 and 16, because the profile accepts nothing else.
     function fontClamp(value) { return Number.isInteger(value) && value >= FONT.min && value <= FONT.max ? value : FONT.base; }
@@ -165,6 +218,7 @@
       if (!profile) return;
       applyTheme(profile.appearance?.theme);
       applyHelp(profile.helpLevel);
+      applyTranscript(profile.transcriptView);
       const name = byId('settings-name');
       // Never overwrite text the user is still typing; committed saves refill.
       if (name && document.activeElement !== name) name.value = profile.name || '';
@@ -179,7 +233,7 @@
           // The initials are a first-class choice: an empty icon means the
           // initials radio is the selected one, not that nothing is selected.
           choice.setAttribute('aria-checked', String(choice.dataset.icon === (profile.icon || '')));
-          if (choice.dataset.icon === '') choice.textContent = icons?.initials(profile.name || '') || 'AK';
+          if (choice.dataset.icon === '') paintInitials(choice, profile.name);
         }
       }
       const mode = byId('settings-work-mode');
@@ -212,6 +266,11 @@
       if (panel) panel.checked = profile.appearance?.panelOpen !== false;
       const theme = byId('settings-theme');
       if (theme) for (const input of theme.querySelectorAll('input')) input.checked = input.value === (profile.appearance?.theme || 'system');
+      const transcript = byId('settings-transcript');
+      if (transcript) {
+        const level = ['compact', 'detailed'].includes(profile.transcriptView) ? profile.transcriptView : 'standard';
+        for (const input of transcript.querySelectorAll('input')) input.checked = input.value === level;
+      }
       if (byId('settings-font-size-value')) paintFontSize(fontClamp(profile.appearance?.fontSize));
     }
 
@@ -235,7 +294,7 @@
         const result = await invoke('profileSave', partial);
         icons?.setAvatarRevision?.(result.avatarRevision || 0);
         fill(result.profile);
-        announce(result.warnings);
+        announce(result.warnings?.length ? result.warnings : ['Ændringerne er gemt.']);
         dispatchSaved(result.profile);
         return result;
       } catch (error) {
@@ -316,6 +375,7 @@
     }
 
     function renderProfileFields() {
+      groupHeading('Dig i Aura');
       const name = document.createElement('input');
       name.id = 'settings-name';
       name.type = 'text';
@@ -324,7 +384,7 @@
       name.placeholder = 'Fx Anna';
       name.addEventListener('change', () => { void saveSection({ name: name.value.trim() }); });
       // The initials preview follows the name as it is typed; a committed save refills.
-      name.addEventListener('input', () => { const preview = byId('settings-icons')?.querySelector('.profile-initials'); if (preview) preview.textContent = icons?.initials(name.value.trim()) || 'AK'; });
+      name.addEventListener('input', () => { paintInitials(byId('settings-icons')?.querySelector('.profile-initials'), name.value); });
       content.append(field('Hvad skal Aura kalde dig?', name, 'settings-name'));
       content.append(note('Navnet bliver i appen og sendes aldrig til AI’en eller nogen server.'));
 
@@ -344,7 +404,7 @@
       initialsChoice.setAttribute('role', 'radio');
       initialsChoice.setAttribute('aria-checked', 'false');
       initialsChoice.setAttribute('aria-label', 'Initialer');
-      initialsChoice.textContent = icons?.initials(profile?.name || '') || 'AK';
+      paintInitials(initialsChoice, profile?.name);
       // The initials are also the deselect target: choosing them saves the empty icon.
       initialsChoice.onclick = () => { void saveSection({ icon: '' }); };
       row.append(initialsChoice);
@@ -380,6 +440,9 @@
         slot.onclick = () => { void uploadAvatar(); };
       }
       row.append(slot);
+      // T8 (the parked "roving tabindex" minor): same one-tab-stop discipline
+      // as the onboarding picker — arrows move focus, click selects.
+      icons?.wireRadioGroup?.(row);
       const iconWrap = document.createElement('div');
       iconWrap.className = 'profile-icon-wrap';
       iconWrap.append(row);
@@ -393,8 +456,9 @@
         iconWrap.append(removeAvatarButton);
       }
       content.append(field('Ikon', iconWrap));
-      content.append(note('Uden valgt ikon bruger appen dine initialer, fx AK for Anna Klit. Et eget billede gemmes kun i appen på din computer og sendes aldrig til AI’en.'));
+      content.append(note('Navn og ikon kan stå tomme. Med et navn bruger appen dine initialer. Et eget billede gemmes kun på din computer og sendes aldrig til AI’en.'));
 
+      groupHeading('Nye projekter');
       const connection = document.createElement('select');
       connection.id = 'settings-standard-connection';
       connection.addEventListener('change', () => {
@@ -446,12 +510,13 @@
       content.append(forgetRow);
       content.append(note('Projektstandarderne gælder nye projekter; det enkelte projekt kan altid vælge anderledes.'));
 
+      groupHeading('Hjælp undervejs');
       const help = document.createElement('select');
       help.id = 'settings-help';
       help.replaceChildren(...HELP_LEVELS.map(([value, label]) => option(value, label)));
       help.addEventListener('change', () => { void saveSection({ helpLevel: help.value }); });
       content.append(field('Hjælp i appen', help, 'settings-help'));
-      content.append(note('Hjælp ved behov skjuler de stående tips — "?"-knappen ved skrivefeltet viser dem. Ingen hjælp skjuler også "?"-knappen. Advarsler, godkendelser og "Før du sender" vises altid.'));
+      content.append(note('Hjælp ved behov viser tips via "?"-knappen ved skrivefeltet. Ingen hjælp skjuler også "?"-knappen. Advarsler, godkendelser og "Før du sender" vises altid.'));
       feedbackArea();
     }
 
@@ -472,7 +537,12 @@
         input.addEventListener('change', () => { void saveSection({ appearance: { theme: input.value, panelOpen: byId('settings-panel-open')?.checked !== false } }); });
         const text = document.createElement('span');
         text.textContent = label;
-        wrap.append(input, text);
+        const graphic = document.createElementNS ? document.createElementNS('http://www.w3.org/2000/svg', 'svg') : document.createElement('svg');
+        graphic.setAttribute('viewBox', '0 0 24 24'); graphic.setAttribute('aria-hidden', 'true');
+        const path = document.createElementNS ? document.createElementNS('http://www.w3.org/2000/svg', 'path') : document.createElement('path');
+        path.setAttribute('d', value === 'light' ? 'M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6 7 7m10 10 1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0' : value === 'dark' ? 'M20.5 14A8.5 8.5 0 0 1 10 3.5a8.5 8.5 0 1 0 10.5 10.5' : 'M3 4h18v13H3ZM8 21h8m-4-4v4');
+        graphic.append(path);
+        wrap.append(input, graphic, text);
         theme.append(wrap);
       }
       content.append(theme);
@@ -488,7 +558,7 @@
         void saveSection({ appearance: { theme: active, panelOpen: checkbox.checked } });
       });
       const panelText = document.createElement('span');
-      panelText.textContent = 'Sidepanelet er åbent, når appen starter';
+      panelText.textContent = 'Arbejdsfladen er åben, når appen starter';
       panel.append(checkbox, panelText);
       content.append(panel);
       content.append(note('Bestemmer, om arbejdsfladen vises ved siden af samtalen, når appen starter.'));
@@ -536,7 +606,34 @@
       sizeUp.addEventListener('click', () => sizeStep(1));
       size.append(sizeDown, sizeValue, sizeUp);
       content.append(field('Skriftstørrelse', size, 'settings-font-size-value'));
-      content.append(note('Skalerer hele appen — tekst, knapper og forhåndsvisning. 13 px er normal størrelse.'));
+      content.append(note('Skalerer hele appen: tekst, knapper og forhåndsvisning. 13 px er normal størrelse.'));
+
+      // Arbejdsdetaljer (D4a): three radio cards with the same titles and
+      // honest one-line descriptions as the onboarding detail step (D6).
+      // Each choice saves only its own field through the shared queue, so
+      // the level never travels with a theme or font-size write.
+      const transcript = document.createElement('fieldset');
+      transcript.id = 'settings-transcript';
+      transcript.className = 'settings-transcript';
+      const transcriptLegend = document.createElement('legend');
+      transcriptLegend.textContent = 'Arbejdsdetaljer';
+      transcript.append(transcriptLegend);
+      for (const [value, title, text] of TRANSCRIPT_LEVELS) {
+        const wrap = document.createElement('label');
+        const input = document.createElement('input');
+        input.type = 'radio';
+        input.name = 'settings-transcript';
+        input.value = value;
+        input.addEventListener('change', () => { void saveSection({ transcriptView: input.value }); });
+        const heading = document.createElement('strong');
+        heading.textContent = title;
+        const description = document.createElement('small');
+        description.textContent = text;
+        wrap.append(input, heading, description);
+        transcript.append(wrap);
+      }
+      content.append(transcript);
+      content.append(note('Vælg, hvor meget af AI’ens arbejde du ser i samtalen. Dine muligheder og godkendelser er de samme ved alle niveauer.'));
       feedbackArea();
     }
 
@@ -554,11 +651,17 @@
       content.setAttribute('aria-labelledby', HEADING_ID);
     }
     function show(section) {
+      for (const dialogID of secondaryDialogs.values()) {
+        const target = document.querySelector('#' + dialogID);
+        if (target?.open) target.close();
+      }
       current = section;
+      dialog.dataset.section = section;
       mark(section);
       describe(section);
       if (section === 'profile') renderProfileFields();
       if (section === 'appearance') renderAppearanceFields();
+      content.scrollTop = 0;
       // The cached profile renders instantly; the fetch refreshes it.
       if (profile) fill(profile);
       if (!dialog.open) dialog.showModal();
@@ -598,6 +701,10 @@
       // Never nest dialogs: close this one first, then let the established open
       // function show its own dialog.
       if (dialog.open) dialog.close();
+      for (const [id, dialogID] of secondaryDialogs) {
+        const target = document.querySelector('#' + dialogID);
+        if (id !== section && target?.open) target.close();
+      }
       await opener();
       return true;
     }
@@ -616,6 +723,17 @@
       if (!Array.from(document.querySelectorAll('dialog')).some(item => item.open)) document.querySelector(toggle)?.focus();
     });
     for (const [id, button] of navButtons) button.addEventListener('click', () => { void open(id); });
+    // Navigation moves focus only. An external section can open another
+    // dialog, so arrows must never activate a section as a side effect.
+    const navigationSurfaces = [dialog.querySelector('.settings-nav'), ...[...secondaryDialogs.values()].map(id => document.querySelector('#' + id)?.querySelector('.settings-nav'))].filter(Boolean);
+    for (const navigation of navigationSurfaces) navigation.addEventListener('keydown', event => {
+      if (event.altKey || event.ctrlKey || event.metaKey || event.isComposing || !['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      const buttons = [...navigation.querySelectorAll('[data-settings-section]')].filter(button => !button.disabled && !button.hidden);
+      const index = buttons.indexOf(document.activeElement);
+      if (index < 0) return;
+      const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : (index + (['ArrowUp', 'ArrowLeft'].includes(event.key) ? -1 : 1) + buttons.length) % buttons.length;
+      event.preventDefault(); buttons[next]?.focus();
+    });
     return { open, register, fill, saveSection };
   }
 
