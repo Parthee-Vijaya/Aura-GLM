@@ -105,7 +105,7 @@ test('en registreret kommando står først i popuppen og aktiverer sin handler v
   dom.prompt.value = '/'; dom.prompt.selectionStart = 1; dom.prompt.emit('input');
   await settle();
   assert.equal(api.open(), true, 'popuppen åbner på kommandoen alene');
-  assert.deepEqual(plain(api.rows().map(row => row.id)), ['byg-om'], 'S2 registrerer ingen andre kommandoer end testsens egen');
+  assert.deepEqual(plain(api.rows().map(row => row.id)), ['byg-om', 'stil'], 'S2 registrerer ingen andre KOMMANDOER; S4s fastgjorte /stil-række står efter dem');
   dom.prompt.emit('keydown', { key: 'Enter', preventDefault() {}, stopPropagation() {} });
   assert.equal(dom.prompt.value, '/byg-om ', 'indsættelsen sætter kommandotokenet med efterfølgende mellemrum');
   assert.deepEqual(activated, ['byg-om'], 'kommandoens aktiveringshook kaldes med navnet');
@@ -130,8 +130,10 @@ test('`/` åbner popuppen med skills fra skills:list — højst 8 rækker, uden 
   const options = dom.layer.children;
   assert.equal(options.length, 8);
   assert.equal(options[0].getAttribute('role'), 'option');
-  assert.match(options[0].textContent, /\/harness-skill-0/);
-  assert.match(options[0].textContent, /Skill 0/, 'navn og kort beskrivelse pr. række');
+  // S4: den fastgjorte /stil-række står først; skills fylder resten.
+  assert.match(options[0].textContent, /\/stil/);
+  assert.match(options[1].textContent, /\/harness-skill-0/);
+  assert.match(options[1].textContent, /Skill 0/, 'navn og kort beskrivelse pr. række');
   assert.equal(dom.prompt.getAttribute('aria-expanded'), 'true');
   assert.equal(dom.prompt.getAttribute('aria-controls'), 'slash-menu');
   assert.equal(dom.prompt.getAttribute('aria-activedescendant'), options[0].id, 'den aktive række bæres af aria-activedescendant');
@@ -148,7 +150,7 @@ test('filtrering: teksten efter / indsnævrer rækkerne; ingen træffer lukker p
   ] });
   dom.prompt.value = '/'; dom.prompt.selectionStart = 1; dom.prompt.emit('input');
   await settle();
-  assert.equal(api.rows().length, 3);
+  assert.equal(api.rows().length, 4, 'S4s /stil-række plus de tre skills');
   dom.prompt.value = '/kod'; dom.prompt.selectionStart = 4; dom.prompt.emit('input');
   await settle();
   assert.deepEqual(plain(api.rows().map(row => row.id)), ['harness-kodestil'], 'bindestregsegmenter matcher også');
@@ -172,9 +174,9 @@ test('tastaturnavigation: pile flytter markeringen; Enter og Tab indsætter; Esc
   assert.equal(option(1).getAttribute('aria-selected'), 'true');
   assert.equal(option(0).getAttribute('aria-selected'), 'false');
   dom.prompt.emit('keydown', { key: 'ArrowDown', preventDefault() {}, stopPropagation() {} });
-  assert.equal(dom.prompt.getAttribute('aria-activedescendant'), option(1).id, 'markeringen stopper ved sidste række');
+  assert.equal(dom.prompt.getAttribute('aria-activedescendant'), option(2).id, 'markeringen stopper ved sidste række');
   dom.prompt.emit('keydown', { key: 'ArrowUp', preventDefault() {}, stopPropagation() {} });
-  assert.equal(dom.prompt.getAttribute('aria-activedescendant'), option(0).id);
+  assert.equal(dom.prompt.getAttribute('aria-activedescendant'), option(1).id);
   dom.prompt.emit('keydown', { key: 'Tab', preventDefault() {}, stopPropagation() {} });
   assert.equal(dom.prompt.value, '/harness-aura-design ', 'Tab indsætter den markerede række');
   assert.equal(api.open(), false);
@@ -196,8 +198,9 @@ test('Enter i en åben popup indsætter og stopper udbredelsen — den sender AL
   dom.prompt.emit('keydown', { key: 'Enter', preventDefault() { prevented = true; }, stopPropagation() { stopped = true; } });
   assert.equal(prevented, true, 'Enter får aldrig browserens standardhandling');
   assert.equal(stopped, true, 'app.js’ Enter-lytter når aldrig frem');
-  assert.equal(dom.prompt.value, '/harness-kodestil ', 'indsættelsen skete');
-  assert.equal(api.open(), false, 'popuppen lukkede');
+  assert.equal(dom.prompt.value, '/stil ', 'indsættelsen skete — markeringen står på S4s fastgjorte række');
+  assert.equal(api.open(), true, 'indsættelsen af `/stil ` åbner katalogniveauet (uden henter: status «Kataloget kunne ikke hentes»)');
+  assert.equal(api.level(), 'styles', 'popuppen er på katalogniveauet');
 });
 
 test('app.js’ egen Enter-lytter sender ikke, når popuppen står åben', () => {
@@ -270,7 +273,7 @@ test('museklik virker også: række-klik indsætter uden at fokus forlader felte
   runModule(dom, api, { skills: async () => [{ id: 'harness-kodestil', title: 'Kodestil', summary: 's', enabled: true }] });
   dom.prompt.value = '/'; dom.prompt.selectionStart = 1; dom.prompt.emit('input');
   await settle();
-  const row = dom.layer.children[0];
+  const row = dom.layer.children[1];
   let prevented = false;
   row.emit('mousedown', { preventDefault() { prevented = true; }, button: 0 });
   assert.equal(prevented, true, 'mousedown forhindrer fokusflugt fra skrivefeltet');
@@ -288,9 +291,10 @@ test('fravalgte skills kan vælges til for én besked og står markeret som såd
   ] });
   dom.prompt.value = '/'; dom.prompt.selectionStart = 1; dom.prompt.emit('input');
   await settle();
-  const rows = api.rows();
+  const rows = api.rows().filter(row => row.kind === 'skill');
   assert.deepEqual(plain(rows.map(row => row.enabled)), [true, false], 'tilslåede skills står bagest');
   assert.match(rows.find(row => !row.enabled).description, /slået fra · kun for denne besked/, 'rækken siger, at aktiveringen kun gælder denne besked');
+  dom.prompt.emit('keydown', { key: 'ArrowDown', preventDefault() {}, stopPropagation() {} });
   dom.prompt.emit('keydown', { key: 'ArrowDown', preventDefault() {}, stopPropagation() {} });
   dom.prompt.emit('keydown', { key: 'Enter', preventDefault() {}, stopPropagation() {} });
   assert.equal(dom.prompt.value, '/harness-kodestil ');
@@ -309,7 +313,7 @@ test('samtaleskift: hver åbning genhenter skills — to projekter viser hver si
   dom.prompt.value = '/'; dom.prompt.selectionStart = 1; dom.prompt.emit('input');
   await settle();
   assert.equal(api.open(), true);
-  assert.deepEqual(plain(api.rows().map(row => row.id)), ['harness-a'], 'første åbning viser det første projekts liste');
+  assert.deepEqual(plain(api.rows().map(row => row.id)), ['stil', 'harness-a'], 'første åbning viser S4s /stil-række og det første projekts liste');
   // Filtrering under den åbne popup genbruger listen — én hentning pr. åben session.
   dom.prompt.value = '/harness'; dom.prompt.selectionStart = 8; dom.prompt.emit('input');
   await settle();
@@ -321,9 +325,10 @@ test('samtaleskift: hver åbning genhenter skills — to projekter viser hver si
   assert.equal(calls, 2, 'den nye åbning henter igen (per åbning, som Skills-dialogen)');
   assert.equal(api.open(), true);
   const rows = api.rows();
-  assert.deepEqual(plain(rows.map(row => row.id)), ['harness-b'], 'andet projekt viser sin egen liste');
-  assert.equal(rows[0].enabled, false, 'enabled-markeringen følger det åbne projekt');
-  assert.match(rows[0].description, /slået fra · kun for denne besked/, 'markeringen lyver ikke om det nye projekt');
+  assert.deepEqual(plain(rows.map(row => row.id)), ['stil', 'harness-b'], 'andet projekt viser sin egen liste');
+  const skill = rows.find(row => row.kind === 'skill');
+  assert.equal(skill.enabled, false, 'enabled-markeringen følger det åbne projekt');
+  assert.match(skill.description, /slået fra · kun for denne besked/, 'markeringen lyver ikke om det nye projekt');
 });
 
 test('en fejet første hentning ("Åbn et projekt først.") cachelagres aldrig — popuppen kommer til live', async () => {
@@ -333,7 +338,8 @@ test('en fejet første hentning ("Åbn et projekt først.") cachelagres aldrig �
   runModule(dom, api, { skills: async () => { calls++; if (fail) throw new Error('Åbn et projekt først.'); return [{ id: 'harness-a', title: 'Projekt A-skill', summary: 's', enabled: true }]; } });
   dom.prompt.value = '/'; dom.prompt.selectionStart = 1; dom.prompt.emit('input');
   await settle();
-  assert.equal(api.open(), false, 'den fejet hentning åbner ikke popuppen');
+  assert.equal(api.open(), true, 'den fejet hentning lader S4s fastgjorte /stil-række stå — men intet svar er gemt');
+  assert.deepEqual(plain(api.rows().map(row => row.id)), ['stil']);
   assert.equal(calls, 1);
   fail = false;
   // Brugeren skriver videre — intet tomt svar er gemt, så næste evaluering henter igen.
@@ -351,7 +357,8 @@ test('en tom første hentning cachelagres heller ikke — genåbning efter tom k
   runModule(dom, api, { skills: async () => (calls++ === 0 ? [] : [{ id: 'harness-b', title: 'Projekt B-skill', summary: 's', enabled: true }]) });
   dom.prompt.value = '/'; dom.prompt.selectionStart = 1; dom.prompt.emit('input');
   await settle();
-  assert.equal(api.open(), false, 'et tomt første svar åbner ikke popuppen');
+  assert.equal(api.open(), true, 'et tomt første svar lader /stil-rækken stå — den er lokal');
+  assert.deepEqual(plain(api.rows().map(row => row.id)), ['stil']);
   dom.prompt.value = '/ha'; dom.prompt.selectionStart = 3; dom.prompt.emit('input');
   await settle();
   assert.equal(calls, 2, 'det tomme svar var ikke memoiseret');
@@ -370,6 +377,7 @@ test('indsættelsen udløser en input-hændelse på #prompt, så kladde-gemninge
   assert.equal(api.open(), true);
   const inputs = [];
   dom.prompt.addEventListener('input', event => inputs.push(event.type));
+  dom.prompt.emit('keydown', { key: 'ArrowDown', preventDefault() {}, stopPropagation() {} });
   dom.prompt.emit('keydown', { key: 'Enter', preventDefault() {}, stopPropagation() {} });
   assert.equal(dom.prompt.value, '/harness-kodestil ');
   assert.deepEqual(inputs, ['input'], 'indsættelsen dispatcher input — kladde-gemningens vej');
@@ -564,7 +572,7 @@ function makeDom() {
 
 function runModule(dom, api, options) {
   const popoverLayer = { open: ({ layer }) => { layer.showPopover(); return true; }, close: ({ layer } = {}) => { (layer || dom.layer).hidePopover(); }, position() {} };
-  api.init({ prompt: dom.prompt, layer: dom.layer, skills: options.skills, popoverLayer });
+  api.init({ prompt: dom.prompt, layer: dom.layer, skills: options.skills, styles: options.styles, popoverLayer });
 }
 
 const settle = () => new Promise(resolve => setImmediate(resolve));
@@ -652,7 +660,7 @@ test('S3-fix: /design-rækken er altid synlig ved bare `/`, også over otte slå
   assert.equal(rows[0].id, 'design', 'aliasrækken står først — før de slåede-til skills');
   assert.equal(rows[0].kind, 'skill', 'den er en skillrække, ikke en kommando');
   // Sorteringen af de øvrige følger titlerne med dansk alfabetisering ("10" og "11" mellem "1" og "2").
-  assert.deepEqual(plain(rows.slice(1).map(row => row.id)), ['harness-slaaet-til-0', 'harness-slaaet-til-1', 'harness-slaaet-til-10', 'harness-slaaet-til-11', 'harness-slaaet-til-2', 'harness-slaaet-til-3', 'harness-slaaet-til-4'], 'resten af rækkerne følger den sædvanlige orden');
+  assert.deepEqual(plain(rows.slice(2).map(row => row.id)), ['harness-slaaet-til-0', 'harness-slaaet-til-1', 'harness-slaaet-til-10', 'harness-slaaet-til-11', 'harness-slaaet-til-2', 'harness-slaaet-til-3'], 'resten af rækkerne følger den sædvanlige orden — S4s /stil står som nr. 2');
 });
 
 test('S3: /design aktiverer harness-design for afsendelsen gennem prepare', async t => {
@@ -707,4 +715,236 @@ test('S3: writeSkills kopierer datafilerne og skriver kommandogodkendelses-bilag
     { path: 'SKILL.md', content: '---\nname: harness-design\ndescription: x\n---\n' },
     { path: 'scripts/evil.sh', content: 'rm -rf' }
   ] }]), /ugyldig fil/, 'vilkårlige scripts accepteres aldrig i motoren');
+});
+
+// ─── 7 · S4: /stil — katalogniveauet i popuppen (hentes sikkert i S4-fladen) ──
+// /stil (alias /style) er stadig RESERVED: registerCommand afviser navnet, og
+// resolve aktiverer intet. Popuppen viser en fastgjort række (som /design) og
+// åbner katalogniveauet efter `/stil ` — hentet gennem host-ejet IPC, aldrig
+// med en URL fra rendereren. Valg indsætter `/stil <slug> ` og sender aldrig.
+
+const STYLES_CATALOG = {
+  status: 'ok', cached: false, stale: false, fetchedAt: '2026-11-04T10:00:00.000Z',
+  entries: [
+    { slug: 'cloudflare', name: 'Cloudflare', category: 'Web', theme: 'dark' },
+    { slug: 'blond', name: 'Blond', category: 'Mode', theme: 'light' },
+    { slug: 'nordvang', name: 'Nordvang', category: 'Kommune', theme: 'dark' },
+    { slug: 'violet-hill', name: 'Violet Hill', category: 'Musik', theme: 'light' },
+    { slug: 'skagen', name: 'Skagen', category: 'Turisme', theme: 'light' },
+    { slug: 'havnen', name: 'Havnen', category: 'Kommune', theme: 'dark' },
+    { slug: 'groenlandsvej', name: 'Grønlandsvej', category: 'Bolig', theme: 'dark' },
+    { slug: 'plaene', name: 'Plænen', category: 'Kultur', theme: 'dark' },
+    { slug: 'stenvej', name: 'Stenvej', category: 'Bolig', theme: 'light' },
+    { slug: 'vindmolle', name: 'Vindmølle', category: 'Energi', theme: 'dark' },
+    { slug: 'fjord', name: 'Fjord', category: 'Turisme', theme: 'light' }
+  ]
+};
+
+test('S4: argumentAt — `/stil ` med markøren i argumentet åbner katalogniveauet', () => {
+  assert.deepEqual(shared.argumentAt('/stil ', 6), { start: 0, end: 6, query: '' }, 'tomt argument er katalogniveauet');
+  assert.deepEqual(shared.argumentAt('/stil cl', 8), { start: 0, end: 8, query: 'cl' }, 'det tastede argument er forespørgslen');
+  assert.deepEqual(shared.argumentAt('Se /style bl', 12), { start: 3, end: 12, query: 'bl' }, 'aliaset gælder også efter whitespace');
+  assert.deepEqual(shared.argumentAt('/stil cloudflare', 16), { start: 0, end: 16, query: 'cloudflare' }, 'fuldt slug er stadig katalogniveauet');
+  assert.equal(shared.argumentAt('/stil', 5), null, 'uden mellemrum er det stadig kommandoniveauet');
+  assert.equal(shared.argumentAt('https://x.dk/stil x', 19), null, 'URL-ord starter ikke argumentet');
+  assert.equal(shared.argumentAt('```\n/stil cl\n```', 12), null, 'kodeblokke åbner ikke kataloget');
+  assert.equal(shared.argumentAt('/design cl', 11), null, 'andre kommandoer har intet katalogniveau');
+  assert.equal(shared.argumentAt('/stil ', 2), null, 'markøren i kommandoordet er ikke argumentet');
+});
+
+test('S4: /stil er RESERVED med fastgjort række — aldrig en registreret kommando', () => {
+  const api = freshModule();
+  assert.equal(api.registerCommand({ name: 'stil', description: 'x' }), false, 'registerCommand afviser stadig reserverede navn');
+  assert.equal(api.registerCommand({ name: 'style', description: 'x' }), false, 'aliaset afvises også');
+  assert.deepEqual([...shared.RESERVED].sort(), ['design', 'stil', 'style'], 'RESERVED består uændret');
+});
+
+test('S4: den fastgjorte /stil-række står med /design før kataloget — RESERVED-før-katalog består', async () => {
+  const dom = makeDom();
+  const api = freshModule(dom);
+  const many = [
+    { id: 'harness-design', title: 'GradientDeck-design', summary: 's', enabled: false },
+    { id: 'harness-aura-design', title: 'Aura-design', summary: 's', enabled: true },
+    ...Array.from({ length: 12 }, (_unused, index) => ({ id: `harness-slaaet-til-${index}`, title: `Slået til ${index}`, summary: 's', enabled: true }))
+  ];
+  runModule(dom, api, { skills: async () => many, styles: async () => STYLES_CATALOG });
+  dom.prompt.value = '/'; dom.prompt.selectionStart = 1; dom.prompt.emit('input');
+  await settle();
+  const rows = api.rows();
+  assert.equal(rows.length, 8, 'højst 8 rækker');
+  assert.deepEqual(plain(rows.slice(0, 2).map(row => row.id)), ['design', 'stil'], '/design og /stil er fastgjorte — før skills-kataloget');
+  assert.equal(rows[1].kind, 'builtin', '/stil er en betroet indbygget kommando, ikke en skill');
+  assert.match(rows[1].description, /GradientDeck/, 'rækken forklarer, hvad /stil gør');
+  dom.prompt.value = '/sti'; dom.prompt.selectionStart = 4; dom.prompt.emit('input');
+  await settle();
+  assert.deepEqual(plain(api.rows().map(row => row.id)), ['stil'], 'filtrering rammer den fastgjorte række');
+  dom.prompt.value = '/sty'; dom.prompt.selectionStart = 4; dom.prompt.emit('input');
+  await settle();
+  assert.deepEqual(plain(api.rows().map(row => row.id)), ['stil'], 'præfikset /sty rammer også');
+  dom.prompt.value = '/style'; dom.prompt.selectionStart = 6; dom.prompt.emit('input');
+  await settle();
+  assert.deepEqual(plain(api.rows().map(row => row.id)), ['stil'], 'aliaset /style viser samme række');
+});
+
+test('S4: valg af /stil-rækken indsætter `/stil ` og åbner katalogniveauet', async () => {
+  const dom = makeDom();
+  const api = freshModule(dom);
+  const styleFetches = [];
+  runModule(dom, api, { skills: async () => [], styles: async () => { styleFetches.push(Date.now()); return STYLES_CATALOG; } });
+  dom.prompt.value = '/sti'; dom.prompt.selectionStart = 4; dom.prompt.emit('input');
+  await settle();
+  assert.equal(styleFetches.length, 0, 'kataloget hentes ALDRIG ved almindelig /-åbning');
+  dom.prompt.emit('keydown', { key: 'Enter', preventDefault() {}, stopPropagation() {} });
+  assert.equal(dom.prompt.value, '/stil ', 'indsættelsen sætter kommandoen med mellemrum');
+  await settle();
+  assert.equal(styleFetches.length, 1, 'katalogåbningen henter ved første `/stil `-åbning');
+  assert.equal(api.open(), true, 'popuppen står åben på katalogniveauet');
+  assert.equal(api.level(), 'styles', 'modulet er på katalogniveauet');
+});
+
+test('S4: katalogniveauet — rækker, filtrering, tema i tilgængelig tekst og hentet-markering', async () => {
+  const dom = makeDom();
+  const api = freshModule(dom);
+  runModule(dom, api, { skills: async () => [], styles: async () => ({ ...STYLES_CATALOG, cachedStyles: ['cloudflare'] }) });
+  dom.prompt.value = '/stil '; dom.prompt.selectionStart = 6; dom.prompt.emit('input');
+  await settle();
+  let rows = api.rows();
+  assert.equal(rows.length, 8, 'højst 8 stiler vises');
+  assert.equal(rows[0].kind, 'style');
+  assert.equal(rows[0].id, 'blond', 'tom forespørgsel: alfabetisk med da');
+  assert.equal(rows[1].id, 'cloudflare', 'alfabetisk rækkefølge — ikke katalogrækkefølge');
+  const cloudflare = rows[1];
+  assert.equal(cloudflare.name, 'Cloudflare', 'navnet (strong) bærer rækken');
+  assert.match(cloudflare.themeText, /Mørk/, 'temaet står i tilgængelig tekst — prikken bærer betydningen alene');
+  assert.equal(cloudflare.theme, 'dark', 'temaet bæres af rækken');
+  assert.equal(cloudflare.fetched, true, 'den hentede stil er markeret');
+  const blond = rows[0];
+  assert.match(blond.themeText, /Lys/);
+  assert.equal(blond.fetched, false);
+  // Overflow-rækken står efter de otte og er ikke valgbar.
+  const overflow = api.overflowText();
+  assert.match(overflow, /3 flere\. Skriv for at filtrere\./, 'resten tælles ærligt op');
+  dom.prompt.value = '/stil ko'; dom.prompt.selectionStart = 8; dom.prompt.emit('input');
+  await settle();
+  rows = api.rows();
+  assert.deepEqual(plain(rows.map(row => row.id)), ['havnen', 'nordvang'], 'præfiks på navn, slug og kategori — her kategorien «Kommune»');
+  dom.prompt.value = '/stil zzzz'; dom.prompt.selectionStart = 10; dom.prompt.emit('input');
+  await settle();
+  assert.equal(api.open(), true, 'ingen træffer lukker ikke popuppen på katalogniveauet');
+  assert.equal(api.statusText(), 'Ingen stile matcher «zzzz»', 'statuslinjen siger det ærligt');
+});
+
+test('S4: Enter og Tab på katalogniveauet indsætter `/stil <slug> ` — de sender ALDRIG', async () => {
+  const dom = makeDom();
+  const api = freshModule(dom);
+  runModule(dom, api, { skills: async () => [], styles: async () => STYLES_CATALOG });
+  dom.prompt.value = '/stil bl'; dom.prompt.selectionStart = 8; dom.prompt.emit('input');
+  await settle();
+  let prevented = false;
+  dom.prompt.emit('keydown', { key: 'Enter', preventDefault() { prevented = true; }, stopPropagation() {} });
+  assert.equal(prevented, true, 'Enter når aldrig afsendelsen');
+  assert.equal(dom.prompt.value, '/stil blond ', 'indsættelsen sætter slug med mellemrum');
+  assert.equal(api.open(), false, 'popuppen lukker efter indsættelsen');
+  dom.prompt.value = 'Byg /stil sk'; dom.prompt.selectionStart = 11; dom.prompt.emit('input');
+  await settle();
+  dom.prompt.emit('keydown', { key: 'Tab', preventDefault() {}, stopPropagation() {} });
+  assert.equal(dom.prompt.value, 'Byg /stil skagen ', 'indsættelsen bevarer teksten omkring kommandoen');
+  assert.deepEqual(plain(api.inserted()), [], 'katalogniveauet registrerer ingen skillaktivering');
+});
+
+test('S4: kataloghentningen genbruges mens popuppen står åben — og kasseres ved lukning', async () => {
+  const dom = makeDom();
+  const api = freshModule(dom);
+  let calls = 0;
+  runModule(dom, api, { skills: async () => [], styles: async () => { calls++; return STYLES_CATALOG; } });
+  dom.prompt.value = '/stil '; dom.prompt.selectionStart = 6; dom.prompt.emit('input');
+  await settle();
+  dom.prompt.value = '/stil bl'; dom.prompt.selectionStart = 8; dom.prompt.emit('input');
+  await settle();
+  assert.equal(calls, 1, 'filtrering genbruger hentningen — én pr. åben session');
+  dom.prompt.emit('keydown', { key: 'Escape', preventDefault() {}, stopPropagation() {} });
+  dom.prompt.value = '/stil '; dom.prompt.selectionStart = 6; dom.prompt.emit('input');
+  await settle();
+  assert.equal(calls, 2, 'genåbning henter igen som skills:list — projektet kan have skiftet');
+});
+
+test('S4: «Henter katalog…» og fejltekster står som status på katalogniveauet', async () => {
+  const dom = makeDom();
+  const api = freshModule(dom);
+  let answer = null;
+  runModule(dom, api, { skills: async () => [], styles: async () => { await new Promise(resolve => setImmediate(resolve)); await new Promise(resolve => setImmediate(resolve)); return answer; } });
+  dom.prompt.value = '/stil '; dom.prompt.selectionStart = 6; dom.prompt.emit('input');
+  await settle();
+  assert.equal(api.statusText(), 'Henter katalog…', 'hentningen er en ærlig status');
+  answer = { status: 'error', message: 'GradientDeck kunne ikke nås. Prøv igen.' };
+  await settle();
+  await settle();
+  assert.equal(api.statusText(), 'GradientDeck kunne ikke nås. Prøv igen.', 'fejlen videresendes konkret');
+  assert.equal(api.rows().length, 0, 'fejlstatus er ikke en valgbar række');
+});
+
+test('S4: katalogniveauet rydder op ved IME og blur som kommandoniveauet', async () => {
+  const dom = makeDom();
+  const api = freshModule(dom);
+  runModule(dom, api, { skills: async () => [], styles: async () => STYLES_CATALOG });
+  dom.prompt.value = '/stil '; dom.prompt.selectionStart = 6; dom.prompt.emit('input');
+  await settle();
+  assert.equal(api.level(), 'styles');
+  dom.prompt.emit('compositionstart');
+  assert.equal(api.open(), false, 'sammensætning lukker også katalogniveauet');
+  dom.prompt.value = '/stil '; dom.prompt.selectionStart = 6; dom.prompt.emit('input');
+  await settle();
+  dom.prompt.emit('focusout', { relatedTarget: null });
+  assert.equal(api.open(), false, 'blur lukker katalogniveauet');
+});
+
+test('S4: samtykkedialogen lukker popuppen — kataloget genåbner alligevel (markør-nulstilling)', async () => {
+  // Livefundet (probe 4.11): en modal dialog (GradientDeck-samtykket) lukker
+  // popuppen, og Chromium nulstiller selectionStart til 0, selv når teksten er
+  // urørt. Er TEKSTEN uændret, genbruges argumentet, så kataloget genåbnes —
+  // ellers ville første-samtykke-åbningen aldrig vise stilene.
+  const dom = makeDom();
+  const api = freshModule(dom);
+  let resolveCatalog;
+  const catalog = new Promise(resolve => { resolveCatalog = resolve; });
+  runModule(dom, api, { skills: async () => [], styles: () => catalog });
+  dom.prompt.value = '/stil '; dom.prompt.selectionStart = 6; dom.prompt.emit('input');
+  await settle();
+  assert.equal(api.statusText(), 'Henter katalog…');
+  // Dialogen åbner: prompten mister fokus → popuppen lukker; markøren nulstilles.
+  dom.prompt.emit('focusout', { relatedTarget: null });
+  dom.prompt.selectionStart = 0;
+  assert.equal(api.open(), false);
+  resolveCatalog({ status: 'ok', cached: false, stale: false, entries: STYLES_CATALOG.entries });
+  await settle(); await settle();
+  assert.equal(api.open(), true, 'kataloget genåbner efter samtykket — teksten er uændret');
+  assert.equal(api.level(), 'styles');
+  assert.equal(api.rows().length, 8, 'stilrækkerne står');
+  // Ændrer brugeren teksten under hentningen, afgør markøren igen som før.
+  let second;
+  const catalog2 = new Promise(resolve => { second = resolve; });
+  const dom2 = makeDom();
+  const api2 = freshModule(dom2);
+  runModule(dom2, api2, { skills: async () => [], styles: () => catalog2 });
+  dom2.prompt.value = '/stil '; dom2.prompt.selectionStart = 6; dom2.prompt.emit('input');
+  await settle();
+  dom2.prompt.value = 'Nu skrev jeg noget andet'; dom2.prompt.selectionStart = 27; dom2.prompt.emit('input');  // teksten ændret: ingen genåbning fra den gamle fortsættelse
+  second({ status: 'ok', cached: false, stale: false, entries: STYLES_CATALOG.entries });
+  await settle(); await settle();
+  assert.equal(api2.open(), false, 'en ændret tekst genåbner ikke kataloget fra den gamle fortsættelse');
+});
+
+test('S4: /stil aktiverer intet og ændrer ikke fingeraftrykket — resolve beholder RESERVED-ordenen', async t => {
+  const f = await workbenchFixture(t);
+  const plainMessage = await f.prepare({ text: 'Byg en landingpage' });
+  const withStil = await f.prepare({ text: 'Byg en landingpage med /stil cloudflare' });
+  assert.equal(withStil.commandInvocations, undefined, '/stil aktiverer ingen kommando');
+  assert.equal(withStil.fingerprint, plainMessage.fingerprint, 'fingeraftrykket er byte-identisk — /stil indgår ikke');
+  assert.equal(withStil.sessionFingerprint, plainMessage.sessionFingerprint, 'modelsessionen er uændret');
+  const resolved = core.resolve('/design /stil /style', [
+    { id: 'faelles-grundregler', title: 'Grundregler' },
+    { id: 'harness-design', title: 'GradientDeck-design' }
+  ]);
+  assert.deepEqual(resolved.skills, ['harness-design'], '/design aktiverer; /stil og /style gør ikke');
+  assert.deepEqual(resolved.reserved, ['stil', 'style'], 'de reserverede navne rapporteres som før');
 });

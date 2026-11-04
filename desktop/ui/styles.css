@@ -212,8 +212,7 @@ html:has(#workspace:not([hidden])), body:has(#workspace:not([hidden])) { height:
 .run-evidence dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 0; font-size: 12px; }
 .run-evidence dt { color: var(--muted); }
 .run-evidence dd { margin: 0; }
-#draft-status { font-size: 12px; margin: 0 20px 8px; color: var(--muted); min-height: 15px; }
-#resume-notice { margin: 0 0 16px; border-radius: 8px; padding: 12px 18px; background: var(--aura-accent-faint); font-size: 12px; border-bottom: 1px solid var(--line); }
+#draft-status { font-size: 12px; margin: 0 20px 8px; color: var(--muted); min-height: 15px; }#resume-notice { margin: 0 0 16px; border-radius: 8px; padding: 12px 18px; background: var(--aura-accent-faint); font-size: 12px; border-bottom: 1px solid var(--line); }
 #resume-notice p { margin-bottom: 6px; }
 #resume-notice .check-label { margin: 6px 0 0; font-size: 11px; }
 #workspace-divider { cursor: col-resize; background: var(--tint); touch-action: none; position: relative; }
@@ -508,13 +507,20 @@ body.setup-guided .app-content { margin-left: 0; }
    sætter den som første segment i rækken) er fortsat synlig i heltefasen,
    hvor linjen og kladden er skjult. Tallene står i tabellariske cifre, og
    ombrydning sker mellem felterne ved smal reflow — aldrig midt i et tal. */
-.composer-status { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 16px; font-size: var(--aura-text-12); line-height: var(--aura-text-12-line); color: var(--muted); margin: 0 16px 6px; min-height: 24px; }
-.status-line { display: inline-flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 0 6px; max-width: 100%; min-height: 24px; padding: 1px 8px; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: var(--aura-text-12); line-height: var(--aura-text-12-line); font-variant-numeric: tabular-nums; cursor: default; border-radius: var(--radius-xs); }
+/* S4-UI (livefundet 4.11): statusrækken er ÉN nowrap-række. Før satte
+   flex-wrap kladdestatussen på egen linje (tre linjer ved 980 px, målt i
+   live-t2). Kladdestatussen er nu et forbigående segment EFTER $0,00*, der
+   fader ud; når pladsen mangler, viger MÅLINGERNE først (draft-crowded) —
+   Datakontrol-knappen i rækken er en altid-synlig sikkerhedsflade og viger
+   aldrig. Sidste udvej ved ekstreme tal: ellipsis på linjen, aldrig ombrydning. */
+.composer-status { display: flex; flex-wrap: nowrap; justify-content: center; align-items: center; gap: 16px; font-size: var(--aura-text-12); line-height: var(--aura-text-12-line); color: var(--muted); margin: 0 16px 6px; min-height: 24px; }
+.composer-status.draft-crowded > #context-status { display: none; }
+.status-line { display: inline-flex; flex-wrap: nowrap; justify-content: center; align-items: baseline; gap: 0 6px; max-width: 100%; min-height: 24px; padding: 1px 8px; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: var(--aura-text-12); line-height: var(--aura-text-12-line); font-variant-numeric: tabular-nums; cursor: default; border-radius: var(--radius-xs); min-width: 0; overflow: hidden; }
 .status-line:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .status-line[hidden] { display: none; }
 .status-field { white-space: nowrap; }
 .status-sep { flex: none; }
-.composer-status #draft-status { margin: 0; min-width: 0; max-width: 100%; text-align: center; overflow-wrap: anywhere; transition: opacity 600ms ease; }
+.composer-status #draft-status { margin: 0; min-width: 0; max-width: 60%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; transition: opacity 600ms ease; }
 #draft-status.draft-faded { opacity: 0; }
 #draft-status.draft-gone { display: none; }
 @media (prefers-reduced-motion: reduce) { #draft-status { transition: none; } }
@@ -1359,6 +1365,28 @@ details.plan-detail > .plan-detail-body { padding: 0 14px 12px 14px; font-size: 
 #slash-menu button:hover, #slash-menu button[aria-selected="true"] { background: var(--aura-bg-hover); }
 #slash-menu button:hover small, #slash-menu button[aria-selected="true"] small { color: var(--aura-ink-secondary); }
 @media (pointer: coarse) { #slash-menu button { min-height: 44px; } }
+
+/* ── S4 · /stil-kataloget — andet niveau i den samme S2-popup ──
+   Rækkerne bor i en INDRE beholder med CSS-ejet højde til otte faste rækker
+   (S2-rækkernes 36 px; 44 px ved berøring). Højden kommer fra klassen — aldrig
+   fra inline-stile — så popover-lagets rydning af sin egen maxHeight (place()
+   nulstiller layer.style.maxHeight ved hver ankring) aldrig kan ændre listens
+   højde. Status («Henter katalog…», «Ingen stile matcher «x»», konkrete
+   fejl), «Gemt katalog»-markeringen og overflow-rækken står uden for listen
+   og er ikke valgbare. */
+:root { --slash-style-row-height: 36px; }
+#slash-menu .slash-styles { max-block-size: calc(8 * var(--slash-style-row-height, 36px)); overflow-y: auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; }
+#slash-menu .slash-row--style { height: var(--slash-style-row-height); }
+@media (pointer: coarse) { #slash-menu .slash-styles { max-block-size: calc(8 * 44px); } #slash-menu .slash-row--style { height: 44px; } }
+#slash-menu .slash-row--style strong { font-family: inherit; font-size: 13px; font-weight: 550; max-width: 52%; }
+/* Tema-prikken er DEKORATIV (aria-hidden): fyldt prik = mørkt tema, ring =
+   lyst tema — betydningen bæres altid af rækkens tilgængelige tekst
+   («Kategori · Mørk/Lys»), aldrig af farven alene (WCAG 1.4.1). */
+#slash-menu .slash-theme-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; }
+#slash-menu .slash-theme-dot.is-dark { background: var(--aura-ink-secondary); border: 0.5px solid var(--aura-border); }
+#slash-menu .slash-theme-dot.is-light { background: transparent; border: 1.5px solid var(--aura-ink-caption); }
+#slash-menu .slash-status, #slash-menu .slash-note, #slash-menu .slash-more { min-height: var(--slash-style-row-height); display: flex; align-items: center; padding: 6px 10px; font-size: 12px; color: var(--muted); }
+#slash-menu .slash-more { color: var(--aura-ink-caption); }
 
 /* Status-badges: farve-kodede piller for agenttilstande (Paradev-mønster) */
 .badge.run-idle { background: var(--aura-success-subtle); color: var(--aura-success); border: 1px solid transparent; }

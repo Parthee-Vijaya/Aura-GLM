@@ -101,6 +101,24 @@
     return { start, end: start + word[0].length, query: match[1].slice(1).toLowerCase() };
   }
 
+  // S4 · katalogniveauet: argumentet efter `/stil ` (alias /style). Matcher
+  // kun når markøren står i selve argumentet — `(^|\s)/(stil|style) ` og
+  // derefter det halvskrevne slug — og respekterer fences og URL-ord ligesom
+  // tokenAt: https://x.dk/stil er ikke et argument, og /design har intet niveau.
+  function argumentAt(text, caret) {
+    if (typeof text !== 'string' || !text.includes('/')) return null;
+    const end = Math.max(0, Math.min(Number.isInteger(caret) ? caret : text.length, text.length));
+    const match = /(?:^|[\s])(\/(?:stil|style)[ \t][a-z0-9-]*)$/i.exec(text.slice(0, end));
+    if (!match) return null;
+    const start = end - match[1].length;
+    // Insertion replaces the WHOLE argument word (as tokenAt does for tokens),
+    // so a caret mid-word never leaves a stray tail behind.
+    const word = /^\/(?:stil|style)[ \t][a-z0-9-]*(?![^\s])/i.exec(text.slice(start));
+    if (!word) return null;
+    if (insideFence(text, start)) return null;
+    return { start, end: start + word[0].length, query: (word[0].split(/[ \t]/)[1] || '').toLowerCase() };
+  }
+
   // ── Command registration (S3-S5 add /design and /stil through this) ──
   const commands = new Map();
   function registerCommand(command) {
@@ -114,8 +132,8 @@
   }
 
   // ── Popup state ──
-  const state = { ready: false, open: false, composing: false, rows: [], buttons: [], active: -1, inserted: new Set(), skills: [] };
-  const options = { prompt: null, layer: null, skills: null, popoverLayer: null };
+  const state = { ready: false, open: false, composing: false, level: null, rows: [], buttons: [], active: -1, inserted: new Set(), skills: [], statusText: '', overflowText: '', noteText: '' };
+  const options = { prompt: null, layer: null, skills: null, styles: null, popoverLayer: null };
 
   function currentLayer() { return options.popoverLayer || root.PopoverLayer || null; }
 
@@ -166,12 +184,14 @@
   }
 
   function close() {
-    if (!state.open) return;
-    state.open = false; state.rows = []; state.buttons = []; state.active = -1; state.skills = [];
+    if (!state.open) { state.level = null; stylesRequest = null; return; }
+    state.open = false; state.level = null; state.rows = []; state.buttons = []; state.active = -1; state.skills = []; state.statusText = ''; state.overflowText = ''; state.noteText = '';
     // Discard the fetched list with the session: the next open re-reads
     // skills:list, so a project or chat switch can never show the previous
-    // project's enabled-markings (review finding 1).
+    // project's enabled-markings (review finding 1). The S4 catalog goes the
+    // same way: kataloget genhentes ved hver åbning som skills:list.
     skillsRequest = null;
+    stylesRequest = null;
     options.layer?.hidePopover?.();
     promptAria(false);
   }
@@ -183,6 +203,10 @@
   // is PINNED after commands, before the plain skill rows — /design is the
   // popup's main entrance, so it must be visible at bare `/`, not sorted to
   // row 9 under the enabled skills (fix-round finding UX 6, measured live).
+  // S4: /stil (alias /style) får sin egen fastgjorte række som betroet
+  // indbygget kommando — mellem aliasrækken og skills, så RESERVED-før-katalog
+  // består: kommandoer, /design, /stil og derefter kataloget.
+  const STYLES_COMMAND = Object.freeze({ kind: 'builtin', id: 'stil', names: ['stil', 'style'], description: 'GradientDecks stilbibliotek · vælg en stil, der hentes sikkert' });
   function buildRows(query) {
     const needle = String(query || '').toLowerCase();
     const matches = (...parts) => parts.some(part => typeof part === 'string' && part.toLowerCase().startsWith(needle));
@@ -197,11 +221,13 @@
     });
     const aliasRows = [], plainRows = [];
     for (const entry of skills) (skillToken(entry.id) === entry.id ? plainRows : aliasRows).push(rowOf(entry));
-    return [...commandRows, ...aliasRows, ...plainRows].slice(0, MAX_ROWS);
+    const builtinRows = STYLES_COMMAND.names.some(name => name.startsWith(needle)) ? [STYLES_COMMAND] : [];
+    return [...commandRows, ...aliasRows, ...builtinRows, ...plainRows].slice(0, MAX_ROWS);
   }
 
   function render(rows) {
     const layer = options.layer;
+    state.level = 'commands';
     state.rows = rows;
     state.buttons = rows.map((row, index) => {
       const button = root.document.createElement('button');
@@ -228,7 +254,99 @@
     else currentLayer()?.position?.();
   }
 
+  // ── S4 · katalogniveauet: GradientDecks stile gennem host-ejet IPC ──
+  // Rækkerne bor i en INDRE beholder (.slash-styles) med CSS-ejet højde til
+  // otte faste rækker — popover-lagets rydning af sin egen inline-maxHeight
+  // (S3-noten) kan derfor aldrig ændre listens højde. Status («Henter
+  // katalog…», «Ingen stile matcher «x»», konkrete fejl), «Gemt katalog»-
+  // markeringen og overflow-rækken står uden for listen og er ikke valgbare.
+
+  function styleButton(row, index) {
+    const layer = options.layer;
+    const button = root.document.createElement('button');
+    button.type = 'button';
+    button.className = 'slash-row slash-row--style';
+    button.setAttribute('role', 'option');
+    button.id = `${layer.id || 'slash-menu'}-style-${index}`;
+    button.setAttribute('aria-selected', 'false');
+    const name = root.document.createElement('strong');
+    name.textContent = row.name || row.id;
+    const description = root.document.createElement('small');
+    description.textContent = row.themeText;
+    const dot = root.document.createElement('span');
+    dot.className = 'slash-theme-dot' + (row.theme === 'dark' ? ' is-dark' : ' is-light');
+    dot.setAttribute('aria-hidden', 'true');
+    button.append(name, description, dot);
+    button.addEventListener('mousedown', event => event.preventDefault?.());
+    button.addEventListener('click', () => insert(row));
+    return button;
+  }
+
+  function renderStyles(rows, status, note, overflow) {
+    const layer = options.layer;
+    state.level = 'styles';
+    state.rows = rows;
+    state.statusText = status || '';
+    state.noteText = note || '';
+    state.overflowText = overflow || '';
+    state.buttons = rows.map((row, index) => styleButton(row, index));
+    const parts = [];
+    if (!rows.length && state.statusText) {
+      const statusRow = root.document.createElement('div');
+      statusRow.className = 'slash-status';
+      statusRow.setAttribute('role', 'status');
+      statusRow.textContent = state.statusText;
+      parts.push(statusRow);
+    }
+    if (rows.length) {
+      const container = root.document.createElement('div');
+      container.className = 'slash-styles';
+      container.setAttribute('role', 'presentation');
+      container.replaceChildren(...state.buttons);
+      parts.push(container);
+    }
+    if (state.noteText) {
+      const noteRow = root.document.createElement('div');
+      noteRow.className = 'slash-note';
+      noteRow.setAttribute('role', 'presentation');
+      noteRow.textContent = state.noteText;
+      parts.push(noteRow);
+    }
+    if (state.overflowText) {
+      const moreRow = root.document.createElement('div');
+      moreRow.className = 'slash-more';
+      moreRow.setAttribute('role', 'presentation');
+      moreRow.textContent = state.overflowText;
+      parts.push(moreRow);
+    }
+    layer.replaceChildren(...parts);
+    const previous = state.active;
+    state.active = rows.length ? Math.min(previous < 0 ? 0 : previous, rows.length - 1) : -1;
+    markActive();
+    if (!state.open) { state.open = true; showLayer(); }
+    else currentLayer()?.position?.();
+  }
+
+  // Præfiks på navn, slug eller kategori — navnepræfiks først, derefter
+  // alfabetisk med dansk alfabetisering. Højst otte rækker; resten tælles op.
+  // Temaet står ALTID i tilgængelig tekst (Mørk/Lys/Blandet/Ukendt tema) —
+  // prikken er dekorativ og bærer aldrig betydningen alene (WCAG 1.4.1).
+  const THEME_LABELS = { dark: 'Mørk', light: 'Lys', mixed: 'Blandet' };
+  function matchStyles(catalog, query) {
+    const needle = String(query || '').toLowerCase();
+    const prefix = (value) => typeof value === 'string' && value.toLowerCase().startsWith(needle);
+    const entries = (catalog.entries || []).filter(entry => entry?.slug && (prefix(entry.name) || prefix(entry.slug) || prefix(entry.category)));
+    entries.sort((a, b) => (prefix(b.name) - prefix(a.name)) || String(a.name || a.slug).localeCompare(String(b.name || b.slug), 'da'));
+    const fetched = new Set(catalog.cachedStyles || []);
+    return entries.map(entry => ({
+      kind: 'style', id: entry.slug, name: entry.name || entry.slug, theme: entry.theme,
+      themeText: `${entry.category || ''} · ${THEME_LABELS[entry.theme] || 'Ukendt tema'}${fetched.has(entry.slug) ? ' · hentet' : ''}`,
+      fetched: fetched.has(entry.slug),
+    }));
+  }
+
   function insert(row) {
+    if (row?.kind === 'style') return insertStyle(row);
     const prompt = options.prompt;
     if (!prompt || !row) return false;
     const text = String(prompt.value ?? '');
@@ -244,6 +362,25 @@
     close();
     prompt.focus?.();
     // app.js gemmer kladden på input-hændelsen; indsættelsen skal reagere som tastatur.
+    prompt.dispatchEvent?.(typeof root.Event === 'function' ? new root.Event('input', { bubbles: true }) : { type: 'input' });
+    return true;
+  }
+
+  // Valg på katalogniveauet indsætter `/stil <slug> ` — det sender ALDRIG
+  // beskeden; selve hentningen med samtykke sker i værten, når beskeden sendes.
+  function insertStyle(row) {
+    const prompt = options.prompt;
+    if (!prompt || !row) return false;
+    const text = String(prompt.value ?? '');
+    const caret = typeof prompt.selectionStart === 'number' ? prompt.selectionStart : text.length;
+    const argument = argumentAt(text, caret);
+    if (!argument) { close(); return false; }
+    const replacement = '/stil ' + row.id + ' ';
+    prompt.value = text.slice(0, argument.start) + replacement + text.slice(argument.end);
+    const at = argument.start + replacement.length;
+    prompt.setSelectionRange?.(at, at);
+    close();
+    prompt.focus?.();
     prompt.dispatchEvent?.(typeof root.Event === 'function' ? new root.Event('input', { bubbles: true }) : { type: 'input' });
     return true;
   }
@@ -270,12 +407,58 @@
   // One evaluation per input/select event: the token at the caret decides
   // whether the popup stands open, and the skills fetch is re-checked against
   // the live text once it resolves (a stale pass steps aside for a newer one).
+  // S4: argumentet efter `/stil ` åbner katalogniveauet i stedet — kataloget
+  // hentes ÉN gang pr. åben session (som skills:list) og kasseres ved lukning,
+  // så et projekt- eller samtaleskift aldrig viser det forrige projekts data.
+  let stylesRequest = null;
+  function ensureStyles() {
+    if (!stylesRequest) {
+      const request = (async () => { try { return await options.styles?.(); } catch { return null; } })();
+      stylesRequest = request;
+      request.then(catalog => { if (stylesRequest === request && (!catalog || typeof catalog !== 'object')) stylesRequest = null; });
+    }
+    return stylesRequest;
+  }
+
+  const danishDate = value => {
+    const date = new Date(value);
+    return Number.isFinite(date.getTime()) ? date.toLocaleDateString('da-DK', { day: 'numeric', month: 'short' }).replace(/\.$/, '') : '';
+  };
+
+  async function evaluateStyles(argument) {
+    const prompt = options.prompt;
+    const textAtStart = String(prompt.value ?? '');
+    renderStyles([], 'Henter katalog…', '', '');
+    const catalog = await ensureStyles();
+    // En modal dialog (samtykket) lukker popuppen og efterlader en ustabil
+    // markør: Chromium nulstiller selectionStart, selv når teksten er urørt.
+    // Er TEKSTEN uændret, genbruges argumentet, så kataloget genåbnes ærligt;
+    // er teksten ændret, afgør den aktuelle markør som før.
+    const text = String(prompt.value ?? '');
+    const now = text === textAtStart ? argument : argumentAt(text, typeof prompt.selectionStart === 'number' ? prompt.selectionStart : text.length);
+    if (!now || state.composing) { close(); return; }
+    if (!catalog || catalog.status !== 'ok') {
+      renderStyles([], catalog?.message || 'Kataloget kunne ikke hentes. Prøv igen.', '', '');
+      return;
+    }
+    const note = catalog.stale ? `Gemt katalog · sidst hentet ${danishDate(catalog.fetchedAt)}` : '';
+    const rows = matchStyles(catalog, now.query);
+    if (!rows.length) {
+      renderStyles([], now.query ? `Ingen stile matcher «${now.query}»` : 'Ingen stile i kataloget.', note, '');
+      return;
+    }
+    const overflow = rows.length > MAX_ROWS ? `… ${rows.length - MAX_ROWS} flere. Skriv for at filtrere.` : '';
+    renderStyles(rows.slice(0, MAX_ROWS), '', note, overflow);
+  }
+
   async function evaluate() {
     const prompt = options.prompt;
     if (!prompt || !options.layer || !root.document) return;
     if (state.composing) { close(); return; }
     const text = String(prompt.value ?? '');
     const caret = typeof prompt.selectionStart === 'number' ? prompt.selectionStart : text.length;
+    const argument = argumentAt(text, caret);
+    if (argument) { await evaluateStyles(argument); return; }
     const token = tokenAt(text, caret);
     if (!token) { close(); return; }
     state.skills = await ensureSkills();
@@ -320,6 +503,7 @@
     const prompt = input.prompt, layer = input.layer;
     options.prompt = prompt; options.layer = layer;
     options.skills = typeof input.skills === 'function' ? input.skills : null;
+    options.styles = typeof input.styles === 'function' ? input.styles : null;
     options.popoverLayer = input.popoverLayer || null;
     state.ready = true;
     prompt.addEventListener('keydown', onKeydown, true);
@@ -334,10 +518,12 @@
     // the textarea's aria must follow the native close as well.
     layer.addEventListener('toggle', event => {
       if (event?.newState === 'closed' && state.open) {
-        state.open = false; state.rows = []; state.buttons = []; state.active = -1; state.skills = [];
+        state.open = false; state.level = null; state.rows = []; state.buttons = []; state.active = -1; state.skills = []; state.statusText = ''; state.overflowText = ''; state.noteText = '';
         // The browser's own dismissal (light dismiss, Escape close watcher)
-        // is a close path too: the fetched list goes with the session.
+        // is a close path too: the fetched list goes with the session — også
+        // S4-kataloget, så en projekt- eller samtaleskift starter forfra.
         skillsRequest = null;
+        stylesRequest = null;
         promptAria(false);
       }
     });
@@ -355,8 +541,9 @@
 
   return Object.freeze({
     RESERVED, RULES_ID, MAX_ROWS, SKILL_TOKENS, skillToken, tokenSkill,
-    parseTokens, tokenAt, insideFence,
+    parseTokens, tokenAt, argumentAt, insideFence,
     registerCommand, commands: () => [...commands.values()],
-    init, open: () => state.open, close, rows: () => [...state.rows], inserted
+    init, open: () => state.open, close, rows: () => [...state.rows], inserted,
+    level: () => (state.open ? state.level : null), statusText: () => state.statusText, overflowText: () => state.overflowText
   });
 });

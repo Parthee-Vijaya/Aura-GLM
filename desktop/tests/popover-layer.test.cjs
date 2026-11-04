@@ -283,3 +283,128 @@ test('S3-fix · belowOf: passer laget ikke nedenunder, begrænses højden i sted
   assert.equal(layer.style.maxHeight, '', 'klampen nulstilles, når der er plads');
   assert.equal(layer.style.top, `${279 + 91 + 8}px`, 'nedenunder-ankeringen består');
 });
+
+// ── S4: /stil-kataloget i popuppen gennem det ENE popover-lag ──
+// Katalogniveauet er en ny flade i den eksisterende S2-popup, så den følger den
+// samme ankerede grammatik: popover-laget rydder ALTID sin egen inline
+// maxHeight (place() linje 1), og stilrækkerne bor derfor i en indre beholder,
+// hvis højde kommer fra CSS-klassen — aldrig fra inline-stile. Otte faste
+// rækker består altså gennem rydningen, og overflow-rækken er ikke valgbar.
+
+const slashSource = fs.readFileSync(path.join(__dirname, '..', 'ui', 'slash-commands.js'), 'utf8');
+const stylesCss = fs.readFileSync(path.join(__dirname, '..', 'ui', 'styles.css'), 'utf8');
+
+class SlashEl {
+  constructor(tag) {
+    this.tagName = String(tag).toUpperCase(); this.children = []; this.parentElement = null;
+    this.attributes = new Map(); this.dataset = {}; this._classes = new Set(); this._text = '';
+    this.hidden = false; this.disabled = false; this.open = false; this.id = ''; this.type = '';
+    this.value = ''; this.selectionStart = 0; this.selectionEnd = 0; this.listeners = {}; this.onclick = null;
+    this._document = null; this._rect = null; this.offsetWidth = 0; this.offsetHeight = 0; this.style = {};
+  }
+  set className(value) { this._classes = new Set(String(value).split(/\s+/).filter(Boolean)); }
+  get className() { return [...this._classes].join(' '); }
+  get classList() { const el = this; return { add: (...names) => names.forEach(name => el._classes.add(name)), remove: (...names) => names.forEach(name => el._classes.delete(name)), toggle: (name, force) => { const on = force === undefined ? !el._classes.has(name) : Boolean(force); if (on) el._classes.add(name); else el._classes.delete(name); return on; }, contains: name => el._classes.has(name) }; }
+  get textContent() { return this._text + this.children.map(child => child.textContent).join(''); }
+  set textContent(value) { this._text = String(value); this.children = []; }
+  setAttribute(name, value) { this.attributes.set(name, String(value)); if (name.startsWith('data-')) this.dataset[name.slice(5)] = String(value); }
+  getAttribute(name) { return this.attributes.has(name) ? this.attributes.get(name) : null; }
+  removeAttribute(name) { this.attributes.delete(name); }
+  append(...children) { for (const child of children) { if (typeof child === 'string') this._text += child; else { child.parentElement = this; this.children.push(child); } } }
+  replaceChildren(...children) { this._text = ''; this.children = []; this.append(...children); }
+  addEventListener(name, handler) { (this.listeners[name] ||= []).push(handler); }
+  emit(name, fields = {}) { const event = { target: this, ...fields }; for (const handler of this.listeners[name] || []) handler(event); return event; }
+  dispatchEvent(event) { return this.emit(event.type, event); }
+  focus() { if (this._document) this._document.activeElement = this; }
+  contains(node) { return this === node || this.children.some(child => child.contains(node)); }
+  closest() { return null; }
+  showPopover() { this.open = true; }
+  hidePopover() { this.open = false; }
+  setSelectionRange(start, end) { this.selectionStart = start; this.selectionEnd = end; }
+  scrollIntoView() {}
+  getBoundingClientRect() { return this._rect ? { ...this._rect } : { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 }; }
+}
+
+function slashHarness({ viewport = { width: 1280, height: 800 } } = {}) {
+  const document = { activeElement: null };
+  const registry = new Map();
+  document.createElement = tag => { const el = new SlashEl(tag); el._document = document; return el; };
+  document.getElementById = id => registry.get(id) || null;
+  document.body = new SlashEl('body');
+  document.listeners = {};
+  document.addEventListener = (name, handler, options) => { (document.listeners[name] ||= []).push({ handler, capture: Boolean(options && options.capture) }); };
+  document.removeEventListener = (name, handler, options) => {
+    const capture = Boolean(options && options.capture);
+    document.listeners[name] = (document.listeners[name] || []).filter(listener => !(listener.handler === handler && listener.capture === capture));
+  };
+  document.querySelector = () => null;
+  const window = { document, innerWidth: viewport.width, innerHeight: viewport.height, listeners: {} };
+  window.addEventListener = (name, handler) => { (window.listeners[name] ||= []).push(handler); };
+  window.removeEventListener = (name, handler) => { window.listeners[name] = (window.listeners[name] || []).filter(item => item !== handler); };
+  const context = { window, document, module: undefined };
+  vm.createContext(context);
+  vm.runInContext(source, context);        // popover-layer.js først: den sætter window.PopoverLayer
+  vm.runInContext(slashSource, context);    // slash-commands.js ser det ENE lag i vinduet
+  const make = (tag, id) => { const el = new SlashEl(tag); el._document = document; el.id = id || ''; if (id) registry.set(id, el); return el; };
+  const prompt = make('textarea', 'prompt');
+  const layer = make('div', 'slash-menu');
+  layer.setAttribute('role', 'listbox');
+  const many = Array.from({ length: 20 }, (_unused, index) => ({ slug: `stil-${index}`, name: `Stil ${index}`, category: 'Kategori', theme: index % 2 ? 'light' : 'dark' }));
+  context.window.SlashCommands.init({ prompt, layer, skills: async () => [], styles: async () => ({ status: 'ok', cached: false, stale: false, entries: many }) });
+  return { window, document, registry, make, prompt, layer, api: context.window.SlashCommands, popover: context.window.PopoverLayer };
+}
+
+test('S4: katalogniveauet holder 8 faste rækker gennem popover-lagets maxHeight-rydning', async () => {
+  const f = slashHarness({ viewport: { width: 1280, height: 460 } });
+  const setRect = (el, left, top, width, height) => { el._rect = { left, top, right: left + width, bottom: top + height, width, height }; };
+  setRect(f.prompt, 200, 300, 400, 36);
+  f.prompt.value = '/stil '; f.prompt.selectionStart = 6; f.prompt.emit('input');
+  await new Promise(resolve => setImmediate(resolve));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(f.api.open(), true, 'popuppen står åben gennem det ene popover-lag');
+  assert.equal(f.layer.open, true);
+  // Beholderen med stilrækkerne er en indre div drevet af CSS — ingen inline-højde.
+  const container = f.layer.children.find(el => el.classList.contains('slash-styles'));
+  assert.ok(container, 'stilrækkerne bor i den indre .slash-styles-beholder');
+  assert.equal(container.children.length, 8, 'præcis 8 rækker i listen');
+  assert.deepEqual(Object.keys(container.style), [], 'beholderen har ingen inline-stile — højden kommer fra CSS-klassen');
+  // Fold laget ned med klamp (place() sætter lagets EGEN maxHeight) og ryd den igen:
+  // de 8 rækker består, fordi beholderens højde aldrig var inline.
+  f.layer.offsetHeight = 320;
+  setRect(f.prompt, 200, 80, 400, 36);
+  f.window.innerHeight = 400;
+  for (const handler of f.window.listeners['resize']) handler();
+  assert.match(f.layer.style.maxHeight, /^\d+px$/, 'klampen sætter lagets egen maxHeight ved folden ned');
+  assert.equal(f.layer.children.find(el => el.classList.contains('slash-styles')).children.length, 8, 'de otte rækker består under klampen');
+  f.window.innerHeight = 800;
+  for (const handler of f.window.listeners['resize']) handler();
+  assert.equal(f.layer.style.maxHeight, '', 'place() rydder lagets maxHeight igen');
+  assert.equal(f.layer.children.find(el => el.classList.contains('slash-styles')).children.length, 8, 'de otte rækker består gennem rydningen');
+  // CSS-pinnen: højdelen bor i styles.css, ikke i JavaScript.
+  assert.match(stylesCss.replace(/\/\*[\s\S]*?\*\//g, ''), /\.slash-styles\s*\{[^}]*max-block-size:\s*calc\(8\s*\*\s*var\(--slash-style-row-height,\s*36px\)\)/, 'højden til 8 rækker er CSS-ejet');
+  assert.match(stylesCss.replace(/\/\*[\s\S]*?\*\//g, ''), /--slash-style-row-height:\s*36px/, 'den faste rækkehøjde matcher S2-rækkerne');
+});
+
+test('S4: overflow-rækken «… N flere» står uden for listen og kan ikke vælges', async () => {
+  const f = slashHarness();
+  const setRect = (el, left, top, width, height) => { el._rect = { left, top, right: left + width, bottom: top + height, width, height }; };
+  setRect(f.prompt, 200, 500, 400, 36);
+  f.prompt.value = '/stil '; f.prompt.selectionStart = 6; f.prompt.emit('input');
+  await new Promise(resolve => setImmediate(resolve));
+  await new Promise(resolve => setImmediate(resolve));
+  const container = f.layer.children.find(el => el.classList.contains('slash-styles'));
+  const overflow = f.layer.children.find(el => el.classList.contains('slash-more'));
+  assert.ok(overflow, 'overflow-rækken står som sin egen række efter listen');
+  assert.equal(overflow.getAttribute('role'), 'presentation', 'den er ikke en valgbar option');
+  assert.match(overflow.textContent, /12 flere\. Skriv for at filtrere\./, '20 stiler − 8 rækker tælles ærligt op');
+  assert.equal(container.children.includes(overflow), false, 'den står uden for den rullende liste');
+  // Pil-navigation går aldrig ned i overflow-rækken: markeringen stopper ved de 8 stiler.
+  for (let step = 0; step < 10; step++) f.prompt.emit('keydown', { key: 'ArrowDown', preventDefault() {}, stopPropagation() {} });
+  const marked = container.children.filter(button => button.getAttribute('aria-selected') === 'true');
+  assert.equal(marked.length, 1, 'markeringen står på en stilrække');
+  assert.ok(container.children.includes(marked[0]), 'markeringen er inden for de 8 rækker — aldrig overflow-rækken');
+  assert.equal(overflow.getAttribute('aria-selected'), null, 'overflow-rækken kan ikke være markeret');
+  // Enter vælger en stil — aldrig overflow-rækken.
+  f.prompt.emit('keydown', { key: 'Enter', preventDefault() {}, stopPropagation() {} });
+  assert.match(f.prompt.value, /^\/stil stil-\d+ $/, 'Enter indsætter en slug — overflow-rækken er ikke valgbar');
+});

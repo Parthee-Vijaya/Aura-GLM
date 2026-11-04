@@ -167,7 +167,16 @@ test('WCAG: tabellariske cifre, 24px-klikmål, dæmpet kontrastfarve og feltombr
   assert.match(lineRule, /min-height:\s*24px/, 'klikmålet er mindst 24 px');
   assert.match(lineRule, /color:\s*var\(--muted\)/, '12 px-teksten bruger den målte dæmpede farve');
   assert.match(strip(styles), /\.status-field\s*\{[^}]*white-space:\s*nowrap/, 'et felt brydes aldrig midt i et tal');
-  assert.match(strip(styles), /\.status-line\s*\{[^}]*flex-wrap:\s*wrap/, 'ombrydning sker mellem felterne — ikke mindre skrift eller skjulte tal');
+  // S4-UI (livefundet 4.11): rækken stod på TRE linjer ved 980 px, fordi
+  // flex-wrap satte kladdestatus på egen linje. Nu er hele rækken nowrap, og
+  // kladdestatussen er et forbigående segment EFTER $0,00*; målingerne viger
+  // først (draft-crowded), når pladsen mangler — Datakontrol-knappen består.
+  assert.match(strip(styles), /\.composer-status\s*\{[^}]*flex-wrap:\s*nowrap/, 'rækken er én nowrap-række');
+  assert.match(strip(styles), /\.status-line\s*\{[^}]*flex-wrap:\s*nowrap/, 'felterne står altid på én linje — ombrydningen var livefundet, ikke design');
+  assert.match(strip(styles), /\.composer-status\.draft-crowded\s*>\s*#context-status\s*\{[^}]*display:\s*none/, 'ved pladsmangel viger målingerne først');
+  assert.doesNotMatch(strip(styles), /\.composer-status\.draft-crowded[^{]*\{[^}]*#privacy-gate-button/, 'Datakontrol-knappen viger aldrig');
+  assert.match(strip(styles), /#draft-status[^{]*\{[^}]*white-space:\s*nowrap/, 'kladdestatussegmentet bryder aldrig linjen');
+  assert.match(app, /draft-crowded/, 'app.js sætter crowding-tilstanden efter en måling');
   assert.match(strip(styles), /#draft-status[^{]*\{[^}]*transition:\s*opacity/, 'kladdestatus fader ud');
   assert.match(strip(styles), /prefers-reduced-motion[^@]*#draft-status[^{]*\{[^}]*transition:\s*none/, 'reduceret bevægelse respekteres');
 });

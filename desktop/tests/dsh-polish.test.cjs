@@ -59,7 +59,10 @@ test('den fjerde kantstyrke (.16/.20) er i tokenskalaen til composerens fokus', 
 test('mørkt tema: composer-fyldet #2C2C2E, boblefyldet og den fulgte muted', () => {
   assert.match(tokens, /--aura-bg-raised:\s*rgb\(44,\s*44,\s*46\)/, 'audit §1: #2C2C2E (44) — kortet løfter sig fra lærredet (21)');
   assert.match(tokens, /--aura-bg-bubble:\s*rgb\(237,\s*243,\s*254\)/, 'DSH §2: boblen er #EDF3FE i lyst tema');
-  assert.match(tokens, /--aura-bg-bubble:\s*rgb\(44,\s*44,\s*46\)/, 'DSH §2: boblen er #2C2C2E i mørkt tema');
+  // S4-UI (livefundet 4.11): #2C2C2E-varianten var fladtbundet med chattens eget
+  // panel (samme tokenværdi som --aura-bg-raised), så boblen var usynlig i
+  // mørkt tema. Løftet ét neutralt trin i paletten (51) — se s4-report.
+  assert.match(tokens, /--aura-bg-bubble:\s*rgb\(51,\s*51,\s*53\)/, 'S4-UI: boblen er synlig mod panelet (44) i mørkt tema');
   assert.match(tokens, /--aura-ink-muted:\s*rgb\(150,\s*152,\s*158\)/, 'muted er fulgt med op, så 12 px-tekst holder 4,5:1 på #2C2C2E');
 });
 
@@ -212,10 +215,10 @@ test('P1-kontrast: alfa-hover, boble, diff-badge og de mørke flader består AA'
 });
 
 // ── 10. Versionen ──
-test('versionen er 0.5.6 overalt (pakke, lås, rod og pakkeposten)', () => {
-  assert.equal(pkg.version, '0.5.6');
-  assert.equal(lock.version, '0.5.6');
-  assert.equal(lock.packages[''].version, '0.5.6');
+test('versionen er 0.5.7 overalt (pakke, lås, rod og pakkeposten)', () => {
+  assert.equal(pkg.version, '0.5.7');
+  assert.equal(lock.version, '0.5.7');
+  assert.equal(lock.packages[''].version, '0.5.7');
 });
 
 // ═══ Fix-runde (review af 3feb05b): F2/F3/F4 ═══

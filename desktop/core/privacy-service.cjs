@@ -337,6 +337,38 @@ class PrivacyService {
   validatePair(pair) {
     if (!pair || typeof pair !== 'object' || !['local','external'].every(key => pair[key] && typeof pair[key].connectionID === 'string' && typeof pair[key].modelID === 'string' && pair[key].connectionID && pair[key].modelID)) throw new Error('Vælg både en lokal model og en cloudmodel.');
   }
+  // S4 (GradientDeck): en ekstern destination, brugeren har samtykket til pr.
+  // projekt, tilføjes til projektets allowedDestinationIds. Konfigurerede
+  // destinationer bevarer kun allerede tilladte id'er (configuredDestinationIds),
+  // så en ny destination skal tilføjes her — med de samme vagter som configure():
+  // aldrig under en kørsel (binding-skift giver PRIVACY_STALE for igangværende
+  // handlinger), kun projektet, kun registrerede destinationer. Tilføjelsen er
+  // idempotent og ophæver aldrig strengere regler: composePolicy skærer med
+  // organisationens loft, og gate-vejen blokerer stadig.
+  async allowDestination(input = {}, trustedChatID) {
+    const scope = this.scope(input, trustedChatID);
+    if (scope.kind !== 'project') throw new Error('Tilladelsen gælder projektet.');
+    const destinationId = input.destinationId;
+    if (typeof destinationId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,199}$/.test(destinationId)) throw new Error('Vælg en gyldig modtager.');
+    if (this.bench.running) throw new Error('Stop den aktive opgave, før du ændrer dataregler.');
+    const registered = await this.privateConfig('external-destinations.json');
+    const entry = registered[destinationId];
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) throw new Error('Modtageren er ikke registreret i appen.');
+    const key = this.bench.store.projectKey(scope.root);
+    await this.bench.store.update(state => {
+      const project = (state.projects[key] ||= {});
+      const privacy = project.privacy ||= { version: randomUUID() };
+      if (typeof privacy.version !== 'string' || !privacy.version) privacy.version = randomUUID();
+      const allowed = privacy.allowedDestinationIds === undefined ? [] : privacy.allowedDestinationIds;
+      if (!Array.isArray(allowed) || allowed.some(id => typeof id !== 'string' || !id || id.length > 200)) throw new Error('Projektets dataregler kunne ikke kontrolleres.');
+      // Kun additiv: eksisterende id'er bevares ordret — en midlertidigt
+      // uregistreret post må aldrig stryge en tidligere tilladelse.
+      privacy.allowedDestinationIds = [...new Set([...allowed, destinationId])];
+    });
+    // En ændret politik starter en frisk motor næste gang — som ved configure().
+    for (const chat of this.bench.chats.values()) if (!chat.running && !chat.sending && !chat.starting && !chat.finishing) chat.prepared = null;
+    return true;
+  }
   async hybridSelection(scope, pair, input, { assertCurrent = () => true } = {}) {
     this.validatePair(pair); assertCurrent();
     const provider = this.bench.privacyRuntimeProvider;

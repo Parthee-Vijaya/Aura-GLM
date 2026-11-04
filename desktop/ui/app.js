@@ -1635,7 +1635,13 @@ $('#connection-form').onsubmit = event => {
   });
 };
 $('#connection-select').onchange = () => { autoConnect = true; action(() => loadModels()); }; $('#model-select').onchange = () => { updateModelSummary(); action(() => loadRoutes()); };
-$('#data-button').onclick = () => action(async () => showData(await call('prepare', selection()), false));
+$('#data-button').onclick = () => action(async () => {
+  const data = await call('prepare', selection());
+  // S4: en selvstændig /stil-kommando har ingen modelgennemgang — værten har
+  // allerede hentet stilen (samtykke skete der); kvitteringen står i rækken.
+  if (data.styleCommand) { setDraftStatus(data.styleCommand.message, data.styleCommand.status === 'ok'); return; }
+  showData(data, false);
+});
 // Låsen tilhører samtalen og sættes før første await, også ved tastaturafsendelse.
 $('#chat-form').onsubmit = event => {
   event.preventDefault();
@@ -1652,6 +1658,15 @@ $('#chat-form').onsubmit = event => {
       }
       const data = await call('prepare', selection(), owner);
       if (view !== sourceView || current?.root !== owner?.root) return;
+      // S4: en selvstændig `/stil <slug>` er håndteret i værten FØR selve
+      // prepare — samtykke, snæver GET, indholdskontrol og kvittering. Ingen
+      // modelkald og ingen DESIGN.md (det er S5). Succes rydder kommandoen ud
+      // af feltet; en fejl lader teksten stå, så den kan prøves igen.
+      if (data.styleCommand) {
+        if (data.styleCommand.status === 'ok') { $('#prompt').value = ''; saveChatDraft(); }
+        setDraftStatus(data.styleCommand.message, data.styleCommand.status === 'ok');
+        return;
+      }
       if (data.accepted || reviewKey(data) === acceptedFingerprint) await sendNow(data, text);
       else { pendingSend = { data, text }; showData(data, true); }
     } catch (error) { if (view === sourceView) { connectionFailed(error.message); throw error; } }
@@ -1674,11 +1689,46 @@ $('#prompt').addEventListener('keydown', event => {
 // Skills-dialogen; uden projekt svarer udbyderen med en tom liste, og
 // popuppen åbner ikke. selection() fører de indsatte tokens videre som
 // invokedSkills; værten genvaliderer aktiveringen fra selve beskedteksten.
+//
+// S4: /stil (alias /style) er en betroet indbygget række, og `/stil ` åbner
+// katalogniveauet. Kataloget hentes VED FØRSTE åbning i projektet — aldrig
+// ved appstart — gennem gradientdeck:catalog; rendereren sender aldrig URL,
+// headere eller transport, kun projektet. Én hentning pr. åben popupsession
+// (som skills:list); lukningen kasserer den.
 window.SlashCommands?.init({
   prompt: $('#prompt'),
   layer: document.getElementById('slash-menu'),
-  skills: async () => call('skills', undefined, selectedOwner())
+  skills: async () => call('skills', undefined, selectedOwner()),
+  styles: async () => call('gradientdeckCatalog', undefined, selectedOwner())
 });
+// S4 · GradientDeck-samtykke: værten ejer beslutningen og kilden; rendereren
+// viser dialogen og fører KUN valget tilbage (once/project/cancel) — aldrig
+// URL'er, stier eller transport. «Annullér», Luk og Escape er samme svar.
+let gradientdeckConsentID = null;
+window.harness?.onEvent?.(event => {
+  if (event?.type !== 'gradientdeck.consent') return;
+  gradientdeckConsentID = event.id;
+  $('#gradientdeck-consent-title').textContent = event.kind === 'style' ? `Hent stilen «${event.name}»?` : 'Hent stilkatalog fra GradientDeck?';
+  $('#gradientdeck-consent-lead').textContent = event.kind === 'style'
+    ? 'Stilen hentes fra GradientDeck og gemmes kun i appens private cache. Den bruges ikke i projektet endnu.'
+    : 'Kataloget med stilbiblioteket hentes fra GradientDeck og gemmes kun i appens private cache. Ingen projektfiler eller beskeder sendes.';
+  $('#gradientdeck-consent-url').textContent = event.url;
+  $('#gradientdeck-consent').showModal();
+});
+$('#gradientdeck-consent').addEventListener('close', () => {
+  if (!gradientdeckConsentID) return;
+  const id = gradientdeckConsentID; gradientdeckConsentID = null;
+  void action(async () => { try { await call('gradientdeckConsent', { id, choice: 'cancel' }); } catch { /* værtens samtykke er måske allerede udløbet */ } });
+});
+const gradientdeckChoice = choice => action(async () => {
+  if (!gradientdeckConsentID) return;
+  const id = gradientdeckConsentID; gradientdeckConsentID = null;
+  $('#gradientdeck-consent').close();
+  try { await call('gradientdeckConsent', { id, choice }); }
+  catch (error) { message(error.message, true); }
+});
+$('#gradientdeck-consent-once').onclick = () => gradientdeckChoice('once');
+$('#gradientdeck-consent-project').onclick = () => gradientdeckChoice('project');
 $('#send').setAttribute('aria-keyshortcuts', 'Enter Meta+Enter Control+Enter');
 $('#send').title = 'Enter sender. Shift+Enter giver en ny linje.';
 $('#data-dialog').addEventListener('close', () => { pendingSend = null; });
@@ -1862,19 +1912,37 @@ wireStatusLineHelp();
 // tekster fader ud efter ca. 2,5 s (teksten består til skærmlæseren); fejl står
 // synligt, indtil de er løst (Codex). verify-chats/verify-resume/verify-demo
 // afhænger af "Kladde gemt/hentet på denne computer".
+//
+// S4-UI (livefundet 4.11): rækken er ÉN nowrap-række, og kladdestatussen er et
+// forbigående segment EFTER $0,00*. Får segmentet og målingerne ikke plads på
+// samme linje, viger MÅLINGERNE først (draft-crowded) — Datakontrol-knappen er
+// en altid-synlig sikkerhedsflade og viger aldrig. Målingen sker efter DOM-
+// opdateringen (requestAnimationFrame), og tilstanden ryddes, når segmentet
+// toner ud eller erstattes — målingerne kommer altid tilbage.
 let draftFadeTimer = null;
+function draftCrowding(text) {
+  const row = $('#status-line-row'), el = $('#draft-status');
+  if (!row || !el) return;
+  row.classList.remove('draft-crowded');
+  if (!text) return;
+  requestAnimationFrame(() => {
+    if (el.textContent !== text || !el.isConnected) return;
+    if (row.scrollWidth > row.clientWidth + 1) row.classList.add('draft-crowded');
+  });
+}
 function setDraftStatus(text, fade = true) {
   const el = $('#draft-status');
   if (!el) return;
   clearTimeout(draftFadeTimer);
   el.textContent = text || '';
   el.classList.remove('draft-faded', 'draft-gone');
+  draftCrowding(text || '');
   // Transient: fad ud efter ca. 2,5 s og giv pladsen tilbage (Codex: ingen
   // permanent plads under talrækken). Teksten bliver i DOM'en til skærmlæseren
   // og prøverne; fejltekster står, indtil de er løst.
   if (text && fade) draftFadeTimer = setTimeout(() => {
     el.classList.add('draft-faded');
-    draftFadeTimer = setTimeout(() => el.classList.add('draft-gone'), 700);
+    draftFadeTimer = setTimeout(() => { el.classList.add('draft-gone'); draftCrowding(''); }, 700);
   }, 2500);
 }
 $('#route-select').addEventListener('change', renderStatusLine);
