@@ -27,6 +27,7 @@ Nulstillingen fra beta 1/1.1 (`1.0.0-beta.1`/`1.0.1-beta.1`) til `0.3.1-beta.1` 
 ## Kvalifikation og offentliggørelse
 
 - Bevar tidligere rettelser og kør relevante tests samt en native prøve af den faktiske pakke i en separat profil.
+- Kør pakkeprøven mod den færdige app og forrige beta: `npm run test:package-acceptance -- --app <ny .app> --from <forrige .app> --out <resultat.json>` (i `desktop`). Den bruger isolerede profiler, en lokal syntetisk modelserver og nul nøgleopslag, og den tester profilmigration, ikke feed-download. Gem resultatet sammen med pakkens kontrolsummer.
 - Gem kildecommit, testbeviser, manifest og kontrolsummer. Skeln mellem lokale tests, GitHub CI, ekstern AI, signering og notarisering.
 - Offentliggør kun DMG, opdaterings-ZIP og SHA256SUMS.txt som release-assets. Blokfiler og build-debugfiler forbliver midlertidige.
 - Verificér de uploadede bytes/digests, downloadadresser og opdateringsfeed.

@@ -1038,6 +1038,7 @@ function fillConnection(connection) {
   $('#azure-deployment').value = connection.deployment || ''; $('#azure-protocol').value = connection.protocol || 'responses';
   $('#custom-protocol').value = connection.kind === 'compatible' && ['openai', 'responses', 'anthropic'].includes(connection.protocol) ? connection.protocol : 'openai';
   $('#provider-id').value = connection.providerID || '';
+  if (connection.kind === 'cloudflare') { $('#cloudflare-account').value = (/\/accounts\/([a-f0-9]{32})\//.exec(connection.baseURL || '') || [])[1] || ''; syncCloudflareAddress(); }
 }
 // Forbindelsestjek i trin (4.11): reach, key and models need no model call.
 // Text and tools would spend tokens and stay skipped until a reviewed live path exists.
@@ -1310,6 +1311,14 @@ function updateProvider() {
   const editableAddress = LOCAL_KINDS.includes($('#provider-kind').value) || definition.editableBaseURL === true;
   $('#base-url').value = definition.baseURL; $('#connection-advanced').open = editableAddress; $('#base-url').readOnly = !editableAddress;
   $('#custom-api-fields').hidden = $('#provider-kind').value !== 'compatible';
+  // Opsætningshjælp (4.11): Cloudflare needs an account id inside the address;
+  // the main process still validates the finished address strictly.
+  const kindNow = $('#provider-kind').value;
+  $('#cloudflare-fields').hidden = kindNow !== 'cloudflare';
+  $('#cloudflare-account').required = kindNow === 'cloudflare';
+  if (kindNow === 'cloudflare') { const match = /\/accounts\/([a-f0-9]{32})\//.exec($('#base-url').value || ''); $('#cloudflare-account').value = match ? match[1] : ''; syncCloudflareAddress(); }
+  const portHelp = { lmstudio: 'LM Studio bruger normalt port 1234. Start serveren under Developer i LM Studio, og ret adressen under Avanceret, hvis du har valgt en anden port.', vllm: 'vLLM bruger normalt port 8000 (vllm serve). Ret adressen under Avanceret, hvis serveren kører et andet sted.', ollama: 'Ollama bruger normalt port 11434 på denne computer.' }[kindNow];
+  $('#local-port-help').hidden = !portHelp; $('#local-port-help').textContent = portHelp || '';
   $('#base-url').placeholder = $('#provider-kind').value === 'compatible' ? 'https://gateway.example/v1' : '';
   if (!$('#connection-id').value) { const used = new Set((state?.connections || []).map(c => c.name)); let name = definition.name, number = 2; while (used.has(name)) name = `${definition.name} ${number++}`; $('#connection-name').value = name; }
   renderKeyReuse();
@@ -3424,6 +3433,13 @@ document.addEventListener('DOMContentLoaded', () => {
 window.addEventListener('harness:komplai-connected', () => action(async () => { state = await call('connectionState'); renderConnections(); applyFeatures(); }));
 
 window.ChatMaterials.connect({read:()=>({root:current?.root,chat:view.id,running:running||projectLoading}),invoke:(method,value,owner)=>call(method,value,owner),invalidate:()=>{acceptedFingerprint=null;pendingSend=null;if($('#data-dialog').open)$('#data-dialog').close();}});
+function syncCloudflareAddress() {
+  const id = $('#cloudflare-account').value.trim().toLowerCase();
+  const valid = /^[a-f0-9]{32}$/.test(id);
+  if (valid) $('#base-url').value = `https://api.cloudflare.com/client/v4/accounts/${id}/ai/v1`;
+  $('#cloudflare-destination').textContent = valid ? `Adressen bliver ${$('#base-url').value}` : 'Du finder konto-id\'et i Cloudflare-dashboardet under Workers AI. Adressen bygges ud fra det.';
+}
+$('#cloudflare-account').addEventListener('input', syncCloudflareAddress);
 function connectionInput(){return {id:$('#connection-id').value||undefined,kind:$('#provider-kind').value,name:$('#connection-name').value,baseURL:$('#provider-kind').value==='azure'?$('#azure-endpoint').value:$('#base-url').value,deployment:$('#azure-deployment').value,protocol:$('#provider-kind').value==='compatible'?$('#custom-protocol').value:$('#azure-protocol').value,...($('#provider-kind').value==='compatible'&&$('#provider-id').value.trim()?{providerID:$('#provider-id').value.trim()}:{}),clearKey:$('#clear-key').checked};}
 function clearConnectionReceipt(){connectionReceipt=null;connectionTicket++;$('#credential-status').textContent='Ingen ny nøgle valgt';void call('credentialCancel').catch(()=>{});}
 $('#credential-open').onclick=()=>action(async()=>{

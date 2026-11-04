@@ -304,3 +304,7 @@ body.native-welcome-window #welcome-dialog::backdrop { background: var(--aura-bg
 .diagnose-step[data-status="unknown"]::before { background: var(--aura-warning-ink); }
 .diagnose-step small { grid-column: 2 / -1; font-size: 12px; color: var(--aura-ink-secondary); }
 .diagnose-status { font-size: 12px; color: var(--aura-ink-secondary); }
+.provider-helper { margin: 6px 0 12px; }
+#cloudflare-fields { display: grid; gap: 6px; }
+#cloudflare-fields[hidden], #local-port-help[hidden] { display: none; }
+#cloudflare-destination { margin: 0; overflow-wrap: anywhere; }
