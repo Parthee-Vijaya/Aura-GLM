@@ -807,7 +807,7 @@ handle('gradientdeck:apply', value => exclusive(async () => {
     chat,
     busyRoot: root => workbench.busyRoot(root),
   });
-  const result = await engine.apply({ root: project.root, slug: value?.slug, choice: value?.choice, expected: typeof value?.expected === 'string' ? value.expected : null });
+  const result = await engine.apply({ root: project.root, slug: value?.slug, choice: value?.choice, expected: typeof value?.expected === 'string' ? value.expected : null, expectedStyle: typeof value?.expectedStyle === 'string' ? value.expectedStyle : null });
   if (result.status === 'applied') {
     workbench.log({ kind: 'gradientdeck', title: `«${result.name}»-stil anvendt`, detail: 'DESIGN.md opdateret · Fortryd under Ændringer', status: 'completed' }, requestChatID());
   }

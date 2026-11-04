@@ -1791,7 +1791,7 @@ function renderStyleCard() {
     keep.textContent = 'Bevar eksisterende'; keep.dataset.close = '';
     keep.onclick = () => { dialog.close(); setDraftStatus('Eksisterende DESIGN.md er bevaret. Intet er ændret.'); };
     apply.textContent = 'Erstat';
-    apply.onclick = () => applyStyleCard('replace', data.expected);
+    apply.onclick = () => applyStyleCard('replace', data.expected, data.expectedStyle);
   } else if (data.status === 'applied') {
     $('#gradientdeck-style-title').textContent = `«${data.name}»-stilen er anvendt`;
     $('#gradientdeck-style-lead').textContent = data.message || 'DESIGN.md er opdateret.';
@@ -1826,12 +1826,12 @@ function renderStyleCard() {
   apply.disabled = apply.disabled || styleCard.busy;
   apply.textContent = styleCard.busy ? `${apply.textContent} …` : apply.textContent;
 }
-async function applyStyleCard(choice, expected) {
+async function applyStyleCard(choice, expected, expectedStyle) {
   const data = styleCard.data;
   if (!data || styleCard.busy) return;
   styleCard.busy = true; renderStyleCard();
   try {
-    const result = await call('gradientdeckApply', { slug: data.slug, choice, ...(expected ? { expected } : {}) }, selectedOwner());
+    const result = await call('gradientdeckApply', { slug: data.slug, choice, ...(expected ? { expected } : {}), ...(expectedStyle ? { expectedStyle } : {}) }, selectedOwner());
     styleCard.data = { ...data, ...result };
     if (styleCard.data.status === 'applied') setDraftStatus(styleCard.data.message, false);
   } catch (error) {

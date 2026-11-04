@@ -57,20 +57,29 @@ class DesignStyleApply {
   // git: Auras GitVersions, når versionsfunktionen kan bruges.
   // chat: den samtale, anvendelsen registreres i ({ copy, ensureBaseline, recordEdit }).
   // busyRoot: ægtentavheden i projektmappen — AI'en må ikke være i gang.
-  constructor({ deck, features, git, chat, busyRoot = () => false } = {}) {
+  // write: projekt-skrivningen (atomisk tmp+rename) — injicerbar, så en
+  //        kastende skrivning kan bevises i regressionstests uden at røre disken.
+  constructor({ deck, features, git, chat, busyRoot = () => false, write = writeAtomicProject } = {}) {
     if (!deck || typeof deck.styleState !== 'function') throw new TypeError('DesignStyleApply kræver GradientDeck-tjenesten.');
     this.deck = deck;
     this.features = typeof features === 'function' ? features : async () => ({});
     this.git = git || null;
     this.chat = chat || null;
     this.busyRoot = typeof busyRoot === 'function' ? busyRoot : () => false;
+    this.write = typeof write === 'function' ? write : writeAtomicProject;
   }
 
   #conflict(style, existing, document) {
     const diff = lineDiff(existing.content, document.content);
     return {
       status: 'conflict', name: style.name, slug: style.slug,
+      // To mærker binder gennemgangen: FILen (sha256 af det eksisterende
+      // DESIGN.md) og STILEN (sha256 af stileindholdet i cachen). Ændres en af
+      // dem, siden forskellen blev set — filen redigeret eller cachen
+      // genhentet med andet indhold — gennemtvinges en NY diff; intet skrives
+      // blindt (gennemgangens Minor 2).
       expected: existing.hash,
+      expectedStyle: style.sha256,
       diff: { added: diff.added, removed: diff.removed, oldLines: diff.oldLines, newLines: diff.newLines, truncated: diff.truncated, approximate: diff.approximate, hunks: diff.hunks },
       message: 'Der findes allerede et DESIGN.md i projektet. Gennemgå forskellen, og vælg Bevar eller Erstat.',
     };
@@ -95,16 +104,17 @@ class DesignStyleApply {
     }
   }
 
-  // Sidst-skrevne-omdøbelse: den forrige fil bevares under et frit, nummereret
-  // navn — et eksisterende (forrige)-navn overskrives ALDRIG.
-  async #renamePrevious(root) {
+  // Sidst-skrevne-bevarelse: det forrige indhold skrives ATOMISK til et frit,
+  // nummereret (forrige)-navn — et eksisterende navn overskrives ALDRIG. Kun
+  // navnet findes her; selve skrivningen sker i KOPI-FØRST-rækkefølgen nedenfor
+  // (gennemgangens Fund 1).
+  async #freePreviousName(root) {
     let name = 'DESIGN (forrige).md', index = 2;
     while (await fs.lstat(path.join(root, name)).then(() => true, error => { if (error.code !== 'ENOENT') throw error; return false; })) name = `DESIGN (forrige ${index++}).md`;
-    await fs.rename(path.join(root, 'DESIGN.md'), path.join(root, name));
     return name;
   }
 
-  async apply({ root, slug, choice = 'apply', expected = null } = {}) {
+  async apply({ root, slug, choice = 'apply', expected = null, expectedStyle = null } = {}) {
     if (!root || typeof root !== 'string') return { status: 'error', message: 'Åbn et projekt først.' };
     if (!['apply', 'replace', 'keep'].includes(choice)) return { status: 'error', message: 'Ukendt valg for anvendelsen.' };
     if (this.chat?.copy) return { status: 'error', message: 'Samtalen arbejder i en isoleret kopi. Anvend stilen fra en samtale, der arbejder i projektet.' };
@@ -123,9 +133,9 @@ class DesignStyleApply {
     catch (error) { return { status: 'error', message: error.message }; }
     if (choice === 'keep') return { status: 'kept', name: style.name, message: 'Eksisterende DESIGN.md er bevaret. Intet er ændret.' };
     if (existing && choice !== 'replace') return this.#conflict(style, existing, document);
-    if (existing && choice === 'replace' && expected !== existing.hash) {
-      // Filen er ændret, siden forskellen blev gennemgået — intet skrives, og
-      // den NYE forskel skal ses, før der kan vælges igen.
+    if (existing && choice === 'replace' && (expected !== existing.hash || expectedStyle !== style.sha256)) {
+      // Filen eller stileNS indhold er ændret, siden forskellen blev gennemgået —
+      // intet skrives, og den NYE forskel skal ses, før der kan vælges igen.
       return this.#conflict(style, existing, document);
     }
     // …fra her skrives der. Baseline først, så Fortryd-sporet har sit udgangspunkt.
@@ -138,9 +148,26 @@ class DesignStyleApply {
         if (attempt.ok) preserved = attempt.preserved;
         else reason = attempt.reason;
       } else reason = versions ? 'versionsystemet er ikke tilgængeligt' : 'versionsfunktionen er ikke tilvalgt';
-      if (!preserved) { previousName = await this.#renamePrevious(root); preserved = 'rename'; }
+      if (!preserved) {
+        // Gennemgangens Fund 1: KOPI-FØRST. Det forrige indhold skrives atomisk
+        // til (forrige)-navnet, FØR DESIGN.md røres — den destruktive erstatning
+        // er altid det SIDSTE, atomiske led (tmp+rename). Fejler kopien, er
+        // projektet urørt. Fejler selve DESIGN.md-skrivningen, fjernes den kopi,
+        // dette kald netop oprettede, og projektet står igen, som før — den
+        // ærlige fejl overføres. Kun et crash midt i vinduet kan efterlade en
+        // harmløs, indholds-identisk (forrige)-kopi — DESIGN.md består da urørt
+        // med sit forrige indhold, og intet går nogensinde tabt.
+        previousName = await this.#freePreviousName(root);
+        await this.write(path.join(root, previousName), existing.content);
+        preserved = 'rename';
+      }
     }
-    await writeAtomicProject(path.join(root, 'DESIGN.md'), document.content);
+    try {
+      await this.write(path.join(root, 'DESIGN.md'), document.content);
+    } catch (error) {
+      if (previousName) await fs.unlink(path.join(root, previousName)).catch(() => { /* bedst-indsats: kopien er netop oprettet af dette kald */ });
+      throw error;
+    }
     const files = [{ file: 'DESIGN.md', before: existing ? existing.content : null, after: document.content }];
     if (previousName) files.push({ file: previousName, before: null, after: existing.content });
     const task = this.chat?.recordEdit?.({

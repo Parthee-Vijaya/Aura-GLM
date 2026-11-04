@@ -26,7 +26,7 @@ const { PrivacyService } = require('../core/privacy-service.cjs');
 const { Workbench } = require('../core/workbench.cjs');
 const { GitVersions } = require('../core/git.cjs');
 const { GradientDeck, ORIGIN, CATALOG_URL, STYLE_PATH } = require('../core/gradientdeck.cjs');
-const { DesignStyleApply } = require('../core/design-styles.cjs');
+const { DesignStyleApply, writeAtomicProject } = require('../core/design-styles.cjs');
 const {
   DESIGN_MAX_BYTES, designDocumentText, readProjectDesignDocument,
   appliedStyleText, gradientdeckSourceLine,
@@ -323,7 +323,7 @@ test('Erstat med versionsfunktionen tilvalgt: det forrige indhold gemmes som en 
   const chat = fakeChat();
   const conflict = await applyFixture(f.deck, chat, { versioner: true, git }).apply({ root: f.root, slug: 'cloudflare' });
   assert.equal(conflict.status, 'conflict');
-  const applied = await applyFixture(f.deck, chat, { versioner: true, git }).apply({ root: f.root, slug: 'cloudflare', choice: 'replace', expected: conflict.expected });
+  const applied = await applyFixture(f.deck, chat, { versioner: true, git }).apply({ root: f.root, slug: 'cloudflare', choice: 'replace', expected: conflict.expected, expectedStyle: conflict.expectedStyle });
   assert.equal(applied.status, 'applied');
   assert.equal(applied.preserved, 'version', 'det forrige indhold er gemt som en version');
   assert.equal(await fs.readFile(path.join(f.root, 'DESIGN.md'), 'utf8'), appliedText('Cloudflare', 'cloudflare', seeded.text), 'filen er erstattet');
@@ -347,7 +347,7 @@ test('Erstat med versionsfunktionen tilvalgt: et DESIGN.md, der allerede står i
   await git.commit(f.root, { token: review.token, files: ['DESIGN.md'], message: 'Første version' });
   const chat = fakeChat();
   const conflict = await applyFixture(f.deck, chat, { versioner: true, git }).apply({ root: f.root, slug: 'cloudflare' });
-  const applied = await applyFixture(f.deck, chat, { versioner: true, git }).apply({ root: f.root, slug: 'cloudflare', choice: 'replace', expected: conflict.expected });
+  const applied = await applyFixture(f.deck, chat, { versioner: true, git }).apply({ root: f.root, slug: 'cloudflare', choice: 'replace', expected: conflict.expected, expectedStyle: conflict.expectedStyle });
   assert.equal(applied.status, 'applied');
   assert.equal(applied.preserved, 'history', 'det forrige indhold findes allerede i den seneste version');
   assert.equal((await git.status(f.root)).history.length, 1, 'der er ikke oprettet ekstra versioner');
@@ -362,7 +362,7 @@ test('Erstat uden versionsfunktionen: sidst-skrevne-omdøbelse bevarer det forri
   const chat = fakeChat();
   const conflict = await applyFixture(f.deck, chat).apply({ root: f.root, slug: 'cloudflare' });
   assert.equal(conflict.status, 'conflict');
-  const applied = await applyFixture(f.deck, chat).apply({ root: f.root, slug: 'cloudflare', choice: 'replace', expected: conflict.expected });
+  const applied = await applyFixture(f.deck, chat).apply({ root: f.root, slug: 'cloudflare', choice: 'replace', expected: conflict.expected, expectedStyle: conflict.expectedStyle });
   assert.equal(applied.status, 'applied');
   assert.equal(applied.preserved, 'rename', 'uden tilvalgt versionsfunktion omdøbes den forrige fil');
   assert.equal(applied.previousName, 'DESIGN (forrige).md');
@@ -371,7 +371,7 @@ test('Erstat uden versionsfunktionen: sidst-skrevne-omdøbelse bevarer det forri
   // En eksisterende (forrige)-fil overskrives ALDRIG — næste led nummereres.
   const secondPreview = await applyFixture(f.deck, fakeChat()).apply({ root: f.root, slug: 'cloudflare' });
   assert.equal(secondPreview.status, 'conflict');
-  const again = await applyFixture(f.deck, chat).apply({ root: f.root, slug: 'cloudflare', choice: 'replace', expected: secondPreview.expected });
+  const again = await applyFixture(f.deck, chat).apply({ root: f.root, slug: 'cloudflare', choice: 'replace', expected: secondPreview.expected, expectedStyle: secondPreview.expectedStyle });
   assert.equal(again.status, 'applied');
   assert.equal(again.previousName, 'DESIGN (forrige 2).md', 'det andet led nummereres');
   assert.equal(await fs.readFile(path.join(f.root, 'DESIGN (forrige 2).md'), 'utf8'), appliedText('Cloudflare', 'cloudflare', seeded.text), 'den tidligere anvendte stil bevares også');
@@ -393,12 +393,85 @@ test('Erstat med versionsfunktion, men Git i vejen: omdøbelsen træder ærligt 
   await run(f.root, ['add', '--', 'DESIGN.md']);   // staged ændringer blokerer versionsgemning
   const chat = fakeChat();
   const conflict = await applyFixture(f.deck, chat, { versioner: true, git }).apply({ root: f.root, slug: 'cloudflare' });
-  const applied = await applyFixture(f.deck, chat, { versioner: true, git }).apply({ root: f.root, slug: 'cloudflare', choice: 'replace', expected: conflict.expected });
+  const applied = await applyFixture(f.deck, chat, { versioner: true, git }).apply({ root: f.root, slug: 'cloudflare', choice: 'replace', expected: conflict.expected, expectedStyle: conflict.expectedStyle });
   assert.equal(applied.status, 'applied', 'anvendelsen gennemføres alligevel — uden at røre brugerens staged valg');
   assert.equal(applied.preserved, 'rename', 'omdøbelsen trådte til, da versionsgemningen var blokeret');
   assert.equal(await fs.readFile(path.join(f.root, 'DESIGN (forrige).md'), 'utf8'), dirty, 'det forrige indhold er bevaret');
   assert.match(applied.message, /versionen kunne ikke gemmes/i, 'kvitteringen siger ærligt, hvorfor');
   assert.match(applied.message, /staged/i, '…og hvad der blokerede');
+});
+
+// ── 6b · Gennemgangens Fund 1: fejlvinduet i Erstat-med-omdøbelse ────────────
+// Den forrige rækkefølge (omdøb DESIGN.md → (forrige) → skriv den nye fil)
+// efterlod projektet uden DESIGN.md, hvis skrivningen fejlede — indholdet
+// overlevede under (forrige)-navnet, men roden stod tom, uden Fortryd-spor og
+// uden kvittering. Regressionstesten injicerer en kastende skrivning og
+// hæver, at projektet står urørt igen (og at KOPI-FØRST-rækkefølgen gælder).
+
+test('Fund 1: en mislykket skrivning efterlader projektet urørt — intet DESIGN.md-tab, ingen stray kopi, ingen Fortryd-registrering', async t => {
+  const f = await deckFixture(t);
+  await seedCache(f.store);
+  const existing = '# Eget design\n## Farver\n- Grøn\n## Typografi\n- Serif\n## Spacing\n- 4 px\n## Komponenter\n- Bred knap\n';
+  await fs.writeFile(path.join(f.root, 'DESIGN.md'), existing);
+  const chat = fakeChat();
+  const writes = [];
+  const engine = new DesignStyleApply({
+    deck: f.deck, features: async () => ({ versioner: false }), chat,
+    write: async (file, content) => {
+      writes.push(path.basename(file));
+      if (path.basename(file) === 'DESIGN.md') throw Object.assign(new Error('Disken er fuld (prøve).'), { code: 'ENOSPC' });
+      return writeAtomicProject(file, content);
+    },
+  });
+  const conflict = await engine.apply({ root: f.root, slug: 'cloudflare' });
+  assert.equal(conflict.status, 'conflict');
+  assert.ok(conflict.expectedStyle, 'konflikten medfører stile-mærket (gennemgangens Minor 2)');
+  await assert.rejects(engine.apply({ root: f.root, slug: 'cloudflare', choice: 'replace', expected: conflict.expected, expectedStyle: conflict.expectedStyle }), /Disken er fuld/, 'skrivningsfejlen overføres ærligt');
+  assert.equal(await fs.readFile(path.join(f.root, 'DESIGN.md'), 'utf8'), existing, 'original DESIGN.md står urørt i projektets rod');
+  assert.equal(await fs.stat(path.join(f.root, 'DESIGN (forrige).md')).then(() => true, () => false), false, 'den stray (forrige)-kopi er fjernet igen — projektet er som før');
+  assert.equal(chat.records.length, 0, 'ingen Fortryd-registrering for en feilet anvendelse');
+  assert.deepEqual(writes, ['DESIGN (forrige).md', 'DESIGN.md'], 'KOPI-FØRST: (forrige)-indholdet skrives FØR DESIGN.md — det destruktive trin er altid det sidste, atomiske led');
+});
+
+test('Fund 1: fejler KOPIEN af det forrige indhold, er projektet også urørt — intet røres', async t => {
+  const f = await deckFixture(t);
+  await seedCache(f.store);
+  const existing = '# Eget design\n## Farver\n- Grøn\n## Typografi\n- Serif\n## Spacing\n- 4 px\n## Komponenter\n- Bred knap\n';
+  await fs.writeFile(path.join(f.root, 'DESIGN.md'), existing);
+  const chat = fakeChat();
+  const engine = new DesignStyleApply({
+    deck: f.deck, features: async () => ({ versioner: false }), chat,
+    write: async () => { throw Object.assign(new Error('Skrivefejl (prøve).'), { code: 'EIO' }); },
+  });
+  const conflict = await engine.apply({ root: f.root, slug: 'cloudflare' });
+  await assert.rejects(engine.apply({ root: f.root, slug: 'cloudflare', choice: 'replace', expected: conflict.expected, expectedStyle: conflict.expectedStyle }), /Skrivefejl/, 'fejlen overføres ærligt');
+  assert.equal(await fs.readFile(path.join(f.root, 'DESIGN.md'), 'utf8'), existing, 'DESIGN.md er urørt');
+  assert.deepEqual((await fs.readdir(f.root)).filter(name => name.includes('forrige')), [], 'ingen halv (forrige)-kopi');
+  assert.equal(chat.records.length, 0, 'ingen registrering');
+});
+
+// ── 6c · Gennemgangens Minor 2: Erstat peger på FILEN og STILEN ─────────────
+
+test('Minor 2: Erstat afviser med ny diff, hvis stilens indhold er ændret siden gennemgangen', async t => {
+  const f = await deckFixture(t);
+  await seedCache(f.store);
+  const existing = '# Eget design\n## Farver\n- Grøn\n## Typografi\n- Serif\n## Spacing\n- 4 px\n## Komponenter\n- Bred knap\n';
+  await fs.writeFile(path.join(f.root, 'DESIGN.md'), existing);
+  const chat = fakeChat();
+  const engine = applyFixture(f.deck, chat);
+  const conflict = await engine.apply({ root: f.root, slug: 'cloudflare' });
+  assert.equal(conflict.status, 'conflict');
+  assert.ok(conflict.expectedStyle, 'stile-mærket (sha256 af stileindholdet) medfølger diffen');
+  // Cachen genhentes med ANDREt indhold for samme slug, efter at forskellen er set.
+  const refreshed = await seedCache(f.store, { body: styleBody('Cloudflare').replace('#f6821f', '#0a2540') });
+  const stale = await engine.apply({ root: f.root, slug: 'cloudflare', choice: 'replace', expected: conflict.expected, expectedStyle: conflict.expectedStyle });
+  assert.equal(stale.status, 'conflict', 'et forældet stile-mærke gennemtvinger en ny gennemgang — intet skrives blindt');
+  assert.notEqual(stale.expectedStyle, conflict.expectedStyle, 'den nye diff bærer det nye stile-mærke');
+  assert.equal(await fs.readFile(path.join(f.root, 'DESIGN.md'), 'utf8'), existing, 'intet er skrevet');
+  // Med det AKTUELLE mærkepar gennemføres erstatningen med det aktuelle indhold.
+  const applied = await engine.apply({ root: f.root, slug: 'cloudflare', choice: 'replace', expected: stale.expected, expectedStyle: stale.expectedStyle });
+  assert.equal(applied.status, 'applied');
+  assert.equal(await fs.readFile(path.join(f.root, 'DESIGN.md'), 'utf8'), appliedText('Cloudflare', 'cloudflare', refreshed.text), 'det stileindhold, den gennemsete diff viser, er det, der skrives');
 });
 
 // ── 7 · Vagter: kopi, kørende opgave, symlink ───────────────────────────────
@@ -489,7 +562,7 @@ test('Fortryd af en Erstat-med-omdøbelse: både filen og (forrige)-kopien sætt
   const engine = new DesignStyleApply({ deck, features: async () => ({ versioner: false }), git: bench.git, chat: bench.chat, busyRoot: root => bench.busyRoot(root) });
   const conflict = await engine.apply({ root: project, slug: 'cloudflare' });
   assert.equal(conflict.status, 'conflict');
-  const applied = await engine.apply({ root: project, slug: 'cloudflare', choice: 'replace', expected: conflict.expected });
+  const applied = await engine.apply({ root: project, slug: 'cloudflare', choice: 'replace', expected: conflict.expected, expectedStyle: conflict.expectedStyle });
   assert.equal(applied.status, 'applied');
   assert.equal(applied.preserved, 'rename');
   const task = bench.chat.changes.tasks.find(item => item.label.includes('Cloudflare'));
@@ -497,6 +570,43 @@ test('Fortryd af en Erstat-med-omdøbelse: både filen og (forrige)-kopien sætt
   await bench.undoTask({ chat: bench.chatID, task: task.id });
   assert.equal(await fs.readFile(path.join(project, 'DESIGN.md'), 'utf8'), existing, 'det gamle design er tilbage ordret');
   assert.equal(await fs.stat(path.join(project, 'DESIGN (forrige).md')).then(() => true, () => false), false, 'den omdøbte kopi er fjernet igen');
+});
+
+// Gennemgangens Note 4: den VERSIONEREDE variant (preserved:'version') har ikke
+// kørt Fortryd end-to-end — mekanismen er den samme (record-formen er pinned i
+// §6), men med Fund 1's rettelse røres skrivevejen alligevel, så dækningen
+// lukkes her: ægte Workbench + ægte Git + undoTask.
+test('Fortryd af en VERSIONERET Erstat: Ændringer gendanner det forrige indhold (gennemgangens Note 4)', async t => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'aura-styles-undo3-'));
+  let bench = null;
+  t.after(async () => { await bench?.close().catch(() => {}); await fs.rm(directory, { recursive: true, force: true }); });
+  const project = path.join(directory, 'project');
+  await fs.mkdir(project);
+  const existing = '# Eget design\n## Farver\n- Grøn\n## Typografi\n- Serif\n## Spacing\n- 4 px\n## Komponenter\n- Bred knap\n';
+  await fs.writeFile(path.join(project, 'DESIGN.md'), existing);
+  bench = new Workbench({ directory: path.join(directory, 'data'), profiles: path.resolve(__dirname, '../../profiles'), safeStorage: { isEncryptionAvailable: () => false }, emit() {}, engineFactory: () => ({ active: true, session: { id: 's' }, resumed: false, start: async () => {}, send: async () => {}, messages: async () => [{}], summarize: async () => {}, abort: async () => {}, close: async () => {} }) });
+  await bench.activate({ root: project, name: 'Versioneret-erstat' });
+  const seeded = await seedCache(bench.store);
+  const deck = new GradientDeck({ store: bench.store, getPrivacy: () => bench.privacy, consent: async () => 'cancel', quiet: () => true, fetch: async () => { throw new Error('intet netværk'); }, now: () => NOW, version: '0.5.8-test' });
+  // Et ægte Git-arkiv med DESIGN.md i HEAD og en ugemt ændring — versionsgrenen.
+  const { git } = await gitFixture(t, project);
+  const first = await git.review(project);
+  await git.commit(project, { token: first.token, files: ['DESIGN.md'], message: 'Første version' });
+  const dirty = existing + '\nBrugerens egen tilføjelse.\n';
+  await fs.writeFile(path.join(project, 'DESIGN.md'), dirty);
+  const engine = new DesignStyleApply({ deck, features: async () => ({ versioner: true }), git, chat: bench.chat, busyRoot: root => bench.busyRoot(root) });
+  const conflict = await engine.apply({ root: project, slug: 'cloudflare' });
+  assert.equal(conflict.status, 'conflict');
+  const applied = await engine.apply({ root: project, slug: 'cloudflare', choice: 'replace', expected: conflict.expected, expectedStyle: conflict.expectedStyle });
+  assert.equal(applied.status, 'applied');
+  assert.equal(applied.preserved, 'version', 'det forrige indhold er gemt som en version — Fortryd-sporet dækker kun filen');
+  const task = bench.chat.changes.tasks.find(item => item.label.includes('Cloudflare'));
+  assert.ok(task, 'den versionerede erstatning står i Ændringer');
+  await bench.undoTask({ chat: bench.chatID, task: task.id });
+  assert.equal(await fs.readFile(path.join(project, 'DESIGN.md'), 'utf8'), dirty, 'det forrige indhold — inklusive de ugemte ændringer — er tilbage ordret');
+  const status = await git.status(project);
+  assert.ok(status.history.some(entry => /før/.test(entry.message) && entry.message.includes('Cloudflare')), 'versionen med det forrige indhold består i historikken — Fortryd gendanner filen, historikken append-only');
+  void seeded;
 });
 
 // ── 10 · "Før du sender" + fingeraftryk med stilens INDHOLD ──────────────────
