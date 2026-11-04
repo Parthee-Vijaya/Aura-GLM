@@ -49,7 +49,7 @@ app.on('second-instance', () => { if (window) { if (window.isMinimized()) window
 require('./core/engine-startup.cjs').install({ directory: path.join(identity.userData, 'harness', 'diagnostics') });
 
 protocol.registerSchemesAsPrivileged(['harness', 'aura-preview'].map(scheme => ({ scheme, privileges: { standard: true, secure: true, supportFetchAPI: true } })));
-let window, chosenParent = null;
+let window, chosenParent = null, onboardingWindow = null;
 let assets = [];
 let github, publishing, deployments, deploymentSetup, restoration, promtePreview, komplaiPreview;
 let registry, history, images;
@@ -149,7 +149,7 @@ async function confirmDiscardWork() {
 const uiURL = 'harness://app/index.html';
 const credentialEntry = require('./core/credential-entry.cjs').createCredentialEntry({ BrowserWindow, ipcMain, safeStorage, parent:() => window, zoomFactor:() => profileFontSize / FONT_SIZE.base, createSession:() => {
   const isolated = session.fromPartition(`credential-${crypto.randomUUID()}`, { cache:false });
-  const files = ['credential-entry.html','credential-entry.css','credential-entry.js'].map(file => require('node:url').pathToFileURL(path.join(__dirname, 'ui', file)).href);
+  const files = ['credential-entry.html','credential-entry.css','credential-entry.js','aura-tokens.css'].map(file => require('node:url').pathToFileURL(path.join(__dirname, 'ui', file)).href);
   isolated.webRequest.onBeforeRequest((details, callback) => callback({ cancel:!files.includes(details.url) }));
   isolated.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
   isolated.setPermissionCheckHandler(() => false);
@@ -478,6 +478,11 @@ async function performFontSizeStep(delta) {
 handle('profile:get', () => profileStore().get());
 handle('profile:save', input => exclusive(async () => { const result = await profileStore().save(input); if (input?.appearance?.theme !== undefined) applyProfileTheme(result.profile.appearance.theme); if (input?.appearance?.fontSize !== undefined) applyProfileFontSize(result.profile.appearance.fontSize); return result; }));
 handle('profile:migrate', input => exclusive(() => profileStore().migrate(input)));
+handle('window:onboarding', async open => {
+  if (typeof open !== 'boolean') throw new Error('Ugyldig vinduestilstand.');
+  if (!onboardingWindow) return { compact: false };
+  return open ? { compact: onboardingWindow.compact } : onboardingWindow.finish(window);
+});
 handle('profile:suggest', () => { try { return require('node:os').userInfo().username || ''; } catch { return ''; } });
 handle('designs:clear', () => exclusive(() => { assets = []; return []; }));
 handle('designs:list', () => new Designs(workbench.store).list());
@@ -1230,8 +1235,8 @@ app.whenReady().then(async () => {
     if (details.resourceType === 'subFrame' && previewAllowed(details.url)) remember(previewLog.documents, { at: Date.now(), status: details.statusCode, url: details.url });
   });
   function createWindow() {
-    window = new BrowserWindow({ width: 1440, height: 940, minWidth: 980, minHeight: 720, backgroundColor: nativeTheme.shouldUseDarkColors ? '#0d1219' : '#F8FAFC', title: DISPLAY_NAME, icon: appIcon, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, webviewTag: false, zoomFactor: profileFontSize / FONT_SIZE.base } });
-    window.maximize(); // Almindeligt maksimeret vindue, ikke macOS-fuldskærm.
+    window = new BrowserWindow({ width: 1440, height: 940, minWidth: 980, minHeight: 720, ...onboardingWindow?.options(), backgroundColor: nativeTheme.shouldUseDarkColors ? '#121212' : '#FFFFFF', title: DISPLAY_NAME, icon: appIcon, ...(process.platform === 'darwin' ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 16, y: 16 } } : {}), webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, webviewTag: false, zoomFactor: profileFontSize / FONT_SIZE.base } });
+    if (!onboardingWindow?.compact) window.maximize();
     // The profile's font size rides along from the first paint: the zoom factor
     // is set before the first load, so the app never flashes the base size.
     window.webContents.setZoomFactor(profileFontSize / FONT_SIZE.base);
@@ -1301,6 +1306,8 @@ app.whenReady().then(async () => {
   // atomic store update.
   try { await workbench.features.migrate(); } catch { /* the renderer's startup migration retries the pin */ }
   if (process.platform === 'darwin') app.dock.setIcon(appIcon);
+  onboardingWindow = new (require('./core/onboarding-window.cjs').OnboardingWindow)(workbench.store);
+  await onboardingWindow.initialize();
   createWindow();
   app.on('activate', () => { if (!window) createWindow(); });
 }).catch(startupFailure);

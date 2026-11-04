@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: EUPL-1.2
-// T8 · Kontroller, tooltips og samtaletitler (0.5.10) — de statiske pins for
+// T8 · Kontroller, tooltips og samtaletitler (0.6.0-beta.1) — de statiske pins for
 // skivens ændringer. Arbejdsliste: claude-uiux-audit.md punkt 9 + §4, S3-fund
 // (f) (samtaletitler) + #chat-materials-menu-skyggen, P1-rapportens bekymring
 // (a) (<480 px: begge arbejdsmåde-chips væk), D1-re-reviewens NOTE (calm-
@@ -44,14 +44,9 @@ const luminance = rgb => {
   return 0.2126 * linear(rgb[0]) + 0.7152 * linear(rgb[1]) + 0.0722 * linear(rgb[2]);
 };
 const contrast = (fg, bg) => { const a = luminance(fg), b = luminance(bg); const [hi, lo] = a > b ? [a, b] : [b, a]; return (hi + 0.05) / (lo + 0.05); };
-const tokenRGB = (css, name) => {
-  const match = new RegExp(`--${name}:\\s*rgb\\((\\d+),\\s*(\\d+),\\s*(\\d+)\\)`).exec(css);
-  return match ? [Number(match[1]), Number(match[2]), Number(match[3])] : null;
-};
-// Tema-blokke i aura-tokens.css: :root (lyst) og den mørke medieblok.
-const LIGHT_BLOCK = /:root\s*\{([\s\S]*?)\n\}/.exec(tokens)?.[1] || '';
-const DARK_BLOCK = /prefers-color-scheme: dark\)\s*\{\s*:root:not\(\[data-workspace-theme="light"\]\)\s*\{([\s\S]*?)\n\s*\}/.exec(tokens)?.[1] || '';
-const themeBlocks = () => [[LIGHT_BLOCK, 'lyst'], [DARK_BLOCK, 'mørkt']];
+const tokenRGB = (values, name) => values[`--${name}`] || null;
+const themes = require('./helpers/theme-tokens.cjs').tokenThemes(tokens);
+const themeBlocks = () => Object.entries(themes).map(([theme, values]) => [values, theme]);
 
 // ── 1. .approval-kind: --aura-warning-ink, 12 px, ≥5:1 i begge temaer ──
 test('.approval-kind bærer --aura-warning-ink og 12 px i begge regler (MUST-FIX)', () => {
@@ -267,9 +262,9 @@ test('(+)-menuen bærer menu-materialet — egen skygge, kant og flade er væk',
   assert.ok(!/#chat-materials-menu button:hover/.test(materialsCss), 'egen hover-række er væk — menu-materialets gælder');
   const calmMenu = /\.workspace-calm #chat-materials-menu\s*\{[^}]*\}/.exec(calm);
   assert.ok(!calmMenu, 'den tunge calm-skygge #0004 er væk fra menuen');
-  const heading = /#chat-materials-menu>strong\s*\{[^}]*\}/.exec(materialsCss);
+  const heading = /#chat-materials-menu\s*>\s*strong\s*\{[^}]*\}/.exec(materialsCss);
   assert.ok(heading, 'overskriften har sin egen regel');
-  assert.match(heading[0], /font-size:\s*var\(--aura-text-12\)/, 'overskriften er løftet fra 11 px til 12 px på skalaen');
+  assert.match(heading[0], /font-size:\s*(?:12px|var\(--aura-text-12\))/, 'overskriften er løftet fra 11 px til 12 px på skalaen');
 });
 
 // ── 8. D1-noten: calm-skuffens skygge på --aura-shadow-overlay ──
@@ -293,11 +288,11 @@ test('ikonvælgeren får roving tabindex: pil taster igennem, ét tab-stop', () 
   assert.match(settingsJs, /wireRadioGroup/, 'indstillings-vælgeren er koblet (settings.js)');
 });
 
-// ── 10. Version 0.5.10 ──
-test('versionen er 0.5.10 overalt (pakke, lås, rod og pakkeposten)', () => {
-  assert.equal(pkg.version, '0.5.10');
-  assert.equal(lock.version, '0.5.10');
-  assert.equal(lock.packages[''].version, '0.5.10');
+// ── 10. Version 0.6.0-beta.1 ──
+test('versionen er 0.6.0-beta.1 overalt (pakke, lås, rod og pakkeposten)', () => {
+  assert.equal(pkg.version, '0.6.0-beta.1');
+  assert.equal(lock.version, '0.6.0-beta.1');
+  assert.equal(lock.packages[''].version, '0.6.0-beta.1');
 });
 
 // ── 11. Efter-byg F6: #chat-menu og #composer-help-popover på menu-materialet ──

@@ -765,14 +765,9 @@ const read = name => fsSync.readFileSync(path.join(__dirname, '..', 'ui', name),
 const strip = css => css.replace(/\/\*[\s\S]*?\*\//g, '');
 
 test('S4-UI: brugerboblen har igen en baggrund i MØRKT tema — forskelligt fra panelet', () => {
-  const tokens = read('aura-tokens.css');
-  const dark = /@media\s*\(prefers-color-scheme:\s*dark\)\s*\{[\s\S]*?:root:not\(\[data-workspace-theme="light"\]\)\s*\{([^}]*)\}/.exec(strip(tokens))[1];
-  const bubble = /--aura-bg-bubble:\s*rgb\((\d+),\s*(\d+),\s*(\d+)\)/.exec(dark);
-  const raised = /--aura-bg-raised:\s*rgb\((\d+),\s*(\d+),\s*(\d+)\)/.exec(dark);
-  assert.ok(bubble && raised, 'begge tokens findes i mørkt tema');
-  assert.notDeepEqual([bubble[1], bubble[2], bubble[3]], [raised[1], raised[2], raised[3]], 'boblen er ikke længere fladtbundet med chattens panel');
-  const light = /:root\s*\{([^}]*)\}/.exec(strip(tokens))[1];
-  assert.match(light, /--aura-bg-bubble:\s*rgb\(237,\s*243,\s*254\)/, 'det lyse tema er uændret');
+  const themes = require('./helpers/theme-tokens.cjs').tokenThemes(read('aura-tokens.css'));
+  assert.notDeepEqual(themes.dark['--aura-bg-bubble'], themes.dark['--aura-bg'], 'dark bubbles remain distinct from the actual chat canvas');
+  assert.notDeepEqual(themes.light['--aura-bg-bubble'], themes.light['--aura-bg'], 'light bubbles remain distinct from the actual chat canvas');
   const styles = strip(read('styles.css'));
   assert.match(styles, /\.chat-message\.user \.user-bubble\s*\{[^}]*background:\s*none/, 'P1s invariante består: den indre boble er stadig ren tekstbærer');
 });

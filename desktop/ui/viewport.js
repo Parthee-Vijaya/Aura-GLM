@@ -5,13 +5,13 @@
   const preset = el('viewport-preset'), width = el('viewport-width'), height = el('viewport-height'), zoom = el('viewport-zoom');
   const sizes = { desktop: [1920, 1080], tablet: [768, 1024], phone: [390, 844] };
   const storageKey = 'harness-workspace-layout-v1';
-  let settings = { chat: 420, preset: 'fluid', width: 390, height: 844, zoom: 'fit' };
-  // Fresh installs size the chat column with the CSS clamp in styles.css
-  // (420-720px, 35% of the grid). An inline --chat-width would override it,
+  let settings = { chat: 360, preset: 'fluid', width: 390, height: 844, zoom: 'fit' };
+  // Fresh installs size the chat column with the shared workspace CSS clamp
+  // (360-880px, 54% of the grid). An inline --chat-width would override it,
   // so this module writes one only after the user has actually chosen a
   // width; until then the divider announces the width the clamp rendered.
   let userWidth = false;
-  const fluidWidth = () => Math.round(Math.min(720, Math.max(420, grid.clientWidth * 0.35)));
+  const fluidWidth = () => Math.round(Math.min(880, Math.max(360, grid.clientWidth * 0.54)));
   try {
     const saved = JSON.parse(localStorage.getItem(storageKey));
     if (saved && Number.isFinite(saved.chat)) { settings.chat = Math.max(280, saved.chat); userWidth = true; }
@@ -28,6 +28,7 @@
       // moduler har gemt (sidepanelets bredde i 'sidebar') aldrig tabes.
       let stored = {}; try { stored = JSON.parse(localStorage.getItem(storageKey)) || {}; } catch { /* Første gemning. */ }
       const next = userWidth ? settings : { ...settings, chat: undefined };
+      if (!userWidth) delete stored.chat;
       for (const key of Object.keys(next)) if (next[key] !== undefined) stored[key] = next[key];
       localStorage.setItem(storageKey, JSON.stringify({ ...stored }));
     } catch { /* Kun brugerfladevalg. */ }
@@ -88,7 +89,11 @@
   });
   function finish() { if (pointer === null) return; pointer = null; document.body.classList.remove('resizing-workspace'); delete grid.dataset.dragging; save(); }
   divider.addEventListener('pointerup', finish); divider.addEventListener('pointercancel', finish); divider.addEventListener('lostpointercapture', finish); window.addEventListener('blur', finish);
-  divider.addEventListener('dblclick', () => { userWidth = true; settings.chat = 420; split(); save(); });
+  divider.addEventListener('dblclick', () => {
+    userWidth = false;
+    grid.style.removeProperty('--chat-width');
+    split(); save(); render();
+  });
   divider.addEventListener('keydown', event => {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();

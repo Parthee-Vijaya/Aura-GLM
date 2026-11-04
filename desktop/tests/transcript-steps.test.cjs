@@ -342,7 +342,7 @@ test('topbar: titlen og brødkrummen synkroniseres med samtalen og projektet', (
   assert.match(appSource, /window\.topbarSync = syncTopbar/, 'sidepanelets opdatering (omdøb) skubber titlen op');
   assert.match(read('chats.js'), /window\.topbarSync\?\.\(\)/, 'chats.js kalder synkroniseringen efter en opdatering');
   assert.match(componentsCss, /\.workspace-calm \.workspace-bar \{[^}]*min-height: var\(--aura-workspace-bar\)/, 'topbjælken er mindst 52 px (§6.1) — D1: højden bor i --aura-workspace-bar, så overlay-skuffen og skillelinjen følger med');
-  assert.match(read('aura-tokens.css'), /--aura-workspace-bar:\s*52px/, 'tokenet er 52 px');
+  assert.match(read('aura-tokens.css'), /--aura-workspace-bar:\s*44px/, 'native titelbar-tokenet er44px');
   const h1 = /\.workspace-calm \.workspace-bar h1 \{([^}]*)\}/.exec(componentsCss);
   assert.ok(h1, 'titelreglen findes');
   assert.match(h1[1], /font-size: 15px/, 'samtaletitlen står i 15 px');
@@ -430,8 +430,8 @@ test('rækker: 24 px enlinje, glyf-krydsfade, fade-maske kun på output — aldr
   assert.ok(!/mask/.test(error[1]), 'fejlteksten er aldrig maskeret (O2)');
   const target = /\.step-target \{([^}]*)\}/.exec(componentsCss);
   assert.ok(!/mask/.test(target[1]), 'målet står umaskeret — lange stier kan læses helt');
-  assert.match(componentsCss, /animation: aura-step-shimmer 1\.5s steps\(48\) 0\.3s infinite/, 'shimmer 1,5 s steps(48) 0,3 s forsinkelse');
-  assert.match(componentsCss, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.step\.status-running \.step-text \{ animation: none; background: none; \}[\s\S]*?\.step-running-note \{ display: inline; \}/, 'reduceret bevægelse: ingen shimmer — kun · kører');
+  assert.match(componentsCss, /\.step\.status-running \.step-text \{[^}]*animation: none/, 'running work uses stable readable text');
+  assert.match(componentsCss, /\.step-running-note \{ display: inline;/, 'the running state remains explicit without animation');
   assert.match(componentsCss, /\.step-meta \{[^}]*font-variant-numeric: tabular-nums/, 'tabelcifre til højre');
   assert.match(componentsCss, /\.activity-output pre \{[^}]*max-height: min\(400px, 50vh\)/, 'aktivitetspanelets tekniske folds følger samme behandling');
 });

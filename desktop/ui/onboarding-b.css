@@ -343,3 +343,38 @@
   :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-hero { background: #1c232b; border-color: #34404e; box-shadow: 0 11px 25px #00000066; }
   :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-orbit { background: #1c232b; border-color: #34404e; color: #a8b3c2; box-shadow: 0 2px 5px #00000066; }
 }
+
+/* Prime model summary: truthful state and a compact route, without the
+   ornamental provider orbit. Keep the existing renderer contract and assets. */
+#task-dialog.onboarding-b .onboarding-b-visual { border-radius: 12px; background: var(--aura-bg-sidebar); box-shadow: none; border: 1px solid var(--aura-border); overflow: hidden; }
+#task-dialog.onboarding-b .onboarding-b-visual-top { display: none; }
+#task-dialog.onboarding-b .onboarding-b-live-tag { display: none; }
+#task-dialog.onboarding-b .onboarding-b-art { height: auto; margin: 20px 18px 16px; }
+#task-dialog.onboarding-b .onboarding-b-art-ring { width: auto; height: auto; border: 0; background: transparent; box-shadow: none; }
+#task-dialog.onboarding-b .onboarding-b-art-ring::before,
+#task-dialog.onboarding-b .onboarding-b-art-ring::after,
+#task-dialog.onboarding-b .onboarding-b-orbit,
+#task-dialog.onboarding-b .onboarding-b-art-pill { display: none; }
+#task-dialog.onboarding-b .onboarding-b-hero { position: static; transform: none; width: 44px; height: 44px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+#task-dialog.onboarding-b .onboarding-b-hero img { width: 34px; height: 34px; }
+#task-dialog.onboarding-b .onboarding-b-visual-copy { padding: 0 18px; text-align: left; }
+#task-dialog.onboarding-b .onboarding-b-visual-heading { margin: 0 0 12px; font: 550 19px/1.4 var(--aura-font-family); letter-spacing: -.02em; }
+#task-dialog.onboarding-b .onboarding-b-visual-heading em { font: inherit; letter-spacing: inherit; color: var(--aura-ink); }
+#task-dialog.onboarding-b .onboarding-b-visual-description { color: var(--aura-ink-secondary); font-size: 12px; line-height: 1.65; }
+#task-dialog.onboarding-b .onboarding-b-data-path { margin: 20px 18px; grid-template-columns: 1fr; gap: 14px; }
+#task-dialog.onboarding-b .onboarding-b-route-node { display: grid; grid-template-columns: 26px 1fr; gap: 0 10px; text-align: left; }
+#task-dialog.onboarding-b .onboarding-b-route-tile { grid-column: 1; grid-row: 1 / span 2; align-self: center; width: 26px; height: 26px; border-radius: 6px; }
+#task-dialog.onboarding-b .onboarding-b-route-node :is(strong, small) { grid-column: 2; overflow-wrap: anywhere; }
+#task-dialog.onboarding-b .onboarding-b-route-node strong { font-size: 12px; }
+#task-dialog.onboarding-b .onboarding-b-route-node small { color: var(--aura-ink-secondary); font-size: 11px; }
+#task-dialog.onboarding-b .onboarding-b-route-arrow { display: none; }
+#task-dialog.onboarding-b .onboarding-b-visual-note { padding: 14px 18px; font-size: 12px; color: var(--aura-ink-secondary); line-height: 1.6; background: transparent; border-top: 1px solid var(--aura-border); }
+#task-dialog.onboarding-b #model-shortlist { grid-template-columns: 1fr; gap: 8px; }
+#task-dialog.onboarding-b #model-shortlist .model-choice { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 3px 12px; min-height: 80px; padding: 16px; border-radius: 10px; box-shadow: none; }
+#task-dialog.onboarding-b #model-shortlist .model-choice > img { grid-column: 1; grid-row: 1 / span 2; align-self: center; width: 26px; height: 26px; margin: 0; filter: none; opacity: 1; }
+#task-dialog.onboarding-b #model-shortlist .model-choice > strong { grid-column: 2; padding-right: 20px; font-size: 14px; font-weight: 600; }
+#task-dialog.onboarding-b #model-shortlist .model-choice > span:not(.onboarding-b-choice-mark) { grid-column: 2; font-size: 12px; color: var(--aura-ink-secondary); }
+#task-dialog.onboarding-b #model-shortlist .model-choice:not(:has(> img)) { grid-template-columns: 1fr; }
+#task-dialog.onboarding-b #model-shortlist .model-choice:not(:has(> img)) > :is(strong, span:not(.onboarding-b-choice-mark)) { grid-column: 1; }
+#task-dialog.onboarding-b #model-shortlist .model-choice[aria-pressed=true] { border-color: var(--aura-accent); background: var(--aura-accent-faint); box-shadow: none; }
+#task-dialog.onboarding-b #model-shortlist .model-choice[aria-pressed=true] .onboarding-b-choice-mark { background: var(--aura-accent); border-color: var(--aura-accent); color: white; }

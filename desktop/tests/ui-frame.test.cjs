@@ -71,8 +71,8 @@ const rulesOf = body => Object.fromEntries([...body.matchAll(/([^{}]+)\{([^}]*)\
 test('aura-tokens.css: rammen --chat-col og gutteren --chat-gutter findes i :root', () => {
   const [open, close] = blockAt(tokensCss, tokensCss.indexOf(':root'));
   const root = tokensCss.slice(open + 1, close);
-  assert.equal(declaration(root, '--chat-col'), '800px', 'rammen er 800 px i basis');
-  assert.equal(declaration(root, '--chat-gutter'), '22px', 'gutteren er 22 px i basis');
+  assert.equal(declaration(root, '--chat-col'), '920px', 'den aktive samtales læseramme er 920 px');
+  assert.equal(declaration(root, '--chat-gutter'), '32px', 'den aktive samtales ydre gutter er 32 px');
 });
 
 test('workspace-calm.css: rammen trapper 960/1040 på store skærme — uden egne selektorbredder', () => {
@@ -87,7 +87,7 @@ test('workspace-calm.css: rammen trapper 960/1040 på store skærme — uden egn
       assert.ok(!key.includes('.chat-content') && !key.includes('.composer'), `${name}-trinnet giver ${key} sin egen bredde — kun rammen må bære den`);
     }
   }
-  assert.ok(calmCss.indexOf('@media (min-width: 1600px)') > calmCss.indexOf('.workspace-calm .composer {'), '1600-trinnet står efter grundreglen — kaskaden bærer overdækningen');
+  assert.ok(calmCss.search(/@media\s*\(min-width:\s*1600px\)/) > calmCss.indexOf('.workspace-calm .composer {'), '1600-trinnet står efter grundreglen — kaskaden bærer overdækningen');
 });
 
 // (b) Both frame elements reference the token — the chat directly, the
@@ -96,13 +96,13 @@ test('workspace-calm.css: chat-indhold og composer deler rammen via --chat-col',
   const chat = declarationsOf(calmCss, '.workspace-calm .chat-content');
   assert.ok(chat.length >= 1, 'chat-indholdets grundregel findes');
   assert.equal(declaration(chat[0], 'max-width'), 'var(--chat-col)', 'tekstkolonnen lukkes ved rammen');
-  assert.equal(declaration(chat[0], 'padding'), '20px var(--chat-gutter)', 'gutteren er padding på kolonnen — afstanden uden for rammen');
-  assert.equal(declaration(chat[0], 'margin'), '0 auto', 'tekstkolonnen centrerer sig');
+  assert.equal(declaration(chat[0], 'padding'), '26px var(--chat-gutter)', 'gutteren er padding på kolonnen — afstanden uden for rammen');
+  assert.equal(declaration(chat[0], 'margin-inline'), 'auto', 'tekstkolonnen centrerer sig');
   const composer = declarationsOf(calmCss, '.workspace-calm .composer');
   assert.ok(composer.length >= 1, 'composerens grundregel findes');
   assert.equal(declaration(composer[0], 'max-width'), 'calc(var(--chat-col) - var(--chat-gutter) * 2)', 'composeren lukkes ved rammen minus gutteren');
   assert.equal(declaration(composer[0], 'width'), 'calc(100% - var(--chat-gutter) * 2)', 'på smalle paneler følger kortet tekstkolonnen — ikke panelets kant');
-  assert.equal(declaration(composer[0], 'margin'), '8px auto 5px', 'kortet centrerer sig som tekstkolonnen');
+  assert.equal(declaration(composer[0], 'margin'), '10px auto 4px', 'kortet centrerer sig som tekstkolonnen');
   // styles.css's base rule carries the same frame, so the contract is not
   // calm-only.
   const base = declarationsOf(stylesCss, '.composer')[0];
@@ -123,7 +123,11 @@ test('workspace-calm.css: den tomme samtale-composers egen bredde (720 px) er v�
   }
   // Panel-kappen består som afrundet af rammen (ruling 3): #chat-panel
   // begrænser kolonnen, --chat-col begrænser indholdet.
-  assert.ok(calmCss.includes('.workspace-calm .work-grid[data-surface="off"] #chat-panel { max-width: 900px; margin: 0 auto; width: 100%; }'), 'panel-luk-kappen (900 px) består');
+  const closed = declarationsOf(calmCss, '.workspace-calm .work-grid[data-surface="off"] #chat-panel')[0];
+  assert.equal(declaration(closed, 'max-width'), 'none', 'lukket panel giver hele hovedfladen til samtalen');
+  const hero = declarationsOf(calmCss, '.workspace-calm #conversation-hero')[0];
+  assert.equal(declaration(hero, 'width'), '76%', 'den tomme native komposition følger den disponible hovedflade');
+  assert.equal(declaration(hero, 'max-width'), '860px', 'velkomsten forbliver samlet ved helt skjult sidebar');
 });
 
 // The edge measurement: composer max-width + gutter == chat-content indre
@@ -161,10 +165,7 @@ test('kantmåling: composers kant == tekstkolonnens kant på de erklærede tal',
   };
   walk(gutter);
   // The narrow step keeps the contract: gutter and padding share one source.
-  const narrow = mediaBlock(calmCss, '(max-width: 1100px)');
-  assert.equal(declaration(narrow, '--chat-gutter'), '18px', 'det smalle trin sætter gutter-tokenet');
-  const narrowChat = declarationsOf(narrow, '.workspace-calm .chat-content');
-  assert.equal(narrowChat.length, 1, 'det smalle trin rører kun padding på kolonnen');
-  assert.equal(declaration(narrowChat[0], 'padding'), '18px var(--chat-gutter)', 'padding følger gutter-tokenet — 18 px-kontrakten består');
-  walk(18);
+  const narrow = mediaBlock(calmCss, '(max-width: 900px)');
+  assert.equal(declaration(narrow, '--chat-gutter'), '22px', 'smalle aktive samtaler beholder en fælles 22px gutter');
+  walk(22);
 });

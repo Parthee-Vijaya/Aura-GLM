@@ -170,6 +170,9 @@ const SETUP_STEPS = Object.freeze({ profile: 1, detail: 2, choice: 3, provider: 
 // The onboarding profile step holds pure UI state: the fields are saved through
 // profileSave and never reach prompts, the model log or diagnostics.
 let profileStepShown = false, profileIconChoice = '';
+const profileChoiceKey = 'aura.profile-choice.v1';
+function hasProfileChoice() { try { return ['saved', 'skipped'].includes(localStorage.getItem(profileChoiceKey)); } catch { return false; } }
+function recordProfileChoice(value) { try { localStorage.setItem(profileChoiceKey, value); } catch { /* This preference never blocks local use. */ } }
 // Whether the stored avatar file exists — the main process owns the truth and
 // answers it with every profile read, upload and removal.
 let profileAvatarAvailable = false;
@@ -235,7 +238,7 @@ function moveConnectionForm(guided, addFlow = false) {
 function setupPage(step) {
   ++setupGeneration;
   setupStep = step;
-  const headings = { profile: ['Din profil', 'Udfyld din profil — du kan altid ændre den under Indstillinger.'], detail: ['Hvor meget vil du se af AI’ens arbejde?', 'Det ændrer kun, hvordan arbejdet vises — ikke hvad Aura kan.'], choice: ['Hvordan vil du forbinde din AI?', 'Vælg den adgang, du allerede har.'], provider: ['Hvem er din udbyder?', 'Har du ikke en nøgle, viser vi dig, hvordan du får en.'], local: ['AI på din computer', 'Vi leder efter modeller, du allerede har i Ollama.'], saved: ['Din AI-forbindelse', 'Kontrollér forbindelsen, før du fortsætter.'], tools: ['Avanceret opsætning', 'Forbindelser og lokale værktøjer.'] };
+  const headings = { profile: ['Din lokale profil', 'Profilen er valgfri. Du kan også tilpasse Aura senere under Indstillinger.'], detail: ['Hvor meget vil du se af AI’ens arbejde?', 'Det ændrer kun, hvordan arbejdet vises — ikke hvad Aura kan.'], choice: ['Hvordan vil du forbinde din AI?', 'Vælg den adgang, du allerede har.'], provider: ['Hvem er din udbyder?', 'Har du ikke en nøgle, viser vi dig, hvordan du får en.'], local: ['AI på din computer', 'Vi leder efter modeller, du allerede har i Ollama.'], saved: ['Din AI-forbindelse', 'Kontrollér forbindelsen, før du fortsætter.'], tools: ['Avanceret opsætning', 'Forbindelser og lokale værktøjer.'] };
   $('#setup-title').textContent = headings[step][0]; $('#setup-subtitle').textContent = headings[step][1];
   for (const el of document.querySelectorAll('[data-setup-step]')) el.hidden = el.dataset.setupStep !== step;
   moveConnectionForm(step === 'provider');
@@ -263,7 +266,7 @@ function renderProfileIconRow() {
   initialsChoice.dataset.icon = '';
   initialsChoice.setAttribute('role', 'radio'); initialsChoice.setAttribute('aria-checked', 'false');
   initialsChoice.setAttribute('aria-label', 'Initialer');
-  initialsChoice.textContent = initialsPreview();
+  renderProfileInitialsChoice(initialsChoice);
   initialsChoice.onclick = () => selectProfileIcon('');
   const choices = [initialsChoice, ...ids.map(id => {
     const choice = node('button', undefined, 'profile-icon-choice'); choice.type = 'button';
@@ -294,14 +297,18 @@ function renderProfileIconRow() {
   window.ProfileIcons?.wireRadioGroup?.(row);
   $('#profile-avatar-remove').hidden = !profileAvatarAvailable;
 }
-// The initials preview follows the name field as it is typed; the hint's example
-// (AK) stands in while the name is still empty.
+// Empty identity uses a person affordance. Initials follow only a name the user entered.
 function initialsPreview() {
-  return window.ProfileIcons?.initials($('#profile-name').value.trim()) || 'AK';
+  return window.ProfileIcons?.initials($('#profile-name').value.trim()) || '';
+}
+function renderProfileInitialsChoice(choice) {
+  const initials = initialsPreview();
+  choice.textContent = initials;
+  if (!initials) choice.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg>';
 }
 function updateProfileInitialsPreview() {
   const initialsChoice = document.querySelector('#profile-icon-row .profile-initials');
-  if (initialsChoice) initialsChoice.textContent = initialsPreview();
+  if (initialsChoice) renderProfileInitialsChoice(initialsChoice);
 }
 function selectProfileIcon(icon) {
   profileIconChoice = window.ProfileIcons?.IDS.includes(icon) || icon === 'upload' && profileAvatarAvailable ? icon : '';
@@ -318,11 +325,8 @@ function profilePatch() {
 }
 async function prepareProfileStep(profile) {
   renderProfileIconRow();
-  if (profile?.name) $('#profile-name').value = profile.name;
-  else {
-    $('#profile-name').value = '';
-    try { const suggestion = await call('profileSuggest'); if (suggestion) $('#profile-name').value = suggestion; } catch { /* the suggestion is optional */ }
-  }
+  // Identity is an explicit local choice. Never adopt the macOS account name.
+  $('#profile-name').value = profile?.name || '';
   updateProfileInitialsPreview();
   selectProfileIcon(profile?.icon || '');
   for (const input of document.querySelectorAll('#profile-theme input')) input.checked = input.value === (profile?.appearance?.theme || 'system');
@@ -417,7 +421,13 @@ function syncProfileHelpCards() {
   for (const input of document.querySelectorAll('#setup-profile .help-cards input')) input.checked = input.value === value;
 }
 for (const input of document.querySelectorAll('#setup-profile .help-cards input')) input.onchange = () => { $('#profile-help').value = input.value; };
-$('#profile-continue').onclick = () => action(async () => { await saveProfileStep(); setupPage('detail'); });
+$('#profile-continue').onclick = () => action(async () => { await saveProfileStep(); recordProfileChoice('saved'); setupPage('detail'); });
+$('#profile-skip').onclick = () => action(() => {
+  // Do not let leaveSetup save values from a profile the user declined.
+  profileStepShown = false;
+  recordProfileChoice('skipped');
+  setupPage('detail');
+});
 // D6 · Detaljeniveau: three radio cards between the profile and the access
 // choice. Fortsæt saves only the transcript level through the shared profile
 // queue; "Vælg senere" skips the step without a save, so an existing saved
@@ -551,8 +561,7 @@ async function showSetup(reason = '', fromIntroduction = false) {
   if (fromIntroduction) { try { const read = await call('profileGet'); profile = read.profile; profileAvatarAvailable = read.hasAvatar === true; window.ProfileIcons?.setAvatarRevision?.(read.avatarRevision || 0); readProfile = true; adoptProfile(profile); } catch { /* without a readable profile the setup starts at the connection choice */ } }
   setupActive = true; $('#setup').hidden = false; $('#workspace').hidden = true; $('#onboarding').hidden = true;
   $('#view-title').textContent = 'Opsætning'; $('#setup-reason').textContent = reason; $('#setup-reason').hidden = !reason;
-  renderSetup(); profileStepShown = readProfile && !profile?.name && !profile?.icon;
-  // The step is on screen before the name suggestion lands; the field fills in when it does.
+  renderSetup(); profileStepShown = readProfile && !profile?.name && !profile?.icon && !hasProfileChoice();
   setupPage(profileStepShown ? 'profile' : 'choice'); action(discoverLocal);
   if (profileStepShown) { await prepareProfileStep(profile); prepareDetailStep(profile); }
 }
@@ -2248,6 +2257,7 @@ function applyFeatures() {
   // Udgiv er altid synlig; uden udgivelse eller en gemt version viser Udgiv det næste trin.
   for (const id of ['#publish-button', '#setup-hosting', '#startup-hosting-row']) $(id).hidden = !featureOn('deling');
   window.dispatchEvent(new Event('aura:features'));
+  window.planning?.render();
   for (const id of ['#design-options', '#design-row']) $(id).hidden = !featureOn('design');
   updateStartupSummary();
 }
@@ -2382,17 +2392,25 @@ $('#model-load').onclick = () => action(() => loadModels(state?.projectSettings.
 const introductionKey = 'harness.introduction.v1';
 const ideaDraftKey = 'harness.ideaDraft.v1';
 let nameTouched = false;
+function syncOnboardingWindow(open) {
+  if (typeof window.harness?.onboardingWindow !== 'function') return;
+  void window.harness.onboardingWindow(open).then(result => {
+    if (result?.ok) document.body.classList.toggle('native-welcome-window', result.value.compact);
+  }).catch(() => {});
+}
 function completeIntroduction(mode) {
   try { localStorage.setItem(introductionKey, mode); } catch {}
 }
 function showIntroduction(step = 'path') {
+  syncOnboardingWindow(true);
   $('#welcome-path').hidden = step !== 'path'; $('#welcome-start').hidden = step !== 'start'; $('#welcome-demo').hidden = true;
   $('#welcome-dialog').setAttribute('aria-labelledby', step === 'path' ? 'welcome-path-title' : 'welcome-title');
   document.body.classList.add('introduction-open'); if (!$('#welcome-dialog').open) $('#welcome-dialog').showModal(); $(step === 'path' ? '#welcome-path-title' : '#welcome-title').focus();
 }
-function closeIntroduction() { document.body.classList.remove('introduction-open'); $('#welcome-dialog').close(); }
+function closeIntroduction() { document.body.classList.remove('introduction-open'); $('#welcome-dialog').close(); syncOnboardingWindow(false); }
 function leaveIntroduction() {
   if (setupActive) action(() => leaveSetup(false));
+  recordProfileChoice('skipped');
   completeIntroduction('skipped'); closeIntroduction();
   (current ? $('#prompt') : $('#purpose')).focus();
 }
@@ -2715,7 +2733,7 @@ $('#idea-examples-toggle').onclick = () => {
   $('#idea-examples').hidden = !open; $('#idea-examples-toggle').setAttribute('aria-expanded', String(open));
   if (open) $('#idea-examples .idea-example').focus();
 };
-try { if (!localStorage.getItem(introductionKey)) showIntroduction(); } catch { showIntroduction(); }
+try { if (!localStorage.getItem(introductionKey)) showIntroduction(); else syncOnboardingWindow(false); } catch { showIntroduction(); }
 
 // Det guidede forløb ændrer aldrig model, rute eller betaling uden et aktivt valg.
 let modelCatalog = [], activePlan = null;

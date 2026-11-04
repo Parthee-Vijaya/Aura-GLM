@@ -141,7 +141,7 @@ test('heltefasen skjuler linjen og kladden — datakontrol-knappen består i ræ
   assert.ok(hiding, 'heltefasen skjuler fortsat statuslinjen');
   assert.match(hiding, /:is\(#context-status,\s*#draft-status\)/);
   assert.doesNotMatch(hiding, /\.composer-status/, 'rækken selv står — Datakontrol-knappen er en altid-synlig sikkerhedsflade');
-  assert.match(strip(calm), /\.workspace-calm :is\(\.composer-status,#context-status\)\s*\{[^}]*font-size:\s*12px[^}]*var\(--muted\)/, 'kontrast-reglen fra ui-typografipinnen består');
+  assert.match(strip(calm), /\.workspace-calm #context-status\s*\{[^}]*font-size:\s*11px[^}]*var\(--muted\)/, 'kontrast-reglen fra ui-typografipinnen består');
 });
 
 test('P1 (§7.1): statuslinjen er ÉN centreret række — skjold · linje · transient kladde', () => {

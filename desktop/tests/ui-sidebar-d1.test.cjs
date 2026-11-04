@@ -35,8 +35,8 @@ const rule = (css, selector) => {
 };
 
 // ── 1. Bredde: 280 standard, træk 264-420, R5-nøgle i layout-objektet ──
-test('sidepanelets bredde er 280 px — og trækket 264-420 gemmes i layout-objektet (R5)', () => {
-  assert.match(calm, /--sidebar:\s*280px/, 'workspace-calm: standardbredden er 280 px (audit §3)');
+test('sidepanelets bredde er 280 px og trækket 224-360 gemmes i layout-objektet', () => {
+  assert.match(calm, /--sidebar:\s*280px/, 'workspace-calm: standardbredden er 280 px');
   assert.ok(!/--sidebar:\s*175px/.test(calm), 'det smalle 175 px-trin er væk (audit §3)');
   assert.match(styles, /--sidebar:\s*280px/, 'basis (--root i styles.css) er også 280 px');
   assert.match(feedbackCss, /--feedback-sidebar-width,\s*280px/, 'skillelinjens CSS-fallback er 280 px');
@@ -49,30 +49,25 @@ test('sidepanelets bredde er 280 px — og trækket 264-420 gemmes i layout-obje
   assert.match(feedback, /aura-sidebar-width-v1/, 'den gamle nøgle er læst-fallback for gemte bredder');
   assert.match(viewport, /JSON\.parse\(localStorage\.getItem\(storageKey\)\)/, 'viewport.js læser det gemte objekt før gemning');
   assert.ok(/function save\(\)[\s\S]{0,900}localStorage\.setItem\(storageKey,\s*JSON\.stringify\(\{\s*\.\.\.stored/.test(viewport), 'viewport.js fletter i det gemte objekt — ukendte nøgler (sidebar) overlever');
-  const min = /(\d+)\s*,\s*Math\.min\(420/.exec(feedback);
+  const min = /(\d+)\s*,\s*Math\.min\(360/.exec(feedback);
   assert.ok(/preferredWidth = 280/.test(feedback), 'standardbredden i JS er 280');
   assert.ok(!/preferredWidth = 208/.test(feedback), 'den gamle 208-standard er væk');
-  assert.match(feedback, /264/, 'trækkets gulv er 264 px');
-  assert.match(feedback, /420/, 'trækkets loft er 420 px');
-  assert.match(feedback, /aria-valuemin', '264'/, 'gulvet annonseres til skærmlæseren');
+  assert.match(feedback, /224/, 'trækkets gulv er 224 px');
+  assert.match(feedback, /360/, 'trækkets loft er 360 px');
+  assert.match(feedback, /aria-valuemin', '224'/, 'gulvet annonseres til skærmlæseren');
   assert.match(feedback, /preferredWidth = 280; sizeSidebar\(\)/, 'dobbeltklik nulstiller til 280');
 });
 
 // ── 2. Brandrækken 60 px med versionpillen som eneste versionflade ──
-test('brandrækken er 60 px og versionen står KUN der (S3-fund d)', () => {
-  const brand = rule(calm, '.workspace-calm .brand');
-  assert.ok(brand && /min-height:\s*60px/.test(brand), 'brandrækken er 60 px (audit §3)');
-  const pill = rule(styles, '.app-version');
-  assert.ok(pill && /border-radius:\s*999px/.test(pill) && /font-size:\s*11px/.test(pill) && /line-height:\s*17px/.test(pill), 'versionpillen er 11/17 (DSH §3)');
-  assert.ok(pill && /var\(--aura-ink-secondary\)/.test(pill), 'pillens tekst bærer den kontrastmålte sekundærfarve');
-  // Versionen står KUN ét sted i selve sidepanelet. Onboarding B's
-  // velkomstdialog (app-rammen er væk dér) har sin egen brandflade og røres
-  // ikke af D1 — derfor tælles kun inden for <aside class="sidebar">.
-  const sidebarMarkup = /<aside class="sidebar"[\s\S]*?<\/aside>/.exec(indexHtml.replace(/\n/g, ' '))[0];
-  const count = [...sidebarMarkup.matchAll(/data-app-version/g)].length;
-  assert.equal(count, 1, 'versionen findes præcis ét sted i sidepanelet');
-  assert.ok(/class="brand"[^>]*>[\s\S]*?data-app-version/.test(sidebarMarkup), 'versionpillen står i brandrækken');
-  assert.ok(!/badge" data-app-version/.test(sidebarMarkup), 'den gamle Testversion-badge i sidepanelets bund er væk');
+test('native system titlebar is separate from the large integrated brand, without a version badge', () => {
+  const brand=rule(calm,'.workspace-calm .brand');
+  assert.match(brand,/min-height:\s*58px/);
+  assert.match(rule(calm,'.workspace-calm .native-sidebar-titlebar'),/min-height:\s*44px/);
+  assert.match(rule(calm,'.workspace-calm .brand-icon'),/width:\s*34px/);
+  const shell=read('workspace-calm.js');
+  assert.match(shell,/sidebarTitlebar\.append\(sidebarToggle\)/);
+  assert.match(shell,/el\('project-menu'\)\.append\(meta\)/,'version is retained in the project menu');
+  assert.match(rule(calm,'.workspace-calm .sidebar .app-version'),/display:\s*none/);
 });
 
 // ── 3. Handlingerne er ADSKILTTE (Parthee 4.11, supersederer B2-noten om at
@@ -169,9 +164,9 @@ test('profilrækken er 44 px og åbner stadig den eksisterende profilflade', () 
 });
 
 // ── 9. Overlay-skuffen følger topbjælken — ingen hårdkodet 51 px ──
-test('overlay-skuffens inset følger topbjælken (52 px) gennem én token', () => {
-  assert.match(tokens, /--aura-workspace-bar:\s*52px/, 'bjælkehøjden er én token i aura-tokens.css');
-  assert.match(calm, /inset:\s*var\(--aura-workspace-bar\)\s*auto\s*0\s*0/, 'skuffens inset følger bjælken (workspace-calm.css:155-fundet)');
+test('native sidebar drawer includes its system titlebar and keeps a single 44px token', () => {
+  assert.match(tokens, /--aura-workspace-bar:\s*44px/, 'bjælkehøjden er én token i aura-tokens.css');
+  assert.match(calm, /inset:\s*0\s*auto\s*0\s*0/, 'skuffens inset følger bjælken (workspace-calm.css:155-fundet)');
   assert.match(feedbackCss, /top:\s*var\(--aura-workspace-bar\)/, 'skillelinjen starter under bjælken');
   const bar = rule(components, '.workspace-calm .workspace-bar');
   assert.ok(bar && /min-height:\s*var\(--aura-workspace-bar\)/.test(bar), 'bjælken selv er målet fra token');
@@ -189,17 +184,7 @@ const luminance = rgb => {
   return 0.2126 * linear(rgb[0]) + 0.7152 * linear(rgb[1]) + 0.0722 * linear(rgb[2]);
 };
 const contrast = (fg, bg) => { const a = luminance(fg), b = luminance(bg); const [hi, lo] = a > b ? [a, b] : [b, a]; return (hi + 0.05) / (lo + 0.05); };
-const tokenThemes = () => {
-  const themes = {};
-  const rootRule = /:root\s*\{([^}]*)\}/.exec(tokens);
-  const darkRule = /@media\s*\(prefers-color-scheme:\s*dark\)\s*\{[\s\S]*?:root:not\(\[data-workspace-theme="light"\]\)\s*\{([^}]*)\}/.exec(tokens);
-  for (const [theme, body] of [['light', rootRule[1]], ['dark', darkRule[1]]]) {
-    themes[theme] = {};
-    for (const match of body.matchAll(/(--aura-[a-z-]+):\s*rgb\((\d+),\s*(\d+),\s*(\d+)\)/g)) themes[theme][match[1]] = [Number(match[2]), Number(match[3]), Number(match[4])];
-    for (const match of body.matchAll(/(--aura-[a-z-]+):\s*rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/g)) themes[theme][match[1]] = { rgb: [Number(match[2]), Number(match[3]), Number(match[4])], a: Number(match[5]) };
-  }
-  return themes;
-};
+const tokenThemes = () => require('./helpers/theme-tokens.cjs').tokenThemes(tokens);
 test('kontrast: sidepanelets nye flader holder AA i begge temaer', () => {
   const themes = tokenThemes();
   const over = (fill, bg) => fill.rgb.map((channel, index) => Math.round(channel * fill.a + bg[index] * (1 - fill.a)));

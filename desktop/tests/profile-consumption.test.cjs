@@ -628,7 +628,7 @@ function runPanelSurface({ profile = { appearance: { theme: 'dark' } }, panelSav
     localStorage: { getItem: key => { storage.push(['getItem', key]); return null; }, setItem: (key, value) => { storage.push(['setItem', key]); }, removeItem: key => { storage.push(['removeItem', key]); } },
     show: () => {}
   };
-  vm.runInNewContext(sliceOf(workspaceSource, '// ── DSH-stil: arbejdsfladen er et valgfrit højrepanel ──', 'function show(name, { focus = false } = {}) {'), context);
+  vm.runInNewContext(sliceOf(workspaceSource, '// ── DSH-stil: arbejdsfladen er et valgfrit højrepanel ──', 'function show(name,'), context);
   return { context, grid, toggle, windowListeners, saves, storage, announced };
 }
 test('arbejdsfladen: starttilstanden kommer fra aura:profile, og skift gemmes i profilen — ikke localStorage', async () => {

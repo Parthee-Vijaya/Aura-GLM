@@ -7,7 +7,7 @@ const vm = require('node:vm');
 
 // Responsive panel layout (UI/UX overhaul slice 2, docs/uiux-overhaul-design.md
 // "Kernetal" bullet 2, "Skiver" #2): the panel-open chat column scales with
-// the viewport — clamp(420px, 35%, 720px) as the CSS fallback — while a
+// the viewport — clamp(360px, 54%, 880px) as the CSS fallback — while a
 // user-chosen width, persisted in harness-workspace-layout-v1, always wins.
 // The pins cover both sides of the contract: the stylesheet that renders a
 // fresh install, and the module that must not freeze that default with an
@@ -54,9 +54,9 @@ function declaration(declarations, property) {
 }
 
 // The clamp a fresh install renders, mirrored in JS for the divider's
-// announced value: 35% of the grid's content box, floored at 420 and capped
-// at 720 — the same numbers styles.css's fallback must carry.
-const fluidAt = width => Math.round(Math.min(720, Math.max(420, width * 0.35)));
+// announced value: 54% of the grid's content box, floored at 360 and capped
+// at 880 — the same numbers styles.css's fallback must carry.
+const fluidAt = width => Math.round(Math.min(880, Math.max(360, width * 0.54)));
 
 // ── Synthetic DOM for the whole viewport.js IIFE ──
 // The width contract lives in the IIFE's wiring (init, storage load, drag and
@@ -76,7 +76,11 @@ function makeNode(id) {
     getBoundingClientRect: () => ({ left: 0, top: 0, width: node.clientWidth, height: node.clientHeight }),
     querySelectorAll: () => [],
   };
-  node.style = { setProperty(name, value) { node.inline.push([name, value]); } };
+  node.removed = [];
+  node.style = {
+    setProperty(name, value) { node.inline.push([name, value]); },
+    removeProperty(name) { node.removed.push(name); },
+  };
   return node;
 }
 
@@ -130,12 +134,12 @@ const dragTo = (fixture, width) => {
 // is the clamp, the fixed 420px fallback is gone everywhere, and the
 // closed-panel rule keeps its own single-column layout.
 test('styles.css: the panel-open chat column starts at the viewport clamp; the fixed 420px fallback is gone', () => {
-  const grid = declarationsOf(stylesCss, '.work-grid');
+  const grid = declarationsOf(calmCss, '.workspace-calm .work-grid');
   assert.ok(grid.length >= 1, 'the .work-grid rule exists');
-  assert.equal(declaration(grid[0], 'grid-template-columns'), 'var(--chat-width, clamp(420px, 35%, 720px)) 7px minmax(0, 1fr)', 'fresh installs render the clamp (420-720px, 35% of the grid)');
+  assert.equal(declaration(grid[0], 'grid-template-columns').replace(/\s/g, ''), 'var(--chat-width,clamp(360px,54%,880px))7pxminmax(0,1fr)', 'fresh installs render the clamp (360-880px, 54% of the grid)');
   assert.ok(!stylesCss.includes('var(--chat-width, 420px)'), 'no rule keeps the fixed 420px fallback');
   const closed = declarationsOf(calmCss, '.workspace-calm .work-grid[data-surface="off"]');
-  assert.equal(declaration(closed[0], 'grid-template-columns'), '1fr', 'the closed-panel grid keeps its single column');
+  assert.equal(declaration(closed[0], 'grid-template-columns').replace(/\s/g, ''), 'minmax(0,1fr)', 'the closed-panel grid keeps its single column');
 });
 
 // (b) No inline value without a choice: a fresh install leaves --chat-width to
@@ -144,7 +148,7 @@ test('styles.css: the panel-open chat column starts at the viewport clamp; the f
 test('viewport.js: a fresh install writes no inline --chat-width — the divider announces the clamp', () => {
   const f = runViewport({ gridWidth: 1400 });
   assert.deepEqual(f.inlineChatWidths(), [], 'init writes no inline --chat-width — the CSS clamp renders on its own');
-  assert.equal(f.divider.getAttribute('aria-valuenow'), String(fluidAt(1400)), 'the announced value is the clamp (490px at a 1400px grid)');
+  assert.equal(f.divider.getAttribute('aria-valuenow'), String(fluidAt(1400)), 'the announced value follows the responsive chat column');
   assert.equal(f.divider.getAttribute('aria-valuemin'), '280', 'the drag floor is still 280px');
   assert.equal(f.divider.getAttribute('aria-valuemax'), String(1400 - 307), 'the drag ceiling is still grid minus 307px');
   assert.equal(f.divider.getAttribute('aria-valuetext'), `${fluidAt(1400)} pixels til samtalen`, 'the announced text format is unchanged');
@@ -155,9 +159,9 @@ test('viewport.js: window resizes keep the clamp alive — no frozen inline widt
   const f = runViewport({ gridWidth: 1400 });
   f.resizeGrid(2400);
   assert.deepEqual(f.inlineChatWidths(), [], 'a resize still writes no inline value');
-  assert.equal(f.divider.getAttribute('aria-valuenow'), String(fluidAt(2400)), 'a wide grid reaches the 720px cap');
+  assert.equal(f.divider.getAttribute('aria-valuenow'), String(fluidAt(2400)), 'a wide grid reaches the 880px cap');
   f.resizeGrid(800);
-  assert.equal(f.divider.getAttribute('aria-valuenow'), String(fluidAt(800)), 'a narrow grid holds the 420px floor');
+  assert.equal(f.divider.getAttribute('aria-valuenow'), String(fluidAt(800)), 'a narrow grid follows the responsive default');
   assert.deepEqual(f.inlineChatWidths(), [], 'the column follows the viewport, not a frozen pixel count');
   assert.equal(f.savedJson(), null, 'resizes persist nothing');
 });
@@ -207,12 +211,19 @@ test('viewport.js: Home resets to 280 and arrow keys step from the clamp — bot
   assert.deepEqual(end.inlineChatWidths(), [['--chat-width', `${1400 - 307}px`]], 'End still jumps to the ceiling');
 });
 
-test('viewport.js: double-click resets to 420px exactly as before', () => {
-  const f = runViewport({ gridWidth: 1400 });
-  dragTo(f, 560);
+test('viewport.js: double-click restores responsive sizing and preserves other layout preferences', () => {
+  const f = runViewport({ saved: { chat: 560, sidebar: 300, preset: 'phone', width: 390, height: 844 }, gridWidth: 1400 });
   fire(f.divider, 'dblclick');
-  assert.deepEqual(f.inlineChatWidths().at(-1), ['--chat-width', '420px'], 'double-click keeps its fixed 420px reset');
-  assert.equal(f.savedJson()?.chat, 420, 'the reset persists');
+  assert.deepEqual(f.grid.removed, ['--chat-width'], 'reset removes the inline override');
+  assert.equal(f.divider.getAttribute('aria-valuenow'), String(fluidAt(1400)));
+  assert.equal(f.savedJson()?.chat, undefined, 'reset removes the persisted manual width');
+  assert.equal(f.savedJson()?.sidebar, 300, 'the sibling sidebar preference survives');
+  assert.equal(f.savedJson()?.preset, 'phone', 'the preview selection survives');
+  f.resizeGrid(2400);
+  assert.equal(f.divider.getAttribute('aria-valuenow'), String(fluidAt(2400)), 'resizing follows the responsive width after reset');
+  const restart = runViewport({ saved: f.savedJson(), gridWidth: 2400 });
+  assert.deepEqual(restart.inlineChatWidths(), [], 'restart leaves the responsive width to CSS');
+  assert.equal(restart.divider.getAttribute('aria-valuenow'), String(fluidAt(2400)));
 });
 
 // The preview viewport sizes are viewport.js's other job: presets keep

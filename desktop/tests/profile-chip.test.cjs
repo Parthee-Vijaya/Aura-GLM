@@ -8,7 +8,7 @@ const ProfileIcons = require('../ui/profile-icons.js');
 
 // Profil-chippen i sidepanelets bund (fund 14): ikon ELLER initialer-cirkel +
 // navn, opdateret fra aura:profile og aura:profile-saved, og et klik åbner
-// Indstillinger › Din profil. Modulet køres i et vm-rige med en falsk rod.
+// Indstillinger › Lokal profil. Modulet køres i et vm-rige med en falsk rod.
 const ui = path.join(__dirname, '..', 'ui');
 const source = fs.readFileSync(path.join(ui, 'profile-chip.js'), 'utf8');
 const indexSource = fs.readFileSync(path.join(ui, 'index.html'), 'utf8');
@@ -45,7 +45,7 @@ function makeModule({ profile = null } = {}) {
 }
 const plain = value => JSON.parse(JSON.stringify(value));
 
-test('chippen viser profilens ikon og navn og er skjult uden begge', () => {
+test('chippen viser profilens ikon og navn og bevarer indgangen uden begge', () => {
   const f = makeModule();
   for (const handler of f.listeners['aura:profile']) handler({ detail: { name: 'Anna Klit', icon: 'aura-1' } });
   const chip = f.registry.get('profile-chip');
@@ -54,7 +54,11 @@ test('chippen viser profilens ikon og navn og er skjult uden begge', () => {
   assert.ok(f.registry.get('profile-chip-mark').innerHTML.includes('<svg'), 'ikonets glyf tegnes');
   assert.equal(f.registry.get('profile-chip-name').textContent, 'Anna Klit');
   for (const handler of f.listeners['aura:profile-saved']) handler({ detail: { name: '', icon: '' } });
-  assert.equal(chip.hidden, true, 'uden navn og ikon er der intet ærligt at vise');
+  assert.equal(chip.hidden, false, 'tom profil bevarer en synlig vej til indstillingerne');
+  assert.equal(f.registry.get('profile-chip-name').textContent, 'Lokal profil');
+  assert.equal(chip.getAttribute('aria-label'), 'Lokal profil og indstillinger');
+  assert.ok(f.registry.get('profile-chip-mark').innerHTML.includes('<svg'), 'tom identitet vises med et neutralt ikon');
+  assert.equal(f.registry.get('profile-chip-mark').textContent, '', 'tidligere initialer bliver ikke stående efter fravalg');
 });
 
 test('med upload som ikon viser chippen det gemte billede', () => {
@@ -115,9 +119,11 @@ test('et ukendt ikon falder tilbage til initialerne', () => {
   assert.equal(f.registry.get('profile-chip').hidden, false);
 });
 
-test('klik åbner Indstillinger › Din profil, og begge hændelser opdaterer', () => {
+test('klik åbner Indstillinger › Lokal profil, og begge hændelser opdaterer', () => {
   const f = makeModule();
   const chip = f.registry.get('profile-chip');
+  assert.equal(chip.hidden, false, 'profilindgangen kan findes allerede før en profilhændelse');
+  assert.equal(f.registry.get('profile-chip-name').textContent, 'Lokal profil');
   chip.emit('click');
   assert.deepEqual(f.opened, ['profile'], 'chippen er en ærlig vej til profilsektionen');
   for (const handler of f.listeners['aura:profile']) handler({ detail: { name: 'Første', icon: '' } });

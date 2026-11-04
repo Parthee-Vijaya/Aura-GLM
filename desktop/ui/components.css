@@ -243,15 +243,9 @@ details.disclosure.step > summary:hover .step-glyph::after, details.disclosure.s
 details.disclosure.step.step-group[open] > summary .step-glyph-char { rotate: 90deg; }
 details.disclosure.step.step-group[open] > summary .step-glyph::after { opacity: 0; }
 
-/* Kørende række: tekst-shimmer (1,5 s, steps(48), 0,3 s forsinkelse). Ved
-   reduceret bevægelse er der ingen shimmer — kun "· kører". */
-.step.status-running .step-text { background: linear-gradient(100deg, currentColor 0%, color-mix(in srgb, currentColor 40%, transparent) 50%, currentColor 100%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; animation: aura-step-shimmer 1.5s steps(48) 0.3s infinite; }
-@keyframes aura-step-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
-.step-running-note { display: none; color: var(--aura-ink-muted); }
-@media (prefers-reduced-motion: reduce) {
-  .step.status-running .step-text { animation: none; background: none; }
-  .step-running-note { display: inline; }
-}
+/* Running work keeps stable text and an explicit status at every motion setting. */
+.step.status-running .step-text { color: var(--aura-ink); background: none; animation: none; }
+.step-running-note { display: inline; color: var(--aura-ink-muted); }
 
 /* Det foldede indhold: målet står altid fuldt og umaskeret øverst, fejl er
    aldrig fanget af maskerne — kun det lange output ruller bag en 24 px
@@ -260,7 +254,7 @@ details.disclosure.step.step-group[open] > summary .step-glyph::after { opacity:
 .step-content > :last-child { margin-bottom: 0; }
 .step-target, .step-error, .step-output, .step-draft, .step-draft-head { margin: 0 0 8px; font: 12px/1.6 var(--aura-font-family-code); white-space: pre-wrap; overflow-wrap: anywhere; }
 .step-target { color: var(--aura-ink-secondary); }
-.step-error { color: var(--aura-error); border-inline-start: 2px solid var(--aura-error); padding-left: 8px; }
+.step-error { color: var(--aura-error); border-inline-start: 1px solid var(--aura-error); padding-left: 8px; }
 .step-exit { margin: 0 0 8px; font-size: 12px; line-height: 16px; color: var(--aura-ink-muted); }
 .step-output { max-height: min(400px, 50vh); overflow: auto; padding: 8px 10px; border: 0.5px solid var(--aura-border); border-radius: var(--aura-radius-sm); background: var(--aura-bg-raised); color: var(--aura-ink); -webkit-mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 24px), transparent 100%); mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 24px), transparent 100%); }
 .step-draft-note { margin: 0 0 8px; }
@@ -289,7 +283,7 @@ details.disclosure.step.step-group[open] > summary .step-glyph::after { opacity:
 .workspace-calm #agent-activity.is-waiting .activity-spinner::before { content: '●'; }
 .workspace-calm #agent-activity-text { min-width: 0; flex: 1; color: var(--aura-accent-ink); font-weight: var(--aura-font-weight-medium); }
 .workspace-calm #agent-activity.is-waiting #agent-activity-text { color: var(--aura-warning-ink); }
-.workspace-calm #agent-activity:not(.is-idle):not(.is-waiting) #agent-activity-text { background: linear-gradient(100deg, currentColor 0%, color-mix(in srgb, currentColor 40%, transparent) 50%, currentColor 100%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; animation: aura-step-shimmer 1.5s steps(48) 0.3s infinite; }
+.workspace-calm #agent-activity:not(.is-idle):not(.is-waiting) #agent-activity-text { color: var(--aura-accent-ink); background: none; animation: none; }
 .workspace-calm #agent-progress { flex-basis: 100%; margin: 0; font-size: 12px; line-height: 16px; color: var(--aura-ink-muted); }
 .workspace-calm #agent-activity button { font-size: 12px; padding: 4px 6px; min-height: 24px; }
 .workspace-calm #agent-activity.is-actionable { color: var(--aura-warning-ink); background: none; }
@@ -370,3 +364,15 @@ details.disclosure.step.step-group[open] > summary .step-glyph::after { opacity:
 .chat-message-copy:focus-visible { outline: 2px solid var(--aura-accent); outline-offset: 2px; }
 .chat-message-copy svg { width: 14px; height: 14px; }
 @media (prefers-reduced-motion: reduce) { .workspace-calm .chat-message.user .chat-message-actions { transition: none; } }
+
+/* Aura Prime: one stroke grammar for navigation, setup and workspace tools.
+   The SVGs carry no accessible text; their existing controls retain names. */
+.aura-ui-icon { display: inline-block; width: 18px; height: 18px; flex: none; vertical-align: middle; pointer-events: none; }
+.hero-chip-caret .aura-ui-icon { width: 12px; height: 12px; }
+.setup-symbol .aura-ui-icon { width: 24px; height: 24px; }
+.empty-code .aura-ui-icon { width: 28px; height: 28px; }
+.chat-choice-icon .aura-ui-icon { width: 22px; height: 22px; }
+:is(#surface-toggle, #project-menu-toggle, #refresh, #preview-options, #viewport-rotate) { display: inline-flex; align-items: center; justify-content: center; }
+/* A layout display on the slash list must not override the browser's closed
+   popover state. Otherwise an empty elevated strip remains above the chat. */
+#slash-menu:not(:popover-open) { display: none; }

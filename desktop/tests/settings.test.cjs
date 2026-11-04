@@ -201,6 +201,8 @@ const openSection = async (settings, section) => { await settings.open(section);
 
 test('seks sektioner i fast rækkefølge med navne og ærlige beskrivelser', () => {
   assert.deepEqual(Settings.SECTIONS.map(section => section.id), ['profile', 'appearance', 'connections', 'features', 'updates', 'support']);
+  assert.equal(sectionOf('profile').label, 'Lokal profil');
+  assert.equal(sectionOf('appearance').label, 'Generelt');
   for (const section of Settings.SECTIONS) {
     assert.ok(section.label.length >= 3, `${section.id} har et navn`);
     assert.ok(section.description.length >= 10, `${section.id} har en beskrivelse`);
@@ -210,7 +212,7 @@ test('seks sektioner i fast rækkefølge med navne og ærlige beskrivelser', () 
     assert.ok(description.length >= 30, `${id} beskriver, hvad sektionen kommer til at indeholde`);
     assert.doesNotMatch(description, /snart|næste trin|placeholder|todo/i, `${id} er ikke en "kommer snart"-pladsholder`);
   }
-  assert.ok(sectionOf('appearance').description.includes('AI’ens arbejde'), 'Udseende nævner arbejdsdetaljerne — D4a flytter niveauet hertil');
+  assert.ok(sectionOf('appearance').description.includes('AI’ens arbejde'), 'Generelt nævner arbejdsdetaljerne');
 });
 
 test('open(profile) viser dialogen med sektionen aktiv og felter udfyldt fra profilen', async () => {
@@ -229,7 +231,7 @@ test('open(profile) viser dialogen med sektionen aktiv og felter udfyldt fra pro
   assert.equal(navButton(dom, 'appearance').getAttribute('aria-current'), null);
   assert.equal(dom.content.children[0].id, 'settings-section-title');
   assert.equal(dom.content.getAttribute('aria-labelledby'), 'settings-section-title');
-  assert.ok(dom.content.textContent.startsWith('Din profil'));
+  assert.ok(dom.content.textContent.startsWith('Lokal profil'));
   assert.ok(dom.content.textContent.includes(sectionOf('profile').description));
   assert.equal(dom.document.activeElement, profileButton, 'fokus lægges på sektionens nav-knap');
   const q = selector => dom.content.querySelector(selector);
@@ -456,7 +458,7 @@ test('temaændring bevarer en gemt lukket starttilstand for panelet', async () =
   assert.deepEqual(themes.at(-1), 'light', 'lys tema gives videre gennem temamodulet');
 });
 
-// Arbejdsdetaljer (D4a): Udseende-sektionen viser tre valgkort fra profilen,
+// Arbejdsdetaljer (D4a): Generelt viser tre valg fra profilen,
 // og hvert valg gemmer kun sit eget felt — hjælpeniveauet og detaljeniveauet
 // er uafhængige (R7: alle 3×3 kombinationer forbliver skrivbare).
 test('open(appearance) viser arbejdsdetaljerne som tre valgkort fra profilen', async () => {
@@ -752,7 +754,7 @@ test('sektionsskift flytter aria-current, indhold og fokus', async () => {
   assert.equal(dom.dialog.open, true);
   assert.equal(navButton(dom, 'appearance').getAttribute('aria-current'), 'true');
   assert.equal(navButton(dom, 'profile').getAttribute('aria-current'), null);
-  assert.ok(dom.content.textContent.startsWith('Udseende'));
+  assert.ok(dom.content.textContent.startsWith('Generelt'));
   assert.ok(dom.content.querySelector('#settings-theme'), 'udseendefelterne er rendering');
   assert.equal(dom.content.querySelector('#settings-name'), null, 'profilfelterne er væk efter skiftet');
   navButton(dom, 'profile').click();

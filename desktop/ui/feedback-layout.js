@@ -12,16 +12,16 @@
   try {
     const saved = JSON.parse(localStorage.getItem(layoutKey));
     const legacy = Number(localStorage.getItem(legacyKey));
-    const value = Number.isFinite(saved?.sidebar) && saved.sidebar >= 264 && saved.sidebar <= 420 ? saved.sidebar
-      : Number.isFinite(legacy) && legacy >= 180 && legacy <= 320 ? Math.max(264, Math.min(420, legacy)) : null;
+    const value = Number.isFinite(saved?.sidebar) && saved.sidebar >= 180 && saved.sidebar <= 420 ? saved.sidebar
+      : Number.isFinite(legacy) && legacy >= 180 && legacy <= 320 ? Math.max(224, Math.min(360, legacy)) : null;
     if (value) preferredWidth = value;
   } catch { /* Optional local layout preference. */ }
-  const maxWidth = () => Math.max(264, Math.min(420, innerWidth - 680));
+  const maxWidth = () => Math.max(224, Math.min(360, innerWidth - 680));
   const available = () => !workspace.hidden && innerWidth > 900 && !document.body.classList.contains('sidebar-collapsed');
   function sizeSidebar() {
-    const width = Math.round(Math.max(264, Math.min(maxWidth(), preferredWidth)));
+    const width = Math.round(Math.max(224, Math.min(maxWidth(), preferredWidth)));
     document.body.style.setProperty('--feedback-sidebar-width', `${width}px`);
-    divider.setAttribute('aria-valuemin', '264'); divider.setAttribute('aria-valuemax', String(maxWidth()));
+    divider.setAttribute('aria-valuemin', '224'); divider.setAttribute('aria-valuemax', String(maxWidth()));
     divider.setAttribute('aria-valuenow', String(width)); divider.setAttribute('aria-valuetext', `${width} pixels til projekter og samtaler`);
   }
   function saveWidth() {
@@ -37,7 +37,7 @@
   });
   divider.addEventListener('pointermove', event => {
     if (event.pointerId !== pointer) return;
-    preferredWidth = Math.round(Math.max(180, Math.min(maxWidth(), event.clientX))); sizeSidebar();
+    preferredWidth = Math.round(Math.max(224, Math.min(maxWidth(), event.clientX))); sizeSidebar();
   });
   function finishResize() {
     if (pointer === null) return;
@@ -51,7 +51,7 @@
     if (!available() || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
     const width = Number(divider.getAttribute('aria-valuenow'));
-    preferredWidth = Math.max(264, Math.min(maxWidth(), event.key === 'Home' ? 264 : event.key === 'End' ? maxWidth() : width + (event.key === 'ArrowLeft' ? -1 : 1) * (event.shiftKey ? 40 : 10)));
+    preferredWidth = Math.max(224, Math.min(maxWidth(), event.key === 'Home' ? 224 : event.key === 'End' ? maxWidth() : width + (event.key === 'ArrowLeft' ? -1 : 1) * (event.shiftKey ? 40 : 10)));
     sizeSidebar(); saveWidth();
   });
   divider.addEventListener('dblclick', () => { preferredWidth = 280; sizeSidebar(); saveWidth(); });
@@ -107,8 +107,9 @@
   // B3: topbjælke-chippen og composer-chippen er to visninger af én tilstand;
   // begge spejler menuens åbningstilstand, og fokus vender tilbage til den
   // chip, der åbnede menuen.
-  let owner = null, invoker = toggle;
+  let owner = null, permissionOwner = null, invoker = toggle;
   const same = () => owner && current?.root === owner.root && view?.id === owner.chat;
+  const samePermission = () => permissionOwner && current?.root === permissionOwner.root && view?.id === permissionOwner.chat;
   const blocked = () => running || projectLoading || Boolean(view?.submitting) || toggle.disabled;
   const isOpen = () => menu.matches(':popover-open');
   function expanded(open) { toggle.setAttribute('aria-expanded', String(open)); topbarToggle?.setAttribute('aria-expanded', String(open)); }
@@ -128,6 +129,7 @@
   }
   function sync() {
     if (isOpen() && (!same() || blocked())) close();
+    if (permissionMenu.matches(':popover-open') && (!samePermission() || blocked())) permissionMenu.hidePopover();
     const selected = select.value === 'build' ? 'free' : select.value;
     for (const button of choices) {
       const chosen = button.dataset.workMode === selected;
@@ -174,12 +176,23 @@
   // YOLO aktiveres aldrig fra pillen uden dialogen: klikket går gennem
   // #yolo-toggle til den eksisterende advarselsdialog (conversation-permission.js),
   // og deaktiveringen er ét klik. Intet gemmes til næste appstart.
-  yolo.addEventListener('click', () => { if (!same() || blocked()) return; window.PopoverLayer.close(); $('#yolo-toggle').click(); });
+  yolo.addEventListener('click', () => {
+    if (!samePermission() || blocked() || yolo.hidden || !permissionMenu.matches(':popover-open')) return;
+    window.PopoverLayer.close(); $('#yolo-toggle').click();
+  });
   pill.addEventListener('click', () => {
+    if (blocked() || !current?.root || !view?.id) return;
+    // Each menu captures its own conversation. Closing the work-mode menu
+    // may queue a toggle event after this menu has already opened.
+    permissionOwner = selectedOwner();
     sync();
     window.PopoverLayer.open({ layer: permissionMenu, invoker: pill, align: 'start', gap: 4, width: () => 320 });
   });
-  permissionMenu.addEventListener('toggle', () => { pill.setAttribute('aria-expanded', String(permissionMenu.matches(':popover-open'))); });
+  permissionMenu.addEventListener('toggle', () => {
+    const open = permissionMenu.matches(':popover-open');
+    pill.setAttribute('aria-expanded', String(open));
+    if (!open) permissionOwner = null;
+  });
   menu.addEventListener('toggle', () => { expanded(isOpen()); if (!isOpen()) owner = null; });
   toggle.addEventListener('keydown', event => { if (event.key === 'ArrowDown') { event.preventDefault(); window.ComposerWorkMode.open(); } });
   topbarToggle?.addEventListener('keydown', event => { if (event.key === 'ArrowDown') { event.preventDefault(); window.ComposerWorkMode.open(topbarToggle); } });

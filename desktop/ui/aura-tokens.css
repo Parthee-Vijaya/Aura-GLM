@@ -1,281 +1,93 @@
-/* Aura Prime · fælles designtokens i DeepSeek Harness-stil.
-   Én kilde for alle skærme: arbejdsflade, onboarding og dialoger.
-   Værdierne følger DSH's design-platform.css (MIT); auraens egen identitet
-   (navn, logo, datamappe, nøglering) er urørt.
-
-   Indlæses FØR alle andre stylesheets i index.html. */
-
+/* Aura Prime: én tema- og tokenskilde for arbejdsflade, onboarding og dialoger.
+   DeepSeek Harness inspirerer neutralerne, den blå markering og typografien.
+   light-dark følger color-scheme ved brug, også efter et manuelt temaskift. */
 :root {
-  /* ── Typografi ── */
+  color-scheme: light dark;
   --aura-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
     'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --aura-font-family-ui: var(--aura-font-family);
   --aura-font-family-brand: 'Montserrat', var(--aura-font-family);
   --aura-font-family-code: 'SF Mono', 'JetBrains Mono', 'Fira Code', Consolas,
     'Liberation Mono', Menlo, Courier, 'PingFang SC', 'Microsoft YaHei';
   --aura-font-weight-medium: 500;
-
-  /* ── Typeskala (DSH §2: brødtekst 14/22, sekundær 13/20, status 12/16,
-     overskrift 15/22, helt 26/32) — ét par pr. trin, tema-uafhængigt. ── */
-  --aura-text-12: 12px; --aura-text-12-line: 16px;
-  --aura-text-13: 13px; --aura-text-13-line: 20px;
-  --aura-text-14: 14px; --aura-text-14-line: 22px;
-  --aura-text-15: 15px; --aura-text-15-line: 22px;
-  --aura-text-26: 26px; --aura-text-26-line: 32px;
-
-  /* ── Bevægelse ── */
+  --aura-text-12: 12px;
+  --aura-text-12-line: 16px;
+  --aura-text-13: 13px;
+  --aura-text-13-line: 20px;
+  --aura-text-14: 14px;
+  --aura-text-14-line: 22px;
+  --aura-text-15: 15px;
+  --aura-text-15-line: 22px;
+  --aura-text-26: 26px;
+  --aura-text-26-line: 32px;
   --aura-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
   --aura-transition-duration-fast: 0.1s;
   --aura-transition-duration: 0.2s;
   --aura-transition-duration-slow: 0.3s;
-
-  /* ── Radius-skala ── */
   --aura-radius-xs: 4px;
   --aura-radius-sm: 8px;
   --aura-radius-md: 12px;
   --aura-radius-lg: 16px;
   --aura-radius-xl: 20px;
-  --aura-radius-panel: 28px;
-
-  /* ── Indholdsramme ── */
-  /* Samtalekolonnen har én bredde: --chat-col. Gutteren (--chat-gutter) står
-     uden for rammen som padding på tekstkolonnen, som composeren trækker fra
-     sin egen bredde — dermed rammer tekst og composer samme kant i alle
-     tilstande. Trinene 960/1040 ved ≥1600/≥2000 sættes i
-     workspace-calm.css (samme skærmtrin som før). */
-  --chat-col: 800px;
-  --chat-gutter: 22px;
-
-  /* ── Arbejdsbjælken ── */
-  /* Topbjælkens højde (DSH §6.1: mindst 52 px) er én token, så alle flader
-     der forholder sig til bjælken — sidepanelets overlay-skuffe og dets
-     skillelinje — følger med, hvis bjælken ændrer sig (audit §3: den
-     hårdkodede 51 px skal følge bjælkehøjden). */
-  --aura-workspace-bar: 52px;
-
-  /* ── Lyst tema (standard) ── */
-  /* Accent: DSH-blå til valgt tilstand, links, aktivitet og markering. */
-  --aura-accent: rgb(65, 118, 230);
-  --aura-accent-hover: rgb(72, 104, 178);
-  --aura-accent-subtle: rgb(228, 237, 253);
-  --aura-accent-faint: rgb(237, 243, 254);
-
-  /* Primærknapper er næsten sorte (DSH-stil), ikke blå. */
-  --aura-button-primary: rgb(21, 21, 23);
-  --aura-button-primary-hover: rgb(40, 40, 42);
-  --aura-button-primary-text: rgb(255, 255, 255);
-
-  /* Flader. */
-  --aura-bg: rgb(255, 255, 255);
-  --aura-bg-sidebar: rgb(249, 250, 251);
-  --aura-bg-raised: rgb(255, 255, 255);
-  --aura-bg-overlay: rgb(255, 255, 255);
-  --aura-bg-tint: rgb(243, 244, 246);
-  /* Hover er DSH's alfa-fyld (§2 interaktion): rgba(38,49,72,.06) lys /
-     rgba(255,255,255,.08) mørk — den samme svage hævning på alle flader,
-     målt med teksterne ovenpå (P1-rapporten). */
-  --aura-bg-hover: rgba(38, 49, 72, 0.06);
-  --aura-bg-active: rgb(237, 238, 241);
-  /* Brugerboblen er sin egen flade (DSH §2): #EDF3FE lys / #2C2C2E mørk. */
-  --aura-bg-bubble: rgb(237, 243, 254);
-
-  /* Tekst. */
-  --aura-ink: rgb(21, 21, 23);
-  --aura-ink-secondary: rgb(64, 64, 68);
-  --aura-ink-muted: rgb(112, 116, 124);
-  --aura-ink-caption: rgb(145, 148, 155);
-  --aura-ink-faint: rgb(180, 182, 187);
-
-  /* Kanter — meget diskrete alpha-værdier i DSH's fire styrker
-     (sort .04/.08/.12/.16, hvid .04/.08/.12/.20); .16/.20 er fokus-kanten. */
-  --aura-border: rgba(0, 0, 0, 0.08);
-  --aura-border-strong: rgba(0, 0, 0, 0.12);
-  --aura-border-faint: rgba(0, 0, 0, 0.04);
-  --aura-border-strongest: rgba(0, 0, 0, 0.16);
-  --aura-border-invert: rgba(255, 255, 255, 0.08);
-
-  /* Skygger. */
-  --aura-shadow-panel: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 14px rgba(0, 0, 0, 0.06);
-  --aura-shadow-overlay: 0 4px 20px rgba(0, 0, 0, 0.12);
-  /* Composerens bløde kortskygge (DSH design-platform: soft) plus 0,5 px kant. */
-  --aura-shadow-composer: 0 4px 16px rgba(0, 0, 0, 0.03), 0 0 24px rgba(0, 0, 0, 0.03);
-  /* Menuers fremtrædende skygge (DSH: prominent). */
-  --aura-shadow-menu: 0 3px 8px rgba(0, 0, 0, 0.04), 0 0 20px rgba(0, 0, 0, 0.05);
-
-  /* Menu-materiale: alpha + blur (DSH) med uigennemsigtig fallback (R4). */
-  --aura-menu-bg: rgba(252, 253, 254, 0.7);
-
-  /* Efter-byg F7 (Codex d3): ÉT fælles scrim-token for dialog-sløret. Værdien
-     er arbejdsfladens eksisterende (#080b105c) — basisreglen havde sin egen
-     #14263b40, så appen viste tre forskellige slør. Privacy-gate-dialogen
-     beholder bevidst sit stærkere #080c1699 (sikkerhedsflade). */
-  --aura-scrim: #080b105c;
-  /* Efter-byg F12 (Claude): switchens AF-spor — --aura-bg-tint var identisk
-     med kortfladen i mørkt tema (38/44 mod 44/46), så en slukket switch læses
-     som en løs prik. Sporet løftes over kortet; knop-kontrasten (≥3:1) er
-     målt i controls-tooltips-titles.test.cjs. */
-  --aura-switch-track: rgb(233, 234, 238);
-
-  /* Læsbar status- og advarselstekst (R4): --aura-warning måler kun 3,15:1
-     på hvid og 2,92:1 på warning-subtle i lyst tema — tekst bærer denne
-     mørkere variant (målt 5,59:1 på hvid, 5,17:1 på warning-subtle). */
-  --aura-warning-ink: rgb(146, 92, 15);
-
-  /* Læsbar accent-tekst (R4/§6.4): accent selv måler kun 4,23:1 på hvid, så
-     den lille 12 px live-indikator bærer denne accentblanding (DSH §6.4:
-     color-mix(accent 70%, #172554) — målt 6,08:1 på lærredet, se
-     d4b-report.md). */
-  --aura-accent-ink: rgb(52, 94, 186);
-
-  /* Status. */
-  --aura-success: rgb(34, 154, 96);
-  --aura-success-subtle: rgb(230, 247, 239);
-  --aura-warning: rgb(200, 130, 20);
-  --aura-warning-subtle: rgb(254, 245, 231);
-  --aura-error: rgb(200, 52, 44);
-  --aura-error-subtle: rgb(253, 240, 239);
-
-  /* Diff-farver — separate fra accent. */
-  --aura-diff-add: rgb(34, 154, 96);
-  --aura-diff-add-bg: rgba(34, 154, 96, 0.08);
-  --aura-diff-del: rgb(200, 52, 44);
-  --aura-diff-del-bg: rgba(200, 52, 44, 0.06);
-
-  /* Metalkant (composer-glow under arbejde). */
-  --aura-glow: linear-gradient(135deg, rgb(65, 118, 230), rgb(103, 158, 254));
+  --aura-radius-panel: 24px;
+  --chat-col: 920px;
+  --chat-gutter: 32px;
+  --aura-workspace-bar: 44px;
+  --aura-accent: light-dark(rgb(65, 118, 230), rgb(103, 158, 254));
+  --aura-accent-hover: light-dark(rgb(72, 104, 178), rgb(122, 170, 255));
+  --aura-accent-subtle: light-dark(rgb(228, 237, 253), rgb(33, 43, 66));
+  --aura-accent-faint: light-dark(rgb(237, 243, 254), rgb(27, 35, 54));
+  --aura-button-primary: light-dark(rgb(21, 21, 23), rgb(240, 240, 242));
+  --aura-button-primary-hover: light-dark(rgb(40, 40, 42), rgb(255, 255, 255));
+  --aura-button-primary-text: light-dark(rgb(255, 255, 255), rgb(21, 21, 23));
+  --aura-bg: light-dark(rgb(255, 255, 255), rgb(19, 19, 20));
+  --aura-bg-sidebar: light-dark(rgb(240, 241, 243), rgb(52, 53, 55));
+  --aura-bg-raised: light-dark(rgb(255, 255, 255), rgb(44, 44, 46));
+  --aura-bg-overlay: light-dark(rgb(255, 255, 255), rgb(44, 44, 46));
+  --aura-bg-tint: light-dark(rgb(243, 244, 246), rgb(38, 38, 40));
+  --aura-bg-hover: light-dark(rgba(38, 49, 72, 0.06), rgba(255, 255, 255, 0.08));
+  --aura-bg-active: light-dark(rgb(237, 238, 241), rgb(51, 51, 53));
+  --aura-bg-bubble: light-dark(rgb(243, 244, 246), rgb(44, 44, 46));
+  --aura-ink: light-dark(rgb(21, 21, 23), rgb(238, 238, 240));
+  --aura-ink-secondary: light-dark(rgb(64, 64, 68), rgb(190, 192, 196));
+  --aura-ink-muted: light-dark(rgb(101, 105, 113), rgb(150, 152, 158));
+  --aura-ink-caption: light-dark(rgb(101, 105, 113), rgb(150, 152, 158));
+  --aura-ink-faint: light-dark(rgb(180, 182, 187), rgb(75, 77, 82));
+  --aura-border: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.08));
+  --aura-border-strong: light-dark(rgba(0, 0, 0, 0.12), rgba(255, 255, 255, 0.12));
+  --aura-border-faint: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.04));
+  --aura-border-strongest: light-dark(rgba(0, 0, 0, 0.16), rgba(255, 255, 255, 0.2));
+  --aura-border-invert: light-dark(rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.08));
+  --aura-shadow-panel: 0 4px 16px light-dark(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.24));
+  --aura-shadow-overlay: 0 12px 36px light-dark(rgba(0, 0, 0, 0.14), rgba(0, 0, 0, 0.4));
+  --aura-shadow-composer: none;
+  --aura-shadow-menu: 0 8px 24px light-dark(rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.36));
+  --aura-scrim: rgba(0, 0, 0, .42);
+  --aura-switch-track: light-dark(rgb(233, 234, 238), rgb(63, 64, 68));
+  --aura-menu-bg: light-dark(rgba(252, 253, 254, 0.7), rgba(48, 49, 54, 0.64));
+  --aura-warning-ink: light-dark(rgb(146, 92, 15), rgb(220, 160, 60));
+  --aura-accent-ink: light-dark(rgb(52, 94, 186), rgb(125, 154, 222));
+  --aura-success: light-dark(rgb(34, 154, 96), rgb(72, 180, 120));
+  --aura-success-subtle: light-dark(rgb(230, 247, 239), rgb(22, 48, 36));
+  --aura-warning: light-dark(rgb(200, 130, 20), rgb(220, 160, 60));
+  --aura-warning-subtle: light-dark(rgb(254, 245, 231), rgb(48, 38, 22));
+  --aura-error: light-dark(rgb(200, 52, 44), rgb(230, 90, 80));
+  --aura-error-subtle: light-dark(rgb(253, 240, 239), rgb(50, 24, 22));
+  --aura-diff-add: light-dark(rgb(34, 154, 96), rgb(72, 180, 120));
+  --aura-diff-add-bg: light-dark(rgba(34, 154, 96, 0.08), rgba(72, 180, 120, 0.1));
+  --aura-diff-del: light-dark(rgb(200, 52, 44), rgb(230, 90, 80));
+  --aura-diff-del-bg: light-dark(rgba(200, 52, 44, 0.06), rgba(230, 90, 80, 0.08));
+  --aura-glow: linear-gradient(135deg, var(--aura-accent), var(--aura-accent-hover));
+  --aura-bg-panel: light-dark(rgb(247, 248, 250), rgb(27, 27, 28));
+  --aura-bg-composer: light-dark(rgb(243, 244, 246), rgb(43, 43, 45));
+  --aura-success-ink: light-dark(rgb(24, 113, 69), rgb(108, 205, 151));
+  --aura-error-ink: light-dark(rgb(200, 52, 44), rgb(230, 90, 80));
 }
 
-/* ── Mørkt tema ── */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-workspace-theme="light"]) {
-    --aura-accent: rgb(103, 158, 254);
-    --aura-accent-hover: rgb(122, 170, 255);
-    --aura-accent-subtle: rgb(33, 43, 66);
-    --aura-accent-faint: rgb(27, 35, 54);
+[data-workspace-theme="light"] { color-scheme: light; }
+[data-workspace-theme="dark"] { color-scheme: dark; }
 
-    --aura-button-primary: rgb(240, 240, 242);
-    --aura-button-primary-hover: rgb(255, 255, 255);
-    --aura-button-primary-text: rgb(21, 21, 23);
-
-    --aura-bg: rgb(21, 21, 23);
-    --aura-bg-sidebar: rgb(27, 27, 28);
-    /* Composer-kortet løfter sig fra lærredet som DSH's input-major-flade
-       #2C2C2E (44) — ikke 30,30,32, der kun giver 1,1:1 mod lærredet. */
-    --aura-bg-raised: rgb(44, 44, 46);
-    --aura-bg-overlay: rgb(44, 44, 46);
-    --aura-bg-tint: rgb(38, 38, 40);
-    --aura-bg-hover: rgba(255, 255, 255, 0.08);
-    --aura-bg-active: rgb(51, 51, 53);
-    /* S4-UI (livefundet 4.11): brugerboblen i mørkt tema var usynlig — P1 satte
-       boblefyldet til #2C2C2E, der ER chattens panel, så boblen forsvandt. Den
-       løftes nu ét neutralt trin i paletten (51 — det eksisterende active-trin),
-       så boblen læses som sin egen flade mod panelet, som #EDF3FE gør på hvidt
-       i lyst tema. Den indre .user-bubble er stadig ren tekstbærer (P1). */
-    --aura-bg-bubble: rgb(51, 51, 53);
-
-    --aura-ink: rgb(238, 238, 240);
-    --aura-ink-secondary: rgb(190, 192, 196);
-    /* Mørk muted er løftet til 150/152/158: den nye hævede flade #2C2C2E er
-       lysere end 30,30,32, og muted skal holde 4,5:1 ovenpå den (målt 4,69:1
-       på raised, 6,23:1 på lærredet — P1-rapporten). */
-    --aura-ink-muted: rgb(150, 152, 158);
-    --aura-ink-caption: rgb(110, 112, 118);
-    --aura-ink-faint: rgb(75, 77, 82);
-
-    --aura-border: rgba(255, 255, 255, 0.08);
-    --aura-border-strong: rgba(255, 255, 255, 0.12);
-    --aura-border-faint: rgba(255, 255, 255, 0.04);
-    --aura-border-strongest: rgba(255, 255, 255, 0.2);
-    --aura-border-invert: rgba(0, 0, 0, 0.08);
-
-    --aura-shadow-panel: 0 1px 3px rgba(0, 0, 0, 0.2), 0 4px 14px rgba(0, 0, 0, 0.3);
-    --aura-shadow-overlay: 0 4px 20px rgba(0, 0, 0, 0.4);
-    /* Composerens bløde kortskygge holdes synlig på det mørke lærred. */
-    --aura-shadow-composer: 0 4px 16px rgba(0, 0, 0, 0.25), 0 0 24px rgba(0, 0, 0, 0.2);
-    --aura-shadow-menu: 0 3px 8px rgba(0, 0, 0, 0.24), 0 0 20px rgba(0, 0, 0, 0.3);
-
-    /* Menu-materiale (DSH, mørk) — den sammensatte baggrund er målt 12,88:1. */
-    --aura-menu-bg: rgba(48, 49, 54, 0.64);
-
-    /* Efter-byg F7/F12: scrim og switch-af-spor følger temaet (se :root). */
-    --aura-scrim: #080b105c;
-    --aura-switch-track: rgb(63, 64, 68);
-
-    /* Den mørke advarselsfarve består kontrasten som tekst (7,24:1 på raised). */
-    --aura-warning-ink: rgb(220, 160, 60);
-
-    /* Accent-tekst i mørkt tema (DSH §6.4: color-mix(accent 55%, #ADB2B8) —
-       målt 6,56:1 på lærredet, se d4b-report.md). */
-    --aura-accent-ink: rgb(125, 154, 222);
-
-    --aura-success: rgb(72, 180, 120);
-    --aura-success-subtle: rgb(22, 48, 36);
-    --aura-warning: rgb(220, 160, 60);
-    --aura-warning-subtle: rgb(48, 38, 22);
-    --aura-error: rgb(230, 90, 80);
-    --aura-error-subtle: rgb(50, 24, 22);
-
-    --aura-diff-add: rgb(72, 180, 120);
-    --aura-diff-add-bg: rgba(72, 180, 120, 0.1);
-    --aura-diff-del: rgb(230, 90, 80);
-    --aura-diff-del-bg: rgba(230, 90, 80, 0.08);
-  }
-}
-
-/* Eksplicit lyst valg via data-attribut (bevarer Auras eksisterende manuelle valg). */
-[data-workspace-theme="light"] {
-  --aura-accent: rgb(65, 118, 230);
-  --aura-accent-hover: rgb(72, 104, 178);
-  --aura-accent-subtle: rgb(228, 237, 253);
-  --aura-accent-faint: rgb(237, 243, 254);
-  --aura-button-primary: rgb(21, 21, 23);
-  --aura-button-primary-hover: rgb(40, 40, 42);
-  --aura-button-primary-text: rgb(255, 255, 255);
-  --aura-bg: rgb(255, 255, 255);
-  --aura-bg-sidebar: rgb(249, 250, 251);
-  --aura-bg-raised: rgb(255, 255, 255);
-  --aura-bg-overlay: rgb(255, 255, 255);
-  --aura-bg-tint: rgb(243, 244, 246);
-  --aura-bg-hover: rgba(38, 49, 72, 0.06);
-  --aura-bg-active: rgb(237, 238, 241);
-  --aura-bg-bubble: rgb(237, 243, 254);
-  --aura-ink: rgb(21, 21, 23);
-  --aura-ink-secondary: rgb(64, 64, 68);
-  --aura-ink-muted: rgb(112, 116, 124);
-  --aura-ink-caption: rgb(145, 148, 155);
-  --aura-ink-faint: rgb(180, 182, 187);
-  --aura-border: rgba(0, 0, 0, 0.08);
-  --aura-border-strong: rgba(0, 0, 0, 0.12);
-  --aura-border-faint: rgba(0, 0, 0, 0.04);
-  --aura-border-strongest: rgba(0, 0, 0, 0.16);
-  --aura-shadow-panel: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 14px rgba(0, 0, 0, 0.06);
-  --aura-shadow-overlay: 0 4px 20px rgba(0, 0, 0, 0.12);
-  --aura-shadow-composer: 0 4px 16px rgba(0, 0, 0, 0.03), 0 0 24px rgba(0, 0, 0, 0.03);
-  --aura-shadow-menu: 0 3px 8px rgba(0, 0, 0, 0.04), 0 0 20px rgba(0, 0, 0, 0.05);
-  --aura-menu-bg: rgba(252, 253, 254, 0.7);
-  --aura-scrim: #080b105c;
-  --aura-switch-track: rgb(233, 234, 238);
-  --aura-warning-ink: rgb(146, 92, 15);
-  --aura-accent-ink: rgb(52, 94, 186);
-  --aura-success: rgb(34, 154, 96);
-  --aura-success-subtle: rgb(230, 247, 239);
-  --aura-warning: rgb(200, 130, 20);
-  --aura-warning-subtle: rgb(254, 245, 231);
-  --aura-error: rgb(200, 52, 44);
-  --aura-error-subtle: rgb(253, 240, 239);
-  --aura-diff-add: rgb(34, 154, 96);
-  --aura-diff-add-bg: rgba(34, 154, 96, 0.08);
-  --aura-diff-del: rgb(200, 52, 44);
-  --aura-diff-del-bg: rgba(200, 52, 44, 0.06);
-}
-
-/* ── Superellipse-hjørner (DSH's smooth corners) ── */
 @supports (corner-shape: superellipse(1.5)) {
-  :root {
-    --aura-corner-shape: superellipse(1.5);
-  }
-  *,
-  *::before,
-  *::after {
-    corner-shape: var(--aura-corner-shape);
-  }
+  :root { --aura-corner-shape: superellipse(1.5); }
+  *, *::before, *::after { corner-shape: var(--aura-corner-shape); }
 }

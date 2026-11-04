@@ -45,25 +45,23 @@ test('typeskalaen: --aura-text-12/13/14/15/26 med DSHs linjehøjder', () => {
   }
 });
 
-test('hover er DSHs alfa-fyld i begge temaer — solid hover er væk', () => {
-  assert.match(tokens, /--aura-bg-hover:\s*rgba\(38,\s*49,\s*72,\s*0\.06\)/, 'lys hover: rgba(38,49,72,.06)');
-  assert.match(tokens, /--aura-bg-hover:\s*rgba\(255,\s*255,\s*255,\s*0\.08\)/, 'mørk hover: rgba(255,255,255,.08)');
-  assert.ok(!/--aura-bg-hover:\s*rgb\(/.test(tokens), 'hover er ikke længere en solid farve (audit §1)');
+test('hover and focus borders preserve both explicit theme variants', () => {
+  const themes = require('./helpers/theme-tokens.cjs').tokenThemes(tokens);
+  assert.deepEqual(themes.light['--aura-bg-hover'], { rgb: [38, 49, 72], a: 0.06 });
+  assert.deepEqual(themes.dark['--aura-bg-hover'], { rgb: [255, 255, 255], a: 0.08 });
+  assert.equal(themes.light['--aura-border-strongest'].a, 0.16);
+  assert.equal(themes.dark['--aura-border-strongest'].a, 0.2);
 });
 
-test('den fjerde kantstyrke (.16/.20) er i tokenskalaen til composerens fokus', () => {
-  assert.match(tokens, /--aura-border-strongest:\s*rgba\(0,\s*0,\s*0,\s*0\.16\)/, 'lys: sort .16 (DSH fire styrker)');
-  assert.match(tokens, /--aura-border-strongest:\s*rgba\(255,\s*255,\s*255,\s*0\.2\)/, 'mørk: hvid .20');
-});
-
-test('mørkt tema: composer-fyldet #2C2C2E, boblefyldet og den fulgte muted', () => {
-  assert.match(tokens, /--aura-bg-raised:\s*rgb\(44,\s*44,\s*46\)/, 'audit §1: #2C2C2E (44) — kortet løfter sig fra lærredet (21)');
-  assert.match(tokens, /--aura-bg-bubble:\s*rgb\(237,\s*243,\s*254\)/, 'DSH §2: boblen er #EDF3FE i lyst tema');
-  // S4-UI (livefundet 4.11): #2C2C2E-varianten var fladtbundet med chattens eget
-  // panel (samme tokenværdi som --aura-bg-raised), så boblen var usynlig i
-  // mørkt tema. Løftet ét neutralt trin i paletten (51) — se s4-report.
-  assert.match(tokens, /--aura-bg-bubble:\s*rgb\(51,\s*51,\s*53\)/, 'S4-UI: boblen er synlig mod panelet (44) i mørkt tema');
-  assert.match(tokens, /--aura-ink-muted:\s*rgb\(150,\s*152,\s*158\)/, 'muted er fulgt med op, så 12 px-tekst holder 4,5:1 på #2C2C2E');
+test('composer and bubble surfaces remain distinct from the neutral dark canvas', () => {
+  const {light, dark} = require('./helpers/theme-tokens.cjs').tokenThemes(tokens);
+  assert.deepEqual(dark['--aura-bg'], [19,19,20]);
+  assert.notDeepEqual(dark['--aura-bg-composer'], dark['--aura-bg']);
+  assert.notDeepEqual(dark['--aura-bg-bubble'], dark['--aura-bg']);
+  for (const theme of [light,dark]) {
+    assert.ok(contrast(theme['--aura-ink'],theme['--aura-bg-bubble']) >= 4.5);
+    assert.ok(contrast(theme['--aura-ink-muted'],theme['--aura-bg-composer']) >= 4.5);
+  }
 });
 
 // ── 2. Én popover-grammatik ──
@@ -92,20 +90,20 @@ test('slash og modelvælger: egne skygger/radier er væk — materialet ejer dem
 });
 
 // ── 3. Brødtekst og de navngivne 11 px ──
-test('brødteksten er 14/22 på typeskala-tokens', () => {
+test('conversation prose uses the redesigned readable 15/25 scale', () => {
   const rule = /\.workspace-calm \.chat-message\s*\{[^}]*\}/.exec(calm)[0];
-  assert.match(rule, /font-size:\s*var\(--aura-text-14\)/, 'audit §1: 13 px → 14 px');
-  assert.match(rule, /line-height:\s*var\(--aura-text-14-line\)/, 'DSH §2: linjehøjde 22');
+  assert.match(rule, /font-size:\s*15px/);
+  assert.match(rule, /line-height:\s*25px/);
 });
 
-test('de navngivne 11 px uden for badges er løftet på skalaen (audit §3)', () => {
-  assert.match(calm, /\.workspace-calm \.workspace-bar button\s*\{[^}]*font-size:\s*var\(--aura-text-12\)/, 'bjælkeknapperne');
-  assert.match(calm, /\.workspace-calm #run-status\s*\{[^}]*font-size:\s*var\(--aura-text-12\)/, '#run-status');
+test('workspace controls remain readable and the hidden status retains its accessible role', () => {
+  assert.match(calm, /\.workspace-calm \.workspace-bar button\s*\{[^}]*font-size:\s*12px/);
+  assert.match(indexHtml, /id="run-status"[^>]*role="status"/);
   const tabRules = [...calm.matchAll(/\.workspace-calm \.work-tab\s*\{[^}]*\}/g)].map(match => match[0]);
-  assert.ok(tabRules.length >= 2, '.work-tab-reglerne findes (basis og smalt trin)');
-  for (const rule of tabRules) assert.match(rule, /font-size:\s*var\(--aura-text-12\)/, `.work-tab 11 px er løftet: ${rule.slice(0, 60)}`);
-  assert.match(tabRules[0], /border-radius:\s*var\(--aura-radius-sm\)/, '.work-tab radius 5 px er på radiusskalaen (8)');
-  assert.match(styles, /\.chat-latest\s*\{[^}]*font-size:\s*var\(--aura-text-12\)/, '.chat-latest');
+  assert.ok(tabRules.length >= 1);
+  for (const rule of tabRules) assert.match(rule, /font-size:\s*12px/);
+  assert.match(calm, /\.work-tab\[aria-selected="true"\]::after\s*\{[^}]*height:\s*2px/);
+  assert.match(styles, /\.chat-latest\s*\{[^}]*font-size:\s*var\(--aura-text-12\)/);
 });
 
 // ── 4. Én boble og den rolige composer ──
@@ -119,10 +117,11 @@ test('brugerboblen er én: .user-bubble har ikke længere fyld, padding eller ra
   assert.match(bubble, /background:\s*var\(--aura-bg-bubble\)/, 'boblefyldet er DSHs eget token');
 });
 
-test('rolig composer: neutral fokus-kant, skyggen består, ring kun ved :focus-visible', () => {
+test('rolig composer: neutral fokus-kant, én kant og synlig tastaturring', () => {
   const calmFocus = /\.workspace-calm \.composer:focus-within\s*\{[^}]*\}/.exec(calm)[0];
-  assert.match(calmFocus, /border-color:\s*var\(--aura-border-strongest\)/, 'fokus = neutral stærk hårlinje (DSH §5.1)');
-  assert.ok(!/box-shadow:\s*none/.test(calmFocus), 'skyggen fjernes ikke længere ved fokus');
+  const nativeRing = /\.composer:has\(textarea:focus-visible\)\s*\{[^}]*\}/.exec(calm)[0];
+  assert.match(nativeRing, /outline:\s*2px solid var\(--aura-accent\)/, 'keyboard boundary uses a high-contrast focus token');
+  assert.match(calmFocus, /box-shadow:\s*none/, 'the bordered composer keeps one elevation treatment');
   const baseFocus = /\.composer:focus-within\s*\{[^}]*\}/.exec(strip(read('styles.css')))[0];
   assert.match(baseFocus, /border-color:\s*var\(--aura-border-strongest\)/, 'basisreglen er ligeledes neutral');
   assert.ok(!/#?0?e8f1ff|box-shadow:\s*0 0 0 3px/.test(baseFocus), 'den blå 3 px-ring ved musefokus er væk');
@@ -216,10 +215,10 @@ test('P1-kontrast: alfa-hover, boble, diff-badge og de mørke flader består AA'
 });
 
 // ── 10. Versionen ──
-test('versionen er 0.5.10 overalt (pakke, lås, rod og pakkeposten)', () => {
-  assert.equal(pkg.version, '0.5.10');
-  assert.equal(lock.version, '0.5.10');
-  assert.equal(lock.packages[''].version, '0.5.10');
+test('versionen er 0.6.0-beta.1 overalt (pakke, lås, rod og pakkeposten)', () => {
+  assert.equal(pkg.version, '0.6.0-beta.1');
+  assert.equal(lock.version, '0.6.0-beta.1');
+  assert.equal(lock.packages[''].version, '0.6.0-beta.1');
 });
 
 // ═══ Fix-runde (review af 3feb05b): F2/F3/F4 ═══

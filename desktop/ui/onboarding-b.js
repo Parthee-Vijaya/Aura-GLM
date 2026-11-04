@@ -6,7 +6,11 @@
 (function (scope, factory) {
   const api = factory();
   if (typeof module === 'object' && module.exports) module.exports = api;
-  if (scope) scope.OnboardingB = api;
+  if (scope) {
+    scope.OnboardingB = api;
+    if (scope.document.readyState === 'loading') scope.document.addEventListener('DOMContentLoaded', () => api.enhance(scope.document), { once: true });
+    else api.enhance(scope.document);
+  }
 })(typeof window === 'undefined' ? null : window, function () {
   'use strict';
   const PROVIDERS = Object.freeze(Object.fromEntries(Object.entries({
@@ -80,7 +84,7 @@
     else { orbit(provider('anthropic').logo, null, 0); orbit(provider('openai').logo, null, 1); orbit(provider('ollama').logo, null, 2); orbit(provider('mistral').logo, null, 3); }
     art.append(ring, make(doc, 'span', 'onboarding-b-art-pill', phase === 'idea' ? 'Fra dine ord til noget, du kan bygge' : 'Forbindelse og model er to valg'));
     const copy = make(doc, 'div', 'onboarding-b-visual-copy'), title = make(doc, 'h2', 'onboarding-b-visual-heading');
-    title.append(make(doc, 'span', null, phase === 'model' && modelChosen ? modelName : current?.name || 'Din AI'), make(doc, 'em', null, phase === 'model' && modelChosen ? 'i dit projekt.' : phase === 'idea' ? 'og din idé.' : 'møder Aura Prime.'));
+    title.append(make(doc, 'span', null, phase === 'model' && modelChosen ? modelName : current?.name || 'Din AI'), make(doc, 'em', null, phase === 'model' ? modelChosen ? 'i dit projekt.' : 'Vælg en model.' : phase === 'idea' ? 'og din idé.' : 'møder Aura Prime.'));
     const description = phase === 'model' ? 'Vælg den model, du vil arbejde med. Modtager og vilkår gennemgås, før du sender noget.' : phase === 'idea' ? 'Beskriv det, du vil bygge. Din forbindelse og dine projektvalg er lige ved hånden.' : preview && current ? 'Se den forbindelse, du kigger på. Åbn kortet, når du vil indtaste dine oplysninger.' : current ? 'Forbindelsen er din adgang til AI. Modellen vælger du i projektet, og du kan ændre valget senere.' : 'Begynd med den adgang, du allerede har. Projektfiler og gemte valg bliver på din computer.';
     copy.append(title, make(doc, 'p', 'onboarding-b-visual-description', description));
     if (connectionName) copy.append(make(doc, 'p', 'onboarding-b-connection-name', connectionName));
@@ -104,5 +108,58 @@
       const mark = make(doc, 'span', 'onboarding-b-choice-mark'); mark.setAttribute('aria-hidden', 'true'); mark.append(icon(doc, 'check')); card.append(mark);
     }
   }
-  return Object.freeze({ provider, render, decorateProviderCard });
+  // Presentation only: the step comes from app.js, never from a new store.
+  // The rail and progress labels do not advance, save or activate any choice.
+  function enhance(doc) {
+    const steps = ['Din profil', 'Arbejdsdetaljer', 'Forbindelse', 'Din idé'];
+    for (const id of ['setup', 'onboarding']) {
+      const surface = doc.getElementById(id);
+      if (!surface || surface.classList.contains('native-onboarding')) continue;
+      surface.classList.add('native-onboarding');
+      const header = make(doc, 'div', 'native-onboarding-header');
+      const brand = make(doc, 'div', 'native-onboarding-brand');
+      brand.append(image(doc, 'onboarding-aura-mark.svg'), make(doc, 'span', null, 'Aura Prime'));
+      header.append(brand, make(doc, 'span', 'native-onboarding-caption', id === 'setup' ? 'Opsætning' : 'Nyt projekt'));
+      surface.prepend(header);
+      const nav = make(doc, 'ol', 'native-onboarding-nav');
+      nav.setAttribute('aria-label', 'Trin i opsætningen');
+      for (const label of steps) nav.append(make(doc, 'li', null, label));
+      header.after(nav);
+      const pane = id === 'setup' ? surface.querySelector('.setup-simple') : make(doc, 'div', 'native-onboarding-pane');
+      if (id === 'setup') pane.prepend(surface.querySelector('.setup-backline'));
+      else {
+        const children = [...surface.children].filter(item => item !== header && item !== nav);
+        pane.append(...children); surface.append(pane);
+      }
+      const update = () => {
+        const step = id === 'onboarding' ? 'idea' : surface.dataset.step || 'choice';
+        const active = step === 'profile' ? 0 : step === 'detail' ? 1 : step === 'idea' ? 3 : 2;
+        [...nav.children].forEach((item, index) => {
+          if (index === active) item.setAttribute('aria-current', 'step');
+          else item.removeAttribute('aria-current');
+        });
+        pane.scrollTop = 0;
+      };
+      update();
+      if (id === 'setup') new MutationObserver(update).observe(surface, { attributes: true, attributeFilter: ['data-step'] });
+    }
+    // Arrow/Home/End only move focus. Enter/Space retain the controller's
+    // explicit activation; browsing a provider never selects or connects it.
+    for (const group of doc.querySelectorAll('#provider-cards, #add-provider-cards')) {
+      group.addEventListener('keydown', event => {
+        if (event.altKey || event.ctrlKey || event.metaKey || event.isComposing || !['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        const items = [...group.querySelectorAll('button:not(:disabled)')].filter(item => !item.hidden && item.checkVisibility());
+        const index = items.indexOf(doc.activeElement);
+        if (index < 0 || !items.length) return;
+        const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : (index + (['ArrowUp', 'ArrowLeft'].includes(event.key) ? -1 : 1) + items.length) % items.length;
+        event.preventDefault(); items[next].focus();
+      });
+    }
+    // Use the same authored strokes as the app, rather than decorative glyphs.
+    for (const [id, glyph] of [['setup-add-provider', 'lock'], ['setup-find-local', 'screen'], ['setup-use-saved', 'check']]) {
+      const symbol = doc.getElementById(id)?.querySelector('.setup-symbol');
+      if (symbol) symbol.replaceChildren(icon(doc, glyph));
+    }
+  }
+  return Object.freeze({ provider, render, decorateProviderCard, enhance });
 });

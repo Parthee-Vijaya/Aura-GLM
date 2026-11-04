@@ -222,7 +222,9 @@ test('index.html har profil- og detaljetrinnet med den enkle opsætningsstruktur
   assert.ok(detail.includes('Vælg senere'), 'spring over-knappen hedder Vælg senere som resten af opsætningen');
   const section = index.slice(index.indexOf('<section id="setup-profile"'), detailStart);
   assert.match(section, /for="profile-name"/);
-  assert.ok(section.includes('Hvad skal Aura kalde dig?'));
+  assert.match(section, /for="profile-name">Navn · valgfrit/);
+  assert.match(section, /id="profile-skip"[^>]*>Fortsæt uden profil/);
+  assert.doesNotMatch(section, /id="profile-name"[^>]*required/);
   assert.match(section, /id="profile-icon-row"/);
   assert.match(section, /class="profile-icon-row"/, 'ikonvalget er en kompakt række — ikke et gitter');
   assert.match(section, /role="radiogroup"/);
@@ -259,9 +261,9 @@ test('profil-trinnet er det første trin, når den guidede opsætning starter me
   assert.equal(f.registry.get('setup-profile').hidden, false, 'profil-trinnet vises');
   assert.equal(f.registry.get('setup-choice').hidden, true);
   assert.equal(f.registry.get('setup-step-state').textContent, 'Trin 1 af 4', 'trintælleren står under Tilbage');
-  assert.equal(f.registry.get('setup-title').textContent, 'Din profil');
-  assert.equal(f.registry.get('setup-subtitle').textContent, 'Udfyld din profil — du kan altid ændre den under Indstillinger.');
-  assert.equal(f.registry.get('profile-name').value, 'Parthee', 'navnefeltet præudfyldes med forslaget');
+  assert.equal(f.registry.get('setup-title').textContent, 'Din lokale profil');
+  assert.equal(f.registry.get('setup-subtitle').textContent, 'Profilen er valgfri. Du kan også tilpasse Aura senere under Indstillinger.');
+  assert.equal(f.registry.get('profile-name').value, '', 'identitet kræver et aktivt lokalt valg');
   assert.equal(f.registry.get('setup-back').hidden || f.registry.get('setup-back').disabled, false, 'tilbage-knappen virker');
   assert.equal(f.registry.get('profile-continue').disabled, false, 'Fortsæt er altid aktivt');
   assert.equal(f.registry.get('setup-detail').hidden, true, 'detaljetrinnet venter');
@@ -287,25 +289,27 @@ test('repeat-opsætning med tom profil starter på profil-trinnet — andre indg
   assert.equal(add.registry.get('setup-profile').hidden, true);
 });
 
-test('profil-trinnet står på skærmen, før navneforslaget lander', async () => {
+test('profilen kan fravælges uden at gemme navn eller spørge igen', async () => {
   const f = runSetup();
-  let release; const gate = new Promise(resolve => { release = resolve; });
-  f.harness.profileSuggest = async () => { f.calls.push('profileSuggest'); await gate; return 'Parthee'; };
-  const entering = f.context.showSetup('', true);
-  await new Promise(resolve => setImmediate(resolve));
-  assert.equal(f.context.setupStep, 'profile', 'profil-trinnet er valgt, så snart skærmen vises');
-  assert.equal(f.registry.get('setup-profile').hidden, false, 'valgskærmen når aldrig at vignette først');
-  assert.equal(f.registry.get('profile-name').value, '', 'navnefeltet udfyldes progressivt, når forslaget lander');
-  release();
-  await entering;
-  assert.equal(f.registry.get('profile-name').value, 'Parthee');
+  await f.context.showSetup('', true);
+  assert.equal(f.registry.get('profile-name').value, '');
+  assert.ok(!f.calls.includes('profileSuggest'));
+  f.registry.get('profile-name').value = 'Ugemt navn';
+  await f.$('#profile-skip').onclick();
+  assert.equal(f.context.setupStep, 'detail');
+  assert.equal(f.context.localStorage.getItem('aura.profile-choice.v1'), 'skipped');
+  assert.equal(f.saves.length, 0);
+  await f.context.leaveSetup(false);
+  assert.equal(f.saves.length, 0, 'forlad opsætning gemmer heller ikke fravalgt identitet');
+  await f.context.showSetup('', true);
+  assert.equal(f.context.setupStep, 'choice', 'tom identitet genudløser ikke profilspørgsmålet');
 });
 
-test('en gemt profil vises i trinnet, og forslaget bruges kun, når navnet er tomt', async () => {
+test('en gemt profil vises i trinnet uden at hente OS-identitet', async () => {
   const f = runSetup();
   await f.context.showSetup('', true);
   assert.equal(f.context.setupStep, 'profile');
-  assert.equal(f.calls.filter(call => call === 'profileSuggest').length, 1, 'en tom profil forslår et navn');
+  assert.equal(f.calls.filter(call => call === 'profileSuggest').length, 0, 'en tom profil henter ikke OS-identitet');
   const buttons = f.document.querySelectorAll('#profile-icon-row button');
   assert.equal(buttons.length, 5, 'kompakt række: initialer, tre Aura-varianter og upload-pladsen');
   const radios = buttons.filter(button => button.getAttribute('role') === 'radio');
@@ -315,7 +319,7 @@ test('en gemt profil vises i trinnet, og forslaget bruges kun, når navnet er to
   assert.equal(radios.find(radio => radio.dataset.icon === 'aura-1').getAttribute('aria-label'), 'Aura · ring');
   assert.equal(radios.find(radio => radio.dataset.icon === 'aura-2').getAttribute('aria-label'), 'Aura · bølge');
   assert.equal(radios.find(radio => radio.dataset.icon === 'aura-3').getAttribute('aria-label'), 'Aura · kredsløb');
-  assert.equal(radios.find(radio => radio.dataset.icon === '').textContent, 'PA', 'initialer-knappen viser forslaget fra navnefeltet');
+  assert.equal(radios.find(radio => radio.dataset.icon === '').textContent, '', 'tom profil viser ingen opfundne initialer');
   assert.ok(radios.filter(radio => radio.dataset.icon).every(radio => radio.innerHTML.includes('<svg')), 'hver variant bærer sin glyf');
   const upload = buttons.find(button => button.getAttribute('aria-label') === 'Upload eget billede');
   assert.ok(upload, 'upload-pladsen er en handlingsknap uden et gemt billede');
@@ -328,7 +332,7 @@ test('en gemt profil vises i trinnet, og forslaget bruges kun, når navnet er to
   assert.equal(f.document.querySelectorAll('#profile-theme input').find(input => input.checked).value, 'dark', 'det gemte tema er forvalgt');
   assert.equal(f.registry.get('profile-help').value, 'delvis', 'det gemte hjælpeniveau er forvalgt');
   assert.equal(f.document.querySelectorAll('#setup-profile .help-cards input').find(input => input.checked).value, 'delvis', 'valgkortene følger det gemte hjælpeniveau');
-  assert.equal(f.calls.filter(call => call === 'profileSuggest').length, 1, 'forslaget overskriver aldrig et gemt navn');
+  assert.equal(f.calls.filter(call => call === 'profileSuggest').length, 0, 'et gemt navn henter heller ikke OS-identitet');
 });
 
 test('upload-knappen beder hovedprocessen om filvælgeren — og billedet bliver det valgte ikon', async () => {
@@ -552,11 +556,11 @@ test('trintælleren viser de fire trin: profil, detaljer, forbindelse og idé', 
 
 test('trinrækkefølgen er låst: profil → detaljer → forbindelse → idé', async () => {
   const appSource = fs.readFileSync(path.join(ui, 'app.js'), 'utf8');
-  const profileHeading = appSource.indexOf("profile: ['Din profil'");
+  const profileHeading = appSource.indexOf("profile: ['Din lokale profil'");
   const detailHeading = appSource.indexOf("detail: ['Hvor meget vil du se af AI’ens arbejde?'");
   const choiceHeading = appSource.indexOf("choice: ['Hvordan vil du forbinde din AI?'");
   assert.ok(profileHeading >= 0 && detailHeading > profileHeading && choiceHeading > detailHeading, 'overskrifterne står i den godkendte rækkefølge');
-  assert.ok(appSource.includes("await saveProfileStep(); setupPage('detail');"), 'Fortsæt fra profilen fører til detaljetrinnet');
+  assert.ok(appSource.includes("await saveProfileStep(); recordProfileChoice('saved'); setupPage('detail');"), 'Fortsæt fra profilen fører til detaljetrinnet');
   assert.ok(appSource.includes("if (setupStep === 'detail') setupPage('profile');"), 'Tilbage fra detaljetrinnet vender til profilen');
   // Senere-valg virker på begge slags trin: detaljetrinnet springes over,
   // forbindelsestrinnet forlades uden AI.

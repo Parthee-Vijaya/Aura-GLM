@@ -114,3 +114,120 @@ body.help-delvis #composer-help:not([hidden]) { display: inline-flex; align-item
   .settings-nav button { white-space: nowrap; }
   .settings-field { grid-template-columns: 1fr; gap: 6px; }
 }
+
+/* The installed reference's single settings modal: a quiet header, stable
+   navigation on the left, real setting rows in the scrolling right pane. */
+:is(#settings-dialog, dialog.native-settings-shell) { width: min(800px, calc(100vw - 48px)); max-width: 800px; height: min(680px, calc(100dvh - 88px)); max-height: calc(100dvh - 88px); padding: 0; overflow: hidden; border: 0; border-radius: 20px; background: var(--aura-bg-raised); color: var(--aura-ink); box-shadow: var(--aura-shadow-overlay); }
+:is(#settings-dialog, dialog.native-settings-shell) > .dialog-heading { height: 66px; margin: 0; padding: 18px 24px; border: 0; }
+:is(#settings-dialog, dialog.native-settings-shell) > .dialog-heading h2 { font: 500 18px/1.4 var(--aura-font-family); letter-spacing: -.015em; }
+#settings-dialog .settings-layout,
+dialog.native-settings-shell .native-settings-layout { display: grid; grid-template-columns: 174px minmax(0, 1fr); height: calc(100% - 66px); min-height: 0; max-height: none; margin: 0; border: 0; }
+:is(#settings-dialog, dialog.native-settings-shell) .settings-nav { display: flex; flex-direction: column; flex-wrap: nowrap; gap: 4px; padding: 12px 10px; background: transparent; border: 0; overflow: auto; }
+:is(#settings-dialog, dialog.native-settings-shell) .settings-nav button { display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 10px 12px; border: 0; border-radius: 10px; color: var(--aura-ink-secondary); background: transparent; text-align: left; font-size: 13px; line-height: 1.4; font-weight: 450; white-space: normal; box-shadow: none; }
+:is(#settings-dialog, dialog.native-settings-shell) .settings-nav button[aria-current=true] { background: var(--aura-bg-active); color: var(--aura-ink); font-weight: 500; }
+:is(#settings-dialog, dialog.native-settings-shell) .settings-nav button svg { width: 17px; height: 17px; color: inherit; }
+#settings-dialog .settings-content,
+dialog.native-settings-shell .native-settings-content { min-width: 0; overflow-y: auto; padding: 10px 28px 32px 22px; scrollbar-width: thin; scrollbar-color: var(--aura-border-strong) transparent; }
+#settings-dialog .settings-content > h3 { margin: 0 0 10px; font-size: 20px; font-weight: 500; line-height: 1.4; letter-spacing: -.015em; }
+#settings-dialog .settings-content .hint,
+dialog.native-settings-shell .hint { max-width: 65ch; font-size: 12px; line-height: 1.65; color: var(--aura-ink-secondary); }
+#settings-dialog .settings-content > h3 + .hint { margin-bottom: 24px; }
+#settings-dialog .settings-group-heading { margin: 28px 0 14px; font-size: 13px; font-weight: 550; color: var(--aura-ink); }
+#settings-dialog .settings-group-heading:first-of-type { margin-top: 22px; }
+#settings-dialog .settings-field { display: grid; grid-template-columns: minmax(0, 1fr) minmax(120px, 45%); align-items: center; gap: 20px; padding: 16px 0; border-top: 1px solid var(--aura-border); }
+#settings-dialog .settings-field > label { margin: 0; font-size: 13px; font-weight: 450; color: var(--aura-ink); line-height: 1.5; }
+#settings-dialog .settings-field :is(input:not([type=checkbox]):not([type=radio]), select) { width: 100%; min-width: 0; margin: 0; padding: 10px 12px; min-height: 38px; border: 1px solid transparent; border-radius: 10px; background: var(--aura-bg-tint); color: var(--aura-ink); font-size: 12px; }
+#settings-dialog .settings-field + .hint { margin: -6px 0 16px; }
+#settings-dialog .profile-icon-row { flex-wrap: wrap; gap: 5px; }
+#settings-dialog .profile-icon-choice { width: 34px; height: 34px; border-radius: 9px; }
+#settings-dialog .settings-theme { border: 0; border-bottom: 1px solid var(--aura-border); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 24px 0 0; padding: 0 0 22px; }
+#settings-dialog .settings-theme legend { padding: 0 0 12px; color: var(--aura-ink); font-size: 13px; font-weight: 450; }
+#settings-dialog .settings-theme label { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; margin: 0; min-height: 86px; padding: 16px 8px; border: 1px solid var(--aura-border-strong); border-radius: 12px; color: var(--aura-ink); background: transparent; font-size: 13px; font-weight: 450; cursor: pointer; }
+#settings-dialog .settings-theme label:has(input:checked) { background: var(--aura-bg-active); border-color: var(--aura-ink-muted); }
+#settings-dialog .settings-theme label svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+#settings-dialog .settings-theme input { position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+#settings-dialog .settings-theme label:focus-within { outline: 2px solid var(--aura-accent); outline-offset: 3px; }
+#settings-dialog .settings-check { margin: 20px 0 0; padding: 16px 0; border: 0; border-top: 1px solid var(--aura-border); border-radius: 0; font-size: 13px; font-weight: 450; }
+#settings-dialog .settings-check input { width: 16px; height: 16px; margin: 0; accent-color: var(--aura-accent); }
+#settings-dialog .settings-fontsize { justify-self: end; }
+#settings-dialog .settings-fontsize button { width: 30px; height: 34px; padding: 0; border: 0; border-radius: 8px; background: var(--aura-bg-tint); }
+#settings-dialog .settings-transcript { margin-top: 26px; padding: 0; border: 0; display: grid; gap: 0; }
+#settings-dialog .settings-transcript legend { font-size: 13px; font-weight: 450; padding-bottom: 8px; }
+#settings-dialog .settings-transcript label { display: grid; grid-template-columns: minmax(0, 1fr) 16px; gap: 3px 16px; padding: 16px 0; margin: 0; border: 0; border-bottom: 1px solid var(--aura-border); border-radius: 0; background: transparent; font-weight: 400; }
+#settings-dialog .settings-transcript input { grid-column: 2; grid-row: 1 / span 2; accent-color: var(--aura-accent); }
+#settings-dialog .settings-transcript strong { grid-column: 1; font-size: 13px; font-weight: 500; }
+#settings-dialog .settings-transcript small { grid-column: 1; color: var(--aura-ink-secondary); font-size: 12px; line-height: 1.6; }
+#settings-dialog .settings-transcript label:has(input:checked) { background: transparent; }
+#settings-dialog .settings-forget { margin-top: 8px; }
+#settings-dialog #settings-feedback { margin-top: 20px; }
+#settings-dialog #settings-feedback.error { color: var(--aura-error-ink); }
+:is(#settings-dialog, dialog.native-settings-shell) :is(button, input, select, textarea, summary):focus-visible { outline: 2px solid var(--aura-accent); outline-offset: 3px; }
+:is(#settings-dialog, dialog.native-settings-shell) :is(input, textarea) { caret-color: var(--aura-accent); }
+:is(#settings-dialog, dialog.native-settings-shell) ::selection { color: var(--aura-ink); background: var(--aura-accent-subtle); }
+:is(#settings-dialog, dialog.native-settings-shell) ::placeholder { color: var(--aura-ink-secondary); opacity: 1; }
+:is(#settings-dialog, dialog.native-settings-shell) .primary { min-height: 38px; border-radius: 10px; background: var(--aura-button-primary); color: var(--aura-button-primary-text); }
+#connections-dialog .saved-connection { padding: 16px 0; border: 0; border-bottom: 1px solid var(--aura-border); border-radius: 0; background: transparent; }
+#connections-dialog .saved-connection small { color: var(--aura-ink-secondary); }
+#connections-dialog .provider-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+#connections-dialog .provider-card { padding: 14px 12px; min-height: 110px; border-radius: 12px; }
+#connections-dialog .provider-card[data-kind=openrouter] { grid-column: auto; }
+#connections-dialog .provider-card img { width: 24px; height: 24px; filter: none; opacity: 1; }
+#features-dialog .feature-row { padding: 16px 0; border: 0; border-bottom: 1px solid var(--aura-border); border-radius: 0; background: transparent; }
+
+/* The first-launch reference is brand-led, intentionally narrow and tall. */
+#welcome-dialog { width: min(600px, calc(100vw - 32px)); max-width: 600px; height: min(700px, calc(100dvh - 60px)); max-height: calc(100dvh - 60px); position: fixed; padding: 64px 40px 36px; overflow-y: auto; border: 0; border-radius: 16px; background: var(--aura-bg-raised); color: var(--aura-ink); box-shadow: var(--aura-shadow-overlay); }
+#welcome-dialog .welcome-header { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; margin: 0; border: 0; }
+#welcome-dialog .aura-brand { display: flex; align-items: center; gap: 14px; }
+#welcome-dialog .aura-logo { width: 52px; height: 52px; }
+#welcome-dialog .brand-copy { font-family: var(--aura-font-family); font-size: 29px; font-weight: 600; line-height: 1.2; letter-spacing: -.025em; }
+#welcome-dialog .brand-copy .app-version { display: none; }
+#welcome-dialog :is(#welcome-path, #welcome-start) { display: flex; flex-direction: column; align-items: center; min-height: calc(100% - 72px); max-width: none; margin: 0; text-align: center; }
+#welcome-dialog :is(#welcome-path[hidden], #welcome-start[hidden], #welcome-demo[hidden]) { display: none; }
+#welcome-dialog :is(#welcome-path-title, #welcome-title) { max-width: 25ch; margin: auto 0 10px; padding-top: 58px; font: 400 26px/1.35 var(--aura-font-family); letter-spacing: -.02em; text-align: center; }
+#welcome-dialog .welcome-description { color: var(--aura-ink-secondary); font-size: 15px; line-height: 1.6; margin: 0 0 auto; }
+#welcome-dialog .path-choices { display: flex; flex-direction: column; gap: 12px; width: min(280px, 100%); margin-top: 36px; border: 0; }
+#welcome-dialog .path-choice { width: 100%; min-height: 44px; padding: 12px 16px; border: 1px solid var(--aura-border-strongest); border-radius: 12px; background: transparent; color: var(--aura-ink); text-align: center; }
+#welcome-dialog #path-app { background: var(--aura-button-primary); color: var(--aura-button-primary-text); border-color: transparent; }
+#welcome-dialog .path-choice strong { font-size: 14px; font-weight: 500; }
+#welcome-dialog .path-choice > span { display: none; }
+#welcome-dialog .welcome-actions { display: flex; flex-direction: column; align-items: stretch; gap: 12px; width: min(280px, 100%); margin: 34px 0 16px; }
+#welcome-dialog .welcome-actions button { min-height: 42px; padding: 11px 14px; border-radius: 12px; font-size: 13px; }
+#welcome-dialog .welcome-actions .primary { background: var(--aura-button-primary); color: var(--aura-button-primary-text); }
+#welcome-dialog .hint { color: var(--aura-ink-secondary); font-size: 12px; line-height: 1.6; }
+#welcome-dialog #welcome-skip { min-height: 44px; width: min(280px, 100%); margin: 12px auto 0; padding: 12px 16px; border: 1px solid var(--aura-border-strongest); border-radius: 12px; font-size: 14px; font-weight: 450; color: var(--aura-ink); background: transparent; }
+#welcome-dialog .eyebrow { display: none; }
+body.native-welcome-window #welcome-dialog { inset: 0; margin: 0; width: 100vw; max-width: none; height: 100dvh; max-height: none; border-radius: 0; box-shadow: none; padding-top: 64px; }
+body.native-welcome-window #welcome-dialog::backdrop { background: var(--aura-bg-raised); }
+#welcome-dialog :is(button, summary):focus-visible { outline: 2px solid var(--aura-accent); outline-offset: 3px; }
+#tools-dialog { border-radius: 20px; background: var(--aura-bg-raised); }
+#tools-dialog .tools-card { border-radius: 12px; background: transparent; }
+@media(max-width: 680px) {
+  :is(#settings-dialog, dialog.native-settings-shell) { width: calc(100vw - 24px); height: calc(100dvh - 40px); max-height: calc(100dvh - 40px); }
+  #settings-dialog .settings-layout, dialog.native-settings-shell .native-settings-layout { grid-template-columns: 138px minmax(0, 1fr); }
+  :is(#settings-dialog, dialog.native-settings-shell) .settings-nav { padding-inline: 6px; }
+  :is(#settings-dialog, dialog.native-settings-shell) .settings-nav button { gap: 7px; padding-inline: 8px; font-size: 12px; }
+  #settings-dialog .settings-content, dialog.native-settings-shell .native-settings-content { padding: 10px 18px 28px 12px; }
+  #settings-dialog .settings-field { grid-template-columns: 1fr; gap: 10px; }
+  #settings-dialog .settings-fontsize { justify-self: start; }
+  #settings-dialog .settings-theme { gap: 6px; }
+  #settings-dialog .settings-theme label { font-size: 11px; padding-inline: 5px; }
+  #connections-dialog .provider-cards { grid-template-columns: 1fr; }
+  #welcome-dialog { padding: 44px 24px 28px; }
+  #welcome-dialog .brand-copy { font-size: 26px; }
+}
+@media(max-width: 440px) {
+  #settings-dialog .settings-layout, dialog.native-settings-shell .native-settings-layout { display: flex; flex-direction: column; }
+  :is(#settings-dialog, dialog.native-settings-shell) .settings-nav { flex: none; flex-direction: row; overflow-x: auto; }
+  :is(#settings-dialog, dialog.native-settings-shell) .settings-nav button { flex: none; white-space: nowrap; }
+}
+/* Keep the welcome's two main actions in the lower part of the same frame.
+   The code-tool route remains a quiet third entry, never an account gate. */
+#welcome-dialog[open] { display: flex; flex-direction: column; align-items: center; }
+#welcome-dialog .welcome-header { flex: none; }
+#welcome-dialog :is(#welcome-path, #welcome-start):not([hidden]) { flex: 1; min-height: 0; width: 100%; }
+#welcome-dialog :is(#welcome-path-title, #welcome-title) { padding-top: 28px; }
+#welcome-dialog .path-choices { margin-top: 30px; }
+#welcome-dialog #path-tools { min-height: 32px; padding: 7px 0; border: 0; font-size: 12px; }
+#welcome-dialog #path-tools strong { font-size: 12px; font-weight: 450; color: var(--aura-ink-secondary); }
+#welcome-dialog > #welcome-skip { display: block; flex: none; margin-top: 10px; }
+#welcome-dialog #welcome-demo { width: 100%; min-height: 0; flex: 1; overflow-y: auto; }

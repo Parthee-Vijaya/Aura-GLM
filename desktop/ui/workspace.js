@@ -52,11 +52,11 @@
     surfaceOpen(event.detail?.appearance?.panelOpen !== false, { persist: false });
   });
 
-  function show(name, { focus = false } = {}) {
+  function show(name, { focus = false, reveal = true } = {}) {
     if (!tabs.includes(name)) return;
     // Åbn panelet, hvis en fane vælges mens det er lukket.
     const grid = document.querySelector('.work-grid');
-    if (grid?.dataset.surface === 'off') surfaceOpen(true, { select: name });
+    if (reveal && grid?.dataset.surface === 'off') surfaceOpen(true, { select: name });
     active = name;
     for (const item of tabs) {
       const selected = item === name;
@@ -321,8 +321,8 @@
     else { code.from = code.to = code.anchor = line; }
     markLines(); updateReferenceButton();
   });
-  async function openFile(file, { line = null, to = null, focus = true } = {}) {
-    show('code');
+  async function openFile(file, { line = null, to = null, focus = true, reveal = true } = {}) {
+    show('code', { reveal });
     const root = current?.workspaceRoot || current?.root;
     if (!code.files || code.stale) await action(loadCodeList);
     try {
@@ -567,9 +567,10 @@
     if (event.type === 'run.review') action(async () => { await loadCodeList(); linkifyAll(); });
     if (event.type === 'plan.ready' && mine(event) && active !== 'plan') { $('#plan-badge').hidden = false; $('#plan-badge').replaceChildren(visuallyHidden('ny plan')); }
   });
-  // Et nyt projekt starter i Forhåndsvisning med tomme faner.
+  // Refresh the selected tab without reopening the panel or persisting a user choice.
+  // A new project starts with empty Preview content.
   async function onProject() {
-    show('preview'); $('#plan-badge').hidden = true;
+    show('preview', { reveal: false }); $('#plan-badge').hidden = true;
     Object.assign(changes, { data: null, source: '', file: '', stale: true, latest: '', mode: 'session', sessionSource: '', versionView: null }); badge('changes', 0); applyMode(); window.versions?.reset();
     $('#changes-source').replaceChildren(option('', 'Ingen opgaver endnu')); $('#changes-source').disabled = true;
     $('#changes-overview').hidden = true; $('#changes-diff').hidden = true; $('#changes-empty').hidden = false; $('#changes-notice').hidden = true;
@@ -587,8 +588,8 @@
     if (changes.mode === 'session') { changes.source = ''; $('#changes-source').replaceChildren(option('', 'Ingen opgaver endnu')); $('#changes-source').disabled = true; $('#changes-overview').hidden = true; $('#changes-diff').hidden = true; $('#changes-empty').hidden = false; $('#changes-notice').hidden = true; if (active === 'changes') await action(() => loadChanges()); }
     references = []; target = null; renderReferences();
     code.files = null; code.stale = true; await action(loadCodeList);
-    if (code.path) { const selected = active; await openFile(code.path); show(selected); }
+    if (code.path) { const selected = active; await openFile(code.path, { focus: false, reveal: false }); show(selected, { reveal: false }); }
     activity.running = running; await action(loadActivity); updateActivityStatus();
   }
-  window.workspace = { show, onProject, onChat, showVersions, showVersion, openFile, showChange, linkify, linkifyAll, references: () => references.map(ref => ({ ...ref })), clearReferences: () => { references = []; target = null; renderReferences(); }, setTarget: value => { target = value ? { id: value.id, label: value.label } : null; renderReferences(); }, target: () => target && { ...target }, get active() { return active; } };
+  window.workspace = { show, setSurfaceOpen: surfaceOpen, onProject, onChat, showVersions, showVersion, openFile, showChange, linkify, linkifyAll, references: () => references.map(ref => ({ ...ref })), clearReferences: () => { references = []; target = null; renderReferences(); }, setTarget: value => { target = value ? { id: value.id, label: value.label } : null; renderReferences(); }, target: () => target && { ...target }, get active() { return active; } };
 })();
