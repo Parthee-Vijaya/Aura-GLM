@@ -55,17 +55,23 @@ nav { display: grid; gap: 5px; }
 nav button { display: flex; gap: 10px; align-items: center; text-align: left; border-color: transparent; background: transparent; padding: 10px; font-weight: 500; }
 nav button span:not(.nav-text) { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; color: var(--muted); flex-shrink: 0; }
 nav svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-nav button[aria-current=page] { color: var(--accent); background: var(--tint); }
-nav button[aria-current=page] span { color: var(--accent); }
 /* DSH §3 · Sidepanelets egne rækker — den flade der bærer appens DSH-
    identitet. Menupunkter (nav-knapperne, Indstillinger, Værktøjer og
    Introduktion) er 36 px-rækker i radius 12 med ikon + 6 px og
    venstrestillet 13/20-tekst; "Søg i samtaler" står i nav-rækken med
    samme grammatik (S3-fund: centreret uden ikon "ligner en ældre epoke").
    Teksten bærer --aura-ink-secondary: DSH's egen tertiær måler under 4,5:1
-   på sidepanelet (R4), så det er den målte sekundærfarve der bærer rollen. */
-.sidebar :is(nav button,#settings-toggle,#tools-button,#intro-button) { display: flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 8px; border-color: transparent; background: transparent; border-radius: var(--aura-radius-md); color: var(--aura-ink-secondary); text-align: left; font-size: 13px; line-height: 20px; font-weight: 500; }
-.sidebar :is(nav button,#settings-toggle,#tools-button,#intro-button):hover:not(:disabled) { background: var(--aura-bg-hover); color: var(--aura-ink); border-color: transparent; }
+   på sidepanelet (R4), så det er den målte sekundærfarve der bærer rollen.
+   Review-fund 1 (basis/kold start): nav-knappernes række er ID-FRI, så
+   valg-reglen nedenfor kan vinde kaskaden — ID'er i :is() gav markeringen
+   transparent fyld, mens den gamle accent-span-reglen farvede .nav-text
+   i 4,07:1. De tre text-button-rækker deler én :is()-regel (uden valg). */
+.sidebar nav button { display: flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 8px; border-color: transparent; background: transparent; border-radius: var(--aura-radius-md); color: var(--aura-ink-secondary); text-align: left; font-size: 13px; line-height: 20px; font-weight: 500; }
+.sidebar :is(#settings-toggle,#tools-button,#intro-button) { display: flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 8px; border-color: transparent; background: transparent; border-radius: var(--aura-radius-md); color: var(--aura-ink-secondary); text-align: left; font-size: 13px; line-height: 20px; font-weight: 500; }
+.sidebar nav button:hover:not(:disabled), .sidebar :is(#settings-toggle,#tools-button,#intro-button):hover:not(:disabled) { background: var(--aura-bg-hover); color: var(--aura-ink); border-color: transparent; }
+/* Den valgte nav-række ("Nyt projekt" på Projektopstart) bærer DSH-behandlingen
+   i BASIS-tilstanden: ink på det neutrale hover-fyld — samme par som calm. */
+.sidebar nav button[aria-current="page"] { color: var(--aura-ink); background: var(--aura-bg-hover); }
 .sidebar :is(nav button,#settings-toggle,#tools-button,#intro-button) span:not(.nav-text) { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; color: inherit; flex-shrink: 0; }
 .sidebar :is(nav button,#settings-toggle,#tools-button,#intro-button) svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 /* DSH §3 · "Ny samtale": 38 px primærknap i radius 12 med plus-glyfen.
@@ -624,9 +630,12 @@ body.sidebar-collapsed nav button { justify-content: center; padding: 10px; }
 body.sidebar-collapsed #new-chat { width: 40px; min-height: 40px; padding: 0; margin-top: 10px; justify-content: center; }
 body.sidebar-collapsed #settings-toggle { display: inline-grid; place-items: center; width: 40px; height: 40px; padding: 0; color: var(--muted); }
 body.sidebar-collapsed .settings-icon { display: inline-flex; }
-/* I et smalt vindue lægger det udfoldede sidepanel sig oven på indholdet og lukker med Escape eller et klik udenfor. */
+/* I et smalt vindue lægger det udfoldede sidepanel sig oven på indholdet og lukker med Escape eller et klik udenfor.
+   Review-fund 2 (D1): stien er med på token-toget — samme bredde og materiale
+   som calm-skuffen (230 px, --aura-bg-sidebar, --aura-shadow-overlay), ikke
+   den gamle 216 px/tint/hex-skygge. */
 body.sidebar-overlay { --sidebar: 60px; }
-body.sidebar-overlay .sidebar { width: 216px; z-index: 30; box-shadow: 0 12px 40px #17325233; background: var(--tint); }
+body.sidebar-overlay .sidebar { width: 230px; z-index: 30; box-shadow: var(--aura-shadow-overlay); background: var(--aura-bg-sidebar); }
 
 /* Arbejdsfladen: fire faner ved siden af samtalen. Fanerne ligger oven på hinanden, så skjulte faner bevarer deres tilstand. */
 .work-surface { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--canvas); container: work / inline-size; }

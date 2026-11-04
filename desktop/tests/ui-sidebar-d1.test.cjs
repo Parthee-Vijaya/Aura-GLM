@@ -108,11 +108,15 @@ test('alle menupunkter har ikon og venstrestilling — også "Søg i samtaler"',
   assert.ok(/<nav>[\s\S]*?id="history-search-open"/.test(indexHtml.replace(/\n/g, ' ')), '"Søg i samtaler" står i nav-rækken med de øvrige menupunkter');
   assert.ok(/id="history-search-open"[^>]*>[\s\S]*?aria-hidden="true"[\s\S]*?<svg/.test(indexHtml.replace(/\n/g, '')), '"Søg i samtaler" har et ikon');
   assert.ok(/id="history-search-open"[^>]*>[\s\S]*?class="nav-text"/.test(indexHtml.replace(/\n/g, '')), '"Søg i samtaler" har venstrestillet tekst');
-  // Rækkerne: 36 px, radius 12 — samme grammatik for nav-knapper og de tre
-  // text-button-rækker (Indstillinger, Værktøjer, Introduktion).
-  const rows = rule(styles, '.sidebar :is(nav button,#settings-toggle,#tools-button,#intro-button)');
-  assert.ok(rows && /min-height:\s*36px/.test(rows) && /border-radius:\s*var\(--aura-radius-md\)/.test(rows), 'menupunkterne er 36 px-rækker med radius 12');
-  assert.ok(rows && /text-align:\s*left/.test(rows), 'teksten står til venstre');
+  // Rækkerne: 36 px, radius 12 — samme grammatik for nav-knapperne og de tre
+  // text-button-rækker (Indstillinger, Værktøjer, Introduktion). Nav-delene
+  // er ID-fri (review-fund 1), text-button-delene deler én :is()-regel.
+  const rowSelectors = ['.sidebar nav button', '.sidebar :is(#settings-toggle,#tools-button,#intro-button)'];
+  for (const selector of rowSelectors) {
+    const rows = rule(styles, selector);
+    assert.ok(rows && /min-height:\s*36px/.test(rows) && /border-radius:\s*var\(--aura-radius-md\)/.test(rows), `menupunkterne er 36 px-rækker med radius 12 (${selector})`);
+    assert.ok(rows && /text-align:\s*left/.test(rows), `teksten står til venstre (${selector})`);
+  }
   const icons = rule(styles, '.sidebar :is(nav button,#settings-toggle,#tools-button,#intro-button) span:not(.nav-text)');
   assert.ok(icons && /width:\s*18px/.test(icons) && /height:\s*18px/.test(icons), 'ikonerne sidder i en fast 18 px-boks');
   for (const id of ['new', 'settings-toggle', 'tools-button', 'intro-button']) assert.ok(new RegExp(`id="${id}"[^>]*>[\\s\\S]{0,120}<svg`).test(indexHtml.replace(/\n/g, '')), `#${id} har et ikon`);
@@ -172,6 +176,11 @@ test('overlay-skuffens inset følger topbjælken (52 px) gennem én token', () =
   const bar = rule(components, '.workspace-calm .workspace-bar');
   assert.ok(bar && /min-height:\s*var\(--aura-workspace-bar\)/.test(bar), 'bjælken selv er målet fra token');
   for (const [css, name] of [[calm, 'workspace-calm.css'], [feedbackCss, 'feedback-layout.css']]) assert.ok(!/51px/.test(css), `ingen hårdkodet 51 px i ${name}`);
+  // Review-fund 2 (Minor): legacy-overlay-stien (workspace.js' egen ≤760-
+  // skuffe) er med på token-toget — samme materiale som calm-skuffen.
+  const legacyOverlay = rule(styles, 'body.sidebar-overlay .sidebar');
+  assert.ok(legacyOverlay && /var\(--aura-bg-sidebar\)/.test(legacyOverlay) && /var\(--aura-shadow-overlay\)/.test(legacyOverlay), 'legacy-overlay-stien bruger tokens (baggrund + skygge)');
+  assert.ok(legacyOverlay && !/#17325233/.test(legacyOverlay) && !/var\(--tint\)/.test(legacyOverlay), 'den gamle hex-skygge og tint-baggrund er væk fra overlay-stien');
 });
 
 // ── 10. Kontrast (R4): de nye flader måles i begge temaer ──
@@ -216,6 +225,28 @@ test('sidepanelets nye størrelser følger gulvet: 11 px kun i versionpillen', (
   assert.ok(label && /font-size:\s*13px/.test(label), 'sektionshovedet er 13 px — ikke 12');
   const chip = rule(styles, '.profile-chip');
   assert.ok(chip && /font-size:\s*13px/.test(chip), 'profilrækken er 13 px');
-  const rows = rule(styles, '.sidebar :is(nav button,#settings-toggle,#tools-button,#intro-button)');
-  assert.ok(rows && /font-size:\s*13px/.test(rows), 'menupunkterne er 13 px');
+  for (const selector of ['.sidebar nav button', '.sidebar :is(#settings-toggle,#tools-button,#intro-button)']) {
+    const rows = rule(styles, selector);
+    assert.ok(rows && /font-size:\s*13px/.test(rows), `menupunkterne er 13 px (${selector})`);
+  }
+});
+
+// ── 12. Kold start (basis-tilstanden uden .workspace-calm): "Nyt projekt"-
+// markeringen følger DSH-behandlingen (review-fund 1: accent-span-reglen
+// målte 4,07:1 i lyst tema og var udenfor probens calm-målinger) ──
+test('kold start: nav-markeringen (aria-current) er neutral i basis-tilstanden', () => {
+  assert.ok(indexHtml.includes('id="new" aria-current="page"'), 'kold start starter med markeringen på Nyt projekt (markup)');
+  // De to gamle accent-regler er væk fra basis.
+  assert.ok(!/nav button\[aria-current=page\]\s*\{[^}]*var\(--accent\)/.test(styles), 'den gamle accent-farve på den valgte nav-række er væk');
+  assert.ok(!/nav button\[aria-current=page\]\s*span/.test(styles), 'span-reglen (accent på .nav-text uden modstander) er væk');
+  // Nav-knappernes basis-række er ID-fri, så valg-reglen kan vinde kaskaden
+  // (ID'er i :is() gav markeringen transparent fyld ved kold start).
+  const row = rule(styles, '.sidebar nav button');
+  assert.ok(row && /min-height:\s*36px/.test(row) && /var\(--aura-ink-secondary\)/.test(row), 'nav-knappernes basis-række er ID-fri DSH-grammatik');
+  const text = rule(styles, '.sidebar :is(#settings-toggle,#tools-button,#intro-button)');
+  assert.ok(text && /min-height:\s*36px/.test(text), 'de tre text-button-rækker har samme grammatik');
+  // Den valgte række bærer DSH-behandlingen i basis: ink på hover-fyldet —
+  // samme par som test 10 måler (15,68:1 lys / 11,87:1 mørk).
+  const selected = rule(styles, '.sidebar nav button[aria-current="page"]');
+  assert.ok(selected && /color:\s*var\(--aura-ink\)/.test(selected) && /background:\s*var\(--aura-bg-hover\)/.test(selected), 'valgt nav-række i basis: ink på det neutrale hover-fyld (DSH §3)');
 });
