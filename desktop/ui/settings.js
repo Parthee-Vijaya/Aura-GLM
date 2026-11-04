@@ -661,7 +661,7 @@
       return tile;
     }
     async function savePlugin(change) {
-      try { pluginState = await invoke('pluginsSave', change); renderPluginsFields(); }
+      try { pluginState = await invoke('pluginsSave', change); root.dispatchEvent?.(new root.CustomEvent('aura:plugins', { detail: { values: pluginState.values } })); renderPluginsFields(); }
       catch (error) { announce([error.message || 'Pluginvalget kunne ikke gemmes.'], true); renderPluginsFields(); }
     }
     function pluginRow(definition) {

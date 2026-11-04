@@ -1039,8 +1039,40 @@ function fillConnection(connection) {
   $('#custom-protocol').value = connection.kind === 'compatible' && ['openai', 'responses', 'anthropic'].includes(connection.protocol) ? connection.protocol : 'openai';
   $('#provider-id').value = connection.providerID || '';
 }
+// Forbindelsestjek i trin (4.11): reach, key and models need no model call.
+// Text and tools would spend tokens and stay skipped until a reviewed live path exists.
+const DIAGNOSE_STEPS = { reach: 'Adressen svarer', key: 'Nøglen accepteres', models: 'Modeller hentet', text: 'Tekstsvar', tools: 'Værktøjskald' };
+const DIAGNOSE_STATUS = { ok: 'OK', failed: 'Fejlede', skipped: 'Sprunget over', unknown: 'Ukendt' };
+function diagnosePanel() {
+  let panel = $('#connection-diagnose');
+  if (panel || typeof window.harness?.connectionDiagnose !== 'function') return panel;
+  panel = node('section', undefined, 'connection-diagnose'); panel.id = 'connection-diagnose'; panel.setAttribute('aria-labelledby', 'connection-diagnose-title');
+  const title = node('h4', 'Kontrollér trin for trin'); title.id = 'connection-diagnose-title';
+  const lead = node('p', 'Tjekker adresse, nøgle og modelliste uden at sende en besked til modellen.', 'hint');
+  const run = node('button', 'Kontrollér nu'); run.type = 'button'; run.id = 'connection-diagnose-run';
+  const list = node('ol', undefined, 'diagnose-steps'); list.id = 'connection-diagnose-steps'; list.setAttribute('aria-live', 'polite');
+  run.onclick = () => action(async () => {
+    const id = $('#connection-id').value; if (!id) return;
+    run.disabled = true; list.replaceChildren(node('li', 'Kontrollerer …', 'hint'));
+    try {
+      const result = await call('connectionDiagnose', { id });
+      if ($('#connection-id').value !== id) return;
+      list.replaceChildren(...(result?.steps || []).map(step => {
+        const item = node('li', undefined, 'diagnose-step'); item.dataset.status = step.status;
+        item.append(node('span', DIAGNOSE_STEPS[step.id] || step.id, 'diagnose-name'), node('span', DIAGNOSE_STATUS[step.status] || step.status, 'diagnose-status'));
+        if (step.detail) item.append(node('small', step.detail));
+        return item;
+      }));
+    } catch (error) { list.replaceChildren(node('li', error.message || 'Kontrollen kunne ikke gennemføres.', 'hint')); }
+    finally { run.disabled = false; }
+  });
+  panel.append(title, lead, run, list);
+  $('#connection-edit').append(panel);
+  return panel;
+}
 function editConnection(connection) {
   moveConnectionForm(false); editingConnection = connection.id;
+  { const panel = diagnosePanel(); if (panel) { $('#connection-diagnose-steps').replaceChildren(); panel.hidden = false; } }
   $('#connection-form').reset(); $('#connection-id').value = connection.id; $('#provider-kind').value = connection.kind; updateProvider(); fillConnection(connection);
   clearConnectionReceipt(); $('#clear-key').checked = false;
   $('#connection-feedback').textContent = connectionChecks.get(connection.id)?.detail || ''; connectionView('edit');
@@ -2078,6 +2110,7 @@ function renderStatusLine() {
   $('#tokens-field').textContent = shaped.tokens;
   $('#price-field').textContent = shaped.price;
   line.setAttribute('aria-label', [shaped.context, shaped.speed, shaped.tokens, shaped.price].join(' · '));
+  renderContextHud(selected, model);
   const help = $('#status-line-help');
   help.replaceChildren(...shaped.tooltip.map(text => node('p', text)));
   if (help.matches(':popover-open')) window.PopoverLayer?.position();
@@ -2087,6 +2120,25 @@ function renderStatusLine() {
 // laget ejer placeringen, browseren ejer lukning — og et klik udenfor må ikke
 // straks åbne boblen igen (mekanismens 400 ms-vagt). Ind 40 ms / ud 80 ms og
 // 12/16-radius-8-looket kommer fra .aura-tooltip (components.css).
+// Kontekstvisning (plugin, 4.11): a compact context meter beside the model
+// chip. It shows only a measured share of the model's window — never a guess —
+// and is off unless the user turns it on under Indstillinger › Plugins.
+let contextHudOn = false;
+function renderContextHud(selected = statusSelection(), model = modelCatalog?.find(item => item.id === statusSelection().modelID)) {
+  const hud = $('#context-hud'); if (!hud) return;
+  const value = window.ContextDisplay.project(selected, view.contextUsage, model, $('#connection-select').value);
+  const measured = Number.isFinite(value.percentage) && Number.isFinite(value.windowTokens);
+  hud.hidden = !contextHudOn || !current || !view.id;
+  const percent = measured ? Math.max(0, Math.min(100, Math.round(value.percentage))) : null;
+  $('#context-hud-value').textContent = percent === null ? '–' : `${percent}%`;
+  hud.dataset.level = percent === null ? 'unknown' : percent >= 85 ? 'high' : percent >= 60 ? 'mid' : 'low';
+  hud.style?.setProperty?.('--context-share', String(percent ?? 0));
+  hud.setAttribute('aria-label', percent === null ? 'Kontekst: endnu ikke målt' : `Kontekst brugt: ${percent} % af modellens vindue`);
+  hud.title = hud.getAttribute('aria-label');
+}
+function applyPluginValues(values) { contextHudOn = values?.contextHud === true; renderContextHud(); }
+window.addEventListener('aura:plugins', event => applyPluginValues(event.detail?.values));
+if (typeof window.harness?.pluginsGet === 'function') void window.harness.pluginsGet().then(result => { if (result?.ok) applyPluginValues(result.value.values); }).catch(() => {});
 function openStatusHelp() {
   const line = $('#context-status');
   if (!line) return;
@@ -3253,6 +3305,18 @@ async function buildModelPicker() {
   renderModelPicker('');
   if (catalogFailed) list.prepend(node('p', 'Modellerne kunne ikke hentes fra forbindelsen. Listen kan være ufuldstændig; prøv igen under Flere indstillinger.', 'hint'));
 }
+// Modelevner (4.11): only documented capabilities are shown; unknown stays
+// "ukendt" and never blocks a choice. Byg needs tools, so the tag guides.
+function modelCapabilityTags(model) {
+  const caps = model?.capabilities; if (!caps || typeof caps !== 'object') return [];
+  const tags = [];
+  if (model.buildSuitable === true || caps.tools === true) tags.push(['Kan bygge', 'build']);
+  else if (model.buildSuitable === false || caps.tools === false) tags.push(['Kun samtale', 'chat-only']);
+  else tags.push(['Ukendt om den kan bygge', 'unknown']);
+  if (caps.images === true) tags.push(['Billeder', 'images']);
+  if (caps.reasoning === true) tags.push(['Ræsonnering', 'reasoning']);
+  return tags;
+}
 function renderModelPicker(term = '') {
   const list = document.getElementById('model-picker-list');
   const search = document.getElementById('model-picker-search');
@@ -3261,7 +3325,10 @@ function renderModelPicker(term = '') {
   if (search) search.removeAttribute('aria-activedescendant');
   const matches = needle ? pickerEntries.filter(e => e.label.toLowerCase().includes(needle) || e.modelID.toLowerCase().includes(needle)) : pickerEntries;
   list.replaceChildren(...(matches.length ? matches.map((item, index) => {
-    const btn = node('button', item.label); btn.type = 'button'; btn.id = `model-option-${index}`; btn.setAttribute('role', 'option');
+    const btn = node('button', undefined, 'model-picker-option'); btn.type = 'button'; btn.id = `model-option-${index}`; btn.setAttribute('role', 'option');
+    btn.append(node('span', item.label, 'model-picker-name'));
+    const tags = modelCapabilityTags(modelCatalog?.find(model => model.id === item.modelID));
+    if (tags.length) { const row = node('span', undefined, 'model-capabilities'); row.append(...tags.map(([text, kind]) => { const tag = node('span', text, 'model-capability'); tag.dataset.kind = kind; return tag; })); btn.append(row); btn.setAttribute('aria-description', tags.map(([text]) => text).join(', ')); }
     btn.setAttribute('aria-selected', String(!!item.current));
     btn.onclick = () => {
       document.getElementById('model-picker').hidePopover();

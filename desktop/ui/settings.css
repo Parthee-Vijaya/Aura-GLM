@@ -291,3 +291,16 @@ body.native-welcome-window #welcome-dialog::backdrop { background: var(--aura-bg
 #settings-dialog .plugin-switch[aria-checked="true"] { background: var(--aura-accent); }
 #settings-dialog .plugin-switch:hover:not(:disabled) { filter: brightness(.97); }
 .provider-catalog[hidden] { display: none; }
+
+/* Forbindelsestjek i trin (4.11) */
+.connection-diagnose { margin: 20px 0 0; padding: 14px 16px; border: 1px solid var(--aura-border); border-radius: 14px; }
+.connection-diagnose h4 { margin: 0 0 4px; font-size: 13px; font-weight: 600; }
+.connection-diagnose .hint { margin: 0 0 10px; }
+.diagnose-steps { display: grid; gap: 6px; margin: 12px 0 0; padding: 0; list-style: none; }
+.diagnose-step { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; align-items: center; gap: 4px 10px; font-size: 13px; }
+.diagnose-step::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--aura-ink-muted); }
+.diagnose-step[data-status="ok"]::before { background: var(--aura-success-ink); }
+.diagnose-step[data-status="failed"]::before { background: var(--aura-error-ink); }
+.diagnose-step[data-status="unknown"]::before { background: var(--aura-warning-ink); }
+.diagnose-step small { grid-column: 2 / -1; font-size: 12px; color: var(--aura-ink-secondary); }
+.diagnose-status { font-size: 12px; color: var(--aura-ink-secondary); }

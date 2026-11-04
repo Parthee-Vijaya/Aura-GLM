@@ -407,3 +407,20 @@ details.disclosure.step.step-group[open] > summary .step-glyph::after { opacity:
 /* B3 at every width: in an active conversation the top bar owns the mode chip,
    the composer row keeps permission, attachments, model and Send. */
 #chat-panel:not([data-phase="hero"]) #composer-mode { display: none; }
+
+/* Kontekstvisning (plugin): ring + procent ved modelchippen. */
+.context-hud { display: inline-flex; align-items: center; gap: 5px; flex: none; padding: 2px 6px; border-radius: 8px; font-size: 12px; line-height: 20px; color: var(--aura-ink-secondary); font-variant-numeric: tabular-nums; }
+.context-hud[hidden] { display: none; }
+.context-hud-ring { width: 14px; height: 14px; border-radius: 50%; background: conic-gradient(var(--context-color, var(--aura-accent)) calc(var(--context-share, 0) * 1%), var(--aura-bg-active) 0); -webkit-mask: radial-gradient(circle, transparent 4px, #000 4.5px); mask: radial-gradient(circle, transparent 4px, #000 4.5px); }
+.context-hud[data-level="mid"] { --context-color: var(--aura-warning-ink); }
+.context-hud[data-level="high"] { --context-color: var(--aura-error-ink); color: var(--aura-error-ink); }
+.context-hud[data-level="unknown"] .context-hud-ring { opacity: .5; }
+.context-hud:not([hidden]) { margin-left: auto; }
+.context-hud:not([hidden]) + #model-chip { margin-left: 0; }
+
+/* Modelevner i modelvælgeren (4.11) */
+.model-picker-option { display: grid; gap: 3px; text-align: left; }
+.model-capabilities { display: flex; flex-wrap: wrap; gap: 4px; }
+.model-capability { padding: 0 6px; border-radius: 5px; font-size: 11px; line-height: 17px; background: var(--aura-bg-hover); color: var(--aura-ink-secondary); }
+.model-capability[data-kind="build"] { background: var(--aura-success-subtle); color: var(--aura-success-ink); }
+.model-capability[data-kind="chat-only"] { background: var(--aura-warning-subtle); color: var(--aura-warning-ink); }

@@ -17,7 +17,7 @@ const definitions = [
   { id: 'shell', group: 'builtin', title: 'Terminalgrænser', summary: 'Indstil tidsgrænse og outputloft for terminalkommandoer.', available: false, reason: reasons.shell, default: {}, settings: [{ key: 'timeoutSeconds', type: 'number', min: 30, max: 1800 }, { key: 'outputLimitKB', type: 'number', min: 16, max: 1024 }] },
   { id: 'lsp', group: 'builtin', title: 'Sprogservere', summary: 'Brug sprogservere til at undersøge kode.', available: false, reason: reasons.lsp, default: false },
   { id: 'mcp', group: 'experimental', title: 'MCP-servere', summary: 'Gem serverdefinitioner til senere sikker tilkobling. Ingen server startes.', available: false, reason: `${reasons.local} ${reasons.remote}`, default: false },
-  { id: 'contextHud', group: 'experimental', title: 'Kontekstvisning', summary: 'Gem en visningspræference uden at ændre motorens rettigheder.', available: true, default: false },
+  { id: 'contextHud', group: 'experimental', title: 'Kontekstvisning', summary: 'Vis hvor meget af modellens kontekstvindue samtalen bruger, som en lille måler ved modelvalget. Ændrer ingen rettigheder.', available: true, default: false },
 ];
 const defaults = () => Object.fromEntries(definitions.map(item => [item.id, structuredClone(item.default)]));
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value) && [Object.prototype, null].includes(Object.getPrototypeOf(value));

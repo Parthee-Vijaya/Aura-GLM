@@ -202,7 +202,7 @@ function azureEndpoint(value) {
 }
 function usesResponses(connection) { return (connection.protocol || definitions[connection.kind]?.protocol) === 'responses'; }
 function usesAnthropic(connection, model) { return (connection.protocol || definitions[connection.kind]?.protocol) === 'anthropic' || connection.kind === 'zen' && /^claude-/.test(model.id); }
-async function requestJSON(url, { key = '', kind, protocol, method = 'GET', body, signal, assertCurrent = () => true } = {}) {
+async function requestJSON(url, { key = '', kind, protocol, method = 'GET', body, signal, statusOnly = false, assertCurrent = () => true } = {}) {
   const headers = { accept: 'application/json' };
   if (kind === 'anthropic' || protocol === 'anthropic') headers['anthropic-version'] = '2023-06-01';
   if (key) Object.assign(headers, kind === 'anthropic' || protocol === 'anthropic' ? { 'x-api-key': key, 'anthropic-version': '2023-06-01' } : kind === 'azure' ? { 'api-key': key } : { Authorization: `Bearer ${key}` });
@@ -215,8 +215,12 @@ async function requestJSON(url, { key = '', kind, protocol, method = 'GET', body
   try { response = await fetch(url, { method, headers, body: body && JSON.stringify(body), signal: signal || AbortSignal.timeout(15000), redirect: 'error' }); }
   catch { throw new Error('Serveren svarer ikke. Kontrollér adresse, port, netværk og eventuelt Tailscale.'); }
   try { current(); } catch (error) { await response.body?.cancel(); throw error; }
+  if (statusOnly) {
+    try { await response.body?.cancel(); } catch {}
+    current(); return { status: response.status };
+  }
   // En Corti-nøgle virker kun i sit eget miljø. Beskeden siger, hvilken adresse appen prøvede, så testeren ved, hvad der skal tjekkes.
-  if (!response.ok && kind === 'corti' && (response.status === 401 || response.status === 403)) throw new Error(`Corti afviste nøglen på ${url.startsWith(CORTI.fr) ? 'adressen i Frankrig' : url.startsWith(CORTI['eu-s']) ? 'adressen i EU-S (Sovereign)' : 'adressen i EU'}. Brug en nøgle fra Corti Models i et projekt i EU, EU-S eller Frankrig; en nøgle virker kun i sit eget miljø.`);
+  if (!response.ok && kind === 'corti' && (response.status === 401 || response.status === 403)) throw Object.assign(new Error(`Corti afviste nøglen på ${url.startsWith(CORTI.fr) ? 'adressen i Frankrig' : url.startsWith(CORTI['eu-s']) ? 'adressen i EU-S (Sovereign)' : 'adressen i EU'}. Brug en nøgle fra Corti Models i et projekt i EU, EU-S eller Frankrig; en nøgle virker kun i sit eget miljø.`), { status: response.status });
   if (!response.ok) throw Object.assign(new Error(response.status === 401 || response.status === 403 ? 'Serveren afviste adgangen. Kontrollér API-nøglen og tilladelserne.' : `Serveren svarede med HTTP ${response.status}. Ingen anden forbindelse blev valgt.`), { status: response.status });
   const chunks = []; let size = 0, complete = false;
   const iterator = response.body[Symbol.asyncIterator]();
@@ -244,6 +248,20 @@ function catalogReasoning(model) {
   else if (out.reasoning && Array.isArray(model.supported_parameters)) out.effort = ['low', 'medium', 'high'];
   return out;
 }
+function modelCapabilities(connection, model, { catalogOnly = false } = {}) {
+  const bool = value => typeof value === 'boolean' ? value : null;
+  const declared = model.capabilities || {};
+  const parameters = Array.isArray(model.supported_parameters) && model.supported_parameters.every(value => typeof value === 'string') ? model.supported_parameters : null;
+  const modalities = Array.isArray(model.architecture?.input_modalities) && model.architecture.input_modalities.every(value => typeof value === 'string') ? model.architecture.input_modalities : null;
+  const tools = bool(declared.function_calling) ?? bool(declared.tools) ?? (parameters ? parameters.includes('tools') : null);
+  const images = bool(declared.images) ?? bool(declared.vision) ?? bool(declared.image_input?.supported) ?? (modalities ? modalities.includes('image') : null);
+  const streaming = bool(declared.streaming);
+  const providerReasoning = bool(declared.reasoning) ?? (parameters ? parameters.includes('reasoning') : null);
+  const reasoning = providerReasoning ?? (catalogOnly ? null : bool(known(connection, model)?.reasoning));
+  const providerEvidence = [tools, images, streaming, providerReasoning].some(value => value !== null);
+  return { capabilities: { tools, images, streaming, ...catalogReasoning(model), reasoning, ...(images !== null ? { vision: images } : {}) },
+    source: providerEvidence ? 'provider' : catalogOnly || reasoning !== null ? 'catalog' : 'unknown', buildSuitable: tools };
+}
 async function listModels(connection, key, { assertCurrent } = {}) {
   assertSupported(connection);
   const def = definitions[connection.kind];
@@ -256,15 +274,15 @@ async function listModels(connection, key, { assertCurrent } = {}) {
     // A documented recommendation is not an authenticated model catalogue.
     // Never hide authentication, network, policy or server failures behind it.
     if (!def.models?.length || ![404, 405].includes(error.status)) throw error;
-    return def.models.map(id => ({ id, name: id, price: null, capabilities: { tools: null }, catalogFallback: true }));
+    return def.models.map(id => ({ id, name: id, price: null, ...modelCapabilities(connection, { id }, { catalogOnly: true }), catalogFallback: true }));
   }
   const models = Array.isArray(response) ? response : response[ollama ? 'models' : connection.kind === 'cloudflare' ? 'result' : 'data'];
   if (!Array.isArray(models)) throw new Error('Serveren returnerede ingen læsbar modelliste.');
   // Azures katalog beskriver modeller, ikke kundens deployment-navne. Vi sender kun til navnet, brugeren har angivet.
-  if (connection.kind === 'azure') return [{ id: connection.deployment, name: connection.deployment, price: null, capabilities: { tools: null }, configuredDeployment: true }];
+  if (connection.kind === 'azure') return [{ id: connection.deployment, name: connection.deployment, price: null, ...modelCapabilities(connection, { id: connection.deployment }, { catalogOnly: true }), source: 'unknown', configuredDeployment: true }];
   return models.slice(0, 5000).filter(model => model && model.capabilities?.completion_chat !== false && !(connection.kind === 'corti' && /embedding/.test(model.id)) && (connection.kind !== 'cloudflare' || !model.task?.name || model.task.name === 'Text Generation') && (connection.kind !== 'openai' || /^(gpt-|chatgpt-|codex-|o\d)/.test(model.id) && !/audio|realtime|transcribe|image|tts|search|deep-research/.test(model.id))).map(model => ({
     id: ollama || connection.kind === 'cloudflare' ? model.name : model.id, name: model.display_name || model.name || model.id,
-    price: model.pricing || null, capabilities: { tools: model.capabilities?.function_calling ?? model.supported_parameters?.includes('tools') ?? null, ...catalogReasoning(model), ...(typeof model.capabilities?.vision==='boolean'?{vision:model.capabilities.vision}:typeof model.capabilities?.image_input?.supported==='boolean'?{vision:model.capabilities.image_input.supported}:Array.isArray(model.architecture?.input_modalities)?{vision:model.architecture.input_modalities.includes('image')}:{}) },
+    price: model.pricing || null, ...modelCapabilities(connection, { ...model, id: ollama ? model.name : model.id }),
     limits: { context: tokenCount(model.context_length ?? model.max_context_length ?? model.context_window ?? model.max_input_tokens), output: tokenCount(model.top_provider?.max_completion_tokens ?? model.max_output_tokens ?? model.max_tokens) },
     local: ollama && !model.remote_host && !/:.*cloud/.test(model.name) ? 'Ikke verificeret' : null
   })).filter(model => typeof model.id === 'string');
@@ -273,6 +291,58 @@ function modelCatalogURL(connection) {
   assertSupported(connection);
   if (connection.kind === 'cloudflare') return cloudflareEndpoint(connection.baseURL).replace(/\/v1$/, '/models/search');
   return `${connection.baseURL}${connection.kind === 'ollama' ? '/api/tags' : '/models'}`;
+}
+function skippedLiveDiagnosis() {
+  return ['text', 'tools'].map(id => ({ id, status: 'skipped', detail: 'Liveprøver er endnu ikke tilkoblet en særskilt datagennemgang. Ingen modelkald er sendt.' }));
+}
+async function diagnoseConnection(connection, key = '', { assertCurrent = () => true } = {}) {
+  assertSupported(connection);
+  const url = modelCatalogURL(connection), def = definitions[connection.kind], checkKey = def.keyRequired || Boolean(key);
+  const current = () => {
+    const result = assertCurrent(url);
+    if (result && typeof result.then === 'function') void result.catch?.(() => {});
+    if (result !== true) throw Object.assign(new Error('Forbindelsens dataregler kunne ikke genvalideres. Gentag kontrollen.'), { code: 'PRIVACY_STALE' });
+    return true;
+  };
+  const steps = [
+    { id: 'reach', status: 'unknown', detail: 'Adressen er ikke kontrolleret.' },
+    { id: 'key', status: checkKey ? 'unknown' : 'skipped', detail: checkKey ? 'Nøglens adgang er ikke kontrolleret.' : 'Forbindelsen bruger ingen API-nøgle.' },
+    { id: 'models', status: 'skipped', detail: 'Modellisten er ikke hentet.' }, ...skippedLiveDiagnosis()
+  ];
+  const result = () => { current(); return { steps, checkedAt: new Date().toISOString() }; };
+  let reach;
+  try {
+    reach = await requestJSON(url, { kind: connection.kind, protocol: connection.protocol || def.protocol, statusOnly: true, assertCurrent: current });
+    steps[0] = { id: 'reach', status: 'ok', detail: `Serveren svarede med HTTP ${reach.status} uden API-nøgle.` };
+  } catch (error) {
+    current();
+    if (error.code?.startsWith('PRIVACY_')) throw error;
+    steps[0] = { id: 'reach', status: 'failed', detail: 'Serveren svarer ikke på den valgte katalogadresse. Kontrollér adresse, netværk og eventuelt Tailscale.' };
+    return result();
+  }
+  if (def.keyRequired && !key) {
+    steps[1] = { id: 'key', status: 'failed', detail: 'Denne forbindelse kræver en gemt API-nøgle.' };
+    return result();
+  }
+  try {
+    const models = await listModels(connection, key, { assertCurrent: current });
+    if (models.some(model => model.catalogFallback)) {
+      steps[2] = { id: 'models', status: 'unknown', detail: 'Modelliste fra dokumentation, ikke fra udbyderen' };
+      if (checkKey) steps[1] = { id: 'key', status: 'unknown', detail: 'Udbyderen har ikke bekræftet nøglen gennem en modelliste.' };
+    } else {
+      steps[2] = { id: 'models', status: models.length ? 'ok' : 'unknown', detail: models.length ? `Modellisten er hentet: ${models.length} modeller. Modelkald er ikke afprøvet.` : 'Udbyderen returnerede en tom modelliste.' };
+      if (checkKey) steps[1] = [401, 403].includes(reach.status)
+        ? { id: 'key', status: 'ok', detail: 'Serveren accepterede modellisteforespørgslen med nøgle. Modeladgang er ikke afprøvet.' }
+        : { id: 'key', status: 'unknown', detail: 'Katalogadressen svarede uden nøgle. Modellisten beviser ikke, at nøglen accepteres.' };
+    }
+  } catch (error) {
+    current();
+    if (error.code?.startsWith('PRIVACY_')) throw error;
+    const denied = [401, 403].includes(error.status);
+    if (denied && checkKey) steps[1] = { id: 'key', status: 'failed', detail: 'Serveren afviste API-nøglen eller kontoens tilladelser.' };
+    steps[2] = { id: 'models', status: 'failed', detail: denied ? 'Modellisten kunne ikke hentes på grund af afvist adgang.' : Number.isInteger(error.status) ? `Modellisten kunne ikke hentes. Serveren svarede med HTTP ${error.status}.` : 'Serverens modelliste kunne ikke læses. Kontrollér API-adressen og udbyderen.' };
+  }
+  return result();
 }
 async function routes(connection, key, model, { assertCurrent } = {}) {
   assertSupported(connection);
@@ -379,4 +449,4 @@ function engineProvider(connection, model, gatewayURL, token) {
     options: { baseURL: gatewayURL, apiKey: token, timeout: 1_230_000, headerTimeout: 1_230_000, chunkTimeout: 1_230_000 },
     models: { [model.id]: { name: model.name, tool_call: true, limit: modelLimits(connection, model), ...(usesResponses(connection) ? { options: { store: false, include: ['reasoning.encrypted_content'] } } : {}) } } };
 }
-module.exports = { definitions, assertSupported, endpoint, normalize, requestJSON, modelCatalogURL, listModels, routes, disclosure, engineProvider, modelLimits, effortLevels, reasons, priceFor, usesResponses, usesAnthropic, OUTPUT_CEILING, WORKING_WINDOW };
+module.exports = { definitions, assertSupported, endpoint, normalize, requestJSON, modelCatalogURL, listModels, diagnoseConnection, skippedLiveDiagnosis, routes, disclosure, engineProvider, modelLimits, effortLevels, reasons, priceFor, usesResponses, usesAnthropic, OUTPUT_CEILING, WORKING_WINDOW };
