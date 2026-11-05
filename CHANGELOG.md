@@ -1,5 +1,11 @@
 # Ændringslog
 
+## 0.6.0-beta.7 · 5. november 2026
+
+- Opdateringskontrollen accepterer GitHub-udbyderens præcise relative ZIP-navn og validerer den fulde forventede releaseadresse uden at ændre udbyderens downloadoplysninger. Forkerte filer, stier, arkitekturer og kontrolsummer afvises fortsat.
+- Kommandoovervågningen venter på hele hjælperens JSON-kvittering før kontrol af nul levende underprocesser.
+- Beta 6-tagget og dets installationsfiler bevares. Installer beta 7 manuelt fra DMG ved opgradering fra beta 5 eller den første beta 6.
+
 ## 0.6.0-beta.6 · 5. november 2026
 
 - **Forbindelsestjek i trin.** En gemt forbindelse kan tjekkes for adresse, nøgle og modelliste hver for sig, uden modelkald.
