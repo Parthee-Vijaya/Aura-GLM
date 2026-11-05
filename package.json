@@ -12,7 +12,7 @@
     "@opencode/cli-windows-arm64": "2.1.4",
     "@opencode/cli-windows-x64-baseline": "2.1.4",
     "@opencode/cli-linux-arm64": "2.1.4",
-    "@opencode/cli-linux-arm64-musl": "2.1.4",
+    "@opencode/cli-linux-arm64-musl": "2.2.2",
     "@opencode/cli-linux-x64-baseline": "2.1.4",
     "@opencode/cli-linux-x64-baseline-musl": "2.1.4"
   },
