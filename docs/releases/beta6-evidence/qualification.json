@@ -1,0 +1,266 @@
+{
+  "version": "0.6.0-beta.6",
+  "sourceCommit": "0cce3b8a9a52cf4a36912fd00eb1578e80b8aab9",
+  "platform": "darwin-arm64",
+  "runtime": {
+    "electron": "45.0.0",
+    "node": "22.23.3",
+    "opencode": "2.1.4"
+  },
+  "fullLocalCheck": {
+    "passed": 2753,
+    "skipped": 34,
+    "failed": 0
+  },
+  "packagedRetirement": {
+    "passed": 8,
+    "failed": 0,
+    "scope": [
+      "SIGTERM",
+      "SIGINT",
+      "SIGKILL",
+      "timeout",
+      "exit 0",
+      "exit 7",
+      "concurrent command",
+      "explicitly approved command"
+    ]
+  },
+  "packageAcceptance": {
+    "from": "0.6.0-beta.5",
+    "passedSteps": 22,
+    "keychainCalls": 0,
+    "syntheticLocalModel": true,
+    "externalSocketBlocked": true,
+    "feedDownloadTested": false
+  },
+  "screenshots": [
+    {
+      "file": "01-welcome-light.png",
+      "sha256": "717e49bc3271c87524e96dd079a8996b67d1ca0510e23e92a868a701d3a41d06",
+      "theme": "light",
+      "window": {
+        "width": 600,
+        "height": 700
+      },
+      "viewport": {
+        "width": 600,
+        "height": 700
+      },
+      "pane": {
+        "scrollTop": 0,
+        "scrollHeight": 505,
+        "clientHeight": 505
+      }
+    },
+    {
+      "file": "02-local-profile-light.png",
+      "sha256": "ed2c70404fe1a048b5817dbccfef373095ddf46bff56dd3759d8c1202af5dadc",
+      "theme": "light",
+      "window": {
+        "width": 1440,
+        "height": 940
+      },
+      "viewport": {
+        "width": 1440,
+        "height": 940
+      },
+      "pane": {
+        "scrollTop": 0,
+        "scrollHeight": 0,
+        "clientHeight": 0
+      }
+    },
+    {
+      "file": "03-local-profile-dark.png",
+      "sha256": "35f68d51f36f0af095648dec3f9531e43625b7bd8b6358b99b9440abf47e3e20",
+      "theme": "dark",
+      "window": {
+        "width": 1440,
+        "height": 940
+      },
+      "viewport": {
+        "width": 1440,
+        "height": 940
+      },
+      "pane": {
+        "scrollTop": 0,
+        "scrollHeight": 0,
+        "clientHeight": 0
+      }
+    },
+    {
+      "file": "04-new-project-light.png",
+      "sha256": "169d2d1b0c875c0b63fae1988883309f90b26ae779fa991d1ed9edf19b6cb343",
+      "theme": "light",
+      "window": {
+        "width": 980,
+        "height": 720
+      },
+      "viewport": {
+        "width": 980,
+        "height": 720
+      },
+      "pane": {
+        "scrollTop": 0,
+        "scrollHeight": 493,
+        "clientHeight": 493
+      }
+    },
+    {
+      "file": "05-new-project-dark.png",
+      "sha256": "dfdcab62746cda9551456f915832ce13fdd26b6eb184cebe1c2ca10d5f42a004",
+      "theme": "dark",
+      "window": {
+        "width": 980,
+        "height": 720
+      },
+      "viewport": {
+        "width": 980,
+        "height": 720
+      },
+      "pane": {
+        "scrollTop": 0,
+        "scrollHeight": 493,
+        "clientHeight": 493
+      }
+    },
+    {
+      "file": "06-workspace-light.png",
+      "sha256": "df54a2579847a8d6335a964319b1a73dbd4e87b23ce5e6794f55615f851e45ed",
+      "theme": "light",
+      "window": {
+        "width": 1280,
+        "height": 820
+      },
+      "viewport": {
+        "width": 1280,
+        "height": 820
+      },
+      "pane": {
+        "scrollTop": 0,
+        "scrollHeight": 0,
+        "clientHeight": 0
+      }
+    },
+    {
+      "file": "07-sidebar-hidden-light.png",
+      "sha256": "d38145205b78fd30abb16a3e3e953cb061c893e2a1ddc6fcbc7854f5bd65b40b",
+      "theme": "light",
+      "window": {
+        "width": 1280,
+        "height": 820
+      },
+      "viewport": {
+        "width": 1280,
+        "height": 820
+      },
+      "pane": {
+        "scrollTop": 0,
+        "scrollHeight": 0,
+        "clientHeight": 0
+      }
+    },
+    {
+      "file": "08-sidebar-hidden-dark.png",
+      "sha256": "7467d3fdc257111d1b71d6d63d6e902f686bf3a9f4d8d3d64c1761fd353461b0",
+      "theme": "dark",
+      "window": {
+        "width": 1280,
+        "height": 820
+      },
+      "viewport": {
+        "width": 1280,
+        "height": 820
+      },
+      "pane": {
+        "scrollTop": 0,
+        "scrollHeight": 0,
+        "clientHeight": 0
+      }
+    },
+    {
+      "file": "09-settings-profile-light.png",
+      "sha256": "4970af4b2f052b140c18b6850b10e75fde9af2dc613681caf5c700ff07285c46",
+      "theme": "light",
+      "window": {
+        "width": 1280,
+        "height": 820
+      },
+      "viewport": {
+        "width": 1280,
+        "height": 820
+      },
+      "pane": {
+        "scrollTop": 0,
+        "scrollHeight": 0,
+        "clientHeight": 0
+      }
+    },
+    {
+      "file": "10-settings-dark.png",
+      "sha256": "3f78c565e257b7f36e58d55f98f58f596c2ce9457182e230834fc2cbcc0b98ba",
+      "theme": "dark",
+      "window": {
+        "width": 1280,
+        "height": 820
+      },
+      "viewport": {
+        "width": 1280,
+        "height": 820
+      },
+      "pane": {
+        "scrollTop": 0,
+        "scrollHeight": 0,
+        "clientHeight": 0
+      }
+    },
+    {
+      "file": "11-workspace-dark.png",
+      "sha256": "9af8320fb5f2cd57ddc13f2bc0abf6eb153e00ae067869c0bd92cb84551c64cc",
+      "theme": "dark",
+      "window": {
+        "width": 1280,
+        "height": 820
+      },
+      "viewport": {
+        "width": 1280,
+        "height": 820
+      },
+      "pane": {
+        "scrollTop": 0,
+        "scrollHeight": 0,
+        "clientHeight": 0
+      }
+    }
+  ],
+  "nativeRestart": {
+    "nameRetained": true,
+    "themeRetained": true,
+    "profileSkipped": true
+  },
+  "MCP_ECONNRESET": "not reproduced in focused native test or final full check; no product or test suppression",
+  "artifacts": {
+    "Aura-Prime-0.6.0-beta.6-mac-arm64.dmg": {
+      "sha256": "ba1f95dd57c72ea041ea5885db428b5c4ffc2ea9dc96367a1abfaa9e57ad80b8",
+      "size": 383021206
+    },
+    "Aura-Prime-0.6.0-beta.6-mac-arm64.zip": {
+      "sha256": "87006359ae1afd8453e7a346420f115f6e9e46b1f9da9ee84a165b600519936e",
+      "size": 375963132
+    },
+    "beta-mac.yml": {
+      "sha256": "134b0babfba6b9f028f941b42695fec5f30b1b029feada9a66dd37bd5b0ccc6b",
+      "size": 546
+    }
+  },
+  "signing": "ad hoc, hardened runtime, codesign deep/strict verified on app and DMG/ZIP copies",
+  "notarized": false,
+  "notQualified": [
+    "Windows",
+    "Linux command retirement",
+    "Intel Mac",
+    "real provider keys",
+    "cloud CI"
+  ]
+}
