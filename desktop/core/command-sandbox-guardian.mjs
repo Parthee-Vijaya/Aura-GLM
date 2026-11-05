@@ -15,7 +15,12 @@ const run = (file, args) => new Promise((resolve, reject) => {
   const process = spawn(file, args, { stdio: ['ignore', 'pipe', 'pipe'] });
   let output = ''; process.stdout.on('data', data => { output += data; });
   process.stderr.resume(); process.once('error', reject);
-  process.once('exit', code => code === 0 ? resolve(JSON.parse(output)) : reject(Error('Procesafslutningen kunne ikke bekræftes.')));
+  // exit may precede the final stdout chunk on a loaded CI host. close is
+  // the barrier for both process completion and a fully drained JSON reply.
+  process.once('close', code => {
+    try { if (code !== 0) throw Error('Procesafslutningen kunne ikke bekræftes.'); resolve(JSON.parse(output)); }
+    catch { reject(Error('Procesafslutningen kunne ikke bekræftes.')); }
+  });
 });
 async function retire() {
   if (retirement) return retirement;
