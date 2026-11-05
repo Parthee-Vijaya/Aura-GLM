@@ -5,7 +5,7 @@ const { isDeepStrictEqual } = require('node:util');
 const reasons = Object.freeze({
   subagents: 'Undersessioners godkendelser, Stop og datakontrol er endnu ikke bundet sikkert til Aura.',
   websearch: 'Websøgning er slået fra. OpenCode 2.1.4 sender søgeord direkte til eksterne søgetjenester uden Auras datagennemgang. En Aura-styret søgetjeneste med godkendelse af præcist søgeord og modtager samt tilbagekaldelse er endnu ikke tilsluttet.',
-  shell: 'Terminalgrænser er slået fra. OpenCode 2.1.4 har ingen global timeoutgrænse. Auras runner mangler et samlet outputfil-loft og et særskilt procesmiljø, hvor timeout og Stop også bekræfter, at løsrevne efterkommerprocesser er stoppet.',
+  shell: 'Terminalgrænser er slået fra. OpenCode 2.1.4 har ingen global timeoutgrænse. Auras runner mangler et samlet outputfil-loft; timeout og Stop af løsrevne efterkommerprocesser er kun kvalificeret på macOS.',
   lsp: 'Sprogserveres processer og filadgang er endnu ikke dækket af Auras kommandosandbox og filbeskyttelse.',
   local: 'Lokal MCP er slået fra. En låst server mangler et eget miljø uden net- og filadgang, godkendelse af hvert kald med præcise argumenter og Stop, der bekræfter nul efterkommerprocesser. Brugerdefinerede servere gemmes uden at blive startet.',
   remote: 'Remote MCP sender data til en ekstern server. Destination, værktøjsdata og tilbagekaldelse er endnu ikke koblet til Privacy Gate.',

@@ -29,10 +29,10 @@ async function fixture(t) {
   });
   await fs.writeFile(path.join(root, 'writer.cjs'), `const fs=require('node:fs');process.on('SIGTERM',()=>{});process.on('SIGINT',()=>{});fs.writeFileSync(process.argv[2]+'.pid',String(process.pid));fs.appendFileSync(process.argv[2],'.');setInterval(()=>fs.appendFileSync(process.argv[2],'.'),25);`);
   await fs.writeFile(path.join(root, 'parent.cjs'), `const cp=require('node:child_process');const c=cp.spawn(process.execPath,['writer.cjs',process.argv[2]],{detached:true,stdio:'ignore'});c.unref();const fs=require('node:fs');const timer=setInterval(()=>{if(fs.existsSync(process.argv[2]+'.pid')){clearInterval(timer);if(process.argv[3]==='hold')setInterval(()=>{},1000);else process.exit(Number(process.argv[3]));}},10);`);
-  function start(name, exit = 'hold', approved = false) {
+  function start(name, exit = 'hold', approved = false, launchOptions = {}) {
     const file = path.join(root, name);
     const payload = Buffer.from(JSON.stringify({ command: quote(configured.node) + ' parent.cjs ' + quote(file) + ' ' + exit, cwd: root })).toString('base64url');
-    const child = spawn(configured.node, [configured.runner, ...(approved ? ['--approved'] : []), configured.policyPath, payload], { cwd: root, stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(configured.node, [configured.runner, ...(approved ? ['--approved'] : []), configured.policyPath, payload], { cwd: root, stdio: ['ignore', 'pipe', 'pipe'], ...launchOptions });
     let stderr = ''; child.stderr.on('data', data => { stderr += data; }); child.stdout.resume();
     const closed = new Promise(resolve => child.once('close', (code, signal) => resolve({ code, signal, stderr })));
     commands.push({ child, closed });
@@ -60,11 +60,11 @@ for (const code of [0, 7]) test('normal command completion ' + code + ' retires 
   const result = await target.closed;
   assert.equal(result.code, code, result.stderr); await f.stopped(target);
 });
-test('execFile timeout retires detached descendants even when runner is forcibly killed', { skip: process.platform !== 'darwin', timeout: 30000 }, async t => {
-  const f = await fixture(t), target = f.start('timed-out'); await target.ready();
-  // Match child_process timeout behavior: signal only the runner, not its descendants.
-  const timeout = setTimeout(() => target.child.kill('SIGKILL'), 50);
-  await target.closed; clearTimeout(timeout); await f.stopped(target);
+test('a real child_process timeout retires detached descendants when runner is forcibly killed', { skip: process.platform !== 'darwin', timeout: 30000 }, async t => {
+  const f = await fixture(t), target = f.start('timed-out', 'hold', false, { timeout: 4000, killSignal: 'SIGKILL' });
+  await target.ready();
+  const result = await target.closed;
+  assert.equal(result.signal, 'SIGKILL'); await f.stopped(target);
 });
 test('automatic command isolation fails closed on unqualified platforms', async () => {
   for (const platform of ['linux', 'win32']) assert.equal((await sandbox.support({ platform })).available, false);
