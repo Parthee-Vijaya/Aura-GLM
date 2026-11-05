@@ -96,3 +96,34 @@ test('Udgivelsen binder Mac-ZIP og Windows-installation til faktiske hashes og p
   await buildUpdateFeeds([{ ...f.release, draft: true }], output, () => { throw Error('Ingen netadgang for kladder'); });
   await assert.rejects(fs.access(path.join(output, 'updates')));
 });
+
+
+test('GitHub relative ZIP metadata normalizes for Aura without mutating provider download data', async t => {
+  const f = await fixture(t);
+  const raw = info(), name = raw.files[0].url.split('/').pop();
+  raw.files[0].url = name; raw.path = name;
+  f.updater.checkForUpdates = async () => ({ updateInfo: raw, isUpdateAvailable: true });
+  const state = await f.controller.check();
+  assert.equal(state.phase, 'available');
+  assert.equal(state.available.version, raw.version);
+  assert.equal(raw.files[0].url, name); assert.equal(raw.path, name);
+  await f.controller.download(); assert.equal(f.controller.snapshot().phase, 'ready');
+  assert.equal(f.counts().downloads, 1);
+});
+
+test('GitHub normalization cannot launder a different file, path, architecture or checksum', () => {
+  const { normalizeInfo } = require('../core/updates.cjs');
+  const options = { version, platform: 'darwin', arch: 'arm64' };
+  const raw = info(), name = raw.files[0].url.split('/').pop(); raw.files[0].url = name; raw.path = name;
+  for (const mutate of [
+    x => { x.files[0].url = '../' + name; },
+    x => { x.files[0].url = name.replace('arm64', 'x64'); },
+    x => { x.files[0].url = name + '?redirect=other'; },
+    x => { x.path = '../' + name; },
+    x => { x.files[0].sha512 = 'invalid'; },
+    x => { x.files.push({ ...x.files[0], url: 'unexpected.zip' }); }
+  ]) {
+    const changed = structuredClone(raw); mutate(changed);
+    assert.throws(() => validateInfo(normalizeInfo(changed, options), options));
+  }
+});
