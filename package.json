@@ -7,7 +7,7 @@
   "bin": { "aura": "cli/aura.cjs" },
   "engines": { "node": ">=22.12.0" },
   "optionalDependencies": {
-    "@opencode/cli-darwin-arm64": "2.1.4",
+    "@opencode/cli-darwin-arm64": "2.2.2",
     "@opencode/cli-darwin-x64-baseline": "2.1.4",
     "@opencode/cli-windows-arm64": "2.1.4",
     "@opencode/cli-windows-x64-baseline": "2.1.4",
