@@ -28,7 +28,7 @@ const nodePath = createPositiveProbe({
 });
 const supportFlight = createSingleFlight();
 async function support({ platform = process.platform } = {}) {
-  if (!['darwin', 'linux'].includes(platform)) return { available: false, platform, reason: 'Automatisk kommandokørsel med teknisk isolation er endnu ikke understøttet på Windows.' };
+  if (platform !== 'darwin') return { available: false, platform, reason: 'Automatisk kommandokørsel med verificeret afslutning af underprocesser er endnu kun understøttet på macOS.' };
   try {
     const node = await nodePath();
     // This key coalesces only overlapping probes; every later call checks the

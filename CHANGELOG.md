@@ -1,17 +1,20 @@
 # Ændringslog
 
-## Ikke udgivet
+## 0.6.0-beta.6 · 5. november 2026
 
 - **Forbindelsestjek i trin.** En gemt forbindelse kan tjekkes for adresse, nøgle og modelliste hver for sig, uden modelkald.
 - **Modelevner.** Modelvælgeren viser værktøjer, billeder, streaming og ræsonnement, når udbyderen eller kataloget oplyser det. Ukendt vises som ukendt.
 - **Kontekstvisning virker.** Når plugin'et er slået til, viser statuslinjen en lille måler for brugt kontekst.
-- **Acceptprøve af den færdige pakke** (`npm run test:package-acceptance`) med isoleret profil, lokal mockserver og opgradering fra beta 4.
+- **Acceptprøve af den færdige pakke** (`npm run test:package-acceptance`) med isoleret profil, lokal mockserver og opgradering fra beta 5.
 - **Cloudflare Workers AI** udfyldes ud fra konto-id, og LM Studio, vLLM og Ollama har porthjælp.
 - **Ventetid forklares.** Under et svar står det, om Aura starter motoren, venter på modellen, venter på godkendelse eller prøver igen.
 - **Lokale servere findes automatisk.** LM Studio og vLLM på standardporte foreslås under AI-forbindelser. Logo-fliser til de nye udbydere, og vinduet maksimeres ikke længere efter velkomsten.
 - **Vilkår med dato pr. emne** (træning, region, opbevaring). Kontroller ældre end 180 dage markeres.
 - **Websøgning forbliver slået fra** med en præcis begrundelse, og søgeværktøjet fjernes nu helt fra motorens værktøjsliste.
-- **Terminalgrænser og lokal MCP forbliver slået fra** med præcise begrundelser. En prøve viste, at kommandorunneren hverken har et samlet outputloft eller sikrer, at løsrevne underprocesser stoppes. Felterne til tidsgrænse og outputloft vises først, når grænserne kan håndhæves.
+- **Terminalgrænser og lokal MCP forbliver slået fra** med præcise begrundelser. Et samlet output- og outputfil-loft mangler fortsat. Felterne til tidsgrænse og outputloft vises først, når grænserne kan håndhæves.
+
+- **Stop afslutter kommandoens underprocesser på macOS.** Hver kommando får en særskilt arvet procesafgrænsning og en værtsovervågning. Stop, timeout, normal afslutning og brat runner-exit afslutter også løsrevne og forældreløse skrivere, uden at stoppe samtidige kommandoer. Almindelige eksplicit godkendte kommandoer får samme levetidskontrol. Automatisk kommandokørsel er utilgængelig på Linux og Windows, indtil tilsvarende afslutning kan kvalificeres.
+- **Aktuelle native billeder i README.** Velkomst, valgfri lokal profil, indstillinger, Nyt projekt ved 980×720, arbejdsflade og skjult sidebar er optaget i den færdige beta 6 med syntetiske data.
 
 ## 0.6.0-beta.5 · 4. november 2026
 

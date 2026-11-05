@@ -124,12 +124,16 @@ async function controlledSandbox(t, options = {}) {
     }
   };
   vm.runInNewContext(await fs.readFile(file, 'utf8'), context, { filename: file });
+  const originalSupport = context.module.exports.support;
+  context.module.exports.support = options => originalSupport({ platform: 'darwin', ...options });
   return { ...f, node, runner, runtime, calls, sandbox: context.module.exports };
 }
 test('integration reuses the verified Node path but rechecks all dependencies on every later support call', async t => {
   const f = await controlledSandbox(t);
-  for (const platform of ['darwin', 'darwin', 'linux', 'linux']) assert.equal((await f.sandbox.support({ platform })).available, true);
+  for (const platform of ['darwin', 'darwin', 'darwin', 'darwin']) assert.equal((await f.sandbox.support({ platform })).available, true);
   assert.deepEqual(f.calls, ['version', 'support', 'support', 'support', 'support']);
+  assert.equal((await f.sandbox.support({ platform: 'linux' })).available, false);
+  assert.equal(f.calls.length, 5);
 });
 test('integration repeats dependency checks after a missing or changed package/tool result', async t => {
   let ready = true;
