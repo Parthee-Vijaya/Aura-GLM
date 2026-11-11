@@ -2,9 +2,9 @@
 
 Aura Prime hjælper dig fra idé til plan, kode og forhåndsvisning i et lokalt arbejdsområde. Appen bygger videre på [Aura Harness fra AI Alliancen](https://github.com/ai-alliancen-org/ai-harness) med OpenCode som kodeagent og frit valg af AI-forbindelse.
 
-**Aktuel kildeversion: `0.6.0-beta.3`, 4. november 2026.** Denne gren indeholder det nye UI/UX. Screenshots er fra `0.6.0-beta.2`; beta.3 retter blandt andet logoets midterprik i lyst tema, idékladden og fokus. De viser den kørende Electron-app på macOS med en separat testprofil og det opdigtede projekt *Fjordby arrangementer*. Versionen er en udviklingsbeta; denne opdatering udgiver ingen ny installer.
+**Aktuel kildeversion: `0.7.0-beta.1`, 12. november 2026.** Denne gren indfører ét materialesystem oven på det nye UI/UX. Skærmbillederne er fra `0.7.0-beta.1`, optaget fra den kørende Electron-app i en Linux-kørsel af kildekoden med en separat testprofil og det opdigtede projekt *Fjordby arrangementer*. Skrifttype og vinduesramme afviger derfor fra macOS. Versionen er en udviklingsbeta; denne opdatering udgiver ingen ny installer.
 
-![Aura Prime med integreret logo, projektoversigt og centreret samtalestart](docs/images/aura-prime-0.6.0-beta.2/02-workspace-light.png)
+![Aura Prime med integreret logo, projektoversigt og centreret samtalestart](docs/images/aura-prime-0.7.0-beta.1/01-workspace-light.png)
 
 ## Det nye arbejdsområde
 
@@ -15,13 +15,14 @@ Det fulde redesign tager udgangspunkt i den installerede DeepSeek Harness-app og
 - **Et integreret logo.** Aura-identiteten indgår i velkomst, sidebar og den centrerede samtalestart.
 - **En sidebar, der kan skjules helt.** Åbn den igen fra arbejdsområdets top. Projekter, samtaler, søgning og indstillinger er samlet til venstre.
 - **Samlede indstillinger.** Lokal profil, generelle valg, AI-forbindelser, funktioner, opdateringer og hjælp har samme navigation. Vælg lyst, mørkt eller systemets tema, og justér tekststørrelsen.
+- **Ét materialesystem.** Seks radiustrin, hårstreger på 0,5 px, bløde elevationer uden kant og fokusringe, der følger tastaturet. Accenten er Auras egen grønne. Se [designkontrakten](desktop/DESIGN.md).
 - **Adgang til arbejdsdetaljer.** Samtalen og arbejdssporet supplerer forhåndsvisning, plan, ændringer, kode og aktivitet. Det midlertidigt lukkede panel i en ny samtale overskriver ikke dit gemte layoutvalg.
 
 ### Fra første åbning til projekt
 
 Vælg **Kom i gang** for det guidede forløb eller **Fortsæt uden profil** for at gå direkte til projektidéen. En AI-forbindelse kan tilføjes senere. Den lokale profil kræver ingen registrering.
 
-![Projektopsætning med navn, idé, lokal kladde og projektplacering](docs/images/aura-prime-0.6.0-beta.2/01-new-project-light.png)
+![Projektopsætning med navn, idé, lokal kladde og projektplacering](docs/images/aura-prime-0.7.0-beta.1/03-new-project-light.png)
 
 **Nyt projekt kræver ingen scrolling i standardvisningen ved 980 × 720 og normal tekststørrelse.** Navn, idé, tilvalg, placering og Opret er synlige. Åbnede tilvalg og længere indhold kan rulle, mens opret-handlingen bliver stående.
 
@@ -29,13 +30,15 @@ Idéen gemmes som lokal kladde. Oprettelse af et projekt kontakter ikke i sig se
 
 ### Palette, indstillinger og sidepanel
 
-Paletten følger de faktiske farver i installeret DeepSeek Harness 0.2.1-rc.5. Lyst tema har hvide felter og næsten hvid sidebar. Mørkt tema bruger referenceappens mørke lærred og felter. Auras eget navn og logo bevares.
+Paletten følger de faktiske farver i installeret DeepSeek Harness 0.2.1-rc.5. Lyst tema har hvide felter og næsten hvid sidebar. Mørkt tema bruger referenceappens mørke lærred og felter. Accenten er fra 0.7.0 Auras egen grønne, og Auras navn og logo bevares.
 
-![Nyt projekt med referenceappens mørke farver og fast opret-handling](docs/images/aura-prime-0.6.0-beta.2/03-new-project-dark.png)
+![Samtalestart i mørkt tema med skrivefelt uden kant](docs/images/aura-prime-0.7.0-beta.1/02-workspace-dark.png)
+
+![Nyt projekt i mørkt tema med fast opret-handling](docs/images/aura-prime-0.7.0-beta.1/04-new-project-dark.png)
 
 Profilen er fortsat valgfri og lokal. Tema, skriftstørrelse og arbejdsdetaljer ændres i de samlede indstillinger. Sidepanelet kan skjules helt og åbnes igen fra arbejdsområdets top.
 
-Billederne er faktiske appoptagelser, ikke designmockups. De viser syntetiske data og ingen modelbesvarelser. Den lilla indikator øverst til venstre er macOS' delingsindikator fra optagelsen og indgår ikke i Aura.
+Billederne er faktiske appoptagelser, ikke designmockups. De viser syntetiske data og ingen modelbesvarelser.
 
 ## Funktionerne følger med
 

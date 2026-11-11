@@ -1,5 +1,19 @@
 # Ændringslog
 
+## 0.7.0-beta.1 · 12. november 2026
+
+Materialesystem for hele desktopappen. Ingen funktions-, tilladelses- eller dataændringer.
+
+- Radius følger seks trin efter rolle (4/8/12/16/20/28 px). 88 afvigende værdier er flyttet, og en test afviser nye.
+- Neutrale kanter er hårstreger på 0,5 px. Skrivefelt, menuer og dialoger har kanten i en blød elevation i stedet for kant plus skygge.
+- Skrivefeltet har 28 px radius og ingen farvet ramme ved klik. Accentringen vises ved tastaturbrug.
+- Fokusringe følger inputmåden: synlige ved tastatur, skjulte efter museklik på knapper, faner og rækker. Tekstfelter beholder deres markering.
+- Accenten er Auras grønne fra logoet i stedet for referenceappens blå. Kontrasten beregnes i testen.
+- Sidebar: ordmærke på 18 px med små bogstaver, Ny samtale som navigationsrække og rækker på 36 px.
+- Baggrunden bag dialoger dæmper uden sløring.
+
+Kontrolleret i den kørende app i en Linux-kørsel i lyst og mørkt tema. macOS' native vinduesramme er ikke kontrolleret i denne runde. Planen for de næste faser står i [desktop/docs/materialesystem-plan.md](desktop/docs/materialesystem-plan.md).
+
 ## 0.6.0-beta.3 · 4. november 2026
 
 Rettelser efter en selvstændig UX/UI-gennemgang af beta.2.

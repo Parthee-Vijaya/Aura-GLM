@@ -86,7 +86,7 @@ test('slash og modelvælger: egne skygger/radier er væk — materialet ejer dem
   assert.ok(!/#model-picker\s*\{[^}]*border:/.test(styles), 'modelvælgeren har ingen egen kant');
   assert.ok(!/\.status-line-help\s*\{[^}]*box-shadow/.test(styles), 'statuslinjens tooltip har ingen egen skygge (#1836581f er væk)');
   assert.ok(!/\.info-pop\s*\{[^}]*box-shadow/.test(styles), 'ⓘ-boblen har ingen egen skygge');
-  assert.match(components, /\.menu-material\s*\{[^}]*box-shadow:\s*var\(--aura-shadow-menu\)/, 'materialet bærer --aura-shadow-menu');
+  assert.match(components, /\.menu-material\s*\{[^}]*box-shadow:\s*var\(--aura-elevation-panel\)/, 'materialet bærer elevationen; hårstregen ligger i skyggen');
 });
 
 // ── 3. Brødtekst og de navngivne 11 px ──
@@ -119,9 +119,13 @@ test('brugerboblen er én: .user-bubble har ikke længere fyld, padding eller ra
 
 test('rolig composer: neutral fokus-kant, én kant og synlig tastaturring', () => {
   const calmFocus = /\.workspace-calm \.composer:focus-within\s*\{[^}]*\}/.exec(calm)[0];
-  const nativeRing = /\.composer:has\(textarea:focus-visible\)\s*\{[^}]*\}/.exec(calm)[0];
+  // Materialesystemet (0.7.0): et klik styrker den neutrale streg; accentringen hører til tastaturet.
+  const clickState = /body\.workspace-calm \.composer:has\(textarea:focus-visible\)\s*\{[^}]*\}/.exec(calm)[0];
+  assert.match(clickState, /outline:\s*none/, 'a click in the field draws no accent frame');
+  const nativeRing = /html\[data-input-modality="keyboard"\] body\.workspace-calm \.composer:has\(textarea:focus-visible\)\s*\{[^}]*\}/.exec(calm)[0];
   assert.match(nativeRing, /outline:\s*2px solid var\(--aura-accent\)/, 'keyboard boundary uses a high-contrast focus token');
-  assert.match(calmFocus, /box-shadow:\s*none/, 'the bordered composer keeps one elevation treatment');
+  assert.match(calmFocus, /box-shadow:\s*0 0 0 1px var\(--aura-border-strongest\)/, 'focus strengthens the neutral stroke of the one elevation');
+  assert.doesNotMatch(calmFocus, /accent/, 'the pointer focus state stays neutral');
   const baseFocus = /\.composer:focus-within\s*\{[^}]*\}/.exec(strip(read('styles.css')))[0];
   assert.match(baseFocus, /border-color:\s*var\(--aura-border-strongest\)/, 'basisreglen er ligeledes neutral');
   assert.ok(!/#?0?e8f1ff|box-shadow:\s*0 0 0 3px/.test(baseFocus), 'den blå 3 px-ring ved musefokus er væk');
@@ -215,10 +219,10 @@ test('P1-kontrast: alfa-hover, boble, diff-badge og de mørke flader består AA'
 });
 
 // ── 10. Versionen ──
-test('versionen er 0.6.0-beta.3 overalt (pakke, lås, rod og pakkeposten)', () => {
-  assert.equal(pkg.version, '0.6.0-beta.3');
-  assert.equal(lock.version, '0.6.0-beta.3');
-  assert.equal(lock.packages[''].version, '0.6.0-beta.3');
+test('versionen er 0.7.0-beta.1 overalt (pakke, lås, rod og pakkeposten)', () => {
+  assert.equal(pkg.version, '0.7.0-beta.1');
+  assert.equal(lock.version, '0.7.0-beta.1');
+  assert.equal(lock.packages[''].version, '0.7.0-beta.1');
 });
 
 // ═══ Fix-runde (review af 3feb05b): F2/F3/F4 ═══

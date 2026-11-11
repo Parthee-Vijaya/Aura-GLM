@@ -50,7 +50,7 @@ details.disclosure[open] > summary { margin-bottom: 6px; }
    the expanding box clipping the reveal. */
 @supports (interpolate-size: allow-keywords) and selector(::details-content) {
   details.disclosure::details-content { block-size: 0; overflow: clip; overflow-clip-margin: 6px; transition: block-size var(--aura-transition-duration) var(--aura-ease-in-out), content-visibility var(--aura-transition-duration) allow-discrete; }
-  details.disclosure[open]::details-content { block-size: auto; padding: 8px 0 0; border-top: 1px solid var(--aura-border); transition: block-size var(--aura-transition-duration) var(--aura-ease-in-out); }
+  details.disclosure[open]::details-content { block-size: auto; padding: 8px 0 0; border-top: var(--aura-hairline) solid var(--aura-border); transition: block-size var(--aura-transition-duration) var(--aura-ease-in-out); }
 }
 
 /* Reduced motion: styles.css kills transitions for *, ::before and ::after —
@@ -74,7 +74,7 @@ details.disclosure.work-progress-card > summary::after { transform: none; }
    blur (DSH §2). R4: kontrasten er målt over den SAMMENSATTE baggrund
    (18,01:1 lyst / 12,88:1 mørkt over lærredet), og uden backdrop-filter
    falder materialet tilbage til en uigennemsigtig flade. */
-.menu-material { position: fixed; inset: auto; margin: 0; padding: 6px 4px; border: 0.5px solid var(--aura-border); border-radius: var(--aura-radius-lg); background: var(--aura-menu-bg); -webkit-backdrop-filter: blur(40px) saturate(150%); backdrop-filter: blur(40px) saturate(150%); box-shadow: var(--aura-shadow-menu); color: var(--aura-ink); }
+.menu-material { position: fixed; inset: auto; margin: 0; padding: 6px 4px; border: 0; border-radius: var(--aura-radius-lg); background: var(--aura-menu-bg); -webkit-backdrop-filter: blur(40px) saturate(150%); backdrop-filter: blur(40px) saturate(150%); box-shadow: var(--aura-elevation-panel); color: var(--aura-ink); }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .menu-material { background: var(--aura-bg-raised); }
 }
@@ -259,7 +259,7 @@ details.disclosure.step.step-group[open] > summary .step-glyph::after { opacity:
 .step-output { max-height: min(400px, 50vh); overflow: auto; padding: 8px 10px; border: 0.5px solid var(--aura-border); border-radius: var(--aura-radius-sm); background: var(--aura-bg-raised); color: var(--aura-ink); -webkit-mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 24px), transparent 100%); mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 24px), transparent 100%); }
 .step-draft-note { margin: 0 0 8px; }
 .step-content .text-button { justify-self: start; padding: 4px 6px; font-size: 12px; min-height: 24px; }
-.step-group-rows { display: grid; gap: 4px; margin: 4px 0 2px 7px; padding: 4px 0 2px 16px; border-inline-start: 1px solid var(--aura-border); }
+.step-group-rows { display: grid; gap: 4px; margin: 4px 0 2px 7px; padding: 4px 0 2px 16px; border-inline-start: var(--aura-hairline) solid var(--aura-border); }
 .step-content .step-group-rows { margin: 0; padding: 0; border: 0; }
 
 /* Aktivitetspanelet: de eksisterende tekniske folds (activity-output) får

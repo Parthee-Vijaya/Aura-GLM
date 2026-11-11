@@ -1,5 +1,6 @@
 /* Aura Prime: én tema- og tokenskilde for arbejdsflade, onboarding og dialoger.
-   Flader, primær/sekundær tekst og accent følger den installerede DeepSeek Harness 0.2.1-rc.5.
+   Flader og tekstfarver følger den installerede DeepSeek Harness 0.2.1-rc.5. Accenten er Auras
+   egen grønne fra logoet. Radius, hårstreg og elevation følger materialesystemet i DESIGN.md.
    light-dark følger color-scheme ved brug, også efter et manuelt temaskift. */
 :root {
   color-scheme: light dark;
@@ -29,14 +30,15 @@
   --aura-radius-md: 12px;
   --aura-radius-lg: 16px;
   --aura-radius-xl: 20px;
-  --aura-radius-panel: 24px;
+  --aura-radius-panel: 28px;
+  --aura-hairline: 0.5px;
   --chat-col: 920px;
   --chat-gutter: 32px;
   --aura-workspace-bar: 44px;
-  --aura-accent: light-dark(rgb(65, 118, 230), rgb(122, 170, 255));
-  --aura-accent-hover: light-dark(rgb(72, 104, 178), rgb(122, 170, 255));
-  --aura-accent-subtle: light-dark(rgb(228, 237, 253), rgb(33, 43, 66));
-  --aura-accent-faint: light-dark(rgb(237, 243, 254), rgb(27, 35, 54));
+  --aura-accent: light-dark(rgb(11, 127, 98), rgb(61, 214, 168));
+  --aura-accent-hover: light-dark(rgb(9, 107, 83), rgb(95, 224, 186));
+  --aura-accent-subtle: light-dark(rgb(221, 243, 236), rgb(22, 53, 44));
+  --aura-accent-faint: light-dark(rgb(234, 247, 243), rgb(18, 39, 32));
   --aura-button-primary: light-dark(rgb(21, 21, 23), rgb(240, 240, 242));
   --aura-button-primary-hover: light-dark(rgb(40, 40, 42), rgb(255, 255, 255));
   --aura-button-primary-text: light-dark(rgb(255, 255, 255), rgb(21, 21, 23));
@@ -58,15 +60,23 @@
   --aura-border-faint: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.04));
   --aura-border-strongest: light-dark(rgba(0, 0, 0, 0.16), rgba(255, 255, 255, 0.2));
   --aura-border-invert: light-dark(rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.08));
-  --aura-shadow-panel: 0 4px 16px light-dark(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.24));
-  --aura-shadow-overlay: 0 12px 36px light-dark(rgba(0, 0, 0, 0.14), rgba(0, 0, 0, 0.4));
-  --aura-shadow-composer: none;
-  --aura-shadow-menu: 0 8px 24px light-dark(rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.36));
+  /* Elevation: the hairline stroke is the first shadow layer, followed by two very
+     soft lights. Elevated surfaces set border:0 and take one of these; a neutral
+     border is never paired with an elevation. */
+  --aura-elevation-stroke-color: var(--aura-border-strongest);
+  --aura-elevation-stroke: 0 0 0 var(--aura-hairline) var(--aura-elevation-stroke-color);
+  --aura-elevation-soft: var(--aura-elevation-stroke), 0 4px 16px 0 rgba(0, 0, 0, 0.03), 0 0 24px 0 rgba(0, 0, 0, 0.03);
+  --aura-elevation-panel: var(--aura-elevation-stroke), 0 3px 8px 0 rgba(0, 0, 0, 0.03), 0 0 16px 0 rgba(0, 0, 0, 0.02);
+  --aura-elevation-prominent: var(--aura-elevation-stroke), 0 3px 8px 0 rgba(0, 0, 0, 0.04), 0 0 20px 0 rgba(0, 0, 0, 0.05);
+  --aura-shadow-panel: var(--aura-elevation-panel);
+  --aura-shadow-overlay: var(--aura-elevation-prominent);
+  --aura-shadow-composer: var(--aura-elevation-soft);
+  --aura-shadow-menu: var(--aura-elevation-panel);
   --aura-scrim: rgba(0, 0, 0, .42);
   --aura-switch-track: light-dark(rgb(233, 234, 238), rgb(63, 64, 68));
   --aura-menu-bg: light-dark(rgba(252, 253, 254, 0.7), rgba(48, 49, 54, 0.64));
   --aura-warning-ink: light-dark(rgb(146, 92, 15), rgb(220, 160, 60));
-  --aura-accent-ink: light-dark(rgb(52, 94, 186), rgb(125, 154, 222));
+  --aura-accent-ink: light-dark(rgb(10, 107, 82), rgb(95, 224, 186));
   --aura-success: light-dark(rgb(34, 154, 96), rgb(72, 180, 120));
   --aura-success-subtle: light-dark(rgb(230, 247, 239), rgb(22, 48, 36));
   --aura-warning: light-dark(rgb(200, 130, 20), rgb(220, 160, 60));
@@ -91,6 +101,10 @@
   :root { --aura-corner-shape: superellipse(1.5); }
   *, *::before, *::after { corner-shape: var(--aura-corner-shape); }
 }
+
+/* Focus rings follow the input modality (ui/input-modality.js). Text fields keep
+   their feedback on click; other controls show the ring for keyboard use only. */
+html[data-input-modality="pointer"] body :focus-visible:not(:read-write) { outline-color: transparent !important; }
 
 /* Review 4.11: the Aura mark keeps its centre dot in both themes. The
    authored mark has a white centre for dark surfaces; light surfaces use the

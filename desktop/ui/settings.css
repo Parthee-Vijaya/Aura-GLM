@@ -6,11 +6,11 @@
 
 #settings-dialog { width: min(780px, 92vw); padding: 0; overflow: hidden; }
 #settings-dialog .dialog-heading { padding: 24px 28px 0; margin-bottom: 0; }
-.settings-layout { display: grid; grid-template-columns: 200px minmax(0, 1fr); min-height: 340px; max-height: calc(88vh - 96px); margin-top: 18px; border-top: 1px solid var(--aura-border-faint); }
+.settings-layout { display: grid; grid-template-columns: 200px minmax(0, 1fr); min-height: 340px; max-height: calc(88vh - 96px); margin-top: 18px; border-top: var(--aura-hairline) solid var(--aura-border-faint); }
 
 /* The section nav in sidebar style: transparent buttons, stroke icons and the
    accent treatment on the current section (aria-current). */
-.settings-nav { padding: 10px; display: grid; gap: 2px; align-content: start; overflow-y: auto; background: var(--aura-bg-sidebar); border-right: 1px solid var(--aura-border); }
+.settings-nav { padding: 10px; display: grid; gap: 2px; align-content: start; overflow-y: auto; background: var(--aura-bg-sidebar); border-right: var(--aura-hairline) solid var(--aura-border); }
 .settings-nav button { display: flex; align-items: center; gap: 10px; text-align: left; padding: 9px 10px; font-weight: 500; border-color: transparent; background: transparent; border-radius: var(--aura-radius-sm); }
 .settings-nav button:hover:not(:disabled) { background: var(--aura-bg-hover); border-color: transparent; }
 .settings-nav button svg { width: 18px; height: 18px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; color: var(--aura-ink-muted); }
@@ -25,7 +25,7 @@
 
 /* Field rows: the label sits left of the control, the calm theme's setting-row
    pattern. The first row of the content starts clean without a top rule. */
-.settings-field { display: grid; grid-template-columns: minmax(110px, 170px) minmax(0, 1fr); align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--aura-border-faint); }
+.settings-field { display: grid; grid-template-columns: minmax(110px, 170px) minmax(0, 1fr); align-items: center; gap: 12px; padding: 10px 0; border-top: var(--aura-hairline) solid var(--aura-border-faint); }
 .settings-field:first-of-type { border-top: 0; padding-top: 12px; }
 .settings-field > label { margin: 0; }
 /* Explanations and the standard-model line belong under the control column. */
@@ -39,7 +39,7 @@
 .settings-theme { border: 0; padding: 0; margin: 14px 0 0; }
 .settings-theme legend { padding: 0; font-size: 12px; font-weight: 550; }
 .settings-theme label { display: inline-flex; align-items: center; gap: 8px; margin: 10px 28px 4px 0; font-size: 13px; }
-.settings-check { display: flex; align-items: center; gap: 10px; margin: 14px 0 0; padding: 10px 14px; border: 1px solid var(--aura-border); border-radius: var(--aura-radius-sm); font-size: 13px; font-weight: 500; cursor: pointer; }
+.settings-check { display: flex; align-items: center; gap: 10px; margin: 14px 0 0; padding: 10px 14px; border: var(--aura-hairline) solid var(--aura-border); border-radius: var(--aura-radius-sm); font-size: 13px; font-weight: 500; cursor: pointer; }
 
 /* The font-size stepper: − / value / + walk the profile's whole 10-16 px
    range. The output (a live region by default) reads the current size; the
@@ -54,7 +54,7 @@
    AA on the raised surface in both themes). */
 .settings-transcript { display: grid; gap: 10px; border: 0; padding: 0; margin: 18px 0 0; }
 .settings-transcript legend { padding: 0 0 4px; font-size: 12px; font-weight: 550; color: var(--aura-ink); }
-.settings-transcript label { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 10px; row-gap: 2px; align-items: center; padding: 11px 14px; border: 1px solid var(--aura-border); border-radius: var(--aura-radius-md); cursor: pointer; }
+.settings-transcript label { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 10px; row-gap: 2px; align-items: center; padding: 11px 14px; border: var(--aura-hairline) solid var(--aura-border); border-radius: var(--aura-radius-md); cursor: pointer; }
 .settings-transcript input { grid-row: 1 / span 2; margin: 0; width: 15px; height: 15px; accent-color: var(--aura-accent); }
 .settings-transcript strong { font-size: 13px; font-weight: 600; color: var(--aura-ink); }
 .settings-transcript small { font-size: 12px; line-height: 1.5; color: var(--aura-ink-muted); }
@@ -95,7 +95,7 @@ body.help-ingen #idea-options .hint:not([data-help="essential"]) { display: none
    it. The popover carries the same live hint texts the standing hints would
    have shown on the current surface. */
 .composer-help-wrap { position: relative; display: flex; justify-content: flex-end; }
-#composer-help { display: none; margin: 2px 16px 6px; padding: 1px 11px 2px; font-size: 12px; line-height: 1.5; color: var(--aura-ink-muted); background: transparent; border: 1px solid var(--aura-border); border-radius: var(--aura-radius-xl); cursor: pointer; }
+#composer-help { display: none; margin: 2px 16px 6px; padding: 1px 11px 2px; font-size: 12px; line-height: 1.5; color: var(--aura-ink-muted); background: transparent; border: var(--aura-hairline) solid var(--aura-border); border-radius: var(--aura-radius-xl); cursor: pointer; }
 #composer-help:hover { color: var(--aura-ink); border-color: var(--aura-border-strong); background: var(--aura-bg-hover); }
 #composer-help:focus-visible { outline: 2px solid var(--aura-accent); outline-offset: 2px; }
 body.help-delvis #composer-help:not([hidden]) { display: inline-flex; align-items: center; }
@@ -110,7 +110,7 @@ body.help-delvis #composer-help:not([hidden]) { display: inline-flex; align-item
 
 @media (max-width: 720px) {
   .settings-layout { grid-template-columns: 1fr; min-height: 0; }
-  .settings-nav { display: flex; gap: 6px; overflow-x: auto; overflow-y: hidden; border-right: 0; border-bottom: 1px solid var(--aura-border); }
+  .settings-nav { display: flex; gap: 6px; overflow-x: auto; overflow-y: hidden; border-right: 0; border-bottom: var(--aura-hairline) solid var(--aura-border); }
   .settings-nav button { white-space: nowrap; }
   .settings-field { grid-template-columns: 1fr; gap: 6px; }
 }
@@ -123,7 +123,7 @@ body.help-delvis #composer-help:not([hidden]) { display: inline-flex; align-item
 #settings-dialog .settings-layout,
 dialog.native-settings-shell .native-settings-layout { display: grid; grid-template-columns: 174px minmax(0, 1fr); height: calc(100% - 66px); min-height: 0; max-height: none; margin: 0; border: 0; }
 :is(#settings-dialog, dialog.native-settings-shell) .settings-nav { display: flex; flex-direction: column; flex-wrap: nowrap; gap: 4px; padding: 12px 10px; background: transparent; border: 0; overflow: auto; }
-:is(#settings-dialog, dialog.native-settings-shell) .settings-nav button { display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 10px 12px; border: 0; border-radius: 10px; color: var(--aura-ink-secondary); background: transparent; text-align: left; font-size: 13px; line-height: 1.4; font-weight: 450; white-space: normal; box-shadow: none; }
+:is(#settings-dialog, dialog.native-settings-shell) .settings-nav button { display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 10px 12px; border: 0; border-radius: 12px; color: var(--aura-ink-secondary); background: transparent; text-align: left; font-size: 13px; line-height: 1.4; font-weight: 450; white-space: normal; box-shadow: none; }
 :is(#settings-dialog, dialog.native-settings-shell) .settings-nav button[aria-current=true] { background: var(--aura-bg-active); color: var(--aura-ink); font-weight: 500; }
 :is(#settings-dialog, dialog.native-settings-shell) .settings-nav button svg { width: 17px; height: 17px; color: inherit; }
 #settings-dialog .settings-content,
@@ -134,26 +134,26 @@ dialog.native-settings-shell .hint { max-width: 65ch; font-size: 12px; line-heig
 #settings-dialog .settings-content > h3 + .hint { margin-bottom: 24px; }
 #settings-dialog .settings-group-heading { margin: 28px 0 14px; font-size: 13px; font-weight: 550; color: var(--aura-ink); }
 #settings-dialog .settings-group-heading:first-of-type { margin-top: 22px; }
-#settings-dialog .settings-field { display: grid; grid-template-columns: minmax(0, 1fr) minmax(120px, 45%); align-items: center; gap: 20px; padding: 16px 0; border-top: 1px solid var(--aura-border); }
+#settings-dialog .settings-field { display: grid; grid-template-columns: minmax(0, 1fr) minmax(120px, 45%); align-items: center; gap: 20px; padding: 16px 0; border-top: var(--aura-hairline) solid var(--aura-border); }
 #settings-dialog .settings-field > label { margin: 0; font-size: 13px; font-weight: 450; color: var(--aura-ink); line-height: 1.5; }
-#settings-dialog .settings-field :is(input:not([type=checkbox]):not([type=radio]), select) { width: 100%; min-width: 0; margin: 0; padding: 10px 12px; min-height: 38px; border: 1px solid var(--aura-border-strong); border-radius: 10px; background: var(--aura-bg-tint); color: var(--aura-ink); font-size: 12px; }
+#settings-dialog .settings-field :is(input:not([type=checkbox]):not([type=radio]), select) { width: 100%; min-width: 0; margin: 0; padding: 10px 12px; min-height: 38px; border: var(--aura-hairline) solid var(--aura-border-strong); border-radius: 12px; background: var(--aura-bg-tint); color: var(--aura-ink); font-size: 12px; }
 #settings-dialog .settings-field + .hint { margin: -6px 0 16px; }
 #settings-dialog .profile-icon-row { flex-wrap: wrap; gap: 5px; }
-#settings-dialog .profile-icon-choice { width: 34px; height: 34px; border-radius: 9px; }
-#settings-dialog .settings-theme { border: 0; border-bottom: 1px solid var(--aura-border); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 24px 0 0; padding: 0 0 22px; }
+#settings-dialog .profile-icon-choice { width: 34px; height: 34px; border-radius: 8px; }
+#settings-dialog .settings-theme { border: 0; border-bottom: var(--aura-hairline) solid var(--aura-border); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 24px 0 0; padding: 0 0 22px; }
 #settings-dialog .settings-theme legend { padding: 0 0 12px; color: var(--aura-ink); font-size: 13px; font-weight: 450; }
-#settings-dialog .settings-theme label { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; margin: 0; min-height: 86px; padding: 16px 8px; border: 1px solid var(--aura-border-strong); border-radius: 12px; color: var(--aura-ink); background: transparent; font-size: 13px; font-weight: 450; cursor: pointer; }
+#settings-dialog .settings-theme label { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; margin: 0; min-height: 86px; padding: 16px 8px; border: var(--aura-hairline) solid var(--aura-border-strong); border-radius: 12px; color: var(--aura-ink); background: transparent; font-size: 13px; font-weight: 450; cursor: pointer; }
 #settings-dialog .settings-theme label:has(input:checked) { background: var(--aura-bg-active); border-color: var(--aura-ink-muted); }
 #settings-dialog .settings-theme label svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 #settings-dialog .settings-theme input { position: absolute; inset: 0; margin: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 #settings-dialog .settings-theme label:focus-within { outline: 2px solid var(--aura-accent); outline-offset: 3px; }
-#settings-dialog .settings-check { margin: 20px 0 0; padding: 16px 0; border: 0; border-top: 1px solid var(--aura-border); border-radius: 0; font-size: 13px; font-weight: 450; }
+#settings-dialog .settings-check { margin: 20px 0 0; padding: 16px 0; border: 0; border-top: var(--aura-hairline) solid var(--aura-border); border-radius: 0; font-size: 13px; font-weight: 450; }
 #settings-dialog .settings-check input { width: 16px; height: 16px; margin: 0; accent-color: var(--aura-accent); }
 #settings-dialog .settings-fontsize { justify-self: end; }
 #settings-dialog .settings-fontsize button { width: 30px; height: 34px; padding: 0; border: 0; border-radius: 8px; background: var(--aura-bg-tint); }
 #settings-dialog .settings-transcript { margin-top: 26px; padding: 0; border: 0; display: grid; gap: 0; }
 #settings-dialog .settings-transcript legend { font-size: 13px; font-weight: 450; padding-bottom: 8px; }
-#settings-dialog .settings-transcript label { display: grid; grid-template-columns: minmax(0, 1fr) 16px; gap: 3px 16px; padding: 16px 0; margin: 0; border: 0; border-bottom: 1px solid var(--aura-border); border-radius: 0; background: transparent; font-weight: 400; }
+#settings-dialog .settings-transcript label { display: grid; grid-template-columns: minmax(0, 1fr) 16px; gap: 3px 16px; padding: 16px 0; margin: 0; border: 0; border-bottom: var(--aura-hairline) solid var(--aura-border); border-radius: 0; background: transparent; font-weight: 400; }
 #settings-dialog .settings-transcript input { grid-column: 2; grid-row: 1 / span 2; accent-color: var(--aura-accent); }
 #settings-dialog .settings-transcript strong { grid-column: 1; font-size: 13px; font-weight: 500; }
 #settings-dialog .settings-transcript small { grid-column: 1; color: var(--aura-ink-secondary); font-size: 12px; line-height: 1.6; }
@@ -162,24 +162,25 @@ dialog.native-settings-shell .hint { max-width: 65ch; font-size: 12px; line-heig
 #settings-dialog #settings-feedback { margin-top: 20px; }
 #settings-dialog #settings-feedback.error { color: var(--aura-error-ink); }
 :is(#settings-dialog, dialog.native-settings-shell) :is(button, input, select, textarea, summary):focus-visible { outline: 2px solid var(--aura-accent); outline-offset: 3px; }
+:is(#settings-dialog, dialog.native-settings-shell) :is(input:not([type=checkbox]):not([type=radio]), textarea):focus-visible { outline-offset: -1px; }
 :is(#settings-dialog, dialog.native-settings-shell) :is(input, textarea) { caret-color: var(--aura-accent); }
 :is(#settings-dialog, dialog.native-settings-shell) ::selection { color: var(--aura-ink); background: var(--aura-accent-subtle); }
 :is(#settings-dialog, dialog.native-settings-shell) ::placeholder { color: var(--aura-ink-secondary); opacity: 1; }
-:is(#settings-dialog, dialog.native-settings-shell) .primary { min-height: 38px; border-radius: 10px; background: var(--aura-button-primary); color: var(--aura-button-primary-text); }
-#connections-dialog .saved-connection { padding: 16px 0; border: 0; border-bottom: 1px solid var(--aura-border); border-radius: 0; background: transparent; }
+:is(#settings-dialog, dialog.native-settings-shell) .primary { min-height: 38px; border-radius: 12px; background: var(--aura-button-primary); color: var(--aura-button-primary-text); }
+#connections-dialog .saved-connection { padding: 16px 0; border: 0; border-bottom: var(--aura-hairline) solid var(--aura-border); border-radius: 0; background: transparent; }
 #connections-dialog .saved-connection small { color: var(--aura-ink-secondary); }
 #connections-dialog .provider-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 #connections-dialog .provider-card { padding: 14px 12px; min-height: 110px; border-radius: 12px; }
 #connections-dialog .provider-card[data-kind=openrouter] { grid-column: auto; }
 #connections-dialog .provider-card img { width: 24px; height: 24px; filter: none; opacity: 1; }
-#features-dialog .feature-row { padding: 16px 0; border: 0; border-bottom: 1px solid var(--aura-border); border-radius: 0; background: transparent; }
+#features-dialog .feature-row { padding: 16px 0; border: 0; border-bottom: var(--aura-hairline) solid var(--aura-border); border-radius: 0; background: transparent; }
 
 /* The first-launch reference is brand-led, intentionally narrow and tall. */
 #welcome-dialog { width: min(600px, calc(100vw - 32px)); max-width: 600px; height: min(700px, calc(100dvh - 60px)); max-height: calc(100dvh - 60px); position: fixed; padding: 64px 40px 36px; overflow-y: auto; border: 0; border-radius: 16px; background: var(--aura-bg-raised); color: var(--aura-ink); box-shadow: var(--aura-shadow-overlay); }
 #welcome-dialog .welcome-header { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; margin: 0; border: 0; }
 #welcome-dialog .aura-brand { display: flex; align-items: center; gap: 14px; }
 #welcome-dialog .aura-logo { width: 52px; height: 52px; }
-#welcome-dialog .brand-copy { font-family: var(--aura-font-family); font-size: 29px; font-weight: 600; line-height: 1.2; letter-spacing: -.025em; }
+#welcome-dialog .brand-copy { font-family: var(--aura-font-family-brand); font-size: 28px; font-weight: 600; line-height: 1.2; letter-spacing: .04em; }
 #welcome-dialog .brand-copy .app-version { display: none; }
 #welcome-dialog :is(#welcome-path, #welcome-start) { display: flex; flex-direction: column; align-items: center; min-height: calc(100% - 72px); max-width: none; margin: 0; text-align: center; }
 #welcome-dialog :is(#welcome-path[hidden], #welcome-start[hidden], #welcome-demo[hidden]) { display: none; }
