@@ -370,12 +370,16 @@
     $('#composer-refs').replaceChildren(...chips);
     updateWorkMode();
   }
+  // One entry point for the Kode tab's button and the composer's "@" list.
+  function addReference(ref) {
+    if (!ref || typeof ref.path !== 'string' || !ref.path) return false;
+    if (references.some(item => item.path === ref.path && item.from === ref.from && item.to === ref.to)) { message('Henvisningen er allerede med i din besked.'); $('#prompt').focus(); return false; }
+    if (references.length >= 10) { message('Du kan henvise til højst 10 filer i én besked.', true); return false; }
+    references.push(ref); renderReferences(); $('#prompt').focus(); return true;
+  }
   $('#code-reference').onclick = () => {
     if (!code.path || code.text === null) return;
-    const ref = { path: code.path, ...(code.from ? { from: code.from, to: code.to } : {}) };
-    if (references.some(item => item.path === ref.path && item.from === ref.from && item.to === ref.to)) { message('Henvisningen er allerede med i din besked.'); $('#prompt').focus(); return; }
-    if (references.length >= 10) { message('Du kan henvise til højst 10 filer i én besked.', true); return; }
-    references.push(ref); renderReferences(); $('#prompt').focus();
+    addReference({ path: code.path, ...(code.from ? { from: code.from, to: code.to } : {}) });
   };
 
   // ---------- Filhenvisninger i samtalen ----------
@@ -591,5 +595,5 @@
     if (code.path) { const selected = active; await openFile(code.path, { focus: false, reveal: false }); show(selected, { reveal: false }); }
     activity.running = running; await action(loadActivity); updateActivityStatus();
   }
-  window.workspace = { show, setSurfaceOpen: surfaceOpen, onProject, onChat, showVersions, showVersion, openFile, showChange, linkify, linkifyAll, references: () => references.map(ref => ({ ...ref })), clearReferences: () => { references = []; target = null; renderReferences(); }, setTarget: value => { target = value ? { id: value.id, label: value.label } : null; renderReferences(); }, target: () => target && { ...target }, get active() { return active; } };
+  window.workspace = { show, setSurfaceOpen: surfaceOpen, onProject, onChat, showVersions, showVersion, openFile, showChange, linkify, linkifyAll, addReference, references: () => references.map(ref => ({ ...ref })), clearReferences: () => { references = []; target = null; renderReferences(); }, setTarget: value => { target = value ? { id: value.id, label: value.label } : null; renderReferences(); }, target: () => target && { ...target }, get active() { return active; } };
 })();

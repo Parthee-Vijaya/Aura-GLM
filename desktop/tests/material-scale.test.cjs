@@ -103,6 +103,27 @@ test('focus rings on buttons follow the input modality', () => {
   assert.match(tokens, /html\[data-input-modality="pointer"\] body :focus-visible:not\(:read-write\)\s*\{[^}]*outline-color:\s*transparent\s*!important/);
 });
 
+test('typing in a text field does not count as keyboard navigation', () => {
+  const vm = require('node:vm');
+  const handlers = {}, dataset = {};
+  const sandbox = { document: { documentElement: { dataset } }, addEventListener: (type, handler) => { handlers[type] = handler; }, Set };
+  vm.runInNewContext(fs.readFileSync(path.join(ui, 'input-modality.js'), 'utf8'), sandbox);
+  const field = { tagName: 'TEXTAREA', type: 'textarea', isContentEditable: false }, button = { tagName: 'BUTTON', type: 'button', isContentEditable: false };
+  handlers.pointerdown({});
+  handlers.keydown({ key: 'a', target: field });
+  assert.equal(dataset.inputModality, 'pointer', 'a typed letter keeps the pointer modality');
+  handlers.keydown({ key: 'Shift', target: button });
+  assert.equal(dataset.inputModality, 'pointer', 'a modifier alone shows no intent');
+  handlers.keydown({ key: 'Tab', target: field });
+  assert.equal(dataset.inputModality, 'keyboard', 'Tab is navigation, also from a field');
+  handlers.pointerdown({});
+  handlers.keydown({ key: 'ArrowDown', target: button });
+  assert.equal(dataset.inputModality, 'keyboard', 'keys on a button are navigation');
+  handlers.pointerdown({});
+  handlers.keydown({ key: ' ', target: { tagName: 'INPUT', type: 'checkbox', isContentEditable: false } });
+  assert.equal(dataset.inputModality, 'keyboard', 'a checkbox is not a text field');
+});
+
 // ── Aura's own accent, with computed contrast ──
 const luminance = rgb => {
   const linear = channel => { const c = channel / 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
