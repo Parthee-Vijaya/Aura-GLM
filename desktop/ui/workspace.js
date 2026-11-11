@@ -501,7 +501,9 @@
   function updateActivityStatus() {
     const waiting = [...activity.entries.values()].filter(entry => entry.status === 'waiting');
     activity.waiting = waiting.length;
-    $('#activity-status').textContent = waiting.length ? `Venter på dig: ${waiting[0].title.replace(/^Godkendelse: /, '')}` : activity.running ? 'AI’en arbejder' : 'Ingen opgave i gang';
+    // Målt værktøjstid står efter tilstanden; en ventende godkendelse står alene.
+    const total = window.ActivitySummary ? ActivitySummary.text(ActivitySummary.summarize(activity.entries.values())) : '';
+    $('#activity-status').textContent = waiting.length ? `Venter på dig: ${waiting[0].title.replace(/^Godkendelse: /, '')}` : (activity.running ? 'AI’en arbejder' : 'Ingen opgave i gang') + (total ? ` · ${total}` : '');
     clearInterval(activity.timer);
     // Ventetiden på en godkendelse tælles op hvert sekund, så længe den venter.
     activity.timer = waiting.length ? setInterval(() => { for (const entry of waiting) { const row = $('#activity-list').querySelector(`[data-id="${CSS.escape(entry.id)}"] .activity-state`); if (row) row.textContent = entryState(entry); } }, 1000) : null;

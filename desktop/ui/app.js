@@ -3288,6 +3288,8 @@ $('#settings-profile-button').onclick = () => openSettings('profile');
 $('#settings-appearance-button').onclick = () => openSettings('appearance');
 $('#connections-button').onclick = () => openSettings('connections');
 $('#features-button').onclick = () => openSettings('features');
+// Sidebarens genvej bruger knappens egen vej, så dens låsning under en opgave også gælder her.
+$('#extensions-open').onclick = () => $('#features-button').click();
 $('#support-button').onclick = () => openSettings('support');
 // updates.js runs after app.js and binds #updates-button itself; adopt its open
 // function as the section's opener, then route the button through openSettings.
