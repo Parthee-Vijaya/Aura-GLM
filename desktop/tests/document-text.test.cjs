@@ -99,6 +99,12 @@ test('a PDF opens through the existing bounded local reader, page by page', asyn
   } finally { await fs.rm(root, { recursive: true, force: true }); }
 });
 
+test('the file reader and the document reader agree on the size limit', () => {
+  const source = require('node:fs').readFileSync(path.join(__dirname, '..', 'core', 'project-files.cjs'), 'utf8');
+  assert.match(source, /DOCUMENT_LIMIT = 5 \* 1024 \* 1024/);
+  assert.equal(documents.INPUT_LIMIT, 5 * 1024 * 1024);
+});
+
 test('the viewer labels extracted text and keeps it out of the reference button', () => {
   const workspace = require('node:fs').readFileSync(path.join(__dirname, '..', 'ui', 'workspace.js'), 'utf8');
   assert.match(workspace, /code\.text = file\.kind === 'text' \? file\.text : null/, 'only real text files can be referenced');
