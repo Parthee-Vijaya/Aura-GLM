@@ -55,3 +55,18 @@ Planlagte og gentagne opgaver, der vender tilbage til deres samtale. Kører kun,
 ## Fravalgt
 
 Plugins, der kører med brugerens fulde rettigheder, automatisk godkendelse af værktøjshandlinger, en tilstand med fuld adgang og stemmeinput. De strider mod Auras regel om, at handlinger uden for projektmappen kræver et udtrykkeligt ja.
+
+## Status 12. november 2026
+
+Fase 1 er leveret som 0.7.0-beta.1. Fase 2 og 3 er leveret som 0.8.0-beta.1 i disse afgrænsninger:
+
+| Punkt | Leveret | Ikke leveret |
+| --- | --- | --- |
+| @-henvisninger | Projektfiler, via de eksisterende filhenvisninger | Tidligere samtaler |
+| Dokumentvisning | Word, Excel og PDF som udtrukket tekst i Kode-fanen | Formateret visning; Markdown vises fortsat som tekst |
+| Skills og udvidelser | Sidepanelrække, der åbner Funktioner | MCP-forbindelser og en samlet side |
+| Arbejdsspor | Antal målte trin og samlet tid i værktøjer | Samlet tid pr. opgave fra start til slut |
+| Automatisering | Planlagte opgaver, der lægger teksten klar; du sender | Opgaver, der sender uden en bruger |
+
+De to åbne valg blev afgjort forsigtigt: ingen nye afhængigheder til dokumentvisning, og en planlagt opgave må kun forberede, ikke sende. Begge kan udvides, hvis Parthee beslutter det.
+

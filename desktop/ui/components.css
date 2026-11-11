@@ -392,3 +392,22 @@ details.disclosure.step.step-group[open] > summary .step-glyph::after { opacity:
 .info:hover:not(:disabled), .info[aria-expanded="true"] { opacity: 1; }
 /* Review 4.11: the setup reason is guidance, not a warning. One info tone in both themes. */
 :root #setup-reason { background: var(--aura-accent-faint); color: var(--aura-ink); border: 1px solid var(--aura-accent-subtle); }
+
+/* ── Automatisering: planlagte opgaver ── */
+.automation-list { list-style: none; margin: 16px 0 8px; padding: 0; display: grid; gap: 8px; }
+.automation-list li { padding: 12px 14px; border: var(--aura-hairline) solid var(--aura-border-strong); border-radius: var(--aura-radius-lg); }
+.automation-list li .hint { margin: 4px 0 0; }
+.automation-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.automation-head strong { font-weight: 550; overflow-wrap: anywhere; }
+.automation-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.automation-actions button { min-height: 28px; padding: 3px 10px; border-radius: var(--aura-radius-sm); font-size: 12px; }
+.automation-form { display: grid; gap: 6px; margin-top: 18px; accent-color: var(--aura-accent); }
+.automation-form h3 { margin: 0 0 4px; font-size: 14px; line-height: 22px; }
+.automation-form label { font-size: 12px; line-height: 20px; font-weight: 500; }
+.automation-form :is(input:not([type=radio]), textarea, select) { width: 100%; box-sizing: border-box; }
+.automation-form [hidden] { display: none; }
+.automation-kinds { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 6px 0 2px; padding: 0; border: 0; }
+.automation-kinds legend { padding: 0; font-size: 12px; line-height: 20px; font-weight: 500; }
+.automation-kinds label { display: inline-flex; align-items: center; gap: 6px; font-weight: 400; font-size: 13px; white-space: nowrap; }
+.automation-kinds input[type=radio] { flex: none; width: auto; min-height: 0; margin: 0; padding: 0; }
+#automation-open[data-pending]::after { content: ""; flex: none; width: 8px; height: 8px; margin-left: auto; border-radius: 50%; background: var(--aura-accent); }

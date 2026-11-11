@@ -2,7 +2,7 @@
 
 Aura Prime hjælper dig fra idé til plan, kode og forhåndsvisning i et lokalt arbejdsområde. Appen bygger videre på [Aura Harness fra AI Alliancen](https://github.com/ai-alliancen-org/ai-harness) med OpenCode som kodeagent og frit valg af AI-forbindelse.
 
-**Aktuel kildeversion: `0.7.0-beta.1`, 12. november 2026.** Denne gren indfører ét materialesystem oven på det nye UI/UX. Skærmbillederne er fra `0.7.0-beta.1`, optaget fra den kørende Electron-app i en Linux-kørsel af kildekoden med en separat testprofil og det opdigtede projekt *Fjordby arrangementer*. Skrifttype og vinduesramme afviger derfor fra macOS. Versionen er en udviklingsbeta; denne opdatering udgiver ingen ny installer.
+**Aktuel kildeversion: `0.8.0-beta.1`, 12. november 2026.** Denne gren indfører ét materialesystem oven på det nye UI/UX og tilføjer @-henvisninger, dokumentvisning og automatisering. Skærmbillederne er fra `0.7.0-beta.1` (før de nye sidepanelrækker), optaget fra den kørende Electron-app i en Linux-kørsel af kildekoden med en separat testprofil og det opdigtede projekt *Fjordby arrangementer*. Skrifttype og vinduesramme afviger derfor fra macOS. Versionen er en udviklingsbeta; denne opdatering udgiver ingen ny installer.
 
 ![Aura Prime med integreret logo, projektoversigt og centreret samtalestart](docs/images/aura-prime-0.7.0-beta.1/01-workspace-light.png)
 
@@ -42,12 +42,13 @@ Billederne er faktiske appoptagelser, ikke designmockups. De viser syntetiske da
 
 ## Funktionerne følger med
 
-Arbejd videre med **Samtale, Planlæg og Byg**, lokale projekter, historik, kladder, modelvalg, forbrug og kontekst. Vedhæft tekstfiler, billeder og PDF, eller vælg en referencemappe med læseadgang. Gennemgå planer, filændringer og værktøjshandlinger, og afprøv understøttede webprojekter i forhåndsvisningen.
+Arbejd videre med **Samtale, Planlæg og Byg**, lokale projekter, historik, kladder, modelvalg, forbrug og kontekst. Vedhæft tekstfiler, billeder og PDF, eller vælg en referencemappe med læseadgang. Skriv @ i skrivefeltet for at henvise til en projektfil, og åbn Word, Excel og PDF som udtrukket tekst i Kode-fanen. Gennemgå planer, filændringer og værktøjshandlinger, og afprøv understøttede webprojekter i forhåndsvisningen.
 
 Redesignet bevarer datagennemgang, Privacy Gate, godkendelser, Stop/genoptagelse og lokale Git-versioner. YOLO under Byg kræver fortsat advarsel og bekræftelse, gælder kun den aktuelle samtale og ophæver ikke beskyttede filer eller datadelingsgrænser.
 
 - [Privacy Gate og isolation](docs/privacy-gate.md)
 - [YOLO og samtaletilladelser](docs/yolo.md)
+- [Automatisering: planlagte opgaver, som du selv sender](docs/automatisering.md)
 - [Designhjælp til dine egne apps](docs/aura-design-skill.md)
 - [Lokal kontrol af genererede webapps](docs/design-quality-control.md)
 - [OpenCode 2 og samtalemigration](docs/opencode-2-upgrade.md)
