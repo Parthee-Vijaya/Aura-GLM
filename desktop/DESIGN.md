@@ -1,12 +1,12 @@
 ---
 name: "Aura Prime"
-description: "Lokal arbejdsapp med integreret Aura-brand, helt skjulbar navigation og centreret samtalestart."
+description: "Lokal arbejdsapp med integreret Aura-brand, helt skjulbar navigation, centreret samtalestart og ét materialesystem."
 colors:
-  aura-accent: "light-dark(rgb(65, 118, 230), rgb(122, 170, 255))"
-  aura-accent-hover: "light-dark(rgb(72, 104, 178), rgb(122, 170, 255))"
-  aura-accent-subtle: "light-dark(rgb(228, 237, 253), rgb(33, 43, 66))"
-  aura-accent-faint: "light-dark(rgb(237, 243, 254), rgb(27, 35, 54))"
-  aura-accent-ink: "light-dark(rgb(52, 94, 186), rgb(125, 154, 222))"
+  aura-accent: "light-dark(rgb(11, 127, 98), rgb(61, 214, 168))"
+  aura-accent-hover: "light-dark(rgb(9, 107, 83), rgb(95, 224, 186))"
+  aura-accent-subtle: "light-dark(rgb(221, 243, 236), rgb(22, 53, 44))"
+  aura-accent-faint: "light-dark(rgb(234, 247, 243), rgb(18, 39, 32))"
+  aura-accent-ink: "light-dark(rgb(10, 107, 82), rgb(95, 224, 186))"
   aura-button-primary: "light-dark(rgb(21, 21, 23), rgb(240, 240, 242))"
   aura-button-primary-hover: "light-dark(rgb(40, 40, 42), rgb(255, 255, 255))"
   aura-button-primary-text: "light-dark(rgb(255, 255, 255), rgb(21, 21, 23))"
@@ -94,23 +94,23 @@ typography:
     letterSpacing: "-0.02em"
   hero-brand:
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif"
-    fontSize: "28px"
-    fontWeight: 550
-    letterSpacing: "-0.025em"
+    fontSize: "26px"
+    fontWeight: 600
+    letterSpacing: "0.04em"
   sidebar-brand:
     fontFamily: "'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif"
-    fontSize: "23px"
+    fontSize: "18px"
     fontWeight: 600
-    letterSpacing: "-0.025em"
+    letterSpacing: "0.04em"
 rounded:
   xs: "4px"
   sm: "8px"
   md: "12px"
   lg: "16px"
   xl: "20px"
-  control: "7px"
-  choice: "10px"
-  panel: "24px"
+  control: "8px"
+  choice: "12px"
+  panel: "28px"
   circle: "50%"
 spacing:
   "4": "4px"
@@ -164,7 +164,7 @@ components:
     backgroundColor: "{colors.aura-bg-composer}"
     textColor: "{colors.aura-ink}"
     rounded: "{rounded.panel}"
-    padding: "13px"
+    padding: "12px"
   work-tab-selected:
     backgroundColor: "transparent"
     textColor: "{colors.aura-accent-ink}"
@@ -179,8 +179,8 @@ components:
     backgroundColor: "{colors.aura-accent}"
     textColor: "light-dark(white,rgb(21,21,23))"
     rounded: "{rounded.circle}"
-    width: "34px"
-    height: "34px"
+    width: "36px"
+    height: "36px"
     padding: "0"
   settings-selected:
     backgroundColor: "{colors.aura-bg-active}"
@@ -195,7 +195,7 @@ components:
 
 **Creative North Star: "Samtalen i den lokale app"**
 
-Aura Prime følger nu kompositionen fra den faktisk installerede DeepSeek Harness 0.2.1-rc.5: integreret brand under systemtitelbaren, en helt skjulbar sidebar, centreret samtalestart og en samlet indstillingsramme. Hovedfladen er neutral, sidebar er lysere, og den runde Send-knap er blå. Den første implementering blev afvist; dens slutvurdering er ikke brugeraccept.
+Aura Prime følger nu kompositionen fra den faktisk installerede DeepSeek Harness 0.2.1-rc.5: integreret brand under systemtitelbaren, en helt skjulbar sidebar, centreret samtalestart og en samlet indstillingsramme. Hovedfladen er neutral, sidebar er lysere, og den runde Send-knap bruger Auras grønne accent. Den første implementering blev afvist; dens slutvurdering er ikke brugeraccept.
 
 Dette er en beskrivelse af den lokale, byggede verden. Aura bruger sit eget navn og symbol og sine eksisterende controllere. Profilen er valgfri og lokal, og appen har ingen kontologin. En ny samtale starter uden åbent værktøjspanel; en kladde bliver i den centrerede komposition, indtil samtalen har en faktisk besked.
 
@@ -203,7 +203,7 @@ Dette er en beskrivelse af den lokale, byggede verden. Aura bruger sit eget navn
 
 - Integreret Aura-symbol og wordmark på fladen, uden appikonets mørke tile eller fast versionsbadge.
 - 280 px sidebar som grundmål; skjul giver hele bredden tilbage uden ikonrail.
-- Neutral composer med 24 px radius, blå rund Send og projekt/arbejdsmåde over feltet ved samtalestart.
+- Neutral composer med 28 px radius, blød elevation uden kant, grøn rund Send og projekt/arbejdsmåde over feltet ved samtalestart.
 - Centreret velkomst og fælles 800×680 px ramme med venstrenavigation og rullende indhold.
 - Ingen tvungen identitet; Lokal profil forbliver en findbar indgang.
 - Første rene opstart bruger et reelt 600×700 native vindue; afslutning gemmer kun desktopWelcomeComplete lokalt og udvider arbejdsrammen.
@@ -222,9 +222,9 @@ Farverne i frontmatter er de uændrede CSS-værdier fra `aura-tokens.css`. Førs
 
 ### Accent og handlinger
 
-Send er blå med `aura-accent`, hover følger `aura-accent-hover`, og teksten er hvid i lyst tema og næsten sort i mørkt. Stop og almindelige primærhandlinger beholder `aura-button-primary` med sort/hvid temaveksling. Velkomstens Kom i gang er neutral primærhandling. Det er en konkret rollefordeling; den tidligere generelle regel om aldrig at bruge blå hovedhandling er udgået.
+Send bruger `aura-accent`, som fra 0.7.0 er Auras grønne fra logoet; hover følger `aura-accent-hover`, og teksten er hvid i lyst tema og næsten sort i mørkt. Stop og almindelige primærhandlinger beholder `aura-button-primary` med sort/hvid temaveksling. Velkomstens Kom i gang er neutral primærhandling. Det er en konkret rollefordeling. Referenceappens blå er DeepSeeks brandfarve og bruges ikke længere som Auras accent.
 
-Samtalevisningens blå linje, links, caret, fokus og udbydervalg bruger accentrollerne. Valgte samtaler og indstillingssektioner har nu neutral flade og almindelig tekst. Temaets store valgfelter bruger neutral kant og aktiv flade. Et visuelt valg giver aldrig samtykke eller filadgang.
+Samtalevisningens markeringslinje, links, caret, fokus og udbydervalg bruger accentrollerne. Valgte samtaler og indstillingssektioner har nu neutral flade og almindelig tekst. Temaets store valgfelter bruger neutral kant og aktiv flade. Et visuelt valg giver aldrig samtykke eller filadgang.
 
 ### Neutrale flader
 
@@ -238,8 +238,8 @@ Samtalevisningens blå linje, links, caret, fokus og udbydervalg bruger accentro
 | `--aura-ink` | `rgb(15, 17, 21)` | `rgb(249, 250, 251)` |
 | `--aura-ink-secondary` | `rgb(97, 102, 107)` | `rgb(207, 211, 214)` |
 | `--aura-ink-muted` | `rgb(101, 105, 113)` | `rgb(150, 152, 158)` |
-| `--aura-accent` | `rgb(65, 118, 230)` | `rgb(122, 170, 255)` |
-| `--aura-accent-ink` | `rgb(52, 94, 186)` | `rgb(125, 154, 222)` |
+| `--aura-accent` | `rgb(11, 127, 98)` | `rgb(61, 214, 168)` |
+| `--aura-accent-ink` | `rgb(10, 107, 82)` | `rgb(95, 224, 186)` |
 | `--aura-button-primary` | `rgb(21, 21, 23)` | `rgb(240, 240, 242)` |
 | `--aura-button-primary-text` | `rgb(255, 255, 255)` | `rgb(21, 21, 23)` |
 | `--aura-bg-active` | `rgb(235, 238, 242)` | `rgb(67, 69, 74)` |
@@ -263,7 +263,7 @@ Systemfonten fra frontmatter bruges til indhold og den centrale Aura-brandrække
 | `headline` / `subheading` | Markdown 20/28 px og 16/24 px. |
 | `setup-title` | 23 px, vægt 500, linjehøjde 1,3. |
 | `welcome-title` | 26 px, vægt 400, linjehøjde 1,35. |
-| `hero-brand` / `sidebar-brand` | Henholdsvis 28 px/vægt 550 og 23 px/vægt 600. |
+| `hero-brand` / `sidebar-brand` | Henholdsvis 26 px og 18 px, vægt 600, spatiering 0,04 em og små bogstaver i selve ordmærket. Navnet i DOM og for skærmlæsere er uændret. |
 | `label` / `caption` | Kompakt kontroltekst og metadata. Den konkrete sidebar bruger også 14 px med normal vægt. |
 | `code` | Kodelinjer og diff 12/22 px; tekniske godkendelsesdetaljer 12 px med linjehøjde 1,7. |
 
@@ -275,7 +275,7 @@ Profilens skriftstørrelse er fortsat 10 til 16 med 13 som normalværdi. Electro
 
 macOS-vinduet bruger `hiddenInset` med de rigtige systemknapper ved x16/y16. CSS reserverer en 44 px titelbarrække og en synlig åbnknap i hovedfladen, når sidebar er skjult. Ingen falske systemknapper tegnes i HTML. Et platformspecifikt native vindue skal verificeres som sådan; et renderer-screenshot beviser ikke hele vinduesrammen.
 
-Sidebarens standard er nu 280 px. Den har først titelbarrækken, derefter en brandrække på mindst 58 px med transparent Aura-symbol og wordmark. Ny samtale er en neutral fuldbreddeknap på mindst 40 px. Nyt projekt, Åbn projekt og Søg i samtaler ligger nedenunder. Flere muligheder samler kodeværktøjer, introduktion, projektmenu, versioner og Udgiv, når deres eksisterende feature- og projektbetingelser tillader dem. Lokal profil og indstillinger ligger nederst. Versionen står ikke som et permanent mærke ved logoet.
+Sidebarens standard er nu 280 px. Den har først titelbarrækken, derefter en brandrække på mindst 60 px med transparent Aura-symbol og wordmark. Ny samtale er øverste navigationsrække på 36 px uden kant. Nyt projekt, Åbn projekt og Søg i samtaler ligger nedenunder. Flere muligheder samler kodeværktøjer, introduktion, projektmenu, versioner og Udgiv, når deres eksisterende feature- og projektbetingelser tillader dem. Lokal profil og indstillinger ligger nederst. Versionen står ikke som et permanent mærke ved logoet.
 
 Ved skjul bliver sidebarbredden **0 px**, og hele sidebaren forsvinder. Åbn sidebar og Ny samtale vises i hovedfladens titelbarområde. Desktopvalget gemmes i den eksisterende `aura.sidebar.v1`; småvindues-skuffen må ikke overskrive det. Skjulte flader er inert, og fokus flyttes til den synlige åbnknap. Den tidligere 60 px ikonrail er udgået.
 
@@ -317,13 +317,13 @@ Opsætning og indstillinger har højst 800×680 px, 20 px radius, 66 px header, 
 
 ## Elevation & Depth
 
-Hovedflade, sidebar og composer bygger på toneforskelle. Composeren har ingen skygge eller dekorativ metalglød. Den fokuserede opsætnings-/indstillingsramme bruger `aura-shadow-overlay`. Materialemenuer bruger deres eksisterende blur på 40 px, 150 % saturering og `aura-shadow-menu`; uden backdrop-filter bruges den uigennemsigtige temaegne flade.
+Hovedflade og sidebar bygger på toneforskelle. Hævede flader har ingen kant: composeren bruger `aura-elevation-soft`, menuer `aura-elevation-panel` og dialoger `aura-elevation-prominent`. Hver elevation begynder med en hårstreg på 0,5 px efterfulgt af to meget svage skygger. En neutral kant må ikke kombineres med en elevation. Materialemenuer bruger deres eksisterende blur på 40 px og 150 % saturering; uden backdrop-filter bruges den uigennemsigtige temaegne flade.
 
 Fælles bevægelse er 100/200/300 ms og den eksisterende easing. Gridfordeling har 240 ms særkurve. Åbning af dialog/fold og faktisk indsendelse kan animere. Reduceret bevægelse stopper animationer og overgange, inklusive `::details-content`, og gør rulning uden animation. Forced colors bruger systemets Highlight til markeringer. Bevægelse må ikke stå som erstatning for en faktisk status.
 
 ## Shapes
 
-Skalaen er 4/8/12/16/20 px plus den aktuelle panelradius på 24 px. Composer bruger 24 px, velkomst 16 px, indstillinger/opsætning 20 px, felt- og navigationsvalg ofte 10 px, øvrige felter 8 px og kort 12 px. Send/Stop og vedhæftningsplus deklarerer 50 % runding. `superellipse(1.5)` er fortsat featuregated og kan påvirke den beregnede hjørneform; radius alene er ikke hele silhouetten.
+Skalaen er 4/8/12/16/20/28 px, valgt efter rolle: små detaljer 4, kompakte kontroller 8, almindelige kontroller og rækker 12, grupperet indhold 16, selvstændige kort og brugerbobler 20, composer og dialoger 28. Cirkler bruger 50 % og kapsler 999 px. `tests/material-scale.test.cjs` afviser andre værdier. Send/Stop og vedhæftningsplus deklarerer 50 % runding. `superellipse(1.5)` er fortsat featuregated og kan påvirke den beregnede hjørneform; radius alene er ikke hele silhouetten.
 
 ## Components
 
@@ -339,11 +339,11 @@ Kom i gang åbner den guidede vej. Fortsæt uden profil er en reel handling og h
 
 ### Composer, input og tastatur
 
-Composeren har neutral flade, 24 px radius, ingen kant og 13 px padding. Feltet er 14/24 px, mindst 44 px og højst 336 px; tom samtale har mindst 52 px. Ved længere tekst ruller feltet internt. Send og Stop deler 34 px plads. Send er blå, Stop er neutral. Modelvalget har ellipsis og må ikke presse Send ud. Vedhæftninger, filer, PDF, billeder og referencemapper bevarer deres almindelige gennemgange.
+Composeren har neutral flade, 28 px radius, ingen kant, blød elevation og 12 px padding. Feltet er 14/24 px, mindst 44 px og højst 336 px; tom samtale har mindst 52 px. Ved længere tekst ruller feltet internt. Send og Stop deler 36 px plads. Send bruger accenten, Stop er neutral. Modelvalget har ellipsis og må ikke presse Send ud. Vedhæftninger, filer, PDF, billeder og referencemapper bevarer deres almindelige gennemgange.
 
 Enter sender, Shift+Enter laver en ny linje, og Cmd/Ctrl+Enter følger det samme sendeforløb med samtykke. IME og gentagelser må ikke give dobbeltafsendelse. Samtale, Planlæg og Byg beholder deres adgangsgrænser. Visningsvalg sender intet og godkender ingen plan. Idéen i et nyt projekt bliver en redigerbar Byg-kladde.
 
-De fleste kontroller har 2 px blå fokus med 3 px afstand. Den aktuelle composer bruger i stedet en 1 px neutral outline uden afstand ved synligt tekstfeltfokus. Dette registrerer den faktiske implementering; det er ikke en ny generel fokusregel eller en erklæring om bestået fokuskontrast. Den detalje indgår i det friske review. Native radiofelter eller deres labels bevarer fokus og normale tastaturvalg.
+Fokus følger inputmåden. `ui/input-modality.js` sætter `data-input-modality` på `<html>` til `keyboard` eller `pointer`. Ved tastatur har kontroller en 2 px accentring med 3 px afstand. Efter et museklik er ringen skjult på knapper, faner og rækker. Tekstfelter beholder deres markering ved klik, og ringen ligger på feltets egen kant. Composeren styrker sin neutrale streg ved klik og får accentringen ved tastatur. Før første input vises ringe som ved tastatur. Native radiofelter eller deres labels bevarer fokus og normale tastaturvalg.
 
 ### Onboarding og indstillinger
 
@@ -392,3 +392,17 @@ Slutstatus: Den uafhængige native genprøve har lukket NF-01 og NF-02 med quali
 Brugerens opfølgning erstatter de grå tilnærmelser med de faktiske flade-, tekst- og accentfarver fra installeret DeepSeek Harness 0.2.1-rc.5. Lyst tema bruger hvidt lærred, hvide felter og sidebar #f9fafb. Mørkt tema bruger lærred #151517, sidebar #1b1b1c og felter #2c2c2e. Statiske farveværdier er læst fra den installerede apps theme-modul. Auras navn, grønne logo og semantiske advarsels-/statusfarver bevares.
 
 Nyt projekt har en tættere formular og en fast bundrække uden for det rullende indhold. Den oprindelige opret-knap bevarer HTML-formtilknytning, validering og disabled-guards. Returhandlingen ligger i headeren. Standardfelter, tilvalg og placering vises uden scroll ved 980×720 og normal tekststørrelse. Åbnede tilvalg, lange fejl/idéresultater og forstørret tekst kan fortsat rulle uden at skjule opret-handlingen.
+
+## Materialesystem, 11. november 2026
+
+Parthee har bestilt samme gennemarbejdede udtryk som referenceappen med Auras eget præg. De tidligere runder overtog komposition og farver. Denne runde overtager materialereglerne og håndhæver dem med en test.
+
+- **Radius** følger seks trin efter rolle. 88 afvigende værdier er flyttet til nærmeste trin.
+- **Hårstreg:** neutrale kanter bruger `--aura-hairline` på 0,5 px. 148 kanter er ændret.
+- **Elevation:** composer, menuer og dialoger har kanten i skyggen. Tvungne farver giver dem en rigtig kant.
+- **Fokus** følger inputmåden som beskrevet under Composer, input og tastatur.
+- **Accent:** Auras grønne fra logoet. Hvid på lys accent har kontrast 4,97:1, og accenttekst består 4,5:1 på alle flader i begge temaer; testen beregner tallene.
+- **Ordmærket** står med små bogstaver og spatiering i sidebar, samtalestart, velkomst og opsætning. Montserrat er fortsat ikke pakket med; uden den installeret bruges systemfonten.
+- **Baggrund bag dialoger** dæmper uden sløring.
+
+Kontrolleret i den kørende Electron-app fra kildekoden i en Linux-kørsel med lyst og mørkt tema. macOS' native vinduesramme, vibrancy og systemfont er ikke kontrolleret i denne runde. Kilder for referenceværdier står i [planen](docs/materialesystem-plan.md).

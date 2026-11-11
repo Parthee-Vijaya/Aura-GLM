@@ -2,19 +2,19 @@
 .material-actions { display:flex; gap:4px; flex-wrap:wrap; margin:4px 0; }
 .material-actions button { font-size:12px; }
 #chat-materials-chips { display:flex; gap:6px; flex-wrap:wrap; padding:0 3px 9px; text-align:left; }
-.material-chip { display:inline-flex; align-items:center; gap:6px; max-width:100%; border:1px solid var(--line); border-radius:7px; padding:4px 5px 4px 9px; margin:0; background:var(--aura-bg); font-size:12px; line-height:20px; }
+.material-chip { display:inline-flex; align-items:center; gap:6px; max-width:100%; border:var(--aura-hairline) solid var(--line); border-radius:8px; padding:4px 5px 4px 9px; margin:0; background:var(--aura-bg); font-size:12px; line-height:20px; }
 .material-chip span { min-width:0; overflow-wrap:anywhere; }
 .material-chip button { padding:2px 5px; min-width:24px; min-height:24px; border:0; background:transparent; color:var(--muted); }
 .material-candidates { max-height:38vh; overflow:auto; }
 #chat-materials-dialog { max-height:85vh; overflow:auto; }
-#chat-materials-dialog pre,#data-materials pre { white-space:pre-wrap; overflow-wrap:anywhere; background:var(--canvas); padding:14px; border:1px solid var(--line); border-radius:8px; max-height:45vh; overflow:auto; }
+#chat-materials-dialog pre,#data-materials pre { white-space:pre-wrap; overflow-wrap:anywhere; background:var(--canvas); padding:14px; border:var(--aura-hairline) solid var(--line); border-radius:8px; max-height:45vh; overflow:auto; }
 #chat-materials-dialog small { overflow-wrap:anywhere; color:var(--muted); }
 #chat-materials-status { margin:4px 0 9px; text-align:left; color:var(--muted); font-size:12px; line-height:19px; }
 .material-image { max-width:100%; max-height:360px; object-fit:contain; }
 .material-menu-wrap { position:relative; flex:none; }
-#chat-materials-plus { height:30px; width:30px; padding:0; color:var(--muted); border:0; background:transparent; border-radius:7px; }
+#chat-materials-plus { height:30px; width:30px; padding:0; color:var(--muted); border:0; background:transparent; border-radius:8px; }
 #chat-materials-plus svg { width:18px; height:18px; }
 #chat-materials-menu { position:absolute; bottom:42px; left:0; width:min(280px,calc(100vw - 60px)); max-height:min(420px,65vh); overflow:auto; z-index:20; }
 #chat-materials-menu > strong { display:block; margin:6px 10px 7px; font-size:12px; font-weight:500; color:var(--aura-ink-secondary); text-align:left; }
-#chat-materials-menu #chat-materials-folder { border-top:1px solid var(--line); border-radius:0; margin-top:5px; padding-top:10px; }
+#chat-materials-menu #chat-materials-folder { border-top:var(--aura-hairline) solid var(--line); border-radius:0; margin-top:5px; padding-top:10px; }
 .composer-shortcut { font-size:12px; margin:0 5px 3px; color:var(--muted); }

@@ -61,9 +61,9 @@ test('sidepanelets bredde er 280 px og trækket 224-360 gemmes i layout-objektet
 // ── 2. Brandrækken 60 px med versionpillen som eneste versionflade ──
 test('native system titlebar is separate from the large integrated brand, without a version badge', () => {
   const brand=rule(calm,'.workspace-calm .brand');
-  assert.match(brand,/min-height:\s*58px/);
+  assert.match(brand,/min-height:\s*60px/);
   assert.match(rule(calm,'.workspace-calm .native-sidebar-titlebar'),/min-height:\s*44px/);
-  assert.match(rule(calm,'.workspace-calm .brand-icon'),/width:\s*34px/);
+  assert.match(rule(calm,'.workspace-calm .brand-icon'),/width:\s*26px/);
   const shell=read('workspace-calm.js');
   assert.match(shell,/sidebarTitlebar\.append\(sidebarToggle\)/);
   assert.match(shell,/el\('project-menu'\)\.append\(meta\)/,'version is retained in the project menu');

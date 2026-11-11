@@ -50,7 +50,7 @@ details.disclosure[open] > summary { margin-bottom: 6px; }
    the expanding box clipping the reveal. */
 @supports (interpolate-size: allow-keywords) and selector(::details-content) {
   details.disclosure::details-content { block-size: 0; overflow: clip; overflow-clip-margin: 6px; transition: block-size var(--aura-transition-duration) var(--aura-ease-in-out), content-visibility var(--aura-transition-duration) allow-discrete; }
-  details.disclosure[open]::details-content { block-size: auto; padding: 8px 0 0; border-top: 1px solid var(--aura-border); transition: block-size var(--aura-transition-duration) var(--aura-ease-in-out); }
+  details.disclosure[open]::details-content { block-size: auto; padding: 8px 0 0; border-top: var(--aura-hairline) solid var(--aura-border); transition: block-size var(--aura-transition-duration) var(--aura-ease-in-out); }
 }
 
 /* Reduced motion: styles.css kills transitions for *, ::before and ::after —
@@ -74,7 +74,7 @@ details.disclosure.work-progress-card > summary::after { transform: none; }
    blur (DSH §2). R4: kontrasten er målt over den SAMMENSATTE baggrund
    (18,01:1 lyst / 12,88:1 mørkt over lærredet), og uden backdrop-filter
    falder materialet tilbage til en uigennemsigtig flade. */
-.menu-material { position: fixed; inset: auto; margin: 0; padding: 6px 4px; border: 0.5px solid var(--aura-border); border-radius: var(--aura-radius-lg); background: var(--aura-menu-bg); -webkit-backdrop-filter: blur(40px) saturate(150%); backdrop-filter: blur(40px) saturate(150%); box-shadow: var(--aura-shadow-menu); color: var(--aura-ink); }
+.menu-material { position: fixed; inset: auto; margin: 0; padding: 6px 4px; border: 0; border-radius: var(--aura-radius-lg); background: var(--aura-menu-bg); -webkit-backdrop-filter: blur(40px) saturate(150%); backdrop-filter: blur(40px) saturate(150%); box-shadow: var(--aura-elevation-panel); color: var(--aura-ink); }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .menu-material { background: var(--aura-bg-raised); }
 }
@@ -92,6 +92,10 @@ details.disclosure.work-progress-card > summary::after { transform: none; }
 .menu-material button:disabled { color: var(--aura-ink-muted); }
 .menu-material button[aria-checked="true"] { background: var(--aura-bg-hover); }
 .menu-material small { display: block; font-size: 12px; line-height: 16px; color: var(--aura-ink-secondary); }
+/* "@"-listen i composeren: filnavn til venstre, mappe dæmpet til højre. */
+#mention-menu [role="option"][aria-selected="true"] { background: var(--aura-bg-hover); }
+#mention-menu [role="option"] span { flex: none; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#mention-menu [role="option"] small { margin-left: auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Radiomarkering i chip-menuerne: det lille flueben til højre er tekst-ærligt
    (aria-checked) og dekoreret med accent (4,23:1 ≥ 3:1 for grafik). */
@@ -259,7 +263,7 @@ details.disclosure.step.step-group[open] > summary .step-glyph::after { opacity:
 .step-output { max-height: min(400px, 50vh); overflow: auto; padding: 8px 10px; border: 0.5px solid var(--aura-border); border-radius: var(--aura-radius-sm); background: var(--aura-bg-raised); color: var(--aura-ink); -webkit-mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 24px), transparent 100%); mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 24px), transparent 100%); }
 .step-draft-note { margin: 0 0 8px; }
 .step-content .text-button { justify-self: start; padding: 4px 6px; font-size: 12px; min-height: 24px; }
-.step-group-rows { display: grid; gap: 4px; margin: 4px 0 2px 7px; padding: 4px 0 2px 16px; border-inline-start: 1px solid var(--aura-border); }
+.step-group-rows { display: grid; gap: 4px; margin: 4px 0 2px 7px; padding: 4px 0 2px 16px; border-inline-start: var(--aura-hairline) solid var(--aura-border); }
 .step-content .step-group-rows { margin: 0; padding: 0; border: 0; }
 
 /* Aktivitetspanelet: de eksisterende tekniske folds (activity-output) får
@@ -388,3 +392,22 @@ details.disclosure.step.step-group[open] > summary .step-glyph::after { opacity:
 .info:hover:not(:disabled), .info[aria-expanded="true"] { opacity: 1; }
 /* Review 4.11: the setup reason is guidance, not a warning. One info tone in both themes. */
 :root #setup-reason { background: var(--aura-accent-faint); color: var(--aura-ink); border: 1px solid var(--aura-accent-subtle); }
+
+/* ── Automatisering: planlagte opgaver ── */
+.automation-list { list-style: none; margin: 16px 0 8px; padding: 0; display: grid; gap: 8px; }
+.automation-list li { padding: 12px 14px; border: var(--aura-hairline) solid var(--aura-border-strong); border-radius: var(--aura-radius-lg); }
+.automation-list li .hint { margin: 4px 0 0; }
+.automation-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.automation-head strong { font-weight: 550; overflow-wrap: anywhere; }
+.automation-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.automation-actions button { min-height: 28px; padding: 3px 10px; border-radius: var(--aura-radius-sm); font-size: 12px; }
+.automation-form { display: grid; gap: 6px; margin-top: 18px; accent-color: var(--aura-accent); }
+.automation-form h3 { margin: 0 0 4px; font-size: 14px; line-height: 22px; }
+.automation-form label { font-size: 12px; line-height: 20px; font-weight: 500; }
+.automation-form :is(input:not([type=radio]), textarea, select) { width: 100%; box-sizing: border-box; }
+.automation-form [hidden] { display: none; }
+.automation-kinds { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 6px 0 2px; padding: 0; border: 0; }
+.automation-kinds legend { padding: 0; font-size: 12px; line-height: 20px; font-weight: 500; }
+.automation-kinds label { display: inline-flex; align-items: center; gap: 6px; font-weight: 400; font-size: 13px; white-space: nowrap; }
+.automation-kinds input[type=radio] { flex: none; width: auto; min-height: 0; margin: 0; padding: 0; }
+#automation-open[data-pending]::after { content: ""; flex: none; width: 8px; height: 8px; margin-left: auto; border-radius: 50%; background: var(--aura-accent); }

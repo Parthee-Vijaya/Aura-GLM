@@ -2426,6 +2426,8 @@ $('#welcome-skip').onclick = leaveIntroduction;
 $('#welcome-dialog').addEventListener('close', () => { if (!$('#welcome-dialog').open) document.body.classList.remove('introduction-open'); });
 $('#welcome-dialog').addEventListener('cancel', event => { event.preventDefault(); leaveIntroduction(); });
 $('#intro-button').onclick = () => showIntroduction();
+// Sidebarens genvej bruger knappens egen vej, så dens låsning under en opgave også gælder her.
+$('#extensions-open').onclick = () => $('#features-button').click();
 $('#setup-back').onclick = () => { const leave = () => repeatSetup ? action(() => leaveSetup(false)) : guidedSetup ? showIntroduction('start') : action(() => leaveSetup(false)); if (setupStep === 'provider' && $('#setup-provider').dataset.view === 'details') providerPicker(); else if (setupStep === 'detail') setupPage('profile'); else if (setupStep === 'profile') leave(); else if (setupStep !== 'choice') { clearConnectionReceipt(); setupPage('choice'); } else if (profileStepShown) setupPage('detail'); else leave(); };
 async function beginGuidedProject() {
   if (current) { await $('#new').onclick(); if (current) return; }

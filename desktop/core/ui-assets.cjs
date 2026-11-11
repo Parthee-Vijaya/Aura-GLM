@@ -10,7 +10,7 @@ const ONBOARDING_ASSETS = ['onboarding-aura-mark.svg', 'onboarding-aura-mark-lig
 // bliver aldrig en generel fillæser — og kun appens egen renderer kan bede om det.
 const DYNAMIC_ASSETS = Object.freeze(['avatar.png']);
 const FILES = [
-  'aura-tokens.css',
+  'aura-tokens.css', 'input-modality.js',
   'feedback-layout.js', 'feedback-layout.css', 'connection-removal.js', 'privacy-gate.js', 'privacy-gate.css',
   'app-version.js', 'preview-working.js', 'preview-working.css', 'idea-refinement.css', 'conversation-permission.css',
   'workspace-calm.js', 'workspace-calm.css', 'idea-refinement.js', 'conversation-permission.js', 'onboarding-compact.css',
@@ -20,7 +20,7 @@ const FILES = [
   'provider-brand.js', 'connection-overview.js', 'chat-display.js', 'context-display.js', 'status-line.js', 'conversation-mode.js',
   'live-work.js', 'server.js', 'viewport.js', 'share-view.js', 'hosting.js', 'deployment-setup.js',
   'promte-preview.js', 'komplai-preview.js', 'deployment.js', 'styles.css', 'demo.css', 'onboarding-b.js', 'onboarding-b.css',
-  'run-state.js', 'diff-review.js', 'shortcuts.js', 'request-log-view.js', 'profile-icons.js', 'profile-save.js', 'profile-chip.js', 'popover-layer.js', 'tooltip.js', 'slash-commands.js', 'permission-pill.js', 'composer-help.js', 'settings.js', 'settings.css', 'components.css',
+  'run-state.js', 'diff-review.js', 'shortcuts.js', 'request-log-view.js', 'profile-icons.js', 'profile-save.js', 'profile-chip.js', 'popover-layer.js', 'tooltip.js', 'slash-commands.js', 'file-mentions.js', 'activity-summary.js', 'automation.js', 'permission-pill.js', 'composer-help.js', 'settings.js', 'settings.css', 'components.css',
   'onboarding-simple.css'
 ];
 function allowed(name) {

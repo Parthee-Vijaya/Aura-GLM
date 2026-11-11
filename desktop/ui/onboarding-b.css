@@ -152,7 +152,7 @@
   margin: 0;
   padding: 23px 19px;
   border: 1px solid var(--ob-line);
-  border-radius: 15px;
+  border-radius: 16px;
   text-align: left;
   color: var(--ob-ink);
   background: var(--ob-surface);
@@ -173,7 +173,7 @@
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--ob-line);
-  border-radius: 22px;
+  border-radius: 20px;
   background: var(--ob-soft);
 }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual[data-kind=anthropic] { --ob-brand: #d97757; }
@@ -194,11 +194,11 @@
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-art-ring::after { content: ''; position: absolute; border: 1px solid var(--ob-brand); border-radius: 50%; opacity: .3; pointer-events: none; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-art-ring::before { inset: 25px; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-art-ring::after { inset: 48px; opacity: .16; }
-:is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-hero { position: relative; z-index: 1; display: grid; place-items: center; height: 94px; width: 94px; border: 1px solid #e1e2e8; border-radius: 25px; background: #fff; box-shadow: 0 11px 25px #15161c08; }
+:is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-hero { position: relative; z-index: 1; display: grid; place-items: center; height: 94px; width: 94px; border: 1px solid #e1e2e8; border-radius: 28px; background: #fff; box-shadow: 0 11px 25px #15161c08; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-hero img { width: 60px; height: 60px; object-fit: contain; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual[data-kind=''] .onboarding-b-hero { background: transparent; border: none; box-shadow: none; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual[data-kind=''] .onboarding-b-hero img { width: 85px; height: 85px; }
-:is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-orbit { position: absolute; z-index: 2; display: grid; place-items: center; height: 37px; width: 37px; border: 1px solid #e1e2e8; border-radius: 11px; background: #fff; color: #747783; box-shadow: 0 2px 5px #00000003; }
+:is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-orbit { position: absolute; z-index: 2; display: grid; place-items: center; height: 37px; width: 37px; border: 1px solid #e1e2e8; border-radius: 12px; background: #fff; color: #747783; box-shadow: 0 2px 5px #00000003; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-orbit img { height: 24px; width: 24px; object-fit: contain; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-orbit svg { height: 19px; width: 19px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-orbit-0 { left: 0; top: 10px; }
@@ -215,7 +215,7 @@
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-connection-name { color: var(--ob-muted); font-size: 11px; line-height: 1.6; margin: 11px 0 0; overflow-wrap: anywhere; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-data-path { display: grid; grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr) 24px minmax(0, 1fr); gap: 3px; align-items: start; margin: 27px 18px 28px; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-route-node { display: flex; flex-direction: column; align-items: center; gap: 7px; min-width: 0; text-align: center; }
-:is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-route-tile { display: grid; place-items: center; height: 37px; width: 37px; flex: none; border: 1px solid var(--ob-line); border-radius: 10px; background: var(--ob-surface); color: var(--ob-muted); }
+:is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-route-tile { display: grid; place-items: center; height: 37px; width: 37px; flex: none; border: 1px solid var(--ob-line); border-radius: 12px; background: var(--ob-surface); color: var(--ob-muted); }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-route-tile img { width: 24px; height: 24px; object-fit: contain; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-route-tile svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-route-node strong { color: var(--ob-ink); font-size: 11px; line-height: 1.4; font-weight: 600; overflow-wrap: anywhere; }
@@ -247,7 +247,7 @@
   :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-art-ring { height: 145px; width: 145px; }
   :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-art-ring::before { inset: 17px; }
   :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-art-ring::after { inset: 32px; }
-  :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-hero { height: 69px; width: 69px; border-radius: 19px; }
+  :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-hero { height: 69px; width: 69px; border-radius: 20px; }
   :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-hero img { height: 44px; width: 44px; }
   :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual-copy { padding: 18px 22px 0 0; text-align: left; }
   :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual-heading { font-size: 22px; margin-top: 0; }
@@ -273,11 +273,11 @@
   :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-art-ring { width: 110px; height: 110px; }
   :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-art-ring::before { inset: 13px; }
   :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-art-ring::after { inset: 24px; }
-  :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-hero { width: 55px; height: 55px; border-radius: 15px; }
+  :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-hero { width: 55px; height: 55px; border-radius: 16px; }
   :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-hero img { width: 35px; height: 35px; }
   :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-orbit { width: 28px; height: 28px; border-radius: 8px; }
   :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-orbit img { width: 19px; height: 19px; }
-  :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-art-pill { font-size: 11px; bottom: 13px; border-radius: 9px; padding: 5px 6px; }
+  :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-art-pill { font-size: 11px; bottom: 13px; border-radius: 8px; padding: 5px 6px; }
   :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual-copy { padding: 16px 15px 0 8px; }
   :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual-heading { font-size: 18px; letter-spacing: -.5px; }
   :is(#setup.onboarding-b, #onboarding.onboarding-b, #task-dialog.onboarding-b) .onboarding-b-visual-heading em { font-size: 21px; }
@@ -346,7 +346,7 @@
 
 /* Prime model summary: truthful state and a compact route, without the
    ornamental provider orbit. Keep the existing renderer contract and assets. */
-#task-dialog.onboarding-b .onboarding-b-visual { border-radius: 12px; background: var(--aura-bg-sidebar); box-shadow: none; border: 1px solid var(--aura-border); overflow: hidden; }
+#task-dialog.onboarding-b .onboarding-b-visual { border-radius: 12px; background: var(--aura-bg-sidebar); box-shadow: none; border: var(--aura-hairline) solid var(--aura-border); overflow: hidden; }
 #task-dialog.onboarding-b .onboarding-b-visual-top { display: none; }
 #task-dialog.onboarding-b .onboarding-b-live-tag { display: none; }
 #task-dialog.onboarding-b .onboarding-b-art { height: auto; margin: 20px 18px 16px; }
@@ -363,14 +363,14 @@
 #task-dialog.onboarding-b .onboarding-b-visual-description { color: var(--aura-ink-secondary); font-size: 12px; line-height: 1.65; }
 #task-dialog.onboarding-b .onboarding-b-data-path { margin: 20px 18px; grid-template-columns: 1fr; gap: 14px; }
 #task-dialog.onboarding-b .onboarding-b-route-node { display: grid; grid-template-columns: 26px 1fr; gap: 0 10px; text-align: left; }
-#task-dialog.onboarding-b .onboarding-b-route-tile { grid-column: 1; grid-row: 1 / span 2; align-self: center; width: 26px; height: 26px; border-radius: 6px; }
+#task-dialog.onboarding-b .onboarding-b-route-tile { grid-column: 1; grid-row: 1 / span 2; align-self: center; width: 26px; height: 26px; border-radius: 8px; }
 #task-dialog.onboarding-b .onboarding-b-route-node :is(strong, small) { grid-column: 2; overflow-wrap: anywhere; }
 #task-dialog.onboarding-b .onboarding-b-route-node strong { font-size: 12px; }
 #task-dialog.onboarding-b .onboarding-b-route-node small { color: var(--aura-ink-secondary); font-size: 11px; }
 #task-dialog.onboarding-b .onboarding-b-route-arrow { display: none; }
-#task-dialog.onboarding-b .onboarding-b-visual-note { padding: 14px 18px; font-size: 12px; color: var(--aura-ink-secondary); line-height: 1.6; background: transparent; border-top: 1px solid var(--aura-border); }
+#task-dialog.onboarding-b .onboarding-b-visual-note { padding: 14px 18px; font-size: 12px; color: var(--aura-ink-secondary); line-height: 1.6; background: transparent; border-top: var(--aura-hairline) solid var(--aura-border); }
 #task-dialog.onboarding-b #model-shortlist { grid-template-columns: 1fr; gap: 8px; }
-#task-dialog.onboarding-b #model-shortlist .model-choice { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 3px 12px; min-height: 80px; padding: 16px; border-radius: 10px; box-shadow: none; }
+#task-dialog.onboarding-b #model-shortlist .model-choice { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 3px 12px; min-height: 80px; padding: 16px; border-radius: 12px; box-shadow: none; }
 #task-dialog.onboarding-b #model-shortlist .model-choice > img { grid-column: 1; grid-row: 1 / span 2; align-self: center; width: 26px; height: 26px; margin: 0; filter: none; opacity: 1; }
 #task-dialog.onboarding-b #model-shortlist .model-choice > strong { grid-column: 2; padding-right: 20px; font-size: 14px; font-weight: 600; }
 #task-dialog.onboarding-b #model-shortlist .model-choice > span:not(.onboarding-b-choice-mark) { grid-column: 2; font-size: 12px; color: var(--aura-ink-secondary); }

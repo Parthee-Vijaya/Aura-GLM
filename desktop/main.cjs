@@ -3,7 +3,7 @@ if (process.argv.includes('--aura-privacy-offline-renderer')) {
   require('./privacy/isolation/offline-renderer-worker.cjs');
 } else {
 require('./core/http-runtime.cjs').install();
-const { app, BrowserWindow, ipcMain, dialog, protocol, session, safeStorage, Menu, shell, webFrameMain, nativeImage, nativeTheme } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, protocol, session, safeStorage, Menu, shell, webFrameMain, nativeImage, nativeTheme, Notification } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const fsSync = require('node:fs');
@@ -890,6 +890,13 @@ handle('code:list', async value => {
 handle('code:read', file => { if (!currentProject()) throw new Error('Åbn et projekt først.'); return projectFiles.readFile(workspaceRoot(), file); });
 handle('activity:list', value => currentProject() ? workbench.activityList(value?.chat || requestChatID()) : []);
 handle('skills:list', () => { if (!currentProject()) throw new Error('Åbn et projekt først.'); return workbench.skills.list(currentProject().root); });
+// Automatisering: planlagte opgaver lægger kun deres tekst klar i skrivefeltet. Herfra sendes intet til en AI.
+const automations = () => new (require('./core/automation.cjs').Automations)(workbench.store);
+handle('automation:list', () => automations().list(currentProject()?.root || ''));
+handle('automation:save', input => { if (!currentProject()) throw new Error('Åbn et projekt først.'); return automations().save(currentProject().root, input, Date.now()); });
+handle('automation:remove', id => automations().remove(id));
+handle('automation:toggle', input => automations().toggle(input?.id, input?.enabled === true, Date.now()));
+handle('automation:clear', id => automations().clearPending(id));
 handle('skills:save', value => exclusive(async () => {
   requireProject();
   for (const chat of workbench.chats.values()) if (!chat.running && !chat.sending && !chat.starting && !chat.finishing) { chat.prepared = null; await chat.close(false); }
@@ -1024,6 +1031,23 @@ function captureView(view, root = workspaceRoot()) {
 // data og renses her, før det vises eller bruges.
 const picking = { active: false, key: '', generation: 0, selected: '' };
 const sendEvent = event => { if (window && !window.isDestroyed()) window.webContents.send('harness:event', event); };
+// Ser hvert halve minut efter planlagte opgaver, når vinduet står klar. En opgave bliver markeret klar og vist; den sendes ikke.
+async function automationTick() {
+  const store = (registry?.selected || registry?.empty)?.store;
+  if (!store || updating || !window || window.isDestroyed() || window.webContents.isLoading()) return;
+  try {
+    for (const task of await new (require('./core/automation.cjs').Automations)(store).claimDue(Date.now())) {
+      sendEvent({ type: 'automation.due', task: { id: task.id, root: task.root, title: task.title, text: task.text } });
+      if (Notification.isSupported()) {
+        const note = new Notification({ title: DISPLAY_NAME, body: `Planlagt opgave klar: ${task.title}` });
+        note.on('click', () => { if (window && !window.isDestroyed()) { window.show(); window.focus(); } });
+        note.show();
+      }
+    }
+  } catch { /* indstillingerne kan være optaget; næste runde prøver igen */ }
+}
+setInterval(automationTick, 30000).unref();
+setTimeout(automationTick, 8000).unref();
 function previewFrame() {
   const main = window?.webContents.mainFrame;
   if (!main || !previewOrigin()) return null;

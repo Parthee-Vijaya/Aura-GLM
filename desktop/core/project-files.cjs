@@ -4,6 +4,10 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { protectedPath, secretContent } = require('./git.cjs');
+// Dokumentlæserne hentes først, når et dokument åbnes. Den isolerede kvalitetskontrol
+// (privacy/isolation/offline-renderer.cjs) må kun læse denne fil, git.cjs og protected-paths.cjs,
+// så denne fil må ikke hente andre moduler ved indlæsning.
+const DOCUMENTS = { '.docx': 'docx', '.xlsx': 'xlsx', '.pdf': 'pdf' }, DOCUMENT_LIMIT = 5 * 1024 * 1024;
 const protectedPaths = require('./protected-paths.cjs');
 
 const TEXT_LIMIT = 1024 * 1024, IMAGE_LIMIT = 2 * 1024 * 1024;
@@ -42,13 +46,25 @@ async function locate(root, file) {
   return { relative, target, stat };
 }
 
-// Læser én fil til visning. Billeder returneres som data-adresse; anden binær fil afvises.
+// Læser én fil til visning. Billeder returneres som data-adresse; Word, Excel og PDF som udtrukket tekst; anden binær fil afvises.
 async function readFile(root, file) {
   const { relative, target, stat } = await locate(root, file);
   const image = IMAGES[path.extname(relative).toLowerCase()];
   if (image) {
     if (stat.size > IMAGE_LIMIT) throw new FileError('Billedet er for stort til at blive vist her.', 'large');
     return { path: relative, kind: 'image', size: stat.size, dataURL: `data:${image};base64,${(await fs.readFile(target)).toString('base64')}` };
+  }
+  const format = DOCUMENTS[path.extname(relative).toLowerCase()];
+  if (format) {
+    if (stat.size > DOCUMENT_LIMIT) throw new FileError('Dokumentet er for stort til at blive vist her. Grænsen er 5 MB.', 'large');
+    const data = await fs.readFile(target);
+    let extracted;
+    // PDF læses af den samme afgrænsede, lokale læser som vedhæftede PDF'er: ingen netværk, scripts eller OCR.
+    try { extracted = format === 'pdf' ? { text: (await require('./chat-media.cjs').pdfText(data)).text, truncated: false } : require('./document-text.cjs').extract(format, data); }
+    // Læserens egne beskeder er til brugeren; alt andet (fx en læser, der ikke kan hentes i den isolerede kontrol) får én neutral besked.
+    catch (error) { throw new FileError(format === 'pdf' || error?.constructor?.name === 'DocumentError' ? error.message : 'Dokumentet kunne ikke læses.', 'binary'); }
+    if (secretContent(extracted.text)) throw new FileError('Filen kan indeholde en nøgle eller adgangskode, så den vises ikke her.', 'secret');
+    return { path: relative, kind: 'document', format, size: stat.size, text: extracted.text, truncated: extracted.truncated };
   }
   if (stat.size > TEXT_LIMIT) throw new FileError('Filen er for stor til at blive vist her. Grænsen er 1 MB.', 'large');
   const data = await fs.readFile(target);

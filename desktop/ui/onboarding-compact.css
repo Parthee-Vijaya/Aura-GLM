@@ -3,7 +3,7 @@
 :is(#setup, #onboarding).onboarding-simple.native-onboarding {
   --os-muted: var(--aura-ink-secondary);
   --os-radius-card: 12px;
-  --os-radius-tile: 10px;
+  --os-radius-tile: 12px;
   display: grid;
   grid-template-columns: 174px minmax(0, 1fr);
   grid-template-rows: 66px minmax(0, 1fr);
@@ -22,11 +22,11 @@
 }
 :is(#setup, #onboarding).native-onboarding [hidden] { display: none !important; }
 :is(#setup, #onboarding).native-onboarding .native-onboarding-header { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; gap: 20px; }
-:is(#setup, #onboarding).native-onboarding .native-onboarding-brand { display: flex; align-items: center; gap: 9px; font-size: 16px; font-weight: 550; letter-spacing: -.02em; }
+:is(#setup, #onboarding).native-onboarding .native-onboarding-brand { display: flex; align-items: center; gap: 9px; font-family: var(--aura-font-family-brand); font-size: 16px; font-weight: 600; letter-spacing: .04em; text-transform: lowercase; }
 :is(#setup, #onboarding).native-onboarding .native-onboarding-brand img { width: 26px; height: 26px; }
 :is(#setup, #onboarding).native-onboarding .native-onboarding-caption { font-size: 12px; color: var(--os-muted); }
 :is(#setup, #onboarding).native-onboarding .native-onboarding-nav { grid-column: 1; grid-row: 2; display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 12px 10px; list-style: none; }
-:is(#setup, #onboarding).native-onboarding .native-onboarding-nav li { display: flex; align-items: center; min-height: 42px; padding: 10px 12px; color: var(--os-muted); border-radius: 10px; font-size: 13px; line-height: 1.5; }
+:is(#setup, #onboarding).native-onboarding .native-onboarding-nav li { display: flex; align-items: center; min-height: 42px; padding: 10px 12px; color: var(--os-muted); border-radius: 12px; font-size: 13px; line-height: 1.5; }
 :is(#setup, #onboarding).native-onboarding .native-onboarding-nav [aria-current=step] { color: var(--aura-ink); background: var(--aura-bg-active); font-weight: 550; }
 #setup.onboarding-simple.native-onboarding .setup-simple,
 #onboarding.onboarding-simple.native-onboarding .native-onboarding-pane { grid-column: 2; grid-row: 2; display: block; width: 100%; max-width: none; min-width: 0; margin: 0; padding: 10px 28px 32px 22px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--aura-border-strong) transparent; }
@@ -40,16 +40,16 @@
 #setup.onboarding-simple.native-onboarding #setup-profile :is(label, .field-label) { margin: 20px 0 8px; font-size: 13px; font-weight: 500; }
 #setup.onboarding-simple.native-onboarding #setup-profile > label:first-child { margin-top: 0; }
 #setup.onboarding-simple.native-onboarding :is(input:not([type=checkbox]):not([type=radio]), textarea, select),
-#onboarding.onboarding-simple.native-onboarding :is(input, textarea, select) { color: var(--aura-ink); background: var(--aura-bg-tint); border: 1px solid var(--aura-border-strong); border-radius: 10px; font-size: 13px; padding: 11px 12px; }
+#onboarding.onboarding-simple.native-onboarding :is(input, textarea, select) { color: var(--aura-ink); background: var(--aura-bg-tint); border: var(--aura-hairline) solid var(--aura-border-strong); border-radius: 12px; font-size: 13px; padding: 11px 12px; }
 #setup.onboarding-simple.native-onboarding #profile-name { font-size: 14px; }
 #setup.onboarding-simple.native-onboarding :is(#setup-profile .hint, #connection-form .hint) { color: var(--os-muted); font-size: 12px; line-height: 1.6; }
 #setup.onboarding-simple.native-onboarding .theme-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-#setup.onboarding-simple.native-onboarding #setup-profile .theme-card { display: block; margin: 0; padding: 18px 6px; text-align: center; border: 1px solid var(--aura-border-strong); border-radius: 12px; font-size: 12px; font-weight: 450; background: transparent; }
+#setup.onboarding-simple.native-onboarding #setup-profile .theme-card { display: block; margin: 0; padding: 18px 6px; text-align: center; border: var(--aura-hairline) solid var(--aura-border-strong); border-radius: 12px; font-size: 12px; font-weight: 450; background: transparent; }
 #setup.onboarding-simple.native-onboarding #setup-profile .theme-card:has(input:checked) { border-color: var(--aura-ink-muted); background: var(--aura-bg-active); }
-#setup.onboarding-simple.native-onboarding :is(.help-cards, .detail-cards) { display: grid; grid-template-columns: 1fr; gap: 0; border-top: 1px solid var(--aura-border); }
+#setup.onboarding-simple.native-onboarding :is(.help-cards, .detail-cards) { display: grid; grid-template-columns: 1fr; gap: 0; border-top: var(--aura-hairline) solid var(--aura-border); }
 #setup.onboarding-simple.native-onboarding :is(.help-card, .detail-card),
-#setup.onboarding-simple.native-onboarding #setup-profile .help-card { display: grid; grid-template-columns: minmax(0, 1fr) 18px; gap: 3px 12px; padding: 16px 0; margin: 0; border: 0; border-bottom: 1px solid var(--aura-border); border-radius: 0; background: transparent; font-weight: 400; }
-#setup.onboarding-simple.native-onboarding :is(.help-card, .detail-card):has(input:checked) { border: 0; border-bottom: 1px solid var(--aura-border); background: transparent; }
+#setup.onboarding-simple.native-onboarding #setup-profile .help-card { display: grid; grid-template-columns: minmax(0, 1fr) 18px; gap: 3px 12px; padding: 16px 0; margin: 0; border: 0; border-bottom: var(--aura-hairline) solid var(--aura-border); border-radius: 0; background: transparent; font-weight: 400; }
+#setup.onboarding-simple.native-onboarding :is(.help-card, .detail-card):has(input:checked) { border: 0; border-bottom: var(--aura-hairline) solid var(--aura-border); background: transparent; }
 #setup.onboarding-simple.native-onboarding :is(.help-card, .detail-card) input { position: static; grid-column: 2; grid-row: 1 / span 2; align-self: center; width: 16px; height: 16px; margin: 0; opacity: 1; accent-color: var(--aura-accent); }
 #setup.onboarding-simple.native-onboarding :is(.help-card, .detail-card) strong { grid-column: 1; font-size: 14px; font-weight: 500; line-height: 1.5; }
 #setup.onboarding-simple.native-onboarding :is(.help-card, .detail-card) small { grid-column: 1; margin: 0; color: var(--os-muted); font-size: 12px; line-height: 1.6; }
@@ -57,16 +57,16 @@
 #setup.onboarding-simple.native-onboarding :is(.setup-actions, .setup-quick-actions) { display: flex; justify-content: flex-start; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
 #setup.onboarding-simple.native-onboarding .setup-quick-actions { gap: 12px 18px; }
 #setup.onboarding-simple.native-onboarding .setup-actions .primary,
-#onboarding.onboarding-simple.native-onboarding .create-footer .primary { min-height: 42px; min-width: 132px; padding: 11px 18px; border-radius: 10px; }
+#onboarding.onboarding-simple.native-onboarding .create-footer .primary { min-height: 42px; min-width: 132px; padding: 11px 18px; border-radius: 12px; }
 #setup.onboarding-simple.native-onboarding .detail-skip { margin: 12px 0 0; }
 #setup.onboarding-simple.native-onboarding #setup-choice { display: grid; grid-template-columns: 1fr; gap: 12px; }
-#setup.onboarding-simple.native-onboarding #setup-choice > button { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 5px 12px; min-height: 100px; padding: 18px; border: 1px solid var(--aura-border-strong); border-radius: 12px; background: transparent; text-align: left; }
+#setup.onboarding-simple.native-onboarding #setup-choice > button { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 5px 12px; min-height: 100px; padding: 18px; border: var(--aura-hairline) solid var(--aura-border-strong); border-radius: 12px; background: transparent; text-align: left; }
 #setup.onboarding-simple.native-onboarding #setup-choice .setup-symbol { grid-row: 1 / span 2; margin-top: 3px; color: var(--aura-ink-secondary); }
 #setup.onboarding-simple.native-onboarding #setup-choice .setup-symbol svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 #setup.onboarding-simple.native-onboarding #setup-choice strong { margin: 0; font-size: 14px; font-weight: 500; }
 #setup.onboarding-simple.native-onboarding #setup-choice span:not(.setup-symbol) { grid-column: 2; font-size: 12px; color: var(--os-muted); }
 #setup.onboarding-simple.native-onboarding .provider-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-#setup.onboarding-simple.native-onboarding .provider-card { position: relative; display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 4px 10px; align-items: start; min-height: 112px; padding: 14px 12px; border: 1px solid var(--aura-border-strong); border-radius: 12px; background: transparent; }
+#setup.onboarding-simple.native-onboarding .provider-card { position: relative; display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 4px 10px; align-items: start; min-height: 112px; padding: 14px 12px; border: var(--aura-hairline) solid var(--aura-border-strong); border-radius: 12px; background: transparent; }
 #setup.onboarding-simple.native-onboarding .provider-card img { grid-row: 1 / span 2; width: 23px; height: 23px; margin: 0; opacity: 1; filter: none; }
 #setup.onboarding-simple.native-onboarding .provider-card strong { grid-column: 2; margin: 0; font-size: 13px; font-weight: 500; }
 #setup.onboarding-simple.native-onboarding .provider-card > :is(span:not(.onboarding-b-choice-mark), small) { grid-column: 2; margin: 0; font-size: 11px; color: var(--os-muted); }
@@ -76,7 +76,7 @@
 #setup.onboarding-simple.native-onboarding .provider-card > small[data-state=connected] { color: var(--aura-success-ink); }
 #setup.onboarding-simple.native-onboarding .provider-card > small[data-state=error] { color: var(--aura-error-ink); }
 #setup.onboarding-simple.native-onboarding #setup-provider-body { border: 0; background: transparent; padding: 0; }
-#setup.onboarding-simple.native-onboarding :is(#setup-ai, #connection-feedback, #local-discovery-status):not(:empty) { padding: 12px; margin-top: 16px; border-radius: 10px; background: var(--aura-bg-tint); font-size: 12px; line-height: 1.65; }
+#setup.onboarding-simple.native-onboarding :is(#setup-ai, #connection-feedback, #local-discovery-status):not(:empty) { padding: 12px; margin-top: 16px; border-radius: 12px; background: var(--aura-bg-tint); font-size: 12px; line-height: 1.65; }
 #onboarding.onboarding-simple.native-onboarding .onboarding-simple-content { width: 100%; max-width: none; padding: 0; margin: 0; }
 #onboarding.onboarding-simple.native-onboarding #create-form > .panel { padding: 0; margin: 0; border: 0; background: transparent; }
 #onboarding.onboarding-simple.native-onboarding { grid-template-rows: 66px minmax(0, 1fr) auto; height: min(760px, calc(100dvh - 72px)); margin-block: max(36px, calc((100dvh - 760px) / 2)); }
@@ -91,11 +91,12 @@
 #onboarding.onboarding-simple.native-onboarding #purpose { height: 96px; min-height: 96px; line-height: 1.5; }
 #onboarding.onboarding-simple.native-onboarding .idea-refine-actions { margin-top: 10px; gap: 8px; }
 #onboarding.onboarding-simple.native-onboarding #idea-draft-status { margin: 6px 0 0; }
-#onboarding.onboarding-simple.native-onboarding #project-options { margin: 12px 0 0; padding: 0; border: 0; border-top: 1px solid var(--aura-border); border-bottom: 1px solid var(--aura-border); border-radius: 0; }
+#onboarding.onboarding-simple.native-onboarding #project-options { margin: 12px 0 0; padding: 0; border: 0; border-top: var(--aura-hairline) solid var(--aura-border); border-bottom: var(--aura-hairline) solid var(--aura-border); border-radius: 0; }
 #onboarding.onboarding-simple.native-onboarding #project-options > summary { padding: 12px 0; font-size: 13px; }
-#onboarding.onboarding-simple.native-onboarding > .create-footer { grid-column: 2; grid-row: 3; flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: nowrap; gap: 12px; margin: 0; padding: 16px 28px 20px 22px; border-top: 1px solid var(--aura-border); background: var(--aura-bg-raised); }
+#onboarding.onboarding-simple.native-onboarding > .create-footer { grid-column: 2; grid-row: 3; flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: nowrap; gap: 12px; margin: 0; padding: 16px 28px 20px 22px; border-top: var(--aura-hairline) solid var(--aura-border); background: var(--aura-bg-raised); }
 #onboarding.onboarding-simple.native-onboarding .create-footer p { color: var(--os-muted); font-size: 12px; text-align: left; }
 :is(#setup, #onboarding).native-onboarding :is(button, input, textarea, select, summary):focus-visible { outline: 2px solid var(--aura-accent); outline-offset: 3px; }
+:is(#setup, #onboarding).native-onboarding :is(input:not([type=checkbox]):not([type=radio]), textarea):focus-visible { outline-offset: -1px; }
 :is(#setup, #onboarding).native-onboarding :is(input, textarea) { caret-color: var(--aura-accent); }
 :is(#setup, #onboarding).native-onboarding ::selection { color: var(--aura-ink); background: var(--aura-accent-subtle); }
 :is(#setup, #onboarding).native-onboarding ::placeholder { color: var(--aura-ink-secondary); opacity: 1; }

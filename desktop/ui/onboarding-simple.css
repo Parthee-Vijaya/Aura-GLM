@@ -15,7 +15,7 @@
   --os-muted: var(--aura-ink-muted, #70747c);
   --os-surface: var(--aura-bg-raised, #ffffff);
   --os-accent: var(--aura-accent, #4176e6);
-  --os-radius-card: 32px;
+  --os-radius-card: 28px;
   --os-radius-tile: 20px;
   box-sizing: border-box;
   width: 100%;
@@ -188,7 +188,7 @@ body:has(#onboarding.onboarding-simple:not([hidden])) .app-content > header { di
   min-height: 138px;
   padding: 20px 18px 16px;
   border: 0.5px solid var(--os-line);
-  border-radius: 24px;
+  border-radius: 28px;
   background: var(--os-surface);
   color: var(--os-ink);
   text-align: left;
