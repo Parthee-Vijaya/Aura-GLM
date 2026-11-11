@@ -284,12 +284,15 @@
   }
   function renderCode(file, { from = null, to = null } = {}) {
     code.path = file.path; code.text = file.kind === 'text' ? file.text : null;
-    const lines = code.text === null ? [] : code.text.replace(/\r\n/g, '\n').split('\n');
+    // Word, Excel og PDF vises som udtrukket tekst. Kun rigtige tekstfiler kan mærkes og henvises til.
+    const shown = file.kind === 'document' ? file.text : code.text;
+    const lines = shown === null ? [] : shown.replace(/\r\n/g, '\n').split('\n');
     if (lines.length > 1 && lines.at(-1) === '') lines.pop();
-    code.from = from && from <= lines.length ? from : null; code.to = code.from ? Math.min(to || from, lines.length) : null;
+    code.from = file.kind === 'text' && from && from <= lines.length ? from : null; code.to = code.from ? Math.min(to || from, lines.length) : null;
     $('#code-current').textContent = file.path; $('#code-title').textContent = file.path;
     const changed = code.files?.find(item => item.path === file.path)?.changed;
-    $('#code-info').textContent = `${file.kind === 'image' ? `Billede · ${Math.ceil(file.size / 1024)} kB` : `${plural(lines.length, 'linje', 'linjer')}${changed ? ` · ${changeText[changed] || 'Ændret'} i denne samtale` : ''}`} · Skrivebeskyttet`;
+    const documentLabel = { docx: 'Word-dokument', xlsx: 'Excel-regneark', pdf: 'PDF' }[file.format] || 'Dokument';
+    $('#code-info').textContent = `${file.kind === 'image' ? `Billede · ${Math.ceil(file.size / 1024)} kB` : file.kind === 'document' ? `${documentLabel} · udtrukket tekst${file.truncated ? ' · forkortet' : ''}` : `${plural(lines.length, 'linje', 'linjer')}${changed ? ` · ${changeText[changed] || 'Ændret'} i denne samtale` : ''}`} · Skrivebeskyttet`;
     $('#code-info').title = 'Du kan se filen her, men ikke ændre den. Bed AI’en om ændringer i samtalen.';
     $('#code-image').hidden = file.kind !== 'image'; $('#code-lines').hidden = file.kind === 'image';
     if (file.kind === 'image') { $('#code-image').src = file.dataURL; $('#code-image').alt = `Billedet ${file.path}`; $('#code-lines').replaceChildren(); }
@@ -314,6 +317,7 @@
   }
   // Et klik på et linjenummer vælger linjen; Skift-klik udvider valget. Hele filen kan altid henvises til med tastaturet.
   $('#code-lines').addEventListener('click', event => {
+    if (code.text === null) return; // udtrukket dokumenttekst kan ikke mærkes eller henvises til
     const row = event.target.closest('.code-ln')?.parentElement; if (!row) return;
     const line = Number(row.dataset.line);
     if (event.shiftKey && code.anchor) { code.from = Math.min(code.anchor, line); code.to = Math.max(code.anchor, line); }

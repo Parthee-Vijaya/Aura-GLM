@@ -4,6 +4,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { protectedPath, secretContent } = require('./git.cjs');
+const documents = require('./document-text.cjs');
 const protectedPaths = require('./protected-paths.cjs');
 
 const TEXT_LIMIT = 1024 * 1024, IMAGE_LIMIT = 2 * 1024 * 1024;
@@ -42,13 +43,24 @@ async function locate(root, file) {
   return { relative, target, stat };
 }
 
-// Læser én fil til visning. Billeder returneres som data-adresse; anden binær fil afvises.
+// Læser én fil til visning. Billeder returneres som data-adresse; Word, Excel og PDF som udtrukket tekst; anden binær fil afvises.
 async function readFile(root, file) {
   const { relative, target, stat } = await locate(root, file);
   const image = IMAGES[path.extname(relative).toLowerCase()];
   if (image) {
     if (stat.size > IMAGE_LIMIT) throw new FileError('Billedet er for stort til at blive vist her.', 'large');
     return { path: relative, kind: 'image', size: stat.size, dataURL: `data:${image};base64,${(await fs.readFile(target)).toString('base64')}` };
+  }
+  const extension = path.extname(relative).toLowerCase(), format = documents.FORMATS[extension] || (extension === '.pdf' ? 'pdf' : null);
+  if (format) {
+    if (stat.size > documents.INPUT_LIMIT) throw new FileError('Dokumentet er for stort til at blive vist her. Grænsen er 5 MB.', 'large');
+    const data = await fs.readFile(target);
+    let extracted;
+    // PDF læses af den samme afgrænsede, lokale læser som vedhæftede PDF'er: ingen netværk, scripts eller OCR.
+    try { extracted = format === 'pdf' ? { text: (await require('./chat-media.cjs').pdfText(data)).text, truncated: false } : documents.extract(format, data); }
+    catch (error) { throw new FileError(error?.message || 'Dokumentet kunne ikke læses.', 'binary'); }
+    if (secretContent(extracted.text)) throw new FileError('Filen kan indeholde en nøgle eller adgangskode, så den vises ikke her.', 'secret');
+    return { path: relative, kind: 'document', format, size: stat.size, text: extracted.text, truncated: extracted.truncated };
   }
   if (stat.size > TEXT_LIMIT) throw new FileError('Filen er for stor til at blive vist her. Grænsen er 1 MB.', 'large');
   const data = await fs.readFile(target);
