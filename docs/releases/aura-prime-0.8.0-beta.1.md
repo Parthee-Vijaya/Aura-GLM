@@ -34,7 +34,7 @@ Beta 7 og tidligere tags og installationsfiler er bevaret.
 
 ## Kvalifikation
 
-Udgivelsen er bygget, afprøvet og uploadet fra udgiverens egen Mac med `desktop/scripts/release-local.cjs`, uden CI. Tallene fra byggemaskinen, kildecommit og kontrolsummer står under Bygning og kontrol i udgivelsen på GitHub. Scriptet offentliggør først, når GitHubs filer matcher de afprøvede filer byte for byte.
+Udgivelsen er bygget, afprøvet og uploadet fra udgiverens egen Mac med `desktop/scripts/release-local.cjs`, uden CI. Tallene fra byggemaskinen, kildecommit og kontrolsummer står under Bygning og kontrol i udgivelsen på GitHub. Scriptet offentliggør først, når GitHubs filer matcher de afprøvede filer byte for byte. Den pakkede app er afprøvet med accepttesten. Den ældre `test:package` indgår ikke: den er forældet og fejlede på samme måde for beta 7.
 
 Det nye udseende og de nye funktioner er udviklet og set i den kørende app i en Linux-kørsel i lyst og mørkt tema. PDF-visning er kun kontrolleret i test. macOS' native vinduesramme med det nye udseende er ikke gennemgået systematisk med skærmbilleder, som beta 7 blev.
 
