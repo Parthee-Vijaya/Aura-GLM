@@ -22,7 +22,9 @@ class OnboardingWindow {
     this.compact = false;
     if (window && !window.isDestroyed()) {
       window.setResizable(true); window.setMaximizable(true); window.setFullScreenable(true);
-      window.setMinimumSize(980, 720); window.setSize(1440, 940); window.center(); window.maximize();
+      // Review 4.11: the first project opens in a calm, centred 1440×940 window
+      // instead of jumping to full screen around a small setup card.
+      window.setMinimumSize(980, 720); window.setSize(1440, 940); window.center();
     }
     return { compact: false };
   }

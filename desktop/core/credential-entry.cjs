@@ -12,7 +12,7 @@ function binding(purpose, value = {}) {
   }
   // copyKeyFrom/copyKeyRevision reference a saved key; they are bound like the
   // other fields but never require the secure entry window themselves.
-  const fields = ['id', 'kind', 'name', 'baseURL', 'deployment', 'protocol', 'clearKey', 'copyKeyFrom', 'copyKeyRevision'];
+  const fields = ['id', 'kind', 'name', 'baseURL', 'deployment', 'protocol', 'providerID', 'clearKey', 'copyKeyFrom', 'copyKeyRevision'];
   if (Object.keys(value).some(key => !fields.includes(key))) throw new Error('Ugyldige nøgleoplysninger.');
   return crypto.createHash('sha256').update(JSON.stringify([purpose, fields.map(key => [key, value[key] ?? null])])).digest('hex');
 }

@@ -35,6 +35,10 @@
       description: 'Vælg, hvad Aura Prime skal hjælpe med i dine projekter, fx versioner, planlægning og design.'
     },
     {
+      id: 'plugins', label: 'Plugins',
+      description: 'Slå indbyggede plugins til og fra, og se hvilke der endnu venter på sikker tilkobling. Alt er slået fra, indtil du vælger det, og godkendelser gælder fortsat.'
+    },
+    {
       id: 'updates', label: 'Opdateringer',
       description: 'Søg efter nye versioner af Aura Prime, og vælg selv, hvornår de hentes og installeres.'
     },
@@ -43,7 +47,7 @@
       description: 'Find hjælp, gem en fejlrapport uden projektindhold, og send feedback til den, der inviterede dig.'
     }
   ].map(Object.freeze));
-  const INLINE_SECTIONS = ['profile', 'appearance'];
+  const INLINE_SECTIONS = ['profile', 'appearance', 'plugins'];
   const HEADING_ID = 'settings-section-title';
   // The theme hint key (aura.theme-hint.v1) has one writer: workspace-calm.js.
   // This module only calls calmWorkspace.setTheme, so the hint copy, the body
@@ -637,6 +641,166 @@
       feedbackArea();
     }
 
+    // Plugins (4.11). The main process owns every value and refuses anything
+    // unavailable; this view only shows the definitions and writes one field.
+    const PLUGIN_ICONS = {
+      subagents: ['#4176e6', '<rect x="4" y="4" width="10" height="10" rx="2.5"/><rect x="10" y="10" width="10" height="10" rx="2.5"/>'],
+      webfetch: ['#1f9d6f', '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.6 2.4 3.9 5.2 3.9 8.5s-1.3 6.1-3.9 8.5c-2.6-2.4-3.9-5.2-3.9-8.5s1.3-6.1 3.9-8.5Z"/>'],
+      websearch: ['#0ea5b7', '<circle cx="10.5" cy="10.5" r="6"/><path d="m15 15 5 5"/>'],
+      shell: ['#4f63d8', '<path d="m5 7 5 5-5 5M12 18h7"/>'],
+      lsp: ['#8b5cf6', '<path d="m8 8-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14"/>'],
+      mcp: ['#e07a2e', '<path d="M8 4v5M16 4v5M6 9h12v3a6 6 0 0 1-12 0V9ZM12 18v3"/>'],
+      contextHud: ['#2f80ed', '<path d="M5 19V11M10 19V6M15 19v-9M20 19V9"/>']
+    };
+    let pluginState = null;
+    function pluginIcon(id) {
+      const [color, body] = PLUGIN_ICONS[id] || ['#61666b', '<circle cx="12" cy="12" r="7"/>'];
+      const tile = document.createElement('span'); tile.className = 'plugin-icon'; tile.setAttribute('aria-hidden', 'true');
+      tile.style?.setProperty?.('--plugin-color', color);
+      tile.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
+      return tile;
+    }
+    async function savePlugin(change) {
+      try { pluginState = await invoke('pluginsSave', change); root.dispatchEvent?.(new root.CustomEvent('aura:plugins', { detail: { values: pluginState.values } })); renderPluginsFields(); }
+      catch (error) { announce([error.message || 'Pluginvalget kunne ikke gemmes.'], true); renderPluginsFields(); }
+    }
+    const PLUGIN_FIELD_LABELS = { timeoutSeconds: ['Tidsgrænse', 'sek.'], outputLimitKB: ['Outputloft', 'KB'] };
+    function pluginNumberFields(definition, value) {
+      const wrap = document.createElement('div'); wrap.className = 'plugin-fields';
+      const current = value && typeof value === 'object' ? value : {};
+      for (const setting of definition.settings) {
+        if (setting.type !== 'number') continue;
+        const [label, unit] = PLUGIN_FIELD_LABELS[setting.key] || [setting.key, ''];
+        const id = `plugin-${definition.id}-${setting.key}`;
+        const field = document.createElement('label'); field.className = 'plugin-field'; field.htmlFor = id;
+        const name = document.createElement('span'); name.textContent = label;
+        const input = document.createElement('input'); input.id = id; input.type = 'number'; input.inputMode = 'numeric';
+        input.min = String(setting.min); input.max = String(setting.max); input.step = '1';
+        input.placeholder = String(setting.min); input.value = Number.isFinite(current[setting.key]) ? String(current[setting.key]) : '';
+        const suffix = document.createElement('span'); suffix.className = 'plugin-unit'; suffix.textContent = unit;
+        input.addEventListener('change', () => {
+          const next = { ...current };
+          if (input.value === '') delete next[setting.key];
+          else {
+            const number = Math.round(Number(input.value));
+            if (!Number.isFinite(number) || number < setting.min || number > setting.max) { input.setCustomValidity?.(`Vælg mellem ${setting.min} og ${setting.max}.`); input.reportValidity?.(); return; }
+            input.setCustomValidity?.(''); next[setting.key] = number;
+          }
+          void savePlugin({ id: definition.id, value: next });
+        });
+        field.append(name, input, suffix); wrap.append(field);
+      }
+      return wrap;
+    }
+    function pluginRow(definition) {
+      const row = document.createElement('div'); row.className = 'plugin-row'; row.dataset.plugin = definition.id;
+      if (!definition.available) row.dataset.unavailable = 'true';
+      const text = document.createElement('div'); text.className = 'plugin-text';
+      const title = document.createElement('strong'); title.id = `plugin-title-${definition.id}`; title.textContent = definition.title;
+      if (definition.group === 'experimental') { const badge = document.createElement('span'); badge.className = 'plugin-badge'; badge.textContent = 'Eksperimentel'; title.append(' ', badge); }
+      const summary = document.createElement('small'); summary.textContent = definition.summary;
+      text.append(title, summary);
+      if (!definition.available && definition.reason) {
+        const why = document.createElement('details'); why.className = 'disclosure plugin-reason';
+        const label = document.createElement('summary'); label.textContent = 'Hvorfor ikke endnu?';
+        const reason = document.createElement('small'); reason.textContent = definition.reason;
+        why.append(label, reason); text.append(why);
+      }
+      const value = pluginState?.values?.[definition.id];
+      let control;
+      if (!definition.available) {
+        control = document.createElement('span'); control.className = 'plugin-state'; control.textContent = 'Kommer senere';
+      } else if (definition.id === 'webfetch') {
+        control = document.createElement('select'); control.className = 'plugin-select';
+        control.append(option('ask', 'Spørg først'), option('deny', 'Slået fra'));
+        control.value = value === 'deny' ? 'deny' : 'ask';
+        control.setAttribute('aria-labelledby', title.id);
+        control.disabled = !definition.available;
+        control.addEventListener('change', () => { void savePlugin({ id: definition.id, value: control.value }); });
+      } else if (typeof definition.default === 'boolean') {
+        control = document.createElement('button'); control.type = 'button'; control.className = 'plugin-switch';
+        control.setAttribute('role', 'switch'); control.setAttribute('aria-checked', String(value === true)); control.setAttribute('aria-labelledby', title.id);
+        control.disabled = !definition.available;
+        if (!definition.available) control.title = definition.reason || 'Ikke tilgængelig endnu';
+        control.addEventListener('click', () => { void savePlugin({ id: definition.id, value: value !== true }); });
+      } else if (Array.isArray(definition.settings) && definition.settings.length) {
+        control = pluginNumberFields(definition, value);
+      } else {
+        control = document.createElement('span'); control.className = 'plugin-state'; control.textContent = definition.available ? 'Standard' : 'Ikke tilgængelig';
+      }
+      row.append(pluginIcon(definition.id), text, control);
+      return row;
+    }
+    function mcpServers() {
+      const wrap = document.createElement('section'); wrap.className = 'plugin-mcp'; wrap.setAttribute('aria-labelledby', 'plugin-mcp-title');
+      const heading = document.createElement('h4'); heading.id = 'plugin-mcp-title'; heading.textContent = 'MCP-servere';
+      wrap.append(heading, note('Gem en lokal kommando eller en HTTPS-adresse nu. Serverne startes ikke, før Aura kan dække dem med godkendelser, sandbox og Privacy Gate.'));
+      const servers = pluginState?.mcp?.servers || [];
+      const list = document.createElement('div'); list.className = 'plugin-mcp-list';
+      if (!servers.length) list.append(note('Ingen MCP-servere gemt.'));
+      for (const server of servers) {
+        const row = document.createElement('div'); row.className = 'plugin-mcp-row';
+        const label = document.createElement('span'); label.textContent = `${server.name || server.id} · ${server.type === 'remote' ? server.url : [server.command, ...(server.args || [])].join(' ')}`;
+        const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'text-button'; remove.textContent = 'Fjern';
+        remove.setAttribute('aria-label', `Fjern MCP-serveren ${server.name || server.id}`);
+        remove.addEventListener('click', () => { void savePlugin({ mcp: { remove: server.id } }); });
+        row.append(label, remove); list.append(row);
+      }
+      const form = document.createElement('form'); form.className = 'plugin-mcp-form';
+      const id = document.createElement('input'); id.id = 'plugin-mcp-id'; id.required = true; id.pattern = '[a-z][a-z0-9-]{1,39}'; id.placeholder = 'fx filer-lokalt'; id.autocomplete = 'off'; id.spellcheck = false;
+      const type = document.createElement('select'); type.id = 'plugin-mcp-type'; type.append(option('local', 'Lokal kommando'), option('remote', 'Remote · HTTPS'));
+      const target = document.createElement('input'); target.id = 'plugin-mcp-target'; target.required = true; target.autocomplete = 'off'; target.spellcheck = false;
+      let targetLabel = null;
+      const sync = () => { target.placeholder = type.value === 'remote' ? 'https://mcp.example/sse' : 'npx -y @scope/server --flag'; if (targetLabel) targetLabel.textContent = type.value === 'remote' ? 'Adresse' : 'Kommando'; };
+      type.addEventListener('change', sync);
+      const add = document.createElement('button'); add.type = 'submit'; add.textContent = 'Gem server';
+      const targetField = field('Kommando', target, 'plugin-mcp-target');
+      targetLabel = targetField.querySelector?.('label') || null; sync();
+      form.append(field('Server-ID', id, 'plugin-mcp-id'), field('Type', type, 'plugin-mcp-type'), targetField, add);
+      form.addEventListener('submit', event => {
+        event.preventDefault();
+        const parts = target.value.trim().split(/\s+/).filter(Boolean);
+        const server = type.value === 'remote' ? { id: id.value.trim(), type: 'remote', url: target.value.trim() } : { id: id.value.trim(), type: 'local', command: parts[0] || '', args: parts.slice(1) };
+        void savePlugin({ mcp: { add: server } });
+      });
+      wrap.append(list, form);
+      return wrap;
+    }
+    function pluginGroup(title, items) {
+      const group = document.createElement('section'); group.className = 'plugin-group';
+      const heading = document.createElement('h4'); heading.textContent = title;
+      group.append(heading, ...items.map(pluginRow));
+      return group;
+    }
+    function renderPluginsFields() {
+      if (current !== 'plugins') return;
+      content.replaceChildren(...[...content.children].slice(0, 2));
+      if (!pluginState) { content.append(note('Henter plugins …')); return; }
+      const definitions = pluginState.definitions || [];
+      const ready = group => definitions.filter(item => item.group === group && item.available);
+      if (ready('builtin').length) content.append(pluginGroup('Indbyggede plugins', ready('builtin')));
+      if (ready('experimental').length) content.append(pluginGroup('Eksperimentelle plugins', ready('experimental')));
+      const waiting = definitions.filter(item => !item.available);
+      if (waiting.length) {
+        const group = pluginGroup('Venter på sikker tilkobling', waiting); group.classList.add('plugin-waiting');
+        group.querySelector('h4').after(note('Disse plugins kan ikke slås til endnu, fordi de ville gå uden om Auras godkendelser, sandbox eller Privacy Gate. De bliver tilgængelige, når den sikre tilkobling er bygget.'));
+        content.append(group);
+      }
+      if (definitions.some(item => item.id === 'mcp')) content.append(mcpServers());
+      const skills = document.createElement('section'); skills.className = 'plugin-group';
+      const skillsHeading = document.createElement('h4'); skillsHeading.textContent = 'Installerede skills';
+      const openFeatures = document.createElement('button'); openFeatures.type = 'button'; openFeatures.className = 'text-button'; openFeatures.textContent = 'Åbn Funktioner og skills';
+      openFeatures.addEventListener('click', () => { void open('features'); });
+      skills.append(skillsHeading, note('Skills styres under Funktioner, fx versioner, planlægning, design og sikkerhed. De gælder stadig sammen med plugins.'), openFeatures);
+      content.append(skills);
+      feedbackArea();
+    }
+    async function loadPlugins() {
+      try { pluginState = await invoke('pluginsGet'); }
+      catch (error) { pluginState = { definitions: [], values: {}, mcp: { servers: [] } }; announce([error.message || 'Plugins kunne ikke hentes.'], true); }
+      renderPluginsFields();
+    }
+
     // Heading and honest intro for every section; non-inline sections stop
     // here (their established dialog holds the real content).
     function describe(section) {
@@ -661,6 +825,7 @@
       describe(section);
       if (section === 'profile') renderProfileFields();
       if (section === 'appearance') renderAppearanceFields();
+      if (section === 'plugins') { renderPluginsFields(); void loadPlugins(); }
       content.scrollTop = 0;
       // The cached profile renders instantly; the fetch refreshes it.
       if (profile) fill(profile);

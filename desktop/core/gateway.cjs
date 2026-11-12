@@ -1,6 +1,6 @@
 const http = require('node:http');
 const { randomBytes } = require('node:crypto');
-const { usesResponses, assertSupported } = require('./connections.cjs');
+const { usesResponses, usesAnthropic, assertSupported } = require('./connections.cjs');
 const { StreamProgress } = require('./stream-progress.cjs');
 
 const { forwardModel, IDLE_LIMIT, GRACE_LIMIT, TOTAL_LIMIT, RETRY_DELAYS } = require('./model-transport.cjs');
@@ -22,7 +22,7 @@ async function startGateway(connection, model, key, route, onFailure = () => {},
     res.on('close', () => { controller.abort(); active.delete(controller); });
     try {
       const responses = usesResponses(connection);
-      const anthropic = connection.kind === 'anthropic' || connection.kind === 'zen' && /^claude-/.test(model.id);
+      const anthropic = usesAnthropic(connection, model);
       if (req.method !== 'POST' || req.url !== (responses ? '/v1/responses' : anthropic ? '/v1/messages' : '/v1/chat/completions')) throw new Error('Ukendt modelhandling.');
       const chunks = []; let size = 0;
       for await (const chunk of req) { size += chunk.length; if (size > 4_000_000) throw new Error('Beskeden er for stor.'); chunks.push(chunk); }

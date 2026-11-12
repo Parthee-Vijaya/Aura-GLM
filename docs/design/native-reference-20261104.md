@@ -1,6 +1,6 @@
 # Aura Prime: reference fra den installerede app
 
-Beslutning den 4. november 2026. Brugeren har afvist den første visuelle implementering og krævet en gennemgang af DeepSeek-appen fra installation og første start til indstillinger, skjult sidebar og integreret logo. Den konkrete reference er den installerede DeepSeek Harness 0.2.1-rc.5 på macOS. Opstart er gennemført med en separat tom profil, og den officielle DMG er læst uden at erstatte brugerens installation.
+Beslutning den 4. november 2026. Brugeren har afvist den første visuelle implementering og krævet en gennemgang af referenceappen fra installation og første start til indstillinger, skjult sidebar og integreret logo. Den konkrete reference er den installerede referenceapp på macOS. Opstart er gennemført med en separat tom profil, og den officielle DMG er læst uden at erstatte brugerens installation.
 
 ## Direction contract
 

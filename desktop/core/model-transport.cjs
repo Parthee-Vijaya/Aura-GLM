@@ -18,7 +18,7 @@ async function forwardModel({ url, headers, payload, res, signal, progress, onRe
   idleLimit = IDLE_LIMIT, graceLimit = GRACE_LIMIT, totalLimit = TOTAL_LIMIT, retryDelays = RETRY_DELAYS }) {
   const deadline = AbortSignal.timeout(totalLimit), lifetime = AbortSignal.any([signal, deadline]);
   let committed = false;
-  const notify = state => { try { onRecovery(state); } catch { /* Observers cannot affect delivery. */ } };
+  const notify = state => { try { onRecovery({ ...state, of: retryDelays.length + 1 }); } catch { /* Observers cannot affect delivery. */ } };
   for (let attempt = 0; ; attempt++) {
     const idle = new AbortController(); let timer, extended = false, response, pause = retryDelays[attempt];
     const touch = () => {

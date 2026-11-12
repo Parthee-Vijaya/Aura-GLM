@@ -399,6 +399,19 @@ class Workbench {
   async closeEngines() { for (const chat of this.chats.values()) if (!chat.running) await chat.close(false); }
   async connection(id) { const connection = (await this.store.read()).connections.find(c => c.id === id); if (!connection) throw new Error('Vælg en gemt forbindelse.'); return connection; }
   discoveryScope(trustedChatID) { return this.privacy.scope({ scope: this.project ? trustedChatID !== undefined || this.chat ? 'conversation' : 'project' : 'idea' }, trustedChatID); }
+  async diagnoseConnection(input, trustedChatID) {
+    if (!input || Array.isArray(input) || Object.keys(input).some(key => key !== 'id') || typeof input.id !== 'string' || !input.id || input.id.length > 200) throw new Error('Vælg en gemt forbindelse til kontrollen.');
+    const connection = await this.connection(input.id);
+    connections.assertSupported(connection);
+    const current = await this.privacy.discoveryPermit(this.discoveryScope(trustedChatID), connection);
+    const result = await connections.diagnoseConnection(connection, this.store.decrypt(connection), { assertCurrent: current });
+    current(); return result;
+  }
+  async diagnoseConnectionLive(input) {
+    if (!input || Array.isArray(input) || Object.keys(input).some(key => !['id', 'modelID', 'confirm'].includes(key)) || typeof input.id !== 'string' || !input.id || input.id.length > 200 || typeof input.modelID !== 'string' || !input.modelID || input.modelID.length > 200 || input.confirm !== true) throw new Error('En liveprøve kræver et gemt forbindelsesvalg, en model og særskilt bekræftelse.');
+    connections.assertSupported(await this.connection(input.id));
+    return { steps: connections.skippedLiveDiagnosis(), checkedAt: new Date().toISOString() };
+  }
   async models(id, trustedChatID) {
     const request = Symbol(); this.catalogRequests.set(id, request); this.catalogs.delete(id);
     const connection = await this.connection(id);

@@ -195,7 +195,7 @@ components:
 
 **Creative North Star: "Samtalen i den lokale app"**
 
-Aura Prime følger nu kompositionen fra den faktisk installerede DeepSeek Harness 0.2.1-rc.5: integreret brand under systemtitelbaren, en helt skjulbar sidebar, centreret samtalestart og en samlet indstillingsramme. Hovedfladen er neutral, sidebar er lysere, og den runde Send-knap bruger Auras grønne accent. Den første implementering blev afvist; dens slutvurdering er ikke brugeraccept.
+Aura Prime følger nu kompositionen fra den installerede desktop-referenceapp: integreret brand under systemtitelbaren, en helt skjulbar sidebar, centreret samtalestart og en samlet indstillingsramme. Hovedfladen er neutral, sidebar er lysere, og den runde Send-knap bruger Auras grønne accent. Den første implementering blev afvist; dens slutvurdering er ikke brugeraccept.
 
 Dette er en beskrivelse af den lokale, byggede verden. Aura bruger sit eget navn og symbol og sine eksisterende controllere. Profilen er valgfri og lokal, og appen har ingen kontologin. En ny samtale starter uden åbent værktøjspanel; en kladde bliver i den centrerede komposition, indtil samtalen har en faktisk besked.
 
@@ -222,7 +222,7 @@ Farverne i frontmatter er de uændrede CSS-værdier fra `aura-tokens.css`. Førs
 
 ### Accent og handlinger
 
-Send bruger `aura-accent`, som fra 0.7.0 er Auras grønne fra logoet; hover følger `aura-accent-hover`, og teksten er hvid i lyst tema og næsten sort i mørkt. Stop og almindelige primærhandlinger beholder `aura-button-primary` med sort/hvid temaveksling. Velkomstens Kom i gang er neutral primærhandling. Det er en konkret rollefordeling. Referenceappens blå er DeepSeeks brandfarve og bruges ikke længere som Auras accent.
+Send bruger `aura-accent`, som fra 0.7.0 er Auras grønne fra logoet; hover følger `aura-accent-hover`, og teksten er hvid i lyst tema og næsten sort i mørkt. Stop og almindelige primærhandlinger beholder `aura-button-primary` med sort/hvid temaveksling. Velkomstens Kom i gang er neutral primærhandling. Det er en konkret rollefordeling. Referenceappens blå er dens egen brandfarve og bruges ikke længere som Auras accent.
 
 Samtalevisningens markeringslinje, links, caret, fokus og udbydervalg bruger accentrollerne. Valgte samtaler og indstillingssektioner har nu neutral flade og almindelig tekst. Temaets store valgfelter bruger neutral kant og aktiv flade. Et visuelt valg giver aldrig samtykke eller filadgang.
 
@@ -357,7 +357,7 @@ Indstillinger har Lokal profil, Generelt, AI-forbindelser, Funktioner, Opdaterin
 
 ### Værktøjer og ærlig status
 
-Samtale/Arbejdsspor er navigation til eksisterende samtale og Aktivitet, ikke en ny motor eller kopieret DeepSeek-datalog. Højre panel åbnes eksplicit. Forhåndsvisning, Plan, Ændringer, Kode og Aktivitet består med samme dataansvar. De fem faners pile/Home/End vælger den næste synlige fane. Skjulte featurefaner springes over. Faneskift og AI-hændelser bevarer brugerens kladde, previewformular, rulning og filvalg.
+Samtale/Arbejdsspor er navigation til eksisterende samtale og Aktivitet, ikke en ny motor eller en kopieret ekstern datalog. Højre panel åbnes eksplicit. Forhåndsvisning, Plan, Ændringer, Kode og Aktivitet består med samme dataansvar. De fem faners pile/Home/End vælger den næste synlige fane. Skjulte featurefaner springes over. Faneskift og AI-hændelser bevarer brugerens kladde, previewformular, rulning og filvalg.
 
 Planen har fortsat fire afsnit og bevidst bygning. Diffs viser reelle ændringer og korrekt ophav; Kode er skrivebeskyttet med beskyttede filer skjult. Aktivitet viser faktiske hændelser, tid og udfald. Private ræsonnementstekster bliver ikke svartekst. Ukendt måling står som ukendt; kontekstkapacitet er adskilt fra arbejdsgrænser. Modeller, indsats, resultater, versioner, fortryd/restore, konflikter og samtidige arbejdskopier bevarer deres fulde adfærd fra arkivet.
 
@@ -389,7 +389,7 @@ Slutstatus: Den uafhængige native genprøve har lukket NF-01 og NF-02 med quali
 
 ## Palette og projektlayout, 4. november 2026
 
-Brugerens opfølgning erstatter de grå tilnærmelser med de faktiske flade-, tekst- og accentfarver fra installeret DeepSeek Harness 0.2.1-rc.5. Lyst tema bruger hvidt lærred, hvide felter og sidebar #f9fafb. Mørkt tema bruger lærred #151517, sidebar #1b1b1c og felter #2c2c2e. Statiske farveværdier er læst fra den installerede apps theme-modul. Auras navn, grønne logo og semantiske advarsels-/statusfarver bevares.
+Brugerens opfølgning erstatter de grå tilnærmelser med de faktiske flade-, tekst- og accentfarver fra den installerede referenceapp. Lyst tema bruger hvidt lærred, hvide felter og sidebar #f9fafb. Mørkt tema bruger lærred #151517, sidebar #1b1b1c og felter #2c2c2e. Statiske farveværdier er læst fra den installerede apps theme-modul. Auras navn, grønne logo og semantiske advarsels-/statusfarver bevares.
 
 Nyt projekt har en tættere formular og en fast bundrække uden for det rullende indhold. Den oprindelige opret-knap bevarer HTML-formtilknytning, validering og disabled-guards. Returhandlingen ligger i headeren. Standardfelter, tilvalg og placering vises uden scroll ved 980×720 og normal tekststørrelse. Åbnede tilvalg, lange fejl/idéresultater og forstørret tekst kan fortsat rulle uden at skjule opret-handlingen.
 

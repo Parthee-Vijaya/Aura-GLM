@@ -40,6 +40,7 @@
     "test:publishing-options": "node scripts/verify-publishing-options.cjs",
     "test:introduction": "node scripts/verify-introduction.cjs",
     "runtime:prepare": "node scripts/prepare-runtime.cjs",
+    "test:package-acceptance": "node scripts/verify-package-acceptance.cjs",
     "package:mac": "electron-builder --config electron-builder.cjs --mac --publish never",
     "package:windows": "electron-builder --config electron-builder.cjs --win --publish never",
     "test:package": "node scripts/verify-package.cjs",

@@ -13,6 +13,15 @@ function validateInfo(info, { version, platform, arch, releases = distribution.r
   if (info.critical && (typeof info.message !== 'string' || !info.message.trim() || info.message.length > 500)) throw new Error('Sikkerhedsopdateringen mangler en kort forklaring.');
   return { version: info.version, bytes: info.files[0].size, critical: info.critical === true, message: info.critical ? info.message.trim() : '' };
 }
+// GitHubProvider keeps the channel file's relative name until download. Aura
+// validates an absolute release URL, while passing the original relative entry
+// back to that provider. Only our exact version/architecture ZIP may normalize.
+function normalizeInfo(info, { platform, arch, releases = distribution.releases, artifactPrefix = distribution.artifactPrefix }) {
+  const name = `${artifactPrefix}-${info?.version}-${platform === 'darwin' ? 'mac' : 'win'}-${arch}.${platform === 'darwin' ? 'zip' : 'exe'}`;
+  if (info?.files?.length !== 1 || info.files[0].url !== name || info.path && info.path !== name) return info;
+  const url = `${releases}download/v${info.version}/${name}`;
+  return { ...info, files: [{ ...info.files[0], url }], ...(info.path ? { path: url } : {}) };
+}
 class Updates {
   constructor({ updater, store, version, platform = process.platform, arch = process.arch, enabled = true, repository = distribution.repository, feed = distribution.feed, releases = distribution.releases, artifactPrefix = distribution.artifactPrefix, emit = () => {}, busy = () => false, prepare = async () => {}, install = () => updater.quitAndInstall(false, true) }) {
     Object.assign(this, { updater, store, version, platform, arch, repository, feed, releases, artifactPrefix, emit, busy, prepare, install });
@@ -62,7 +71,7 @@ class Updates {
     try {
       const result = await this.updater.checkForUpdates();
       if (!result) throw new Error('Intet svar');
-      const info = result.updateInfo;
+      const info = normalizeInfo(result.updateInfo, this);
       if (semver.valid(info?.version) && semver.lte(info.version, this.version)) return this.set({ phase: 'current', available: null, checkedAt: new Date().toISOString() });
       const available = validateInfo(info, this);
       if (result.isUpdateAvailable === false) return this.fail('Denne opdatering kan ikke installeres på dit styresystem. Se udgivelsesnoterne på downloadsiden.');
@@ -99,4 +108,4 @@ class Updates {
   }
   close() { clearTimeout(this.startTimer); clearInterval(this.timer); }
 }
-module.exports = { Updates, validateInfo, channelFor, FEED: distribution.feed, RELEASES: distribution.releases };
+module.exports = { Updates, normalizeInfo, validateInfo, channelFor, FEED: distribution.feed, RELEASES: distribution.releases };

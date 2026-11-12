@@ -13,6 +13,7 @@ const VERSION = '2.1.4';
 const v2 = require('./engine-opencode2.cjs');
 const taskTools = require('./engine-opencode2-todos.cjs');
 const protectedPaths = require('./protected-paths.cjs');
+const pluginPolicy = require('./plugins.cjs');
 const { localMetrics, RunMeasurement } = require('./run-metrics.cjs');
 const { createStartupRecord } = require('./engine-startup.cjs');
 const parseOpenCodeVersion = value => /^(?:opencode v)?(\d+\.\d+\.\d+)\s*$/.exec(String(value).trim())?.[1] || null;
@@ -47,7 +48,7 @@ const DATA_FILE = /^(worlds\/worlds\.json|photos\/photos\.json|scripts\/roll\.mj
 // En mappe spærres derfor både som "mappe/…" og "…/mappe/…"; en fuld sti ville aldrig blive ramt. Sidste regel, der passer, gælder.
 // Aktive skills ligger i motorens egen konfigurationsmappe uden for projektet. Mappens navn er projektets nøgle, så mønsteret kun rammer den.
 const skillPattern = directory => `*/${path.basename(directory)}/config/skills/*`;
-function permissions(root, references, mode = 'free', skills = null) {
+function permissions(root, references, mode = 'free', skills = null, pluginValues = {}) {
   const read = { '*': 'allow', ...Object.fromEntries(protectedPaths.toOpenCodeGlobs().map(pattern => [pattern, 'deny'])) };
   // Udvalgte referencer har et unikt filnavn fra appen, så mønsteret kun rammer den valgte fil.
   for (const file of references) if (!protectedPaths.isProtected(file, { references: false })) for (const pattern of [file, `*/${file}`]) read[pattern] = 'allow';
@@ -62,7 +63,7 @@ function permissions(root, references, mode = 'free', skills = null) {
   if (['chat', 'plan'].includes(mode)) return { '*': 'deny', read, glob: 'allow', list: 'allow', grep: 'ask', webfetch: 'ask', external_directory: external, skill, question: 'allow' };
   const edit = { '*': 'ask', ...Object.fromEntries(protectedPaths.toOpenCodeGlobs().map(pattern => [pattern, 'deny'])) };
   if (skills?.names.length) edit[skillPattern(skills.directory)] = 'deny';
-  return { '*': 'ask', read, glob: 'allow', grep: 'ask', list: 'allow', edit, bash: 'ask', external_directory: external, webfetch: 'ask', websearch: 'deny', task: 'deny', skill, lsp: 'deny', question: 'allow', todowrite: 'allow', todoread: 'allow' };
+  return pluginPolicy.applyPermissions({ '*': 'ask', read, glob: 'allow', grep: 'ask', list: 'allow', edit, bash: 'ask', external_directory: external, webfetch: 'ask', websearch: 'deny', task: 'deny', skill, lsp: 'deny', question: 'allow', todowrite: 'allow', todoread: 'allow' }, mode, pluginValues);
 }
 // Motorens skillmappe skrives forfra ved hver start, så en fravalgt skill eller en gammel tilpasning ikke bliver liggende.
 async function writeSkills(directory, skills) {
@@ -216,7 +217,7 @@ async function writeReadGuard(directory, root, references, skills = []) {
 }
 class OpenCodeEngine {
   // resume: en tidligere OpenCode-session for samme samtale. Findes den ikke længere, oprettes en ny.
-  constructor({ root, directory, provider, model, references = [], mode = 'free', skills = [], resume = null, sandbox = null, privacyIsolation = null, detached = false, recovery = {}, measurement = null, onEvent = () => {} }) { Object.assign(this, { root, directory, provider, model, references, mode, skills, resume, sandbox, privacyIsolation, detached, recovery, onEvent }); this.promptEpoch = 0; this.lifecycle = new AbortController(); this.closed = false; this.closedPermissions = new Set(); this.closedQuestions = new Set(); this.pendingQuestions = new Map(); this.pending = new Map(); this.active = false; this.resumed = false; this.adapter = new v2.EventAdapter(root); this.startup = createStartupRecord({ mode, privacyIsolation: Boolean(privacyIsolation), sandbox: Boolean(sandbox), detached }); this.setRunMeasurement(measurement); }
+  constructor({ root, directory, provider, pluginStore = null, model, references = [], mode = 'free', skills = [], resume = null, sandbox = null, privacyIsolation = null, detached = false, recovery = {}, measurement = null, onEvent = () => {} }) { Object.assign(this, { root, directory, provider, pluginStore, model, references, mode, skills, resume, sandbox, privacyIsolation, detached, recovery, onEvent }); this.promptEpoch = 0; this.lifecycle = new AbortController(); this.closed = false; this.closedPermissions = new Set(); this.closedQuestions = new Set(); this.pendingQuestions = new Map(); this.pending = new Map(); this.active = false; this.resumed = false; this.adapter = new v2.EventAdapter(root); this.startup = createStartupRecord({ mode, privacyIsolation: Boolean(privacyIsolation), sandbox: Boolean(sandbox), detached }); this.setRunMeasurement(measurement); }
   setRunMeasurement(measurement) { this.pendingMeasurement = measurement instanceof RunMeasurement ? measurement : null; }
   async wire(url, method = 'GET', body, signal) {
     this.lifecycle.signal.throwIfAborted();
@@ -360,6 +361,7 @@ class OpenCodeEngine {
     return child;
   }
   async startActual() {
+    this.pluginValues = this.pluginStore ? (await new pluginPolicy.Plugins(this.pluginStore).get()).values : pluginPolicy.defaults();
     const startup = this.startup;
     startup.phase('find-executable');
     const executable = await findExecutable();
@@ -375,7 +377,7 @@ class OpenCodeEngine {
     startup.phase('read-guard');
     const password = randomBytes(32).toString('hex');
     this.auth = `Basic ${Buffer.from(`opencode:${password}`).toString('base64')}`;
-    const permission = permissions(this.root, this.references, this.mode, { directory: this.directory, names: this.skills.map(skill => skill.name) });
+    const permission = permissions(this.root, this.references, this.mode, { directory: this.directory, names: this.skills.map(skill => skill.name) }, this.pluginValues);
     if (this.sandbox) {
       const trustedPattern = `*/${path.basename(path.dirname(this.sandbox.policyPath))}/*`;
       permission.read[trustedPattern] = 'deny';
@@ -546,6 +548,10 @@ class OpenCodeEngine {
   }
   async send(text, system) {
     if (!this.active) throw new Error('Agenten er ikke startet.');
+    if (this.pluginStore && ['free', 'build'].includes(this.mode)) {
+      const latest = (await new pluginPolicy.Plugins(this.pluginStore).get()).values;
+      if (latest.webfetch !== this.pluginValues?.webfetch) throw new Error('Pluginvalgene er ændret. Forbered opgaven igen, så motoren bruger de aktuelle rettigheder.');
+    }
     const measurement = this.pendingMeasurement || localMetrics.create({ mode: this.mode });
     this.pendingMeasurement = null; this.activeMeasurement = measurement;
     measurement.sending(text, system);

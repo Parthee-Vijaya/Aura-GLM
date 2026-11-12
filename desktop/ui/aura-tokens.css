@@ -1,5 +1,5 @@
 /* Aura Prime: én tema- og tokenskilde for arbejdsflade, onboarding og dialoger.
-   Flader og tekstfarver følger den installerede DeepSeek Harness 0.2.1-rc.5. Accenten er Auras
+   Flader og tekstfarver følger den installerede referenceapp. Accenten er Auras
    egen grønne fra logoet. Radius, hårstreg og elevation følger materialesystemet i DESIGN.md.
    light-dark følger color-scheme ved brug, også efter et manuelt temaskift. */
 :root {

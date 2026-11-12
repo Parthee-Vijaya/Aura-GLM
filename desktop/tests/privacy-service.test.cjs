@@ -76,6 +76,21 @@ test('service sends exact reviewed sanitized bytes and records metadata without 
   assert.equal(JSON.parse(audit.trim()).decision, 'rewrite');
 });
 
+test('model dispatch reports waiting for data approval before any transport and resumes its actual phase', async t => {
+  const f = await fixture(t), phases = new (require('../core/work-phase.cjs').WorkPhases)({ emit: event => f.events.push(event) });
+  f.bench.chat.workPhases = phases;
+  phases.begin(f.connection);
+  const reviewReady = f.nextReview(), sending = f.dispatch({ body: packet('Contact alice@example.invalid.') });
+  const review = await reviewReady;
+  assert.equal(phases.phase, 'waiting-approval'); assert.equal(f.received.length, 0);
+  phases.set('waiting-model');
+  assert.equal(phases.phase, 'waiting-approval');
+  f.service.decide({ id: review.id, decision: 'approve' });
+  await (await sending).text();
+  assert.equal(f.received.length, 1); assert.equal(phases.phase, 'waiting-model');
+  assert.deepEqual(f.events.filter(event => event.type === 'work.phase').map(event => event.phase), ['starting-engine', 'waiting-approval', 'waiting-model']);
+});
+
 test('trusted IPC conversation scope survives a selected-tab change and ignores renderer retargeting', async t => {
   const f = await fixture(t), first = { ...f.bench.chat, project: f.bench.project, close: async () => {} }, other = { id: 'conversation-2', project: f.bench.project, close: async () => {} };
   f.bench.chats = new Map([[first.id, first], [other.id, other]]); f.bench.chat = other;
@@ -162,6 +177,34 @@ test('discovery permits bind the exact catalog URL and reject async final guards
   await assert.rejects(connections.requestJSON(f.connection.baseURL + '/different', { assertCurrent: permit }), { code: 'PRIVACY_DESTINATION_INVALID' });
   await assert.rejects(connections.requestJSON(f.connection.baseURL + '/models', { assertCurrent: async () => true }), /genvalideres/);
   await assert.rejects(f.service.discoveryPermit(f.scope, f.connection, { kind: 'routes', modelID: '../private' }), { code: 'PRIVACY_CONTROL_FAILED' });
+  assert.equal(f.received.length, 0);
+});
+
+test('Cloudflare discovery admits only its exact account catalog and keeps policy leases fail-closed', async t => {
+  const f = await fixture(t);
+  const baseURL = 'https://api.cloudflare.com/client/v4/accounts/' + 'a'.repeat(32) + '/ai/v1';
+  Object.assign(f.connection, { kind: 'cloudflare', baseURL });
+  await f.store.update(state => { state.connections = [f.connection]; });
+  const permit = await f.service.discoveryPermit(f.scope, f.connection);
+  const catalogURL = baseURL.replace(/\/v1$/, '/models/search');
+  assert.equal(permit(catalogURL), true);
+  let calls = 0;
+  t.mock.method(global, 'fetch', async (url, options) => {
+    calls++;
+    assert.equal(url, catalogURL);
+    assert.equal(options.headers.Authorization, 'Bearer synthetic-cloudflare-key');
+    return new Response(JSON.stringify({ success: true, result: [{ name: '@cf/synthetic-chat', task: { name: 'Text Generation' } }] }));
+  });
+  for (const url of [baseURL + '/models', catalogURL.replace('a'.repeat(32), 'b'.repeat(32)), catalogURL.replace('api.cloudflare.com', 'other.example.invalid'), catalogURL.replace('https:', 'http:'), catalogURL + '/different', catalogURL + '?key=synthetic']) {
+    await assert.rejects(connections.requestJSON(url, { key: 'synthetic-cloudflare-key', assertCurrent: permit }), { code: 'PRIVACY_DESTINATION_INVALID' });
+  }
+  assert.equal(calls, 0);
+  const models = await connections.listModels(f.connection, 'synthetic-cloudflare-key', { assertCurrent: permit });
+  assert.deepEqual(models.map(model => model.id), ['@cf/synthetic-chat']);
+  assert.equal(calls, 1);
+  await f.store.update(state => { state.projects[f.store.projectKey(f.bench.project.root)].privacy.workMode = 'local'; });
+  await assert.rejects(connections.listModels(f.connection, 'synthetic-cloudflare-key', { assertCurrent: permit }), { code: 'PRIVACY_STALE' });
+  assert.equal(calls, 1, 'a changed policy prevents any further catalog request');
   assert.equal(f.received.length, 0);
 });
 

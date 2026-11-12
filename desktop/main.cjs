@@ -119,7 +119,7 @@ const failures = [];
 function recordFailure(area, type) { failures.push({ area, type, at: new Date().toISOString() }); if (failures.length > 10) failures.shift(); }
 function supportReport() {
   // Hjælp må ikke kontakte nøgleringen. Kontrollen sker først ved brug af en nøgle.
-  return require('./core/diagnostics.cjs').diagnostics({ version: app.getVersion(), platform: process.platform, arch: process.arch, packaged: app.isPackaged, versions: require('./core/runtime.cjs').get()?.versions, project: Boolean(currentProject()), running: workbench?.running, preview: currentSpace().devServer?.state, failures });
+  return require('./core/diagnostics.cjs').diagnostics({ version: app.getVersion(), platform: process.platform, arch: process.arch, packaged: app.isPackaged, versions: require('./core/runtime.cjs').get()?.versions, project: Boolean(currentProject()), running: workbench?.running, preview: currentSpace().devServer?.state, failures, connection: workbench?.chat?.workPhases?.snapshot() });
 }
 function shutdown() {
   if (!shuttingDown) shuttingDown = (async () => {
@@ -404,6 +404,13 @@ handle('preview:revision', async () => {
 
 handle('preferences:get', () => new Preferences(workbench.store).get());
 handle('preferences:save', input => exclusive(() => new Preferences(workbench.store).save(input)));
+handle('plugins:get', () => new (require('./core/plugins.cjs').Plugins)(workbench.store).get());
+handle('plugins:save', input => exclusive(async () => {
+  if (aiWorking()) throw new Error('Vent på AI-opgaven, eller stop den, før du ændrer plugins.');
+  const result = await new (require('./core/plugins.cjs').Plugins)(workbench.store).save(input);
+  if (input?.id === 'webfetch') for (const bench of [registry.empty, ...registry.values()]) for (const chat of bench.chats.values()) { chat.prepared = null; chat.engineIdentity = null; }
+  return result;
+}));
 // The profile is app-owned UI state; name, icon and the avatar never reach prompts, model log, diagnostics or feedback.
 // The avatar is one fixed file in the app's private harness folder: icon 'upload' is valid only while it exists.
 const avatarFile = () => path.join(app.getPath('userData'), 'harness', 'avatar.png');
@@ -723,6 +730,10 @@ const accountPages = {
   alexandra: { start: 'https://platform.alexandra.dk/platform-ui/register', keys: 'https://platform.alexandra.dk/platform-ui/keys', billing: 'https://platform.alexandra.dk/platform-ui/billing', usage: 'https://platform.alexandra.dk/platform-ui/usage' },
   openrouter: { start: 'https://openrouter.ai/settings/keys' }, zen: { start: 'https://opencode.ai/auth' }
 };
+// Only catalog-owned HTTPS links extend the fixed account-page allowlist.
+for (const [kind, def] of Object.entries(require('./core/connections.cjs').definitions)) {
+  if (!Object.hasOwn(accountPages, kind) && typeof def.keyURL === 'string' && def.keyURL.startsWith('https://')) accountPages[kind] = { start: def.keyURL };
+}
 handle('connections:account', value => {
   const kind = typeof value === 'string' ? value : value?.kind, page = typeof value === 'string' ? 'start' : value?.page || 'start';
   if (!Object.hasOwn(accountPages, kind) || !Object.hasOwn(accountPages[kind], page)) throw new Error('Denne forbindelse opsættes hos din organisation eller på din egen server.');
@@ -736,7 +747,7 @@ handle('setup:status', async () => {
     return { git: `${version} · projektets historik og identitet kontrolleres, når du åbner et projekt.`, project: false };
   } catch (error) { return { git: error.message, project: Boolean(currentProject()) }; }
 });
-handle('connections:discover', () => require('./core/local-discovery.cjs').discoverLocalModels());
+handle('connections:discover', () => require('./core/local-discovery.cjs').discoverForWorkbench(currentWorkbench(), requests.getStore()?.chat));
 const komplaiLogin = new (require('./core/komplai.cjs').KomplaiLogin)();
 handle('komplai:login', () => komplaiLogin.start(url => shell.openExternal(url)));
 handle('komplai:cancel', () => komplaiLogin.cancel());
@@ -763,6 +774,8 @@ handle('idea:prepare', value => { if (currentProject()) throw new Error('Brug id
 handle('idea:send', value => { if (currentProject()) throw new Error('Idéhjælpen er lukket.'); return ideaRefinement.send(value); });
 handle('idea:stop', () => ideaRefinement.stop());
 handle('connections:models', value => workbench.models(value, requests.getStore()?.chat));
+handle('connections:diagnose', value => workbench.diagnoseConnection(value, requests.getStore()?.chat));
+handle('connections:diagnose-live', value => workbench.diagnoseConnectionLive(value));
 handle('connections:routes', value => workbench.routes(value.connectionID, value.modelID, requests.getStore()?.chat));
 handle('connections:effort-levels', value => workbench.effortLevels(value?.connectionID, value?.modelID, value?.capabilities));
 handle('model-log:list', value => workbench.modelLogList(value?.offset, value?.limit, requests.getStore()?.chat));
@@ -1169,6 +1182,10 @@ app.whenReady().then(async () => {
     configure: bench => {
       const normalEngineFactory=bench.engineFactory;
       bench.engineFactory=options=>privacyActivation.trackEngine(normalEngineFactory(options),()=>bench.project?.root||options.root);
+      const pluginEngineFactory = bench.engineFactory;
+      bench.engineFactory = options => pluginEngineFactory({ ...options, pluginStore: bench.store });
+      const privacyPluginEngineFactory = bench.privacyRuntimeProvider.dependencies.createEngine || (options => new (require('./core/engine.cjs').OpenCodeEngine)(options));
+      bench.privacyRuntimeProvider.dependencies.createEngine = (options, ...rest) => privacyPluginEngineFactory({ ...options, pluginStore: bench.store }, ...rest);
       bench.privacyRuntimeProvider.beforeConfigure=async (scope,{settings}={})=>{
         const activationCurrent=privacyActivation.activation(scope.root,{enabled:settings?.enabled!==false});
         if([...externalRequests.values()].includes(bench))throw new Error('Vent på den eksterne handling, før du ændrer datareglerne.');
