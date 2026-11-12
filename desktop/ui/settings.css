@@ -240,7 +240,7 @@ body.native-welcome-window #welcome-dialog::backdrop { background: var(--aura-bg
 
 /* Udbyderkatalog (4.11): segmenteret valg mellem katalog og egen API,
    én dropdown og en ærlig vilkårslinje. */
-.provider-catalog { display: grid; gap: 8px; margin: 16px 0 6px; padding: 16px; border-radius: 16px; background: var(--aura-bg-tint); border: 1px solid var(--aura-border); }
+.provider-catalog { display: grid; gap: 8px; margin: 16px 0 6px; padding: 16px; border-radius: 16px; background: var(--aura-bg-tint); border: var(--aura-hairline) solid var(--aura-border); }
 .provider-catalog #catalog-lead { margin: 0; }
 .provider-catalog #catalog-panel { display: grid; gap: 6px; }
 .provider-catalog #catalog-panel[hidden] { display: none; }
@@ -259,13 +259,13 @@ body.native-welcome-window #welcome-dialog::backdrop { background: var(--aura-bg
 .plugin-group { margin: 22px 0 0; }
 .plugin-group h4, .plugin-mcp h4 { margin: 0 0 10px; font-size: 14px; font-weight: 600; color: var(--aura-ink); }
 .plugin-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 10px 0; }
-.plugin-icon { display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--aura-border); background: var(--aura-bg-raised); color: var(--plugin-color, var(--aura-accent)); }
+.plugin-icon { display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; border: var(--aura-hairline) solid var(--aura-border); background: var(--aura-bg-raised); color: var(--plugin-color, var(--aura-accent)); }
 .plugin-icon svg { width: 22px; height: 22px; }
 .plugin-text { display: grid; gap: 2px; min-width: 0; }
 .plugin-text strong { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--aura-ink); }
 .plugin-text small { font-size: 12px; line-height: 1.45; color: var(--aura-ink-secondary); }
 .plugin-text .plugin-reason { color: var(--aura-ink-muted); }
-.plugin-badge { padding: 1px 7px; border-radius: 6px; background: var(--aura-accent-subtle); color: var(--aura-accent-ink); font-size: 11px; font-weight: 500; }
+.plugin-badge { padding: 1px 7px; border-radius: 8px; background: var(--aura-accent-subtle); color: var(--aura-accent-ink); font-size: 11px; font-weight: 500; }
 .plugin-row[data-unavailable="true"] .plugin-icon { opacity: .6; }
 .plugin-switch { position: relative; width: 38px; height: 22px; min-height: 22px; padding: 0; border: 0; border-radius: 999px; background: var(--aura-bg-active); cursor: pointer; }
 .plugin-switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--aura-bg-raised); box-shadow: 0 1px 2px rgba(0,0,0,.2); transition: transform 150ms ease; }
@@ -280,7 +280,7 @@ body.native-welcome-window #welcome-dialog::backdrop { background: var(--aura-bg
 .plugin-field input { width: 76px; min-height: 30px; text-align: right; }
 .plugin-field input:focus-visible { outline: 2px solid var(--aura-accent); outline-offset: 2px; }
 .plugin-unit { min-width: 28px; color: var(--aura-ink-muted); }
-.plugin-mcp { margin: 24px 0 0; padding: 16px; border: 1px solid var(--aura-border); border-radius: 14px; }
+.plugin-mcp { margin: 24px 0 0; padding: 16px; border: var(--aura-hairline) solid var(--aura-border); border-radius: 16px; }
 .plugin-mcp-list { display: grid; gap: 6px; margin: 8px 0 12px; }
 .plugin-mcp-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 12px; }
 .plugin-mcp-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--aura-font-mono, ui-monospace, monospace); }
@@ -292,14 +292,14 @@ body.native-welcome-window #welcome-dialog::backdrop { background: var(--aura-bg
 .plugin-reason summary::-webkit-details-marker { display: none; }
 .plugin-reason[open] summary { margin-bottom: 2px; }
 .plugin-waiting .plugin-row { padding: 8px 0; }
-.plugin-waiting .plugin-state { padding: 2px 8px; border-radius: 6px; background: var(--aura-bg-hover); }
+.plugin-waiting .plugin-state { padding: 2px 8px; border-radius: 8px; background: var(--aura-bg-hover); }
 #settings-dialog .plugin-switch { background: var(--aura-bg-active); border: 0; }
 #settings-dialog .plugin-switch[aria-checked="true"] { background: var(--aura-accent); }
 #settings-dialog .plugin-switch:hover:not(:disabled) { filter: brightness(.97); }
 .provider-catalog[hidden] { display: none; }
 
 /* Forbindelsestjek i trin (4.11) */
-.connection-diagnose { margin: 20px 0 0; padding: 14px 16px; border: 1px solid var(--aura-border); border-radius: 14px; }
+.connection-diagnose { margin: 20px 0 0; padding: 14px 16px; border: var(--aura-hairline) solid var(--aura-border); border-radius: 16px; }
 .connection-diagnose h4 { margin: 0 0 4px; font-size: 13px; font-weight: 600; }
 .connection-diagnose .hint { margin: 0 0 10px; }
 .diagnose-steps { display: grid; gap: 6px; margin: 12px 0 0; padding: 0; list-style: none; }

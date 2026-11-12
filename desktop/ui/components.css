@@ -425,12 +425,12 @@ details.disclosure.step.step-group[open] > summary .step-glyph::after { opacity:
 /* Modelevner i modelvælgeren (4.11) */
 .model-picker-option { display: grid; gap: 3px; text-align: left; }
 .model-capabilities { display: flex; flex-wrap: wrap; gap: 4px; }
-.model-capability { padding: 0 6px; border-radius: 5px; font-size: 11px; line-height: 17px; background: var(--aura-bg-hover); color: var(--aura-ink-secondary); }
+.model-capability { padding: 0 6px; border-radius: 8px; font-size: 11px; line-height: 17px; background: var(--aura-bg-hover); color: var(--aura-ink-secondary); }
 .model-capability[data-kind="build"] { background: var(--aura-success-subtle); color: var(--aura-success-ink); }
 .model-capability[data-kind="chat-only"] { background: var(--aura-warning-subtle); color: var(--aura-warning-ink); }
 
 /* Lettermark tiles for catalog providers without a bundled logo (4.11). */
-.provider-lettermark { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 3px; box-sizing: border-box; flex: none; border-radius: 5px; background: var(--lettermark, var(--aura-ink-secondary)); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: -.02em; line-height: 1; }
+.provider-lettermark { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 3px; box-sizing: border-box; flex: none; border-radius: 8px; background: var(--lettermark, var(--aura-ink-secondary)); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: -.02em; line-height: 1; }
 
 /* Ventetid forklaret (4.11) */
 .work-phase { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--aura-ink-secondary); white-space: nowrap; }

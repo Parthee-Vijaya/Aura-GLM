@@ -222,7 +222,7 @@ Farverne i frontmatter er de uændrede CSS-værdier fra `aura-tokens.css`. Førs
 
 ### Accent og handlinger
 
-Send bruger `aura-accent`, som fra 0.7.0 er Auras grønne fra logoet; hover følger `aura-accent-hover`, og teksten er hvid i lyst tema og næsten sort i mørkt. Stop og almindelige primærhandlinger beholder `aura-button-primary` med sort/hvid temaveksling. Velkomstens Kom i gang er neutral primærhandling. Det er en konkret rollefordeling. Referenceappens blå er DeepSeeks brandfarve og bruges ikke længere som Auras accent.
+Send bruger `aura-accent`, som fra 0.7.0 er Auras grønne fra logoet; hover følger `aura-accent-hover`, og teksten er hvid i lyst tema og næsten sort i mørkt. Stop og almindelige primærhandlinger beholder `aura-button-primary` med sort/hvid temaveksling. Velkomstens Kom i gang er neutral primærhandling. Det er en konkret rollefordeling. Referenceappens blå er dens egen brandfarve og bruges ikke længere som Auras accent.
 
 Samtalevisningens markeringslinje, links, caret, fokus og udbydervalg bruger accentrollerne. Valgte samtaler og indstillingssektioner har nu neutral flade og almindelig tekst. Temaets store valgfelter bruger neutral kant og aktiv flade. Et visuelt valg giver aldrig samtykke eller filadgang.
 
