@@ -2,11 +2,11 @@
 
 Aura Prime hjælper dig fra idé til plan, kode og forhåndsvisning i et lokalt arbejdsområde. Appen bygger videre på [Aura Harness fra AI Alliancen](https://github.com/ai-alliancen-org/ai-harness) med OpenCode som kodeagent og frit valg af AI-forbindelse.
 
-**Aktuel kildeversion: `0.8.0-beta.1` (ikke udgivet), 12. november 2026.** Kilden indeholder materialesystemet, @-henvisninger, dokumentvisning og automatisering oven på beta 7; se [ændringsloggen](CHANGELOG.md). Seneste udgivelse er beta 7. Alle billeder nedenfor er fra den færdige beta 7 på macOS med isolerede testprofiler og det opdigtede projekt *Fjordby arrangementer*. Versionen er en udviklingsbeta til macOS på Apple Silicon: [Hent **Aura Prime 0.6.0 beta 7**](https://github.com/Parthee-Vijaya/Aura-Prime/releases/tag/v0.6.0-beta.7) (ad hoc-signeret, ikke notariseret). [Noter og kontrolsummer](docs/releases/aura-prime-0.6.0-beta.7.md).
+**Aktuel udgivelse: Aura Prime 0.8.0 beta 1, 12. november 2026.** Den indeholder materialesystemet, @-henvisninger, dokumentvisning og automatisering oven på beta 7; se [ændringsloggen](CHANGELOG.md). Versionen er en udviklingsbeta til macOS på Apple Silicon: [Hent **Aura Prime 0.8.0 beta 1**](https://github.com/Parthee-Vijaya/Aura-Prime/releases/tag/v0.8.0-beta.1) (ad hoc-signeret, ikke notariseret). [Noter og kontrolsummer](docs/releases/aura-prime-0.8.0-beta.1.md). Billederne nedenfor er fra beta 7 på macOS med isolerede testprofiler og det opdigtede projekt *Fjordby arrangementer*; der er endnu ikke taget macOS-billeder af det nye udseende.
 
 ![Aura Prime med integreret logo, projektoversigt og centreret samtalestart](docs/images/aura-prime-0.6.0-beta.7/06-workspace-light.png)
 
-**Opgradering fra beta 5 eller den første beta 6:** Installer denne DMG manuelt. Beta 7 retter opdateringskontrollens metadata og downloadsti; den tidligere app kan ikke hente rettelsen automatisk. Dine lokale projekter og indstillinger bevares.
+**Opgradering fra beta 5 eller den første beta 6:** Installer DMG'en manuelt. De versioner kan ikke hente en opdatering selv; det blev rettet i beta 7. Beta 7 finder 0.8.0 beta 1 ved næste opdateringskontrol, men download og installation derfra er ikke afprøvet, så DMG'en er den sikre vej. Dine lokale projekter og indstillinger bevares.
 
 ## Det nye arbejdsområde
 
@@ -37,7 +37,7 @@ Idéen gemmes som lokal kladde. Oprettelse af et projekt kontakter ikke i sig se
 
 ### Palette, indstillinger og sidepanel
 
-Paletten er neutral. Beta 7 på billederne har blå accent; kildeversion 0.8.0-beta.1 bruger Auras grønne fra logoet ([lyst](docs/images/aura-prime-0.7.0-beta.1/01-workspace-light.png) og [mørkt](docs/images/aura-prime-0.7.0-beta.1/02-workspace-dark.png) fra en Linux-kørsel af kildekoden). Lyst tema har hvide felter og næsten hvid sidebar. Mørkt tema har et mørkt lærred og lidt lysere felter. Auras eget navn og logo bevares.
+Paletten er neutral. Beta 7 på billederne har blå accent; 0.8.0 beta 1 bruger Auras grønne fra logoet ([lyst](docs/images/aura-prime-0.7.0-beta.1/01-workspace-light.png) og [mørkt](docs/images/aura-prime-0.7.0-beta.1/02-workspace-dark.png) fra en Linux-kørsel af kildekoden). Lyst tema har hvide felter og næsten hvid sidebar. Mørkt tema har et mørkt lærred og lidt lysere felter. Auras eget navn og logo bevares.
 
 ![Nyt projekt i mørkt tema med fast opret-handling](docs/images/aura-prime-0.6.0-beta.7/05-new-project-dark.png)
 

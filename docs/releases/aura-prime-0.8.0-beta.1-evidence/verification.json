@@ -1,0 +1,92 @@
+{
+  "format": 1,
+  "release": {
+    "tag": "v0.8.0-beta.1",
+    "title": "Aura Prime 0.8.0 beta 1",
+    "prerelease": true,
+    "publishedAt": "2026-11-12T22:00:52Z",
+    "url": "https://github.com/Parthee-Vijaya/Aura-Prime/releases/tag/v0.8.0-beta.1",
+    "commit": "a714513affc19fbe16bfe83bb8b7695affdcd1e8",
+    "tagType": "commit",
+    "commitOnMain": true
+  },
+  "verifiedAt": "2026-11-12T22:04:22Z",
+  "method": "The four files were downloaded from the published GitHub release in a separate Linux environment and hashed there. This is not a test of the app.",
+  "files": [
+    {
+      "name": "Aura-Prime-0.8.0-beta.1-mac-arm64.dmg",
+      "bytes": 382999682,
+      "sha256": "23715b36d5ad58b048feaeb18b331924dbe40bc6505ac28c634af9208c6c7242"
+    },
+    {
+      "name": "Aura-Prime-0.8.0-beta.1-mac-arm64.zip",
+      "bytes": 375976665,
+      "sha256": "7d45906ce0f12baed79637ad4b5b8564f6ffe447f23c5d36b7d5889658c39137"
+    },
+    {
+      "name": "beta-mac.yml",
+      "bytes": 486,
+      "sha256": "b1a208b10e826aac616cb1bde3943d565f8d9d818770283785d9c43f4ac5f850"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 287,
+      "sha256": "68ab6b5344662694eb10157862511e5893b94d6514da7949d0e5ece7756ab630"
+    }
+  ],
+  "checks": {
+    "downloadedBytesMatchSHA256SUMS": true,
+    "githubDigestsMatchBuildOutput": true,
+    "downloadAddressesMatchRepositoryAndTag": true,
+    "feedHasOneZipEntry": true,
+    "feedSha512AndSizeMatchZip": true,
+    "feedAcceptedByUpdateCheckOf": [
+      "0.6.0-beta.6",
+      "0.6.0-beta.7"
+    ],
+    "feedAddressPublicWithoutLogin": true,
+    "zipReadable": {
+      "entries": 8316,
+      "topLevel": "Aura Prime.app",
+      "bundleVersion": "0.8.0-beta.1",
+      "crc": "ok"
+    }
+  },
+  "feed": {
+    "version": "0.8.0-beta.1",
+    "files": [
+      {
+        "url": "Aura-Prime-0.8.0-beta.1-mac-arm64.zip",
+        "sha512": "rb5/uSbaoWFVpt3t7TEpMtJYTxWhp9RTp9fvVShEmLjt6a65DhHw/JeiplcsuiKHu7kEw40AxfxJKT3wdKqyPA==",
+        "size": 375976665
+      }
+    ],
+    "path": "Aura-Prime-0.8.0-beta.1-mac-arm64.zip",
+    "sha512": "rb5/uSbaoWFVpt3t7TEpMtJYTxWhp9RTp9fvVShEmLjt6a65DhHw/JeiplcsuiKHu7kEw40AxfxJKT3wdKqyPA==",
+    "critical": false,
+    "message": "",
+    "releaseDate": "2026-11-12T22:00:20.724Z"
+  },
+  "buildMachine": {
+    "source": "release text written by desktop/scripts/release-local.cjs",
+    "node": "22.23.3",
+    "fullChecks": {
+      "pass": 2815,
+      "skip": 35,
+      "fail": 0
+    },
+    "acceptance": {
+      "passedSteps": 22,
+      "from": "0.6.0-beta.7"
+    },
+    "signing": "ad hoc, hardened runtime, not notarized",
+    "ci": false
+  },
+  "notTested": [
+    "automatic download and installation from the feed",
+    "the app on another Mac",
+    "real provider keys",
+    "Windows, Intel Mac, Linux command execution",
+    "Apple notarization"
+  ]
+}
