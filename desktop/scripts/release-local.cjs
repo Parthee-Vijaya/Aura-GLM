@@ -273,4 +273,4 @@ async function main([command, ...rest]) {
 }
 if (require.main === module) main(process.argv.slice(2)).catch(error => { console.error(error.message); process.exitCode = 1; });
 
-module.exports = { names, feed, checksums, problems, buildPlan, testCounts, previousRelease, releaseBody, verifyUploaded, build, publish };
+module.exports = { names, feed, checksums, problems, buildPlan, testCounts, previousRelease, releaseBody, verifyUploaded, build, publish, system };
