@@ -11,7 +11,6 @@ const { createReadStream } = require('node:fs');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { spawn, spawnSync, execFileSync } = require('node:child_process');
-const semver = require('semver');
 const distribution = require('../core/distribution.cjs');
 const { assetURL, matchesAssetURL } = require('../../scripts/release-contract.cjs');
 
@@ -19,6 +18,11 @@ const desktop = path.join(__dirname, '..'), repositoryRoot = path.join(desktop, 
 const TARGET = 'darwin-arm64';
 const betaPattern = /^(\d+\.\d+\.\d+)-beta\.(\d+)$/;
 const SIGNING = 'Ad hoc-signeret med hardened runtime og ikke Apple-notariseret';
+// build is what installs the packages, so this file only uses Node and the repository.
+// Beta versions are compared as four numbers; that is their SemVer order among betas.
+const parts = version => betaPattern.exec(version)[0].split(/[.-]|beta/).filter(Boolean).map(Number);
+const older = (a, b) => { const x = parts(a), y = parts(b), at = x.findIndex((value, index) => value !== y[index]); return at !== -1 && x[at] < y[at]; };
+const nodeSupported = version => { const match = /^(\d+)\.(\d+)\.\d+/.exec(version || ''); return Boolean(match) && (Number(match[1]) > 22 || Number(match[1]) === 22 && Number(match[2]) >= 12); };
 
 function names(version) {
   const match = betaPattern.exec(version || '');
@@ -46,7 +50,7 @@ function checksums(files) {
 function problems({ platform, arch, node, version, dirty, tagExists, notesExist, onMain }) {
   const found = [], beta = betaPattern.test(version || '');
   if (platform !== 'darwin' || arch !== 'arm64') found.push(`Udgivelsen bygges på en Mac med Apple-chip. Denne maskine er ${platform}-${arch}.`);
-  if (!semver.valid(node) || semver.lt(node, '22.12.0')) found.push(`Bygningen kræver Node 22.12 eller nyere. Denne terminal bruger ${node}.`);
+  if (!nodeSupported(node)) found.push(`Bygningen kræver Node 22.12 eller nyere. Denne terminal bruger ${node}.`);
   if (!beta) found.push('Versionen i desktop/package.json skal have formen X.Y.Z-beta.N.');
   if (dirty) found.push('Arbejdsmappen har ændringer, som ikke er committet. Pakken skal bygges fra en ren commit.');
   if (tagExists) found.push(`Tagget v${version} findes allerede. Et tag flyttes eller genbruges ikke; vælg næste version.`);
@@ -82,12 +86,12 @@ function previousRelease(releases, version) {
   const candidates = [];
   for (const release of releases) {
     const found = /^v(.+)$/.exec(release.tag_name || '')?.[1];
-    if (release.draft || !betaPattern.test(found || '') || !semver.lt(found, version)) continue;
+    if (release.draft || !betaPattern.test(found || '') || !older(found, version)) continue;
     const asset = (release.assets || []).find(asset => asset.name === names(found).dmg && asset.state === 'uploaded' && /^sha256:[a-f0-9]{64}$/.test(asset.digest || ''));
     if (asset) candidates.push({ version: found, tag: release.tag_name, name: asset.name, sha256: asset.digest.slice(7) });
   }
   if (!candidates.length) return null;
-  const { tag, name, sha256 } = candidates.sort((a, b) => semver.rcompare(a.version, b.version))[0];
+  const { tag, name, sha256 } = candidates.sort((a, b) => older(a.version, b.version) ? 1 : -1)[0];
   return { tag, name, sha256 };
 }
 
