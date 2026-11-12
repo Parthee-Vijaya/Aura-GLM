@@ -129,14 +129,15 @@ class PreviewImages {
     return this.change(root, index => { for (const entry of index.images) if (entry.pair === pair) entry.commit = commit; });
   }
   // Parret for en version, en opgave eller et par. Uden et før-billede bruges det seneste billede af samme visning fra
-  // før, hvis der findes et, så en version, du selv har gemt, også kan sammenlignes.
+  // før, hvis der findes et, så en version, du selv har gemt, også kan sammenlignes. "Før" er rækkefølgen i listen,
+  // som billederne føjes til: to billeder kan have samme tidsstempel i millisekunder.
   async pairFor(root, { commit, task, pair }) {
     const { images } = await this.index(root);
     const after = [...images].reverse().find(entry => entry.role === 'after' && ((commit && entry.commit === commit) || (task && entry.task === task) || (pair && entry.pair === pair)));
     const any = after || [...images].reverse().find(entry => (commit && entry.commit === commit) || (task && entry.task === task) || (pair && entry.pair === pair));
     if (!any) return null;
     let before = images.find(entry => entry.role === 'before' && entry.pair === any.pair) || null;
-    if (!before && after) before = [...images].reverse().find(entry => entry.role === 'after' && entry.at < after.at && sameView(entry.view, after.view)) || null;
+    if (!before && after) before = images.slice(0, images.indexOf(after)).reverse().find(entry => entry.role === 'after' && sameView(entry.view, after.view)) || null;
     return { before: before && strip(before), after: after && strip(after), view: (after || any).view };
   }
   // Det seneste billede af den samme visning, fx før en version, du selv gemmer.

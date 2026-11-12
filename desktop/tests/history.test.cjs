@@ -138,6 +138,22 @@ test('en versions filer og indhold vises kun, når det er sikkert', async t => {
   await assert.rejects(history.file(r.root, second, '../x'), /Vælg en fil/);
 });
 
+test('et selvgemt billede får det forrige billede af samme visning som før-billede, også i samme millisekund', async t => {
+  // På en hurtig maskine får to billeder samme tidsstempel. Rækkefølgen i listen afgør, hvad der kom før.
+  t.mock.timers.enable({ apis: ['Date'], now: 1_800_000_000_000 });
+  const directory = await temp(t), root = path.join(directory, 'projekt');
+  const images = new PreviewImages({ root: path.join(directory, 'data'), projectKey: () => 'nogle' });
+  const view = { page: '', width: 800, height: 600 }, jpeg = Buffer.from('ffd8ffe0', 'hex');
+  const add = meta => images.add(root, jpeg, { role: 'after', view, ...meta });
+  const first = await add(), previous = await add(), otherView = await add({ view: { ...view, width: 900 } });
+  const manual = await add({ commit: 'd'.repeat(40) }), later = await add();
+  assert.equal(new Set([first, previous, otherView, manual, later].map(entry => entry.at)).size, 1, 'alle fem billeder har samme tidsstempel');
+  const pair = await images.pairFor(root, { commit: 'd'.repeat(40) });
+  assert.equal(pair.after.id, manual.id);
+  assert.equal(pair.before?.id, previous.id, 'det seneste tidligere billede af samme visning; ikke et senere og ikke en anden visning');
+  assert.equal((await images.pairFor(root, { pair: first.pair })).before, null, 'det første billede har intet før-billede');
+});
+
 test('billederne gemmes i par i appens data, bindes til en version og ryddes efter 80', async t => {
   const directory = await temp(t), root = path.join(directory, 'projekt');
   const store = { root: path.join(directory, 'data'), projectKey: () => 'nogle' }, images = new PreviewImages(store);

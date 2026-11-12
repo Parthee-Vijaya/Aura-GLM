@@ -10,6 +10,7 @@ Fire tilføjelser efter gennemgangen af referenceappen. Ingen af dem sender noge
 - **Aktivitet** viser antal målte trin og deres samlede tid i værktøjer.
 - **Automatisering:** en planlagt opgave (én gang, hver dag eller hver uge) lægger sin tekst klar i skrivefeltet på tidspunktet. Du sender den selv. Opgaver udløses kun, mens Aura er åben; tid, der er gået mens appen var lukket, giver én levering. Se [docs/automatisering.md](docs/automatisering.md).
 - Fokus: at skrive i et tekstfelt tæller ikke som tastaturnavigation, så skrivefeltets ring vises ved Tab, ikke under skrivning.
+- **Rettet:** en version, du selv gemmer, får nu det forrige billede af samme visning som før-billede, også når de to billeder er gemt i samme millisekund. Før blev de sammenlignet på tidsstempel, og på en hurtig maskine manglede før-billedet.
 - **Lokal udgivelse uden CI:** `desktop/scripts/release-local.cjs` bygger, afprøver og samler en Mac-beta på udgiverens egen Mac og offentliggør den først, når GitHubs filer matcher de afprøvede. Se [docs/udgivelse.md](docs/udgivelse.md).
 
 Ikke med i denne runde: @-henvisning til tidligere samtaler, formateret visning af Markdown og regneark, MCP-forbindelser under Skills og udvidelser, og opgaver der sender uden dig. Kontrolleret i den kørende app i en Linux-kørsel; PDF-visning er kun kontrolleret i test.
