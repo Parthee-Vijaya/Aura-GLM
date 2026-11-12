@@ -8,6 +8,8 @@ Installationsfilerne ligger i GitHub Releases. [GitHub Pages](https://ai-allianc
 
 Betaerne i 0.6.0-rækken blev bygget og uploadet fra udgiverens egen Mac. `desktop/scripts/release-local.cjs` gør det forløb gentageligt. Det dækker én ad hoc-signeret pakke til Mac med Apple-chip og erstatter ikke det notariserede forløb nedenfor.
 
+Byg med samme Node som `check.yml`, 22.23.3 fra nodejs.org. Med Homebrews Node 26.13 blev pakkearkiverne ikke byte-ens med de committede, og den samlede kontrol stoppede bygningen. Efter første `runtime:prepare` ligger det kontrollerede arkiv i `desktop/.cache/runtime/`; pak det ud uden for repositoryet, og sæt dets `bin` forrest i `PATH` for terminalvinduet. Brug ikke Node i `desktop/.runtime/`: den mappe udskiftes under bygningen.
+
 Kør fra `desktop/` i en ren checkout af den `main`, der skal udgives:
 
 ```bash
