@@ -147,6 +147,34 @@ test('uploaded files must match the tested files byte for byte before the releas
   }
 });
 
+test('the command loads in a fresh clone, before any package is installed', () => {
+  // build is what runs npm ci, so the script and everything it loads may only use Node itself and files in the repository.
+  const seen = new Set(), outside = [];
+  const visit = file => {
+    if (seen.has(file)) return; seen.add(file);
+    for (const [, specifier] of require('node:fs').readFileSync(file, 'utf8').matchAll(/\brequire\(\s*['"]([^'"]+)['"]\s*\)/g)) {
+      if (specifier.startsWith('node:')) continue;
+      if (!specifier.startsWith('.')) { outside.push(`${path.basename(file)} requires ${specifier}`); continue; }
+      const target = require.resolve(path.resolve(path.dirname(file), specifier));
+      if (target.endsWith('.cjs')) visit(target);
+    }
+  };
+  visit(path.join(__dirname, '..', 'scripts', 'release-local.cjs'));
+  assert.deepEqual(outside, []);
+  assert.ok(seen.size >= 3, 'the walk followed the script into the modules it loads');
+});
+
+test('versions are ordered as numbers, not as text', () => {
+  const release = version => ({ tag_name: 'v' + version, draft: false, assets: [{ name: local.names(version).dmg, state: 'uploaded', digest: 'sha256:' + 'a'.repeat(64) }] });
+  const pick = (versions, current) => local.previousRelease(versions.map(release), current)?.tag;
+  assert.equal(pick(['0.6.0-beta.7', '0.6.0-beta.10', '0.6.0-beta.9'], '0.8.0-beta.1'), 'v0.6.0-beta.10');
+  assert.equal(pick(['0.9.0-beta.1', '0.10.0-beta.1', '0.2.0-beta.30'], '0.10.0-beta.2'), 'v0.10.0-beta.1');
+  assert.equal(pick(['0.8.0-beta.1', '0.8.0-beta.2', '1.0.0-beta.1'], '0.8.0-beta.1'), undefined, 'the same and later versions are never the previous one');
+  const node = version => local.problems({ platform: 'darwin', arch: 'arm64', node: version, version: next, dirty: false, tagExists: false, notesExist: true, onMain: true }).length;
+  assert.deepEqual(['22.12.0', '22.23.3', '24.22.1', '100.0.0'].map(node), [0, 0, 0, 0]);
+  assert.deepEqual(['22.11.9', '20.19.0', '9.99.99', 'unknown', undefined].map(node), [1, 1, 1, 1, 1]);
+});
+
 // build and publish run here against a fake machine: every command the script would start is
 // recorded and answered from memory, and its files go to a temporary folder. Nothing is
 // installed, packaged, uploaded or fetched.
