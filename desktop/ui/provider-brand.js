@@ -15,9 +15,25 @@
     }
     return typeof kind === 'string' && Object.hasOwn(ASSETS, kind) ? ASSETS[kind] : null;
   }
+  // Catalog providers without a bundled logo get a neutral lettermark tile:
+  // no third-party artwork, so no logo licence is implied.
+  const LETTERMARKS = Object.freeze({
+    google: ['G', '#4285f4'], groq: ['Gq', '#f55036'], together: ['T', '#0f6fff'], fireworks: ['F', '#6720ff'],
+    cerebras: ['C', '#f05a28'], xai: ['x', '#111111'], perplexity: ['P', '#20808d'], huggingface: ['HF', '#ff9d00'],
+    nvidia: ['N', '#76b900'], moonshot: ['K', '#1f1f1f'], cloudflare: ['CF', '#f38020'], lmstudio: ['LM', '#4b5bdc'], vllm: ['vL', '#30a2ff']
+  });
+  function lettermark(kind, ownerDocument) {
+    if (!Object.hasOwn(LETTERMARKS, kind) || !ownerDocument?.createElement) return null;
+    const [letters, color] = LETTERMARKS[kind];
+    const tile = ownerDocument.createElement('span');
+    tile.className = 'provider-brand-icon provider-lettermark'; tile.textContent = letters;
+    tile.style?.setProperty?.('--lettermark', color); tile.setAttribute('aria-hidden', 'true');
+    return tile;
+  }
   function icon(kind, modelID, ownerDocument) {
     const src = asset(kind, modelID);
-    if (!src || !ownerDocument?.createElement) return null;
+    if (!src) return lettermark(kind, ownerDocument);
+    if (!ownerDocument?.createElement) return null;
     const image = ownerDocument.createElement('img');
     image.className = 'provider-brand-icon'; image.src = src; image.alt = '';
     image.width = 18; image.height = 18; image.draggable = false;
@@ -35,7 +51,7 @@
     const image = modelID ? icon(kind, modelID, button.ownerDocument) : null;
     button.replaceChildren(...(image ? [image, text] : [text]), ...(effort ? [effort] : []));
   }
-  const api = Object.freeze({ asset, icon, decorate });
+  const api = Object.freeze({ asset, icon, decorate, lettermark });
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof window !== 'undefined') window.ProviderBrand = api;
 })();

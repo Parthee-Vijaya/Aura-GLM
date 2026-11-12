@@ -27,7 +27,7 @@ function checkedText(value, max, required = false) {
 }
 function buildRequest(selection, messages, system = SYSTEM) {
   const { connection, model, route } = selection;
-  const responses = connections.usesResponses(connection), anthropic = connection.kind === 'anthropic' || connection.kind === 'zen' && /^claude-/.test(model.id);
+  const responses = connections.usesResponses(connection), anthropic = connections.usesAnthropic(connection, model);
   // Reasoning shares the output allowance. Keep room for the short visible
   // proposal without changing the user's/provider's chosen effort level.
   const output = Math.min(connections.reasons(connection, model) ? 32768 : 8192, connections.modelLimits(connection, model).output);

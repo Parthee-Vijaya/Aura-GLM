@@ -13,7 +13,7 @@ async function executable(file) {
   }
 }
 async function sandboxPrerequisiteReason({ platform = process.platform, canExecute = executable } = {}) {
-  if (!['darwin', 'linux'].includes(platform)) return `OS-isolation er ikke understøttet på ${platform}.`;
+  if (platform !== 'darwin') return `Kommandoprocessernes afslutning er ikke kvalificeret på ${platform}; native kommandoprøver kræver macOS.`;
   const programs = platform === 'darwin' ? ['/usr/bin/sandbox-exec'] : ['bwrap', 'socat'];
   const missing = [];
   for (const program of programs) {

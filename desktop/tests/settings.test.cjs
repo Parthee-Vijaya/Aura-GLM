@@ -92,7 +92,7 @@ function selectWithin(root, selector) {
     return true;
   });
 }
-const POPOVER_BUTTON = { profile: 'settings-profile-button', appearance: 'settings-appearance-button', connections: 'connections-button', features: 'features-button', updates: 'updates-button', support: 'support-button' };
+const POPOVER_BUTTON = { profile: 'settings-profile-button', appearance: 'settings-appearance-button', connections: 'connections-button', features: 'features-button', plugins: 'plugins-button', updates: 'updates-button', support: 'support-button' };
 function makeDom() {
   const document = { activeElement: null };
   document.listeners = {};
@@ -199,8 +199,8 @@ function makeSettings(dom, harness, { themes = [] } = {}) {
 }
 const openSection = async (settings, section) => { await settings.open(section); await flush(); };
 
-test('seks sektioner i fast rækkefølge med navne og ærlige beskrivelser', () => {
-  assert.deepEqual(Settings.SECTIONS.map(section => section.id), ['profile', 'appearance', 'connections', 'features', 'updates', 'support']);
+test('syv sektioner i fast rækkefølge med navne og ærlige beskrivelser', () => {
+  assert.deepEqual(Settings.SECTIONS.map(section => section.id), ['profile', 'appearance', 'connections', 'features', 'plugins', 'updates', 'support']);
   assert.equal(sectionOf('profile').label, 'Lokal profil');
   assert.equal(sectionOf('appearance').label, 'Generelt');
   for (const section of Settings.SECTIONS) {
@@ -927,7 +927,7 @@ test('fokus stjæles ikke fra en dialog, der er åbnet i stedet', () => {
   assert.equal(dom.document.activeElement, navButton(dom, 'profile'), 'settings-dialogen rører ikke fokus, mens en anden dialog er åben');
 });
 
-test('app.js binder popoverens seks punkter til openSettings og registrerer de etablerede åbnerfunktioner', () => {
+test('app.js binder popoverens syv punkter til openSettings og registrerer de etablerede åbnerfunktioner', () => {
   const dom = makeDom();
   const opened = [], registered = [];
   const opener = { connections: () => {}, features: () => {}, support: () => {} };
@@ -991,7 +991,7 @@ test('index.html: settings-dialogen har seks nav-punkter, ikoner, indholdspanel 
   }
 });
 
-test('index.html: popoveren har seks punkter med de bevarede id\'er og ikoner', () => {
+test('index.html: popoveren har syv punkter med de bevarede id\'er og ikoner', () => {
   const menuStart = index.indexOf('<div id="settings-menu"');
   assert.ok(menuStart >= 0);
   const menu = index.slice(menuStart, index.indexOf('</div>', menuStart));

@@ -1,6 +1,6 @@
 # Nyt projekt og referencepalette
 
-Kontrolleret 4. november 2026 for Aura Prime 0.6.0-beta.2. Brugeren bad om en projektformular uden unødvendig scrolling og de samme farver som den installerede DeepSeek Harness-app.
+Kontrolleret 4. november 2026 for Aura Prime 0.6.0-beta.2. Brugeren bad om en projektformular uden unødvendig scrolling og de samme farver som den installerede referenceapp.
 
 ## Ændring
 
@@ -10,7 +10,7 @@ Ved normal tekststørrelse viser et native vindue på **980×720** hele standard
 
 ## Farver
 
-Værdierne er læst fra theme-modulet i den faktisk installerede **DeepSeek Harness 0.2.1-rc.5**. Det aktuelle kildeklons nyere palette blev ikke brugt som erstatning for den installerede version. Der er ikke kopieret private samtaler eller referencebilleder ind i repositoryet.
+Værdierne er læst fra theme-modulet i den faktisk installerede referenceapp. Det aktuelle kildeklons nyere palette blev ikke brugt som erstatning for den installerede version. Der er ikke kopieret private samtaler eller referencebilleder ind i repositoryet.
 
 | Rolle | Lyst | Mørkt |
 | --- | --- | --- |

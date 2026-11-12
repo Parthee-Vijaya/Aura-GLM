@@ -2,27 +2,34 @@
 
 Aura Prime hjælper dig fra idé til plan, kode og forhåndsvisning i et lokalt arbejdsområde. Appen bygger videre på [Aura Harness fra AI Alliancen](https://github.com/ai-alliancen-org/ai-harness) med OpenCode som kodeagent og frit valg af AI-forbindelse.
 
-**Aktuel kildeversion: `0.8.0-beta.1`, 12. november 2026.** Denne gren indfører ét materialesystem oven på det nye UI/UX og tilføjer @-henvisninger, dokumentvisning og automatisering. Skærmbillederne er fra `0.7.0-beta.1` (før de nye sidepanelrækker), optaget fra den kørende Electron-app i en Linux-kørsel af kildekoden med en separat testprofil og det opdigtede projekt *Fjordby arrangementer*. Skrifttype og vinduesramme afviger derfor fra macOS. Versionen er en udviklingsbeta; denne opdatering udgiver ingen ny installer.
+**Aktuel kildeversion: `0.8.0-beta.1` (ikke udgivet), 12. november 2026.** Kilden indeholder materialesystemet, @-henvisninger, dokumentvisning og automatisering oven på beta 7; se [ændringsloggen](CHANGELOG.md). Seneste udgivelse er beta 7. Alle billeder nedenfor er fra den færdige beta 7 på macOS med isolerede testprofiler og det opdigtede projekt *Fjordby arrangementer*. Versionen er en udviklingsbeta til macOS på Apple Silicon: [Hent **Aura Prime 0.6.0 beta 7**](https://github.com/Parthee-Vijaya/Aura-Prime/releases/tag/v0.6.0-beta.7) (ad hoc-signeret, ikke notariseret). [Noter og kontrolsummer](docs/releases/aura-prime-0.6.0-beta.7.md).
 
-![Aura Prime med integreret logo, projektoversigt og centreret samtalestart](docs/images/aura-prime-0.7.0-beta.1/01-workspace-light.png)
+![Aura Prime med integreret logo, projektoversigt og centreret samtalestart](docs/images/aura-prime-0.6.0-beta.7/06-workspace-light.png)
+
+**Opgradering fra beta 5 eller den første beta 6:** Installer denne DMG manuelt. Beta 7 retter opdateringskontrollens metadata og downloadsti; den tidligere app kan ikke hente rettelsen automatisk. Dine lokale projekter og indstillinger bevares.
 
 ## Det nye arbejdsområde
 
-Det fulde redesign tager udgangspunkt i den installerede DeepSeek Harness-app og dens opstartsforløb. Aura beholder sit eget navn, logo og sine eksisterende funktioner.
+Det fulde redesign giver en roligere arbejdsapp med et nyt opstartsforløb. Aura beholder sit eget navn, logo og sine eksisterende funktioner.
 
 - **Ingen konto eller login til Aura.** Start direkte, eller opret en valgfri lokal profil. Navn og ikon kan stå tomme. Profil og indstillinger gemmes på computeren.
 - **En rolig start.** Et kompakt velkomstvindue åbner projektopsætningen. Arbejdsdetaljer, AI-forbindelser og idéhjælp er stadig tilgængelige gennem onboarding.
 - **Et integreret logo.** Aura-identiteten indgår i velkomst, sidebar og den centrerede samtalestart.
 - **En sidebar, der kan skjules helt.** Åbn den igen fra arbejdsområdets top. Projekter, samtaler, søgning og indstillinger er samlet til venstre.
+- **Flere AI-udbydere og plugins.** Under AI-forbindelser ligger de kendte udbydere som kort, og nye som Google Gemini, Groq, xAI og LM Studio i en dropdown. Under Plugins styrer du webhentning og kontekstvisning. Plugins, der endnu ikke kan dækkes sikkert, står med en begrundelse.
 - **Samlede indstillinger.** Lokal profil, generelle valg, AI-forbindelser, funktioner, opdateringer og hjælp har samme navigation. Vælg lyst, mørkt eller systemets tema, og justér tekststørrelsen.
 - **Ét materialesystem.** Seks radiustrin, hårstreger på 0,5 px, bløde elevationer uden kant og fokusringe, der følger tastaturet. Accenten er Auras egen grønne. Se [designkontrakten](desktop/DESIGN.md).
 - **Adgang til arbejdsdetaljer.** Samtalen og arbejdssporet supplerer forhåndsvisning, plan, ændringer, kode og aktivitet. Det midlertidigt lukkede panel i en ny samtale overskriver ikke dit gemte layoutvalg.
 
 ### Fra første åbning til projekt
 
+![Velkomst uden konto og med mulighed for at fortsætte uden profil](docs/images/aura-prime-0.6.0-beta.7/01-welcome-light.png)
+
 Vælg **Kom i gang** for det guidede forløb eller **Fortsæt uden profil** for at gå direkte til projektidéen. En AI-forbindelse kan tilføjes senere. Den lokale profil kræver ingen registrering.
 
-![Projektopsætning med navn, idé, lokal kladde og projektplacering](docs/images/aura-prime-0.7.0-beta.1/03-new-project-light.png)
+![Valgfri lokal profil i det guidede opstartsforløb](docs/images/aura-prime-0.6.0-beta.7/02-local-profile-light.png)
+
+![Projektopsætning med navn, idé, lokal kladde og projektplacering](docs/images/aura-prime-0.6.0-beta.7/04-new-project-light.png)
 
 **Nyt projekt kræver ingen scrolling i standardvisningen ved 980 × 720 og normal tekststørrelse.** Navn, idé, tilvalg, placering og Opret er synlige. Åbnede tilvalg og længere indhold kan rulle, mens opret-handlingen bliver stående.
 
@@ -30,21 +37,27 @@ Idéen gemmes som lokal kladde. Oprettelse af et projekt kontakter ikke i sig se
 
 ### Palette, indstillinger og sidepanel
 
-Paletten følger de faktiske farver i installeret DeepSeek Harness 0.2.1-rc.5. Lyst tema har hvide felter og næsten hvid sidebar. Mørkt tema bruger referenceappens mørke lærred og felter. Accenten er fra 0.7.0 Auras egen grønne, og Auras navn og logo bevares.
+Paletten er neutral. Beta 7 på billederne har blå accent; kildeversion 0.8.0-beta.1 bruger Auras grønne fra logoet ([lyst](docs/images/aura-prime-0.7.0-beta.1/01-workspace-light.png) og [mørkt](docs/images/aura-prime-0.7.0-beta.1/02-workspace-dark.png) fra en Linux-kørsel af kildekoden). Lyst tema har hvide felter og næsten hvid sidebar. Mørkt tema har et mørkt lærred og lidt lysere felter. Auras eget navn og logo bevares.
 
-![Samtalestart i mørkt tema med skrivefelt uden kant](docs/images/aura-prime-0.7.0-beta.1/02-workspace-dark.png)
-
-![Nyt projekt i mørkt tema med fast opret-handling](docs/images/aura-prime-0.7.0-beta.1/04-new-project-dark.png)
+![Nyt projekt i mørkt tema med fast opret-handling](docs/images/aura-prime-0.6.0-beta.7/05-new-project-dark.png)
 
 Profilen er fortsat valgfri og lokal. Tema, skriftstørrelse og arbejdsdetaljer ændres i de samlede indstillinger. Sidepanelet kan skjules helt og åbnes igen fra arbejdsområdets top.
 
-Billederne er faktiske appoptagelser, ikke designmockups. De viser syntetiske data og ingen modelbesvarelser.
+![Lokal profil i de samlede indstillinger](docs/images/aura-prime-0.6.0-beta.7/09-settings-profile-light.png)
+
+![Generelle indstillinger i mørkt tema](docs/images/aura-prime-0.6.0-beta.7/10-settings-dark.png)
+
+![Arbejdsområde med helt skjult sidebar i mørkt tema](docs/images/aura-prime-0.6.0-beta.7/08-sidebar-hidden-dark.png)
+
+Billederne er direkte optagelser af den pakkede Electron-app med syntetiske data og ingen modelbesvarelser. [Alle 11 optagelser og målinger](docs/releases/beta7-evidence/qualification.json) omfatter også den lyse skjulte sidebar og den mørke arbejdsflade.
 
 ## Funktionerne følger med
 
 Arbejd videre med **Samtale, Planlæg og Byg**, lokale projekter, historik, kladder, modelvalg, forbrug og kontekst. Vedhæft tekstfiler, billeder og PDF, eller vælg en referencemappe med læseadgang. Skriv @ i skrivefeltet for at henvise til en projektfil, og åbn Word, Excel og PDF som udtrukket tekst i Kode-fanen. Gennemgå planer, filændringer og værktøjshandlinger, og afprøv understøttede webprojekter i forhåndsvisningen.
 
 Redesignet bevarer datagennemgang, Privacy Gate, godkendelser, Stop/genoptagelse og lokale Git-versioner. YOLO under Byg kræver fortsat advarsel og bekræftelse, gælder kun den aktuelle samtale og ophæver ikke beskyttede filer eller datadelingsgrænser.
+
+Stop afslutter også løsrevne underprocesser pr. kommando på macOS. Linux og Windows har endnu ikke denne kvalificerede kommandokørsel. Terminalgrænser, websøgning og MCP er fortsat utilgængelige; blandt andet mangler et samlet output- og outputfil-loft. De nye udbydere er ikke alle afprøvet med rigtige nøgler. [Betaens kvalifikation og begrænsninger](docs/releases/aura-prime-0.6.0-beta.7.md).
 
 - [Privacy Gate og isolation](docs/privacy-gate.md)
 - [YOLO og samtaletilladelser](docs/yolo.md)

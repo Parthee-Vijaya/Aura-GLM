@@ -236,4 +236,4 @@ async function probeIsolationSupport({ runtimeRoot, reaperPath = defaultHelperPa
   availabilityCache.set(key, promise);
   return promise;
 }
-module.exports = { createEngineIsolation, probeIsolationSupport, makeProfile, gatewayAddress, createOfflineRendererIsolation, createOfflineProcessIsolation };
+module.exports = { verifyHostHelper, createEngineIsolation, probeIsolationSupport, makeProfile, gatewayAddress, createOfflineRendererIsolation, createOfflineProcessIsolation };

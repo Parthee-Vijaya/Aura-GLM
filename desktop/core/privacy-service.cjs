@@ -7,6 +7,7 @@ const path = require('node:path');
 const { randomUUID, randomBytes, createHmac, createHash } = require('node:crypto');
 const { PrivacyGate, PrivacyGateError, composePolicy, inheritClassification, inspectRequest, takeLocalChoice } = require('./privacy/index.cjs');
 const { stable, validateDestination } = require('./privacy/policy.cjs');
+const { modelCatalogURL } = require('./connections.cjs');
 
 // A profile has multiple workbenches, all of which share these files. A queue
 // per PrivacyService would lose audit records and race monotonic floor writes.
@@ -447,7 +448,7 @@ class PrivacyService {
       if (address !== undefined && address !== target) throw new PrivacyGateError('PRIVACY_DESTINATION_INVALID', 'Katalogadressen svarer ikke til den valgte forbindelse.');
       return true;
     };
-    const target = connection.baseURL + (kind === 'models' ? connection.kind === 'ollama' ? '/api/tags' : '/models' : '/models/' + modelID.split('/').map(encodeURIComponent).join('/') + '/endpoints');
+    const target = kind === 'models' ? modelCatalogURL(connection) : connection.baseURL + '/models/' + modelID.split('/').map(encodeURIComponent).join('/') + '/endpoints';
     await this.assertSelection(scope, { connectionID: connection.id, modelID }); current();
     const saved = (await this.bench.store.read()).connections.find(item => item.id === connection.id);
     if (!saved || stable(saved) !== stable(connection)) throw new PrivacyGateError('PRIVACY_STALE', 'AI-forbindelsen er ændret. Ingen ny katalogforespørgsel er tilladt.');
@@ -512,13 +513,20 @@ class PrivacyService {
     const id = randomUUID();
     const expiresAt = Math.min(review.expiresAt || this.now() + 120000, this.now() + 120000);
     return new Promise((resolve, reject) => {
-      const finish = decision => { clearTimeout(timer); signal?.removeEventListener('abort', aborted); this.pending.delete(id); this.bench.emit({ type: 'privacy.resolved', id, decision }); resolve(decision); };
-      const aborted = () => { clearTimeout(timer); this.pending.delete(id); this.bench.emit({ type: 'privacy.resolved', id, decision: 'cancel' }); reject(signal.reason || new Error('Delingen blev afbrudt.')); };
+      let endPhaseWait;
+      const releasePhase = () => { try { endPhaseWait?.(); } catch { /* Phase observation cannot affect approval. */ } };
+      const finish = decision => { clearTimeout(timer); signal?.removeEventListener('abort', aborted); this.pending.delete(id); releasePhase(); this.bench.emit({ type: 'privacy.resolved', id, decision }); resolve(decision); };
+      const aborted = () => { clearTimeout(timer); this.pending.delete(id); releasePhase(); this.bench.emit({ type: 'privacy.resolved', id, decision: 'cancel' }); reject(signal.reason || new Error('Delingen blev afbrudt.')); };
       const timer = setTimeout(() => finish('cancel'), Math.max(0, expiresAt - this.now()));
       const publicReview = { ...review, id, body: review.payload, recipient: review.destination?.label || review.destination?.id, model: review.destination?.model, policyVersion: (review.policyVersions || []).map(item => `${item.layer}:${item.version}`).join(' / '), expiresAt, allowedDecisions: ['approve', 'local', 'cancel'] };
       this.pending.set(id, { id, scope, review: publicReview, finish });
       signal?.addEventListener('abort', aborted, { once: true });
       if (signal?.aborted) { aborted(); return; }
+      // Only the host-bound conversation owns this wait, even after a tab change.
+      try {
+        const chat = scope?.kind === 'conversation' ? this.bench.chats?.get(scope.chat) || (this.bench.chat?.id === scope.chat ? this.bench.chat : null) : null;
+        if (chat && (chat.project?.root || this.bench.project?.root) === scope.root) endPhaseWait = chat.workPhases?.waitForApproval?.();
+      } catch { /* Phase observation cannot affect approval. */ }
       this.bench.emit({ type: 'privacy.review', ...publicReview });
     });
   }

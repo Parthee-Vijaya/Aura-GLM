@@ -237,3 +237,84 @@ body.native-welcome-window #welcome-dialog::backdrop { background: var(--aura-bg
    quiet secondary ink so it no longer competes with "Åbn et projekt". */
 #welcome-dialog #welcome-back { color: var(--aura-ink-secondary); font-weight: 450; }
 #welcome-dialog #welcome-back:hover { color: var(--aura-ink); }
+
+/* Udbyderkatalog (4.11): segmenteret valg mellem katalog og egen API,
+   én dropdown og en ærlig vilkårslinje. */
+.provider-catalog { display: grid; gap: 8px; margin: 16px 0 6px; padding: 16px; border-radius: 16px; background: var(--aura-bg-tint); border: 1px solid var(--aura-border); }
+.provider-catalog #catalog-lead { margin: 0; }
+.provider-catalog #catalog-panel { display: grid; gap: 6px; }
+.provider-catalog #catalog-panel[hidden] { display: none; }
+.provider-catalog label { font-size: 12px; font-weight: 600; color: var(--aura-ink); }
+.provider-catalog select { width: min(360px, 100%); min-height: 38px; }
+.provider-catalog .catalog-terms { margin: 2px 0 0; }
+.provider-catalog .catalog-terms[data-verified="false"] { color: var(--aura-warning-ink); }
+#custom-api-fields { display: grid; gap: 6px; margin: 8px 0 12px; }
+#custom-api-fields[hidden] { display: none; }
+#custom-api-fields .hint { margin: 0 0 6px; }
+/* In the add flow the catalog drives the kind; the form's own picker is for editing. */
+#add-connection-home label[for="provider-kind"], #add-connection-home #provider-kind { display: none; }
+
+/* Plugins (4.11) — rows after the reference: icon tile, title and summary,
+   control on the right; unavailable plugins say why instead of pretending. */
+.plugin-group { margin: 22px 0 0; }
+.plugin-group h4, .plugin-mcp h4 { margin: 0 0 10px; font-size: 14px; font-weight: 600; color: var(--aura-ink); }
+.plugin-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 10px 0; }
+.plugin-icon { display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--aura-border); background: var(--aura-bg-raised); color: var(--plugin-color, var(--aura-accent)); }
+.plugin-icon svg { width: 22px; height: 22px; }
+.plugin-text { display: grid; gap: 2px; min-width: 0; }
+.plugin-text strong { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--aura-ink); }
+.plugin-text small { font-size: 12px; line-height: 1.45; color: var(--aura-ink-secondary); }
+.plugin-text .plugin-reason { color: var(--aura-ink-muted); }
+.plugin-badge { padding: 1px 7px; border-radius: 6px; background: var(--aura-accent-subtle); color: var(--aura-accent-ink); font-size: 11px; font-weight: 500; }
+.plugin-row[data-unavailable="true"] .plugin-icon { opacity: .6; }
+.plugin-switch { position: relative; width: 38px; height: 22px; min-height: 22px; padding: 0; border: 0; border-radius: 999px; background: var(--aura-bg-active); cursor: pointer; }
+.plugin-switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--aura-bg-raised); box-shadow: 0 1px 2px rgba(0,0,0,.2); transition: transform 150ms ease; }
+.plugin-switch[aria-checked="true"] { background: var(--aura-accent); }
+.plugin-switch[aria-checked="true"]::after { transform: translateX(16px); }
+.plugin-switch:disabled { cursor: not-allowed; opacity: .5; }
+.plugin-switch:focus-visible, .plugin-select:focus-visible { outline: 2px solid var(--aura-accent); outline-offset: 2px; }
+.plugin-select { min-height: 32px; }
+.plugin-state { font-size: 12px; color: var(--aura-ink-muted); }
+.plugin-fields { display: grid; gap: 6px; justify-items: end; }
+.plugin-field { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--aura-ink-secondary); }
+.plugin-field input { width: 76px; min-height: 30px; text-align: right; }
+.plugin-field input:focus-visible { outline: 2px solid var(--aura-accent); outline-offset: 2px; }
+.plugin-unit { min-width: 28px; color: var(--aura-ink-muted); }
+.plugin-mcp { margin: 24px 0 0; padding: 16px; border: 1px solid var(--aura-border); border-radius: 14px; }
+.plugin-mcp-list { display: grid; gap: 6px; margin: 8px 0 12px; }
+.plugin-mcp-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 12px; }
+.plugin-mcp-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--aura-font-mono, ui-monospace, monospace); }
+.plugin-mcp-form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; align-items: end; }
+.plugin-mcp-form > :nth-child(3) { grid-column: 1 / -1; }
+.plugin-mcp-form button[type="submit"] { justify-self: start; }
+@media (prefers-reduced-motion: reduce) { .plugin-switch::after { transition: none; } }
+.plugin-reason summary { width: max-content; font-size: 12px; color: var(--aura-accent-ink); cursor: pointer; list-style: none; }
+.plugin-reason summary::-webkit-details-marker { display: none; }
+.plugin-reason[open] summary { margin-bottom: 2px; }
+.plugin-waiting .plugin-row { padding: 8px 0; }
+.plugin-waiting .plugin-state { padding: 2px 8px; border-radius: 6px; background: var(--aura-bg-hover); }
+#settings-dialog .plugin-switch { background: var(--aura-bg-active); border: 0; }
+#settings-dialog .plugin-switch[aria-checked="true"] { background: var(--aura-accent); }
+#settings-dialog .plugin-switch:hover:not(:disabled) { filter: brightness(.97); }
+.provider-catalog[hidden] { display: none; }
+
+/* Forbindelsestjek i trin (4.11) */
+.connection-diagnose { margin: 20px 0 0; padding: 14px 16px; border: 1px solid var(--aura-border); border-radius: 14px; }
+.connection-diagnose h4 { margin: 0 0 4px; font-size: 13px; font-weight: 600; }
+.connection-diagnose .hint { margin: 0 0 10px; }
+.diagnose-steps { display: grid; gap: 6px; margin: 12px 0 0; padding: 0; list-style: none; }
+.diagnose-step { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; align-items: center; gap: 4px 10px; font-size: 13px; }
+.diagnose-step::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--aura-ink-muted); }
+.diagnose-step[data-status="ok"]::before { background: var(--aura-success-ink); }
+.diagnose-step[data-status="failed"]::before { background: var(--aura-error-ink); }
+.diagnose-step[data-status="unknown"]::before { background: var(--aura-warning-ink); }
+.diagnose-step small { grid-column: 2 / -1; font-size: 12px; color: var(--aura-ink-secondary); }
+.diagnose-status { font-size: 12px; color: var(--aura-ink-secondary); }
+.provider-helper { margin: 6px 0 12px; }
+#cloudflare-fields { display: grid; gap: 6px; }
+#cloudflare-fields[hidden], #local-port-help[hidden] { display: none; }
+#cloudflare-destination { margin: 0; overflow-wrap: anywhere; }
+.local-discovery-more { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
+.local-discovery-more[hidden] { display: none; }
+.provider-catalog .catalog-terms[data-stale="true"] { color: var(--aura-warning-ink); }
+#connection-add-flow > .catalog-terms { margin: -4px 0 14px; }

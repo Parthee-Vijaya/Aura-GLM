@@ -1,0 +1,230 @@
+{
+  "version": "0.6.0-beta.7",
+  "sourceCommit": "fc972f06370ed6568299bfdd2696f659bd9e161e",
+  "fullChecks": {
+    "pass": 2755,
+    "skip": 34,
+    "fail": 0
+  },
+  "finalContracts": {
+    "pass": 19,
+    "fail": 0
+  },
+  "packagedCommandRetirement": {
+    "pass": 8,
+    "fail": 0,
+    "realChildProcessTimeout": true
+  },
+  "packageAcceptance": {
+    "from": "0.6.0-beta.6",
+    "passedSteps": 22,
+    "syntheticLocalModel": true,
+    "feedDownloadInstallTested": false
+  },
+  "screenshots": [
+    {
+      "file": "01-welcome-light.png",
+      "sha256": "717e49bc3271c87524e96dd079a8996b67d1ca0510e23e92a868a701d3a41d06",
+      "theme": {
+        "workspaceTheme": "light"
+      },
+      "window": {
+        "width": 600,
+        "height": 700
+      },
+      "pane": {
+        "scrollTop": 0,
+        "scrollHeight": 505,
+        "clientHeight": 505
+      }
+    },
+    {
+      "file": "02-local-profile-light.png",
+      "sha256": "ed2c70404fe1a048b5817dbccfef373095ddf46bff56dd3759d8c1202af5dadc",
+      "theme": {
+        "workspaceTheme": "light"
+      },
+      "window": {
+        "width": 1440,
+        "height": 940
+      },
+      "pane": {
+        "scrollTop": 0,
+        "scrollHeight": 0,
+        "clientHeight": 0
+      }
+    },
+    {
+      "file": "03-local-profile-dark.png",
+      "sha256": "35f68d51f36f0af095648dec3f9531e43625b7bd8b6358b99b9440abf47e3e20",
+      "theme": {
+        "workspaceTheme": "dark"
+      },
+      "window": {
+        "width": 1440,
+        "height": 940
+      },
+      "pane": {
+        "scrollTop": 0,
+        "scrollHeight": 0,
+        "clientHeight": 0
+      }
+    },
+    {
+      "file": "04-new-project-light.png",
+      "sha256": "169d2d1b0c875c0b63fae1988883309f90b26ae779fa991d1ed9edf19b6cb343",
+      "theme": {
+        "workspaceTheme": "light"
+      },
+      "window": {
+        "width": 980,
+        "height": 720
+      },
+      "pane": {
+        "scrollTop": 0,
+        "scrollHeight": 493,
+        "clientHeight": 493
+      }
+    },
+    {
+      "file": "05-new-project-dark.png",
+      "sha256": "dfdcab62746cda9551456f915832ce13fdd26b6eb184cebe1c2ca10d5f42a004",
+      "theme": {
+        "workspaceTheme": "dark"
+      },
+      "window": {
+        "width": 980,
+        "height": 720
+      },
+      "pane": {
+        "scrollTop": 0,
+        "scrollHeight": 493,
+        "clientHeight": 493
+      }
+    },
+    {
+      "file": "06-workspace-light.png",
+      "sha256": "24c3c20300cd2a65c26faee1178118e4aa00fcd9eb113abba202795e849db249",
+      "theme": {
+        "workspaceTheme": "light"
+      },
+      "window": {
+        "width": 1280,
+        "height": 820
+      },
+      "pane": {
+        "scrollTop": 0,
+        "scrollHeight": 0,
+        "clientHeight": 0
+      }
+    },
+    {
+      "file": "07-sidebar-hidden-light.png",
+      "sha256": "d38145205b78fd30abb16a3e3e953cb061c893e2a1ddc6fcbc7854f5bd65b40b",
+      "theme": {
+        "workspaceTheme": "light"
+      },
+      "window": {
+        "width": 1280,
+        "height": 820
+      },
+      "pane": {
+        "scrollTop": 0,
+        "scrollHeight": 0,
+        "clientHeight": 0
+      }
+    },
+    {
+      "file": "08-sidebar-hidden-dark.png",
+      "sha256": "7467d3fdc257111d1b71d6d63d6e902f686bf3a9f4d8d3d64c1761fd353461b0",
+      "theme": {
+        "workspaceTheme": "dark"
+      },
+      "window": {
+        "width": 1280,
+        "height": 820
+      },
+      "pane": {
+        "scrollTop": 0,
+        "scrollHeight": 0,
+        "clientHeight": 0
+      }
+    },
+    {
+      "file": "09-settings-profile-light.png",
+      "sha256": "54fc69d96e3605232a5749948897a4c67c1fb265c3ec70be448562b9455f368f",
+      "theme": {
+        "workspaceTheme": "light"
+      },
+      "window": {
+        "width": 1280,
+        "height": 820
+      },
+      "pane": {
+        "scrollTop": 0,
+        "scrollHeight": 0,
+        "clientHeight": 0
+      }
+    },
+    {
+      "file": "10-settings-dark.png",
+      "sha256": "3c7058eb48bb27a91e44943e661f8986e2795d7c1b58cb0be8b2c98f3c0b89dd",
+      "theme": {
+        "workspaceTheme": "dark"
+      },
+      "window": {
+        "width": 1280,
+        "height": 820
+      },
+      "pane": {
+        "scrollTop": 0,
+        "scrollHeight": 0,
+        "clientHeight": 0
+      }
+    },
+    {
+      "file": "11-workspace-dark.png",
+      "sha256": "084f5cbb0a08b58d6c7231fa7e844e5754448eec2f4fc6c161c6a7099389fd58",
+      "theme": {
+        "workspaceTheme": "dark"
+      },
+      "window": {
+        "width": 1280,
+        "height": 820
+      },
+      "pane": {
+        "scrollTop": 0,
+        "scrollHeight": 0,
+        "clientHeight": 0
+      }
+    }
+  ],
+  "nativeRestart": {
+    "nameRetained": true,
+    "themeRetained": true
+  },
+  "artifacts": {
+    "Aura-Prime-0.6.0-beta.7-mac-arm64.dmg": {
+      "sha256": "f0a3599d45d7506a5babdb4eb1f4b661833c5bcfdcfc2116e027e63c30263172",
+      "bytes": 383020384
+    },
+    "Aura-Prime-0.6.0-beta.7-mac-arm64.zip": {
+      "sha256": "a90fd97ee76700b9bc047958caa0327782867713fc0a9230fc259a4637694d6e",
+      "bytes": 375963100
+    },
+    "beta-mac.yml": {
+      "sha256": "ed4962b4a7feea901817f9e2b3c9cffe1764660becaccc04e566718ef7b50f98",
+      "bytes": 494
+    }
+  },
+  "signing": "ad hoc, hardened runtime; deep/strict codesign verified on DMG app; ZIP executable/ASAR/source proof match DMG",
+  "notarized": false,
+  "cloudCI": "Not qualified by local checks. Beta6 Intel prepare-runtime failed with Invalid Mach-O signature region; beta6 ARM helper stdout race fixed before beta7.",
+  "notQualified": [
+    "Intel Mac",
+    "Windows",
+    "Linux command retirement",
+    "real provider keys",
+    "automatic installation from old beta5/beta6"
+  ]
+}
