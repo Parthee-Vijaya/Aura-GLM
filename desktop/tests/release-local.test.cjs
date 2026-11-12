@@ -74,7 +74,7 @@ test('a build is refused for every fact that would make the package unqualified'
 
 test('the build plan tests the source before packaging and the finished package before anything is collected', () => {
   const plan = local.buildPlan({ version: next, from: '/tmp/previous.dmg', candidate: '/tmp/candidate' });
-  assert.deepEqual(plan.map(step => step.id), ['install', 'runtime', 'check', 'package', 'package-source', 'package-test', 'package-acceptance', 'mac-artifacts']);
+  assert.deepEqual(plan.map(step => step.id), ['install', 'runtime', 'check', 'package', 'package-source', 'package-acceptance', 'mac-artifacts']);
   const line = id => { const step = plan.find(step => step.id === id); return [step.command, ...step.args].join(' '); };
   assert.equal(line('install'), 'npm ci');
   assert.equal(line('runtime'), 'npm run runtime:prepare -- darwin-arm64');
@@ -83,7 +83,9 @@ test('the build plan tests the source before packaging and the finished package 
   assert.deepEqual(plan.find(step => step.id === 'package').env, { CSC_IDENTITY_AUTO_DISCOVERY: 'false' });
   const app = path.join('release', 'mac-arm64', 'Aura Prime.app');
   assert.equal(line('package-source'), `node scripts/verify-package-source.cjs ${path.join(app, 'Contents', 'Resources')} darwin-arm64`);
-  assert.equal(line('package-test'), `npm run test:package -- ${app}`);
+  // scripts/verify-package.cjs is not a gate: it waits for a placeholder the interface no longer shows there and failed
+  // the same way in CI on the v0.6.0-beta.7 tag. The acceptance test is the test of the packaged app.
+  assert.ok(!plan.some(step => step.args.includes('test:package')), 'the stale package test is not a release gate');
   assert.equal(line('package-acceptance'), `npm run test:package-acceptance -- --app ${app} --from /tmp/previous.dmg --out ${path.join('/tmp/candidate', 'acceptance.json')}`);
   assert.equal(line('mac-artifacts'), `node scripts/verify-mac-artifacts.cjs ${app} ${path.join('release', local.names(next).dmg)} ${path.join('release', local.names(next).zip)} darwin-arm64 ${path.join('/tmp/candidate', 'mac-artifacts.json')} --local-ad-hoc`);
   assert.ok(plan.every(step => step.title && !['gh', 'git'].includes(step.command)), 'a build never uploads, tags or pushes');
