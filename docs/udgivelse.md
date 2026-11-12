@@ -4,6 +4,30 @@ Terminalpakken har [sit eget udgivelsesforløb](udgivelse-cli.md) med tags, der 
 
 Installationsfilerne ligger i GitHub Releases. [GitHub Pages](https://ai-alliancen-org.github.io/ai-harness/) viser downloadknapper til den seneste publicerede version med gyldige installationsfiler. Begge udgivelser kræver en særskilt, manuel kørsel. Et commit eller push starter ingen af dem.
 
+## Lokal Mac-beta uden CI
+
+Betaerne i 0.6.0-rækken blev bygget og uploadet fra udgiverens egen Mac. `desktop/scripts/release-local.cjs` gør det forløb gentageligt. Det dækker én ad hoc-signeret pakke til Mac med Apple-chip og erstatter ikke det notariserede forløb nedenfor.
+
+Kør fra `desktop/` i en ren checkout af den `main`, der skal udgives:
+
+```bash
+node scripts/release-local.cjs build
+```
+
+`build` afviser en forkert maskine, ændringer der ikke er committet, et tag der findes, og manglende udgivelsesnoter (`docs/releases/aura-prime-VERSION.md`). Derefter installerer den fra låsefilen, klargør runtime, kører den samlede lokale kontrol, bygger pakken og kører `verify-package-source.cjs`, `test:package`, `test:package-acceptance` mod forrige udgivelse og `verify-mac-artifacts.cjs --local-ad-hoc`. Forrige udgivelses DMG hentes fra GitHub og kontrolleres mod GitHubs kontrolsum; angiv `--from <forrige .app eller .dmg>` for at bruge en lokal fil. De afprøvede filer samles i en ny mappe, `release/candidate-VERSION-TIDSPUNKT/`, sammen med `beta-mac.yml`, `SHA256SUMS.txt` og `qualification.json`. Intet uploades, tagges eller pushes, og en kandidatmappe genbruges ikke.
+
+Opdateringsfeedet skrives af scriptet. electron-builders eget feed har både ZIP og DMG, og den installerede app accepterer kun én post med opdaterings-ZIP'en.
+
+Se appen i `release/mac-arm64` efter, og offentliggør så med den kommando, `build` skriver til sidst:
+
+```bash
+node scripts/release-local.cjs publish "release/candidate-VERSION-TIDSPUNKT"
+```
+
+`publish` kontrollerer, at filerne er uændrede siden afprøvningen, og at den afprøvede commit ligger på `origin/main`. Den uploader DMG, ZIP, `beta-mac.yml` og `SHA256SUMS.txt` til en kladde, sammenligner GitHubs størrelser og SHA-256 med de afprøvede filer og offentliggør først derefter betaen. GitHub opretter tagget på den afprøvede commit; scriptet flytter eller overskriver aldrig et tag. Fejler sammenligningen, forbliver udgivelsen en kladde. Udgivelsesteksten er noterne fra den afprøvede commit plus kildecommit, testtal og kontrolsummer.
+
+Når tagget oprettes, starter workflowet **Byg testpakker** stadig. Det offentliggør intet, og den lokale udgivelse afhænger ikke af det. Efter udgivelsen opdateres README, teststatus og eventuelle skærmbilleder i en særskilt commit.
+
 ## Klargør den konkrete version
 
 1. Opdatér `desktop/package.json` og rodpakken i `desktop/package-lock.json` til samme version. Gennemgå ændringerne og de relevante tests. Brugeren håndterer commit, push og tag.
